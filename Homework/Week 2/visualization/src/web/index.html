@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>Radius Dependency Explorer</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="/static/app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand"><span class="brand-mark" aria-hidden="true">◉</span><span>RADIUS</span><span class="brand-divider" aria-hidden="true"></span><span class="brand-subtitle">Research tools</span></div>
+        <span class="course-label">EE292M · Week 2</span>
+      </header>
+
+      <main>
+        <div class="intro">
+          <p class="eyebrow">Sector research</p>
+          <h1>Dependency Explorer</h1>
+          <p class="lede">Trace how subsectors fit into an investment theme. Search the NYSE classification workbook, then inspect the links around a selected sector.</p>
+        </div>
+
+        <section class="workspace" aria-label="Dependency explorer">
+          <div class="workspace-header">
+            <div>
+              <p class="eyebrow">Theme 01</p>
+              <h2>AI infrastructure</h2>
+            </div>
+            <form id="search-form" class="search" role="search">
+              <label for="search-input" class="sr-only">Search a ticker or company</label>
+              <input id="search-input" type="search" placeholder="Find a ticker or company" autocomplete="off" maxlength="80">
+              <button type="submit">Find</button>
+            </form>
+          </div>
+
+          <div id="search-results" class="search-results" hidden aria-label="Search results"></div>
+          <p id="error" class="error" role="alert" hidden></p>
+
+          <div id="content" class="content" hidden>
+            <div class="graph-region">
+              <div class="graph-heading"><span>Conceptual sector dependencies</span><span class="graph-hint">Select a sector</span></div>
+              <div id="graph" class="graph" aria-label="AI infrastructure subsector map. Arrows point from an input toward its use.">
+                <svg id="links" role="img" aria-label="Directed conceptual connections between sectors"></svg>
+              </div>
+              <p class="graph-note">Arrows show a possible economic input or use. They do not assert a commercial relationship between the example companies.</p>
+            </div>
+
+            <aside id="inspector" class="inspector" aria-live="polite" aria-label="Selected sector details">
+              <p id="sector-id" class="eyebrow"></p>
+              <h3 id="sector-title"></h3>
+              <p id="sector-name" class="sector-name"></p>
+              <div id="company-selection" class="company-selection" hidden></div>
+              <div class="inspector-rule"></div>
+              <p class="field-label">Examples from your workbook</p>
+              <div id="examples" class="examples"></div>
+              <p id="listing-count" class="small-note"></p>
+              <div class="inspector-rule"></div>
+              <p class="field-label">Mapped theme connections</p>
+              <ul id="connections" class="connections"></ul>
+              <p id="outside-theme" class="small-note" hidden>This sector is in the workbook but has no mapped connection in this theme yet.</p>
+            </aside>
+          </div>
+        </section>
+
+        <div class="source-line"><span>Source: NYSE 50 sector classification workbook · September 24, 2026</span><span>Company relationship evidence has not been loaded</span></div>
+      </main>
+    </div>
+  </body>
+</html>

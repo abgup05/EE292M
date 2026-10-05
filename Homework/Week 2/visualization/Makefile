@@ -1,4 +1,4 @@
-.PHONY: help build up down verify test lint fmt smoke lock clean logs shell
+.PHONY: help build up down verify test lint fmt smoke lock clean logs shell data
 
 export COMPOSE_PROJECT_NAME := ee292m-week2-radius
 export LOCAL_UID := $(shell id -u)
@@ -9,12 +9,16 @@ help:
 	@echo 'Everyday: build up down verify clean'
 	@echo 'Development: test lint fmt smoke logs shell'
 	@echo 'Dependencies: lock'
+	@echo 'Official data: data (download once and inspect BEA snapshot)'
+
+data:
+	$(COMPOSE) run --rm --no-deps app python -m app.acquire
 
 build:
 	$(COMPOSE) build app
 
 up:
-	$(COMPOSE) up --build -d app
+	$(COMPOSE) up --build --force-recreate -d app
 
 down:
 	$(COMPOSE) down
@@ -33,7 +37,7 @@ fmt:
 	$(COMPOSE) run --rm --no-deps app ruff format src tests
 
 smoke:
-	$(COMPOSE) up -d app
+	$(COMPOSE) up --force-recreate -d app
 	@trap '$(COMPOSE) down' EXIT; $(COMPOSE) exec -T app python tests/smoke.py
 
 lock:

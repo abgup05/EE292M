@@ -1,34 +1,52 @@
 # Architecture
 
-This repository holds weekly coursework and one built app. AGENTS.md contains the working rules. The root Makefile forwards commands to the Week 2 visualization folder; the other homework files are independent.
+This repository holds independent coursework, capstone pitches, and the Week 2 Industry Flow Explorer. The root Makefile forwards its targets to Homework/Week 2/visualization/. AGENTS.md contains the repository rules.
 
-## Week 2 visualization
+## Application
 
-The Radius Dependency Explorer lives entirely under Homework/Week 2/visualization/, except for the root Makefile, README, and this architecture note. It is the first implemented app in the repository.
+- Backend: Python 3.14, FastAPI, Pydantic and openpyxl.
+- Frontend: static HTML, CSS and browser-native JavaScript/SVG, with no package dependencies or build step.
+- Container: Docker Compose, bound only to 127.0.0.1:8765. Dependencies are installed at image build using docker/pyproject.toml and docker/uv.lock.
+- Source: the unchanged official BEA Use_Summary.xlsx in data/raw/bea/, with URL, retrieval date and SHA256 in source.json. The previous supplied NYSE workbook remains untouched but is not used in this visualization.
+- Runtime: no external data requests. Startup validates and caches the committed snapshot.
 
-- Backend: Python 3.14, FastAPI, Pydantic response models, and openpyxl. The API contract is at /docs.
-- Frontend: static HTML, CSS, and browser-native JavaScript/SVG. It has no frontend package dependency or build step.
-- Container: one Docker Compose project, bound to 127.0.0.1:8765. The base image is pinned to the Python 3.14 minor version. The app runs as the host user with the repository mounted at /work.
-- Dependencies: docker/pyproject.toml and docker/uv.lock. A container-only lock stage generates the lock; the app image installs from it at build time. No dependency is fetched when the app starts.
-- Data: data/raw/ holds an unchanged copy of the supplied NYSE classification workbook. data/conceptual_links.json holds seven authored sector-level links. There is no company relationship database yet.
+The application layout is:
 
-The nested app layout is:
+    docker/                 image, compose definition and dependency lock
+    src/app/acquire.py      explicit official data download and inspection
+    src/app/flows.py        source validation and research calculations
+    src/app/flow_models.py  response types
+    src/app/api.py          validated API endpoints and static assets
+    src/web/               HTML, CSS and JavaScript/SVG rendering
+    data/raw/bea/          official workbook and provenance
+    tests/                 independent arithmetic tests and live HTTP checks
 
-    docker/                 Dockerfile, compose.yaml, pyproject.toml, uv.lock
-    src/app/                api.py (routes), pipeline.py (data work), models.py (response types)
-    src/web/                index.html, app.js, styles.css
-    data/raw/               supplied source workbook
-    data/conceptual_links.json
-    tests/                  pytest pipeline checks
-    Makefile                container-backed targets
-    README.md               use, data limits, and API description
+## Computation boundary
 
-The API loads and checks the workbook on first request. It verifies that all 50 guide counts match the 2,922 listings before serving results. /api/search performs ticker/name matching and ranking in Python. /api/graph returns the fixed seven-node theme, the selected sector, and which directed sector links touch it. The frontend positions nodes, draws arrows, and handles input, but does not calculate financial or research results. An error hides the earlier graph, so a failed request cannot leave a stale result on screen.
+The BEA use table is commodity-by-industry. Each annual sheet contains 73 product rows and 71 buying-industry columns, followed by published intermediate totals and final uses. The parser locates boundaries by BEA codes T005 and T001, checks consistent classifications and units, preserves negative numbers and ellipses, and reconciles numeric flows to published totals within the rounding bound for independently rounded millions.
 
-The theme graph is intentionally conceptual. Its edges express potential sector inputs or uses, not documented company trade, revenue shares, or market effects. The search can locate any workbook security, including one outside the seven-node theme, but the page shows that such a sector has no mapped theme connection. Multiple share classes and investment products remain source listings, not distinct business nodes.
+The backend computes all rankings, shares, comparison-year changes, annual series and display-unit conversions. Shares use the relevant published intermediate total, including negative adjustments. Missing cells remain null and do not become measured zero. Shares are unavailable for nonpositive or missing denominators; percentage growth requires a positive baseline. Rankings return all numeric flows, including zeros and negative adjustments.
 
-## Build and verification
+The browser draws bar lengths and time-series geometry, chooses which backend-provided measure to draw, and handles input. It performs no research filtering, statistics or monetary conversion. A request sequence guard prevents stale responses from replacing newer selections; failed requests hide earlier results.
 
-From the repository root or nested app, make help lists commands. make lock resolves dependencies inside Docker; make build installs them into the image; make up and make down manage the loopback-only service. make verify builds the image, runs Ruff, a containerized Node syntax check, and pytest, then starts the app and checks live graph, sector, search, and page responses before stopping it. The pipeline tests check source reconciliation, search membership, edge direction and selection, and unknown-sector rejection. The root Makefile delegates each target to the nested app so the same gate works from a fresh clone.
+## API and files
 
-This structure departs from the original root-level scaffold because the requested Week 2 deliverable belongs in its own homework folder. It uses native SVG instead of D3 because seven fixed sector nodes need no chart package. Node runs only in a verification container; it adds no package or build step to the web app.
+- GET /api/catalog: axes, available years and source provenance.
+- GET /api/flows: inputs or buyers view, selected year, comparison year, ranking and selected relationship history.
+- GET /api/export: CSV of the same computed ranking and denominator.
+- GET /: page; /app.js and /styles.css: relative assets also usable by the local-file entry page.
+- /docs: generated API documentation.
+
+A direct file:// visit displays a link to the running local app instead of leaving an empty or misleading chart.
+
+## Verification and operation
+
+make data downloads the official BEA bundle only if the local workbook is absent. Existing snapshots are not overwritten. The raw workbook and manifest are committed so make verify does not need a data download or API key. A future data refresh must explicitly update and review the snapshot, provenance and coverage expectations together.
+
+make verify builds the image, lints Python, checks JavaScript syntax in a Node container, runs independent numerical tests and a full-workbook validation, then checks the running HTTP API, CSV, empty selections, input errors and page assets. It stops the service afterward. make up rebuilds and recreates the app so the in-memory snapshot reflects current files.
+
+The tests use an asymmetric synthetic matrix to check direction, denominators, share changes, negative adjustments, undefined growth and missing cells. Snapshot tests independently check specific source values and coverage. Browser layout and interaction checks are separate from this automated gate.
+
+## Scope
+
+This is an annual view of nominal U.S. intermediate purchases, including imported inputs. It excludes final-demand columns such as capital formation, household consumption and exports. It does not infer company suppliers, stock returns, shock transmission or complete capital-expenditure chains. Native SVG is adequate for the ranked bars and annual series; no additional chart dependency is needed.

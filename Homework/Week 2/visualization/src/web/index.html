@@ -1,71 +1,62 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="color-scheme" content="light dark">
-    <title>Radius Dependency Explorer</title>
-    <link rel="stylesheet" href="/static/styles.css">
-    <script src="/static/app.js" defer></script>
-  </head>
-  <body>
-    <div class="app-shell">
-      <header class="topbar">
-        <div class="brand"><span class="brand-mark" aria-hidden="true">◉</span><span>RADIUS</span><span class="brand-divider" aria-hidden="true"></span><span class="brand-subtitle">Research tools</span></div>
-        <span class="course-label">EE292M · Week 2</span>
-      </header>
-
-      <main>
-        <div class="intro">
-          <p class="eyebrow">Sector research</p>
-          <h1>Dependency Explorer</h1>
-          <p class="lede">Trace how subsectors fit into an investment theme. Search the NYSE classification workbook, then inspect the links around a selected sector.</p>
-        </div>
-
-        <section class="workspace" aria-label="Dependency explorer">
-          <div class="workspace-header">
-            <div>
-              <p class="eyebrow">Theme 01</p>
-              <h2>AI infrastructure</h2>
-            </div>
-            <form id="search-form" class="search" role="search">
-              <label for="search-input" class="sr-only">Search a ticker or company</label>
-              <input id="search-input" type="search" placeholder="Find a ticker or company" autocomplete="off" maxlength="80">
-              <button type="submit">Find</button>
-            </form>
-          </div>
-
-          <div id="search-results" class="search-results" hidden aria-label="Search results"></div>
-          <p id="error" class="error" role="alert" hidden></p>
-
-          <div id="content" class="content" hidden>
-            <div class="graph-region">
-              <div class="graph-heading"><span>Conceptual sector dependencies</span><span class="graph-hint">Select a sector</span></div>
-              <div id="graph" class="graph" aria-label="AI infrastructure subsector map. Arrows point from an input toward its use.">
-                <svg id="links" role="img" aria-label="Directed conceptual connections between sectors"></svg>
-              </div>
-              <p class="graph-note">Arrows show a possible economic input or use. They do not assert a commercial relationship between the example companies.</p>
-            </div>
-
-            <aside id="inspector" class="inspector" aria-live="polite" aria-label="Selected sector details">
-              <p id="sector-id" class="eyebrow"></p>
-              <h3 id="sector-title"></h3>
-              <p id="sector-name" class="sector-name"></p>
-              <div id="company-selection" class="company-selection" hidden></div>
-              <div class="inspector-rule"></div>
-              <p class="field-label">Examples from your workbook</p>
-              <div id="examples" class="examples"></div>
-              <p id="listing-count" class="small-note"></p>
-              <div class="inspector-rule"></div>
-              <p class="field-label">Mapped theme connections</p>
-              <ul id="connections" class="connections"></ul>
-              <p id="outside-theme" class="small-note" hidden>This sector is in the workbook but has no mapped connection in this theme yet.</p>
-            </aside>
-          </div>
-        </section>
-
-        <div class="source-line"><span>Source: NYSE 50 sector classification workbook · September 24, 2026</span><span>Company relationship evidence has not been loaded</span></div>
-      </main>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EE292M · Industry Flow Explorer</title>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <div id="file-notice" hidden class="file-notice">This visualization needs its local data service. <a href="http://127.0.0.1:8765">Open the working app →</a><small>If it is stopped, run <code>make up</code> in EE292M.</small></div>
+  <header class="topbar"><a class="brand" href="/"><strong>EE292M</strong> <span class="lab">RESEARCH LAB</span></a><span class="source-pill">U.S. economic flows <span> / </span> BEA</span></header>
+  <main>
+    <section class="intro">
+      <div><p class="eyebrow">FOLLOW THE SPENDING</p><h1>Who buys what?</h1><p class="lead">Explore the inputs industries rely on, the markets that buy them,<br class="desktop"> and how those relationships change.</p></div>
+      <div class="scope"><b id="coverage">1997–2025</b><span>Annual U.S. production inputs<br>71 industries · 73 product categories</span></div>
+    </section>
+    <div class="starters" aria-label="Starting points"><span>START WITH A QUESTION</span>
+      <button data-mode="inputs" data-focus="334">What goes into computer manufacturing? <span>↗</span></button>
+      <button data-mode="buyers" data-focus="335">Who buys electrical equipment? <span>↗</span></button>
+      <button data-mode="buyers" data-focus="324">Who buys petroleum products? <span>↗</span></button>
     </div>
-  </body>
+    <section class="workspace">
+      <div class="controls">
+        <div class="mode-switch" role="group" aria-label="Question"><button id="inputs" aria-pressed="true">What does an industry buy?</button><button id="buyers" aria-pressed="false">Who buys a product?</button></div>
+        <div class="filters">
+          <label class="focus-control"><span id="focus-label">Buying industry</span><select id="focus" aria-label="Industry or product"></select></label>
+          <label><span>Year</span><select id="year" aria-label="Year"></select></label>
+          <label><span>Compare with</span><select id="baseline" aria-label="Compare with"></select></label>
+        </div>
+      </div>
+      <p id="status" class="status" role="status">Loading the official BEA data…</p>
+      <div id="results" hidden>
+        <section class="summary">
+          <div><p class="eyebrow" id="context">INDUSTRY INPUTS</p><h2 id="focus-name"></h2><p id="denominator"></p></div>
+          <div class="total"><span id="total"></span><small id="total-change"></small></div>
+        </section>
+        <div class="analysis-grid">
+          <section class="ranking">
+            <div class="panel-head"><div><p class="eyebrow">01 / COMPOSITION</p><h3 id="ranking-title">Largest inputs</h3></div><label class="sort-control"><span class="sr-only">Rank relationships</span><select id="sort"><option value="amount">Largest purchases</option><option value="share_change">Biggest share gains</option></select></label></div>
+            <p id="insight" class="insight"></p>
+            <div class="table-wrap"><table><thead><tr><th id="row-label">Product category</th><th>Purchases</th><th>Share</th><th>Δ share <span title="Percentage points, versus the comparison year">(pp)</span></th></tr></thead><tbody id="rows"></tbody></table></div>
+            <div class="table-foot"><span id="rows-note"></span><a id="export" href="/api/export">Download CSV ↓</a></div>
+          </section>
+          <section class="history">
+            <div class="panel-head"><div><p class="eyebrow">02 / FOLLOW A RELATIONSHIP</p><h3>How has it changed?</h3></div></div>
+            <p class="hint">Select any row on the left to explore its history.</p>
+            <div class="relationship"><span id="from"></span><span class="arrow">↓ purchased by</span><span id="to"></span></div>
+            <div class="metric-switch" role="group" aria-label="Chart measure"><button data-metric="amount" aria-pressed="true">Purchase dollars</button><button data-metric="share" aria-pressed="false">Share of total</button></div>
+            <div class="chart-heading"><strong id="relationship-value"></strong><span id="relationship-change"></span></div>
+            <svg id="trend" viewBox="0 0 480 260" role="img" aria-label="Annual purchase history"></svg>
+            <p id="chart-note" class="chart-note"></p>
+            <details><summary>Annual values</summary><div class="annual-wrap"><table><thead><tr><th>Year</th><th>Purchases</th><th>Share</th></tr></thead><tbody id="annual"></tbody></table></div></details>
+          </section>
+        </div>
+      </div>
+    </section>
+    <section class="reading"><div><h4>Use this for research</h4><p>Identify meaningful input costs and customer industries. Compare shares to see structural shifts, then investigate relevant companies in RD2.</p></div><div><h4>Know what is measured</h4><p>U.S. industry aggregates, including imported inputs. Excludes capital investment, household purchases and exports from these views. It is not a company supplier map.</p></div><div><h4>Read changes carefully</h4><p>Current-dollar values mix price and quantity changes. “Share” uses the published intermediate total. Negative adjustments are retained; BEA ellipses are unreported, not plotted as zero.</p></div></section>
+    <footer><span id="provenance">Source: BEA Supply–Use Tables · Use Summary</span><a href="https://www.bea.gov/resources/guide-interactive-industry-input-output-accounts-tables" target="_blank" rel="noreferrer">Source & definitions ↗</a></footer>
+  </main>
+</body>
 </html>

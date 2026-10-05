@@ -1,212 +1,169 @@
+/* Drawing and interaction only; all research results come from the Python API. */
 "use strict";
+const $ = id => document.getElementById(id);
+const state = {mode:"buyers", focus:"335", year:2025, baseline:2019, sort:"amount", selected:null};
+let catalog, view, requestNumber = 0, metric = "amount";
+const NS = "http://www.w3.org/2000/svg";
 
-const graphElement = document.getElementById("graph");
-const linksElement = document.getElementById("links");
-const contentElement = document.getElementById("content");
-const errorElement = document.getElementById("error");
-const resultsElement = document.getElementById("search-results");
-let graphData = null;
-let selectedCompany = null;
-let requestNumber = 0;
-
-async function readJson(url) {
-  const response = await fetch(url, { headers: { Accept: "application/json" } });
-  const data = await response.json();
-  if (!response.ok) {
-    throw new Error(typeof data.detail === "string" ? data.detail : "The request could not be completed.");
-  }
-  return data;
+function text(id, value) { $(id).textContent = value; }
+function option(value, label) {
+  const node = document.createElement("option");
+  node.value = value; node.textContent = label; return node;
 }
-
-function showError(message) {
-  graphData = null;
-  contentElement.hidden = true;
-  resultsElement.hidden = true;
-  errorElement.textContent = message;
-  errorElement.hidden = false;
+function choices() {
+  $("focus").replaceChildren();
+  const axis = state.mode === "inputs" ? catalog.industries : catalog.products;
+  if(!axis.some(item=>item.id===state.focus)) state.focus=axis[0].id;
+  axis.forEach(item => $("focus").append(option(item.id, item.name)));
+  $("focus").value = state.focus;
+  text("focus-label", state.mode === "inputs" ? "Buying industry" : "Product category");
+  ["inputs","buyers"].forEach(id => $(id).setAttribute("aria-pressed", String(state.mode === id)));
 }
-
-function clearError() {
-  errorElement.hidden = true;
-  errorElement.textContent = "";
+function params(includeSelected=true) {
+  const p = new URLSearchParams({mode:state.mode, focus:state.focus, year:state.year, baseline:state.baseline, sort:state.sort});
+  if(includeSelected && state.selected) p.set("selected",state.selected);
+  return p;
 }
-
-async function selectSector(sectorId, company = null) {
-  const current = ++requestNumber;
+async function refresh() {
+  const sequence = ++requestNumber;
+  $("results").hidden = true; $("status").hidden = false;
+  $("status").className = "status"; text("status","Reading annual purchase flows…");
   try {
-    const data = await readJson(`/api/graph?focus=${encodeURIComponent(sectorId)}`);
-    if (current !== requestNumber) return;
-    graphData = data;
-    selectedCompany = company;
-    clearError();
-    contentElement.hidden = false;
-    resultsElement.hidden = true;
-    draw();
-  } catch (error) {
-    if (current === requestNumber) showError(error.message);
+    const response = await fetch("/api/flows?" + params());
+    if(!response.ok) throw new Error("The data request failed. Check the selected years and try again.");
+    const data = await response.json();
+    if(sequence !== requestNumber) return;
+    view = data; state.selected = data.selected;
+    render();
+    $("status").hidden = true; $("results").hidden = false;
+  } catch(error) {
+    if(sequence !== requestNumber) return;
+    text("status",error.message); $("status").className = "status error";
   }
 }
-
-function makeText(tag, content, className = "") {
-  const item = document.createElement(tag);
-  item.textContent = content;
-  if (className) item.className = className;
-  return item;
-}
-
-function renderInspector() {
-  const selected = graphData.selected;
-  const node = graphData.nodes.find((item) => item.id === selected.id);
-  document.getElementById("sector-id").textContent = `Sector ${selected.id}${node ? " · theme slice" : ""}`;
-  document.getElementById("sector-title").textContent = node ? node.label : selected.name;
-  document.getElementById("sector-name").textContent = node ? selected.name : selected.family;
-  const examples = document.getElementById("examples");
-  examples.replaceChildren(...selected.example_tickers.map((ticker) => makeText("span", ticker)));
-  document.getElementById("listing-count").textContent = `${selected.listing_count} listed securities in this category; counts include share classes and other instruments.`;
-
-  const companyBox = document.getElementById("company-selection");
-  companyBox.hidden = !selectedCompany;
-  if (selectedCompany) {
-    const name = makeText("strong", `${selectedCompany.ticker} · ${selectedCompany.name}`);
-    const note = makeText("span", "Classified in this sector. No company-level relationship is asserted by this map.");
-    companyBox.replaceChildren(name, note);
-  } else {
-    companyBox.replaceChildren();
-  }
-
-  const connections = document.getElementById("connections");
-  const active = graphData.edges.filter((edge) => edge.active);
-  connections.replaceChildren(...active.map((edge) => {
-    const outward = edge.source === selected.id;
-    const otherId = outward ? edge.target : edge.source;
-    const other = graphData.nodes.find((item) => item.id === otherId);
-    const row = document.createElement("li");
-    row.append(makeText("strong", `${outward ? "To" : "From"} ${other.label}`));
-    row.append(makeText("span", `${edge.role} · conceptual`));
-    return row;
-  }));
-  document.getElementById("outside-theme").hidden = Boolean(node);
-}
-
-function svgElement(tag, attributes) {
-  const item = document.createElementNS("http://www.w3.org/2000/svg", tag);
-  for (const [name, value] of Object.entries(attributes)) item.setAttribute(name, String(value));
-  return item;
-}
-
-function renderGraph() {
-  const width = graphElement.clientWidth;
-  const narrow = width < 520;
-  const height = narrow ? 566 : 434;
-  const boxWidth = narrow ? Math.min(145, (width - 45) / 2) : Math.min(158, (width - 65) / 3);
-  const boxHeight = narrow ? 90 : 78;
-  const left = narrow ? 12 : 0;
-  const middle = narrow ? width - boxWidth - 12 : (width - boxWidth) / 2;
-  const right = width - boxWidth;
-  const positions = narrow ? {
-    "05": [left, 18], "32": [middle, 18], "11": [left, 146], "33": [middle, 146],
-    "12": [left, 288], "19": [middle, 288], "47": [(width - boxWidth) / 2, 474]
-  } : {
-    "05": [left, 24], "11": [middle, 24], "12": [middle, 126], "19": [middle, 228],
-    "32": [left, 330], "33": [middle, 330], "47": [right, 174]
-  };
-  graphElement.style.height = `${height}px`;
-  linksElement.setAttribute("viewBox", `0 0 ${width} ${height}`);
-  const defs = svgElement("defs", {});
-  for (const active of [true, false]) {
-    const marker = svgElement("marker", {
-      id: active ? "arrow-active" : "arrow-muted", viewBox: "0 0 10 10", refX: 8, refY: 5,
-      markerWidth: 5, markerHeight: 5, orient: "auto-start-reverse"
+function render() {
+  const inputs = view.mode === "inputs";
+  text("context", inputs ? "INDUSTRY INPUTS" : "INDUSTRIAL BUYERS");
+  text("focus-name",view.focus_name);
+  text("denominator",view.denominator_label);
+  text("total",view.total_label);
+  text("total-change",view.total_change_label + " nominal change since " + view.baseline);
+  text("ranking-title",state.sort === "share_change" ? "Relationships gaining share" : (inputs ? "Largest input purchases" : "Largest industrial buyers"));
+  text("row-label", inputs ? "Product category" : "Buying industry");
+  text("insight",view.insight);
+  text("rows-note",view.rows.length + " numeric relationships · " + view.missing_count + " unreported. Scroll for all.");
+  $("export").href = "/api/export?" + params(false);
+  $("rows").replaceChildren();
+  const max = Math.max(1,...view.rows.map(row=>Math.abs(row.amount)));
+  for(const row of view.rows) {
+    const tr = document.createElement("tr");
+    if(row.id === view.selected) tr.className = "selected";
+    const label = document.createElement("td"), button = document.createElement("button");
+    button.textContent = row.name;
+    button.setAttribute("aria-pressed",String(row.id === view.selected));
+    button.addEventListener("click",()=>{state.selected=row.id;refresh();});
+    label.append(button);
+    const track = document.createElement("div"), bar = document.createElement("span");
+    track.className="bar-track"; bar.className="bar";
+    bar.style.width = Math.abs(row.amount)/max*100 + "%";
+    if(row.amount<0) bar.style.background="#b77540";
+    track.append(bar); label.append(track); tr.append(label);
+    [row.amount_label,row.share_label,row.share_change_label].forEach((value,i)=>{
+      const td=document.createElement("td");td.textContent=value;
+      if(i===2 && row.share_change!==null) td.className=row.share_change<0?"negative":"positive";
+      tr.append(td);
     });
-    marker.append(svgElement("path", { d: "M 0 0 L 10 5 L 0 10 z", fill: active ? "var(--accent)" : "var(--line)" }));
-    defs.append(marker);
+    $("rows").append(tr);
   }
-  linksElement.replaceChildren(defs);
-  const activeIds = new Set([graphData.selected.id]);
-  graphData.edges.filter((edge) => edge.active).forEach((edge) => { activeIds.add(edge.source); activeIds.add(edge.target); });
-
-  graphData.edges.forEach((edge) => {
-    const a = positions[edge.source];
-    const b = positions[edge.target];
-    let path;
-    if (narrow) {
-      if (edge.target !== "47") {
-        path = `M${a[0] + boxWidth / 2},${a[1] + boxHeight} L${b[0] + boxWidth / 2},${b[1] - 4}`;
-      } else if (edge.source === "11" || edge.source === "33") {
-        const fromLeft = edge.source === "11";
-        const startX = fromLeft ? a[0] : a[0] + boxWidth;
-        const outerX = fromLeft ? 3 : width - 3;
-        const endX = fromLeft ? b[0] - 4 : b[0] + boxWidth + 4;
-        path = `M${startX},${a[1] + boxHeight / 2} L${outerX},${a[1] + boxHeight / 2} L${outerX},${b[1] + boxHeight / 2} L${endX},${b[1] + boxHeight / 2}`;
-      } else {
-        const startX = a[0] + boxWidth / 2;
-        const endX = b[0] + (edge.source === "12" ? boxWidth * .25 : boxWidth * .75);
-        path = `M${startX},${a[1] + boxHeight} C${startX},${a[1] + boxHeight + 55} ${endX},${b[1] - 54} ${endX},${b[1] - 4}`;
-      }
-    } else {
-      const startX = a[0] + boxWidth;
-      const endX = b[0] - 4;
-      const startY = a[1] + boxHeight / 2;
-      const endY = b[1] + boxHeight / 2;
-      const bendX = (startX + endX) / 2;
-      path = `M${startX},${startY} C${bendX},${startY} ${bendX},${endY} ${endX},${endY}`;
+  text("from",inputs ? view.selected_name || "No reported product" : view.focus_name);
+  text("to",inputs ? view.focus_name : view.selected_name || "No reported buyer");
+  $("annual").replaceChildren();
+  view.series.forEach(point=>{
+    const tr=document.createElement("tr");
+    [point.year,point.amount_label,point.share_label].forEach(value=>{
+      const td=document.createElement("td");td.textContent=value;tr.append(td);
+    });
+    $("annual").append(tr);
+  });
+  text("provenance","BEA · Use Summary · Snapshot " + view.source.retrieved_at.slice(0,10) + " · Current U.S. dollars");
+  drawTrend();
+}
+function svg(tag, attributes={}, label) {
+  const node=document.createElementNS(NS,tag);
+  Object.entries(attributes).forEach(([key,value])=>node.setAttribute(key,value));
+  if(label!==undefined) node.textContent=label;
+  return node;
+}
+function drawTrend() {
+  const chart=$("trend");chart.replaceChildren();
+  document.querySelectorAll("[data-metric]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.metric===metric)));
+  const current = view.series.find(p=>p.year===view.year);
+  const relation = view.rows.find(r=>r.id===view.selected);
+  text("relationship-value",current ? current[metric+"_label"] : "Not reported");
+  text("relationship-change",relation ? (metric==="amount"?relation.change_label:relation.share_change_label)+" vs "+view.baseline : "");
+  text("chart-note",metric==="amount" ? "Annual nominal purchases. Prices and volumes both affect this line. Select a point to inspect its year." : view.denominator_label+". Changes are percentage points, not percentage growth.");
+  const values=view.series.map(p=>p[metric]);
+  const valid=values.filter(v=>v!==null);
+  if(!valid.length){chart.append(svg("text",{x:20,y:110},"No reported values for this relationship."));return;}
+  const min=Math.min(0,...valid),max=Math.max(0,...valid),range=max-min||1;
+  const left=26,right=458,top=26,bottom=215;
+  const x=i=>left+i*(right-left)/Math.max(1,view.series.length-1);
+  const y=v=>bottom-(v-min)/range*(bottom-top);
+  [0,.5,1].forEach(t=>chart.append(svg("line",{x1:left,x2:right,y1:top+t*(bottom-top),y2:top+t*(bottom-top),stroke:"#e5e9e3","stroke-dasharray":"3 4"})));
+  chart.append(svg("line",{x1:left,x2:right,y1:y(0),y2:y(0),stroke:"#d5ddd4"}));
+  let path="",pen=false;
+  view.series.forEach((point,i)=>{
+    if(point[metric]===null){pen=false;return;}
+    path+=(pen?" L":" M")+x(i)+" "+y(point[metric]);pen=true;
+  });
+  chart.append(svg("path",{d:path,fill:"none",stroke:"#1b6654","stroke-width":2.4,"stroke-linejoin":"round"}));
+  view.series.forEach((point,i)=>{
+    if(i===0 || i===view.series.length-1 || point.year%5===0){
+      chart.append(svg("text",{x:x(i),y:241,"text-anchor":"middle"},point.year));
     }
-    linksElement.append(svgElement("path", {
-      d: path, fill: "none", stroke: edge.active ? "var(--accent)" : "var(--line)",
-      "stroke-width": edge.active ? 2.3 : 1.2,
-      "marker-end": `url(#${edge.active ? "arrow-active" : "arrow-muted"})`
-    }));
+    if(point[metric]===null)return;
+    const active=point.year===view.year, baseline=point.year===view.baseline;
+    if(active||baseline){
+      chart.append(svg("line",{x1:x(i),x2:x(i),y1:top,y2:bottom,stroke:active?"#91ad9b":"#d6ac80","stroke-dasharray":"3 4"}));
+      const anchor=i>view.series.length-5?"end":i<4?"start":"middle";
+      chart.append(svg("text",{x:x(i),y:Math.max(14,y(point[metric])-12),"text-anchor":anchor},point[metric+"_label"]));
+    }
+    const dot=svg("circle",{cx:x(i),cy:y(point[metric]),r:active?5:baseline?4:3,fill:baseline&&!active?"#b77540":"#1b6654"});
+    dot.append(svg("title",{},point.year+": "+point[metric+"_label"]));chart.append(dot);
+    const hit=svg("circle",{cx:x(i),cy:y(point[metric]),r:8,fill:"transparent",tabindex:0,role:"button","aria-label":point.year+": "+point[metric+"_label"]});
+    const select=()=>{state.year=point.year;$("year").value=point.year;refresh();};
+    hit.addEventListener("click",select);hit.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();select();}});
+    chart.append(hit);
   });
-
-  graphElement.querySelectorAll(".graph-node").forEach((item) => item.remove());
-  graphData.nodes.forEach((node) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "graph-node";
-    button.setAttribute("aria-pressed", String(node.id === graphData.selected.id));
-    button.setAttribute("aria-label", `Sector ${node.id}, ${node.label}`);
-    button.classList.toggle("dim", !activeIds.has(node.id));
-    button.style.left = `${positions[node.id][0]}px`;
-    button.style.top = `${positions[node.id][1]}px`;
-    button.style.width = `${boxWidth}px`;
-    button.style.height = `${boxHeight}px`;
-    button.append(makeText("span", node.id), makeText("strong", node.label));
-    button.addEventListener("click", () => selectSector(node.id));
-    graphElement.append(button);
-  });
+  chart.append(svg("title",{},view.selected_name+"; "+(metric==="amount"?"annual purchase dollars":"annual share of intermediate total")+". Exact values in the annual values table."));
 }
-
-function draw() {
-  if (!graphData) return;
-  renderInspector();
-  renderGraph();
-}
-
-document.getElementById("search-form").addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const query = document.getElementById("search-input").value.trim();
-  if (!query) return;
+async function init() {
+  if(location.protocol==="file:"){
+    $("file-notice").hidden=false;text("status","Open the local app above to load data.");return;
+  }
   try {
-    const hits = await readJson(`/api/search?q=${encodeURIComponent(query)}&limit=10`);
-    clearError();
-    resultsElement.replaceChildren();
-    if (hits.length === 0) {
-      resultsElement.append(makeText("p", "No matching listing in this workbook.", "search-empty"));
-    } else {
-      hits.forEach((hit) => {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "search-result";
-        button.append(makeText("strong", hit.ticker), makeText("span", hit.name), makeText("em", `Sector ${hit.sector_id}`));
-        button.addEventListener("click", () => selectSector(hit.sector_id, hit));
-        resultsElement.append(button);
-      });
-    }
-    resultsElement.hidden = false;
-  } catch (error) {
-    showError(error.message);
-  }
-});
-
-new ResizeObserver(() => { if (graphData) renderGraph(); }).observe(graphElement);
-selectSector("47");
+    const response=await fetch("/api/catalog");
+    if(!response.ok)throw new Error("The BEA source data could not be loaded.");
+    catalog=await response.json();
+    catalog.years.forEach(year=>{$("year").append(option(year,year));$("baseline").append(option(year,year));});
+    state.year=catalog.years[catalog.years.length-1];
+    $("year").value=state.year;$("baseline").value=state.baseline;
+    text("coverage",catalog.years[0]+"–"+state.year);
+    choices();
+    ["inputs","buyers"].forEach(mode=>$(mode).addEventListener("click",()=>{
+      state.mode=mode;state.selected=null;choices();refresh();
+    }));
+    ["focus","year","baseline","sort"].forEach(id=>$(id).addEventListener("change",()=>{
+      state[id]=(id==="year"||id==="baseline")?Number($(id).value):$(id).value;
+      if(id==="focus")state.selected=null;
+      refresh();
+    }));
+    document.querySelectorAll("[data-focus]").forEach(button=>button.addEventListener("click",()=>{
+      state.mode=button.dataset.mode;state.focus=button.dataset.focus;state.selected=null;
+      state.sort="amount";$("sort").value="amount";choices();refresh();
+    }));
+    document.querySelectorAll("[data-metric]").forEach(button=>button.addEventListener("click",()=>{metric=button.dataset.metric;if(view)drawTrend();}));
+    await refresh();
+  }catch(error){text("status",error.message);$("status").className="status error";}
+}
+init();

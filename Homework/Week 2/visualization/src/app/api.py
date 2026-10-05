@@ -1,60 +1,134 @@
-"""HTTP routes for the Radius sector dependency visualization."""
+"""Local HTTP API for measured BEA industry purchase flows."""
 
+import csv
+import io
+from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from app.models import GraphResponse, SearchHit, SectorDetail
-from app.pipeline import build_graph, project_catalog, search_catalog
+from app.flow_models import FlowView
+from app.flows import explore, load_dataset
 
 WEB_DIR = Path(__file__).resolve().parents[1] / "web"
-app = FastAPI(title="Radius Dependency Explorer", version="0.1.0")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Validate the complete data snapshot before accepting requests."""
+    load_dataset()
+    yield
+
+
+app = FastAPI(title="Radius Industry Flow Explorer", version="0.2.0", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
 
 
 @app.get("/", include_in_schema=False)
 def index() -> FileResponse:
-    """Serve the single static web page."""
+    """Serve the visualization."""
     return FileResponse(WEB_DIR / "index.html")
 
 
-@app.get("/api/sectors", response_model=list[SectorDetail])
-def sectors() -> list[SectorDetail]:
-    """List all 50 classifications in source order."""
+@app.get("/app.js", include_in_schema=False)
+def javascript() -> FileResponse:
+    """Serve the relative asset used by both local-file and HTTP entry points."""
+    return FileResponse(WEB_DIR / "app.js", media_type="text/javascript")
+
+
+@app.get("/styles.css", include_in_schema=False)
+def stylesheet() -> FileResponse:
+    """Serve the relative stylesheet."""
+    return FileResponse(WEB_DIR / "styles.css", media_type="text/css")
+
+
+@app.get("/api/catalog")
+def catalog() -> dict:
+    """Return validated classification choices, years and provenance."""
+    data = load_dataset()
+    return {
+        "industries": [{"id": k, "name": v} for k, v in data.industries.items()],
+        "products": [{"id": k, "name": v} for k, v in data.products.items()],
+        "years": sorted(data.tables),
+        "source": data.source,
+    }
+
+
+@app.get("/api/flows", response_model=FlowView)
+def flows(
+    mode: Literal["inputs", "buyers"] = "inputs",
+    focus: str = Query("334", pattern=r"^[A-Za-z0-9]{1,12}$"),
+    year: int = Query(2025, ge=1997, le=2100),
+    baseline: int = Query(2019, ge=1997, le=2100),
+    sort: Literal["amount", "share_change"] = "amount",
+    selected: str | None = Query(None, pattern=r"^[A-Za-z0-9]{1,12}$"),
+) -> FlowView:
+    """Calculate all rankings and annual series for the current selection."""
     try:
-        return list(project_catalog().sectors.values())
-    except (FileNotFoundError, ValueError) as exc:
-        raise HTTPException(
-            status_code=500, detail="Source data is unavailable"
-        ) from exc
+        return explore(load_dataset(), mode, focus, year, baseline, sort, selected)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
-@app.get("/api/graph", response_model=GraphResponse)
-def graph(focus: str = Query("47", pattern=r"^[0-9]{2}$")) -> GraphResponse:
-    """Return the theme and the sector selected for inspection."""
-    try:
-        return build_graph(project_catalog(), focus)
-    except (FileNotFoundError, ValueError) as exc:
-        if str(exc).startswith("Unknown sector:"):
-            raise HTTPException(status_code=404, detail="Sector not found") from exc
-        raise HTTPException(
-            status_code=500, detail="Source data is unavailable"
-        ) from exc
-
-
-@app.get("/api/search", response_model=list[SearchHit])
-def search(
-    q: str = Query(min_length=1, max_length=80, pattern=r"^[^\x00-\x1f\x7f]+$"),
-    limit: int = Query(10, ge=1, le=25),
-) -> list[SearchHit]:
-    """Search workbook securities and report their classification."""
-    if not q.strip():
-        raise HTTPException(status_code=422, detail="Search text is required")
-    try:
-        return search_catalog(project_catalog(), q, limit)
-    except (FileNotFoundError, ValueError) as exc:
-        raise HTTPException(
-            status_code=500, detail="Source data is unavailable"
-        ) from exc
+@app.get("/api/export")
+def export(
+    mode: Literal["inputs", "buyers"] = "inputs",
+    focus: str = Query("334", pattern=r"^[A-Za-z0-9]{1,12}$"),
+    year: int = Query(2025, ge=1997, le=2100),
+    baseline: int = Query(2019, ge=1997, le=2100),
+    sort: Literal["amount", "share_change"] = "amount",
+) -> Response:
+    """Export exactly the displayed ranking and its denominator."""
+    result = flows(mode, focus, year, baseline, sort, None)
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(["BEA Use Summary", result.source["url"]])
+    writer.writerow(
+        [
+            "Mode",
+            mode,
+            "Focus",
+            focus,
+            result.focus_name,
+            "Year",
+            year,
+            "Comparison year",
+            baseline,
+        ]
+    )
+    writer.writerow(
+        ["Denominator (millions USD)", result.total, result.denominator_label]
+    )
+    writer.writerow(
+        [
+            "Code",
+            "Name",
+            "Millions USD",
+            "Share percent",
+            "Comparison millions USD",
+            "Nominal change percent",
+            "Share change pp",
+        ]
+    )
+    for row in result.rows:
+        writer.writerow(
+            [
+                row.id,
+                row.name,
+                row.amount,
+                row.share,
+                row.baseline_amount,
+                row.change_pct,
+                row.share_change,
+            ]
+        )
+    return Response(
+        buffer.getvalue(),
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": 'attachment; filename="bea-industry-flows.csv"'
+        },
+    )

@@ -1,5 +1,7 @@
 # EE292M
 
-The [Week 2 Radius Dependency Explorer](Homework/Week%202/visualization/README.md) is a Python-backed visualization of an AI infrastructure theme using the supplied NYSE sector workbook. The [capstone idea pitches](Capstone/idea%20pitches.md) describe three ways to expand it into a research tool.
+The [Week 2 Industry Flow Explorer](Homework/Week%202/visualization/README.md) visualizes official BEA purchases between product categories and U.S. industries across 1997–2025. Select what an industry buys or who buys a product, compare spending shares, and trace annual relationships.
 
-Run `make help` for the project's targets. `make verify` builds the app container and checks its pipeline, code, and live API. `make up` serves the app at <http://127.0.0.1:8765>; `make down` stops it. Docker and Make are required; dependencies install only inside the container.
+The [three capstone pitches](Capstone/idea%20pitches.md) are in Capstone.
+
+Run `make up`, then open <http://127.0.0.1:8765>. Use the HTTP app rather than opening its HTML file directly. `make verify` builds the container, runs numerical tests and code checks, and checks the live API. `make down` stops the app. Docker and Make are required; all dependencies stay inside containers.

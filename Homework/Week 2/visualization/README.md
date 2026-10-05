@@ -1,12 +1,39 @@
-# Radius Dependency Explorer
+# Radius Industry Flow Explorer
 
-This Week 2 app visualizes how selected subsectors fit into an AI infrastructure theme. Search any ticker or company in the supplied NYSE workbook, inspect its primary classification, and select a node to see incoming and outgoing theme links. The Python backend reads the raw workbook, validates the category counts, computes search and selection results, and returns them through a documented API. The static page draws the graph and handles interaction.
+A research visualization for asking **what an industry buys**, **who buys a product**, and **which relationships are changing**. It uses official BEA data across 1997–2025, rather than an authored network.
 
-The arrows are **conceptual sector dependencies** curated for this demonstration. They are not verified commercial links between the example companies. The workbook is a September 24, 2026 snapshot of 2,922 listed securities in 50 categories; listings are not distinct issuers. Preferred shares, funds, SPAC instruments, and multiple share classes remain in the source. If a search result belongs to a sector outside the seven mapped theme slices, the app shows its workbook classification and says that the theme has no mapped connection for it.
+## Use it
+
+Run `make up` from this folder or the repository root, then open <http://127.0.0.1:8765>. Opening index.html directly shows a link to this local service.
+
+1. Try a starting question, or choose an industry/product from the dropdown.
+2. Set the year and comparison year.
+3. Rank by purchase amount or by gain in share. Shares use the complete published intermediate total, not only the largest rows.
+4. Click a relationship to see its annual purchases and share. The comparison year is marked in amber; the selected year in green. Click a chart point to inspect that year.
+5. Expand Annual values for exact numbers, or download the ranked data as CSV.
+
+For example, use computer manufacturing inputs to inspect its largest production costs. Use electrical equipment buyers to identify industrial demand categories. Compare petroleum-product buyers to explore customer mix. These are starting questions, not claims that particular stocks will benefit.
+
+## Data and interpretation
+
+Source: [BEA Supply–Use Tables](https://www.bea.gov/itable/input-output), official [workbook bundle](https://apps.bea.gov/industry/release/zip/SUPPLY-USE.zip), and [table definitions](https://www.bea.gov/resources/guide-interactive-industry-input-output-accounts-tables).
+
+The committed Use_Summary.xlsx has 29 annual sheets, 73 product categories and 71 buying industries. data/raw/bea/source.json records its original download URL, retrieval time and SHA256. The backend verifies the checksum, axes, units and published totals on startup. No network call or API key is needed to explore the snapshot.
+
+- These are commodity-to-industry purchases across the U.S. economy, including imported inputs. Product categories are not individual supplier companies.
+- Values are millions of current U.S. dollars in the source; the API formats billions/trillions for display. Changes combine price and quantity effects.
+- Industry-input shares divide by all intermediate inputs purchased by that industry (T005). Product-buyer shares divide by intermediate use of that product across all industries (T001).
+- Final uses are excluded: this is not a full map of equipment investment, construction capex, household purchases or exports.
+- Negative adjustments are retained. Individual positive shares can therefore sum above 100%.
+- Ellipses remain unreported cells, excluded from numeric rankings and drawn as gaps in history. Numeric zero remains zero. A missing/nonpositive total has no percentage share, and a missing/nonpositive comparison amount has no percentage-growth result.
+- Share changes are percentage points. A move from 10% to 15% is +5 pp.
+- BEA values are independently rounded; displayed shares need not add to exactly 100%.
+
+The original NYSE workbook remains unchanged in data/raw/ but is no longer used by the app. The old illustrative links have been removed.
 
 ## Run and verify
 
-From this folder or the EE292M repository root:
+Docker and Make are required. Nothing is installed on the host.
 
 ```text
 make help
@@ -15,21 +42,15 @@ make up
 make down
 ```
 
-Open <http://127.0.0.1:8765> after `make up`. The API contract is at <http://127.0.0.1:8765/docs>. `make verify` builds the pinned container, runs the pipeline tests, Python lint and JavaScript syntax checks, and checks real HTTP responses. Only Docker, Make, and git are needed on the host. No host packages are installed. The service listens only on `127.0.0.1`.
+make verify builds the image, lints Python, checks JavaScript syntax, runs numerical/source tests and real HTTP checks, then stops the service. Use make up afterward. The service binds only to 127.0.0.1. API documentation: <http://127.0.0.1:8765/docs>.
 
-Change Python dependencies in `docker/pyproject.toml`, then run `make lock` to regenerate `docker/uv.lock` in the lock container. Commit the manifest and lock together. There are no frontend packages: the directed network uses browser-native SVG and JavaScript.
-
-## Source and data rules
-
-- `data/raw/NYSE_50_sector_classification.xlsx` is an unchanged copy of the supplied workbook. Keep it read-only.
-- `data/conceptual_links.json` is the seven-category illustration. Each arrow has direction and a short role; none claims company-level evidence.
-- The backend checks each guide count against the listings sheet before serving data. It refuses incomplete or changed input rather than silently showing a partial graph.
-- Search includes all workbook securities. Example tickers in the inspector are the examples recorded by the workbook, not a complete membership list.
+make data acquires the official workbook only when absent, then inspects it. It never silently updates an existing snapshot. Dependencies are locked in docker/uv.lock and installed at image build. make lock updates the lock inside Docker.
 
 ## API
 
-- `GET /api/sectors`: all 50 workbook categories.
-- `GET /api/search?q=VRT&limit=10`: ranked ticker/name matches, with security type and classification.
-- `GET /api/graph?focus=11`: the seven-node theme and the selected category's incident links. The response labels every link as conceptual.
+- GET /api/catalog
+- GET /api/flows?mode=inputs&focus=334&year=2025&baseline=2019&sort=amount
+- GET /api/flows?mode=buyers&focus=335&year=2025&baseline=2019&sort=share_change
+- GET /api/export with the same selection parameters
 
-The app does not estimate company revenue exposure, supplier shares, or stock-price effects. A later evidence-backed company network would require its own relationship table with sources and review dates.
+The backend computes all research results; the frontend handles interaction and chart geometry only. Calculations are covered by independent synthetic examples, full-source reconciliation, known source-cell checks and live endpoint validation. Visual browser checks are not part of make verify.

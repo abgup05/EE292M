@@ -1,0 +1,121 @@
+order_id,order_date,customer,region,sales_rep,product,units,unit_price,discount,revenue,status,refund,source
+ORD-1045,01/08/2026,UMBRELLA CORP,TX,Maya,Dock,5, 250.00 ,10%,1125.00,Shipped,0,web
+ORD-1048,2026-02-01,Massive Dynamic,Ill.,Jordan,Air Laptop,4," 1,200.00 ",0,$4.8K,Completed,0,Partner
+ORD-1005,Feb 12 2026,Aperture Science,California,Chris,Air Laptop,1,1200.00,5%,,Completed,$0,web
+ORD-1056,3/11/26,Globex Corporation,IL,Taylor,Tablet,2,700,15%,1190.00,Completed,0.00,Sales
+ORD-1027,2/28/26,Initech,north,Jordan,Monitor,2,$450,0%, 900.00 ,Cancelled,0,web
+ORD-1065,2026-03-07,UMBRELLA CORP,east,Taylor,Monitor,2,$450,0%,$900,Completed,0.00,WEB
+ORD-1074,2/2/26,Vandelay Industries,Illinois,Alex,Monitor,1,$450,5%,427.50,Completed,0.00,WEB
+ORD-1011,2026-03-12,Initech,IL,Alex,Air Laptop,5,1200.00,10%,"$5,400.00",Completed,$0,web
+ORD-1041,01/02/2026,Hooli,North,Chris,Dock,5,$250.00,5%,"1,188",Completed,0.00,web
+ORD-1108,02/09/2026,massive dynamic,west,Alex,Tablet,2,$700,10%,1260.00,Returned,$1.3K,Sales
+ORD-1019,02/17/2026,Gringotts,California,Jordan,Tablet,2,700,0,"$1,400.00",Completed,$0,Sales
+ORD-1063,Feb 28 2026,Umbrella,NORTH,Alex,Tablet,5,$700.00,0.1,"$3,150.00",Completed,,Web
+ORD-1012,2026-01-26,Soylent Corp,Illinois,Jordan,Air Laptop,4,"1,200",0%,4800.00,Completed,$0,Partner
+ORD-1037,2026-01-26,wayne,California,Jordan,Dock,1,$250,0%,250,Completed,0.00,Web
+ORD-1090,02/11/2026,tyrell,SOUTH,Jordan,Pro Laptop,2,"1,800",5%,"$3,420.00",Pending,0.00,partner
+ORD-1092,2026-01-11,WONKA INDUSTRIES,north,Alex,Dock,3, 250.00 ,0%,750,Pending,$0,WEB
+ORD-1110,Feb 20 2026,Umbrella Corp,north,Maya,Tablet,3,700,5%," 1,995.00 ",Completed,0.00,Sales
+ORD-1001,03/24/2026,GLOBEX CORPORATION,California,Jordan,Tablet,2, 700.00 ,0%," 1,400.00 ",completed,$0,Sales
+ORD-1089,01/25/2026,WONKA INDUSTRIES,Ill.,Alex,Dock,1,250.00,5%,237.50,Cancelled,0,Sales
+ORD-1105,02/27/2026,tyrell,South,Jordan,Monitor,2,$450.00,0%, 900.00 ,Cancelled,$0,Sales
+ORD-1066,02/15/2026,ACME INC.,NY,Maya,Air Laptop,4,$1.2K,0%," 4,900.00 ",Completed,0,Web
+ORD-1046,Jan 16 2026,WONKA INDUSTRIES,west,Jordan,Air Laptop,5," 1,200.00 ",5%,"5,700",Completed,0,WEB
+ORD-1032,03/20/2026,MASSIVE DYNAMIC,CA,Alex,Air Laptop,2," 1,200.00 ",0%,"2,400",Completed,0,Sales
+ORD-1071,Feb 15 2026,Vandelay,East,Chris,Air Laptop,1," 1,200.00 ",0%,1200.00,Completed,0.00,Sales
+ORD-1043,Jan 13 2026,UMBRELLA CORP,California,Alex,Tablet,1,700.00,0%,$700,Completed,0.00,Sales
+ORD-1013,Jan 9 2026,initech,Ill.,Jordan,Pro Laptop,4,"1,800",5%,"$6,840.00",Returned," 6,840.00 ",Sales
+ORD-1016,2026-03-11,Umbrella Corp,Tex.,Taylor,Air Laptop,3,$1.2K,0,"$3,600.00",Pending,$0,WEB
+ORD-1073,03/19/2026,SOYLENT,illinois,Alex,Monitor,1,$450,0.1,$405.00,pending,$0,Web
+ORD-1077,02/14/2026,GRINGOTTS,east,Chris,Dock,4, 250.00 ,0%,1000.00,Canceled,$0,partner
+ORD-1098,1/3/26,aperture,California,Alex,Monitor,1,450.00,5%, 427.50 ,Completed,0.00,partner
+ORD-1025,02/01/2026,TYRELL CORP,South,Chris,Air Laptop,2,1200.00,0%,"2,400",Completed,0,Web
+ORD-1079,2026-03-04,Aperture,Texas,Jordan,Dock,1,250.00,0.15,$212.50,Pending,,Web
+ORD-1023,01/10/2026,Tyrell Corp,TX,Chris,Dock,3,250.00,0%,750,Completed,0.00,Partner
+ORD-1097,2026-03-06,soylent,north,Maya,Monitor,2,450.00,10%,810.00,Completed,0.00,partner
+ORD-1057,2/23/26,Globex,New York,Taylor,Pro Laptop,1,1800.00,5%,"1,710",Returned,1710.00,Sales
+ORD-1008,02/09/2026,APERTURE SCIENCE,ny,Jordan,Air Laptop,3,"$1,200.00",0%," 3,600.00 ",canceled,$100.00,Web
+ORD-1031,2026-03-12,Acme,south,Taylor,Air Laptop,1,"1,200",0%,$1.2K,Completed,$50,web
+ORD-1054,Jan 26 2026,Massive Dynamic,South,Jordan,Air Laptop,1,"1,200",0%," 1,200.00 ",Completed,0.00,partner
+ORD-9003,Mar 4 2026,Acme,calif.,Jordan,Tablet,1,$700,0%,700,Completed,,Web
+ORD-1010,2026-02-28,Globex Corporation,N.Y.,Maya,Air Laptop,1,"$1,200.00",5%,$1.1K,Completed,150.00,web
+ORD-1034,01/24/2026,Vandelay Industries,South,Chris,Dock,5, 250.00 ,10%,1125.00,Completed,0.00,Web
+ORD-1026,2/25/26,umbrella,NY,Chris,Dock,5, 250.00 ,0," 1,250.00 ",Completed,,partner
+ORD-1070,03/01/2026,Aperture Science,SOUTH,Alex,Pro Laptop,4," 1,800.00 ",0%," 7,200.00 ",Completed,$0,WEB
+ORD-1029,Feb 24 2026,SOYLENT CORP,N.Y.,Jordan,Monitor,2, 450.00 ,5%,,Completed,,partner
+ORD-1099,Mar 30 2026,Massive Dynamic,west,Taylor,Air Laptop,1,"$1,200.00",10%,"1,080",Completed,0.00,Partner
+ORD-1086,2/5/26,Gringotts,West,Chris,Monitor,1, 450.00 ,10%,405,Completed,,WEB
+ORD-1006,03/14/2026,Soylent Corp,South,Jordan,Dock,4,250.00,15%,850.00,Completed,,partner
+ORD-1091,Mar 16 2026,WAYNE ENTERPRISES,Ill.,Taylor,Dock,1,$250.00,15%,,Pending,0.00,Sales
+ORD-1069,Mar 28 2026,gringotts,TX,Maya,Pro Laptop,4,"$1,800.00",0%,$7.2K,Completed,$0,partner
+ORD-1040,2/19/26,Wonka,North,Alex,Tablet,4,700,5%,,Completed,0,web
+ORD-1050,2026-03-23,Vandelay Industries,Ill.,Alex,Dock,1,250.00,15%,$212,Completed,0,Web
+ORD-1036,3/5/26,wonka,California,Maya,Pro Laptop,2,1800.00,0%,$3.6K,Completed,$0,Web
+ORD-1017,2026-01-16,GLOBEX CORPORATION,New York,Alex,Tablet,2,700.00,0.15,"$1,190.00",Completed,0,WEB
+ORD-1067,2026-01-21,Initech,California,Maya,Pro Laptop,2," 1,800.00 ",10%,$3.2K,Completed,0,web
+ORD-1035,2026-03-06,aperture,SOUTH,Jordan,Air Laptop,5,1200.00,0%,"6,000",Shipped,,Sales
+ORD-1052,02/03/2026,TYRELL CORP,calif.,Maya,Monitor,2,450,0.15,765.00,completed,0,web
+ORD-1008,2/9/26,Aperture Science,NY,Jordan,Air Laptop,3,"$1,200.00",0%," 3,600.00 ",Canceled,$100.00,Web
+ORD-1044,1/15/26,Aperture Science,NY,Alex,Tablet,4,700.00,0.1,"$2,520.00",Completed,,Partner
+ORD-1073,Mar 19 2026,Soylent,Illinois,Alex,Monitor,1,$450,0.1,$405.00,Pending,$0,Web
+ORD-1068,Feb 21 2026,Massive Dynamic,WEST,Jordan,Pro Laptop,2,"1,800",5%,"3,420",Returned," 3,420.00 ",partner
+ORD-1084,3/25/26,Initech,North,Maya,Monitor,1, 450.00 ,0%, 450.00 ,Completed,,WEB
+ORD-1028,2026-01-21,UMBRELLA CORP,IL,Taylor,Air Laptop,2,1200.00,0%,$2.4K,Completed,0.00,Partner
+ORD-1020,Feb 13 2026,Gringotts,north,Maya,Air Laptop,2,$1.2K,0,"2,400",Cancelled,$0,Web
+ORD-1096,02/01/2026,WONKA INDUSTRIES,California,Maya,Tablet,5, 700.00 ,0%,,Completed,$0,web
+ORD-1101,2026-03-29,globex,Illinois,Taylor,Dock,2,250.00,0%, 500.00 ,Completed,,web
+ORD-1009,03/05/2026,APERTURE SCIENCE,California,Maya,Dock,1,250.00,0,$250,Completed,,partner
+ORD-1014,03/12/2026,Acme,South,Chris,Pro Laptop,1,"$1,800.00",0.15," 1,530.00 ",completed,150,partner
+ORD-1085,Jan 6 2026,GRINGOTTS,NY,Maya,Tablet,3,700,0%,2100.00,Pending,0.00,partner
+ORD-1004,02/19/2026,stark,North,Jordan,Tablet,1,700.00,5%, 665.00 ,Completed,$0,Sales
+ORD-1018,1/18/26,Tyrell,Tex.,Taylor,Air Laptop,5," 1,200.00 ",15%,"5,100",Completed,0,WEB
+ORD-1039,2026-01-16,Aperture Science,WEST,Taylor,Monitor,5,450.00,0%," 2,250.00 ",Completed,$0,partner
+ORD-9002,02/18/26,Acme Incorporated,California,Jordan,Dock,4,250,10%,$900,complete,0,Web
+ORD-1007,Mar 2 2026,Soylent Corp,South,Alex,Dock,1,$250,0,250,Completed,0,Sales
+ORD-1078,02/01/2026,stark,IL,Jordan,Air Laptop,3," 1,200.00 ",15%,$3.1K,Returned,"$3,060.00",Sales
+ORD-1019,02/17/2026,GRINGOTTS,california,Jordan,Tablet,2,700,0,"$1,400.00",completed,$0,Sales
+ORD-1095,1/11/26,Vandelay Industries,Calif.,Chris,Air Laptop,5,"1,200",10%," 5,400.00 ",Completed,0,WEB
+ORD-1055,Mar 7 2026,Stark,east,Taylor,Tablet,5,$700,5%,3325.00,Completed,0,WEB
+ORD-1051,02/12/2026,Gringotts,west,Chris,Tablet,3, 700.00 ,5%,1995.00,Pending,0.00,Partner
+ORD-1081,1/19/26,gringotts,Illinois,Jordan,Monitor,1,$450,0%,450,Completed,,Sales
+ORD-1047,2/24/26,wayne,TX,Taylor,Pro Laptop,2," 1,800.00 ",5%,$3.4K,Cancelled,$0,Sales
+ORD-1082,03/22/2026,WONKA INDUSTRIES,WEST,Taylor,Pro Laptop,5,1800.00,15%,"$7,650.00",Canceled,0.00,Web
+ORD-1062,Feb 12 2026,massive dynamic,New York,Alex,Pro Laptop,1,"$1,800.00",0.05," 1,710.00 ",Completed,$0,Partner
+ORD-9001,2026-02-04,ACME INC,CA,Jordan,Monitor,2,$450,0%,$900,Completed,$0,Web
+ORD-1080,02/21/2026,Soylent Corp,Tex.,Alex,Air Laptop,4,$1.2K,0,,Completed,,Sales
+ORD-1094,1/7/26,APERTURE SCIENCE,West,Maya,Pro Laptop,1,1800.00,15%,1530.00,Completed,0.00,Partner
+ORD-1042,2026-01-11,acme,New York,Taylor,Tablet,2,$700.00,0.1,$1.3K,Completed,0.00,Web
+ORD-1059,03/01/2026,globex,East,Jordan,Dock,1,$250,0%, 250.00 ,Cancelled,0,WEB
+ORD-1049,Jan 14 2026,Soylent Corp,NORTH,Alex,Pro Laptop,1,$1.8K,0.1," 1,620.00 ",Pending,,WEB
+ORD-1102,Mar 30 2026,umbrella,CA,Alex,Dock,1,250,0%, 250.00 ,Completed,0.00,Sales
+ORD-1058,1/14/26,Aperture Science,NORTH,Taylor,Dock,4,$250,5%,$950,Completed,$0,Web
+ORD-1076,03/30/2026,Soylent,CA,Jordan,Monitor,3,$450.00,0%,"$1,350.00",Completed,0,Sales
+ORD-1033,2026-02-09,APERTURE SCIENCE,West,Chris,Dock,1,$250,5%,237.50,Completed,$0,Partner
+ORD-1034,01/24/2026,VANDELAY INDUSTRIES,south,Chris,Dock,5, 250.00 ,10%,1125.00,completed,0.00,Web
+ORD-1060,01/20/2026,Initech,South,Chris,Air Laptop,1," 1,200.00 ",0%,"$1,200.00",Completed,,Partner
+ORD-1064,Feb 18 2026,Gringotts,NY,Alex,Dock,1,$250,15%,$212,Returned,$212.50,partner
+ORD-1106,Jan 31 2026,ACME INC.,west,Chris,Monitor,3,450,10%,$1.3K,Completed,0.00,WEB
+ORD-1038,Mar 11 2026,Initech,South,Chris,Pro Laptop,1,1800.00,15%,"$1,530.00",Completed,0.00,Partner
+ORD-1030,Mar 15 2026,Tyrell Corp,CA,Maya,Pro Laptop,4,1800.00,0%,"$7,200.00",Pending,,Web
+ORD-1092,01/11/2026,WONKA INDUSTRIES,north,Alex,Dock,3, 250.00 ,0%,750,pending,$0,WEB
+ORD-1002,03/26/2026,Vandelay Industries,IL,Maya,Air Laptop,5,"$1,200.00",15%,"$5,100.00",Completed,0.00,WEB
+ORD-1053,Feb 19 2026,Massive Dynamic,Tex.,Maya,Dock,2,250,5%,$475,Completed,150,Sales
+ORD-1022,2026-03-19,Hooli,south,Taylor,Tablet,4, 700.00 ,15%,"2,380",Pending,$2.4K,Partner
+ORD-1003,2026-03-20,stark,WEST,Alex,Monitor,1,450,10%,$405.00,Completed,$0,Web
+ORD-1024,03/13/2026,Aperture,CA,Alex,Tablet,2,$700,0%," 1,400.00 ",Completed,0.00,Web
+ORD-1104,Jan 28 2026,vandelay,Illinois,Maya,Tablet,5,700,5%,$3.3K,Completed,0,WEB
+ORD-1100,Mar 9 2026,Wonka Industries,New York,Taylor,Dock,1,$250,5%,$237.50,Returned,$238,WEB
+ORD-1088,1/10/26,Umbrella Corp,TX,Chris,Tablet,4,$700,15%,"2,380",Completed,0,Web
+ORD-1109,2026-01-25,Acme Inc.,SOUTH,Jordan,Tablet,2,700,0%,"1,400",Completed,0,WEB
+ORD-1075,3/27/26,MASSIVE DYNAMIC,N.Y.,Taylor,Tablet,1,700.00,15%,$595,completed,$0,Sales
+ORD-1087,02/28/2026,acme,SOUTH,Alex,Dock,4,250,0.05,1050.00,Completed,0,web
+ORD-1083,2026-03-10,Soylent,WEST,Taylor,Monitor,5,$450,0%,$2.2K,Completed, 50.00 ,WEB
+ORD-9004,2026-03-15,Acme Inc.,West,Jordan,Pro Laptop,1,"$1,800",5%,"$1,710",Completed,0,Web
+ORD-1021,2026-03-27,umbrella,IL,Alex,Tablet,2,$700,0%,$1.4K,Returned,"$1,400.00",Web
+ORD-1061,Feb 17 2026,Soylent Corp,CA,Chris,Monitor,2,$450.00,15%,765.00,Returned,0,Web
+ORD-1072,2026-02-11,Initech,North,Alex,Pro Laptop,5,$1.8K,0.1,"$8,100.00",Completed,0,partner
+ORD-1107,Mar 25 2026,Acme Inc.,west,Chris,Dock,2,250,0.15,$375,Completed,0,Web
+ORD-1015,2026-03-19,Acme Inc,Calif.,Alex,Monitor,3,450.00,5%," 1,282.50 ",Completed,0,Web
+ORD-1093,01/30/2026,Wayne Enterprises,Texas,Taylor,Pro Laptop,2," 1,800.00 ",0%," 3,600.00 ",Completed,0.00,partner
+ORD-1052,Feb 3 2026,TYRELL CORP,Calif.,Maya,Monitor,2,450,0.15,765.00,Completed,0,web
+ORD-1103,03/04/2026,Soylent Corp,Ill.,Jordan,Tablet,1,$700,10%,630,Pending,0.00,WEB

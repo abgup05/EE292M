@@ -1,4 +1,4 @@
-.PHONY: help build up down verify test lint fmt smoke lock clean logs shell data
+.PHONY: help build up down verify test lint fmt smoke lock clean logs shell data vercel-deps
 
 export COMPOSE_PROJECT_NAME := ee292m-week2-radius
 export LOCAL_UID := $(shell id -u)
@@ -9,6 +9,7 @@ help:
 	@echo 'Everyday: build up down verify clean'
 	@echo 'Development: test lint fmt smoke logs shell'
 	@echo 'Dependencies: lock'
+	@echo 'Vercel runtime dependencies: vercel-deps'
 	@echo 'Official data: data (download once and inspect BEA snapshot)'
 
 data:
@@ -29,12 +30,12 @@ test:
 	$(COMPOSE) run --rm --no-deps app pytest -q -p no:cacheprovider tests
 
 lint:
-	$(COMPOSE) run --rm --no-deps app ruff check --no-cache src tests
+	$(COMPOSE) run --rm --no-deps app ruff check --no-cache src tests main.py
 	$(COMPOSE) run --rm --no-deps jscheck
 
 fmt:
-	$(COMPOSE) run --rm --no-deps app ruff check --fix --no-cache src tests
-	$(COMPOSE) run --rm --no-deps app ruff format src tests
+	$(COMPOSE) run --rm --no-deps app ruff check --fix --no-cache src tests main.py
+	$(COMPOSE) run --rm --no-deps app ruff format src tests main.py
 
 smoke:
 	$(COMPOSE) up --force-recreate -d app
@@ -43,6 +44,10 @@ smoke:
 lock:
 	$(COMPOSE) build lock
 	$(COMPOSE) run --rm --no-deps lock lock
+
+vercel-deps:
+	$(COMPOSE) build lock
+	$(COMPOSE) run --rm --no-deps lock export --frozen --no-dev --no-emit-project --no-hashes --format requirements-txt --output-file /work/requirements.txt
 
 logs:
 	$(COMPOSE) logs -f app

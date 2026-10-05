@@ -54,3 +54,26 @@ make data acquires the official workbook only when absent, then inspects it. It 
 - GET /api/export with the same selection parameters
 
 The backend computes all research results; the frontend handles interaction and chart geometry only. Calculations are covered by independent synthetic examples, full-source reconciliation, known source-cell checks and live endpoint validation. Visual browser checks are not part of make verify.
+
+## Deploy on Vercel
+
+The app is prepared for Vercel's native FastAPI/Python runtime. Vercel runs the Python app directly; the Docker setup remains for local development.
+
+1. Push the committed app to GitHub. The implementation is on `codex/week2-radius-visualization`; deploy that branch, or merge it through a reviewed pull request before deploying `main`.
+2. In [Vercel New Project](https://vercel.com/new), import `abgup05/EE292M`. Select the branch containing these files. If the import screen starts from `main`, use the branch's GitHub URL or create a deployment from the feature branch after import.
+3. Set **Root Directory** to `Homework/Week 2/visualization` (the entire app folder, not `src/web`).
+4. Use the **FastAPI** framework preset. Leave Build Command, Install Command and Output Directory at their framework defaults. No environment variables or API keys are needed for this app.
+5. Deploy, then check the homepage, switch between both views, change a year, and download a CSV. `/api/catalog` should return the categories and years; `/docs` should show the API.
+6. Paste the working website URL into the Website field in [W2L2.md](../W2L2.md). Check the link in a signed-out browser before submitting it so you know whether your Vercel project's access settings allow your reviewer to open it.
+
+Deployment files:
+
+- `main.py` exposes the existing app and supplies the source import path that Docker normally provides.
+- `.python-version` selects Python 3.14.
+- `requirements.txt` contains pinned runtime dependencies exported from the existing Docker lock. After changing dependencies, run `make lock` and `make vercel-deps`, and commit both the lock and exported requirements.
+- `vercel.json` selects FastAPI and excludes tests, Docker files and the unused NYSE workbook from the function bundle. `.vercelignore` also excludes those files from CLI uploads.
+- The official BEA workbook, provenance file and web assets stay in the deployment so the app can read them without a separate storage service.
+
+Local checks validate the entrypoint without Docker's `PYTHONPATH`, source loading, static files and API behavior. A live Vercel build and deployment have not yet been verified.
+
+Official references: [FastAPI on Vercel](https://vercel.com/docs/frameworks/backend/fastapi), [Python runtime](https://vercel.com/docs/functions/runtimes/python), and [Git deployments](https://vercel.com/docs/git).

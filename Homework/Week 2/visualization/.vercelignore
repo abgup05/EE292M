@@ -1,0 +1,8 @@
+docker/
+tests/
+data/raw/NYSE_50_sector_classification.xlsx
+__pycache__/
+**/__pycache__/
+.pytest_cache/
+.ruff_cache/
+.DS_Store

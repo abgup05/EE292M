@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "fastapi",
+  "functions": {
+    "main.py": {
+      "excludeFiles": "{docker/**,tests/**,data/raw/NYSE_50_sector_classification.xlsx}"
+    }
+  }
+}

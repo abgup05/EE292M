@@ -12,6 +12,11 @@ This repository holds independent coursework, capstone pitches, and the Week 2 I
 
 The application layout is:
 
+    main.py                 Vercel entrypoint for the existing FastAPI app
+    requirements.txt        runtime dependencies exported from the Docker lock
+    .python-version         Python 3.14 for hosted builds
+    vercel.json             FastAPI hosting configuration and bundle exclusions
+    .vercelignore           CLI upload exclusions
     docker/                 image, compose definition and dependency lock
     src/app/acquire.py      explicit official data download and inspection
     src/app/flows.py        source validation and research calculations
@@ -46,6 +51,14 @@ make data downloads the official BEA bundle only if the local workbook is absent
 make verify builds the image, lints Python, checks JavaScript syntax in a Node container, runs independent numerical tests and a full-workbook validation, then checks the running HTTP API, CSV, empty selections, input errors and page assets. It stops the service afterward. make up rebuilds and recreates the app so the in-memory snapshot reflects current files.
 
 The tests use an asymmetric synthetic matrix to check direction, denominators, share changes, negative adjustments, undefined growth and missing cells. Snapshot tests independently check specific source values and coverage. Browser layout and interaction checks are separate from this automated gate.
+
+## Optional Vercel hosting
+
+Vercel's project root is Homework/Week 2/visualization/. Its native Python runtime imports main.py, which adds the local src/ directory to the import path and exposes the same FastAPI instance used by Docker. All file reads resolve from source file locations, so no hosted working-directory override is needed. Python 3.14 is selected by .python-version. Runtime dependencies are exported from docker/uv.lock by make vercel-deps; no packages are installed on the host.
+
+The hosted function includes the BEA snapshot and web assets. Bundle/upload exclusions omit the unused NYSE workbook, development tests and Docker files. The application has no writable data store and no runtime secrets. Cold starts validate and cache the workbook inside each function process. Local Docker remains bound to 127.0.0.1; an eventual Vercel deployment serves through Vercel's HTTPS endpoint, as requested by the user.
+
+The entrypoint test imports the app in a subprocess with Python environment overrides ignored, then checks source loading and the HTML file. This verifies independence from Docker's PYTHONPATH; it does not replace a live Vercel deployment check.
 
 ## Scope
 

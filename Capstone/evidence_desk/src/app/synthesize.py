@@ -275,7 +275,8 @@ class ExtractiveSynthesizer:
         stances = {e.stance for e in evidence}
         disagreements = (
             [
-                "Selected passages include both supporting and challenging statements; compare stances."
+                "Selected passages include both supporting and challenging statements; "
+                "compare stances."
             ]
             if {Stance.supports, Stance.challenges} <= stances
             else []
@@ -293,7 +294,8 @@ class ExtractiveSynthesizer:
             disagreements=disagreements,
             unknowns=[f"No passage matched: {text}" for text in unanswered],
             next_steps=[
-                "Configure a model credential to obtain reasoned findings and confidence rationale.",
+                "Configure a model credential to obtain reasoned findings and confidence "
+                "rationale.",
                 "Add independent sources for each finding currently backed by a single page.",
                 "Review each quoted passage in its source context before relying on it.",
             ],

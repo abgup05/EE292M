@@ -1,0 +1,35 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: app
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    env_file:
+      - path: ../.env
+        required: false
+    environment:
+      PYTHONPATH: /work/src
+      HOME: /tmp
+      EVIDENCE_DESK_DATA_DIR: /work/data/runs
+    volumes:
+      - ..:/work
+    ports:
+      - "127.0.0.1:8766:8000"
+  lock:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: lock
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    environment:
+      HOME: /tmp
+      UV_CACHE_DIR: /tmp/uv-cache
+    volumes:
+      - ..:/work
+  jscheck:
+    image: node:24-slim
+    working_dir: /work
+    volumes:
+      - ..:/work:ro
+    command: ["node", "--check", "src/web/app.js"]

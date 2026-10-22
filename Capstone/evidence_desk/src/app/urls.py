@@ -100,9 +100,7 @@ def canonicalize(url: str) -> str:
     scheme = parts.scheme.lower()
     host = (parts.hostname or "").lower()
     port = parts.port
-    netloc = (
-        host if port is None or DEFAULT_PORTS.get(scheme) == port else f"{host}:{port}"
-    )
+    netloc = host if port is None or DEFAULT_PORTS.get(scheme) == port else f"{host}:{port}"
     path = parts.path or "/"
     if len(path) > 1 and path.endswith("/"):
         path = path.rstrip("/") or "/"

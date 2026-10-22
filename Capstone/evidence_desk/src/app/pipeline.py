@@ -241,8 +241,7 @@ def _status(run: Run, documents: dict[str, ExtractedDocument]) -> RunStatus:
     reasons: list[str] = []
     if len(documents) < MIN_COMPLETE_SOURCES:
         reasons.append(
-            f"Fewer than six sources were extracted ({len(documents)}); "
-            "the review is not complete."
+            f"Fewer than six sources were extracted ({len(documents)}); the review is not complete."
         )
     if run.unsupported_findings:
         reasons.append(

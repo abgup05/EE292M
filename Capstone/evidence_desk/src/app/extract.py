@@ -28,9 +28,7 @@ REMOVED_TAGS = (
     "form",
     "button",
 )
-REMOVED_ROLES = frozenset(
-    {"navigation", "banner", "contentinfo", "complementary", "search"}
-)
+REMOVED_ROLES = frozenset({"navigation", "banner", "contentinfo", "complementary", "search"})
 HEADING_TAGS = ("h1", "h2", "h3", "h4", "h5", "h6")
 BLOCK_TAGS = HEADING_TAGS + (
     "p",
@@ -88,9 +86,7 @@ def _clean(value: str) -> str:
 
 def _meta(soup: BeautifulSoup, *names: str) -> str | None:
     for name in names:
-        tag = soup.find("meta", attrs={"property": name}) or soup.find(
-            "meta", attrs={"name": name}
-        )
+        tag = soup.find("meta", attrs={"property": name}) or soup.find("meta", attrs={"name": name})
         if isinstance(tag, Tag):
             content = tag.get("content")
             if isinstance(content, str) and content.strip():

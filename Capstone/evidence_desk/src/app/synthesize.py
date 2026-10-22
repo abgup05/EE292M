@@ -184,9 +184,7 @@ class ExtractiveSynthesizer:
         used: set[tuple[str, str]] = set()
         for subquestion in subquestions:
             wanted = keywords(subquestion.text) | question_words
-            contrary_question = (
-                "against" in subquestion.text or "wrong" in subquestion.text
-            )
+            contrary_question = "against" in subquestion.text or "wrong" in subquestion.text
             scored = []
             for candidate in candidates:
                 score = len(candidate.words & wanted)
@@ -196,9 +194,7 @@ class ExtractiveSynthesizer:
                     score -= 1
                 if score > 0:
                     scored.append((score, candidate))
-            scored.sort(
-                key=lambda item: (-item[0], item[1].source_id, item[1].sentence)
-            )
+            scored.sort(key=lambda item: (-item[0], item[1].source_id, item[1].sentence))
             picked_sources: set[str] = set()
             for score, candidate in scored:
                 key = (candidate.source_id, candidate.sentence)
@@ -210,15 +206,11 @@ class ExtractiveSynthesizer:
                 if len(picked_sources) >= 2:
                     break
         if len(chosen) < MIN_FINDINGS:
-            for candidate in sorted(
-                candidates, key=lambda c: -len(c.words & question_words)
-            ):
+            for candidate in sorted(candidates, key=lambda c: -len(c.words & question_words)):
                 key = (candidate.source_id, candidate.sentence)
                 if key not in used and candidate.words & question_words:
                     used.add(key)
-                    chosen.append(
-                        (candidate, subquestions[0] if subquestions else None, 0)
-                    )
+                    chosen.append((candidate, subquestions[0] if subquestions else None, 0))
                 if len(chosen) >= MIN_FINDINGS:
                     break
         chosen = chosen[:MAX_FINDINGS]
@@ -309,10 +301,7 @@ def _candidates(documents: dict[str, ExtractedDocument]) -> list[_Candidate]:
         for section in doc.sections:
             for sentence in SENTENCE_SPLIT.split(section.text):
                 sentence = sentence.strip()
-                if (
-                    not MIN_SENTENCE <= len(sentence) <= MAX_SENTENCE
-                    or sentence not in doc.text
-                ):
+                if not MIN_SENTENCE <= len(sentence) <= MAX_SENTENCE or sentence not in doc.text:
                     continue
                 lowered = sentence.lower()
                 out.append(

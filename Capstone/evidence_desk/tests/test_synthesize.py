@@ -45,9 +45,7 @@ def test_plan_preserves_question_and_includes_a_contrary_subquestion() -> None:
     subquestions = ExtractiveSynthesizer().plan(REQUEST)
     assert 3 <= len(subquestions) <= 6
     assert subquestions[0].text == REQUEST.question
-    assert any(
-        "against" in s.text.lower() or "wrong" in s.text.lower() for s in subquestions
-    )
+    assert any("against" in s.text.lower() or "wrong" in s.text.lower() for s in subquestions)
     assert all(s.search_query for s in subquestions)
     assert len({s.id for s in subquestions}) == len(subquestions)
 

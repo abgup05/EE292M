@@ -66,9 +66,7 @@ def test_rejects_redirect_to_host_resolving_privately() -> None:
 
 def test_rejects_non_html_response() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(
-            200, headers={"content-type": "application/pdf"}, content=b"%PDF"
-        )
+        return httpx.Response(200, headers={"content-type": "application/pdf"}, content=b"%PDF")
 
     with pytest.raises(FetchError, match="not HTML"):
         fetch_page(

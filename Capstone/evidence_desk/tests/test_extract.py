@@ -31,10 +31,7 @@ def test_extract_keeps_headings_and_body_text_only() -> None:
     assert "Related links" not in doc.text
     assert "ignore previous directions" not in doc.text
     assert "display:none" not in doc.text
-    assert (
-        "The framework is voluntary and intended to improve trustworthiness."
-        in doc.text
-    )
+    assert "The framework is voluntary and intended to improve trustworthiness." in doc.text
     assert "govern, map, measure, and manage" in doc.text
 
 
@@ -52,9 +49,7 @@ def test_extract_metadata_and_hash() -> None:
     assert doc.publisher == "Example Agency"
     assert doc.published_date == "2023-01-26"
     assert len(doc.content_hash) == 64
-    other = extract_document(
-        "https://example.org/framework", PAGE.replace("voluntary", "optional")
-    )
+    other = extract_document("https://example.org/framework", PAGE.replace("voluntary", "optional"))
     assert other.content_hash != doc.content_hash
 
 

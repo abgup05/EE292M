@@ -174,23 +174,17 @@ class ClaudeSynthesizer:
                 messages=[{"role": "user", "content": user}],
                 betas=[FALLBACK_BETA],
                 extra_body={
-                    "output_config": {
-                        "format": {"type": "json_schema", "schema": schema}
-                    },
+                    "output_config": {"format": {"type": "json_schema", "schema": schema}},
                     "fallbacks": "default",
                 },
             )
         except api_errors as exc:
-            raise SynthesisError(
-                f"Model request failed: {exc.__class__.__name__}"
-            ) from exc
+            raise SynthesisError(f"Model request failed: {exc.__class__.__name__}") from exc
         if response.stop_reason == "refusal":
             raise SynthesisError("The model declined this request")
         if response.stop_reason == "max_tokens":
             raise SynthesisError("The model response was truncated")
-        text = next(
-            (block.text for block in response.content if block.type == "text"), None
-        )
+        text = next((block.text for block in response.content if block.type == "text"), None)
         if text is None:
             raise SynthesisError("The model returned no text")
         try:
@@ -217,9 +211,7 @@ class ClaudeSynthesizer:
                     )
                 )
             except (KeyError, TypeError) as exc:
-                raise SynthesisError(
-                    "The model returned a malformed subquestion"
-                ) from exc
+                raise SynthesisError("The model returned a malformed subquestion") from exc
         return plan
 
     def synthesize(
@@ -233,8 +225,7 @@ class ClaudeSynthesizer:
                 _request_block(request),
                 "<subquestions>\n"
                 + "\n".join(
-                    f'<subquestion id="{s.id}">{s.text}</subquestion>'
-                    for s in subquestions
+                    f'<subquestion id="{s.id}">{s.text}</subquestion>' for s in subquestions
                 )
                 + "\n</subquestions>",
                 "<sources>\n"
@@ -279,7 +270,7 @@ def _parse_draft(data: dict[str, Any], subquestions: list[Subquestion]) -> Draft
                     stance=Stance(raw_evidence["stance"]),
                     finding_id=finding_id,
                 )
-            except (KeyError, TypeError, ValueError, ValidationError):
+            except KeyError, TypeError, ValueError, ValidationError:
                 continue  # verification treats a missing excerpt as unsupported
             evidence.append(record)
             evidence_ids.append(evidence_id)
@@ -297,9 +288,7 @@ def _parse_draft(data: dict[str, Any], subquestions: list[Subquestion]) -> Draft
             raise SynthesisError("The model returned a malformed finding") from exc
     known_ids = {s.id for s in subquestions}
     answered = {
-        str(value)
-        for value in data.get("answered_subquestion_ids", [])
-        if str(value) in known_ids
+        str(value) for value in data.get("answered_subquestion_ids", []) if str(value) in known_ids
     }
     return Draft(
         direct_answer=str(data.get("direct_answer", "")).strip(),

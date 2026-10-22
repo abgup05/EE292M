@@ -1,4 +1,4 @@
-.PHONY: help build up down verify test lint fmt smoke demo fixtures lock logs shell clean
+.PHONY: help build up down verify verify-fresh test lint fmt smoke demo fixtures lock logs shell clean
 
 export COMPOSE_PROJECT_NAME := ee292m-evidence-desk
 export LOCAL_UID := $(shell id -u)
@@ -7,7 +7,7 @@ COMPOSE := docker compose -f docker/compose.yaml
 RUN := $(COMPOSE) run --rm --no-deps app
 
 help:
-	@echo 'Everyday: build up down verify clean'
+	@echo 'Everyday: build up down verify clean (verify-fresh: clone the committed branch under results/ and verify it)'
 	@echo 'Development: test lint fmt smoke logs shell'
 	@echo 'Dependencies: lock'
 	@echo 'Demonstration: demo (live run against the two real seed URLs; writes results/)'
@@ -23,6 +23,13 @@ down:
 	$(COMPOSE) down
 
 verify: build lint test smoke
+
+verify-fresh:
+	@mkdir -p results
+	@checkout=$$(mktemp -d "$(CURDIR)/results/verify.XXXXXX"); \
+	git clone --quiet --no-hardlinks "$(CURDIR)/../.." "$$checkout" && \
+	$(MAKE) -C "$$checkout/Capstone/evidence_desk" COMPOSE_PROJECT_NAME=ee292m-evidence-desk-fresh verify && \
+	rm -rf "$$checkout"
 
 test:
 	$(RUN) pytest -q -p no:cacheprovider tests

@@ -126,6 +126,7 @@ class Finding(BaseModel):
     evidence_ids: list[str]
     confidence: Confidence
     rationale: str
+    subquestion_ids: list[str] = Field(default_factory=list)
     verified: bool = False
     single_source: bool = False
 

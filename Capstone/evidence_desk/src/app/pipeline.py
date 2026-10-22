@@ -96,10 +96,8 @@ def execute_run(
     run.evidence = result.evidence
     run.errors.extend(f"Citation check: {problem}" for problem in result.problems)
 
-    answered = draft.answered_subquestion_ids | {
-        subquestion.id
-        for subquestion in run.subquestions
-        if subquestion.id in draft.answered_subquestion_ids
+    answered = set(draft.answered_subquestion_ids) | {
+        subquestion_id for finding in run.findings for subquestion_id in finding.subquestion_ids
     }
     for subquestion in run.subquestions:
         subquestion.status = (

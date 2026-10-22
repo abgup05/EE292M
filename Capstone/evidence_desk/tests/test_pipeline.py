@@ -88,6 +88,9 @@ def test_two_seed_run_is_partial_with_verified_findings(store: Store) -> None:
     assert all(s.published_date is None for s in extracted)
     assert 3 <= len(result.subquestions) <= 6
     assert result.findings and all(f.verified for f in result.findings)
+    answered = {sq.id for sq in result.subquestions if sq.status == "answered"}
+    assert answered == {sq for f in result.findings for sq in f.subquestion_ids}
+    assert answered
     texts = store.get_source_texts(result.id)
     for evidence in result.evidence:
         assert evidence.excerpt in texts[evidence.source_id]

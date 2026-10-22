@@ -2,7 +2,7 @@
 
 Evidence Desk is a proposed research workbench for turning an open-ended project question into a decision brief whose findings can be checked against source passages. It is meant for a researcher or project lead making a real choice: whether to proceed, revise a plan, or investigate further. The deliverable is a detailed answer with traceable citations, conflicting evidence, and visible gaps.
 
-These files contain the plan and the [coding-agent prompt](PROMPT.md); the proposed application has **not** been built. The prompt is the implementation brief for a fork of `starting_point`.
+These files contain the plan and the [coding-agent prompt](PROMPT.md). The first working slice is implemented in [`evidence_desk/`](evidence_desk/README.md); `starting_point` does not exist in this repository, so it was built on the Week 2 app's stack and conventions instead.
 
 ## Why it is worth doing
 

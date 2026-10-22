@@ -245,6 +245,7 @@ class ExtractiveSynthesizer:
                     statement=f"{doc.title} ({doc.publisher}) states: {candidate.sentence}",
                     evidence_ids=[evidence_id],
                     confidence=Confidence.low,
+                    subquestion_ids=[subquestion.id] if subquestion is not None else [],
                     rationale=(
                         "Extractive mode: one exact passage selected by keyword overlap from a "
                         "single source; no model judgement or corroboration was applied."

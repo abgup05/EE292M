@@ -1,6 +1,12 @@
 # Architecture
 
-This repository holds independent coursework, capstone pitches, and the Week 2 Industry Flow Explorer. The root Makefile forwards its targets to Homework/Week 2/visualization/. AGENTS.md contains the repository rules.
+This repository holds independent coursework, the capstone plan and app, and the Week 2 Industry Flow Explorer. The root Makefile forwards its targets to one app: `make <target>` runs the capstone in Capstone/evidence_desk/ and `make APP=week2 <target>` runs Homework/Week 2/visualization/. AGENTS.md contains the repository rules.
+
+## Capstone: Evidence Desk
+
+Capstone/evidence_desk/ is a research-brief tool: one question, one decision, optional seed URLs, and a brief whose findings each cite an exact excerpt from a retrieved page, verified server-side before anything reaches the client. It reuses the Week 2 stack (Python 3.14 / FastAPI, uv lock, Docker Compose on 127.0.0.1:8766, static frontend, ruff and pytest) and keeps the same invariants: the backend computes everything, dependencies install at image build, and all commands run through the Makefile. Its design, pipeline and boundary are described in Capstone/evidence_desk/ARCHITECTURE.md; the implementation brief is Capstone/PROMPT.md.
+
+## Week 2: Industry Flow Explorer
 
 ## Application
 

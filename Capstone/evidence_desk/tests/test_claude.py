@@ -100,6 +100,7 @@ def test_synthesis_wraps_page_text_as_data_and_maps_evidence() -> None:
                             "statement": "Generative AI can produce false statements.",
                             "confidence": "medium",
                             "rationale": "One primary source states it.",
+                            "subquestion_ids": ["sq-1", "sq-unknown"],
                             "evidence": [
                                 {
                                     "source_id": "src-1",
@@ -133,6 +134,7 @@ def test_synthesis_wraps_page_text_as_data_and_maps_evidence() -> None:
     assert draft.evidence[0].finding_id == draft.findings[0].id
     assert draft.evidence[0].id in draft.findings[0].evidence_ids
     assert draft.answered_subquestion_ids == {"sq-1"}
+    assert draft.findings[0].subquestion_ids == ["sq-1"]  # unknown IDs are dropped
 
 
 def test_synthesis_requests_json_schema_output() -> None:
@@ -157,6 +159,8 @@ def test_synthesis_requests_json_schema_output() -> None:
     output_format = call["extra_body"]["output_config"]["format"]
     assert output_format["type"] == "json_schema"
     assert "findings" in output_format["schema"]["properties"]
+    finding_schema = output_format["schema"]["properties"]["findings"]["items"]
+    assert "subquestion_ids" in finding_schema["required"]
 
 
 def test_refusal_or_truncation_raises() -> None:

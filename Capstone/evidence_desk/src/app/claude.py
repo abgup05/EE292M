@@ -49,6 +49,8 @@ Rules:
 - Prefer primary sources for claims about an institution's own data or policy. Note source
   dependence and age. Confidence is a qualitative judgement (high, medium, low) with a
   written reason, never a probability. Say when a finding rests on a single source.
+- Name the subquestion IDs each finding answers, and list a subquestion as answered only
+  when the evidence genuinely addresses it.
 - Report disagreements between sources, what remains unknown, and concrete next research
   steps. If the sources do not answer the question, say so rather than guessing.
 Respond with JSON only."""
@@ -85,6 +87,7 @@ SYNTHESIS_SCHEMA: dict[str, Any] = {
                     "statement": {"type": "string"},
                     "confidence": {"type": "string", "enum": ["high", "medium", "low"]},
                     "rationale": {"type": "string"},
+                    "subquestion_ids": {"type": "array", "items": {"type": "string"}},
                     "evidence": {
                         "type": "array",
                         "items": {
@@ -103,7 +106,7 @@ SYNTHESIS_SCHEMA: dict[str, Any] = {
                         },
                     },
                 },
-                "required": ["statement", "confidence", "rationale", "evidence"],
+                "required": ["statement", "confidence", "rationale", "subquestion_ids", "evidence"],
                 "additionalProperties": False,
             },
         },
@@ -256,6 +259,7 @@ def _parse_draft(data: dict[str, Any], subquestions: list[Subquestion]) -> Draft
     raw_findings = data.get("findings")
     if not isinstance(raw_findings, list):
         raise SynthesisError("The model returned no findings list")
+    known_ids = {s.id for s in subquestions}
     for index, item in enumerate(raw_findings[:8], start=1):
         finding_id = f"f-{index}"
         evidence_ids: list[str] = []
@@ -282,11 +286,15 @@ def _parse_draft(data: dict[str, Any], subquestions: list[Subquestion]) -> Draft
                     evidence_ids=evidence_ids,
                     confidence=Confidence(item["confidence"]),
                     rationale=str(item["rationale"]).strip(),
+                    subquestion_ids=[
+                        str(value)
+                        for value in item.get("subquestion_ids", [])
+                        if str(value) in known_ids
+                    ],
                 )
             )
         except (KeyError, TypeError, ValueError, ValidationError) as exc:
             raise SynthesisError("The model returned a malformed finding") from exc
-    known_ids = {s.id for s in subquestions}
     answered = {
         str(value) for value in data.get("answered_subquestion_ids", []) if str(value) in known_ids
     }

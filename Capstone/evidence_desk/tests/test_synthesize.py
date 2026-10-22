@@ -64,6 +64,9 @@ def test_synthesis_quotes_only_exact_stored_text() -> None:
             assert item.excerpt in docs[item.source_id].text
             assert item.locator
     assert draft.direct_answer
+    known = {s.id for s in synthesizer.plan(REQUEST)}
+    for finding in draft.findings:
+        assert finding.subquestion_ids and set(finding.subquestion_ids) <= known
 
 
 def test_synthesis_marks_contrary_evidence_as_challenges() -> None:

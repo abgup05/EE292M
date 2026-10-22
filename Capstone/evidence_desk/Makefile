@@ -27,13 +27,13 @@ test:
 	$(RUN) pytest -q -p no:cacheprovider tests
 
 lint:
-	$(RUN) ruff check --no-cache src tests
-	$(RUN) ruff format --check src tests
+	$(RUN) ruff check --no-cache --config docker/pyproject.toml src tests
+	$(RUN) ruff format --check --config docker/pyproject.toml src tests
 	$(COMPOSE) run --rm --no-deps jscheck
 
 fmt:
-	$(RUN) ruff check --fix --no-cache src tests
-	$(RUN) ruff format src tests
+	$(RUN) ruff check --fix --no-cache --config docker/pyproject.toml src tests
+	$(RUN) ruff format --config docker/pyproject.toml src tests
 
 smoke:
 	$(COMPOSE) up --force-recreate -d app

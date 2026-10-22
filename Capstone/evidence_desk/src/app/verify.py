@@ -40,11 +40,15 @@ def verify_findings(
         for evidence_id in finding.evidence_ids:
             item = by_id.get(evidence_id)
             if item is None:
-                result.problems.append(f"{finding.id}: evidence {evidence_id} does not exist")
+                result.problems.append(
+                    f"{finding.id}: evidence {evidence_id} does not exist"
+                )
                 continue
             text = source_text.get(item.source_id)
             if text is None:
-                result.problems.append(f"{finding.id}: source {item.source_id} is not stored")
+                result.problems.append(
+                    f"{finding.id}: source {item.source_id} is not stored"
+                )
                 continue
             if not item.excerpt or item.excerpt not in text:
                 result.problems.append(
@@ -57,7 +61,11 @@ def verify_findings(
         if kept:
             result.verified.append(
                 finding.model_copy(
-                    update={"evidence_ids": kept, "verified": True, "single_source": len(source_ids) == 1}
+                    update={
+                        "evidence_ids": kept,
+                        "verified": True,
+                        "single_source": len(source_ids) == 1,
+                    }
                 )
             )
         else:

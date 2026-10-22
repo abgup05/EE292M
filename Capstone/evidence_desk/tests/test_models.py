@@ -48,7 +48,9 @@ def test_seed_urls_are_canonicalized_and_duplicates_rejected() -> None:
             **VALID,
             seed_urls=["https://example.org/a/", "HTTPS://example.org/a#frag"],
         )
-    request = ResearchRequest(**VALID, seed_urls=["https://example.org/a/?utm_source=x"])
+    request = ResearchRequest(
+        **VALID, seed_urls=["https://example.org/a/?utm_source=x"]
+    )
     assert request.seed_urls == ["https://example.org/a"]
 
 

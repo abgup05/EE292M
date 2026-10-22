@@ -57,14 +57,26 @@ def test_private_address_detection(address: str, private: bool) -> None:
 @pytest.mark.parametrize(
     ("raw", "canonical"),
     [
-        ("HTTPS://WWW.GAO.GOV/products/gao-24-106946", "https://www.gao.gov/products/gao-24-106946"),
-        ("https://www.gao.gov/products/gao-24-106946/", "https://www.gao.gov/products/gao-24-106946"),
-        ("https://www.gao.gov/products/gao-24-106946#summary", "https://www.gao.gov/products/gao-24-106946"),
+        (
+            "HTTPS://WWW.GAO.GOV/products/gao-24-106946",
+            "https://www.gao.gov/products/gao-24-106946",
+        ),
+        (
+            "https://www.gao.gov/products/gao-24-106946/",
+            "https://www.gao.gov/products/gao-24-106946",
+        ),
+        (
+            "https://www.gao.gov/products/gao-24-106946#summary",
+            "https://www.gao.gov/products/gao-24-106946",
+        ),
         (
             "https://www.gao.gov/products/gao-24-106946?utm_source=x&utm_medium=y",
             "https://www.gao.gov/products/gao-24-106946",
         ),
-        ("https://www.gao.gov:443/products/a?b=2&a=1", "https://www.gao.gov/products/a?a=1&b=2"),
+        (
+            "https://www.gao.gov:443/products/a?b=2&a=1",
+            "https://www.gao.gov/products/a?a=1&b=2",
+        ),
         ("http://example.org:80/", "http://example.org/"),
     ],
 )

@@ -14,7 +14,15 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 ALLOWED_SCHEMES = frozenset({"http", "https"})
 TRACKING_PARAMETERS = frozenset(
-    {"utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "fbclid", "gclid"}
+    {
+        "utm_source",
+        "utm_medium",
+        "utm_campaign",
+        "utm_term",
+        "utm_content",
+        "fbclid",
+        "gclid",
+    }
 )
 DEFAULT_PORTS = {"http": 80, "https": 443}
 BLOCKED_HOSTNAMES = frozenset({"localhost", "localhost.localdomain"})
@@ -50,7 +58,7 @@ def validate_public_url(url: str) -> str:
     if parts.username is not None or parts.password is not None:
         raise UnsafeURL("URLs with embedded credentials are not allowed")
     host = parts.hostname.lower()
-    if host in BLOCKED_HOSTNAMES or host.endswith(".localhost") or host.endswith(".local"):
+    if host in BLOCKED_HOSTNAMES or host.endswith((".localhost", ".local")):
         raise UnsafeURL("Local hostnames are not allowed")
     try:
         ipaddress.ip_address(host)
@@ -92,7 +100,9 @@ def canonicalize(url: str) -> str:
     scheme = parts.scheme.lower()
     host = (parts.hostname or "").lower()
     port = parts.port
-    netloc = host if port is None or DEFAULT_PORTS.get(scheme) == port else f"{host}:{port}"
+    netloc = (
+        host if port is None or DEFAULT_PORTS.get(scheme) == port else f"{host}:{port}"
+    )
     path = parts.path or "/"
     if len(path) > 1 and path.endswith("/"):
         path = path.rstrip("/") or "/"

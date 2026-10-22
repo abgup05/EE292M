@@ -76,7 +76,9 @@ def fetch_page(
     """
     owned = client is None
     client = client or httpx.Client(
-        timeout=TIMEOUT_SECONDS, headers={"user-agent": USER_AGENT}, follow_redirects=False
+        timeout=TIMEOUT_SECONDS,
+        headers={"user-agent": USER_AGENT},
+        follow_redirects=False,
     )
     try:
         current = url

@@ -66,6 +66,18 @@ def execute_run(
     run.synthesizer = synthesizer.name
     store.save_run(run)
 
+    if not run.inputs.seed_urls and searcher is None:
+        # Nothing could ever be fetched: fail before spending a model call on planning.
+        run.subquestions = ExtractiveSynthesizer().plan(run.inputs)
+        run.coverage_limits.append(
+            "No search provider configured: only the supplied seed URLs were considered."
+        )
+        run.errors.append(
+            "No seed URLs were supplied and no search provider is configured; "
+            "there was nothing to retrieve."
+        )
+        return _finish(run, store, RunStatus.failed)
+
     run.subquestions = _plan(run, synthesizer)
     store.save_run(run)
 

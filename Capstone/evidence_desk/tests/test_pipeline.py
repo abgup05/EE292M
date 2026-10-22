@@ -212,3 +212,20 @@ def test_time_budget_stops_retrieval(store: Store) -> None:
     extracted = [s for s in result.sources if s.extraction_status == "extracted"]
     assert len(extracted) == 1
     assert any("time" in limit.lower() for limit in result.coverage_limits)
+
+
+def test_no_candidates_fails_fast_without_calling_the_synthesizer(store: Store) -> None:
+    class ExplodingSynthesizer:
+        name = "exploding"
+
+        def plan(self, request):
+            raise AssertionError("plan must not be called without candidate pages")
+
+        def synthesize(self, request, subquestions, documents):
+            raise AssertionError("synthesize must not be called without candidate pages")
+
+    run = new_run(make_request([]))
+    result = execute_run(run, store, fetcher=fake_fetcher, synthesizer=ExplodingSynthesizer())
+    assert result.status == RunStatus.failed
+    assert result.brief is None
+    assert any("no seed urls" in error.lower() for error in result.errors)

@@ -66,3 +66,17 @@ def test_date_in_visible_text_is_not_used_as_publication_date() -> None:
     html = "<html><body><p>Updated 2024-06-20 by the editor.</p></body></html>"
     doc = extract_document("https://example.org/p", html)
     assert doc.published_date is None
+
+
+def test_loose_text_in_divs_is_kept_under_its_heading() -> None:
+    html = (
+        "<html><body><div class='block'><h3>Abstract</h3> The goal of the framework is to "
+        "offer a resource to organizations. It is voluntary. </div>"
+        "<div><h3>Citation</h3><div>NIST AI 100-1</div></div></body></html>"
+    )
+    doc = extract_document("https://example.org/pub", html)
+    assert [s.heading for s in doc.sections] == ["Abstract", "Citation"]
+    assert doc.sections[0].text == (
+        "The goal of the framework is to offer a resource to organizations. It is voluntary."
+    )
+    assert doc.sections[1].text == "NIST AI 100-1"

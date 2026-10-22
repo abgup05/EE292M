@@ -1,4 +1,4 @@
-.PHONY: help build up down verify test lint fmt smoke demo lock logs shell clean
+.PHONY: help build up down verify test lint fmt smoke demo fixtures lock logs shell clean
 
 export COMPOSE_PROJECT_NAME := ee292m-evidence-desk
 export LOCAL_UID := $(shell id -u)
@@ -11,6 +11,7 @@ help:
 	@echo 'Development: test lint fmt smoke logs shell'
 	@echo 'Dependencies: lock'
 	@echo 'Demonstration: demo (live run against the two real seed URLs; writes results/)'
+	@echo 'Fixtures: fixtures (record the two real seed pages under tests/fixtures; REFRESH=1 to overwrite)'
 
 build:
 	$(COMPOSE) build app
@@ -42,6 +43,9 @@ smoke:
 demo:
 	$(COMPOSE) up --force-recreate -d app
 	@trap '$(COMPOSE) down' EXIT; $(COMPOSE) exec -T app python -m app.demo
+
+fixtures:
+	$(RUN) python -m app.record_fixtures $(if $(filter 1,$(REFRESH)),--refresh,)
 
 lock:
 	$(COMPOSE) build lock

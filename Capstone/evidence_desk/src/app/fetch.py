@@ -21,7 +21,7 @@ TIMEOUT_SECONDS = 12.0
 MAX_BYTES = 2 * 1024 * 1024
 MAX_REDIRECTS = 5
 HTML_TYPES = ("text/html", "application/xhtml+xml")
-USER_AGENT = "EvidenceDesk/0.1 (+research brief tool; public HTML only)"
+USER_AGENT = "Mozilla/5.0 (compatible; EvidenceDesk/0.1; research brief tool; public HTML only)"
 
 Resolver = Callable[[str, int], list[str]]
 

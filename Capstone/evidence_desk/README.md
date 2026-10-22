@@ -44,7 +44,8 @@ URLs; otherwise the run records that only seed URLs were considered.
 
 `make demo` runs the same seed case against the live container without a
 browser and writes `results/demo-<UTC>.md` with a measured summary and the
-exported brief.
+exported brief. The record behind the numbers below is committed as
+[`demo/demo-2026-10-22.md`](demo/demo-2026-10-22.md).
 
 ## Measured results (demo, 2026-10-22)
 

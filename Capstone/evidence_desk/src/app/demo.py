@@ -127,8 +127,9 @@ def summarize(
         f"{coverage['claims_total']}",
         f"- Findings verified: {coverage['findings_verified']}; withheld: "
         f"{coverage['findings_withheld']}",
-        f"- Quotes offered: {coverage['quotes_offered']}; verified excerpts: "
-        f"{coverage['excerpts_verified']}; rejected: {coverage['quotes_rejected']}",
+        f"- Quotes offered: {coverage['quotes_offered']}; found word for word: "
+        f"{coverage['quotes_found']}; rejected: {coverage['quotes_rejected']}; kept as "
+        f"evidence: {coverage['excerpts_verified']}",
         "",
         "## Sources",
         "",

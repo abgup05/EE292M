@@ -29,12 +29,14 @@ from app.core.models import (
 from app.core.policy import (
     DECISION_LABELS,
     FIGURES_NOTE,
-    PROVENANCE_NOTE,
+    NO_CHECKER_NOTE,
     REVIEW_NOTE,
     STATUS_NOTES,
+    SUPPORT_LABELS,
     UNDECIDED,
     VERDICT_LABELS,
     VERDICT_NOTES,
+    provenance_note,
 )
 
 # For records written before findings carried their own reason.
@@ -42,7 +44,10 @@ WITHHELD_REASON = "no quote could be verified against the stored source text"
 NOT_AVAILABLE = "n/a"
 XBRL_FORM = "XBRL company facts"
 UNMATCHED_SUFFIX = "was not found in the quotes or the cited figures"
+# A numbers_detail line about the finding's reason, not its statement.
+REASON_DETAIL_PREFIX = "in the reason: "
 QUOTE_CHECKS = {"passed": "found in the filing", "none": "none cited", "failed": "not found"}
+NO_CHECKER = "none"
 # Statuses whose claims carry a final verdict worth tabulating.
 _DECIDED = (RunStatus.complete, RunStatus.partial)
 
@@ -121,6 +126,7 @@ def _header(run: Run, review: Review | None) -> list[str]:
         f"- Started: {_utc(run.started_at)}",
         f"- Finished: {_utc(run.finished_at)}",
         f"- Engine: {run.engine}" + (f" ({_text(run.engine_detail)})" if run.engine_detail else ""),
+        _checker_line(run),
     ]
     if company:
         lines.append(f"- SEC CIK: {company.cik}")
@@ -150,7 +156,10 @@ def _verdict_table(run: Run, review: Review | None) -> list[str]:
     ]
     for claim in run.claims:
         findings = _verified_for(run, claim)
-        counts = [sum(1 for f in findings if f.stance == stance) for stance in Stance]
+        # Each finding as the verdict rule counted it (its own stance in older records).
+        counts = [
+            sum(1 for f in findings if (f.counted_as or f.stance) == stance) for stance in Stance
+        ]
         label = VERDICT_LABELS[claim.verdict] if claim.verdict else NOT_AVAILABLE
         cells = [_cell(claim.text), label]
         if review is not None:
@@ -203,7 +212,8 @@ def _checks_line(finding: Finding) -> str:
     """ "quote: found in the filing; numbers: 2 of 2 matched".
 
     A finding with evidence passed the quote check even in a record written
-    before findings carried their checks.
+    before findings carried their checks. Numbers count the statement's; a
+    withheld reason adds "; reason: withheld (<its numbers>)".
     """
     checks: FindingChecks = finding.checks
     quote = (
@@ -211,13 +221,35 @@ def _checks_line(finding: Finding) -> str:
         if finding.evidence_ids
         else QUOTE_CHECKS.get(checks.quotes, checks.quotes)
     )
+    statement = [d for d in checks.numbers_detail if not d.startswith(REASON_DETAIL_PREFIX)]
+    reason = [
+        d.removeprefix(REASON_DETAIL_PREFIX).removesuffix(UNMATCHED_SUFFIX).strip()
+        for d in checks.numbers_detail
+        if d.startswith(REASON_DETAIL_PREFIX)
+    ]
     if checks.numbers == "none":
         numbers = "none to check"
     else:
-        total = len(checks.numbers_detail)
-        matched = sum(1 for d in checks.numbers_detail if not d.endswith(UNMATCHED_SUFFIX))
-        numbers = f"{matched} of {total} matched"
-    return f"quote: {quote}; numbers: {numbers}"
+        matched = sum(1 for d in statement if not d.endswith(UNMATCHED_SUFFIX))
+        numbers = f"{matched} of {len(statement)} matched"
+    withheld = f"; reason: withheld ({', '.join(reason)})" if reason else ""
+    return f"quote: {quote}; numbers: {numbers}{withheld}"
+
+
+def _checker_line(run: Run) -> str:
+    """ "- Meaning check: claude (<how it answered>)", or that nothing checked meaning."""
+    if run.checker == NO_CHECKER:
+        return f"- Meaning check: none. {NO_CHECKER_NOTE}"
+    detail = f" ({_text(run.checker_detail)})" if run.checker_detail else ""
+    return f"- Meaning check: {_text(run.checker)}{detail}"
+
+
+def _meaning_line(finding: Finding) -> str:
+    """ "- Meaning: partly supported: <the checker's reason>", or "- Meaning: not checked"."""
+    checks: FindingChecks = finding.checks
+    label = SUPPORT_LABELS.get(checks.support, checks.support)
+    reason = " ".join(checks.support_detail.split())
+    return f"- Meaning: {label}" + (f": {_text(reason)}" if reason else "")
 
 
 def _decision_line(finding_id: str, decisions: dict[str, Decision]) -> str:
@@ -260,7 +292,11 @@ def _claims(run: Run, review: Review | None) -> list[str]:
                 f"- Rationale: {_text(finding.rationale)}",
                 f"- Sources cited: {finding.filings_cited}",
                 f"- Checks: {_checks_line(finding)}",
+                _meaning_line(finding),
             ]
+            if finding.count_note:
+                counted = finding.counted_as or Stance.context
+                lines.append(f"- Counted as: {counted} ({_text(finding.count_note)})")
             for metric_id in finding.metric_ids:
                 metric = metrics.get(metric_id)
                 shown = _figure_line(metric) if metric else _text(metric_id)
@@ -344,7 +380,9 @@ def render_markdown(run: Run, review: Review | None = None) -> str:
     lines += _sources(run)
     lines += ["## Coverage limits", "", *_bullets(run.coverage_limits, "None recorded."), ""]
     lines += ["## Errors", "", *_bullets(run.errors, "None."), ""]
-    lines += ["## Provenance", "", PROVENANCE_NOTE, ""]
+    # The run's own note; a record written before runs kept one gets it from its sources.
+    note = brief.provenance_note if brief is not None and brief.provenance_note else ""
+    lines += ["## Provenance", "", _text(note or provenance_note(run.sources)), ""]
     lines += ["## Withheld findings", ""]
     if run.unsupported_findings:
         lines += [

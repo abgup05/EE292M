@@ -408,6 +408,51 @@ def test_withheld_findings_carry_their_own_reason() -> None:
     assert "a number in the statement is not in its quotes or cited figures: 65%" in withheld
 
 
+def _checked_run() -> Run:
+    """The complete run after a meaning check: f1 supported, f2 partly, f3 unchecked; f5 failed."""
+    run = _complete_run()
+    run.checker = "claude"
+    run.checker_detail = "claude-haiku-5-5 via the Anthropic API"
+    by_id = {finding.id: finding for finding in run.findings}
+    by_id["f1"].checks = FindingChecks(
+        quotes="passed", support="passed", support_detail="The excerpt states 56% growth."
+    )
+    by_id["f2"].checks = FindingChecks(
+        quotes="passed", support="partly", support_detail="It names one customer, not most."
+    )
+    failed = run.unsupported_findings[0]
+    failed.checks = FindingChecks(quotes="passed", support="failed", support_detail="Off topic.")
+    failed.withheld_reason = (
+        "a second model judged that its evidence does not support the statement: Off topic"
+    )
+    return run
+
+
+def test_each_finding_says_what_the_meaning_check_found() -> None:
+    claims = _between(render_markdown(_checked_run()), "## Claims", "## Unknowns")
+    f1 = _between(claims, "Statement f1.", "Statement f2.")
+    f2 = _between(claims, "Statement f2.", "Statement f3.")
+    f3 = _between(claims, "Statement f3.", "Statement f4.")
+    assert "- Meaning: supported: The excerpt states 56% growth." in f1
+    assert "- Meaning: partly supported: It names one customer, not most." in f2
+    assert "- Meaning: not checked" in f3
+
+
+def test_the_header_names_the_checker_or_says_none_checked() -> None:
+    header = render_markdown(_checked_run()).split("## Decision", 1)[0]
+    assert "- Meaning check: claude (claude-haiku-5-5 via the Anthropic API)" in header
+    unchecked = render_markdown(_complete_run()).split("## Decision", 1)[0]
+    assert "- Meaning check: none. No second model checked the findings' meaning." in unchecked
+
+
+def test_a_finding_withheld_by_the_meaning_check_gives_its_reason() -> None:
+    withheld = render_markdown(_checked_run()).split("## Withheld findings", 1)[1]
+    assert (
+        "- f5 (c2): Statement f5. Withheld: a second model judged that its evidence does not "
+        "support the statement: Off topic."
+    ) in withheld
+
+
 def test_coverage_counts_claims_with_verified_excerpts_or_figures() -> None:
     markdown = render_markdown(_run_with_figures())
     assert "Claims with verified excerpts or figures: 2 of 3" in markdown
@@ -499,3 +544,58 @@ def test_a_review_without_decisions_says_none_were_made() -> None:
     markdown = render_markdown(run, build_review(run, []))
     assert "You decided 0 of 4 findings." in markdown
     assert markdown.rstrip().endswith("This brief includes no reviewer decision yet.")
+
+
+# Findings counted as context (referee 1 of version 4, finding 1)
+
+FIGURE_ONLY_NOTE = (
+    "backed by reported figures only and not confirmed by the meaning check: counted as context"
+)
+
+
+def test_the_export_says_which_findings_were_counted_as_context() -> None:
+    run = _run_with_figures()
+    f2 = run.findings[1]  # challenges c1, now on a figure alone and not confirmed by a check
+    f2.evidence_ids = []
+    f2.metric_ids = [QUARTER_REVENUE.id]
+    f2.counted_as = Stance.context
+    f2.count_note = FIGURE_ONLY_NOTE
+    for finding in (run.findings[0], run.findings[2], run.findings[3]):
+        finding.counted_as = finding.stance
+    run.evidence = [item for item in run.evidence if item.finding_id != "f2"]
+    markdown = render_markdown(run)
+    claims = _between(markdown, "## Claims", "## Unknowns")
+    f2_block = _between(claims, "Statement f2.", "Statement f3.")
+    assert f"- Counted as: context ({FIGURE_ONLY_NOTE})" in f2_block
+    assert "Counted as" not in _between(claims, "Statement f1.", "Statement f2.")
+    # The table counts each finding as the verdict rule counted it.
+    table = _between(markdown, "## Verdicts", "## Summary")
+    row = [line for line in table.splitlines() if line.startswith(f"| {CLAIMS[0]}")][0]
+    assert row.replace(" ", "").endswith("|1|0|2|")
+
+
+def test_the_export_uses_the_runs_own_provenance_note() -> None:
+    run = _complete_run()
+    assert run.brief is not None
+    run.brief.provenance_note = (
+        "Evidence comes from the company's SEC filings and from 1 page you added; each excerpt "
+        "names its source. A page you added is not a filing."
+    )
+    provenance = _between(render_markdown(run), "## Provenance", "## Withheld findings")
+    assert run.brief.provenance_note in provenance and PROVENANCE_NOTE not in provenance
+
+
+def test_a_withheld_reason_is_not_counted_among_the_statements_numbers() -> None:
+    run = _run_with_figures()
+    f1 = run.findings[0]
+    f1.rationale = (
+        "[Reason withheld: it cited a number (65%) that is in neither the finding's quotes nor "
+        "its cited figures.]"
+    )
+    f1.checks.numbers_detail.append(
+        "in the reason: 65% was not found in the quotes or the cited figures"
+    )
+    claims = _between(render_markdown(run), "## Claims", "## Unknowns")
+    f1_block = _between(claims, "Statement f1.", "Statement f2.")
+    assert "numbers: 2 of 2 matched; reason: withheld (65%)" in f1_block
+    assert "Rationale: [Reason withheld" in f1_block

@@ -43,7 +43,7 @@ def test_the_summary_reports_status_claims_coverage_and_sources(tmp_path: Path) 
 
     assert run.id in text and "PARTIAL" in text
     assert "12.3" in line_with("Wall time")
-    assert "extractive" in line_with("Engine") and "0.4.0" in line_with("Engine")
+    assert "extractive" in line_with("Engine") and "0.5.0" in line_with("Engine")
     for claim in run.claims:
         withheld = sum(1 for f in run.unsupported_findings if f.claim_id == claim.id)
         row = line_with(claim.text)
@@ -59,8 +59,9 @@ def test_the_summary_reports_status_claims_coverage_and_sources(tmp_path: Path) 
     assert _numbers(line_with("Passages indexed")) == [c.passages_indexed]
     assert _numbers(line_with("Quotes offered")) == [
         c.quotes_offered,
-        c.excerpts_verified,
+        c.quotes_found,
         c.quotes_rejected,
+        c.excerpts_verified,
     ]
     assert _numbers(line_with("Findings verified")) == [c.findings_verified, c.findings_withheld]
     assert "10-Q" in line_with("s1", "2026-07-26", "2026-08-26")

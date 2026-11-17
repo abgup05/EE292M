@@ -1,8 +1,8 @@
 """Run the example thesis offline with model answers replayed from a cassette.
 
 The filings and the reported figures are the recorded NVIDIA fixtures, so no
-network is used, and the Claude engine's answers come from a cassette
-(see ``docs/cassettes.md``), so no model is called. The same prompts are built
+network is used, and the Claude engine's answers, and the meaning checker's,
+come from a cassette (see ``docs/cassettes.md``), so no model is called. The same prompts are built
 every time, which is what lets ``tests/test_replay.py`` assert the result.
 
 ``make replay`` runs this. Exit code 3 means the cassette is missing answers:
@@ -21,6 +21,7 @@ from app.api import create_app
 from app.core import policy
 from app.core.models import Run
 from app.engines.cassette import CassetteTransport
+from app.engines.checker import ClaudeChecker
 from app.engines.claude import ClaudeAnalyst
 from app.services.examples import EXAMPLE_THESIS
 from app.services.export import render_markdown
@@ -58,17 +59,26 @@ def replay(cassette: Path, data_dir: Path) -> tuple[Run, list[str]]:
         filings=recorded_filings(),
         analyst=analyst,
         cache=FilingCache(data_dir / "cache.sqlite"),
+        checker=replay_checker(transport),
     )
     return run, list(transport.pending_keys)
+
+
+def replay_checker(transport: CassetteTransport) -> ClaudeChecker:
+    """The meaning checker over the engine's own cassette and run: it never calls the API."""
+    return ClaudeChecker(transport=transport.sibling())
 
 
 def sample_record(run: Run, cassette: Path, data_dir: Path) -> dict[str, object]:
     """The page's sample file: the wording the API serves, and the replayed run."""
     from fastapi.testclient import TestClient  # imported here: it warns on import
 
-    analyst = ClaudeAnalyst(transport=CassetteTransport(cassette))
+    transport = CassetteTransport(cassette)
     app = create_app(
-        store=Store(data_dir / "sample.sqlite"), filings=recorded_filings(), analyst=analyst
+        store=Store(data_dir / "sample.sqlite"),
+        filings=recorded_filings(),
+        analyst=ClaudeAnalyst(transport=transport),
+        checker=replay_checker(transport),
     )
     with TestClient(app) as client:
         meta = client.get("/api/meta").json()
@@ -103,6 +113,8 @@ def main(argv: list[str] | None = None) -> int:
             f"{len(pending)} model request(s) are pending in {args.cassette}/pending. "
             "Answer them (docs/cassettes.md) and run again."
         )
+        for key in pending:
+            print(f"  pending/{key}.json")
         return 3
     print(f"status: {run.status} | engine: {run.engine} | {run.engine_detail}")
     for claim in run.claims:
@@ -114,6 +126,10 @@ def main(argv: list[str] | None = None) -> int:
         f"withheld {coverage.findings_withheld}; "
         f"excerpts verified {coverage.excerpts_verified}, "
         f"quotes rejected {coverage.quotes_rejected}"
+    )
+    print(
+        f"meaning check ({run.checker}): judged {coverage.findings_checked}, "
+        f"partly {coverage.findings_partly}, withheld {coverage.findings_failed_meaning}"
     )
     if args.out:
         args.out.mkdir(parents=True, exist_ok=True)

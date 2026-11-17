@@ -25,9 +25,18 @@ from app.core.models import (
     ThesisRequest,
     Verdict,
 )
-from app.core.policy import STATUS_NOTES
-from app.core.ports import ClaimDraft, FindingDraft, Quote, SourceError
+from app.core.policy import MEANING_SAME_MODEL, PROVENANCE_NOTE, STATUS_NOTES
+from app.core.ports import (
+    ClaimDraft,
+    FindingDraft,
+    Judgement,
+    Quote,
+    SourceError,
+    SupportVerdict,
+)
+from app.engines.checker import NoChecker
 from app.engines.extractive import ExtractiveAnalyst
+from app.services.export import render_markdown
 from app.services.ingest import filing_title
 from app.services.numbers import select_figures
 from app.services.thesis_run import execute_run, fail_run, new_run
@@ -44,6 +53,7 @@ from tests.fakes import (
     FakePages,
     ManualClock,
     ScriptedAnalyst,
+    ScriptedChecker,
     filing_html,
     recorded_facts,
     recorded_html,
@@ -105,6 +115,13 @@ def passage_with(passages: list[Passage], text: str) -> Passage:
     return next(passage for passage in passages if text in passage.text)
 
 
+def assert_quotes_add_up(run: Run) -> None:
+    """Every quote offered was either found word for word in an offered passage or rejected."""
+    coverage = run.coverage
+    assert coverage.quotes_found + coverage.quotes_rejected == coverage.quotes_offered
+    assert coverage.excerpts_verified == len(run.evidence) <= coverage.quotes_found
+
+
 def supports_first_sentence(claim: object, passages: list[Passage]) -> ClaimDraft:
     """A model that finds the first sentence of the best passage supports the claim."""
     first = passages[0]
@@ -140,7 +157,8 @@ def test_every_excerpt_is_an_exact_slice_of_the_stored_filing(
         assert item.locator
     assert {item.finding_id for item in run.evidence} == {f.id for f in run.findings}
     assert run.coverage.excerpts_verified == len(run.evidence)
-    assert run.coverage.quotes_offered == len(run.evidence) + run.coverage.quotes_rejected
+    assert_quotes_add_up(run)
+    assert {item.link_kind for item in run.evidence} <= {"passage", "first-line", "document"}
 
 
 # Limiting case
@@ -240,6 +258,8 @@ def test_a_quote_with_one_word_changed_is_withheld_and_its_sibling_survives(stor
     assert run_excerpts(run, context) == [EXPORT_SENTENCE]
     assert run.claims[0].verdict == Verdict.supported  # the withheld challenge does not count
     assert run.coverage.quotes_offered == 4 and run.coverage.quotes_rejected == 2
+    assert run.coverage.quotes_found == 2
+    assert_quotes_add_up(run)
     assert run.coverage.findings_withheld == 1
     assert run.status == RunStatus.partial
     assert "1 finding(s) could not be verified and were withheld." in run.coverage_limits
@@ -503,9 +523,49 @@ def test_fail_run_ends_the_record_as_failed(store: Store) -> None:
 # Locators (review finding: a locator from the wrong passage passed every test)
 
 
-def test_every_locator_is_the_heading_of_the_section_holding_its_excerpt(store: Store) -> None:
+def _quotes_across_passages(claim: object, passages: list[Passage]) -> ClaimDraft:
+    """Names the first passage offered but quotes a line of an offered passage from another section.
+
+    Also names the first passage with a line from a passage that was not offered at all, which
+    must be rejected. The referee's scripted analyst: "names passage X with text from section Y".
+    """
+    named = passages[0]
+    other = next((p for p in passages if p.locator != named.locator), passages[-1])
+    line = max(other.text.split("\n"), key=len)
+    return ClaimDraft(
+        findings=[
+            FindingDraft(
+                statement="A line from another offered passage.",
+                stance=Stance.context,
+                quotes=[Quote(named.id, line[: limits.MAX_EXCERPT_CHARS])],
+                confidence=Confidence.low,
+                rationale="Scripted.",
+            ),
+            FindingDraft(
+                statement="A line from a passage nobody offered.",
+                stance=Stance.context,
+                quotes=[Quote(named.id, UNOFFERED_LINE)],
+                confidence=Confidence.low,
+                rationale="Scripted.",
+            ),
+        ]
+    )
+
+
+# A sentence of the recorded 10-Q's signature page, which no claim below retrieves.
+UNOFFERED_LINE = "the registrant has duly caused this report to be signed on its behalf"
+
+
+@pytest.mark.parametrize(
+    "analyst",
+    [ExtractiveAnalyst, lambda: ScriptedAnalyst(_quotes_across_passages)],
+    ids=["extractive", "quotes-across-passages"],
+)
+def test_every_locator_is_the_heading_of_the_section_holding_its_excerpt(
+    store: Store, analyst: object
+) -> None:
     thesis = request(GROWTH, CUSTOMERS, EXPORT, MARGIN, SUPPLIERS, filings=1)
-    run = run_with(store, thesis, FakeFilings.nvidia(Q2_2027), ExtractiveAnalyst())
+    run = run_with(store, thesis, FakeFilings.nvidia(Q2_2027), analyst())  # type: ignore[operator]
     document = parse_filing(
         recorded_html(RECORDED[Q2_2027.url]),
         url=Q2_2027.url,
@@ -523,6 +583,7 @@ def test_every_locator_is_the_heading_of_the_section_holding_its_excerpt(store: 
     for item in run.evidence:
         holding = {heading for start, end, heading in spans if start <= item.start < end}
         assert item.locator in holding, (item.locator, holding)
+    assert_quotes_add_up(run)
 
 
 # Reported numbers
@@ -566,6 +627,10 @@ def test_a_percentage_its_quote_does_not_contain_is_withheld_naming_the_number(
     assert run.findings == [] and run.evidence == []
     assert run.claims[0].verdict == Verdict.not_addressed
     assert run.coverage.numbers_checked == 1 and run.coverage.numbers_unmatched == 1
+    # Referee finding 5: the quote was found word for word though its finding was withheld.
+    assert (run.coverage.quotes_offered, run.coverage.quotes_found) == (1, 1)
+    assert run.coverage.quotes_rejected == 0 and run.coverage.excerpts_verified == 0
+    assert_quotes_add_up(run)
 
 
 def test_the_same_statement_with_the_quoted_percentage_passes(store: Store) -> None:
@@ -577,15 +642,96 @@ def test_the_same_statement_with_the_quoted_percentage_passes(store: Store) -> N
     assert run.coverage.numbers_checked == 1 and run.coverage.numbers_unmatched == 0
 
 
-def test_a_finding_citing_a_real_figure_and_no_quote_is_verified_and_counts(store: Store) -> None:
+FIGURE_ONLY_NOTE = (
+    "backed by reported figures only and not confirmed by the meaning check: counted as context"
+)
+
+
+def test_a_finding_citing_a_real_figure_and_no_quote_is_verified_but_counts_as_context(
+    store: Store,
+) -> None:
     statement = "Revenue grew 65% in fiscal 2026."
     run = _growth_run(store, _stating(statement, quote=False, metric_ids=(GROWTH_FIGURE,)))
     [finding] = run.findings
     assert finding.verified and finding.metric_ids == [GROWTH_FIGURE]
     assert finding.evidence_ids == [] and finding.checks.quotes == "none"
-    assert run.claims[0].verdict == Verdict.supported
+    assert finding.counted_as == Stance.context and finding.count_note == FIGURE_ONLY_NOTE
+    assert run.claims[0].verdict == Verdict.unjudged
     assert run.coverage.claims_with_evidence == 1 and run.coverage.figures_cited == 1
+    assert run.coverage.findings_without_quote == 1
     assert GROWTH_FIGURE in {metric.id for metric in run.metrics}
+
+
+def _two_quoted_supports_and_a_figure_only_challenge(
+    claim: object, passages: list[Passage]
+) -> ClaimDraft:
+    """The referee's case (recorded run, claim c3): f11 challenges on a company-wide figure."""
+    growth = passage_with(passages, GROWTH_SENTENCE)
+    export = passage_with(passages, EXPORT_SENTENCE)
+
+    def quoted(passage: Passage, text: str) -> FindingDraft:
+        return FindingDraft(
+            statement="The filing says so.",
+            stance=Stance.supports,
+            quotes=[Quote(passage.id, text)],
+            confidence=Confidence.medium,
+            rationale="Scripted.",
+        )
+
+    return ClaimDraft(
+        findings=[
+            quoted(growth, GROWTH_SENTENCE),
+            quoted(export, EXPORT_SENTENCE),
+            FindingDraft(
+                statement="Revenue grew 65% in fiscal 2026.",
+                stance=Stance.challenges,
+                quotes=[],
+                confidence=Confidence.low,
+                rationale="These figures are company-wide.",
+                metric_ids=[GROWTH_FIGURE],
+            ),
+        ]
+    )
+
+
+@pytest.mark.parametrize(
+    ("checker", "verdict"),
+    [
+        (None, Verdict.supported),
+        (ScriptedChecker(), Verdict.mixed),
+        (
+            ScriptedChecker(
+                lambda claim, items: [
+                    Judgement(0, SupportVerdict.supported, "r"),
+                    Judgement(1, SupportVerdict.supported, "r"),
+                    Judgement(2, SupportVerdict.partly, "r"),
+                ]
+            ),
+            Verdict.supported,
+        ),
+    ],
+    ids=["unchecked", "check-passed", "check-partly"],
+)
+def test_a_figure_only_challenge_moves_the_verdict_only_when_the_meaning_check_passed(
+    store: Store, checker: ScriptedChecker | None, verdict: Verdict
+) -> None:
+    run = _checked_run(
+        store,
+        checker,
+        GROWTH,
+        analyst=ScriptedAnalyst(_two_quoted_supports_and_a_figure_only_challenge),
+    )
+    assert run.claims[0].verdict == verdict
+    challenge = run.findings[2]
+    assert challenge.verified and challenge.evidence_ids == []
+    expected = Stance.challenges if verdict == Verdict.mixed else Stance.context
+    assert challenge.counted_as == expected
+    assert (challenge.count_note == FIGURE_ONLY_NOTE) == (expected == Stance.context)
+    assert [f.counted_as for f in run.findings[:2]] == [Stance.supports, Stance.supports]
+    assert run.coverage.findings_without_quote == 1
+    markdown = render_markdown(run)
+    counted = f"- Counted as: context ({FIGURE_ONLY_NOTE})"
+    assert (counted in markdown) == (expected == Stance.context)
 
 
 def test_a_finding_citing_an_unknown_figure_and_no_quote_is_withheld(store: Store) -> None:
@@ -621,7 +767,7 @@ def test_unreadable_facts_leave_the_run_to_the_filings_and_say_so(store: Store) 
     filings.facts_error = SourceError("EDGAR answered HTTP 503 for company facts")
     analyst = ScriptedAnalyst(supports_first_sentence)
     run = run_with(store, request(GROWTH, filings=1), filings, analyst)
-    assert run.status == RunStatus.complete and run.claims[0].verdict == Verdict.supported
+    assert run.status == RunStatus.partial and run.claims[0].verdict == Verdict.supported
     assert run.metrics == [] and run.series == [] and analyst.figures[GROWTH] == []
     assert run.coverage.metrics_computed == 0 and run.coverage.figures_offered == 0
     assert run.coverage_limits == [
@@ -691,3 +837,398 @@ def test_assessed_by_names_the_engine_that_drafted_each_claim(store: Store) -> N
         run.coverage.findings_verified + run.coverage.findings_withheld
     )
     assert run.coverage.findings_proposed == len(run.findings) + len(run.unsupported_findings)
+
+
+# The meaning check (a second model reads each verified finding without the writer's reasoning)
+
+GROWTH_STATEMENT = "Data Center revenue grew 56% from a year ago."
+EXPORT_STATEMENT = "Export controls are cutting data center revenue."
+OFF_TOPIC = "The excerpt is about sales to China, not about data center growth."
+
+
+def _one_each_way(claim: object, passages: list[Passage]) -> ClaimDraft:
+    """A supporting finding on the growth sentence and a challenging one on the export sentence."""
+    growth = passage_with(passages, GROWTH_SENTENCE)
+    export = passage_with(passages, EXPORT_SENTENCE)
+    return ClaimDraft(
+        findings=[
+            FindingDraft(
+                statement=GROWTH_STATEMENT,
+                stance=Stance.supports,
+                quotes=[Quote(growth.id, GROWTH_SENTENCE)],
+                confidence=Confidence.high,
+                rationale="WRITER-REASONING: stated directly.",
+            ),
+            FindingDraft(
+                statement=EXPORT_STATEMENT,
+                stance=Stance.challenges,
+                quotes=[Quote(export.id, EXPORT_SENTENCE)],
+                confidence=Confidence.medium,
+                rationale="WRITER-REASONING: export limits hurt.",
+            ),
+        ],
+        rationale="Assessed.",
+    )
+
+
+def _judging(*verdicts: SupportVerdict, reason: str = OFF_TOPIC) -> ScriptedChecker:
+    """A checker that gives the items these verdicts, in order, each with ``reason``."""
+
+    def judge(claim: object, items: object) -> list[Judgement]:
+        return [Judgement(n, verdict, reason) for n, verdict in enumerate(verdicts)]
+
+    return ScriptedChecker(judge)
+
+
+def _checked_run(
+    store: Store, checker: object, *claims: str, analyst: ScriptedAnalyst | None = None
+) -> Run:
+    filings = FakeFilings.synthetic(filing_html(GROWTH_SENTENCE, EXPORT_SENTENCE))
+    return execute_run(
+        new_run(request(*(claims or (GROWTH,)), filings=1)),
+        store,
+        filings=filings,
+        analyst=analyst or ScriptedAnalyst(_one_each_way),
+        fetch_page=FakePages({}),
+        clock=ManualClock(),
+        checker=checker,  # type: ignore[arg-type]
+    )
+
+
+def test_without_the_check_the_claim_is_mixed(store: Store) -> None:
+    run = _checked_run(store, None)
+    assert run.claims[0].verdict == Verdict.mixed
+    assert all(f.checks.support == "unchecked" for f in run.findings)
+    assert run.checker == "none" and run.coverage.findings_checked == 0
+
+
+def test_a_finding_the_checker_rejects_is_withheld_with_its_reason_and_the_verdict_moves(
+    store: Store,
+) -> None:
+    checker = _judging(SupportVerdict.supported, SupportVerdict.not_supported)
+    run = _checked_run(store, checker)
+    [claim] = run.claims
+    assert claim.verdict == Verdict.supported, "the one challenge no longer counts"
+    [kept] = run.findings
+    assert kept.statement == GROWTH_STATEMENT and kept.checks.support == "passed"
+    assert kept.checks.support_detail == OFF_TOPIC
+    [withheld] = run.unsupported_findings
+    assert withheld.statement == EXPORT_STATEMENT and not withheld.verified
+    assert withheld.checks.support == "failed" and withheld.checks.support_detail == OFF_TOPIC
+    assert withheld.withheld_reason == (
+        "a second model judged that its evidence does not support the statement: "
+        "The excerpt is about sales to China, not about data center growth"
+    )
+    assert withheld.evidence_ids == [] and withheld.filings_cited == 0
+    assert [item.excerpt for item in run.evidence] == [GROWTH_SENTENCE]
+    assert claim.finding_ids == [kept.id]
+    coverage = run.coverage
+    assert (coverage.findings_checked, coverage.findings_partly) == (2, 0)
+    assert coverage.findings_failed_meaning == 1
+    assert (coverage.findings_verified, coverage.findings_withheld) == (1, 1)
+    assert coverage.findings_proposed == 2 and coverage.excerpts_verified == 1
+    assert run.status == RunStatus.partial
+    assert "1 finding(s) could not be verified and were withheld." in run.coverage_limits
+    assert run.checker == "scripted-check" and run.checker_detail == "scripted test checker"
+
+
+def test_the_checker_sees_statement_stance_and_excerpts_but_not_the_reasoning(
+    store: Store,
+) -> None:
+    checker = ScriptedChecker()
+    _checked_run(store, checker)
+    first, second = checker.seen[GROWTH]
+    assert (first.statement, first.stance) == (GROWTH_STATEMENT, Stance.supports)
+    assert [e.text for e in first.excerpts] == [GROWTH_SENTENCE]
+    assert first.excerpts[0].locator.startswith("Item 2.")
+    assert (second.stance, [e.text for e in second.excerpts]) == (
+        Stance.challenges,
+        [EXPORT_SENTENCE],
+    )
+    assert "WRITER-REASONING" not in repr(checker.seen)
+    assert "medium" not in repr(checker.seen) and "high" not in repr(checker.seen)
+
+
+def test_a_partly_supported_finding_is_kept_counts_and_is_shown_as_such(store: Store) -> None:
+    reason = "The excerpt names China only, a narrower effect than stated."
+    checker = _judging(SupportVerdict.supported, SupportVerdict.partly, reason=reason)
+    run = _checked_run(store, checker)
+    assert run.claims[0].verdict == Verdict.mixed
+    assert [f.checks.support for f in run.findings] == ["passed", "partly"]
+    assert run.findings[1].checks.support_detail == reason and run.findings[1].verified
+    assert run.unsupported_findings == []
+    assert run.coverage.findings_partly == 1 and run.coverage.findings_failed_meaning == 0
+    assert run.status == RunStatus.complete and run.coverage_limits == []
+
+
+def test_a_checker_that_fails_leaves_findings_unchecked_with_one_error_and_a_limit(
+    store: Store,
+) -> None:
+    checker = ScriptedChecker(fail_with=RuntimeError("secret detail of the checker"))
+    run = _checked_run(
+        store, checker, GROWTH, EXPORT, analyst=ScriptedAnalyst(supports_first_sentence)
+    )
+    assert run.stage == "done" and run.brief is not None
+    assert [claim.verdict for claim in run.claims] == [Verdict.supported, Verdict.supported]
+    assert all(f.checks.support == "unchecked" and f.verified for f in run.findings)
+    meaning_errors = [error for error in run.errors if "meaning check" in error]
+    assert meaning_errors == [
+        "The meaning check could not run for 2 claim(s), so 2 finding(s) were left unchecked: "
+        "RuntimeError."
+    ]
+    assert not any("secret detail" in error for error in run.errors)
+    assert (
+        "2 of 2 verified finding(s) were not checked for meaning by a second model; for those, "
+        "whether the excerpts support the statement rests on the engine's reading."
+    ) in run.coverage_limits
+    assert run.status == RunStatus.complete  # nothing was withheld or left unread
+    assert run.coverage.findings_checked == 0
+
+
+def test_judgements_that_miss_a_finding_leave_the_claim_unchecked(store: Store) -> None:
+    run = _checked_run(store, _judging(SupportVerdict.not_supported))  # one of two judged
+    assert run.claims[0].verdict == Verdict.mixed
+    assert run.unsupported_findings == []
+    assert any("judged 1 of 2 finding(s)" in error for error in run.errors)
+
+
+def test_no_checker_changes_nothing(store: Store) -> None:
+    without = _comparable(_checked_run(store, None))
+    with_none = _comparable(_checked_run(store, NoChecker()))
+    assert with_none == without
+    assert with_none["checker"] == "none" and with_none["checker_detail"] == ""
+    assert not any("meaning" in line for line in with_none["coverage_limits"])
+
+
+def test_a_checker_on_the_engines_own_model_is_a_coverage_limit(store: Store) -> None:
+    same = ScriptedAnalyst(_one_each_way)
+    same.model = "check-model"  # type: ignore[attr-defined]
+    run = _checked_run(store, ScriptedChecker(), analyst=same)
+    assert MEANING_SAME_MODEL in run.coverage_limits
+    assert MEANING_SAME_MODEL == (
+        "The meaning check used the same model as the engine; it is not an independent reading."
+    )
+    other = ScriptedAnalyst(_one_each_way)
+    other.model = "engine-model"  # type: ignore[attr-defined]
+    different = _checked_run(store, ScriptedChecker(), analyst=other)
+    assert MEANING_SAME_MODEL not in different.coverage_limits
+
+
+def test_checking_claims_together_gives_the_sequential_record(store: Store) -> None:
+    def every_other(claim: object, items: object) -> list[Judgement]:
+        return [
+            Judgement(n, SupportVerdict.not_supported if n % 2 else SupportVerdict.supported, "r")
+            for n in range(len(items))  # type: ignore[arg-type]
+        ]
+
+    claims = (GROWTH, EXPORT, CUSTOMERS, MARGIN, SUPPLIERS)
+    records = [
+        _comparable(
+            run_with_checker(store, claims, ScriptedChecker(every_other), concurrency=concurrency)
+        )
+        for concurrency in (1, limits.MAX_CONCURRENT_ASSESSMENTS)
+    ]
+    assert records[0] == records[1]
+    assert records[0]["coverage"]["findings_failed_meaning"] > 0  # type: ignore[index]
+
+
+def run_with_checker(
+    store: Store, claims: tuple[str, ...], checker: ScriptedChecker, concurrency: int
+) -> Run:
+    return execute_run(
+        new_run(request(*claims)),
+        store,
+        filings=_five_claim_filing(),
+        analyst=ScriptedAnalyst(_two_findings),
+        fetch_page=FakePages({}),
+        clock=ManualClock(),
+        concurrency=concurrency,
+        checker=checker,
+    )
+
+
+def _two_findings(claim: object, passages: list[Passage]) -> ClaimDraft:
+    """Two findings on the first two sentences of the best passage."""
+    first = passages[0]
+    lines = [line for line in first.text.split("\n") if len(line) >= limits.MIN_EXCERPT_CHARS]
+    return ClaimDraft(
+        findings=[
+            FindingDraft(
+                statement=f"Finding {n}.",
+                stance=Stance.supports if n == 1 else Stance.challenges,
+                quotes=[Quote(first.id, line)],
+                confidence=Confidence.medium,
+                rationale="Scripted.",
+            )
+            for n, line in enumerate(lines[:2], start=1)
+        ]
+    )
+
+
+# The number check reads the reason too (referee 1 of version 4, finding 3)
+
+REASON_WITHHELD = (
+    "[Reason withheld: it cited a number (65%) that is in neither the finding's quotes nor "
+    "its cited figures.]"
+)
+
+
+def test_a_finding_whose_reason_cites_a_number_its_quote_lacks_keeps_its_place(
+    store: Store,
+) -> None:
+    def assess(claim: object, passages: list[Passage]) -> ClaimDraft:
+        passage = passage_with(passages, GROWTH_SENTENCE)
+        return ClaimDraft(
+            findings=[
+                FindingDraft(
+                    statement="Data Center revenue grew 56% from a year ago.",
+                    stance=Stance.supports,
+                    quotes=[Quote(passage.id, GROWTH_SENTENCE)],
+                    confidence=Confidence.high,
+                    rationale="Revenue grew 65%",
+                )
+            ]
+        )
+
+    run = _growth_run(store, assess)
+    [finding] = run.findings
+    assert finding.verified and finding.rationale == REASON_WITHHELD
+    assert "in the reason: 65% was not found in the quotes or the cited figures" in (
+        finding.checks.numbers_detail
+    )
+    assert run.claims[0].verdict == Verdict.supported
+    assert run.coverage.reasons_withheld == 1
+    assert "Revenue grew 65%" not in render_markdown(run)
+
+
+def test_a_claims_commentary_citing_an_unverified_number_is_withheld(store: Store) -> None:
+    def assess(claim: object, passages: list[Passage]) -> ClaimDraft:
+        draft = _stating("Data Center revenue grew 56% from a year ago.")(claim, passages)
+        draft.rationale = "Growth is strong: Data Center revenue grew 65% from a year ago."
+        return draft
+
+    run = _growth_run(store, assess)
+    assert run.claims[0].rationale == (
+        "[Commentary withheld: it cited a number (65%) that is in none of the claim's verified "
+        "quotes or cited figures.]"
+    )
+    assert run.coverage.reasons_withheld == 1
+
+
+def test_a_claims_commentary_whose_numbers_are_verified_is_kept(store: Store) -> None:
+    def assess(claim: object, passages: list[Passage]) -> ClaimDraft:
+        draft = _stating("Data Center revenue grew 56% from a year ago.")(claim, passages)
+        draft.rationale = "Data Center revenue grew 56%, so the claim holds."
+        return draft
+
+    run = _growth_run(store, assess)
+    assert run.claims[0].rationale == "Data Center revenue grew 56%, so the claim holds."
+    assert run.coverage.reasons_withheld == 0
+
+
+def test_unknowns_and_next_steps_citing_unverified_numbers_are_dropped(store: Store) -> None:
+    def assess(claim: object, passages: list[Passage]) -> ClaimDraft:
+        draft = _stating("Data Center revenue grew 56% from a year ago.")(claim, passages)
+        draft.unknowns = [
+            "Whether revenue grows 237% next year.",
+            "Whether the 56% growth rate holds next quarter.",
+        ]
+        return draft
+
+    next_steps = ["Check whether gross margin stays above 93.7%.", "Read the next 10-Q."]
+    run = _growth_run(store, assess, next_steps=next_steps)
+    assert run.brief is not None
+    assert run.brief.unknowns == ["Whether the 56% growth rate holds next quarter."]
+    assert run.brief.next_steps == ["Read the next 10-Q."]
+    assert (
+        "2 unknown(s) or next step(s) written by the engine were dropped: each cited a number "
+        "that is in no verified excerpt, finding or reported figure."
+    ) in run.errors
+
+
+# Thin evidence must not read as complete (referee 1 of version 4, finding 4)
+
+NO_ITEMS = (
+    "<html><body>"
+    + f"<p>{GROWTH_SENTENCE}</p>"
+    + "".join(f"<p>Paragraph {n} of a filing with no Item headings.</p>" for n in range(40))
+    + "</body></html>"
+)
+
+
+def test_a_filing_without_item_headings_can_no_longer_finish_complete(store: Store) -> None:
+    # A JPMorgan-style 10-Q: almost none of the body sits under a numbered Item.
+    run = run_with(
+        store,
+        request(GROWTH, filings=1),
+        FakeFilings.synthetic(NO_ITEMS),
+        ScriptedAnalyst(supports_first_sentence),
+    )
+    assert run.claims[0].verdict == Verdict.supported and run.unsupported_findings == []
+    assert run.status == RunStatus.partial
+    assert (
+        "Item headings were not found for most of 1 of 1 filing(s); passages from it are "
+        "located by sub-heading only."
+    ) in run.coverage_limits
+    [filing] = [s for s in run.sources if s.kind == SourceKind.sec_filing]
+    assert filing.item_coverage is not None and filing.item_coverage < 0.5
+
+
+def test_a_filing_under_item_headings_records_its_coverage_and_stays_complete(
+    store: Store,
+) -> None:
+    filings = FakeFilings.synthetic(filing_html(GROWTH_SENTENCE, EXPORT_SENTENCE))
+    analyst = ScriptedAnalyst(supports_first_sentence)
+    run = run_with(store, request(GROWTH, filings=1), filings, analyst)
+    [filing] = [s for s in run.sources if s.kind == SourceKind.sec_filing]
+    assert filing.item_coverage is not None and filing.item_coverage >= 0.5
+    [facts] = [s for s in run.sources if s.kind == SourceKind.sec_xbrl]
+    assert facts.item_coverage is None
+    assert run.status == RunStatus.complete, run.coverage_limits
+
+
+def test_the_record_keeps_how_many_filings_were_asked_for(store: Store) -> None:
+    filings = FakeFilings.synthetic(filing_html(GROWTH_SENTENCE, EXPORT_SENTENCE))
+    analyst = ScriptedAnalyst(supports_first_sentence)
+    run = run_with(store, request(GROWTH, filings=3), filings, analyst)
+    assert run.coverage.filings_asked == 3
+    assert run.coverage.sources_requested == 1 and run.coverage.sources_read == 1
+    assert (
+        "3 filing(s) were requested; EDGAR lists 1 (the latest annual report and the quarterly "
+        "reports filed after it)."
+    ) in run.coverage_limits
+
+
+# Provenance (referee 1 of version 4, finding 6)
+
+PAGE_URL = "https://investor.example.com/q2"
+PAGE = "<html><head><title>Press release</title></head><body><p>{}</p></body></html>"
+
+
+def test_a_run_that_reads_a_page_you_added_says_so_in_its_provenance(store: Store) -> None:
+    thesis = ThesisRequest(
+        ticker="NVDA", decision=DECISION, claims=[GROWTH], filings=1, extra_urls=[PAGE_URL]
+    )
+    run = execute_run(
+        new_run(thesis),
+        store,
+        filings=FakeFilings.synthetic(filing_html(GROWTH_SENTENCE, EXPORT_SENTENCE)),
+        analyst=ScriptedAnalyst(supports_first_sentence),
+        fetch_page=FakePages({PAGE_URL: (PAGE_URL, PAGE.format(GROWTH_SENTENCE))}),
+        clock=ManualClock(),
+    )
+    assert any(
+        s.kind == SourceKind.public_html and s.extraction_status == "extracted" for s in run.sources
+    )
+    note = (
+        "Evidence comes from the company's SEC filings and from 1 page you added; each excerpt "
+        "names its source. A page you added is not a filing."
+    )
+    assert run.brief is not None and run.brief.provenance_note == note
+    provenance = render_markdown(run).split("## Provenance", 1)[1].split("##", 1)[0]
+    assert note in provenance and PROVENANCE_NOTE not in provenance
+
+
+def test_a_run_on_filings_alone_keeps_the_filings_provenance(store: Store) -> None:
+    run = _growth_run(store, _stating("Data Center revenue grew 56% from a year ago."))
+    assert run.brief is not None and run.brief.provenance_note == PROVENANCE_NOTE

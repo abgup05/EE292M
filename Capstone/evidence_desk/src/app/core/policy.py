@@ -7,7 +7,19 @@ to every view, so the page and the Markdown export cannot disagree.
 
 from __future__ import annotations
 
-from app.core.models import Claim, DecisionValue, Finding, RunStatus, Stance, Verdict
+from collections.abc import Iterable, Sequence
+
+from app.core.models import (
+    Claim,
+    DecisionValue,
+    ExtractionStatus,
+    Finding,
+    RunStatus,
+    Source,
+    SourceKind,
+    Stance,
+    Verdict,
+)
 
 STATUS_NOTES: dict[RunStatus, str] = {
     RunStatus.running: "The run is in progress.",
@@ -54,9 +66,15 @@ REVIEW_NOTE = (
     "and undecided findings do not count toward it."
 )
 
+# The note for a run that read only the company's SEC filings and XBRL facts, and the one
+# shown before any run. A run's own note is built by provenance_note from what it read.
 PROVENANCE_NOTE = (
     "Evidence comes from the company's own filings with the SEC. It shows what the company "
     "reported, not whether an outside party agrees."
+)
+PROVENANCE_WITH_PAGES = (
+    "Evidence comes from the company's SEC filings and from {pages} you added; each excerpt "
+    "names its source. A page you added is not a filing."
 )
 
 
@@ -65,8 +83,7 @@ FIGURES_NOTE = (
     "the SEC; each shows the facts it used and its arithmetic."
 )
 # Reported figures are a second path to the numbers, not a source of excerpts: when they
-# cannot be read the run says so here and continues from the filing text, and the run
-# status is unaffected (every finding must still pass the quote and number checks).
+# cannot be read the run continues from the filing text, and is partial, with this reason.
 FACTS_UNAVAILABLE = (
     "The reported figures (XBRL company facts) could not be read ({error}); "
     "findings rest on the filing text alone."
@@ -75,17 +92,105 @@ SUMMARY_REPLACED = (
     "The model's summary was replaced by the template summary: {numbers} in it "
     "is not in any verified finding or reported figure."
 )
+# A filing whose text mostly sits outside numbered Item headings: its passages carry
+# sub-heading locators only, so the run is partial.
+THIN_FILINGS = (
+    "Item headings were not found for most of {thin} of {read} filing(s); passages from "
+    "{pronoun} are located by sub-heading only."
+)
+
+# Every number an engine writes beside the evidence is checked like a statement's. A
+# finding's reason, or a claim's commentary, that cites a number its evidence does not hold
+# is replaced by one of these; the finding and the verdict stand.
+REASON_WITHHELD = (
+    "[Reason withheld: it cited a number ({numbers}) that is in neither the finding's quotes "
+    "nor its cited figures.]"
+)
+REASON_NUMBER_DETAIL = "in the reason: {number} was not found in the quotes or the cited figures"
+COMMENTARY_WITHHELD = (
+    "[Commentary withheld: it cited a number ({numbers}) that is in none of the claim's "
+    "verified quotes or cited figures.]"
+)
+ENTRIES_DROPPED = (
+    "{count} unknown(s) or next step(s) written by the engine were dropped: each cited a "
+    "number that is in no verified excerpt, finding or reported figure."
+)
+
+# A verified finding with no excerpt rests on reported figures alone. Whether a figure bears
+# on the claim is a question of meaning, so its stance counts toward the verdict only when
+# the meaning check confirmed it ("passed"); otherwise it counts as context.
+FIGURE_ONLY_NOTE = (
+    "backed by reported figures only and not confirmed by the meaning check: counted as context"
+)
+
+# The meaning check: a second model reads each verified finding's excerpts and figures, without
+# the engine's reasoning, and judges whether they support the statement. A finding it judges
+# unsupported is withheld; one it judges partly supported is kept, counts toward the verdict
+# (unless it rests on reported figures alone: see FIGURE_ONLY_NOTE) and is shown as such (it
+# does not make the run partial: the evidence still points the way stated). A check that cannot
+# run leaves its findings unchecked and is a coverage limit: the status is unaffected, because
+# nothing was withheld or left unread.
+SUPPORT_LABELS: dict[str, str] = {
+    "passed": "supported",
+    "partly": "partly supported",
+    "failed": "not supported",
+    "unchecked": "not checked",
+}
+MEANING_WITHHELD = (
+    "a second model judged that its evidence does not support the statement: {reason}"
+)
+MEANING_UNCHECKED_ERROR = (
+    "The meaning check could not run for {claims} claim(s), so {findings} finding(s) were "
+    "left unchecked: {reasons}."
+)
+MEANING_UNCHECKED_LIMIT = (
+    "{findings} of {verified} verified finding(s) were not checked for meaning by a second "
+    "model; for those, whether the excerpts support the statement rests on the engine's reading."
+)
+MEANING_SAME_MODEL = (
+    "The meaning check used the same model as the engine; it is not an independent reading."
+)
+NO_CHECKER_NOTE = "No second model checked the findings' meaning."
+
+
+def counted_stance(finding: Finding) -> Stance | None:
+    """The stance the verdict rule uses for ``finding``; None when it is not verified.
+
+    A verified finding counts as its own stance when it has at least one verified
+    excerpt, or when the meaning check passed it. One that rests on reported figures
+    alone and was not confirmed (unchecked, or only partly supported) counts as context.
+    """
+    if not finding.verified:
+        return None
+    if finding.evidence_ids or finding.checks.support == "passed":
+        return finding.stance
+    return Stance.context
+
+
+def mark_counted(findings: Iterable[Finding]) -> None:
+    """Record on each finding the stance the verdict rule uses, and why when it was demoted.
+
+    Sets ``counted_as`` (:func:`counted_stance`) and ``count_note``
+    (:data:`FIGURE_ONLY_NOTE` when a supporting or challenging finding counts as
+    context; empty otherwise), so no view has to work it out.
+    """
+    for finding in findings:
+        finding.counted_as = counted_stance(finding)
+        demoted = finding.counted_as == Stance.context and finding.stance != Stance.context
+        finding.count_note = FIGURE_ONLY_NOTE if demoted else ""
 
 
 def claim_verdict(findings: list[Finding]) -> Verdict:
     """The verdict for one claim, from its verified findings alone.
 
     A model proposes a stance per finding; it never sets the verdict. Findings
-    that did not survive the citation gate do not count.
+    that did not survive the citation gate do not count, and each verified one
+    counts as :func:`counted_stance` says.
     """
     verified = [finding for finding in findings if finding.verified]
-    supports = any(finding.stance == Stance.supports for finding in verified)
-    challenges = any(finding.stance == Stance.challenges for finding in verified)
+    stances = [counted_stance(finding) for finding in verified]
+    supports = Stance.supports in stances
+    challenges = Stance.challenges in stances
     if supports and challenges:
         return Verdict.mixed
     if supports:
@@ -97,6 +202,23 @@ def claim_verdict(findings: list[Finding]) -> Verdict:
     return Verdict.not_addressed
 
 
+def provenance_note(sources: Sequence[Source]) -> str:
+    """Where a run's evidence came from, built from the sources it actually read.
+
+    :data:`PROVENANCE_NOTE` when only SEC filings and XBRL facts were read; when
+    any page the user added was read, a note that says so and how many.
+    """
+    pages = sum(
+        1
+        for source in sources
+        if source.kind == SourceKind.public_html
+        and source.extraction_status == ExtractionStatus.extracted
+    )
+    if not pages:
+        return PROVENANCE_NOTE
+    return PROVENANCE_WITH_PAGES.format(pages=f"{pages} page{'s' if pages > 1 else ''}")
+
+
 def run_status(
     *,
     sources_requested: int,
@@ -105,11 +227,16 @@ def run_status(
     withheld_findings: int,
     engine_fallbacks: int,
     time_limit_hit: bool,
+    thin_filings: int = 0,
+    filings_read: int = 0,
+    facts_error: str | None = None,
 ) -> tuple[RunStatus, list[str]]:
     """Complete only when nothing limits the brief; otherwise partial, with each reason.
 
     Failed when no source at all was read. The reasons are sentences a reader
-    can act on, each with its denominator.
+    can act on, each with its denominator. ``thin_filings`` of the
+    ``filings_read`` filings have most of their text outside numbered Items;
+    ``facts_error`` says why the reported figures could not be read.
     """
     if sources_extracted == 0:
         return RunStatus.failed, ["No source could be retrieved and read; no brief was produced."]
@@ -119,6 +246,16 @@ def run_status(
             f"{sources_requested - sources_extracted} of {sources_requested} source(s) "
             "could not be read."
         )
+    if thin_filings:
+        reasons.append(
+            THIN_FILINGS.format(
+                thin=thin_filings,
+                read=max(filings_read, thin_filings),
+                pronoun="it" if thin_filings == 1 else "them",
+            )
+        )
+    if facts_error is not None:
+        reasons.append(FACTS_UNAVAILABLE.format(error=facts_error))
     if withheld_findings:
         # A finding is withheld for no surviving quote or figure, or for a number in its
         # statement that its quotes and figures do not contain; the reason is on the finding.

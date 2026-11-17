@@ -4,28 +4,37 @@ This is the only place a run is advanced, and both entry points (the HTTP API
 and the command line) call it. It depends on the ports in
 :mod:`app.core.ports`, never on a concrete EDGAR client or engine. A run
 leaves this module only after :func:`app.core.gate.gate_claim` has checked
-every quote, cited figure and stated number, and :mod:`app.core.policy` has
-computed the verdicts and status.
+every quote, cited figure and stated number (and each finding's reason), a
+configured checker has read each verified finding's meaning
+(:mod:`app.core.meaning`), every number in a claim's commentary, the unknowns
+and the next steps has been checked against the verified evidence, and
+:mod:`app.core.policy` has computed the verdicts and status.
 """
 
 from __future__ import annotations
 
 import logging
+import threading
 import time
 import uuid
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from concurrent.futures import Future, ThreadPoolExecutor
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
 from app.core import limits, policy
 from app.core.documents import Passage
-from app.core.gate import RunIds, StoredSource, gate_claim
+from app.core.gate import GateResult, RunIds, StoredSource, gate_claim
+from app.core.meaning import MeaningResult, apply_judgements, check_items
+from app.core.metric_models import Metric
 from app.core.models import (
     Brief,
     Claim,
     Coverage,
+    Evidence,
     ExtractionStatus,
+    Finding,
     Run,
     RunStatus,
     SourceKind,
@@ -35,12 +44,14 @@ from app.core.models import (
 from app.core.numcheck import check_numbers
 from app.core.ports import (
     Analyst,
+    Checker,
     ClaimDraft,
     FilingSource,
     PageFetcher,
     SourceError,
     SummaryDraft,
 )
+from app.engines.checker import NoChecker
 from app.engines.extractive import ExtractiveAnalyst
 from app.engines.fallback import FallbackAnalyst
 from app.retrieval.chunk import chunk_document
@@ -119,11 +130,59 @@ class EngineFailures:
 
 @dataclass
 class _Assessment:
-    """One claim's draft, the passages it was drafted from, and the steps that fell back."""
+    """One claim after its worker: the draft, what passed the gate, and the meaning check.
+
+    ``meaning`` is None when no checker read the claim's findings; ``check_error``
+    says why a checker that was asked could not.
+    """
 
     draft: ClaimDraft
     offered: list[Passage]
     failures: list[tuple[str, str]]
+    gated: GateResult = field(default_factory=GateResult)
+    meaning: MeaningResult | None = None
+    check_error: str = ""
+
+
+class _GateOrder:
+    """Lets claims assessed on worker threads pass the gate one at a time, in claim order.
+
+    The gate issues the finding and evidence ids, so passing it in claim order
+    keeps every id what a sequential run gives; one claim at a time also keeps
+    the shared quote indexes of the stored sources to one thread.
+    """
+
+    def __init__(self) -> None:
+        self._next = 0
+        self._done: set[int] = set()
+        self._ready = threading.Condition()
+
+    @contextmanager
+    def turn(self, position: int) -> Iterator[None]:
+        """Wait until every claim before ``position`` has passed; hand the turn on afterwards."""
+        with self._ready:
+            self._ready.wait_for(lambda: self._next == position)
+        try:
+            yield
+        finally:
+            self.done(position)
+
+    def done(self, position: int) -> None:
+        """Mark ``position`` as through the gate (or as never needing it)."""
+        with self._ready:
+            self._done.add(position)
+            while self._next in self._done:
+                self._next += 1
+            self._ready.notify_all()
+
+
+@dataclass
+class _Unchecked:
+    """Claims whose meaning check could not run, the findings left unchecked, and why."""
+
+    claims: int = 0
+    findings: int = 0
+    reasons: list[str] = field(default_factory=list)
 
 
 def execute_run(
@@ -136,16 +195,21 @@ def execute_run(
     clock: Callable[[], float] = time.monotonic,
     concurrency: int = limits.MAX_CONCURRENT_ASSESSMENTS,
     cache: FilingCache | None = None,
+    checker: Checker | None = None,
 ) -> Run:
     """Execute ``run`` to completion, persisting progress, and return the final record.
 
     Up to ``concurrency`` claims are assessed at once (1 assesses them one after
     another); the record is the same either way. Source text is kept in
     ``cache``; without one, an in-memory cache that lives for this run only.
+    ``checker`` reads each claim's verified findings again, after the gate and
+    before the verdict, in the worker that assessed the claim; without one (or
+    with :class:`~app.engines.checker.NoChecker`) every finding stays unchecked.
     """
     if concurrency < 1:
         raise ValueError("concurrency must be at least 1")
     cache = cache if cache is not None else FilingCache()
+    reader = None if checker is None or isinstance(checker, NoChecker) else checker
     started = clock()
 
     def out_of_time() -> bool:
@@ -166,6 +230,9 @@ def execute_run(
     )
     run.engine = analyst.name
     run.engine_detail = str(getattr(analyst, "detail", "") or "")
+    if reader is not None:
+        run.checker = reader.name
+        run.checker_detail = str(reader.detail or "")
     _stage(run, store, "company")
     try:
         company = filings.company(run.inputs.ticker)
@@ -188,6 +255,7 @@ def execute_run(
         cache=cache,
     )
     run.coverage = Coverage(
+        filings_asked=run.inputs.filings,
         sources_requested=ingested.distinct_requested,
         sources_read=len(ingested.documents),
         claims_total=len(run.claims),
@@ -213,8 +281,6 @@ def execute_run(
         run.metrics = list(numbers.report.metrics)
         run.series = list(numbers.report.series)
     run.metrics_notes = list(numbers.notes)
-    if numbers.error is not None:
-        run.coverage_limits.append(policy.FACTS_UNAVAILABLE.format(error=numbers.error))
     figures = select_figures(numbers.report)
     offered_figures = {figure.id: figure for figure in figures}
     run.coverage.metrics_computed = sum(1 for m in run.metrics if m.value is not None)
@@ -251,9 +317,24 @@ def execute_run(
     unknowns: list[str] = []
     time_limit_hit = ingested.time_limit_hit
     unassessed: list[Claim] = []
+    gate_order = _GateOrder()
+    unchecked = _Unchecked()
 
-    def assess_claim(claim: Claim, offered: list[Passage]) -> _Assessment:
-        """Draft one claim on a worker thread; its fallbacks are kept, not yet recorded."""
+    def check_meaning(claim: Claim, assessment: _Assessment) -> None:
+        """Have the checker read the claim's verified findings; apply its judgements."""
+        gated = assessment.gated
+        if reader is None or not gated.findings:
+            return
+        items = check_items(gated.findings, {e.id: e for e in gated.evidence}, offered_figures)
+        try:
+            judgements = reader.check(run.inputs, company, claim, items)
+            assessment.meaning = apply_judgements(gated.findings, judgements)
+        except Exception as exc:  # noqa: BLE001 - any failure leaves the findings unchecked
+            log.warning("the meaning check failed for %s: %s", claim.id, _safe(exc))
+            assessment.check_error = _safe(exc)
+
+    def assess_claim(position: int, claim: Claim, offered: list[Passage]) -> _Assessment:
+        """Draft, gate and check one claim on a worker thread; fallbacks are kept, not recorded."""
         steps: list[tuple[str, str]] = []
 
         def on_claim_failure(step: str, exc: Exception) -> None:
@@ -265,8 +346,18 @@ def execute_run(
             if analyst.name == deterministic.name
             else FallbackAnalyst(analyst, deterministic, on_claim_failure)
         )
-        draft = claim_engine.assess(run.inputs, company, claim, offered, figures=figures)
-        return _Assessment(draft, offered, steps)
+        try:
+            draft = claim_engine.assess(run.inputs, company, claim, offered, figures=figures)
+        except BaseException:
+            gate_order.done(position)  # never gated, so later claims must not wait for it
+            raise
+        with gate_order.turn(position):
+            gated = gate_claim(
+                claim.id, draft, {p.id: p for p in offered}, stored, ids, figures=offered_figures
+            )
+        assessment = _Assessment(draft, offered, steps, gated)
+        check_meaning(claim, assessment)
+        return assessment
 
     def start(pool: ThreadPoolExecutor, position: int) -> Future[_Assessment]:
         """Retrieve one claim's passages here, in claim order, and hand its assessment out."""
@@ -277,15 +368,17 @@ def execute_run(
         offered = index.search([claim.text, *claim.queries])
         claim.passages_considered = len(offered)
         if offered:
-            return pool.submit(assess_claim, claim, offered)
+            return pool.submit(assess_claim, position, claim, offered)
+        gate_order.done(position)  # an empty draft issues no id
         ready: Future[_Assessment] = Future()
         ready.set_result(_Assessment(ClaimDraft(rationale=NO_PASSAGE_RATIONALE), offered, []))
         return ready
 
-    # Up to ``concurrency`` assessments run at once, but claims start in claim order and their
-    # results pass the gate in claim order, so every id and count is what a sequential run
-    # gives. The time limit is checked once before each round of starts: a claim not started
-    # in time is reported as not assessed, exactly as when claims ran one after another.
+    # Up to ``concurrency`` claims are assessed and checked at once, but claims start in claim
+    # order and pass the gate in claim order, and their results are recorded in claim order, so
+    # every id and count is what a sequential run gives. The time limit is checked once before
+    # each round of starts: a claim not started in time is reported as not assessed, exactly
+    # as when claims ran one after another.
     total = len(run.claims)
     in_flight: dict[int, Future[_Assessment]] = {}
     next_up = 0
@@ -307,36 +400,58 @@ def execute_run(
             run.stage_detail = f"claim {position + 1} of {total}"
             store.save_run(run)
             assessment = in_flight.pop(position).result()
-            draft, offered = assessment.draft, assessment.offered
+            draft, offered, result = assessment.draft, assessment.offered, assessment.gated
             for step, reason in assessment.failures:
                 failures.record(step, reason)
             if offered:
                 fell_back = any(step == "assess" for step, _ in assessment.failures)
                 claim.assessed_by = deterministic.name if fell_back else analyst.name
-            result = gate_claim(
-                claim.id, draft, {p.id: p for p in offered}, stored, ids, figures=offered_figures
-            )
-            run.findings.extend(result.findings)
-            run.unsupported_findings.extend(result.unsupported)
-            run.evidence.extend(result.evidence)
-            run.errors.extend(f"Citation check: {problem}" for problem in result.problems)
-            claim.finding_ids = [finding.id for finding in result.findings]
-            claim.rationale = draft.rationale
-            claim.verdict = policy.claim_verdict(result.findings)
-            unknowns.extend(draft.unknowns)
+            verified, withheld, evidence = result.findings, result.unsupported, result.evidence
+            figures_cited = result.figures_cited
             coverage = run.coverage
-            coverage.findings_verified += len(result.findings)
-            coverage.findings_withheld += len(result.unsupported)
+            meaning = assessment.meaning
+            if meaning is not None:
+                # A finding the second model judged unsupported is withheld, and its excerpts
+                # and cited figures no longer count.
+                verified, withheld = meaning.kept, [*withheld, *meaning.withheld]
+                evidence = [item for item in evidence if item.id not in meaning.dropped_evidence]
+                figures_cited -= sum(len(finding.metric_ids) for finding in meaning.withheld)
+                coverage.findings_checked += meaning.checked
+                coverage.findings_partly += meaning.partly
+                coverage.findings_failed_meaning += meaning.failed
+            elif assessment.check_error:
+                unchecked.claims += 1
+                unchecked.findings += len(verified)
+                unchecked.reasons.append(assessment.check_error)
+            run.findings.extend(verified)
+            run.unsupported_findings.extend(withheld)
+            run.evidence.extend(evidence)
+            run.errors.extend(f"Citation check: {problem}" for problem in result.problems)
+            claim.finding_ids = [finding.id for finding in verified]
+            claim.rationale = _checked_commentary(
+                draft.rationale, verified, evidence, offered_figures
+            )
+            if claim.rationale != draft.rationale:
+                coverage.reasons_withheld += 1
+            policy.mark_counted(verified)
+            claim.verdict = policy.claim_verdict(verified)
+            unknowns.extend(draft.unknowns)
+            coverage.findings_verified += len(verified)
+            coverage.findings_withheld += len(withheld)
             coverage.findings_proposed = coverage.findings_verified + coverage.findings_withheld
-            coverage.excerpts_verified += len(result.evidence)
+            coverage.findings_without_quote += sum(1 for f in verified if not f.evidence_ids)
+            coverage.excerpts_verified += len(evidence)
             coverage.quotes_offered += result.quotes_offered
+            coverage.quotes_found += result.quotes_found
             coverage.quotes_rejected += result.quotes_rejected
             coverage.numbers_checked += result.numbers_checked
             coverage.numbers_unmatched += result.numbers_unmatched
-            coverage.figures_cited += result.figures_cited
+            coverage.reasons_withheld += result.reasons_withheld
+            coverage.figures_cited += figures_cited
             if claim.verdict != Verdict.not_addressed:
                 coverage.claims_with_evidence += 1
             store.save_run(run)
+    _record_meaning_limits(run, reader, analyst, unchecked)
 
     _stage(run, store, "verifying")
     summary_step = len(failures)
@@ -351,8 +466,17 @@ def execute_run(
             summary = deterministic.summarize(run.inputs, company, run.claims, run.findings)
             model_wrote_summary = False
     run.errors.extend(failures.messages())
+    unknowns, dropped = _drop_unverified_numbers(unknowns, run)
+    next_steps, dropped_steps = _drop_unverified_numbers(summary.next_steps, run)
+    if dropped + dropped_steps:
+        run.errors.append(policy.ENTRIES_DROPPED.format(count=dropped + dropped_steps))
     fallbacks = len(failures) + plan_fallbacks
     run.coverage.engine_fallbacks = fallbacks
+    filings_read = [
+        source
+        for source in run.sources
+        if source.id in ingested.documents and source.kind == SourceKind.sec_filing
+    ]
     status, reasons = policy.run_status(
         sources_requested=ingested.distinct_requested,
         sources_extracted=len(ingested.documents),
@@ -360,6 +484,13 @@ def execute_run(
         withheld_findings=len(run.unsupported_findings),
         engine_fallbacks=fallbacks,
         time_limit_hit=time_limit_hit,
+        thin_filings=sum(
+            1
+            for source in filings_read
+            if source.item_coverage is not None and source.item_coverage < limits.MIN_ITEM_COVERAGE
+        ),
+        filings_read=len(filings_read),
+        facts_error=numbers.error,
     )
     run.coverage_limits.extend(reasons)
     for claim in run.claims:
@@ -371,11 +502,79 @@ def execute_run(
         summary=summary.summary,
         summary_origin="model" if model_wrote_summary else "template",
         unknowns=_distinct(unknowns)[:MAX_UNKNOWNS],
-        next_steps=_distinct(summary.next_steps),
+        next_steps=_distinct(next_steps),
         coverage_status=status,
         status_note=policy.STATUS_NOTES[status],
+        provenance_note=policy.provenance_note(run.sources),
     )
     return _finish(run, store, status)
+
+
+def _record_meaning_limits(
+    run: Run, reader: Checker | None, analyst: Analyst, unchecked: _Unchecked
+) -> None:
+    """Say on the run where the meaning check fell short: one error line, and coverage limits.
+
+    A checker that read with the engine's own model is no independent reading;
+    a check that could not run leaves its findings unchecked. Neither changes
+    the status: nothing was withheld or left unread because of it.
+    """
+    if reader is None:
+        return
+    engine_model = getattr(analyst, "model", None)
+    if reader.same_model_as(engine_model if isinstance(engine_model, str) else None):
+        run.coverage_limits.append(policy.MEANING_SAME_MODEL)
+    if unchecked.findings:
+        run.errors.append(
+            policy.MEANING_UNCHECKED_ERROR.format(
+                claims=unchecked.claims,
+                findings=unchecked.findings,
+                reasons="; ".join(_distinct(unchecked.reasons)),
+            )
+        )
+        run.coverage_limits.append(
+            policy.MEANING_UNCHECKED_LIMIT.format(
+                findings=unchecked.findings, verified=run.coverage.findings_verified
+            )
+        )
+
+
+def _checked_commentary(
+    commentary: str,
+    findings: list[Finding],
+    evidence: list[Evidence],
+    figures: dict[str, Metric],
+) -> str:
+    """A claim's commentary, or the withheld note when it cites a number its evidence lacks.
+
+    The numbers are checked against the excerpts and cited figures of the claim's
+    verified ``findings`` (``evidence`` is the claim's verified evidence, ``figures``
+    the figures offered, by id).
+    """
+    cited = [
+        figures[metric_id]
+        for finding in findings
+        for metric_id in finding.metric_ids
+        if metric_id in figures
+    ]
+    numbers = check_numbers(commentary, [item.excerpt for item in evidence], cited)
+    if numbers.status != "failed":
+        return commentary
+    return policy.COMMENTARY_WITHHELD.format(numbers=", ".join(numbers.unmatched))
+
+
+def _drop_unverified_numbers(entries: list[str], run: Run) -> tuple[list[str], int]:
+    """The engine-written ``entries`` whose numbers are all verified, and how many were dropped.
+
+    Verified means in an excerpt kept as evidence, a verified finding's statement,
+    or a reported figure of the run.
+    """
+    allowed = [item.excerpt for item in run.evidence]
+    allowed += [finding.statement for finding in run.findings if finding.verified]
+    kept = [
+        entry for entry in entries if check_numbers(entry, allowed, run.metrics).status != "failed"
+    ]
+    return kept, len(entries) - len(kept)
 
 
 def _unsupported_summary_numbers(summary: SummaryDraft, run: Run) -> list[str]:

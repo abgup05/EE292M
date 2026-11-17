@@ -133,7 +133,12 @@ class Claim(BaseModel):
 
 
 class Source(BaseModel):
-    """A retrieved document. For a filing, ``published_date`` is the filing date."""
+    """A retrieved document. For a filing, ``published_date`` is the filing date.
+
+    ``item_coverage`` is the share (0.0 to 1.0) of a filing's text that sits under a
+    numbered Item heading, set for every filing read; None for pages, XBRL facts and
+    filings that were not read.
+    """
 
     id: str
     kind: SourceKind
@@ -151,10 +156,16 @@ class Source(BaseModel):
     sections: int = 0
     characters: int = 0
     error: str | None = None
+    item_coverage: float | None = None
 
 
 class Evidence(BaseModel):
-    """An exact excerpt of a stored source. ``start`` is its offset in the stored text."""
+    """An exact excerpt of a stored source. ``start`` is its offset in the stored text.
+
+    ``locator`` is the heading of the offered passage that holds the excerpt. ``link_kind``
+    says what ``link`` opens (:func:`app.core.links.link_kind`): "passage", "first-line" or
+    "document"; "" in records written before it was kept.
+    """
 
     id: str
     source_id: str
@@ -165,6 +176,7 @@ class Evidence(BaseModel):
     context_before: str = ""
     context_after: str = ""
     link: str = ""
+    link_kind: str = ""
 
 
 class FindingChecks(BaseModel):
@@ -173,8 +185,14 @@ class FindingChecks(BaseModel):
     ``quotes``: "passed" when at least one quote was found in the stored text, "none" when
     the finding cites no quote. ``numbers``: "passed" when every number in the statement was
     matched to a quote or a cited reported figure, "failed" when one was not, "none" when the
-    statement has no number to check. ``support`` is the second-model check that the excerpts
-    mean what the statement says: "passed", "failed" or "unchecked".
+    statement has no number to check. A number in the finding's reason that its quotes and
+    figures do not hold adds a line starting "in the reason:" to ``numbers_detail`` (and the
+    reason is withheld); it does not change ``numbers``. ``support`` is the second-model check
+    that the excerpts
+    mean what the statement says: "passed" (supported), "partly" (they support a weaker
+    statement; the finding is kept and counts), "failed" (the finding is withheld) or
+    "unchecked" (no checker, or the check could not run). ``support_detail`` is the
+    checker's one-sentence reason.
     """
 
     quotes: str = "none"
@@ -185,7 +203,13 @@ class FindingChecks(BaseModel):
 
 
 class Finding(BaseModel):
-    """A statement about one claim, tied to the excerpts and reported figures that back it."""
+    """A statement about one claim, tied to the excerpts and reported figures that back it.
+
+    ``counted_as`` is the stance the verdict rule used for a verified finding (None for a
+    withheld one): its own stance, or context when it rests on reported figures alone and
+    the meaning check did not confirm it; ``count_note`` then says why
+    (:func:`app.core.policy.mark_counted`).
+    """
 
     id: str
     claim_id: str
@@ -199,10 +223,16 @@ class Finding(BaseModel):
     metric_ids: list[str] = Field(default_factory=list)
     checks: FindingChecks = Field(default_factory=FindingChecks)
     withheld_reason: str = ""
+    counted_as: Stance | None = None
+    count_note: str = ""
 
 
 class Brief(BaseModel):
-    """The decision-level summary. ``summary_origin`` says who wrote the summary text."""
+    """The decision-level summary. ``summary_origin`` says who wrote the summary text.
+
+    ``provenance_note`` says where this run's evidence came from (the SEC filings, and any
+    page the user added); "" in records written before it was kept.
+    """
 
     summary: str
     summary_origin: str
@@ -210,6 +240,7 @@ class Brief(BaseModel):
     next_steps: list[str]
     coverage_status: RunStatus
     status_note: str
+    provenance_note: str = ""
 
 
 class DecisionValue(StrEnum):
@@ -294,6 +325,7 @@ class ClaimChange(BaseModel):
     before: Verdict | None
     after: Verdict | None
     moved: bool
+    change: str = ""
     reviewed_before: Verdict | None = None
     reviewed_after: Verdict | None = None
     excerpts_added: int = 0
@@ -314,11 +346,17 @@ class RunComparison(BaseModel):
     verdicts_moved: int = 0
     claims_total: int = 0
     note: str = ""
+    earlier_engine: str = ""
+    later_engine: str = ""
+    engines_differ: bool = False
 
 
 class Coverage(BaseModel):
     """What the run read and kept, counted by the backend so no view has to."""
 
+    # filings_asked: the filings the request asked for; sources_requested: the filings EDGAR
+    # listed (at most that many) plus the extra pages, identical content counted once.
+    filings_asked: int = 0
     sources_requested: int = 0
     sources_read: int = 0
     passages_indexed: int = 0
@@ -327,9 +365,16 @@ class Coverage(BaseModel):
     findings_proposed: int = 0
     findings_verified: int = 0
     findings_withheld: int = 0
+    # Verified findings that rest on reported figures alone, with no excerpt.
+    findings_without_quote: int = 0
     engine_fallbacks: int = 0
+    # Every quote offered is either found word for word inside a passage offered for its
+    # claim (quotes_found, whatever became of its finding) or rejected, so
+    # quotes_found + quotes_rejected == quotes_offered. excerpts_verified counts the
+    # excerpts kept as evidence of verified findings.
     excerpts_verified: int = 0
     quotes_offered: int = 0
+    quotes_found: int = 0
     quotes_rejected: int = 0
     # Reported figures (XBRL company facts): computed for the run, shown to the engine,
     # cited by verified findings; numbers written in finding statements and how many
@@ -339,6 +384,15 @@ class Coverage(BaseModel):
     figures_cited: int = 0
     numbers_checked: int = 0
     numbers_unmatched: int = 0
+    # Reasons and commentary replaced because they cited a number that is in neither their
+    # quotes nor their cited figures: a finding's reason, or a claim's commentary.
+    reasons_withheld: int = 0
+    # The meaning check by a second model: verified findings it judged, those it judged only
+    # partly supported (kept), and those it judged unsupported (withheld; also counted in
+    # findings_withheld).
+    findings_checked: int = 0
+    findings_partly: int = 0
+    findings_failed_meaning: int = 0
 
 
 class Run(BaseModel):
@@ -355,6 +409,9 @@ class Run(BaseModel):
     company: Company | None = None
     engine: str = "extractive"
     engine_detail: str = ""
+    # The second model that checked the findings' meaning; "none" when nothing checked them.
+    checker: str = "none"
+    checker_detail: str = ""
     claims: list[Claim] = Field(default_factory=list)
     sources: list[Source] = Field(default_factory=list)
     evidence: list[Evidence] = Field(default_factory=list)

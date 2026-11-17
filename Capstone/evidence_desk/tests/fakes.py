@@ -3,7 +3,8 @@
 ``FakeFilings`` serves the recorded NVIDIA filings under ``tests/fixtures/edgar``
 (and any small synthetic filing a test supplies) through the same
 :class:`~app.core.ports.FilingSource` interface the real EDGAR client has.
-``ScriptedAnalyst`` is an engine whose assessments a test writes by hand.
+``ScriptedAnalyst`` is an engine whose assessments a test writes by hand, and
+``ScriptedChecker`` a meaning checker whose judgements it writes.
 """
 
 from __future__ import annotations
@@ -20,7 +21,15 @@ from typing import Any
 from app.core.documents import FetchedFiling, FilingRef, Passage
 from app.core.metric_models import Metric
 from app.core.models import Claim, Company, Finding, ThesisRequest
-from app.core.ports import ClaimDraft, SourceError, SummaryDraft, UnknownTicker
+from app.core.ports import (
+    CheckItem,
+    ClaimDraft,
+    Judgement,
+    SourceError,
+    SummaryDraft,
+    SupportVerdict,
+    UnknownTicker,
+)
 from app.engines.extractive import ExtractiveAnalyst
 from app.sources.edgar import archive_url, normalize_ticker
 from app.sources.http import FetchedPage, FetchError
@@ -212,7 +221,7 @@ class ScriptedAnalyst:
     "assess", "summarize") raise :class:`ScriptedFailure`; ``fail_claims``
     limits assessment failures to those claim texts. ``before_assess`` runs
     before every assessment (a test uses it to advance a clock). ``summary``
-    replaces the fixed summary text.
+    replaces the fixed summary text and ``next_steps`` the fixed next steps.
     """
 
     detail = "scripted test engine"
@@ -226,6 +235,7 @@ class ScriptedAnalyst:
         fail_claims: tuple[str, ...] = (),
         before_assess: Callable[[], None] | None = None,
         summary: str | None = None,
+        next_steps: list[str] | None = None,
     ) -> None:
         self.name = name
         self._assess = assess
@@ -233,6 +243,7 @@ class ScriptedAnalyst:
         self._fail_claims = fail_claims
         self._before_assess = before_assess
         self._summary = summary
+        self._next_steps = next_steps
         self._extractive = ExtractiveAnalyst()
         self.offered: dict[str, list[str]] = {}
         self.figures: dict[str, list[Metric]] = {}
@@ -272,8 +283,57 @@ class ScriptedAnalyst:
         self._maybe_fail("summarize")
         return SummaryDraft(
             summary=self._summary or f"Scripted summary of {len(findings)} finding(s).",
-            next_steps=["Read the filings."],
+            next_steps=list(self._next_steps or ["Read the filings."]),
         )
+
+
+Judge = Callable[[Claim, Sequence[CheckItem]], list[Judgement]]
+
+
+class ScriptedChecker:
+    """A meaning checker whose judgements the test writes.
+
+    ``judge`` maps a claim and its items to judgements; the default judges
+    every item supported. Every item it was shown is kept in ``seen``, by
+    claim text. ``fail_with`` makes every check raise that exception.
+    """
+
+    def __init__(
+        self,
+        judge: Judge | None = None,
+        *,
+        name: str = "scripted-check",
+        model: str = "check-model",
+        fail_with: Exception | None = None,
+    ) -> None:
+        self.name = name
+        self.model = model
+        self.detail = "scripted test checker"
+        self._judge = judge
+        self._fail_with = fail_with
+        self.seen: dict[str, list[CheckItem]] = {}
+
+    def same_model_as(self, engine_model: str | None) -> bool:
+        """True when ``engine_model`` is this checker's ``model``."""
+        return engine_model == self.model
+
+    def check(
+        self,
+        request: ThesisRequest,
+        company: Company,
+        claim: Claim,
+        findings: Sequence[CheckItem],
+    ) -> list[Judgement]:
+        """The scripted judgements, or the configured failure."""
+        self.seen[claim.text] = list(findings)
+        if self._fail_with is not None:
+            raise self._fail_with
+        if self._judge is not None:
+            return self._judge(claim, findings)
+        return [
+            Judgement(index, SupportVerdict.supported, "The excerpt says so.")
+            for index in range(len(findings))
+        ]
 
 
 class ManualClock:

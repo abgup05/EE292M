@@ -1,6 +1,6 @@
 # Architecture
 
-Evidence Desk (version 0.4.0) tests an equity analyst's thesis claims against the company's own SEC filings and shows,
+Evidence Desk (version 0.5.0) tests an equity analyst's thesis claims against the company's own SEC filings and shows,
 per claim, the verbatim passages and figures that support or challenge it. A reviewer can accept or reject each
 finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the brief; `docs/reviews/` the review.
 
@@ -23,13 +23,15 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/core/facts.py       FactBook: values from XBRL company facts, placed by their dates
     src/app/core/metrics.py     computes the metrics report from facts; metric_models.py is its pure data
     src/app/core/numcheck.py    the numeric check: each number a statement writes is in what it cites
+    src/app/core/meaning.py     the meaning check's pure half: what the checker is shown, and applying its judgements
     src/app/sources/edgar.py    SEC EDGAR adapter: ticker, filing selection, rate-limited fetch
     src/app/sources/filing.py   splits a 10-K/10-Q into Part and Item sections
     src/app/sources/http.py     bounded fetch of a public page, every redirect hop revalidated
     src/app/sources/urls.py, web.py, xbrl.py   public-URL validation; page text; the company-facts URL and body
     src/app/retrieval/chunk.py, bm25.py   sections into passages (exact substrings); Okapi BM25 scoring
-    src/app/retrieval/search.py ranks a run's passages for one claim (top 8, at most 5 per source)
+    src/app/retrieval/search.py ranks a run's passages for one claim (top 8; at most 5 per source when there are several)
     src/app/engines/claude.py   Claude engine: builds each request and parses each answer
+    src/app/engines/checker.py  the meaning checker: a second model judges each verified finding (NoChecker: none)
     src/app/engines/transport.py, cassette.py   the Transport port and its API adapter; answers recorded once, replayed by key
     src/app/engines/extractive.py, fallback.py   deterministic engine, no stance; a primary engine falling back to it
     src/app/services/ingest.py  select, read (cache or EDGAR), parse, deduplicate, record the sources
@@ -82,18 +84,34 @@ Two SQLite files under the data directory (`EVIDENCE_DESK_DATA_DIR`; `data/`, gi
    is read once. With no readable source the run ends `failed` with no brief.
 3. **Numbers** (`services/numbers`). The company's XBRL facts become a metrics report on the run; the newest quarters
    and years of a few key metrics are the figures offered to the engine. A failure is a coverage limit, never the end
-   of the run. The facts are never chunked or quoted.
+   of the run, but the run is then partial. The facts are never chunked or quoted.
 4. **Plan.** The engine writes up to four queries per claim.
 5. **Retrieve.** All passages of the run go into one BM25 index; each claim is searched with its own text and queries.
 6. **Assess.** One engine call per claim returns findings with stances, quotes and cited figure ids. Up to
    `MAX_CONCURRENT_ASSESSMENTS` (3) calls run at once; claims start and pass the gate in claim order, so the record
    (ids included) is the one a sequential run gives. A failed call falls back for that claim only.
-7. **Verify.** `gate.gate_claim` locates each quote in the stored text of its source (`FilingCache.source_texts`) and
-   keeps the stored span; a cited figure must have been offered; `core/numcheck` requires every number a statement
-   writes to appear in its excerpts or figures. A finding with no surviving quote or figure, or an unmatched number,
-   is withheld and counted; a model summary with an unmatched number is replaced by the template.
-8. **Decide.** `policy.claim_verdict` sets each verdict from verified findings only; `policy.run_status` sets
-   complete, partial (with each reason and its denominator) or failed. The 300-second limit is checked before every
+7. **Verify.** `gate.gate_claim` locates each quote inside a passage offered for its claim (the one it names, else
+   another offered passage of the same source, whose locator the excerpt then carries) in the stored text
+   (`FilingCache.source_texts`) and keeps the stored span; a quote found only elsewhere in the source, or one that
+   includes a heading line the parser wrote, is rejected. A cited figure must have been offered; `core/numcheck`
+   requires every number a statement writes to appear in its excerpts or figures. A finding with no surviving quote
+   or figure, or an unmatched number, is withheld and counted. A verified finding's reason, a claim's commentary,
+   the unknowns and the next steps are checked the same way: a reason or commentary with an unmatched number is
+   replaced by a note, an unknown or next step is dropped; a model summary with an unmatched number is replaced by
+   the template. Every quote is counted as found or rejected (`quotes_found + quotes_rejected == quotes_offered`).
+8. **Check meaning** (when a `Checker` is configured). In the worker that assessed the claim, right after its gate,
+   one request per claim shows a second model (`ANTHROPIC_CHECK_MODEL`, default `claude-haiku-5-5`) each verified
+   finding's statement, stance, excerpts and cited figures, never the engine's rationale or confidence
+   (`core/meaning.check_items`). "supported" marks the finding passed, "partly" keeps it marked partly, and
+   "not_supported" withholds it with the checker's reason and drops its evidence. A checker failure leaves that
+   claim's findings unchecked, adds one error line and a coverage limit, and never fails the run; neither "partly"
+   nor a failed check makes a run partial. A checker on the engine's own model is recorded as a coverage limit.
+9. **Decide.** `policy.claim_verdict` sets each verdict from verified findings only; a finding that rests on
+   reported figures alone counts as its stance only when the meaning check passed it, and as context otherwise
+   (`Finding.counted_as`, `count_note`). `policy.run_status` sets complete, partial (with each reason and its
+   denominator) or failed; a filing mostly outside numbered Items (`Source.item_coverage` below
+   `MIN_ITEM_COVERAGE`) or unreadable XBRL facts make a run partial. `policy.provenance_note` writes the run's
+   provenance from the sources it read (`Brief.provenance_note`). The 300-second limit is checked before every
    source and each round of claims; a claim not started in time is reported as not assessed.
 
 Saves: the run is saved at each stage, after each source and after each claim. A save while the status is `running`
@@ -109,12 +127,13 @@ dropped, filings new or gone.
 
 ## Patterns and interfaces
 
-- **Ports and adapters.** `core/ports.py` declares `FilingSource`, `PageFetcher` and `Analyst`. `sources/edgar.py`
+- **Ports and adapters.** `core/ports.py` declares `FilingSource`, `PageFetcher`, `Analyst` and `Checker`. `sources/edgar.py`
   adapts SEC EDGAR to `FilingSource`; `sources/http.py` is the `PageFetcher`. The pipeline imports only the ports.
 - **Transport as a port, two adapters.** `engines/transport.py` declares `Transport` (a `ModelRequest` in, the answer
   out). `AnthropicTransport` calls the API; `engines/cassette.CassetteTransport` answers from recorded responses keyed
   by the SHA-256 of the request; a changed prompt finds no answer and is saved to `pending/` (`docs/cassettes.md`).
-  `ClaudeAnalyst` builds the same prompts either way.
+  `ClaudeAnalyst` builds the same prompts either way. The meaning checker shares the engine's cassette and run through
+  `CassetteTransport.sibling`, so a pending check blocks the summary; the cassette starts a new run only at a plan.
 - **Strategy.** The engines (`engines/claude.py`, `engines/extractive.py`) are interchangeable behind `Analyst`.
   Retrieval variants are a separate registry, `VARIANTS` in `evaluation/retrieval_eval.py`.
 - **Decorator.** `engines/fallback.py` wraps an engine in the same `Analyst` interface and uses the extractive engine
@@ -125,7 +144,8 @@ dropped, filings new or gone.
 - **Gate and pure rules.** `core/gate.py` (`gate_claim`) is the only path from an engine's draft to evidence a reader
   sees; `core/review.py` and `core/compare.py` also take records and return records. None touches the network, a store
   or a clock; `services/theses.py` reads the store and calls them.
-- **Composition root.** `wiring.py` (`analyst_from_env`, `filings_from_env`, `store_from_env`, `cache_from_env`) is
+- **Composition root.** `wiring.py` (`analyst_from_env`, `checker_from_env`, `filings_from_env`, `store_from_env`,
+  `cache_from_env`) is
   the only module that reads the environment; nothing opens a database at import time. `create_app` builds one
   `FilingCache` shared by all runs.
 - **Two entry points, one use case.** `api.py` (`create_app`, run by uvicorn `--factory`) and `cli.py` (`main`) both
@@ -147,7 +167,8 @@ finding, 409 while running, 422 withheld finding); `GET .../export.md?reviewed=t
 - **A new metric**: its computation in `core/metrics.py` (writing the formula out); if the engine should see it, its
   key in `services/numbers.FIGURE_KEYS`. The gate and numeric check apply unchanged; re-baseline the tripwire.
 - **A prompt or schema change** (`engines/claude.py`): the tripwire's `prompts` stage moves and the replay finds no
-  answers. Re-record the cassette (`docs/cassettes.md`), review the answers, `make golden-baseline`, read the diff of
+  answers. The checker's prompt (`engines/checker.py`) is not in the `prompts` stage: a change to it shows only as
+  pending `check` requests in the replay. Re-record the cassette (`docs/cassettes.md`), review the answers, `make golden-baseline`, read the diff of
   `tests/golden/`, commit together.
 - **A new engine**: a class with `name`, `plan`, `assess`, `summarize` in `engines/`, chosen in `wiring.py`. The gate
   and the policy apply to it unchanged.

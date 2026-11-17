@@ -33,6 +33,9 @@ MIN_EXCERPT_CHARS = 20
 MAX_EXCERPT_CHARS = 600
 CONTEXT_CHARS = 240
 
+# The meaning check: a second model's one-sentence reason per finding, at most this long.
+MAX_SUPPORT_REASON_CHARS = 300
+
 # Reported figures (XBRL company facts)
 FIGURE_QUARTERS = 3
 FIGURE_YEARS = 2

@@ -52,6 +52,8 @@ CONTRACT: dict[str, int | float] = {
     # Added in version 4: a reviewer's note on a decision, and a saved thesis's name
     "MAX_NOTE_CHARS": 500,
     "MAX_THESIS_NAME_CHARS": 80,
+    # Added in version 5: the meaning check's one-sentence reason per finding
+    "MAX_SUPPORT_REASON_CHARS": 300,
 }
 
 

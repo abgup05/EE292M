@@ -68,8 +68,9 @@ def one(text: str) -> Quantity:
         ("diluted EPS of $2.46", 2.46, "usd", 2),
         ("trades at 30x earnings", 30, "multiple", 0),
         ("grew 3 times faster", 3, "multiple", 0),
-        ("shipped 1,250 systems", 1250, "plain", 0),
-        ("3.2 million units", 3_200_000, "plain", 1),
+        ("shipped 1,250 systems", 1250, "count", 0),  # a count of things, never an amount
+        ("3.2 million units", 3_200_000, "count", 1),
+        ("a total of 1,250 and then more", 1250, "plain", 0),  # a connective is not a thing
         ("a net loss of (1,234)", -1234, "plain", 0),
         ("a net loss of $(1,234)", -1234, "usd", 0),
         ("a net loss of ($1,234)", -1234, "usd", 0),
@@ -399,7 +400,97 @@ def test_2000_employees_is_checked_against_the_quote() -> None:
         "from 2023 through 2025",
         "on 2026-07-26",
         "as of July 26, 2026",
+        "at fiscal year-end 2026",
+        "at year end 2025",
+        "inventory at quarter-end 2026",
     ],
 )
 def test_a_year_in_a_date_like_context_is_exempt(text: str) -> None:
     assert quantities(text) == []
+
+
+def test_a_year_after_year_end_is_not_a_quantity_in_a_recorded_statement() -> None:
+    """A stand-in's true statement, withheld on 17 November 2026 because 2026 was read as a number.
+
+    From the first replay of ``demo/cassettes/nvda-example-tagged``: the three shares were
+    each found in a cited figure and the finding was still withheld for "2026".
+    """
+    statement = (
+        "Accounts receivable are also concentrated: at fiscal year-end 2026, Customer One was "
+        "25%, Customer Two 18% and Customer Three 13% of receivables."
+    )
+    assert [(q.value, q.unit) for q in quantities(statement)] == [
+        (25.0, "percent"),
+        (18.0, "percent"),
+        (13.0, "percent"),
+    ]
+
+
+# The third referee's demonstrations (docs/reviews/referee-3-version-9.md, finding 2) ----------
+
+
+@pytest.mark.parametrize(
+    "statement",
+    [
+        "Revenue grew 3% while gross margin fell.",
+        "Gross margin fell while revenue grew 3%.",
+        "A 3% increase in revenue came as costs fell.",
+    ],
+)
+def test_a_word_of_decline_about_something_else_does_not_let_growth_match_a_fall(
+    statement: str,
+) -> None:
+    """2c: a word of decline anywhere in the sentence used to let "grew 3%" match "(3)%"."""
+    check = check_numbers(statement, ["Revenue change (3)%"], [])
+    assert check.status == "failed" and check.unmatched == ["3%"]
+
+
+@pytest.mark.parametrize(
+    "statement",
+    [
+        "Revenue was down 3% while costs rose.",
+        "A 3% decline in revenue came as costs rose.",
+        "Revenue fell 3% in the first quarter and 5% in the second.",
+        "Revenue was 3% lower than a year ago, although services grew.",
+    ],
+)
+def test_the_direction_word_nearest_a_percentage_decides(statement: str) -> None:
+    """The nearest direction word before the number governs it; with none before, the next."""
+    sources = ["Revenue change (3)%", "Revenue change (5)%"]
+    assert check_numbers(statement, sources, []).status == "passed"
+
+
+@pytest.mark.parametrize(
+    ("statement", "quote"),
+    [
+        ("The company earned $46 million of revenue.", "It served 46 customers in the period."),
+        ("Revenue was $130 million.", "The company sells in 130 countries."),
+        ("Costs were $2,000 million.", "It has 2,000 employees in the region."),
+        ("Revenue was $46 million.", "It reached 46 million developers."),
+    ],
+)
+def test_a_count_of_things_in_a_quote_does_not_match_a_dollar_amount(
+    statement: str, quote: str
+) -> None:
+    """2b: "46 customers" times a million used to match "$46 million"."""
+    assert check_numbers(statement, [quote], []).status == "failed"
+
+
+@pytest.mark.parametrize(
+    ("statement", "quote"),
+    [
+        ("It has 2,000 employees in the region.", "approximately 2,000 employees"),
+        ("It served 46 customers.", "sales to 46 customers"),
+        ("It reached 46 million developers.", "more than 46 million developers"),
+        ("The count was 2,000.", "approximately 2,000 employees"),
+        # A table row and a number followed by a function word are still amounts.
+        ("Revenue was $46.7 billion.", "Revenue 46,743 39,331"),
+        ("Revenue was $46.7 billion.", "Revenue of 46,743 and 39,331 in the two years"),
+        ("Revenue was $46.7 billion.", "Revenue was 46,743 in the year (in millions)"),
+    ],
+)
+def test_a_count_still_matches_a_count_and_a_table_number_still_matches_an_amount(
+    statement: str, quote: str
+) -> None:
+    check = check_numbers(statement, [quote], [])
+    assert check.status == "passed", check.details

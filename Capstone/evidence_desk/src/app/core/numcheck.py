@@ -12,26 +12,35 @@ The rules:
 - Units must agree: a percent matches a percent (percentage points count as
   percent); N basis points match N/100 percent; USD matches USD; a multiple
   ("30x", "3 times") matches a multiple. A plain number and a USD amount may
-  match each other, because filing tables often omit the dollar sign.
+  match each other, because filing tables often omit the dollar sign. A count
+  of things ("46 customers", "130 countries": a number with no currency sign
+  directly followed by a lower-case word that is not a connective) matches a
+  count or a plain number, never a USD amount.
 - The tolerance is half a unit in the last digit the *statement* wrote: "56%"
   matches 55.6% and 56.4% but not 55.4%; "$46.7 billion" matches $46,743 million.
 - A plain or USD number in a quote with no scale word (a table cell such as
-  "Revenue $ 46,743") also matches at 1e3, 1e6 or 1e9 times its value.
+  "Revenue $ 46,743") also matches at 1e3, 1e6 or 1e9 times its value. A count
+  of things does not.
 - Direction: an unsigned statement number matches a positive source; it
   matches a *negative* source ("(3)%", "-3%") only when the statement's
-  sentence that holds it has a word that allows it ("revenue declined 3%"
-  against "(3)%" passes; "revenue grew 3%" against it fails). For a percentage
-  that word must be one of decline (:data:`DECLINE_WORDS`); for an amount a word
-  for an outflow (:data:`OUTFLOW_WORDS`) will also do, since filings print
-  expenses and payments in parentheses. A negative statement number needs a
-  negative source. The reverse is not checked: "fell 56%" matches "up 56%".
+  sentence that holds it allows it ("revenue declined 3%" against "(3)%"
+  passes; "revenue grew 3%" against it fails). For a percentage the direction
+  word that governs the number must be one of decline: the nearest word of
+  :data:`DECLINE_WORDS` or :data:`GROWTH_WORDS` before the number in its
+  sentence, or with none before it the nearest after it ("revenue grew 3%
+  while gross margin fell" fails; "a 3% decline" passes). For an amount a word
+  of decline or for an outflow (:data:`OUTFLOW_WORDS`) anywhere in the sentence
+  will do, since filings print expenses and payments in parentheses and write
+  "purchases rose to". A negative statement number needs a negative source.
+  The reverse is not checked: "fell 56%" matches "up 56%".
 - Not quantities:
 
   - a four-digit number from 1900 to 2100 in a date-like context only
     (:func:`_is_year`): after "fiscal", "FY", "in", "since", "during", "by",
     "for", "of", "ended", "ending", "due" and similar, after a month or a quarter
-    label, or paired with another year ("2024 and 2025", "2023 to 2025").
-    "2000 employees" and "2025 stores" are checked;
+    label, after "year-end", "year end", "quarter-end" and the like, or paired
+    with another year ("2024 and 2025", "2023 to 2025"). "2000 employees" and
+    "2025 stores" are checked;
   - a reference: a *capitalised* word such as "Note", "Item", "Part",
     "Section", "Rule" or "Form" directly followed by its own number or Roman
     numeral ("Note 5", "Item 1A", "Part II", "Rule 10b5-1"), never a
@@ -59,7 +68,7 @@ from typing import Literal
 
 from app.core.metric_models import Metric
 
-Unit = Literal["percent", "bps", "usd", "multiple", "plain"]
+Unit = Literal["percent", "bps", "usd", "multiple", "plain", "count"]
 Status = Literal["none", "passed", "failed"]
 
 SCALES: dict[str, float] = {
@@ -122,6 +131,41 @@ OUTFLOW_WORDS: tuple[str, ...] = (
     "capital expenditures",
 )
 NEGATIVE_WORDS: tuple[str, ...] = DECLINE_WORDS + OUTFLOW_WORDS
+# Words that say a figure rose. They take a percentage away from a word of decline that is
+# about something else: in "revenue grew 3% while gross margin fell" the 3% is growth.
+GROWTH_WORDS: tuple[str, ...] = (
+    "grew",
+    "grow",
+    "grows",
+    "growing",
+    "growth",
+    "increase",
+    "increased",
+    "increases",
+    "increasing",
+    "rose",
+    "rise",
+    "rises",
+    "rising",
+    "up",
+    "higher",
+    "gain",
+    "gained",
+    "gains",
+    "expanded",
+    "expansion",
+    "improved",
+    "improvement",
+    "widened",
+)
+# A lower-case word directly after a number that does not make it a count of that word.
+NOT_COUNTED: frozenset[str] = frozenset(
+    {
+        "a", "an", "and", "are", "as", "at", "but", "by", "compared", "due", "during", "each",
+        "for", "from", "in", "is", "of", "on", "or", "per", "respectively", "than", "that",
+        "the", "through", "to", "versus", "vs", "was", "were", "when", "which", "while", "with",
+    }
+)  # fmt: skip
 
 _MONTH = (
     r"(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|Aug(?:ust)?|"
@@ -150,7 +194,7 @@ _MASKS: tuple[re.Pattern[str], ...] = (
 _YEAR_BEFORE = re.compile(
     r"(?:\b(?:fiscal(?:\s+years?)?|calendar(?:\s+years?)?|years?|FY|CY|in|since|during|by|"
     r"for|of|ended|ending|from|through|until|between|before|after|due|maturing|expiring|"
-    r"quarter|half|"
+    r"quarter|half|(?:year|quarter|period|month)[-–\s]end|"
     rf"Q[1-4]|H[12]|{_MONTH}\.?,?)"
     r"|\b(?:19|20|21)\d\d\s*(?:and|to|through|or)|\b(?:19|20|21)\d\d\s*[-–])\s*'?$",
     re.IGNORECASE,
@@ -165,6 +209,8 @@ def _whole_words(words: tuple[str, ...]) -> re.Pattern[str]:
 
 _NEGATIVE = _whole_words(NEGATIVE_WORDS)
 _DECLINE = _whole_words(DECLINE_WORDS)
+_DIRECTION = _whole_words(DECLINE_WORDS + GROWTH_WORDS)
+_WORD_AFTER = re.compile(r"\s([a-z][a-z'’-]*)\b")
 _SENTENCE_BREAK = re.compile(r"[.!?;](?=\s)|\n")
 _NUMBER = re.compile(r"\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?|\.\d+")
 _CURRENCY_BEFORE = re.compile(r"(?:US\$|\$|\bUSD)\s?$")
@@ -317,6 +363,10 @@ def _read(text: str, match: re.Match[str]) -> Quantity | None:
         caps = _CAPS_WORD_BEFORE.search(text[max(0, begin - 24) : begin])
         if caps and caps.group(1) != "USD":
             return None  # RTX 5090: a product name
+    if unit == "plain" and not negative:
+        counted = _WORD_AFTER.match(text, position)
+        if counted and counted.group(1) not in NOT_COUNTED:
+            unit = "count"  # 46 customers, 4 million developers: a count of that word
     value = number * scale
     return Quantity(
         raw=text[start:position].strip(),
@@ -346,8 +396,8 @@ def quantities(text: str) -> list[Quantity]:
     return [quantity for quantity, _ in _placed_quantities(text)]
 
 
-def _sentence_at(text: str, position: int) -> str:
-    """The sentence of ``text`` that holds ``position``.
+def _sentence_at(text: str, position: int) -> tuple[str, int]:
+    """The sentence of ``text`` that holds ``position``, and where the sentence starts.
 
     A sentence ends at ".", "!", "?" or ";" followed by white space, or at a line
     break; a decimal point ("46.7") is never followed by white space, so it does
@@ -356,9 +406,9 @@ def _sentence_at(text: str, position: int) -> str:
     start = 0
     for found in _SENTENCE_BREAK.finditer(text):
         if found.end() > position:
-            return text[start : found.end()]
+            return text[start : found.end()], start
         start = found.end()
-    return text[start:]
+    return text[start:], start
 
 
 def says_negative(sentence: str) -> bool:
@@ -366,9 +416,23 @@ def says_negative(sentence: str) -> bool:
     return _NEGATIVE.search(sentence) is not None
 
 
-def says_decline(sentence: str) -> bool:
-    """True when ``sentence`` has a word of :data:`DECLINE_WORDS`."""
-    return _DECLINE.search(sentence) is not None
+def decline_governs(sentence: str, offset: int) -> bool:
+    """True when the direction word governing the number at ``offset`` is one of decline.
+
+    The governing word is the nearest word of :data:`DECLINE_WORDS` or
+    :data:`GROWTH_WORDS` that ends before ``offset``; when the sentence has none
+    before the number, the nearest that starts after it. No direction word at
+    all gives False.
+    """
+    before: re.Match[str] | None = None
+    after: re.Match[str] | None = None
+    for found in _DIRECTION.finditer(sentence):
+        if found.end() <= offset:
+            before = found
+        elif found.start() > offset and after is None:
+            after = found
+    governing = before or after
+    return governing is not None and _DECLINE.fullmatch(governing.group()) is not None
 
 
 # Matching
@@ -389,7 +453,8 @@ _COMPATIBLE: dict[Unit, frozenset[Unit]] = {
     "percent": frozenset({"percent", "bps"}),
     "bps": frozenset({"percent", "bps"}),
     "usd": frozenset({"usd", "plain"}),
-    "plain": frozenset({"usd", "plain"}),
+    "plain": frozenset({"usd", "plain", "count"}),
+    "count": frozenset({"count", "plain"}),
     "multiple": frozenset({"multiple"}),
 }
 
@@ -480,11 +545,12 @@ def check_numbers(
 
     Quotes are tried before cited figures, and the first match is reported. An
     unsigned quantity matches a negative source only when its own sentence of
-    ``statement`` has a word that allows it: for a percentage a word of decline
-    (:data:`DECLINE_WORDS`), for an amount a word of decline or of an outflow
-    (:data:`NEGATIVE_WORDS`). The reverse is not checked: "fell 56%" matches a source
-    that says "up 56%", because a filing writes most declines as positive numbers with
-    a word, and a sign cannot tell the two apart.
+    ``statement`` allows it: for a percentage the direction word that governs it
+    must be one of decline (:func:`decline_governs`), for an amount the sentence
+    must have a word of decline or of an outflow (:data:`NEGATIVE_WORDS`). The
+    reverse is not checked: "fell 56%" matches a source that says "up 56%",
+    because a filing writes most declines as positive numbers with a word, and a
+    sign cannot tell the two apart.
     """
     candidates = [*_excerpt_candidates(excerpts), *_metric_candidates(metrics)]
     details: list[str] = []
@@ -492,9 +558,11 @@ def check_numbers(
     placed = _placed_quantities(statement)
     wanted = [quantity for quantity, _ in placed]
     for quantity, position in placed:
-        sentence = _sentence_at(statement, position)
-        is_change = quantity.unit in ("percent", "bps")
-        negative_allowed = says_decline(sentence) if is_change else says_negative(sentence)
+        sentence, begins = _sentence_at(statement, position)
+        if quantity.unit in ("percent", "bps"):
+            negative_allowed = decline_governs(sentence, position - begins)
+        else:
+            negative_allowed = says_negative(sentence)
         hit = next((c for c in candidates if _matches(quantity, c, negative_allowed)), None)
         if hit is None:
             unmatched.append(quantity.raw)

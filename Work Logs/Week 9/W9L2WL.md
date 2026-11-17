@@ -90,14 +90,37 @@ After the first pass I asked the session to keep going: another round of buildin
 - **What the comparison cannot say.** The verdict on one claim differs between the recording with tagged figures and the one without, and no finding under that claim cites a tagged figure. With one answer per prompt, nothing here shows that the option changes a verdict.
 - **A year in a statement is still not checked** against its evidence. The referee is right that it is the commonest error in this kind of work. It is the next milestone, not built.
 
+**The second pass, to its end: a sixth review, and version 11**
+
+- **A sixth blind review**, of version 10, against the Week 7A checklist: speed, the system, what cannot be rebuilt, one boundary. The system had not been read that way since version 3. Nine findings and a suggestion, unedited in `Capstone/evidence_desk/docs/reviews/review-6-speed-system.md`; the decisions are in `Homework/Week 9/W9L2.md`.
+- **The restore check could not have failed on the case it exists for.** It compared runs by their ids and skipped, on both sides, any decision or thesis that no longer parsed, so a backup and a record that were equally unreadable agreed. It now compares every stored record as text and fails, by name, on one this version cannot read. On the real record: 35 runs, 18 decisions, 9 theses, all readable.
+- **Two writers, run for the first time.** The README draws the app and a one-off container writing one record at once. `make two-writers` does it on a scratch record: 2,000 writes from each side at the same time, no failed write, every row there.
+- **A live run, timed inside the run.** Five runs under each of four conditions. About two thirds of a run without a key is waiting for EDGAR; parsing is a quarter of a cold run. The earlier note had inferred this by subtracting an offline profile from one live run.
+- **Version 11: the year a finding names.** A check that reads the years in a verified finding's statement and looks for each in its quotes, its cited figures and the period of each filing it quotes. It reports and withholds nothing. Built by a Claude Opus session from a written contract; the page by another.
+- **Measured both ways before it is believed.** On the golden set's findings: 34 years named, 34 found. With a wrong year planted in each of the 25 findings that name one: 21 flagged moved one year back, 24 two back, 25 three back, 23 one forward.
+
+**What went wrong in this part**
+
+- **The first timing showed a fault nobody had looked for.** A run that asked for tagged figures made two more requests to EDGAR than one that did not, every time: the cache keeps a filing's parsed text and the tags are in the HTML. Version 10 had been tagged that way. Fixed in two steps, each from a failing test: what is read from the tags is kept, and a first run reads them from the HTML it already has.
+- **The period check let a date pass as a fiscal label.** "As of July 26, 2027" passed against the quarter ended 26 July 2026, because 2027 is that filing's fiscal year. No unit test had it; planting wrong years found it, four times in twenty-five.
+- **It misses the commonest slip most.** A year moved one back passes whenever the quote itself prints that year, and a sentence that compares a quarter with the year before always does. Four of twenty-five. That is the wrong column of a table, and this check cannot see it.
+- **No real period error has been seen.** The planted ones are mechanical: the same shift applied to every year. What a model's own slips look like is not known.
+- **The first version of the check read its own sentences back** to find which years had failed, in the brief and in the replay. Changed in review: the record carries them as data.
+- **A benchmark taken while other work ran did not agree with itself**: 32 ms saved on the parse and 52 ms on the whole run. Taken again on an idle machine, twice, the two agree at 30 and 34 ms. The disagreement was the only sign that the first was disturbed.
+- **A false alarm of the session's own.** A test seemed to show one filing fetched again on every run, as if the cache were broken. The fake source used in that test leaves that filing out on purpose. Twenty minutes went to finding that the fault was in the test.
+- **The build agent ran `python3` on the host twice**, against the rule that everything runs through make. Read-only, nothing installed; it said so in its report.
+- **The record is still on one disk.** The review's suggestion, a copy of the decisions on a branch of their own, was not carried out: where the record goes is mine to decide.
+
 **Status**
 
-Version 10. The gate from a fresh clone: 1,361 offline tests, the smoke test, 142 assertions on the rendered page, in 34 s. Ten tags; versions 2 to 10 were all built on 17 November. What that does not mean:
+Version 11. The gate from a fresh clone: 1,499 offline tests, the smoke test, 156 assertions on the rendered page, in 38 s. Eleven tags; versions 2 to 11 were all built on 17 November. What that does not mean:
 
 - No person has read the thirty golden cases, the code, a filing comparison, a list of changes under a claim, or a breakdown table against the printed one.
 - The model path has not run through the API since October: both keys were refused again on 17 November, and every model answer here is a recording made by a stand-in.
 - A finding can cite the tagged figures, on NVIDIA only and in recordings only. A finding that rests on figures alone is checked for its numbers and read by a second model, and by nothing else.
 - The reported figures are checked against published values for three companies, and were wrong for three of the other five until this afternoon.
+- The period check reports and withholds nothing, has seen no real error, and cannot see the wrong column of a table.
+- The record has no copy off this laptop; `make backup-status` now says so each time the app starts.
 - No colleague has reviewed this, and my reviews of colleagues are still owed.
 - The link that opens a filing at a passage has never been clicked in a real browser.
 
@@ -111,8 +134,9 @@ A proposed order, mine to change. The outline is `Capstone/evidence_desk/docs/dr
 4. Read five reworded pairs and five added paragraphs for a company other than NVIDIA, and say whether the classes hold.
 5. Read the five changed paragraphs listed under each claim of the example, and say for each whether it bears on the claim. Hold one breakdown table for a company other than NVIDIA against the table the filing prints, and one quarter of `make figures` for Costco, Amazon and JPMorgan against the filing.
 6. Ask a colleague to review it, and review theirs.
-7. Decide on the check of periods (milestone 11 in the plan): build it and measure its false alarms, or leave it as a stated limit.
-8. Write the draft from the outline, with the results table as it then stands.
+7. Copy the record off this laptop: at least `backups/decisions-<UTC>.jsonl`, and say where.
+8. Decide whether an unverified year should withhold a finding, after reading a second thesis with the check on. Milestone 12 (table rows that keep their column headings) is what the wrong-column case waits on.
+9. Write the draft from the outline, with the results table as it then stands.
 
 **Takeaway**
 
@@ -123,3 +147,5 @@ And 1,094 tests passed over a table whose columns did not count the same thing, 
 And in the second pass each new feature's first fault showed in its first real output, not in its tests: a duplicated paragraph, a dropped quarter. Running the thing on real filings and reading what comes out is a check of its own kind, and the cheapest one here.
 
 A fourth, from the end of the day. The oldest figures in the tool had been wrong for three companies of eight since version 3, under an answer key that covered the other three. An answer key says the checked values are right; it says nothing about the rows nobody keyed. Printing every company's figures side by side took one small command, and it had not been written because nothing was failing.
+
+And a fifth, about measuring. The period check passed every test written for it and every real finding it was shown. What told its strength and its one fault apart was making true statements wrong on purpose and counting. The same afternoon a restore check that had passed for seven versions turned out unable to fail, and a timing nobody had needed showed two requests too many. In all three the passing check was the less informative one.

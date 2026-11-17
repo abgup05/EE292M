@@ -87,6 +87,16 @@ def main() -> int:
         print(f"   {claim['id']} {claim['verdict']}: {claim['text']}")
     expect(run["status"] in ("complete", "partial"), "the run finishes with a brief")
     expect(coverage["sources_read"] == coverage["sources_requested"], "every filing was read")
+    print(
+        f"   {coverage['periods_checked']} year(s) named in its findings checked against their "
+        f"evidence, {coverage['periods_unverified']} not found"
+    )
+    expect(
+        coverage["periods_checked"] > 0
+        and coverage["periods_unverified"]
+        == sum(len(f["checks"]["periods_unverified"]) for f in run["findings"]),
+        "the period check ran on the findings, and its count is the years the findings list",
+    )
     expect(
         coverage["engine_fallbacks"] == 0,
         "the recorded answers match the live filings, so the run is judged (if this fails, the "

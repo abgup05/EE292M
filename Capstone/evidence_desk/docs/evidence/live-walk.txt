@@ -1,9 +1,9 @@
 # make live-walk
-# 2026-11-17T18:21:45Z, version 0.10.0, with recorded answers (demo/cassettes/nvda-example) and live SEC EDGAR
+# 2026-11-17T19:13:44Z, version 0.11.0, with recorded answers (demo/cassettes/nvda-example) and live SEC EDGAR
 
-engine: claude; version 0.10.0
+engine: claude; version 0.11.0
 ok: a run on the example thesis starts (202)
-   run run-003886688291: complete; 3 of 3 filings from live EDGAR; 18 of 18 findings verified; 0 engine fallback(s)
+   run run-26ecf8e677d6: complete; 3 of 3 filings from live EDGAR; 18 of 18 findings verified; 0 engine fallback(s)
    c1 supported: Data center revenue is still growing year over year.
    c2 supported: A small number of customers account for a large share of revenue.
    c3 mixed: Export controls on sales to China are restricting revenue.
@@ -11,6 +11,8 @@ ok: a run on the example thesis starts (202)
    c5 mixed: The company depends on a limited number of suppliers to manufacture its products.
 ok: the run finishes with a brief
 ok: every filing was read
+   10 year(s) named in its findings checked against their evidence, 0 not found
+ok: the period check ran on the findings, and its count is the years the findings list
 ok: the recorded answers match the live filings, so the run is judged (if this fails, the company has filed again and the recording has expired: record the cassette again, docs/cassettes.md)
 ok: what changed in the filings the run read is listed under its claims
    compared 10-K: 2026-01-25 against 2025-01-26

@@ -220,6 +220,23 @@ def test_saving_a_thesis_again_replaces_it(store: Store) -> None:
     assert len(store.list_theses()) == 1
 
 
+def test_raw_rows_give_every_column_of_every_row_by_key(store: Store) -> None:
+    """What a backup is compared by: every column, so an indexed column cannot drift unseen."""
+    store.save_run(_run("run-1", thesis_id="th-1"))
+    store.save_decision(_decision("f1"))
+    store.save_thesis(_thesis("th-1"))
+    [(key, run)] = store.raw_rows("runs").items()
+    assert key == "run-1"
+    assert list(run) == ["id", "started_at", "thesis_id", "record"]
+    assert run["thesis_id"] == "th-1" and run["started_at"] == NOON.isoformat()
+    [(key, decision)] = store.raw_rows("decisions").items()
+    assert key == "run-1/f1" and decision["decided_at"] == NOON.isoformat()
+    [(key, thesis)] = store.raw_rows("theses").items()
+    assert key == "th-1" and thesis["created_at"] == NOON.isoformat()
+    with pytest.raises(ValueError, match="no table"):
+        store.raw_rows("sqlite_master")
+
+
 def test_counts_cover_the_three_tables(store: Store) -> None:
     store.save_run(_run())
     store.save_decision(_decision("f1"))

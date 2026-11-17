@@ -1,4 +1,4 @@
-.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench eval eval-validate backup restore-check up-recorded live-walk changes
+.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench eval eval-validate backup restore-check up-recorded live-walk changes sample-run-changes
 
 export COMPOSE_PROJECT_NAME := ee292m-evidence-desk
 export LOCAL_UID := $(shell id -u)
@@ -86,17 +86,25 @@ demo: build
 	$(COMPOSE) up --force-recreate -d app
 	@trap '$(COMPOSE) down' EXIT; $(COMPOSE) exec -T app python -m app.demo
 
+# Headless Chromium exits 0 when its GPU process dies on a very tall capture and writes no file,
+# so no capture is taller than 3600 px and the target fails unless every file was written anew.
+SHOTS := first-screen sample-run sample-run-phone sample-synthetic sample-changes sample-changes-phone
 screenshots:
-	@mkdir -p docs/screenshots
+	@mkdir -p docs/screenshots results
+	@touch results/.screenshots-started
 	$(COMPOSE) up --force-recreate -d app
 	@trap '$(COMPOSE) down' EXIT; \
 	$(COMPOSE) exec -T app python uitests/wait_ready.py && \
 	$(COMPOSE) run --rm shots --window-size=1280,720 --screenshot=/work/docs/screenshots/first-screen.png "http://app:8000/" && \
-	$(COMPOSE) run --rm shots --window-size=1280,4500 --screenshot=/work/docs/screenshots/sample-run.png "http://app:8000/?sample" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-run.png "http://app:8000/?sample" && \
 	$(COMPOSE) run --rm shots --window-size=390,1400 --screenshot=/work/docs/screenshots/sample-run-phone.png "http://app:8000/?sample" && \
-	$(COMPOSE) run --rm shots --window-size=1280,6900 --screenshot=/work/docs/screenshots/sample-synthetic.png "http://app:8000/?sample=synthetic" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-synthetic.png "http://app:8000/?sample=synthetic" && \
 	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-changes.png "http://app:8000/?sample=changes" && \
 	$(COMPOSE) run --rm shots --window-size=390,2600 --screenshot=/work/docs/screenshots/sample-changes-phone.png "http://app:8000/?sample=changes"
+	@for name in $(SHOTS); do \
+		test docs/screenshots/$$name.png -nt results/.screenshots-started \
+		|| { echo "screenshots: docs/screenshots/$$name.png was not written"; exit 1; }; \
+	done
 
 fixtures:
 	$(RUN) python -m app.record_fixtures $(if $(filter 1,$(REFRESH)),--refresh,)
@@ -127,6 +135,9 @@ fixtures-facts:
 
 changes:
 	$(RUN) python -m app.changes $(ARGS)
+
+sample-run-changes:
+	$(RUN) python -m tests.sample_run_changes $(ARGS)
 
 probe:
 	$(RUN) python -m app.probe $(if $(filter 1,$(OUTLINE)),--outline,) $(or $(TICKERS),NVDA)

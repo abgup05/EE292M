@@ -411,6 +411,42 @@ def test_an_index_without_a_list_of_older_pages_is_read_as_having_none() -> None
         client.filings_of_form(NVDA, "10-K", 2)
 
 
+# The latest filing of a form: one is enough (a company's first annual report has no earlier one).
+
+
+def test_the_latest_filing_of_a_form_is_the_newest_and_amendments_are_skipped() -> None:
+    ref = index_client(ROWS).latest_of_form(NVDA, "10-K")
+    assert (ref.form, ref.filed_date) == ("10-K", "2026-02-25")
+    assert index_client(ROWS).latest_of_form(NVDA, "10-Q").filed_date == "2026-11-01"
+
+
+def test_one_filing_of_the_form_is_enough_for_the_latest_and_no_older_page_is_read() -> None:
+    seen: list[str] = []
+    files = [page_entry(1, "2024-01-01", "2025-01-31")]
+    ref = paged_client(BUSY, files, {}, seen).latest_of_form(NVDA, "10-K")
+    assert ref.filed_date == "2026-02-25" and seen == [MAIN_INDEX]
+
+
+def test_the_latest_filing_is_looked_for_in_older_pages_when_the_recent_index_has_none() -> None:
+    seen: list[str] = []
+    recent = [("424B2", "2026-11-10"), ("8-K", "2026-08-20")]
+    files = [page_entry(1, "2025-06-01", "2025-11-30"), page_entry(2, "2024-12-01", "2025-05-31")]
+    pages = {
+        1: older_page(1, [("424B2", "2025-11-30")]),
+        2: older_page(2, [("10-K", "2025-02-26"), ("10-K", "2024-02-21")]),
+    }
+    ref = paged_client(recent, files, pages, seen).latest_of_form(NVDA, "10-K")
+    assert ref.filed_date == "2025-02-26"
+    assert seen == [MAIN_INDEX, page_name(1), page_name(2)]
+
+
+def test_no_filing_of_the_form_anywhere_is_a_source_error_that_says_so() -> None:
+    client = index_client([("10-Q", "2026-08-26"), ("8-K", "2026-03-01")])
+    message = r"NVIDIA CORP has no 10-K filing in EDGAR's recent index"
+    with pytest.raises(SourceError, match=message):
+        client.latest_of_form(NVDA, "10-K")
+
+
 def test_filings_of_form_needs_a_limit_of_at_least_two() -> None:
     with pytest.raises(ValueError, match="at least 2"):
         index_client(ROWS).filings_of_form(NVDA, "10-K", 1)

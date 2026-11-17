@@ -167,29 +167,52 @@ class EdgarClient:
         """
         if limit < 2:
             raise ValueError("limit must be at least 2")
+        rows, where = self._rows_of_form(company, form, needed=2)
+        if len(rows) < 2:
+            raise SourceError(
+                f"{company.name} has {len(rows)} {form} filing(s) in {where}; "
+                "two are needed to compare"
+            )
+        return [self._ref(company.cik, row) for row in rows[:limit]]
+
+    def latest_of_form(self, company: Company, form: str) -> FilingRef:
+        """The newest filing of exactly ``form`` (amendments skipped).
+
+        One is enough: a company's first annual report has no earlier one. The older
+        pages of the index are read only when the recent index has none of the form.
+        None after that is a :class:`SourceError` that says how far the search went.
+        """
+        rows, where = self._rows_of_form(company, form, needed=1)
+        if not rows:
+            raise SourceError(f"{company.name} has no {form} filing in {where}")
+        return self._ref(company.cik, rows[0])
+
+    def _rows_of_form(
+        self, company: Company, form: str, needed: int
+    ) -> tuple[list[dict[str, str]], str]:
+        """Index rows of ``form``, newest first, and a phrase saying where they were sought.
+
+        The recent index first; while it yields fewer than ``needed``, the older pages,
+        newest first, at most :data:`MAX_OLDER_INDEX_PAGES`.
+        """
         what = f"the filing index of {company.name}"
         payload = self._index_payload(company)
         recent = self._rows(payload["filings"]["recent"], what)
         rows = [row for row in recent if row["form"] == form]
         where = "EDGAR's recent index"
-        if len(rows) < 2:
+        if len(rows) < needed:
             older = self._older_pages(payload, company, what)
             read = 0
             for name in older[:MAX_OLDER_INDEX_PAGES]:
                 page = self._get_json(SUBMISSIONS_PAGE_URL.format(name=name), what)
                 rows += [row for row in self._rows(page, what) if row["form"] == form]
                 read += 1
-                if len(rows) >= 2:
+                if len(rows) >= needed:
                     break
             if read:
                 where += f" and the {read} newest of its {len(older)} older index pages"
-        if len(rows) < 2:
-            raise SourceError(
-                f"{company.name} has {len(rows)} {form} filing(s) in {where}; "
-                "two are needed to compare"
-            )
         rows.sort(key=lambda row: row["filingDate"], reverse=True)
-        return [self._ref(company.cik, row) for row in rows[:limit]]
+        return rows, where
 
     def fetch(self, ref: FilingRef) -> FetchedFiling:
         """Retrieve a filing's primary document, decoded as UTF-8."""

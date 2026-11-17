@@ -85,6 +85,8 @@ assert {"earlier", "later", "items", "totals"} <= set(recorded_changes["changes"
 # The filing comparison is mounted; another form is refused before any filing is asked for.
 status, body, _ = request("/api/companies/NVDA/changes?form=8-K")
 assert status == 422 and [p["field"] for p in json.loads(body)["details"]] == ["form"]
+status, body, _ = request("/api/runs/run-does-not-exist/changes")
+assert status == 404 and json.loads(body) == {"detail": "Run not found"}
 
 valid = {"ticker": "NVDA", "decision": DECISION, "claims": [CLAIM]}
 assert refused_fields(valid | {"ticker": "nv da$"}) == ["ticker"]

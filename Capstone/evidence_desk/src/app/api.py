@@ -377,9 +377,7 @@ def create_app(
         return changes_of(load(run_id))
 
     @app.get("/api/runs/{run_id}/export.md")
-    def export_run(
-        run_id: str, reviewed: bool = False, changes: bool = False
-    ) -> PlainTextResponse:
+    def export_run(run_id: str, reviewed: bool = False, changes: bool = False) -> PlainTextResponse:
         """The run as a Markdown brief.
 
         ``reviewed=true`` adds the reviewer's decisions. ``changes=true`` adds the reading

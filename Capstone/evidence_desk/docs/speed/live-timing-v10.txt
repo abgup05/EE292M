@@ -1,0 +1,67 @@
+Live run of the example thesis without a key, version 0.10.0, 2026-11-17T18:38:03Z
+Filings and company facts from SEC EDGAR; the deterministic engine; one process.
+Each stage is timed inside the run. EDGAR requests include the client's rate-limit waits.
+
+cold cache: 5 runs, whole run median 1103 ms (range 1022 to   1173 ms); status partial, 3 sources read, 0 tagged figures offered
+  stage                         median  share  calls   range
+  EDGAR requests              603.3 ms  54.7%      6      532 to    666 ms
+  parse filings               357.1 ms  32.4%      3      353 to    371 ms
+  index (BM25)                 21.7 ms   2.0%      1       22 to     23 ms
+  save_run                     15.0 ms   1.4%     24       14 to     17 ms
+  filing cache                 13.7 ms   1.2%     10       12 to     15 ms
+  figures: build               13.6 ms   1.2%      3       13 to     17 ms
+  chunk                         3.0 ms   0.3%      3        3 to      3 ms
+  retrieve                      2.5 ms   0.2%      5        2 to      3 ms
+  gate_claim                    2.2 ms   0.2%      5        2 to      2 ms
+  assess                        2.1 ms   0.2%      5        2 to      2 ms
+  plan                          0.0 ms   0.0%      1        0 to      0 ms
+  summary                       0.0 ms   0.0%      1        0 to      0 ms
+  unaccounted                  68.9 ms   6.2%
+
+warm cache: 5 runs, whole run median 482 ms (range 460 to    487 ms); status partial, 3 sources read, 0 tagged figures offered
+  stage                         median  share  calls   range
+  EDGAR requests              325.2 ms  67.5%      3      317 to    331 ms
+  index (BM25)                 23.0 ms   4.8%      1       22 to     24 ms
+  figures: build               15.9 ms   3.3%      3       14 to     19 ms
+  save_run                     15.3 ms   3.2%     24       14 to     18 ms
+  chunk                         3.3 ms   0.7%      3        3 to      4 ms
+  retrieve                      2.5 ms   0.5%      5        3 to      3 ms
+  gate_claim                    2.3 ms   0.5%      5        2 to      2 ms
+  assess                        2.1 ms   0.4%      5        2 to      2 ms
+  filing cache                  1.9 ms   0.4%      7        1 to      2 ms
+  plan                          0.0 ms   0.0%      1        0 to      0 ms
+  summary                       0.0 ms   0.0%      1        0 to      0 ms
+  unaccounted                  90.3 ms  18.7%
+
+cold cache, tagged figures: 5 runs, whole run median 1545 ms (range 1356 to   1832 ms); status partial, 3 sources read, 40 tagged figures offered
+  stage                         median  share  calls   range
+  EDGAR requests              992.2 ms  64.2%      8      817 to   1255 ms
+  parse filings               353.3 ms  22.9%      3      337 to    362 ms
+  tagged figures: read         53.8 ms   3.5%      6       52 to     57 ms
+  index (BM25)                 28.1 ms   1.8%      1       27 to     29 ms
+  save_run                     20.0 ms   1.3%     24       18 to     21 ms
+  figures: build               16.2 ms   1.1%      3       13 to     17 ms
+  filing cache                 13.7 ms   0.9%     10       10 to     15 ms
+  chunk                         4.4 ms   0.3%      3        4 to      5 ms
+  retrieve                      2.8 ms   0.2%      5        3 to      3 ms
+  gate_claim                    2.5 ms   0.2%      5        2 to      3 ms
+  assess                        2.4 ms   0.2%      5        2 to      2 ms
+  plan                          0.0 ms   0.0%      1        0 to      0 ms
+  summary                       0.0 ms   0.0%      1        0 to      0 ms
+  unaccounted                  55.7 ms   3.6%
+
+warm cache, tagged figures: 5 runs, whole run median 788 ms (range 772 to    898 ms); status partial, 3 sources read, 40 tagged figures offered
+  stage                         median  share  calls   range
+  EDGAR requests              569.0 ms  72.3%      5      556 to    691 ms
+  tagged figures: read         53.8 ms   6.8%      6       41 to     58 ms
+  index (BM25)                 27.4 ms   3.5%      1       22 to     28 ms
+  save_run                     17.9 ms   2.3%     24       16 to     19 ms
+  figures: build               15.2 ms   1.9%      3       15 to     19 ms
+  chunk                         4.2 ms   0.5%      3        3 to      4 ms
+  retrieve                      2.8 ms   0.4%      5        3 to      3 ms
+  gate_claim                    2.5 ms   0.3%      5        2 to      3 ms
+  assess                        2.3 ms   0.3%      5        2 to      2 ms
+  filing cache                  1.8 ms   0.2%      7        2 to      2 ms
+  plan                          0.0 ms   0.0%      1        0 to      0 ms
+  summary                       0.0 ms   0.0%      1        0 to      0 ms
+  unaccounted                  90.5 ms  11.5%

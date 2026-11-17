@@ -56,7 +56,7 @@ from app.core.documents import Passage
 from app.core.gate import NUMBER_REASON, GateResult, RunIds, StoredSource, gate_claim
 from app.core.meaning import IncompleteJudgements, by_index, check_items
 from app.core.models import Claim, Company, Finding, ThesisRequest, Verdict
-from app.core.periods import check_periods, shift_years
+from app.core.periods import check_periods, shift_each_year, shift_years
 from app.core.ports import Checker, CheckItem, ClaimDraft, SupportVerdict
 from app.engines.cassette import CassetteMiss, CassetteTransport
 from app.engines.checker import ClaudeChecker
@@ -90,7 +90,11 @@ __all__ = [
     "PeriodSummary",
     "PlantedPeriod",
     "PlantedShift",
+    "PlantedSingleYear",
     "Rate",
+    "SINGLE_YEAR_MIN_YEARS",
+    "SINGLE_YEAR_SHIFT",
+    "SingleYearCounts",
     "UnverifiedPeriod",
     "build_record",
     "case_request",
@@ -197,6 +201,46 @@ class PlantedShift:
     not_flagged: tuple[PlantedPeriod, ...] = ()
 
 
+# The second planted measurement, one wrong year beside right ones: in each verified finding
+# whose statement names at least SINGLE_YEAR_MIN_YEARS years, each year in turn is moved by
+# SINGLE_YEAR_SHIFT (the year before, a report's comparison column) and the others are left.
+SINGLE_YEAR_SHIFT = -1
+SINGLE_YEAR_MIN_YEARS = 2
+
+
+@dataclass(frozen=True)
+class PlantedSingleYear:
+    """One verified finding's statement with one of its years moved and the others left as written.
+
+    ``moved`` is the words that named the year before it was moved ("fiscal
+    2026"); ``statement`` the statement as planted. The evidence was left as it
+    is. ``flagged`` when the period check then finds at least one year the
+    evidence does not carry; ``details`` are its sentences on the planted statement.
+    """
+
+    case_id: str
+    finding_id: str
+    moved: str
+    statement: str
+    flagged: bool
+    details: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class SingleYearCounts:
+    """The single-year planting over a run: findings, statements planted, flagged, and misses.
+
+    ``findings`` counts the verified findings that name at least
+    :data:`SINGLE_YEAR_MIN_YEARS` years; ``statements`` one per year they name.
+    """
+
+    shift: int
+    findings: int
+    statements: int
+    flagged: int
+    not_flagged: tuple[PlantedSingleYear, ...] = ()
+
+
 @dataclass(frozen=True)
 class UnverifiedPeriod:
     """One year a verified finding names that its evidence does not carry.
@@ -251,6 +295,9 @@ class CaseOutcome:
     # Each of those findings that names a year, with its years moved (PLANTED_SHIFTS) and
     # checked again against the same evidence.
     periods_planted: tuple[PlantedPeriod, ...] = field(default_factory=tuple)
+    # Each of those findings that names two or more years, with one year at a time moved by
+    # SINGLE_YEAR_SHIFT and checked again against the same evidence.
+    periods_single_year: tuple[PlantedSingleYear, ...] = field(default_factory=tuple)
 
     @property
     def answerable(self) -> bool:
@@ -406,19 +453,29 @@ def _kept(result: GateResult, check: CheckOutcome | None) -> list[Finding]:
     ]
 
 
+PeriodResults = tuple[
+    int,
+    tuple[UnverifiedPeriod, ...],
+    tuple[PlantedPeriod, ...],
+    tuple[PlantedSingleYear, ...],
+]
+
+
 def _periods(
     case: GoldenCase,
     findings: Sequence[Finding],
     result: GateResult,
     figures: CompanyFigures,
     filing_periods: Mapping[str, date],
-) -> tuple[int, tuple[UnverifiedPeriod, ...], tuple[PlantedPeriod, ...]]:
+) -> PeriodResults:
     """The period check of each kept finding, as a run makes it: years checked, those unplaced.
 
     Source ``sN`` is the case's N-th filing; its period end comes from
     ``filing_periods`` (by accession), the calendar from ``figures``. Each finding
     that names a year is also checked with its years moved by each of
-    :data:`PLANTED_SHIFTS` and its evidence unchanged: the third value.
+    :data:`PLANTED_SHIFTS` and its evidence unchanged: the third value. Each that
+    names at least :data:`SINGLE_YEAR_MIN_YEARS` years is checked once per year
+    with only that year moved by :data:`SINGLE_YEAR_SHIFT`: the fourth value.
     """
     ends = {
         f"s{number}": filing_periods.get(accession)
@@ -429,6 +486,7 @@ def _periods(
     checked = 0
     unverified: list[UnverifiedPeriod] = []
     planted: list[PlantedPeriod] = []
+    single: list[PlantedSingleYear] = []
     for finding in findings:
         quoted = [evidence[i] for i in finding.evidence_ids if i in evidence]
         excerpts = [(item.excerpt, ends.get(item.source_id)) for item in quoted]
@@ -463,7 +521,20 @@ def _periods(
                         details=tuple(again.details),
                     )
                 )
-    return checked, tuple(unverified), tuple(planted)
+        if period_check.checked >= SINGLE_YEAR_MIN_YEARS:
+            for mention, moved in shift_each_year(finding.statement, SINGLE_YEAR_SHIFT):
+                again = check_periods(moved, excerpts, cited, figures.calendar)
+                single.append(
+                    PlantedSingleYear(
+                        case_id=case.id,
+                        finding_id=finding.id,
+                        moved=mention.raw,
+                        statement=moved,
+                        flagged=again.status == "unverified",
+                        details=tuple(again.details),
+                    )
+                )
+    return checked, tuple(unverified), tuple(planted), tuple(single)
 
 
 def _outcome(
@@ -476,7 +547,7 @@ def _outcome(
     figures: CompanyFigures,
     engine_error: str,
     check: CheckOutcome | None = None,
-    periods: tuple[int, tuple[UnverifiedPeriod, ...], tuple[PlantedPeriod, ...]] = (0, (), ()),
+    periods: PeriodResults = (0, (), (), ()),
 ) -> CaseOutcome:
     """Compare one case's gated result (and its meaning check, if any) with the case."""
     verdict = policy.claim_verdict(result.findings)
@@ -512,6 +583,7 @@ def _outcome(
         periods_checked=periods[0],
         periods_unverified=periods[1],
         periods_planted=periods[2],
+        periods_single_year=periods[3],
     )
 
 
@@ -710,6 +782,19 @@ class PeriodSummary:
     comparative: int
     mentions: tuple[UnverifiedPeriod, ...]
     planted: tuple[PlantedPeriod, ...] = ()
+    single_year: tuple[PlantedSingleYear, ...] = ()
+
+    def single_year_counts(self) -> SingleYearCounts:
+        """The single-year planting: findings that name two or more years, statements, flagged."""
+        findings = {(planted.case_id, planted.finding_id) for planted in self.single_year}
+        missed = tuple(planted for planted in self.single_year if not planted.flagged)
+        return SingleYearCounts(
+            shift=SINGLE_YEAR_SHIFT,
+            findings=len(findings),
+            statements=len(self.single_year),
+            flagged=len(self.single_year) - len(missed),
+            not_flagged=missed,
+        )
 
     def planted_by_shift(self) -> list[PlantedShift]:
         """The planted statements grouped by how far their years were moved, in that order."""
@@ -721,8 +806,13 @@ class PeriodSummary:
         return rows
 
     def as_dict(self) -> dict[str, Any]:
-        """The counts, every unverified year and the planted years, for the JSON record."""
+        """The counts, every unverified year and the planted years, for the JSON record.
+
+        ``planted`` moves every year of a statement together; ``planted_single_year``
+        moves one year at a time in statements that name two or more.
+        """
         by_shift = self.planted_by_shift()
+        single = self.single_year_counts()
         return {
             "checked": self.checked,
             "passed": self.passed,
@@ -735,6 +825,13 @@ class PeriodSummary:
                     for row in by_shift
                 ],
                 "not_flagged": [asdict(missed) for row in by_shift for missed in row.not_flagged],
+            },
+            "planted_single_year": {
+                "shift": single.shift,
+                "findings": single.findings,
+                "statements": single.statements,
+                "flagged": single.flagged,
+                "not_flagged": [asdict(missed) for missed in single.not_flagged],
             },
         }
 
@@ -750,6 +847,7 @@ def summarize_periods(outcomes: Sequence[CaseOutcome]) -> PeriodSummary:
         comparative=sum(1 for mention in mentions if mention.comparative),
         mentions=mentions,
         planted=tuple(planted for o in outcomes for planted in o.periods_planted),
+        single_year=tuple(planted for o in outcomes for planted in o.periods_single_year),
     )
 
 
@@ -1042,7 +1140,7 @@ def _periods_section(periods: PeriodSummary) -> list[str]:
         ]
     else:
         lines.append("None.")
-    return [*lines, "", *_planted_section(p)]
+    return [*lines, "", *_planted_section(p), "", *_single_year_section(p)]
 
 
 def _planted_section(periods: PeriodSummary) -> list[str]:
@@ -1074,6 +1172,49 @@ def _planted_section(periods: PeriodSummary) -> list[str]:
         "|---|---|---|---|",
     ]
     lines += [_row(m.case_id, f"{m.shift:+d}", m.statement, "; ".join(m.details)) for m in missed]
+    return lines
+
+
+def _single_year_section(periods: PeriodSummary) -> list[str]:
+    """What the period check catches when one year is wrong beside years that are right."""
+    counts = periods.single_year_counts()
+    lines = [
+        "### One planted wrong year beside right ones",
+        "",
+        f"Every verified finding whose statement names {SINGLE_YEAR_MIN_YEARS} or more years, "
+        f"planted once per year: that year moved by {SINGLE_YEAR_SHIFT:+d} (the year before, a "
+        "report's comparison column), the others and the evidence left as they are. Unlike the "
+        "table above, which moves every year together, this is the slip a writer makes: one "
+        "wrong year beside a right one. A statement is flagged when the check then finds at "
+        "least one year the evidence does not carry. No model is involved.",
+        "",
+    ]
+    if not counts.statements:
+        return [*lines, "No verified finding names two or more years."]
+    lines += [
+        _row(
+            "Findings that name two or more years", "Statements planted", "Flagged", "Not flagged"
+        ),
+        "|---|---|---|---|",
+        _row(
+            counts.findings,
+            counts.statements,
+            counts.flagged,
+            counts.statements - counts.flagged,
+        ),
+    ]
+    if not counts.not_flagged:
+        return [*lines, "", "Every planted statement was flagged."]
+    lines += [
+        "",
+        "Every planted statement that was not flagged, with the reason each of its years passed:",
+        "",
+        _row("Case", "Year moved", "Statement as planted", "Why its years passed"),
+        "|---|---|---|---|",
+    ]
+    lines += [
+        _row(m.case_id, m.moved, m.statement, "; ".join(m.details)) for m in counts.not_flagged
+    ]
     return lines
 
 

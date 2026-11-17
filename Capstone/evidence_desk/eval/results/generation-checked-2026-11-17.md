@@ -4,7 +4,7 @@ Model answers: replayed from cassette golden: 79 responses recorded via Claude C
 
 A recording answered by a stand-in (any `via` other than the model a run calls) is an upper bound for quote validity: a stand-in that copies from the prompt in front of it quotes more exactly than a model may, so the quote and citation scores may be lower live.
 
-Generated 2026-11-17T18:58:13.222621+00:00. Each case is run as a one-claim thesis with the decision "Whether the thesis still holds after the latest filings"; the gate and the verdict rule are the pipeline's own.
+Generated 2026-11-17T20:34:18.124327+00:00. Each case is run as a one-claim thesis with the decision "Whether the thesis still holds after the latest filings"; the gate and the verdict rule are the pipeline's own.
 Golden set SHA-256 `4ef5c8d35bf11a1e…`; queries from `eval/queries.json` (SHA-256 `7609070a134303ab…`).
 The meaning check ran: a second model read every case's verified findings through the same cassette (step `check`), as a run would.
 
@@ -110,6 +110,24 @@ Every planted error that was not flagged, with the reason each of its years pass
 | nvda-crypto-lawsuit-over | -2 | The case was not finished: after the Supreme Court dismissed the writ, the Ninth Circuit judgment took effect on February 20, 2023 and the case went back to the district court for further proceedings. | February 20, 2023 is in a quote |
 | nvda-china-reopened | +1 | Licences granted in August 2026 for certain H20 products produced approximately $60 million in H20 revenue. | August 2026 is the calendar year of a filing quoted (period ended 2026-01-25) |
 | nvda-crypto-lawsuit-over | +1 | The case was not finished: after the Supreme Court dismissed the writ, the Ninth Circuit judgment took effect on February 20, 2026 and the case went back to the district court for further proceedings. | February 20, 2026 is the calendar year of a filing quoted (period ended 2026-07-26) |
+
+### One planted wrong year beside right ones
+
+Every verified finding whose statement names 2 or more years, planted once per year: that year moved by -1 (the year before, a report's comparison column), the others and the evidence left as they are. Unlike the table above, which moves every year together, this is the slip a writer makes: one wrong year beside a right one. A statement is flagged when the check then finds at least one year the evidence does not carry. No model is involved.
+
+| Findings that name two or more years | Statements planted | Flagged | Not flagged |
+|---|---|---|---|
+| 9 | 18 | 13 | 5 |
+
+Every planted statement that was not flagged, with the reason each of its years passed:
+
+| Case | Year moved | Statement as planted | Why its years passed |
+|---|---|---|---|
+| nvda-margin-widened | fiscal year 2026 | On a full-year basis the picture is the opposite: gross margin fell to 71.1% in fiscal year 2025 from 75.0% in fiscal year 2025. | fiscal year 2025 is in a quote; fiscal year 2025 is in a quote |
+| cost-members-renew | 2026 | Part of the growth in membership income comes from the fee increase rather than from renewals alone: the fee increase accounted for approximately 30% and 40% of membership income growth during 2025 and 2025. | 2025 is in a quote; 2025 is in a quote |
+| cost-markup-widened | fiscal 2026 | The XBRL-derived annual gross margin was 12.8% in both fiscal 2025 and fiscal 2025, so it shows no widening. | fiscal 2025 is the fiscal year of a cited figure (period ended 2025-08-31); fiscal 2025 is the fiscal year of a cited figure (period ended 2025-08-31) |
+| aapl-china-shrinking | 2026 | Greater China net sales increased during 2025 compared to 2025, primarily due to higher net sales of iPhone and Mac. | 2025 is in a quote; 2025 is in a quote |
+| ko-pricing-lifts-margin | 2025 | The full-year picture is similar: gross profit margin increased to 61.6% in 2024 from 61.1% in 2024, mainly from favorable pricing and the refranchising of some bottling operations, partly offset by currency and higher commodity costs. | 2024 is in a quote; 2024 is in a quote |
 
 ## How to read it
 

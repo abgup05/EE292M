@@ -39,9 +39,10 @@ The rules:
     (:func:`is_year`): after "fiscal", "FY", "in", "since", "during", "by",
     "for", "of", "ended", "ending", "due" and similar, after a month or a quarter
     label, after "year-end", "year end", "quarter-end", "end-of-", "versus",
-    "vs.", "compared to", "compared with" or "relative to", or paired with
-    another year ("2024 and 2025", "2023 to 2025"). "2000 employees" and
-    "2025 stores" are checked;
+    "vs.", "compared to", "compared with" or "relative to", paired with
+    another year ("2024 and 2025", "2023 to 2025"), or directly before a
+    financial noun of :data:`YEAR_NOUNS` ("2025 revenue", "2026 net income").
+    "2000 employees" and "2025 stores" are checked;
   - a reference: a *capitalised* word such as "Note", "Item", "Part",
     "Section", "Rule" or "Form" directly followed by its own number or Roman
     numeral ("Note 5", "Item 1A", "Part II", "Rule 10b5-1"), never a
@@ -87,6 +88,25 @@ SCALE_ABBREVIATIONS: dict[str, float] = {"K": 1e3, "M": 1e6, "B": 1e9, "bn": 1e9
 TABLE_SCALES: tuple[float, ...] = (1.0, 1e3, 1e6, 1e9)
 MAX_EXEMPT_COUNT = 12
 YEARS = range(1900, 2101)
+# Financial nouns that make a four-digit number directly before them a year used as an
+# adjective ("2025 revenue", "2026 net income"), matched as whole words, case ignored. Kept
+# short on purpose: any other noun after a number makes it a count ("2025 employees").
+YEAR_NOUNS: tuple[str, ...] = (
+    "revenue",
+    "revenues",
+    "sales",
+    "net income",
+    "income",
+    "earnings",
+    "results",
+    "margin",
+    "margins",
+    "guidance",
+    "outlook",
+    "annual report",
+    "10-K",
+    "10-Q",
+)
 # Words that let a number written without a sign stand for a negative source figure, matched
 # as whole words, case ignored, in the number's own sentence. Two kinds. Words of decline
 # say the figure fell or is below zero; they are needed for a percentage, because a
@@ -212,6 +232,11 @@ _YEAR_BEFORE = re.compile(
     re.IGNORECASE,
 )
 _YEAR_AFTER = re.compile(r"\s*(?:(?:and|to|through|or)\s+|[-–]\s*)(?:19|20|21)\d\d\b")
+# A financial noun directly after a four-digit number: "2025 revenue" (see YEAR_NOUNS).
+_YEAR_NOUN_AFTER = re.compile(
+    r"\s+(?:" + "|".join(re.escape(noun).replace(r"\ ", r"\s+") for noun in YEAR_NOUNS) + r")\b",
+    re.IGNORECASE,
+)
 
 
 def _whole_words(words: tuple[str, ...]) -> re.Pattern[str]:
@@ -313,14 +338,20 @@ def is_year(text: str, begin: int, end: int) -> bool:
     """True when the four digits at ``text[begin:end]`` are a year in a date-like context.
 
     The number must be from 1900 to 2100 and either follow a period word, a
-    preposition of time, a month or a quarter label (:data:`_YEAR_BEFORE`), or
-    be joined to another year by "and", "to", "through", "or" or a dash.
+    preposition of time, a month or a quarter label (:data:`_YEAR_BEFORE`), be
+    joined to another year by "and", "to", "through", "or" or a dash, or be
+    directly followed by a financial noun of :data:`YEAR_NOUNS` ("2025
+    revenue"). Before any other noun it is a count ("2025 employees").
     """
     digits = text[begin:end]
     if len(digits) != 4 or not digits.isdigit() or int(digits) not in YEARS:
         return False
     before = text[max(0, begin - 40) : begin]
-    return bool(_YEAR_BEFORE.search(before) or _YEAR_AFTER.match(text, end))
+    return bool(
+        _YEAR_BEFORE.search(before)
+        or _YEAR_AFTER.match(text, end)
+        or _YEAR_NOUN_AFTER.match(text, end)
+    )
 
 
 def _read(text: str, match: re.Match[str]) -> Quantity | None:

@@ -64,8 +64,9 @@ YEAR_END_DRIFT_DAYS = 10
 # A label's offset from the calendar year its fiscal year ends in: 0 or -1 in practice; a
 # filing whose ``fy`` is further off is not a usable calendar.
 MAX_LABEL_OFFSET = 1
-# The years an excerpt is taken to show (years_in).
-EVIDENCE_YEARS = range(1990, 2101)
+# The years an excerpt is taken to show (years_in): the years a statement can name, so that a
+# year the number check reads in a statement can always be found in a quote that prints it.
+EVIDENCE_YEARS = YEARS
 # A year this much below the fiscal year of a filing or a figure is a comparison year.
 COMPARATIVE_GAPS = (1, 2)
 
@@ -309,19 +310,45 @@ def shift_years(text: str, by: int) -> str:
     pieces: list[str] = []
     cursor = 0
     for begin, end, mention in _placed_mentions(text):
-        raw = text[begin:end]
-        four = [m for m in _FOUR_DIGITS.finditer(raw) if int(m.group()) == mention.year]
-        if four:
-            low, high = four[0].span()
-            moved = raw[:low] + str(mention.year + by) + raw[high:]
-        else:
-            two = re.search(r"\d{2}$", raw)
-            if two is None:
-                continue
-            moved = raw[: two.start()] + f"{(mention.year + by) % 100:02d}"
+        moved = _moved(text[begin:end], mention.year, by)
+        if moved is None:
+            continue
         pieces += [text[cursor:begin], moved]
         cursor = end
     return "".join(pieces) + text[cursor:]
+
+
+def shift_each_year(text: str, by: int) -> list[tuple[PeriodMention, str]]:
+    """One copy of ``text`` per year it names, with only that year moved by ``by`` years.
+
+    For planting a single wrong year beside correct ones ("fiscal 2025, down
+    from fiscal 2025" for "fiscal 2026, down from fiscal 2025"), which is how a
+    real slip looks; :func:`shift_years` moves every year together. Each copy
+    comes with the mention that was moved, in the order the text names them.
+    A text naming no year gives an empty list. Years are found and moved as
+    :func:`shift_years` finds and moves them.
+    """
+    planted: list[tuple[PeriodMention, str]] = []
+    for begin, end, mention in _placed_mentions(text):
+        moved = _moved(text[begin:end], mention.year, by)
+        if moved is not None:
+            planted.append((mention, text[:begin] + moved + text[end:]))
+    return planted
+
+
+def _moved(raw: str, year: int, by: int) -> str | None:
+    """The words ``raw`` naming ``year`` with that year moved by ``by``; None if no digits are.
+
+    A four-digit year is replaced in place; a two-digit label ("FY26") keeps two digits.
+    """
+    four = [m for m in _FOUR_DIGITS.finditer(raw) if int(m.group()) == year]
+    if four:
+        low, high = four[0].span()
+        return raw[:low] + str(year + by) + raw[high:]
+    two = re.search(r"\d{2}$", raw)
+    if two is None:
+        return None
+    return raw[: two.start()] + f"{(year + by) % 100:02d}"
 
 
 _EVIDENCE_YEAR = re.compile(r"(?<![\d,.$])(\d{4})(?![\d%]|[.,]\d)")
@@ -331,9 +358,10 @@ _EVIDENCE_LABEL = re.compile(r"(?i)\b(?:FY|CY)\s?'?(\d{2})\b|\bfiscal(?:\s+years
 def years_in(text: str) -> set[int]:
     """Every year an excerpt shows, in any context: generous, for evidence.
 
-    Any standalone four-digit number from 1990 to 2100 (not part of a longer
-    number, an amount or a percentage), plus two-digit fiscal labels ("FY26",
-    "fiscal '26" give 2026).
+    Any standalone four-digit number in :data:`EVIDENCE_YEARS` (1900 to 2100,
+    the years :mod:`app.core.numcheck` reads in a statement) that is not part of
+    a longer number, an amount or a percentage, plus two-digit fiscal labels
+    ("FY26", "fiscal '26" give 2026).
     """
     years = {int(match.group(1)) for match in _EVIDENCE_YEAR.finditer(text)}
     years = {year for year in years if year in EVIDENCE_YEARS}

@@ -1,6 +1,6 @@
 {
   "kind": "meaning-check-mismatch-evaluation",
-  "generated_at": "2026-11-17T18:58:19.066467+00:00",
+  "generated_at": "2026-11-17T20:34:38.896955+00:00",
   "models": {
     "mismatch": "replayed from cassette mismatch: 64 responses recorded via Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the rules and Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17 with claude-haiku-5-5, 2026-11-17 to 2026-11-17",
     "findings": "replayed from cassette golden: 79 responses recorded via Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the engine's rules, Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the rules and Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17 with claude-haiku-5-5 and claude-sonnet-5-5, 2026-11-17 to 2026-11-17"

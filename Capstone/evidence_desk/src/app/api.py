@@ -10,7 +10,10 @@ call the command line makes. Start the server with
 from __future__ import annotations
 
 import logging
-from collections.abc import AsyncIterator
+import re
+import threading
+import time
+from collections.abc import AsyncIterator, Callable
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from datetime import datetime
@@ -24,11 +27,13 @@ from pydantic import BaseModel
 
 from app import __version__, wiring
 from app.core import limits, policy
-from app.core.models import Run, ThesisRequest
+from app.core.metric_models import MetricsReport
+from app.core.models import TICKER_PATTERN, Company, Run, ThesisRequest
 from app.core.ports import Analyst, FilingSource, PageFetcher, SourceError, UnknownTicker
 from app.services import thesis_run
 from app.services.examples import EXAMPLE_THESIS
 from app.services.export import render_markdown
+from app.services.numbers import load_numbers
 from app.sources.http import fetch_page as default_fetch_page
 from app.sources.urls import canonicalize, validate_public_url
 from app.store import Store
@@ -40,8 +45,12 @@ CRASH_MESSAGE = "The run stopped because of an internal error."
 STATIC_FILES = {
     "/app.js": ("app.js", "text/javascript"),
     "/styles.css": ("styles.css", "text/css"),
-    "/sample-run.json": ("sample-run.json", "application/json"),
 }
+# Sample records the page can load: src/web/sample-<name>.json, served at /sample-<name>.json.
+SAMPLE_NAME = re.compile(r"[a-z0-9-]{1,40}")
+TICKER_MESSAGE = (
+    "ticker must be 1 to 6 letters or digits, optionally with a class suffix such as BRK.B"
+)
 log = logging.getLogger(__name__)
 
 
@@ -125,17 +134,49 @@ def _refusal(problems: list[Problem]) -> JSONResponse:
     )
 
 
+class MetricsCache:
+    """Metrics reports by CIK, each kept for :data:`limits.METRICS_CACHE_SECONDS`.
+
+    Only successful reports are kept, so an EDGAR outage is not remembered.
+    Safe to share between threads.
+    """
+
+    def __init__(self, monotonic: Callable[[], float]) -> None:
+        """Measure age with ``monotonic`` (seconds)."""
+        self._monotonic = monotonic
+        self._lock = threading.Lock()
+        self._reports: dict[int, tuple[float, MetricsReport]] = {}
+
+    def get(self, cik: int) -> MetricsReport | None:
+        """The cached report for ``cik`` if it is fresh, else None."""
+        with self._lock:
+            entry = self._reports.get(cik)
+            if entry is None or self._monotonic() - entry[0] >= limits.METRICS_CACHE_SECONDS:
+                return None
+            return entry[1]
+
+    def put(self, cik: int, report: MetricsReport) -> None:
+        """Keep ``report`` for ``cik`` from now."""
+        with self._lock:
+            self._reports[cik] = (self._monotonic(), report)
+
+
 def create_app(
     store: Store | None = None,
     filings: FilingSource | None = None,
     analyst: Analyst | None = None,
     fetch_page: PageFetcher = default_fetch_page,
+    monotonic: Callable[[], float] = time.monotonic,
 ) -> FastAPI:
-    """Build the application. Collaborators not given are built by :mod:`app.wiring`."""
+    """Build the application. Collaborators not given are built by :mod:`app.wiring`.
+
+    ``monotonic`` is the clock of the metrics cache (injectable for tests).
+    """
     store = store or wiring.store_from_env()
     filings = filings or wiring.filings_from_env()
     analyst = analyst or wiring.analyst_from_env()
     executor = ThreadPoolExecutor(max_workers=RUN_WORKERS, thread_name_prefix="run")
+    metrics_cache = MetricsCache(monotonic)
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
@@ -213,10 +254,39 @@ def create_app(
         """The run as a Markdown brief."""
         return PlainTextResponse(render_markdown(load(run_id)), media_type="text/markdown")
 
+    def resolve(ticker: str) -> Company:
+        """The company for a ticker in a path, or a 422 naming the ticker field."""
+        cleaned = ticker.strip().upper()
+        if not TICKER_PATTERN.fullmatch(cleaned):
+            raise RequestRefused([Problem(field="ticker", message=TICKER_MESSAGE)])
+        try:
+            return filings.company(cleaned)
+        except UnknownTicker as exc:
+            raise RequestRefused([Problem(field="ticker", message=str(exc))]) from exc
+
+    @app.get("/api/companies/{ticker}/metrics")
+    def company_metrics(ticker: str) -> MetricsReport:
+        """The reported-numbers report for a ticker, without starting a run.
+
+        422 for a malformed or unknown ticker, 503 when EDGAR cannot be read or its
+        facts cannot be; a report is cached per company for 15 minutes.
+        """
+        company = resolve(ticker)
+        cached = metrics_cache.get(company.cik)
+        if cached is not None:
+            return cached
+        result = load_numbers(company, filings)
+        if result.report is None:
+            raise SourceError(result.error or "The XBRL company facts could not be read")
+        metrics_cache.put(company.cik, result.report)
+        return result.report
+
     @app.get("/api/meta")
     def meta() -> dict[str, Any]:
         """The limits and wording every view uses, so the page and the export agree."""
         return {
+            "version": __version__,
+            "figures_note": policy.FIGURES_NOTE,
             "limits": public_limits(),
             "status_notes": {status.value: note for status, note in policy.STATUS_NOTES.items()},
             "verdict_labels": {v.value: label for v, label in policy.VERDICT_LABELS.items()},
@@ -248,6 +318,16 @@ def create_app(
             methods=["GET"],
             include_in_schema=False,
         )
+
+    @app.get("/sample-{name}.json", include_in_schema=False)
+    def sample(name: str) -> FileResponse:
+        """A recorded sample record, src/web/sample-<name>.json; the name is allow-listed."""
+        if not SAMPLE_NAME.fullmatch(name):
+            raise HTTPException(status_code=404, detail="Not found")
+        file = WEB_DIR / f"sample-{name}.json"
+        if not file.is_file():
+            raise HTTPException(status_code=404, detail="Not found")
+        return FileResponse(file, media_type="application/json")
 
     return app
 

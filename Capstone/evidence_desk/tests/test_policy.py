@@ -102,7 +102,7 @@ def test_complete_when_nothing_limits_the_brief() -> None:
     ("change", "reason"),
     [
         ({"sources_extracted": 2}, "1 of 3 source(s) could not be read."),
-        ({"withheld_findings": 2}, "2 finding(s) had no verified excerpt and were withheld."),
+        ({"withheld_findings": 2}, "2 finding(s) could not be verified and were withheld."),
         (
             {"claims": _claims(Verdict.supported, Verdict.not_addressed, Verdict.mixed)},
             "1 of 3 claim(s) have no verified evidence in the passages retrieved.",
@@ -138,7 +138,7 @@ def test_reasons_combine_in_order() -> None:
     assert status == RunStatus.partial
     assert reasons == [
         "3 of 4 source(s) could not be read.",
-        "3 finding(s) had no verified excerpt and were withheld.",
+        "3 finding(s) could not be verified and were withheld.",
         "2 of 4 claim(s) have no verified evidence in the passages retrieved.",
         "1 of 4 claim(s) have relevant passages but no judged stance.",
         "The model engine failed for 2 step(s); the deterministic engine was used for those.",

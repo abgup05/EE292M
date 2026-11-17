@@ -51,7 +51,7 @@ wait_for_startup()
 
 status, body, _ = request("/api/health")
 health = json.loads(body)
-assert status == 200 and health["status"] == "ok" and health["version"] == "0.2.0", health
+assert status == 200 and health["status"] == "ok" and health["version"] == "0.3.0", health
 assert health["engine"] in ("claude", "extractive"), health
 
 status, body, _ = request("/api/meta")

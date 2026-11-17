@@ -9,6 +9,7 @@ import pytest
 from app.core import limits
 from app.core.documents import Passage
 from app.core.gate import GateResult, IdMinter, RunIds, StoredSource, TextIndex, gate_claim, locate
+from app.core.metric_models import Metric
 from app.core.models import Confidence, Stance
 from app.core.ports import ClaimDraft, FindingDraft, Quote
 
@@ -167,25 +168,48 @@ def _perturb(quote: str, rng: random.Random) -> str:
     return "".join(out)
 
 
-def test_locate_is_fast_on_a_large_text() -> None:
-    rng = random.Random(7)
+def _large_text(characters: int, seed: int = 7) -> tuple[str, list[str]]:
+    """Filing-like text full of folded characters, and 50 re-spaced quotes (the last absent)."""
+    rng = random.Random(seed)
     words = ["revenue", "grew", "customers", "risk", "the", "data", "center", "supply"]
     lines = []
-    while sum(len(line) + 1 for line in lines) < 500_000:
+    while sum(len(line) + 1 for line in lines) < characters:
         lines.append(" ".join(rng.choice(words) for _ in range(rng.randint(5, 40))) + " — ’")
-    text = "\n".join(lines)[:500_000]
+    text = "\n".join(lines)[:characters]
     quotes = []
     for _ in range(50):
         begin = rng.randint(0, len(text) - 200)
         quotes.append(text[begin : begin + 120].replace(" ", "\n").replace("’", "'"))
     quotes[-1] = "a quote that is nowhere in the text at all"
-    began = time.perf_counter()
-    index = TextIndex(text)
-    found = [index.locate(quote) for quote in quotes]
-    elapsed = time.perf_counter() - began
+    return text, quotes
+
+
+def _best_seconds(text: str, quotes: list[str], repeats: int = 5) -> float:
+    """The fastest of ``repeats`` timings of indexing ``text`` and locating every quote."""
+    timings = []
+    for _ in range(repeats):
+        began = time.perf_counter()
+        index = TextIndex(text)
+        for quote in quotes:
+            index.locate(quote)
+        timings.append(time.perf_counter() - began)
+    return min(timings)
+
+
+def test_locate_scales_linearly_with_the_text() -> None:
+    # A ratio of two timings on the same machine, not a wall-clock bound: eight times the text
+    # costs about eight times as much when indexing and locating are linear, sixty-four times
+    # when quadratic. Twenty sits between the two with room for noise; the best of five runs
+    # each removes most scheduling noise.
+    small_text, small_quotes = _large_text(50_000)
+    large_text, large_quotes = _large_text(400_000)
+    index = TextIndex(large_text)
+    found = [index.locate(quote) for quote in large_quotes]
     assert all(span is not None for span in found[:-1])
     assert found[-1] is None
-    assert elapsed < 0.5
+    small = _best_seconds(small_text, small_quotes)
+    large = _best_seconds(large_text, large_quotes)
+    assert large < 20 * small, f"8x the text took {large / small:.1f}x as long"
 
 
 # gate_claim ---------------------------------------------------------------------------------
@@ -431,3 +455,108 @@ def test_too_many_findings_are_reported_not_silently_dropped() -> None:
 def test_stance_is_carried_through(stance: Stance) -> None:
     result = _gate(_finding(("p2", "Data Center revenue was $41.1 billion"), stance=stance))
     assert result.findings[0].stance == stance
+
+
+# numbers and reported figures ---------------------------------------------------------------
+
+GROWTH_QUOTE = "Data Center revenue was $41.1 billion, up 56% from a year ago"
+FIGURE = Metric(
+    id="revenue_yoy:annual:2026-01-25",
+    key="revenue_yoy",
+    label="Revenue growth, year over year",
+    period="annual",
+    period_end="2026-01-25",
+    period_label="Fiscal year ended 2026-01-25",
+    value=65.4735357900948,
+    unit="percent",
+    display="+65.5%",
+)
+FIGURES = {FIGURE.id: FIGURE}
+
+
+def _stated(statement: str, *quotes: tuple[str, str], metric_ids: list[str] = ()) -> FindingDraft:
+    return FindingDraft(
+        statement=statement,
+        stance=Stance.supports,
+        quotes=[Quote(passage_id=pid, text=text) for pid, text in quotes],
+        confidence=Confidence.high,
+        rationale="Scripted.",
+        metric_ids=list(metric_ids),
+    )
+
+
+def _gate_figures(*findings: FindingDraft) -> GateResult:
+    return gate_claim(
+        claim_id="c1",
+        draft=ClaimDraft(findings=list(findings)),
+        passages=PASSAGES,
+        sources=SOURCES,
+        ids=RunIds(),
+        figures=FIGURES,
+    )
+
+
+def test_a_number_not_in_the_quote_withholds_the_finding_and_names_the_number() -> None:
+    result = _gate_figures(_stated("Data Center revenue grew 65%.", ("p2", GROWTH_QUOTE)))
+    assert result.findings == [] and result.evidence == []
+    (withheld,) = result.unsupported
+    assert not withheld.verified and withheld.evidence_ids == []
+    assert withheld.checks.quotes == "passed"
+    assert withheld.checks.numbers == "failed"
+    assert withheld.checks.numbers_detail == [
+        "65% was not found in the quotes or the cited figures"
+    ]
+    assert withheld.withheld_reason == (
+        "a number in the statement is not in its quotes or cited figures: 65%"
+    )
+    assert result.numbers_checked == 1 and result.numbers_unmatched == 1
+
+
+def test_the_quoted_number_passes_the_numeric_check() -> None:
+    result = _gate_figures(_stated("Data Center revenue grew 56%.", ("p2", GROWTH_QUOTE)))
+    (finding,) = result.findings
+    assert finding.verified and finding.withheld_reason == ""
+    assert finding.checks.quotes == "passed" and finding.checks.numbers == "passed"
+    assert finding.checks.numbers_detail == ["56% matched 56% in a quote"]
+    assert result.numbers_checked == 1 and result.numbers_unmatched == 0
+    _assert_identity(result)
+
+
+def test_a_finding_without_numbers_says_the_check_did_not_apply() -> None:
+    result = _gate(_finding(("p1", "a limited number of customers account")))
+    (finding,) = result.findings
+    assert finding.checks.numbers == "none" and finding.checks.numbers_detail == []
+    assert finding.metric_ids == []
+
+
+def test_a_cited_figure_alone_verifies_a_finding() -> None:
+    result = _gate_figures(_stated("Revenue grew 65% in fiscal 2026.", metric_ids=[FIGURE.id]))
+    (finding,) = result.findings
+    assert finding.verified and finding.metric_ids == [FIGURE.id] and finding.evidence_ids == []
+    assert finding.checks.quotes == "none" and finding.checks.numbers == "passed"
+    assert finding.filings_cited == 0
+
+
+def test_an_unknown_figure_is_dropped_reported_and_cannot_verify() -> None:
+    result = _gate_figures(
+        _stated("Revenue grew 65% in fiscal 2026.", metric_ids=["revenue_yoy:annual:1999-01-31"])
+    )
+    (withheld,) = result.unsupported
+    assert withheld.metric_ids == []
+    assert withheld.withheld_reason == "no verified quote or reported figure"
+    assert result.problems == [
+        f"{withheld.id}: cites figure revenue_yoy:annual:1999-01-31, which was not offered"
+    ]
+
+
+def test_a_number_only_in_an_uncited_figure_fails() -> None:
+    result = _gate_figures(_stated("Data Center revenue grew 65%, up 56%.", ("p2", GROWTH_QUOTE)))
+    (withheld,) = result.unsupported
+    assert withheld.checks.numbers == "failed"
+
+
+def test_a_finding_with_no_quote_and_no_figure_says_why_it_was_withheld() -> None:
+    result = _gate(_finding(("p1", "a limited number of suppliers account for a significant")))
+    (withheld,) = result.unsupported
+    assert withheld.withheld_reason == "no verified quote or reported figure"
+    assert withheld.checks.quotes == "none"

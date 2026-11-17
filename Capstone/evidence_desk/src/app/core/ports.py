@@ -7,11 +7,12 @@ adapter that satisfies one of these protocols.
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from typing import Protocol
 
 from app.core.documents import FetchedFiling, FilingRef, Passage
+from app.core.metric_models import Metric
 from app.core.models import Claim, Company, Confidence, Finding, Stance, ThesisRequest
 
 
@@ -38,6 +39,10 @@ class FilingSource(Protocol):
         """Retrieve the primary document. Raises :class:`SourceError`."""
         ...
 
+    def company_facts(self, company: Company) -> dict:
+        """The company's XBRL facts as EDGAR serves them. Raises :class:`SourceError`."""
+        ...
+
 
 @dataclass(frozen=True)
 class Quote:
@@ -49,11 +54,14 @@ class Quote:
 
 @dataclass
 class FindingDraft:
+    """One drafted finding. ``metric_ids`` name reported figures the statement relies on."""
+
     statement: str
     stance: Stance
     quotes: list[Quote]
     confidence: Confidence
     rationale: str
+    metric_ids: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -92,7 +100,10 @@ class Assessor(Protocol):
         company: Company,
         claim: Claim,
         passages: list[Passage],
-    ) -> ClaimDraft: ...
+        figures: Sequence[Metric] = (),
+    ) -> ClaimDraft:
+        """Draft findings for ``claim`` from ``passages`` and the reported ``figures``."""
+        ...
 
 
 class Summarizer(Protocol):

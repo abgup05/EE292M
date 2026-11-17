@@ -13,16 +13,21 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
+from app.core import limits
 from app.core.documents import Document, FilingRef
 from app.core.models import Company, ExtractionStatus, Run, Source, SourceKind
 from app.core.ports import FilingSource, PageFetcher, SourceError
-from app.sources.filing import parse_filing
+from app.sources.filing import item_coverage, parse_filing
 from app.sources.http import FetchError
 from app.sources.urls import canonicalize
 from app.sources.web import extract_document
 from app.store import Store
 
 log = logging.getLogger(__name__)
+ITEM_COVERAGE_NOTE = (
+    "Item headings were not found for most of {title}; its passages are located by "
+    "sub-heading only."
+)
 
 
 @dataclass
@@ -152,6 +157,9 @@ def ingest(
             document = None
             result.duplicates += 1
         run.sources.append(source)
+        if document is not None and isinstance(item, FilingRef):
+            if item_coverage(document) < limits.MIN_ITEM_COVERAGE:
+                run.coverage_limits.append(ITEM_COVERAGE_NOTE.format(title=source.title))
         if document is not None:
             hashes[document.content_hash] = source_id
             result.documents[source_id] = document

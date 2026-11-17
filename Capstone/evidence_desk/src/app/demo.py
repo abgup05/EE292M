@@ -123,7 +123,7 @@ def summarize(
         "",
         f"- Sources read: {coverage['sources_read']} of {coverage['sources_requested']}",
         f"- Passages indexed: {coverage['passages_indexed']}",
-        f"- Claims with verified evidence: {coverage['claims_with_evidence']} of "
+        f"- Claims with verified excerpts or figures: {coverage['claims_with_evidence']} of "
         f"{coverage['claims_total']}",
         f"- Findings verified: {coverage['findings_verified']}; withheld: "
         f"{coverage['findings_withheld']}",

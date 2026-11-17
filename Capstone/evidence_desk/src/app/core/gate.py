@@ -5,7 +5,10 @@ quote in the stored text of the passage's source, exactly or after collapsing
 whitespace and folding typographic quotes, dashes and the ellipsis, and keeps
 the *stored* span, never the engine's wording. So every excerpt shown is
 byte-exact: ``stored_text[e.start : e.start + len(e.excerpt)] == e.excerpt``.
-A finding with no surviving quote is withheld and reported (PROMPT.md 4.8).
+A finding is verified when it keeps at least one quote or cites at least one
+reported figure that was offered to the engine, and every number its statement
+writes is found in those quotes or figures (:mod:`app.core.numcheck`). Any
+other finding is withheld with the reason, and reported (PROMPT.md 4.8).
 
 Pure: no network, no I/O, no clock.
 """
@@ -16,12 +19,19 @@ import re
 from bisect import bisect_right
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from types import MappingProxyType
 
 from app.core import limits
 from app.core.documents import Passage
 from app.core.links import passage_link
-from app.core.models import Evidence, Finding
+from app.core.metric_models import Metric
+from app.core.models import Evidence, Finding, FindingChecks
+from app.core.numcheck import check_numbers
 from app.core.ports import ClaimDraft, FindingDraft
+
+NO_SUPPORT_REASON = "no verified quote or reported figure"
+NUMBER_REASON = "a number in the statement is not in its quotes or cited figures: {numbers}"
+NO_FIGURES: Mapping[str, Metric] = MappingProxyType({})
 
 # Typographic characters folded to their plain forms before comparison.
 _FOLDS: dict[str, str] = {
@@ -198,6 +208,9 @@ class GateResult:
     problems: list[str] = field(default_factory=list)
     quotes_offered: int = 0
     quotes_rejected: int = 0
+    numbers_checked: int = 0
+    numbers_unmatched: int = 0
+    figures_cited: int = 0
 
 
 def _context_before(text: str, start: int) -> str:
@@ -269,21 +282,40 @@ def _check_finding(
     return kept
 
 
+def _cited_figures(
+    draft: FindingDraft, finding_id: str, figures: Mapping[str, Metric], result: GateResult
+) -> list[Metric]:
+    """The offered figures a draft cites, each once; an id not offered is reported."""
+    kept: list[Metric] = []
+    for metric_id in draft.metric_ids:
+        figure = figures.get(metric_id)
+        if figure is None:
+            result.problems.append(f"{finding_id}: cites figure {metric_id}, which was not offered")
+        elif figure not in kept:
+            kept.append(figure)
+    return kept
+
+
 def gate_claim(
     claim_id: str,
     draft: ClaimDraft,
     passages: Mapping[str, Passage],
     sources: Mapping[str, StoredSource],
     ids: RunIds,
+    figures: Mapping[str, Metric] = NO_FIGURES,
 ) -> GateResult:
     """Turn one engine draft into verified findings and evidence, and withheld findings.
 
     ``passages`` are the passages offered to the engine for this claim, by
-    passage id; ``sources`` maps every source id to its :class:`StoredSource`.
+    passage id; ``sources`` maps every source id to its :class:`StoredSource`;
+    ``figures`` are the reported figures offered to the engine, by metric id.
     Each draft finding gets the next finding id from ``ids`` whether or not it
-    survives, and each kept excerpt the next evidence id. A quote survives
-    only if it is located in the stored text of its passage's source and the
-    located span is ``MIN_EXCERPT_CHARS`` to ``MAX_EXCERPT_CHARS`` long.
+    survives. A quote survives only if it is located in the stored text of its
+    passage's source and the located span is ``MIN_EXCERPT_CHARS`` to
+    ``MAX_EXCERPT_CHARS`` long; a cited figure survives only if it was offered.
+    A finding is verified when something survived and every number in its
+    statement matches its surviving excerpts or figures; only a verified
+    finding's excerpts become evidence, each with the next evidence id.
     Drafts beyond ``MAX_FINDINGS_PER_CLAIM`` are not checked and are reported.
     """
     result = GateResult()
@@ -297,8 +329,19 @@ def gate_claim(
     for finding_draft in drafts:
         finding_id = ids.findings()
         kept = _check_finding(finding_draft, finding_id, passages, sources, result)
+        cited = _cited_figures(finding_draft, finding_id, figures, result)
+        excerpts = [source.text[start:end] for _, source, start, end in kept]
+        numbers = check_numbers(finding_draft.statement, excerpts, cited)
+        result.numbers_checked += numbers.checked
+        result.numbers_unmatched += len(numbers.unmatched)
+        reason = ""
+        if not kept and not cited:
+            reason = NO_SUPPORT_REASON
+        elif numbers.status == "failed":
+            reason = NUMBER_REASON.format(numbers=", ".join(numbers.unmatched))
+        verified = not reason
         evidence_ids: list[str] = []
-        for passage, source, start, end in kept:
+        for passage, source, start, end in kept if verified else []:
             excerpt = source.text[start:end]
             item = Evidence(
                 id=ids.evidence(),
@@ -313,6 +356,8 @@ def gate_claim(
             )
             result.evidence.append(item)
             evidence_ids.append(item.id)
+        if verified:
+            result.figures_cited += len(cited)
         finding = Finding(
             id=finding_id,
             claim_id=claim_id,
@@ -321,8 +366,15 @@ def gate_claim(
             evidence_ids=evidence_ids,
             confidence=finding_draft.confidence,
             rationale=finding_draft.rationale,
-            verified=bool(evidence_ids),
-            filings_cited=len({passage.source_id for passage, *_ in kept}),
+            verified=verified,
+            filings_cited=len({p.source_id for p, *_ in kept}) if verified else 0,
+            metric_ids=[figure.id for figure in cited],
+            checks=FindingChecks(
+                quotes="passed" if kept else "none",
+                numbers=numbers.status,
+                numbers_detail=numbers.details,
+            ),
+            withheld_reason=reason,
         )
-        (result.findings if evidence_ids else result.unsupported).append(finding)
+        (result.findings if verified else result.unsupported).append(finding)
     return result

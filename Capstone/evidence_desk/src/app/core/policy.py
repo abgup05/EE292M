@@ -46,6 +46,23 @@ PROVENANCE_NOTE = (
 )
 
 
+FIGURES_NOTE = (
+    "Reported figures are computed by the backend from the XBRL facts the company filed with "
+    "the SEC; each shows the facts it used and its arithmetic."
+)
+# Reported figures are a second path to the numbers, not a source of excerpts: when they
+# cannot be read the run says so here and continues from the filing text, and the run
+# status is unaffected (every finding must still pass the quote and number checks).
+FACTS_UNAVAILABLE = (
+    "The reported figures (XBRL company facts) could not be read ({error}); "
+    "findings rest on the filing text alone."
+)
+SUMMARY_REPLACED = (
+    "The model's summary was replaced by the template summary: {numbers} in it "
+    "is not in any verified finding or reported figure."
+)
+
+
 def claim_verdict(findings: list[Finding]) -> Verdict:
     """The verdict for one claim, from its verified findings alone.
 
@@ -89,7 +106,9 @@ def run_status(
             "could not be read."
         )
     if withheld_findings:
-        reasons.append(f"{withheld_findings} finding(s) had no verified excerpt and were withheld.")
+        # A finding is withheld for no surviving quote or figure, or for a number in its
+        # statement that its quotes and figures do not contain; the reason is on the finding.
+        reasons.append(f"{withheld_findings} finding(s) could not be verified and were withheld.")
     total = len(claims)
     unaddressed = sum(1 for claim in claims if claim.verdict in (None, Verdict.not_addressed))
     if unaddressed:

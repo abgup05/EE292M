@@ -25,10 +25,21 @@ MAX_PASSAGES_PER_SOURCE = 5
 MAX_QUERIES_PER_CLAIM = 4
 MAX_FINDINGS_PER_CLAIM = 4
 
+# A filing with less than this share of its text under numbered Item headings is flagged.
+MIN_ITEM_COVERAGE = 0.5
+
 # Evidence
 MIN_EXCERPT_CHARS = 20
 MAX_EXCERPT_CHARS = 600
 CONTEXT_CHARS = 240
 
+# Reported figures (XBRL company facts)
+FIGURE_QUARTERS = 3
+FIGURE_YEARS = 2
+MAX_FIGURES_OFFERED = 40
+METRICS_CACHE_SECONDS = 900
+
 # Run bounds
 RUN_TIME_LIMIT_SECONDS = 300.0
+# Claims assessed at once: each assessment is one model call of several seconds.
+MAX_CONCURRENT_ASSESSMENTS = 3

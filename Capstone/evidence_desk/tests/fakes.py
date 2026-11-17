@@ -11,12 +11,14 @@ from __future__ import annotations
 import functools
 import gzip
 import json
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from app.core.documents import FetchedFiling, FilingRef, Passage
+from app.core.metric_models import Metric
 from app.core.models import Claim, Company, Finding, ThesisRequest
 from app.core.ports import ClaimDraft, SourceError, SummaryDraft, UnknownTicker
 from app.engines.extractive import ExtractiveAnalyst
@@ -52,6 +54,16 @@ RECORDED = {Q2_2027.url: "nvda-10q-20260726.htm.gz", FY_2026.url: "nvda-10k-2026
 def recorded_html(name: str) -> str:
     """A recorded primary document, decompressed."""
     return gzip.decompress((EDGAR / name).read_bytes()).decode("utf-8", errors="replace")
+
+
+@functools.cache
+def _recorded_facts_text(cik: int) -> str:
+    return gzip.decompress((EDGAR / f"companyfacts-CIK{cik:010d}.json.gz").read_bytes()).decode()
+
+
+def recorded_facts(cik: int = NVIDIA.cik) -> dict[str, Any]:
+    """The recorded (trimmed) XBRL company facts of ``cik``, a fresh copy each call."""
+    return json.loads(_recorded_facts_text(cik))
 
 
 def recorded_companies() -> dict[str, Company]:
@@ -94,6 +106,8 @@ class FakeFilings:
     ``documents`` maps a filing URL to its HTML, or to the :class:`SourceError`
     its retrieval raises. A ref with no entry fails as EDGAR does for a missing
     document. Set ``index_error`` or ``company_error`` to make those calls fail.
+    ``company_facts`` serves the recorded NVIDIA XBRL facts (``facts`` replaces
+    them; ``facts_error`` makes the call fail) and counts calls in ``facts_calls``.
     """
 
     refs: list[FilingRef]
@@ -101,7 +115,10 @@ class FakeFilings:
     companies: dict[str, Company] = field(default_factory=lambda: {"NVDA": NVIDIA})
     index_error: SourceError | None = None
     company_error: SourceError | None = None
+    facts: dict[str, Any] | None = None
+    facts_error: SourceError | None = None
     fetched: list[str] = field(default_factory=list)
+    facts_calls: int = 0
 
     @classmethod
     def nvidia(cls, *refs: FilingRef) -> FakeFilings:
@@ -146,6 +163,17 @@ class FakeFilings:
             raise document
         return FetchedFiling(ref=ref, html=document, retrieved_at=RETRIEVED_AT)
 
+    def company_facts(self, company: Company) -> dict[str, Any]:
+        """The configured facts, the recorded facts of the company, or the configured failure."""
+        self.facts_calls += 1
+        if self.facts_error is not None:
+            raise self.facts_error
+        if self.facts is not None:
+            return self.facts
+        if not (EDGAR / f"companyfacts-CIK{company.cik:010d}.json.gz").exists():
+            raise SourceError(f"EDGAR answered HTTP 404 for company facts of CIK {company.cik}")
+        return recorded_facts(company.cik)
+
 
 @dataclass
 class FakePages:
@@ -179,11 +207,15 @@ Assess = Callable[[Claim, list[Passage]], ClaimDraft]
 class ScriptedAnalyst:
     """An engine whose assessments the test writes; planning is the extractive engine's.
 
-    Records the passage ids offered for each claim text in ``offered``. Steps
-    named in ``fail_on`` ("plan", "assess", "summarize") raise
-    :class:`ScriptedFailure`. ``before_assess`` runs before every assessment
-    (a test uses it to advance a clock).
+    Records the passage ids offered for each claim text in ``offered`` and the
+    figures offered in ``figures``. Steps named in ``fail_on`` ("plan",
+    "assess", "summarize") raise :class:`ScriptedFailure`; ``fail_claims``
+    limits assessment failures to those claim texts. ``before_assess`` runs
+    before every assessment (a test uses it to advance a clock). ``summary``
+    replaces the fixed summary text.
     """
+
+    detail = "scripted test engine"
 
     def __init__(
         self,
@@ -191,14 +223,19 @@ class ScriptedAnalyst:
         *,
         name: str = "scripted",
         fail_on: tuple[str, ...] = (),
+        fail_claims: tuple[str, ...] = (),
         before_assess: Callable[[], None] | None = None,
+        summary: str | None = None,
     ) -> None:
         self.name = name
         self._assess = assess
         self._fail_on = fail_on
+        self._fail_claims = fail_claims
         self._before_assess = before_assess
+        self._summary = summary
         self._extractive = ExtractiveAnalyst()
         self.offered: dict[str, list[str]] = {}
+        self.figures: dict[str, list[Metric]] = {}
 
     def _maybe_fail(self, step: str) -> None:
         if step in self._fail_on:
@@ -210,13 +247,20 @@ class ScriptedAnalyst:
         return self._extractive.plan(request, company)
 
     def assess(
-        self, request: ThesisRequest, company: Company, claim: Claim, passages: list[Passage]
+        self,
+        request: ThesisRequest,
+        company: Company,
+        claim: Claim,
+        passages: list[Passage],
+        figures: Sequence[Metric] = (),
     ) -> ClaimDraft:
         """The scripted draft, or the extractive engine's when no script was given."""
         self.offered[claim.text] = [passage.id for passage in passages]
+        self.figures[claim.text] = list(figures)
         if self._before_assess is not None:
             self._before_assess()
-        self._maybe_fail("assess")
+        if not self._fail_claims or claim.text in self._fail_claims:
+            self._maybe_fail("assess")
         if self._assess is None:
             return self._extractive.assess(request, company, claim, passages)
         return self._assess(claim, passages)
@@ -227,7 +271,7 @@ class ScriptedAnalyst:
         """A fixed summary naming how many findings it was given."""
         self._maybe_fail("summarize")
         return SummaryDraft(
-            summary=f"Scripted summary of {len(findings)} finding(s).",
+            summary=self._summary or f"Scripted summary of {len(findings)} finding(s).",
             next_steps=["Read the filings."],
         )
 

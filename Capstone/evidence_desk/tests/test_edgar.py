@@ -196,6 +196,28 @@ def test_amendments_are_skipped() -> None:
     assert forms_and_dates(refs) == [("10-K", "2026-02-25")]
 
 
+def test_the_newest_of_two_close_annual_reports_is_chosen_with_only_later_quarterlies() -> None:
+    # Two 10-Ks three weeks apart (say a transition-period report), a 10-K/A newer than both,
+    # and 10-Qs before, between and after them; given out of order, as nothing promises order.
+    rows = [
+        ("10-Q", "2026-03-10"),  # between the two 10-Ks: before the newest, so not taken
+        ("10-K/A", "2026-04-02"),  # newer than both annual reports, but an amendment
+        ("10-Q", "2026-08-26"),
+        ("10-K", "2026-02-17"),  # the older annual report
+        ("10-Q", "2026-01-12"),  # before both
+        ("10-K", "2026-03-17"),  # the newest plain annual report
+        ("10-Q", "2026-05-20"),
+        ("10-Q", "2026-11-18"),
+    ]
+    refs = index_client(rows).periodic_filings(NVDA, 5)
+    assert forms_and_dates(refs) == [
+        ("10-Q", "2026-11-18"),
+        ("10-Q", "2026-08-26"),
+        ("10-Q", "2026-05-20"),
+        ("10-K", "2026-03-17"),
+    ]
+
+
 def test_filing_reference_carries_the_archive_url_and_metadata() -> None:
     (ref,) = index_client(ROWS).periodic_filings(NVDA, 1)
     assert ref == FilingRef(
@@ -428,3 +450,31 @@ def test_selection_against_the_recorded_nvidia_index() -> None:
     assert refs[0].url == (
         "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm"
     )
+
+
+# Company facts (XBRL)
+
+
+def test_company_facts_are_read_from_data_sec_gov_for_the_padded_cik() -> None:
+    seen: list[str] = []
+    facts = {"cik": 1045810, "entityName": "NVIDIA CORP", "facts": {"us-gaap": {}}}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(str(request.url))
+        return json_response(facts)
+
+    assert make_client(handler).company_facts(NVDA) == facts
+    assert seen == ["https://data.sec.gov/api/xbrl/companyfacts/CIK0001045810.json"]
+
+
+@pytest.mark.parametrize(
+    "response",
+    [
+        httpx.Response(200, content=b"{not json"),
+        httpx.Response(200, content=b"[1, 2]"),
+        httpx.Response(404, content=b""),
+    ],
+)
+def test_company_facts_failures_are_source_errors(response: httpx.Response) -> None:
+    with pytest.raises(SourceError):
+        make_client(lambda request: response).company_facts(NVDA)

@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 
 import pytest
 
+from app.core.metric_models import Metric
 from app.core.models import (
     Brief,
     Claim,
@@ -12,6 +13,7 @@ from app.core.models import (
     Evidence,
     ExtractionStatus,
     Finding,
+    FindingChecks,
     Run,
     RunStatus,
     Source,
@@ -20,7 +22,13 @@ from app.core.models import (
     ThesisRequest,
     Verdict,
 )
-from app.core.policy import PROVENANCE_NOTE, STATUS_NOTES, VERDICT_LABELS, VERDICT_NOTES
+from app.core.policy import (
+    FIGURES_NOTE,
+    PROVENANCE_NOTE,
+    STATUS_NOTES,
+    VERDICT_LABELS,
+    VERDICT_NOTES,
+)
 from app.services.export import render_markdown
 
 URL = "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm"
@@ -279,3 +287,121 @@ def test_failed_or_running_run_renders_without_a_verdict_table(status: RunStatus
     assert "EDGAR could not be reached" in markdown
     for claim in CLAIMS:
         assert claim in markdown
+
+
+# Reported figures and checks
+
+QUARTER_REVENUE = Metric(
+    id="revenue:quarter:2026-07-26",
+    key="revenue",
+    label="Revenue",
+    period="quarter",
+    period_end="2026-07-26",
+    period_label="Quarter ended 2026-07-26",
+    value=96_221_000_000,
+    unit="USD",
+    display="$96.22B",
+)
+QUARTER_MARGIN = Metric(
+    id="gross_margin:quarter:2026-07-26",
+    key="gross_margin",
+    label="Gross margin",
+    period="quarter",
+    period_end="2026-07-26",
+    period_label="Quarter ended 2026-07-26",
+    value=74.97531723844068,
+    unit="percent",
+    display="75.0%",
+    formula="72,142 ÷ 96,221; USD millions",
+)
+OLDER_QUARTER = QUARTER_REVENUE.model_copy(
+    update={
+        "id": "revenue:quarter:2026-04-26",
+        "period_end": "2026-04-26",
+        "period_label": "Quarter ended 2026-04-26",
+        "display": "$81.62B",
+    }
+)
+YEAR_REVENUE = QUARTER_REVENUE.model_copy(
+    update={
+        "id": "revenue:annual:2026-01-25",
+        "period": "annual",
+        "period_end": "2026-01-25",
+        "period_label": "Fiscal year ended 2026-01-25",
+        "display": "$215.94B",
+    }
+)
+
+
+def _run_with_figures() -> Run:
+    run = _complete_run()
+    run.metrics = [QUARTER_REVENUE, OLDER_QUARTER, QUARTER_MARGIN, YEAR_REVENUE]
+    run.metrics_notes = ["Skipped 1 malformed fact(s) of Revenues (USD): fact has no 'end' date"]
+    run.sources.append(
+        _source(
+            id="s3",
+            kind=SourceKind.sec_xbrl,
+            title="NVIDIA CORP XBRL company facts",
+            publisher="SEC EDGAR (XBRL API)",
+            url="https://data.sec.gov/api/xbrl/companyfacts/CIK0001045810.json",
+            form=None,
+            accession=None,
+            period_end=None,
+            published_date=None,
+        )
+    )
+    f1 = run.findings[0]
+    f1.metric_ids = [QUARTER_MARGIN.id]
+    f1.checks = FindingChecks(
+        quotes="passed",
+        numbers="passed",
+        numbers_detail=["56% matched 56% in a quote", "75% matched 75.0% in a cited figure"],
+    )
+    run.unsupported_findings[
+        0
+    ].withheld_reason = "a number in the statement is not in its quotes or cited figures: 65%"
+    run.coverage.claims_with_evidence = 2
+    run.coverage.claims_total = 3
+    return run
+
+
+def test_reported_figures_show_the_newest_quarter_and_fiscal_year() -> None:
+    markdown = render_markdown(_run_with_figures())
+    section = _between(markdown, "## Reported figures", "## Claims")
+    assert "Quarter ended 2026-07-26" in section and "Fiscal year ended 2026-01-25" in section
+    assert "$96.22B" in section and "$215.94B" in section and "75.0%" in section
+    assert "72,142 ÷ 96,221; USD millions" in section
+    assert "$81.62B" not in section  # not the newest quarter
+    assert "Skipped 1 malformed fact(s)" in section
+    assert FIGURES_NOTE in section
+
+
+def test_no_reported_figures_section_without_metrics() -> None:
+    assert "## Reported figures" not in render_markdown(_complete_run())
+
+
+def test_each_finding_shows_its_cited_figures_and_its_checks() -> None:
+    claims = _between(render_markdown(_run_with_figures()), "## Claims", "## Unknowns")
+    f1 = _between(claims, "Statement f1.", "Statement f2.")
+    assert "Gross margin, Quarter ended 2026-07-26: 75.0% (72,142 ÷ 96,221; USD millions)" in f1
+    assert "Checks: quote: found in the filing; numbers: 2 of 2 matched" in f1
+    f4 = claims.split("Statement f4.", 1)[1]
+    assert "Checks: quote: found in the filing; numbers: none to check" in f4
+
+
+def test_the_xbrl_source_is_a_row_of_the_sources_table() -> None:
+    table = _between(render_markdown(_run_with_figures()), "## Sources", "## Coverage limits")
+    [row] = [line for line in table.splitlines() if line.startswith("| s3 ")]
+    assert "NVIDIA CORP XBRL company facts" in row and "| XBRL company facts |" in row
+    assert "data.sec.gov/api/xbrl/companyfacts" in row
+
+
+def test_withheld_findings_carry_their_own_reason() -> None:
+    withheld = render_markdown(_run_with_figures()).split("## Withheld findings", 1)[1]
+    assert "a number in the statement is not in its quotes or cited figures: 65%" in withheld
+
+
+def test_coverage_counts_claims_with_verified_excerpts_or_figures() -> None:
+    markdown = render_markdown(_run_with_figures())
+    assert "Claims with verified excerpts or figures: 2 of 3" in markdown
+    assert "verified evidence:" not in markdown

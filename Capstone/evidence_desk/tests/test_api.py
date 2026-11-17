@@ -13,15 +13,23 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app import __version__
-from app.api import create_app
+from app.api import WEB_DIR, create_app
 from app.core import limits
+from app.core.facts import FactBook
+from app.core.metrics import build_report
 from app.core.models import RunStatus, Verdict
-from app.core.policy import PROVENANCE_NOTE, STATUS_NOTES, VERDICT_LABELS, VERDICT_NOTES
+from app.core.policy import (
+    FIGURES_NOTE,
+    PROVENANCE_NOTE,
+    STATUS_NOTES,
+    VERDICT_LABELS,
+    VERDICT_NOTES,
+)
 from app.core.ports import SourceError
 from app.engines.extractive import ExtractiveAnalyst
 from app.services.examples import EXAMPLE_THESIS
 from app.store import Store
-from tests.fakes import FakeFilings, FakePages, ScriptedAnalyst, filing_html
+from tests.fakes import FakeFilings, FakePages, ScriptedAnalyst, filing_html, recorded_facts
 
 DECISION = "Whether to keep an overweight position in NVIDIA into the next earnings report"
 CLAIM = "Data center revenue is still growing year over year."
@@ -241,6 +249,8 @@ def test_meta_gives_every_view_its_limits_and_wording(client: TestClient) -> Non
     assert meta["verdict_labels"] == {v.value: label for v, label in VERDICT_LABELS.items()}
     assert meta["verdict_notes"] == {v.value: note for v, note in VERDICT_NOTES.items()}
     assert meta["provenance_note"] == PROVENANCE_NOTE
+    assert meta["figures_note"] == FIGURES_NOTE
+    assert meta["version"] == "0.3.0"
     assert meta["engine"] == "extractive"
     assert meta["example"] == EXAMPLE_THESIS.model_dump(mode="json")
 
@@ -252,7 +262,7 @@ def test_health(client: TestClient) -> None:
         "engine": "extractive",
         "model": None,
     }
-    assert __version__ == "0.2.0"
+    assert __version__ == "0.3.0"
 
 
 # Static files
@@ -274,3 +284,119 @@ def test_static_files_are_served(
     assert response.status_code == 200
     assert response.headers["content-type"].startswith(media_type)
     assert marker in response.text
+
+
+# Reported figures without a run
+
+
+class Clock:
+    def __init__(self) -> None:
+        self.now = 1000.0
+
+    def __call__(self) -> float:
+        return self.now
+
+
+@pytest.fixture
+def clock() -> Clock:
+    return Clock()
+
+
+@pytest.fixture
+def nvidia_filings() -> FakeFilings:
+    return FakeFilings.nvidia()
+
+
+@pytest.fixture
+def metrics_client(
+    tmp_path: Path, nvidia_filings: FakeFilings, clock: Clock
+) -> Iterator[TestClient]:
+    app = create_app(
+        store=Store(tmp_path / "runs.sqlite"),
+        filings=nvidia_filings,
+        analyst=ExtractiveAnalyst(),
+        fetch_page=FakePages({}),
+        monotonic=clock,
+    )
+    with TestClient(app) as test_client:
+        yield test_client
+
+
+def test_metrics_for_a_ticker_without_a_run(metrics_client: TestClient) -> None:
+    response = metrics_client.get("/api/companies/nvda/metrics")
+    assert response.status_code == 200, response.text
+    report = response.json()
+    expected = build_report(FactBook(recorded_facts()))
+    assert report == expected.model_dump(mode="json")
+    assert report["cik"] == 1045810
+    assert metrics_client.get("/api/runs").json() == {"runs": []}
+
+
+def test_metrics_are_cached_for_fifteen_minutes_per_company(
+    metrics_client: TestClient, nvidia_filings: FakeFilings, clock: Clock
+) -> None:
+    for _ in range(3):
+        assert metrics_client.get("/api/companies/NVDA/metrics").status_code == 200
+    assert nvidia_filings.facts_calls == 1
+    clock.now += limits.METRICS_CACHE_SECONDS + 1
+    assert metrics_client.get("/api/companies/NVDA/metrics").status_code == 200
+    assert nvidia_filings.facts_calls == 2
+
+
+@pytest.mark.parametrize("ticker", ["nv da$", "TOOLONGTICKER", "ZZZZ"])
+def test_metrics_for_a_malformed_or_unknown_ticker_are_refused(
+    metrics_client: TestClient, ticker: str
+) -> None:
+    response = metrics_client.get(f"/api/companies/{ticker}/metrics")
+    assert response.status_code == 422
+    assert fields(response) == ["ticker"]
+
+
+def test_metrics_when_edgar_is_down_are_a_503_and_not_cached(
+    metrics_client: TestClient, nvidia_filings: FakeFilings
+) -> None:
+    nvidia_filings.facts_error = SourceError("EDGAR could not be reached (ConnectError)")
+    response = metrics_client.get("/api/companies/NVDA/metrics")
+    assert response.status_code == 503
+    assert response.json() == {"error": "EDGAR could not be reached (ConnectError)"}
+    nvidia_filings.facts_error = None
+    assert metrics_client.get("/api/companies/NVDA/metrics").status_code == 200
+
+
+def test_metrics_from_malformed_facts_are_a_503(
+    metrics_client: TestClient, nvidia_filings: FakeFilings
+) -> None:
+    nvidia_filings.facts = {"cik": 1045810, "entityName": "NVIDIA CORP", "facts": []}
+    response = metrics_client.get("/api/companies/NVDA/metrics")
+    assert response.status_code == 503
+    assert "could not be read" in response.json()["error"]
+
+
+# Sample records
+
+
+def test_any_named_sample_record_is_served(client: TestClient) -> None:
+    sample = WEB_DIR / "sample-zz-api-test.json"
+    sample.write_text('{"run": {}}')
+    try:
+        response = client.get("/sample-zz-api-test.json")
+        assert response.status_code == 200
+        assert response.headers["content-type"].startswith("application/json")
+        assert response.json() == {"run": {}}
+    finally:
+        sample.unlink()
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/sample-missing.json",
+        "/sample-..%2F..%2Fdocker%2Fpyproject.json",
+        "/sample-../app.json",
+        "/sample-%2e%2e.json",
+        "/sample-UPPER.json",
+        "/sample-" + "a" * 41 + ".json",
+    ],
+)
+def test_unknown_or_unsafe_sample_names_are_404(client: TestClient, path: str) -> None:
+    assert client.get(path).status_code == 404

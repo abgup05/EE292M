@@ -14,6 +14,7 @@ from enum import StrEnum
 from pydantic import BaseModel, Field, field_validator
 
 from app.core import limits
+from app.core.metric_models import Metric, Series
 
 
 class RunStatus(StrEnum):
@@ -49,6 +50,7 @@ class Confidence(StrEnum):
 
 class SourceKind(StrEnum):
     sec_filing = "sec_filing"
+    sec_xbrl = "sec_xbrl"
     public_html = "public_html"
 
 
@@ -127,6 +129,7 @@ class Claim(BaseModel):
     rationale: str = ""
     finding_ids: list[str] = Field(default_factory=list)
     passages_considered: int = 0
+    assessed_by: str = ""
 
 
 class Source(BaseModel):
@@ -164,8 +167,25 @@ class Evidence(BaseModel):
     link: str = ""
 
 
+class FindingChecks(BaseModel):
+    """Which automatic checks a finding went through. A check that did not run says so.
+
+    ``quotes``: "passed" when at least one quote was found in the stored text, "none" when
+    the finding cites no quote. ``numbers``: "passed" when every number in the statement was
+    matched to a quote or a cited reported figure, "failed" when one was not, "none" when the
+    statement has no number to check. ``support`` is the second-model check that the excerpts
+    mean what the statement says: "passed", "failed" or "unchecked".
+    """
+
+    quotes: str = "none"
+    numbers: str = "none"
+    numbers_detail: list[str] = Field(default_factory=list)
+    support: str = "unchecked"
+    support_detail: str = ""
+
+
 class Finding(BaseModel):
-    """A statement about one claim, tied to the excerpts that back it."""
+    """A statement about one claim, tied to the excerpts and reported figures that back it."""
 
     id: str
     claim_id: str
@@ -176,6 +196,9 @@ class Finding(BaseModel):
     rationale: str
     verified: bool = False
     filings_cited: int = 0
+    metric_ids: list[str] = Field(default_factory=list)
+    checks: FindingChecks = Field(default_factory=FindingChecks)
+    withheld_reason: str = ""
 
 
 class Brief(BaseModel):
@@ -197,11 +220,21 @@ class Coverage(BaseModel):
     passages_indexed: int = 0
     claims_total: int = 0
     claims_with_evidence: int = 0
+    findings_proposed: int = 0
     findings_verified: int = 0
     findings_withheld: int = 0
+    engine_fallbacks: int = 0
     excerpts_verified: int = 0
     quotes_offered: int = 0
     quotes_rejected: int = 0
+    # Reported figures (XBRL company facts): computed for the run, shown to the engine,
+    # cited by verified findings; numbers written in finding statements and how many
+    # were not found in the finding's quotes or cited figures.
+    metrics_computed: int = 0
+    figures_offered: int = 0
+    figures_cited: int = 0
+    numbers_checked: int = 0
+    numbers_unmatched: int = 0
 
 
 class Run(BaseModel):
@@ -216,6 +249,7 @@ class Run(BaseModel):
     finished_at: datetime | None = None
     company: Company | None = None
     engine: str = "extractive"
+    engine_detail: str = ""
     claims: list[Claim] = Field(default_factory=list)
     sources: list[Source] = Field(default_factory=list)
     evidence: list[Evidence] = Field(default_factory=list)
@@ -224,4 +258,7 @@ class Run(BaseModel):
     coverage_limits: list[str] = Field(default_factory=list)
     errors: list[str] = Field(default_factory=list)
     coverage: Coverage = Field(default_factory=Coverage)
+    metrics: list[Metric] = Field(default_factory=list)
+    series: list[Series] = Field(default_factory=list)
+    metrics_notes: list[str] = Field(default_factory=list)
     brief: Brief | None = None

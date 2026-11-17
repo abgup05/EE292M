@@ -223,3 +223,29 @@ def test_the_time_limit_stops_fetching_and_says_how_many_were_skipped(store: Sto
     assert set(result.documents) == {"s1"}
     assert len(filings.fetched) == 1
     assert run.coverage_limits == ["The run time limit was reached; 2 source(s) were not fetched."]
+
+
+def test_a_filing_mostly_outside_item_headings_is_a_coverage_limit(store: Store) -> None:
+    paragraph = "<p>Paragraph {} of a filing whose Item headings are missing.</p>"
+    no_items = "<html><body>" + "".join(paragraph.format(n) for n in range(40)) + "</body></html>"
+    run = make_run(filings=2)
+    filings = FakeFilings.synthetic(no_items, filing_html("A readable paragraph under an Item."))
+    ingest(run, NVIDIA, store, filings=filings, fetch_page=FakePages({}), out_of_time=never)
+    title = run.sources[0].title
+    assert run.coverage_limits == [
+        f"Item headings were not found for most of {title}; "
+        "its passages are located by sub-heading only."
+    ]
+
+
+def test_the_recorded_10q_has_no_item_coverage_limit(store: Store) -> None:
+    run = make_run(filings=1)
+    ingest(
+        run,
+        NVIDIA,
+        store,
+        filings=FakeFilings.nvidia(Q2_2027),
+        fetch_page=FakePages({}),
+        out_of_time=never,
+    )
+    assert run.coverage_limits == []

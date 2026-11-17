@@ -26,6 +26,7 @@ import httpx
 from app.core.documents import FetchedFiling, FilingRef
 from app.core.models import Company
 from app.core.ports import SourceError, UnknownTicker
+from app.sources.xbrl import fetch_company_facts
 
 ALLOWED_HOSTS = frozenset({"www.sec.gov", "data.sec.gov"})
 TICKERS_URL = "https://www.sec.gov/files/company_tickers.json"
@@ -156,6 +157,13 @@ class EdgarClient:
             html=body.decode("utf-8", errors="replace"),
             retrieved_at=datetime.now(UTC),
         )
+
+    def company_facts(self, company: Company) -> dict[str, Any]:
+        """The company's XBRL company facts from ``data.sec.gov``, parsed.
+
+        Raises :class:`SourceError` when EDGAR fails or the body is not a JSON object.
+        """
+        return fetch_company_facts(self.get, company.cik)
 
     # Transport
 

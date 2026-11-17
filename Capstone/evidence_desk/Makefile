@@ -145,7 +145,7 @@ profile:
 	$(RUN) python -m tests.speed_run profile
 
 bench:
-	$(RUN) python -m tests.speed_run bench $(if $(RUNS),--runs $(RUNS),)
+	$(RUN) python -m tests.speed_run bench $(if $(RUNS),--runs $(RUNS),) $(if $(filter 1,$(COLLECTOR)),--collector,)
 
 time-live:
 	$(RUN) python -m tests.live_timing $(if $(RUNS),--runs $(RUNS),)

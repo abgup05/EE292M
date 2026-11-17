@@ -28,6 +28,16 @@ def company_facts_url(cik: int) -> str:
     return COMPANY_FACTS_URL.format(cik=cik)
 
 
+def decode_json(body: bytes) -> Any:
+    """EDGAR's JSON answer as Python data.
+
+    One function for every answer (the company list, a company's filings, its facts),
+    so that what decoding costs can be timed apart from the request (``make time-live``):
+    a large company's facts are several megabytes.
+    """
+    return json.loads(body)
+
+
 def fetch_company_facts(get: Callable[[str], bytes], cik: int) -> dict[str, Any]:
     """Retrieve and parse the company facts of ``cik`` through ``get``.
 
@@ -37,7 +47,7 @@ def fetch_company_facts(get: Callable[[str], bytes], cik: int) -> dict[str, Any]
     url = company_facts_url(cik)
     body = get(url)
     try:
-        payload = json.loads(body)
+        payload = decode_json(body)
     except (json.JSONDecodeError, UnicodeDecodeError) as exc:
         raise SourceError(f"EDGAR returned malformed company facts for CIK {cik}") from exc
     if not isinstance(payload, dict):

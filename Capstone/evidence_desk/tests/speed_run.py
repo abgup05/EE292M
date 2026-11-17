@@ -15,10 +15,18 @@ it too:
 
 ``python -m tests.speed_run bench`` (``make bench``) measures the inline-XBRL
 header cut by interleaving: ``--runs`` pairs (default 12), each one run with
-the cut and one without, alternately in one process. It reports each
-variant's median for the parse stage and the whole run, and the paired
-difference with its spread, and checks that both variants give the same
-golden record. It writes ``results/bench-<UTC>.txt``.
+the cut and one without, in one process. Which of the two runs first alternates
+from pair to pair, and the garbage collector is run before each timed run: with a
+fixed order and nothing done about the collector, its cycles fell on the same
+variant every few pairs and moved time between the parse and the rest of the run
+(the fourth referee read that out of the pairs). By default the collector is then
+switched off during the timed run, which times the run's own work; with
+``--collector`` (``make bench COLLECTOR=1``) it stays on, as in the app, and each run
+also pays for the collections its own allocations cause. It reports each
+variant's median for the parse stage and the whole run, the paired difference
+with its spread, the same difference separately for the pairs where the cut ran
+first and second, and checks that both variants give the same golden record. It
+writes ``results/bench-<UTC>.txt``.
 
 This is the offline path only. A live run's time is EDGAR and, with a key, the
 model; neither is in these numbers (``docs/speed.md``).
@@ -30,6 +38,7 @@ import argparse
 import contextlib
 import cProfile
 import functools
+import gc
 import io
 import pstats
 import sqlite3
@@ -281,15 +290,35 @@ def _no_cut(html: str) -> tuple[str, str]:
     return html, ""
 
 
-def _timed_run(cut: bool) -> tuple[float, float, str]:
-    """One :func:`build_golden` with or without the header cut: (parse s, whole s, sha256)."""
-    with ExitStack() as stack:
-        if not cut:
-            stack.enter_context(mock.patch.object(filing_parser, "_cut_ix_headers", _no_cut))
-        watch = stack.enter_context(Stopwatch().timing({"parse filings": STAGES["parse filings"]}))
-        began = time.perf_counter()
-        digest = build_golden()["sha256"]
-        whole = time.perf_counter() - began
+def _timed_run(cut: bool, collector: bool = False) -> tuple[float, float, str]:
+    """One :func:`build_golden` with or without the header cut: (parse s, whole s, sha256).
+
+    The garbage collector is run first, so a collection that an earlier run made due
+    cannot land inside this one. Without ``collector`` it is then switched off for the
+    timed part, and the time is the run's own work alone. With it, it stays on, as it is
+    when the app runs, and the run also pays for the collections its own allocations cause.
+    """
+    gc.collect()
+    was_enabled = gc.isenabled()
+    if collector:
+        gc.enable()
+    else:
+        gc.disable()
+    try:
+        with ExitStack() as stack:
+            if not cut:
+                stack.enter_context(mock.patch.object(filing_parser, "_cut_ix_headers", _no_cut))
+            watch = stack.enter_context(
+                Stopwatch().timing({"parse filings": STAGES["parse filings"]})
+            )
+            began = time.perf_counter()
+            digest = build_golden()["sha256"]
+            whole = time.perf_counter() - began
+    finally:
+        if was_enabled:
+            gc.enable()
+        else:
+            gc.disable()
     return watch.tallies["parse filings"].seconds, whole, digest
 
 
@@ -302,20 +331,40 @@ def _spread(values: list[float]) -> str:
     )
 
 
-def bench(pairs: int = DEFAULT_PAIRS, out_dir: Path = RESULTS) -> dict[str, float]:
-    """Interleave ``pairs`` runs with and without the header cut; report and return the medians."""
+def bench(
+    pairs: int = DEFAULT_PAIRS, out_dir: Path = RESULTS, collector: bool = False
+) -> dict[str, float]:
+    """Interleave ``pairs`` runs with and without the header cut; report and return the medians.
+
+    ``collector`` leaves the garbage collector on during each timed run (see :func:`_timed_run`).
+    """
     if pairs < MIN_PAIRS:
         raise ValueError(f"pairs must be at least {MIN_PAIRS}")
-    _timed_run(True), _timed_run(False)  # warm-up, discarded
+    _timed_run(True, collector), _timed_run(False, collector)  # warm-up, discarded
     rows: list[tuple[float, float, float, float]] = []
+    cut_first: list[bool] = []
     digests: set[str] = set()
-    for _ in range(pairs):
-        cut_parse, cut_whole, cut_digest = _timed_run(True)
-        raw_parse, raw_whole, raw_digest = _timed_run(False)
+    for number in range(pairs):
+        first = number % 2 == 0  # the cut runs first in pairs 1, 3, ...; second in 2, 4, ...
+        order = (True, False) if first else (False, True)
+        timed = {variant: _timed_run(variant, collector) for variant in order}
+        cut_parse, cut_whole, cut_digest = timed[True]
+        raw_parse, raw_whole, raw_digest = timed[False]
         digests |= {cut_digest, raw_digest}
         rows.append((cut_parse, raw_parse, cut_whole, raw_whole))
+        cut_first.append(first)
     parse_saved = [raw - cut for cut, raw, _, _ in rows]
     whole_saved = [raw - cut for _, _, cut, raw in rows]
+
+    def by_order(saved: list[float]) -> str:
+        """The median saving where the cut ran first, and where it ran second."""
+        firsts = [value for value, first in zip(saved, cut_first, strict=True) if first]
+        seconds = [value for value, first in zip(saved, cut_first, strict=True) if not first]
+        return (
+            f"cut run first {statistics.median(firsts) * 1000:+.1f} ms ({len(firsts)} pairs), "
+            f"cut run second {statistics.median(seconds) * 1000:+.1f} ms ({len(seconds)} pairs)"
+        )
+
     medians = {
         "parse_cut": statistics.median(r[0] for r in rows),
         "parse_no_cut": statistics.median(r[1] for r in rows),
@@ -323,22 +372,28 @@ def bench(pairs: int = DEFAULT_PAIRS, out_dir: Path = RESULTS) -> dict[str, floa
         "whole_no_cut": statistics.median(r[3] for r in rows),
     }
     lines = [
-        f"Header cut, interleaved: {pairs} pairs (cut, no cut, cut, no cut, ...), one process, "
+        f"Header cut, interleaved: {pairs} pairs, one process, "
         f"{datetime.now(UTC):%Y-%m-%d %H:%M:%S} UTC",
+        "  The order within a pair alternates: the cut first in odd pairs, second in even ones.",
+        "  The garbage collector is run before each timed run and "
+        + ("left on during it, as in the app." if collector else "switched off during it."),
         f"  parse 3 filings: cut {medians['parse_cut'] * 1000:.1f} ms, "
         f"no cut {medians['parse_no_cut'] * 1000:.1f} ms (medians)",
         f"    saved per pair: {_spread(parse_saved)}; cut faster in "
         f"{sum(d > 0 for d in parse_saved)} of {pairs}",
+        f"    median saved by order: {by_order(parse_saved)}",
         f"  whole run:       cut {medians['whole_cut'] * 1000:.1f} ms, "
         f"no cut {medians['whole_no_cut'] * 1000:.1f} ms (medians)",
         f"    saved per pair: {_spread(whole_saved)}; cut faster in "
         f"{sum(d > 0 for d in whole_saved)} of {pairs}",
+        f"    median saved by order: {by_order(whole_saved)}",
         f"  record sha256: {', '.join(sorted(digests))}",
-        "  pairs (ms): parse cut/no cut, whole cut/no cut",
+        "  pairs (ms): parse cut/no cut, whole cut/no cut, which ran first",
     ]
     lines += [
-        f"    {a * 1000:6.1f} {b * 1000:6.1f}   {c * 1000:6.1f} {d * 1000:6.1f}"
-        for a, b, c, d in rows
+        f"    {a * 1000:6.1f} {b * 1000:6.1f}   {c * 1000:6.1f} {d * 1000:6.1f}   "
+        f"{'cut' if first else 'no cut'}"
+        for (a, b, c, d), first in zip(rows, cut_first, strict=True)
     ]
     text = "\n".join(lines) + "\n"
     print(text)
@@ -358,11 +413,16 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("profile", help="stage breakdown and cProfile; results/profile-<UTC>.txt")
     bench_parser = sub.add_parser("bench", help="header cut against no cut, interleaved")
     bench_parser.add_argument("--runs", type=int, default=DEFAULT_PAIRS, help="pairs to run")
+    bench_parser.add_argument(
+        "--collector",
+        action="store_true",
+        help="leave the garbage collector on during each timed run, as it is in the app",
+    )
     args = parser.parse_args(argv)
     if args.command == "profile":
         profile()
     else:
-        bench(args.runs)
+        bench(args.runs, collector=args.collector)
     return 0
 
 

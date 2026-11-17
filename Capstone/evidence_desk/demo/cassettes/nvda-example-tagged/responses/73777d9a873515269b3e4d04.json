@@ -1,0 +1,26 @@
+{
+  "key": "73777d9a873515269b3e4d04",
+  "step": "check",
+  "via": "Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-17T17:39:18+00:00",
+  "response": {
+    "judgements": [
+      {
+        "finding_number": 1,
+        "verdict": "supported",
+        "reason": "The excerpt, under the Risk Factors supply heading, lists the limited number and geographic concentration of suppliers, foundries and manufacturers as a risk, matching the statement and the supports stance."
+      },
+      {
+        "finding_number": 2,
+        "verdict": "supported",
+        "reason": "The excerpt states the company depends on foundries for wafers, does not assemble, test or package products, and contracts with independent subcontractors, which matches the statement and the supports stance."
+      },
+      {
+        "finding_number": 3,
+        "verdict": "partly",
+        "reason": "The excerpt confirms supplier broadening, expansion into the U.S. and Latin America, and two named foundries, but says supply is mainly concentrated in Asia; it does not show the expansion offsets concentration."
+      }
+    ]
+  }
+}

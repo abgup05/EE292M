@@ -1,0 +1,74 @@
+{
+  "key": "9f6c9b99a0c919cb5406cfdc",
+  "step": "assess",
+  "via": "Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-17T17:38:25+00:00",
+  "response": {
+    "findings": [
+      {
+        "statement": "The company says its revenue is concentrated among a limited number of direct and indirect customers, and that this may continue. For fiscal year 2026 one direct customer was 22% of total revenue and another was 14%.",
+        "stance": "supports",
+        "confidence": "high",
+        "rationale": "The 10-K states the concentration directly. The tagged XBRL figures for Customer One (22.0%) and Customer Two (14.0%) match the percentages in the filing text.",
+        "quotes": [
+          {
+            "passage_id": "s3-p183",
+            "text": "Our revenue is concentrated among a limited number of direct and indirect customers and this trend may continue."
+          }
+        ],
+        "figure_ids": [
+          "tagged:revenue_concentration_by_customer:nvda:CustomerOneMember+ComputeandNetworkingSegment:annual:2026-01-25",
+          "tagged:revenue_concentration_by_customer:nvda:CustomerTwoMember+ComputeandNetworkingSegment:annual:2026-01-25"
+        ]
+      },
+      {
+        "statement": "In the first quarter of fiscal year 2027 three direct customers represented 21%, 17% and 16% of total revenue.",
+        "stance": "supports",
+        "confidence": "high",
+        "rationale": "The most recent quarters show the concentration continuing, with several individual customers each above 10% of revenue. The filings do not state a combined share, so none is calculated here.",
+        "quotes": [
+          {
+            "passage_id": "s2-p79",
+            "text": "Direct Customers – For the first quarter of fiscal year 2027, three direct customers represented 21%, 17%, and 16% of total revenue, all of which was primarily attributable to the Compute &amp; Networking segment."
+          }
+        ],
+        "figure_ids": []
+      },
+      {
+        "statement": "For the second quarter of fiscal year 2027 one direct customer represented 16% of total revenue, and for the first half three direct customers represented 16%, 15% and 13%. In the second quarter of fiscal year 2026 two customers represented 23% and 16%.",
+        "stance": "context",
+        "confidence": "medium",
+        "rationale": "The single-customer share in the latest quarter (16%, also tagged in XBRL) is lower than in the same quarter a year earlier. Concentration is still present, but the distribution across customers has shifted. The passages do not show whether this is a trend.",
+        "quotes": [
+          {
+            "passage_id": "s1-p96",
+            "text": "Direct Customers – For the second quarter of fiscal year 2027, one direct customer represented 16% of total revenue, which was primarily attributable to the Compute &amp; Networking segment. For the first half of fiscal year 2027, three direct customers represented 16%, 15%, and 13% of total revenue, all of which was primarily attributable to the Compute &amp; Networking segment."
+          }
+        ],
+        "figure_ids": [
+          "tagged:revenue_concentration_by_customer:nvda:RevenueCustomer1Member+ComputeandNetworking:quarter:2026-07-26"
+        ]
+      },
+      {
+        "statement": "Accounts receivable are also concentrated: at fiscal year-end 2026, Customer One was 25%, Customer Two 18% and Customer Three 13% of receivables.",
+        "stance": "supports",
+        "confidence": "medium",
+        "rationale": "The tagged receivables shares show the concentration also appears in credit exposure. These figures describe receivables, not revenue, so they support the claim only indirectly.",
+        "quotes": [],
+        "figure_ids": [
+          "tagged:receivables_concentration_by_customer:nvda:CustomerOneMember:annual:2026-01-25",
+          "tagged:receivables_concentration_by_customer:nvda:CustomerTwoMember:annual:2026-01-25",
+          "tagged:receivables_concentration_by_customer:nvda:CustomerThreeMember:annual:2026-01-25"
+        ]
+      }
+    ],
+    "rationale": "The passages support the claim. Filings across fiscal 2026 and fiscal 2027 describe revenue as concentrated in a limited number of customers and give customer shares of 13% to 23%. Whether the combined share counts as large depends on the reader's threshold, which the filings do not set.",
+    "unknowns": [
+      "The combined share of revenue from the largest customers is not stated, so it is not computed here.",
+      "The identities of the direct customers are not disclosed, so the passages do not show whether they are related to each other.",
+      "The indirect customer shares are described as estimates, and the passages give no figures for them.",
+      "The passages do not show whether the shift in individual customer shares in the latest quarter reflects a lasting change in concentration."
+    ]
+  }
+}

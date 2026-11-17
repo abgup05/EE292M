@@ -1,0 +1,81 @@
+{
+  "key": "5569dfd51f79b8c602b80b0b",
+  "step": "assess",
+  "via": "Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-17T17:38:25+00:00",
+  "response": {
+    "findings": [
+      {
+        "statement": "Gross margin was higher in the second quarter of fiscal 2027 than a year earlier: 75.0% against 72.4%, which the filing attributes to improved mix from Blackwell Ultra.",
+        "stance": "supports",
+        "confidence": "medium",
+        "rationale": "The year-over-year increase is stated directly and has an operating cause (mix), not only a one-time effect. It is a comparison with the same quarter a year earlier, so it shows a rise over that period but not a continuing upward trend.",
+        "quotes": [
+          {
+            "passage_id": "s1-p98",
+            "text": "Gross margin increased to 75.0% for the second quarter of fiscal year 2027 compared to 72.4% for the second quarter of fiscal year 2026, and 75.0% for the first half of fiscal year 2027 compared to 66.6% for the first half of fiscal year 2026 due to improved mix from Blackwell Ultra."
+          }
+        ],
+        "figure_ids": [
+          "gross_margin:quarter:2026-07-26"
+        ]
+      },
+      {
+        "statement": "The first-quarter increase in fiscal 2027 (74.9% against 60.5%) is attributed primarily to the prior year's $4.5 billion H20 charge, so it mostly reflects the removal of a one-time item.",
+        "stance": "context",
+        "confidence": "high",
+        "rationale": "The filing says the year-over-year rise was primarily due to the prior-year charge. That weakens the use of this comparison as evidence of underlying expansion.",
+        "quotes": [
+          {
+            "passage_id": "s2-p81",
+            "text": "Gross margin increased to 74.9% for the first quarter of fiscal year 2027 compared to 60.5% for the first quarter of fiscal year 2026, primarily due to the prior year's $4.5 billion charge associated with H20 excess inventory and purchase obligations."
+          }
+        ],
+        "figure_ids": [
+          "gross_margin:quarter:2026-04-26"
+        ]
+      },
+      {
+        "statement": "Gross margin was approximately flat sequentially in the most recent quarter. The reported quarterly figures are 75.0%, 74.9% and 75.0% for the last three quarters, which shows a plateau and not continued expansion.",
+        "stance": "challenges",
+        "confidence": "high",
+        "rationale": "The company states that the sequential change was approximately flat. The three quarterly gross margin figures agree, so the claim of expansion holds only against year-ago periods that carried the charge and the transition costs.",
+        "quotes": [
+          {
+            "passage_id": "s1-p90",
+            "text": "Gross margin was approximately flat sequentially as our Blackwell architecture remains the vast majority of our revenue."
+          }
+        ],
+        "figure_ids": [
+          "gross_margin:quarter:2026-07-26",
+          "gross_margin:quarter:2026-04-26",
+          "gross_margin:quarter:2026-01-25"
+        ]
+      },
+      {
+        "statement": "For the full fiscal year 2026, gross margin fell to 71.1% from 75.0% in fiscal 2025, so over the last full year it contracted.",
+        "stance": "challenges",
+        "confidence": "high",
+        "rationale": "The annual figure fell, with the filing citing the shift from Hopper HGX systems to Blackwell full-scale datacenter solutions and the H20 charge. The recent quarters recover to the fiscal 2025 level of 75.0% but do not exceed it.",
+        "quotes": [
+          {
+            "passage_id": "s3-p185",
+            "text": "Gross margins decreased to 71.1% in fiscal year 2026 from 75.0% in fiscal year 2025 as our business model transitioned from offering Hopper HGX systems to Blackwell full-scale datacenter solutions and a $4.5 billion charge associated with H20 excess inventory and purchase obligations in the first quarter of fiscal year 2026."
+          }
+        ],
+        "figure_ids": [
+          "gross_margin:annual:2026-01-25",
+          "gross_margin:annual:2025-01-26"
+        ]
+      }
+    ],
+    "rationale": "The passages show a recovery, not a steady expansion. Gross margin rose year over year in the first half of fiscal 2027, but part of that is the absence of the prior-year $4.5 billion H20 charge, and the company says it was approximately flat sequentially. The last full fiscal year saw a decline. The claim holds if it means a rebound from the depressed fiscal 2026 level and is not supported if it means margins are still rising.",
+    "unknowns": [
+      "Whether gross margin will rise above the roughly 75% level in upcoming quarters; the passages give no forward guidance on gross margin.",
+      "How much of the second-quarter year-over-year increase comes from mix and how much from lower inventory provisions; the passages quantify the provision effect (0.8% unfavorable in the second quarter of fiscal 2027) but do not split the increase.",
+      "Whether the margin trend the claim refers to is year over year, sequential or annual, since the passages give different answers for each.",
+      "How the next earnings report compares with expectations, which these passages do not address."
+    ]
+  }
+}

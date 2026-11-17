@@ -1,0 +1,16 @@
+{
+  "key": "f6e70ea1166e7d606b42bf21",
+  "step": "summarize",
+  "via": "Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-17T17:52:15+00:00",
+  "response": {
+    "summary": "Four of five claims are Supported. Data Center revenue grew year over year in consecutive quarters (up 117% in Q2 fiscal 2027), though the company warns faster product cadence may make revenue volatile. Revenue and receivables are concentrated in a few customers. Export controls are restricting revenue: a $4.5 billion H20 charge, with licensed China sales still small. Supplier dependence is confirmed; only two foundries are named. Gross margin is Mixed evidence: 75.0% in Q2 against 72.4% a year earlier, but flat sequentially and down to 71.1% for fiscal 2026, so expansion is not established. For the overweight decision, growth supports it while concentration and export-control risk weigh against it.",
+    "next_steps": [
+      "Check whether gross margin moves beyond the 75% plateau in the next quarter's guidance and results.",
+      "Track the share of revenue from the largest direct customers and any change in receivables concentration.",
+      "Monitor H200 license progress and any revenue from China, and the effect of export controls on other markets.",
+      "Review how the faster product cadence could affect revenue volatility and supplier capacity."
+    ]
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "key": "3663869b94e269c9f44f636f",
+  "step": "check",
+  "via": "Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-17T17:51:54+00:00",
+  "response": {
+    "judgements": [
+      {
+        "finding_number": 1,
+        "verdict": "supported",
+        "reason": "The excerpt says revenue is concentrated among a limited number of customers and may continue; figures show one customer at 22% and another at 14% of FY2026 revenue, supporting the claim."
+      },
+      {
+        "finding_number": 2,
+        "verdict": "supported",
+        "reason": "The excerpt states that three direct customers represented 21%, 17% and 16% of total revenue in Q1 FY2027, matching the statement exactly."
+      },
+      {
+        "finding_number": 3,
+        "verdict": "supported",
+        "reason": "Tagged figures show receivables shares of 25%, 18% and 13% for three named customers at fiscal year-end 2026, matching the statement and supporting concentration."
+      }
+    ]
+  }
+}

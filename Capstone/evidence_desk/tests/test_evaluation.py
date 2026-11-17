@@ -26,6 +26,7 @@ from app.evaluation.retrieval_eval import (
     is_relevant,
     rank_label,
     read_queries,
+    read_queries_file,
     recall_at,
     reciprocal_rank,
     score_case,
@@ -201,6 +202,20 @@ def test_a_queries_file_naming_an_unknown_case_is_refused(tmp_path: Path) -> Non
     path.write_text(json.dumps({"no-such-case": ["x"]}))
     with pytest.raises(ValueError, match="no-such-case"):
         read_queries(path, {"supplier-concentration"})
+
+
+def test_a_queries_file_is_read_in_the_planned_shape_and_the_flat_shape(tmp_path: Path) -> None:
+    ids = {"supplier-concentration"}
+    book = {"supplier-concentration": ["contract manufacturers"]}
+    flat, planned = tmp_path / "flat.json", tmp_path / "planned.json"
+    flat.write_text(json.dumps(book))
+    planned.write_text(json.dumps({"provenance": {"golden_sha256": "x"}, "queries": book}))
+    assert read_queries(flat, ids) == read_queries(planned, ids) == book
+    assert read_queries_file(planned, ids) == (book, {"golden_sha256": "x"})
+    assert read_queries_file(flat, ids) == (book, None)
+    planned.write_text(json.dumps({"provenance": {}, "queries": {"no-such-case": []}}))
+    with pytest.raises(ValueError, match="no-such-case"):
+        read_queries(planned, ids)
 
 
 # Validation

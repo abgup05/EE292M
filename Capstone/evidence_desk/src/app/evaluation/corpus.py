@@ -1,7 +1,9 @@
 """The filings the golden set is measured on: pinned by hash, read offline when possible.
 
 Every filing a case names is pinned in ``eval/filings.json`` (ticker, accession,
-form, period end, filing date, URL and the SHA-256 of the original HTML). The
+form, period end, filing date, URL and the SHA-256 of the original HTML, and the
+company's CIK and name); the file also pins each company's XBRL facts under
+``"facts"`` (see :mod:`app.evaluation.companies`). The
 primary document is read, in order, from the recorded test fixtures
 (``tests/fixtures/edgar``, listed in their ``manifest.json``), from the local
 cache ``eval/cache`` (gitignored), and only then from SEC EDGAR through
@@ -39,6 +41,7 @@ PINS_VERSION = 1
 
 ACCESSION_PATTERN = r"^\d{10}-\d{2}-\d{6}$"
 DATE_PATTERN = r"^\d{4}-\d{2}-\d{2}$"
+SHA256_PATTERN = r"^[0-9a-f]{64}$"
 ARCHIVE_PREFIX = "https://www.sec.gov/Archives/edgar/data/"
 
 Origin = Literal["fixture", "cache", "edgar"]
@@ -60,7 +63,11 @@ class PinnedFiling(BaseModel):
     period_end: str = Field(pattern=DATE_PATTERN)
     filed_date: str = Field(pattern=DATE_PATTERN)
     url: str = Field(pattern=r"^https://www\.sec\.gov/Archives/edgar/data/\d+/\d{18}/[\w.-]+$")
-    sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    sha256: str = Field(pattern=SHA256_PATTERN)
+    # The filer as EDGAR names it, pinned once: the model prompts carry both, so a
+    # change would change every request key of the cassette.
+    cik: int | None = Field(default=None, gt=0)
+    name: str | None = Field(default=None, min_length=1, max_length=200)
 
     @property
     def title(self) -> str:
@@ -68,13 +75,24 @@ class PinnedFiling(BaseModel):
         return f"{self.ticker} {self.form}, period ended {self.period_end}"
 
 
+class PinnedFacts(BaseModel):
+    """A company's XBRL company facts as pinned: where they came from and their hash."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    cik: int = Field(gt=0)
+    url: str = Field(pattern=r"^https://data\.sec\.gov/")
+    sha256: str = Field(pattern=SHA256_PATTERN)
+
+
 class PinsFile(BaseModel):
-    """The shape of ``eval/filings.json``."""
+    """The shape of ``eval/filings.json``: the filings, and the company facts by ticker."""
 
     model_config = ConfigDict(extra="forbid")
 
     version: Literal[1]
     filings: list[PinnedFiling]
+    facts: dict[str, PinnedFacts] = Field(default_factory=dict)
 
 
 def sha256_hex(body: bytes) -> str:
@@ -82,30 +100,48 @@ def sha256_hex(body: bytes) -> str:
     return hashlib.sha256(body).hexdigest()
 
 
-def load_pins(path: Path = FILINGS_PATH) -> dict[str, PinnedFiling]:
-    """The pinned filings by accession number. Raises :class:`CorpusError` on a bad file."""
+def _read_pins_file(path: Path) -> PinsFile:
     try:
-        payload = PinsFile.model_validate_json(path.read_bytes())
+        return PinsFile.model_validate_json(path.read_bytes())
     except FileNotFoundError as exc:
         raise CorpusError(f"{path.name} not found at {path}") from exc
     except ValidationError as exc:
         count = exc.error_count()
         raise CorpusError(f"{path.name} is malformed: {count} problem(s)\n{exc}") from exc
+
+
+def load_pins(path: Path = FILINGS_PATH) -> dict[str, PinnedFiling]:
+    """The pinned filings by accession number. Raises :class:`CorpusError` on a bad file."""
     pins: dict[str, PinnedFiling] = {}
-    for pin in payload.filings:
+    for pin in _read_pins_file(path).filings:
         if pin.accession in pins:
             raise CorpusError(f"{path.name} pins {pin.accession} twice")
         pins[pin.accession] = pin
     return pins
 
 
-def save_pins(pins: Iterable[PinnedFiling], path: Path = FILINGS_PATH) -> None:
-    """Write the pins sorted by ticker, then period end (newest first)."""
+def load_facts_pins(path: Path = FILINGS_PATH) -> dict[str, PinnedFacts]:
+    """The pinned company facts by ticker. Raises :class:`CorpusError` on a bad file."""
+    return dict(_read_pins_file(path).facts)
+
+
+def save_pins(
+    pins: Iterable[PinnedFiling],
+    path: Path = FILINGS_PATH,
+    facts: Mapping[str, PinnedFacts] | None = None,
+) -> None:
+    """Write the pins sorted by ticker, then period end (newest first).
+
+    ``facts`` replaces the pinned company facts; when it is None the facts
+    already in the file at ``path`` are kept.
+    """
+    if facts is None:
+        facts = _read_pins_file(path).facts if path.exists() else {}
     ordered = sorted(pins, key=lambda pin: pin.period_end, reverse=True)
     ordered.sort(key=lambda pin: pin.ticker)  # stable: newest first within a ticker
-    payload = PinsFile(version=PINS_VERSION, filings=ordered)
+    payload = PinsFile(version=PINS_VERSION, filings=ordered, facts=dict(sorted(facts.items())))
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload.model_dump(), indent=2) + "\n")
+    path.write_text(json.dumps(payload.model_dump(exclude_none=True), indent=2) + "\n")
 
 
 def fixture_files(fixture_dir: Path = FIXTURE_DIR) -> dict[str, Path]:

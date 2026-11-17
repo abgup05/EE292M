@@ -10,6 +10,15 @@ Commands:
   latest 10-K and the newest 10-Q filed after it).
 - ``show TICKER ACCESSION [SECTION] [--grep REGEX] [--text]``: print a filing's outline,
   one section, matching lines, or the whole stored text, for drafting cases.
+- ``plan --cassette DIR [--out eval/queries.json]``: ask the planner, through the
+  cassette, for every case's retrieval queries; write the queries file when every
+  request is answered, otherwise list what is pending and exit 3.
+- ``generate --cassette DIR --queries FILE [--out eval/results]``: assess every case
+  through the cassette, gate it and score the answers; exit 3 while any assess
+  request is pending, writing nothing.
+
+``plan``, ``generate`` and ``fetch`` pin each company's CIK and name, and
+``generate`` and ``fetch`` its XBRL facts, in ``eval/filings.json`` the first time.
 
 ``make eval ARGS="..."`` runs ``python -m app.evaluation run ...``, so a leading
 ``run`` followed by another command name is dropped: ``make eval ARGS="fetch"``
@@ -28,7 +37,15 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from app.core.documents import Document
+from app.core.models import Company
 from app.core.ports import SourceError
+from app.evaluation.companies import (
+    CompanyFigures,
+    company_for,
+    figures_for,
+    pin_companies,
+    read_facts,
+)
 from app.evaluation.corpus import (
     CACHE_DIR,
     EVAL_DIR,
@@ -37,31 +54,38 @@ from app.evaluation.corpus import (
     CorpusError,
     Fetch,
     PinnedFiling,
+    load_facts_pins,
     load_pins,
     save_pins,
     sha256_hex,
 )
+from app.evaluation.generation_eval import run_generation
 from app.evaluation.golden import (
     GOLDEN_PATH,
+    GoldenCase,
     Validation,
     heading_matches,
     read_golden,
     render_validation,
     validate_golden,
 )
+from app.evaluation.planning import run_plan
 from app.evaluation.retrieval_eval import (
     VARIANTS,
     build_record,
     evaluate,
     get_variant,
-    read_queries,
+    read_queries_file,
     render_markdown,
     write_record,
 )
 from app.sources.edgar import EdgarClient
 
-COMMANDS = ("validate", "run", "fetch", "pin", "show")
+COMMANDS = ("validate", "run", "fetch", "pin", "show", "plan", "generate")
+GLOBAL_OPTIONS_WITH_VALUE = ("--golden", "--filings")
 RESULTS_DIR = EVAL_DIR / "results"
+QUERIES_PATH = EVAL_DIR / "queries.json"
+CASSETTE_DIR = EVAL_DIR / "cassettes" / "golden"
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -73,7 +97,7 @@ def _parser() -> argparse.ArgumentParser:
     commands.add_parser("validate", help="check every golden case")
     run = commands.add_parser("run", help="validate, then score retrieval")
     run.add_argument("--variant", default="claim", choices=sorted(VARIANTS))
-    run.add_argument("--queries", type=Path, help="JSON {case_id: [query, ...]}")
+    run.add_argument("--queries", type=Path, help="a queries file, as plan writes it")
     run.add_argument("--out", type=Path, default=RESULTS_DIR, help="where the record goes")
     commands.add_parser("fetch", help="cache every pinned filing not in the fixtures")
     pin = commands.add_parser("pin", help="pin a company's filings in eval/filings.json")
@@ -85,6 +109,13 @@ def _parser() -> argparse.ArgumentParser:
     show.add_argument("section", nargs="?", default="", help="a heading prefix, e.g. 'Item 1A'")
     show.add_argument("--grep", help="print only lines matching this regex (case-insensitive)")
     show.add_argument("--text", action="store_true", help="print the whole stored text")
+    plan = commands.add_parser("plan", help="model-written queries for every case")
+    plan.add_argument("--cassette", type=Path, default=CASSETTE_DIR, help="the cassette")
+    plan.add_argument("--out", type=Path, default=QUERIES_PATH, help="the queries file")
+    generate = commands.add_parser("generate", help="assess every case and score the answers")
+    generate.add_argument("--cassette", type=Path, default=CASSETTE_DIR, help="the cassette")
+    generate.add_argument("--queries", type=Path, default=QUERIES_PATH, help="from plan")
+    generate.add_argument("--out", type=Path, default=RESULTS_DIR, help="where the record goes")
     return parser
 
 
@@ -92,12 +123,13 @@ def normalize_argv(argv: Sequence[str]) -> list[str]:
     """Drop the ``run`` that ``make eval`` puts before another command name."""
     args = list(argv)
     position = next((n for n, arg in enumerate(args) if not arg.startswith("-")), None)
-    if (
-        position is not None
-        and args[position] == "run"
-        and position + 1 < len(args)
-        and args[position + 1] in COMMANDS
-    ):
+    if position is None or args[position] != "run":
+        return args
+    following = position + 1
+    while following < len(args) and args[following].startswith("-"):
+        # Global options may come between: --offline, and --golden/--filings with a value.
+        following += 2 if args[following] in GLOBAL_OPTIONS_WITH_VALUE else 1
+    if following < len(args) and args[following] in COMMANDS:
         del args[position]
     return args
 
@@ -126,7 +158,7 @@ def cmd_run(args: argparse.Namespace, corpus: Corpus) -> int:
     book: dict[str, list[str]] = {}
     queries_sha = None
     if args.queries is not None:
-        book = read_queries(args.queries, {case.id for case, _ in cases})
+        book, _ = read_queries_file(args.queries, {case.id for case, _ in cases})
         queries_sha = sha256_hex(args.queries.read_bytes())
     elif variant.needs_queries:
         print(f"run: variant {variant.name!r} needs --queries FILE")
@@ -156,8 +188,109 @@ def cmd_run(args: argparse.Namespace, corpus: Corpus) -> int:
     return 0
 
 
-def cmd_fetch(corpus: Corpus) -> int:
-    """Read every pinned filing (fixture, cache or EDGAR); 0 when all matched their pins."""
+def _companies(
+    args: argparse.Namespace, corpus: Corpus, client: EdgarClient | None, tickers: list[str]
+) -> dict[str, Company]:
+    """Each ticker's pinned company, looked up through EDGAR and pinned the first time."""
+    pins, changed = pin_companies(tickers, corpus.pins, client.company if client else None)
+    if changed:
+        corpus.pins = pins
+        save_pins(pins.values(), args.filings)
+        print(f"pinned the CIK and name of {', '.join(changed)} in {_display(args.filings)}")
+    return {ticker: company_for(ticker, pins) for ticker in tickers}
+
+
+def _figures(
+    args: argparse.Namespace, companies: dict[str, Company], client: EdgarClient | None
+) -> dict[str, CompanyFigures]:
+    """Each company's reported figures from its pinned facts, pinning facts read the first time."""
+    pinned = load_facts_pins(args.filings)
+    figures: dict[str, CompanyFigures] = {}
+    added: list[str] = []
+    for ticker, company in companies.items():
+        facts = read_facts(
+            ticker,
+            company,
+            pinned.get(ticker),
+            cache_dir=CACHE_DIR,
+            fetch=client.get if client else None,
+        )
+        if facts.pin is not None and ticker not in pinned:
+            pinned[ticker] = facts.pin
+            added.append(ticker)
+        figures[ticker] = figures_for(facts)
+        print(f"facts: {ticker}: {figures[ticker].note}")
+    if added:
+        save_pins(load_pins(args.filings).values(), args.filings, facts=pinned)
+        print(f"pinned the XBRL facts of {', '.join(added)} in {_display(args.filings)}")
+    return figures
+
+
+def _tickers(cases: list[GoldenCase]) -> list[str]:
+    return list(dict.fromkeys(case.ticker for case in cases))
+
+
+def _golden_inputs(args: argparse.Namespace, golden_sha: str) -> dict[str, str]:
+    return {
+        "golden_file": _display(args.golden),
+        "golden_sha256": golden_sha,
+        "filings_sha256": sha256_hex(args.filings.read_bytes()),
+    }
+
+
+def cmd_plan(args: argparse.Namespace, corpus: Corpus, client: EdgarClient | None) -> int:
+    """Plan every case's queries through the cassette; 3 while any request is pending."""
+    validation, golden_sha = _validate(args.golden, corpus)
+    if not validation.ok:
+        print(render_validation(validation))
+        print("plan: the golden set does not validate; nothing was asked")
+        return 1
+    cases = [case for case, _ in validation.cases()]
+    companies = _companies(args, corpus, client, _tickers(cases))
+    inputs = _golden_inputs(args, golden_sha)
+    return run_plan(cases, companies, args.cassette, args.out, inputs=inputs)
+
+
+def cmd_generate(args: argparse.Namespace, corpus: Corpus, client: EdgarClient | None) -> int:
+    """Assess and score every case through the cassette; 3 while any request is pending."""
+    validation, golden_sha = _validate(args.golden, corpus)
+    if not validation.ok:
+        print(render_validation(validation))
+        print("generate: the golden set does not validate; nothing was asked")
+        return 1
+    cases = validation.cases()
+    book, provenance = read_queries_file(args.queries, {case.id for case, _ in cases})
+    planned_for = (provenance or {}).get("golden_sha256")
+    if planned_for != golden_sha:
+        print(
+            f"generate: {_display(args.queries)} was not planned for this golden set "
+            f"(planned for {str(planned_for)[:12]}, golden is {golden_sha[:12]}); run plan again"
+        )
+        return 1
+    golden_cases = [case for case, _ in cases]
+    companies = _companies(args, corpus, client, _tickers(golden_cases))
+    figures = _figures(args, companies, client)
+    inputs = {
+        **_golden_inputs(args, golden_sha),
+        "queries_file": _display(args.queries),
+        "queries_sha256": sha256_hex(args.queries.read_bytes()),
+        "queries_planned_by": (provenance or {}).get("cassette_description"),
+        "cassette": _display(args.cassette),
+    }
+    return run_generation(
+        cases,
+        corpus.load_filing,
+        book,
+        companies,
+        figures,
+        cassette=args.cassette,
+        out_dir=args.out,
+        inputs=inputs,
+    )
+
+
+def cmd_fetch(args: argparse.Namespace, corpus: Corpus, client: EdgarClient | None) -> int:
+    """Read every pinned filing and company's facts; 0 when all filings matched their pins."""
     failures = 0
     for pin in sorted(corpus.pins.values(), key=lambda p: (p.ticker, p.period_end)):
         try:
@@ -171,6 +304,12 @@ def cmd_fetch(corpus: Corpus) -> int:
             f"{len(body):,} bytes from {origin}, hash matches pin"
         )
     print(f"fetch: {len(corpus.pins) - failures} of {len(corpus.pins)} pinned filing(s) ready")
+    tickers = sorted({pin.ticker for pin in corpus.pins.values()})
+    try:
+        _figures(args, _companies(args, corpus, client, tickers), client)
+    except CorpusError as exc:
+        print(f"fetch: company facts FAILED: {exc}")
+        failures += 1
     return 1 if failures else 0
 
 
@@ -199,6 +338,8 @@ def cmd_pin(args: argparse.Namespace, corpus: Corpus, client: EdgarClient | None
             body, origin = client.get(ref.url), "edgar"
             corpus.write_cache(ref.accession, body)
         pin = PinnedFiling(
+            cik=company.cik,
+            name=company.name,
             ticker=company.ticker.upper().replace(".", "-"),
             accession=ref.accession,
             form=ref.form,  # type: ignore[arg-type]
@@ -268,7 +409,11 @@ def _dispatch(args: argparse.Namespace, corpus: Corpus, client: EdgarClient | No
     if args.command == "run":
         return cmd_run(args, corpus)
     if args.command == "fetch":
-        return cmd_fetch(corpus)
+        return cmd_fetch(args, corpus, client)
+    if args.command == "plan":
+        return cmd_plan(args, corpus, client)
+    if args.command == "generate":
+        return cmd_generate(args, corpus, client)
     if args.command == "pin":
         return cmd_pin(args, corpus, client)
     if args.command == "show":

@@ -1,0 +1,65 @@
+{
+ "key": "f684e6ddc41692ca0059c8fd",
+ "step": "plan",
+ "via": "Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the engine's rules",
+ "model": "claude-sonnet-5-5",
+ "recorded_at": "2026-11-17T12:41:22Z",
+ "response": {
+  "claims": [
+   {
+    "claim_number": 1,
+    "queries": [
+     "Data Center revenue",
+     "compute and networking revenue",
+     "revenue growth year over year",
+     "decline in Data Center revenue"
+    ]
+   },
+   {
+    "claim_number": 2,
+    "queries": [
+     "customer concentration",
+     "direct customers percent of revenue",
+     "indirect customers cloud service providers",
+     "loss of a key customer"
+    ]
+   },
+   {
+    "claim_number": 3,
+    "queries": [
+     "China export license H20",
+     "export controls China",
+     "Data Center revenue China",
+     "export restrictions limit sales"
+    ]
+   },
+   {
+    "claim_number": 4,
+    "queries": [
+     "gross margin percentage",
+     "operating income as percent of revenue",
+     "gross margin decrease inventory provisions",
+     "net income margin"
+    ]
+   },
+   {
+    "claim_number": 5,
+    "queries": [
+     "share repurchase program",
+     "dividends per share quarterly",
+     "repurchases of common stock",
+     "dividend increase"
+    ]
+   },
+   {
+    "claim_number": 6,
+    "queries": [
+     "senior notes issued",
+     "long-term debt",
+     "cash provided by operating activities",
+     "commercial paper or debt issuance"
+    ]
+   }
+  ]
+ }
+}

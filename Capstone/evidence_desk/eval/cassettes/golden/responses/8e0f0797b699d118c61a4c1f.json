@@ -1,0 +1,47 @@
+{
+ "key": "8e0f0797b699d118c61a4c1f",
+ "step": "plan",
+ "via": "Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the engine's rules",
+ "model": "claude-sonnet-5-5",
+ "recorded_at": "2026-11-17T12:41:22Z",
+ "response": {
+  "claims": [
+   {
+    "claim_number": 1,
+    "queries": [
+     "purchase obligations",
+     "supply and capacity purchase commitments",
+     "guarantees and indemnification obligations",
+     "prepaid supply agreements and counterparty credit risk"
+    ]
+   },
+   {
+    "claim_number": 2,
+    "queries": [
+     "custom silicon developed by customers",
+     "competition from in-house accelerators",
+     "customer concentration cloud service providers",
+     "reduced demand for our GPUs"
+    ]
+   },
+   {
+    "claim_number": 3,
+    "queries": [
+     "securities class action cryptocurrency mining",
+     "legal proceedings shareholder litigation",
+     "settlement of class action",
+     "Supreme Court certiorari securities case"
+    ]
+   },
+   {
+    "claim_number": 4,
+    "queries": [
+     "employees labor union",
+     "collective bargaining work stoppage",
+     "human capital employees",
+     "labor disputes strikes risk"
+    ]
+   }
+  ]
+ }
+}

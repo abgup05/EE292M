@@ -60,14 +60,22 @@ def overlap(start: int, end: int, other_start: int, other_end: int) -> int:
     return max(0, min(end, other_end) - max(start, other_start))
 
 
-def is_relevant(passage: Passage, spans: Sequence[Span]) -> bool:
-    """True when ``passage`` holds at least half the characters of one of ``spans``."""
-    end = passage.start + len(passage.text)
+def holds_half(source_id: str, start: int, end: int, spans: Sequence[Span]) -> bool:
+    """True when [start, end) of ``source_id`` holds at least half of one of ``spans``.
+
+    The one overlap rule of the evaluation: a retrieved passage and a verified
+    excerpt are both judged by it.
+    """
     return any(
-        passage.source_id == span.source_id
-        and 2 * overlap(passage.start, end, span.start, span.end) >= span.end - span.start
+        source_id == span.source_id
+        and 2 * overlap(start, end, span.start, span.end) >= span.end - span.start
         for span in spans
     )
+
+
+def is_relevant(passage: Passage, spans: Sequence[Span]) -> bool:
+    """True when ``passage`` holds at least half the characters of one of ``spans``."""
+    return holds_half(passage.source_id, passage.start, passage.start + len(passage.text), spans)
 
 
 def first_relevant_rank(
@@ -172,9 +180,22 @@ def variant_queries(name: str, case: GoldenCase, book: QueryBook) -> tuple[list[
 
 
 def read_queries(path: Path, case_ids: set[str]) -> dict[str, list[str]]:
-    """A queries file ``{case_id: [query, ...]}``, checked against the golden set's ids.
+    """The queries of a queries file, checked against the golden set's ids.
 
-    Raises ValueError for a malformed file or a case id the golden set does not have.
+    See :func:`read_queries_file` for the two shapes accepted.
+    """
+    return read_queries_file(path, case_ids)[0]
+
+
+def read_queries_file(
+    path: Path, case_ids: set[str]
+) -> tuple[dict[str, list[str]], dict[str, Any] | None]:
+    """A queries file and its provenance (None for a file without one).
+
+    Two shapes: ``{"provenance": {...}, "queries": {case_id: [query, ...]}}``, as
+    ``python -m app.evaluation plan`` writes it, and the flat
+    ``{case_id: [query, ...]}``. Raises ValueError for a malformed file or a case
+    id the golden set does not have.
     """
     try:
         payload = json.loads(path.read_text())
@@ -184,6 +205,16 @@ def read_queries(path: Path, case_ids: set[str]) -> dict[str, list[str]]:
         raise ValueError(f"queries file {path.name} is not valid JSON: {exc}") from exc
     if not isinstance(payload, dict):
         raise ValueError("a queries file is a JSON object {case_id: [query, ...]}")
+    provenance: dict[str, Any] | None = None
+    if set(payload) == {"provenance", "queries"} and isinstance(payload["provenance"], dict):
+        provenance = payload["provenance"]
+        payload = payload["queries"]
+        if not isinstance(payload, dict):
+            raise ValueError('"queries" in a planned queries file is {case_id: [query, ...]}')
+    return _query_book(payload, case_ids), provenance
+
+
+def _query_book(payload: dict[str, Any], case_ids: set[str]) -> dict[str, list[str]]:
     book: dict[str, list[str]] = {}
     for case_id, queries in payload.items():
         if case_id not in case_ids:

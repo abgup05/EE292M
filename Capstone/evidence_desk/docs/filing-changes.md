@@ -104,25 +104,30 @@ about coverage (the evidence file has each run's notes). It does not show that t
   a reader would look for them. Item coverage (99.4%) cannot see this: it measures text under *an* Item. (This
   sentence first said "6,460 of 7,253 paragraphs", a sum over columns that did not count the same thing.)
 
-## The threshold on two more companies (read by a model, not by a person)
+## The threshold on three more companies (read by a model, not by a person)
 
 `make changes ARGS="<TICKER> --form 10-K --review 0.44"` adds a section, "Pairs to read before trusting the
 threshold": the pairs the comparison paired with a similarity from 0.50 to under 0.56, and the pairs a threshold
 of 0.44 would add, which it reports as one removed and one added paragraph. Neither list is cut. The session that
-built this read every pair it printed for Apple and Coca-Cola on 17 November and asked of each: is this one
-paragraph rewritten?
+built this read every pair it printed for Apple, Coca-Cola and Microsoft on 17 November and asked of each: is this
+one paragraph rewritten?
 
 | Annual reports | Paired just above: one paragraph rewritten | Not paired just below: one paragraph rewritten |
 | --- | ---: | ---: |
 | NVIDIA (from "The threshold" above; its bands were 0.50 to 0.55 and 0.45 to 0.50, on two filing pairs) | 19 of 20 | 8 of 10 |
 | Apple | 10 of 11 | 5 of 5 |
 | Coca-Cola | 7 of 10 | 4 of 9 |
+| Microsoft | 5 of 5 | 8 of 8 (two of them doubtful) |
+| All four | 41 of 46 | 25 of 32 |
 
 - **Apple.** The one wrong pair above joins two different sentences that end alike ("…materially adversely affect
   the Company's business, results of operations, financial condition and stock price"). One of the ten is a piece
   of a paragraph the later report split. All five pairs below are the same paragraph rewritten and are shown as
   removed and added: a risk-factor heading turned from "Losses or unauthorized access…" into "The Company
   experiences cybersecurity incidents…", the Epic Games paragraph, the net sales lines for Greater China and Japan.
+- **Microsoft.** All five pairs above are one paragraph rewritten. So are the eight below, which the comparison
+  shows as removed and added: the opening of the risk factors, three risk-factor paragraphs, the lines on server and
+  cloud revenue and on sales and marketing expense, an accounting policy, and a sentence on other income.
 - **Coca-Cola.** Three of the ten pairs above are template matches: a bullet about one operating segment paired with
   a bullet about another, the paragraph on other income for 2023 paired with the one for 2025, and two unrelated
   footnotes about Latin America. Below, four are the same paragraph and five are not.
@@ -131,11 +136,14 @@ What this says: on risk factors, which are prose, the threshold behaves as it di
 if anything too strict. In a discussion of results that has one paragraph per year, one bullet per segment and
 numbered footnotes, paragraphs built on one template are told apart mostly by their figures, and figures are
 exactly what the similarity leaves out. There a pair just above the threshold is wrong about three times in ten,
-and lowering the threshold would add more wrong pairs than right ones. So 0.5 stays, and "reworded" in those
-sections needs reading, which the marked words make possible. Two ways to do better were not tried: let the year
+and lowering the threshold would add more wrong pairs than right ones. Taken over the four companies, 25 of the 32 pairs just below the threshold are one paragraph rewritten, which the
+comparison reports as one removed and one added. That is evidence that 0.5 is too strict outside template-built
+sections, and that a lower value would hide more new paragraphs inside "reworded" in Coca-Cola's kind of filing.
+It has not been changed: the reading is a model's, a change moves every count in this document, and where to trade
+a missed rewording against a hidden addition is a decision for a person who has read the pairs. Two ways to do better were not tried: let the year
 a paragraph names keep two template paragraphs apart, and prefer the pair nearest in order within the Item.
 
-This is still a model's reading of 35 pairs for two companies, by the session that built the feature. The command
+This is still a model's reading of 48 pairs for three companies, by the session that built the feature. The command
 is there so that a person can do the same in a few minutes.
 
 ## Speed

@@ -51,12 +51,31 @@ Version 6 had been tagged without any review, so the `referee` agent read it: an
 - **The threshold, read on two more companies** by the session, with a new option that prints the pairs to read. Apple: 10 of 11 pairs just above it are one paragraph rewritten, and all 5 just below it are too. Coca-Cola: 7 of 10 above, and 4 of 9 below. In a discussion of results built on templates, about three in ten borderline pairs join two different paragraphs. The threshold stays; a person's reading is still owed.
 - Rejected, with reasons: a minimum amount of evidence for "complete", a check of direction in the number check, and showing moved figures inside tables.
 
+**A second pass the same day: a fifth review, and versions 8 and 9**
+
+After the first pass I asked the session to keep going: another round of building and refining, with the hand-ins and logs kept up to date. This is that round, also on 17 November.
+
+- **A fifth blind review**, of version 7, against the Week 6A checklist, because the page had gained two views since it was last read that way. Twelve findings, unedited in `Capstone/evidence_desk/docs/reviews/review-5-message-interface-tests.md`; the decisions are in `Homework/Week 9/W9L1.md`. Built in: a first screen that states the one takeaway; "Refused" for an input, so that "Rejected" is only my decision; a legend that says what a dashed border really means; a mark for what no person has checked; a tripwire stage for the filing comparison; a page test that refuses a stale dump.
+- **Version 8: what changed that bears on each claim.** For each claim of a run, the paragraphs that changed in the filings it read, ranked by the words they share with the claim. No model. On the recorded example the first paragraph under "Gross margin is expanding" is one the newest annual report added: "Gross margin decreased in fiscal year 2026".
+- **Does the second model reject what does not fit?** The reviewer's wrong program quotes any real sentence as support. An evaluation now plants 152 such cases, real quotes under statements they do not belong to. The second model rejected 149, called 3 "partly" and agreed with none; on the same findings with their own quotes it had rejected 1 of 76.
+- **Version 9: segments, geographies and customers.** Read from each filing's own tagged facts, which the figures shown so far cannot give. NVIDIA's annual report: Data Center revenue $193,737 million, up 68.2%; China including Hong Kong $19,677 million, down 21.4%; one customer at 22% of revenue. Run on sixteen filings of eight companies; every breakdown adds up to the filing's tagged total.
+
+**What went wrong in the second pass**
+
+- **The first live output of the claim list wasted two of five places.** NVIDIA prints the same paragraph under two Items, and each copy was listed. Every test passed; it showed only when the feature was run on the real filings and read. Fixed with a test written first.
+- **Real filings broke the breakdowns five times**: members that are sums of other members, two splits of one total, segments reconciled through eliminations, a customer share that leaked into the wrong table, and a 16-week quarter that was dropped without a word. Each was found by running the eight companies and looking, as the agent notes ask.
+- **A screenshot that was never rewritten.** Headless Chromium exits 0 when it fails on a very tall page and writes nothing. One committed screenshot had been stale since version 6. The target now caps the height and fails if a file was not written anew.
+- **The session pulled a make target out from under a running agent** while setting version 8 apart from version 9, and that agent's last check could not run. It was run afterwards.
+- **A relabelled count that was not true.** The page's count of quotes that failed the check was renamed "not found" while fixing another label; a quote can also fail for its length. Caught on reading the report, before it was committed.
+- **The evaluation measures the easy case.** A swapped quote is usually about another topic. Whether the second model catches a quote on the right topic that does not carry the statement is still not known.
+
 **Status**
 
-Version 7. The gate from a fresh clone: 1,128 offline tests, the smoke test, 75 assertions on the rendered page. All six milestones of the plan have a tag, and the seventh tag answers the second referee. What that does not mean:
+Version 9. The gate from a fresh clone: 1,265 offline tests, the smoke test, 124 assertions on the rendered page. Nine tags; versions 2 to 9 were all built on 17 November. What that does not mean:
 
-- No person has read the thirty golden cases, the code, or one filing comparison.
-- The model path has not run through the API since October: both keys were refused for lack of credit, and every model answer here is a recording made by a stand-in.
+- No person has read the thirty golden cases, the code, a filing comparison, a list of changes under a claim, or a breakdown table against the printed one.
+- The model path has not run through the API since October: both keys were refused again on 17 November, and every model answer here is a recording made by a stand-in.
+- The breakdowns are shown beside a run and cannot yet be cited by a finding.
 - No colleague has reviewed this, and my reviews of colleagues are still owed.
 - The link that opens a filing at a passage has never been clicked in a real browser.
 
@@ -68,11 +87,14 @@ A proposed order, mine to change. The outline is `Capstone/evidence_desk/docs/dr
 2. Rotate the API key that was pasted into a conversation; get credit; record the cassettes again through the API.
 3. Use the tool on a thesis of my own and write down where it was wrong.
 4. Read five reworded pairs and five added paragraphs for a company other than NVIDIA, and say whether the classes hold.
-5. Ask a colleague to review it, and review theirs.
-6. Write the draft from the outline, with the results table as it then stands.
+5. Read the five changed paragraphs listed under each claim of the example, and say for each whether it bears on the claim. Hold one breakdown table for a company other than NVIDIA against the table the filing prints.
+6. Ask a colleague to review it, and review theirs.
+7. Write the draft from the outline, with the results table as it then stands.
 
 **Takeaway**
 
-Two, from one day. Everything that passed on NVIDIA passed. The failure was one command away on a different company, and the instruction to run that command was already written down. A rule in a file did not get it run until the documents had already been written around one company.
+Three, from one day. Everything that passed on NVIDIA passed. The failure was one command away on a different company, and the instruction to run that command was already written down. A rule in a file did not get it run until the documents had already been written around one company.
 
 And 1,094 tests passed over a table whose columns did not count the same thing, because each test checked that a number was what the code computed and none asked what its heading claimed. A reader with no tool found it by reading one function beside one table.
+
+And in the second pass each new feature's first fault showed in its first real output, not in its tests: a duplicated paragraph, a dropped quarter. Running the thing on real filings and reading what comes out is a check of its own kind, and the cheapest one here.

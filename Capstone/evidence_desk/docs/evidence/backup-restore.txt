@@ -1,0 +1,10 @@
+# make backup && make restore-check
+# 2026-11-17T13:25:55Z, version 0.5.0, on the record the live walk had just written. Same disk, same machine.
+
+found a version 3 database at /work/data/runs/runs.sqlite; it is not read
+wrote backups/record-20261117T132555Z.sqlite
+wrote backups/record-20261117T132555Z.sqlite.sha256
+wrote backups/decisions-20261117T132555Z.jsonl
+the backup holds 8 runs, 4 decisions and 2 theses
+found a version 3 database at /work/data/runs/runs.sqlite; it is not read
+PASS: record-20261117T132555Z.sqlite restores to the live record: 8 runs, 4 decisions, 2 theses

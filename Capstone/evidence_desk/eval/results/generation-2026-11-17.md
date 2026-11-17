@@ -1,10 +1,10 @@
 # Generation evaluation
 
-Model answers: replayed from cassette golden: 36 responses recorded via Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the engine's rules with claude-sonnet-5-5, 2026-11-17 to 2026-11-17.
+Model answers: replayed from cassette golden: 70 responses recorded via Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the engine's rules and Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the rules with claude-haiku-5-5 and claude-sonnet-5-5, 2026-11-17 to 2026-11-17.
 
 A recording answered by a stand-in (any `via` other than the model a run calls) is an upper bound for quote validity: a stand-in that copies from the prompt in front of it quotes more exactly than a model may, so the quote and citation scores may be lower live.
 
-Generated 2026-11-17T12:43:54.290720+00:00. Each case is run as a one-claim thesis with the decision "Whether the thesis still holds after the latest filings"; the gate and the verdict rule are the pipeline's own.
+Generated 2026-11-17T13:28:32.442495+00:00. Each case is run as a one-claim thesis with the decision "Whether the thesis still holds after the latest filings"; the gate and the verdict rule are the pipeline's own.
 Golden set SHA-256 `4ef5c8d35bf11a1e…`; queries from `eval/queries.json` (SHA-256 `7609070a134303ab…`).
 
 Reported figures offered with every claim:
@@ -19,8 +19,8 @@ Reported figures offered with every claim:
 
 | Score | Value | Cases |
 |---|---|---|
-| Verdict agreement | 70.8% | 17 / 24 |
-| where a must-retrieve passage was offered | 66.7% | 12 / 18 |
+| Verdict agreement | 83.3% | 20 / 24 |
+| where a must-retrieve passage was offered | 83.3% | 15 / 18 |
 | where none was offered | 83.3% | 5 / 6 |
 | Cites a must-retrieve passage (verified excerpt holds half of it) | 62.5% | 15 / 24 |
 | where a must-retrieve passage was offered | 83.3% | 15 / 18 |
@@ -30,9 +30,9 @@ Expected stance (rows) against the verdict obtained (columns):
 
 | Expected | supported | challenged | mixed | unjudged | not_addressed | Cases |
 |---|---|---|---|---|---|---|
-| supports | 9 | 0 | 3 | 0 | 0 | 12 |
+| supports | 10 | 0 | 2 | 0 | 0 | 12 |
 | challenges | 0 | 8 | 2 | 0 | 0 | 10 |
-| mixed | 0 | 2 | 0 | 0 | 0 | 2 |
+| mixed | 0 | 0 | 2 | 0 | 0 | 2 |
 
 ## Unanswerable cases (6)
 
@@ -44,15 +44,14 @@ Expected stance (rows) against the verdict obtained (columns):
 
 | Count | Value | Of |
 |---|---|---|
-| Quotes verified (located in the stored text) | 81 | 81 / 82 offered |
-| Quotes rejected | 1 | 1 / 82 offered |
-| Excerpts kept as evidence (verified findings only) | 79 |  |
-| Numbers unmatched | 4 | 4 / 73 checked |
-| Findings verified | 76 | 76 / 79 proposed |
-| Findings withheld | 3 | 3 / 79 proposed |
-| withheld: a number in the statement is not in its quotes or cited figures | 2 | 2 / 3 withheld |
-| withheld: no verified quote or reported figure | 1 | 1 / 3 withheld |
-| Reported figures cited by verified findings | 17 |  |
+| Quotes verified (located in the stored text) | 84 | 84 / 84 offered |
+| Quotes rejected | 0 | 0 / 84 offered |
+| Excerpts kept as evidence (verified findings only) | 82 |  |
+| Numbers unmatched | 3 | 3 / 70 checked |
+| Findings verified | 77 | 77 / 79 proposed |
+| Findings withheld | 2 | 2 / 79 proposed |
+| withheld: a number in the statement is not in its quotes or cited figures | 2 | 2 / 2 withheld |
+| Reported figures cited by verified findings | 12 |  |
 | Model answers that could not be parsed | 0 | 0 / 30 cases |
 | Cases with no passage offered (model not asked) | 0 | 0 / 30 cases |
 
@@ -74,15 +73,15 @@ Verdict agreement and citation are over the answerable cases; refusal over the u
 | nvda-custom-silicon-threat | NVDA | supports | supported | not offered (rank 23) | no | 2 / 0 |
 | nvda-crypto-lawsuit-over | NVDA | challenges | challenged | offered #2 of 8 | yes | 4 / 0 |
 | nvda-workforce-unionising | NVDA | none | not_addressed | n/a | n/a | 0 / 0 |
-| cost-members-renew | COST | supports | supported | offered #5 of 5 | yes | 3 / 0 |
-| cost-markup-widened | COST | mixed | challenged | offered #1 of 5 | yes | 3 / 1 |
-| cost-tariffs-unrecovered | COST | challenges | mixed | offered #1 of 5 | yes | 4 / 0 |
+| cost-members-renew | COST | supports | supported | offered #5 of 8 | yes | 3 / 1 |
+| cost-markup-widened | COST | mixed | mixed | offered #1 of 8 | yes | 3 / 0 |
+| cost-tariffs-unrecovered | COST | challenges | mixed | offered #1 of 8 | yes | 4 / 0 |
 | cost-north-america-dependence | COST | supports | mixed | not offered (not in top 50) | no | 2 / 0 |
 | cost-franchising | COST | none | not_addressed | n/a | n/a | 0 / 0 |
-| aapl-china-shrinking | AAPL | challenges | challenged | offered #1 of 5 | yes | 2 / 0 |
-| aapl-margin-runway | AAPL | mixed | challenged | offered #1 of 5 | yes | 3 / 1 |
-| aapl-asian-assembly | AAPL | supports | supported | offered #1 of 5 | yes | 3 / 0 |
-| aapl-eu-app-store | AAPL | supports | supported | offered #1 of 5 | yes | 4 / 0 |
+| aapl-china-shrinking | AAPL | challenges | challenged | offered #1 of 8 | yes | 2 / 0 |
+| aapl-margin-runway | AAPL | mixed | mixed | offered #1 of 8 | yes | 3 / 0 |
+| aapl-asian-assembly | AAPL | supports | supported | offered #1 of 8 | yes | 4 / 0 |
+| aapl-eu-app-store | AAPL | supports | supported | offered #1 of 8 | yes | 4 / 0 |
 | aapl-electric-car | AAPL | none | not_addressed | n/a | n/a | 0 / 0 |
 | msft-azure-growth | MSFT | supports | supported | offered #7 of 8 | yes | 2 / 1 |
 | msft-cloud-margin | MSFT | challenges | mixed | offered #7 of 8 | yes | 4 / 0 |
@@ -90,7 +89,7 @@ Verdict agreement and citation are over the answerable cases; refusal over the u
 | msft-never-breached | MSFT | challenges | challenged | offered #2 of 8 | yes | 2 / 0 |
 | msft-stock-split | MSFT | none | not_addressed | n/a | n/a | 0 / 0 |
 | ko-north-america-volume | KO | challenges | challenged | offered #6 of 8 | yes | 3 / 0 |
-| ko-pricing-lifts-margin | KO | supports | mixed | offered #1 of 8 | yes | 3 / 0 |
+| ko-pricing-lifts-margin | KO | supports | supported | offered #1 of 8 | yes | 3 / 0 |
 | ko-irs-dispute-settled | KO | challenges | challenged | not offered (not in top 50) | no | 3 / 0 |
 | ko-cannabis-stake | KO | none | not_addressed | n/a | n/a | 0 / 0 |
 | ko-bitcoin-treasury | KO | none | not_addressed | n/a | n/a | 0 / 0 |

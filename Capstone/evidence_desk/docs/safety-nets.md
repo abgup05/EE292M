@@ -52,7 +52,8 @@ The layers, in the order a result meets them. The point of stacking them is that
 | Request validation at the API | Malformed input, unknown tickers, private-network URLs | A well-formed claim that is vague or untestable |
 | The quote check | A quote that is not word for word in the filing | A real quote that does not mean what the finding says |
 | The number check | A number in a finding that is in neither its quotes nor its cited figures | A right number attached to the wrong thing; numbers written as words |
-| The verdict rule | A model asserting a verdict without verified evidence | A wrong stance on a verified finding |
+| The meaning check | A verified finding whose excerpts a second model judges do not support the statement or stance; it is withheld with the reason | A misreading the checker shares (same model family; same model is flagged as a coverage limit); a check that could not run leaves findings "not checked", shown as such |
+| The verdict rule | A model asserting a verdict without verified evidence | A wrong stance on a verified finding that the meaning check passed |
 | The answer key for figures | A wrong formula, period or restatement, on three companies | A company whose XBRL tags differ from those three |
 | The tripwire | Any change upstream of a recorded run | A change that is wrong and was re-baselined without reading the diff |
 | The replay test | A prompt edited without re-recording | Whatever the recorded answers got wrong, replayed faithfully |
@@ -62,6 +63,6 @@ The layers, in the order a result meets them. The point of stacking them is that
 
 **What slips past all of them today:**
 
-- **A wrong stance.** Every mechanical layer passes a real sentence that the engine misread. Only the reader stands behind it. A second-model check of meaning is the next layer to add.
+- **A wrong stance.** Every mechanical layer passes a real sentence that the engine misread. The meaning check now asks a second model, but it is another Claude model reading the same excerpts, and until its cassette requests are answered it has not judged a recorded run; the reader is still the last layer.
 - **A passage that was never retrieved.** If the passage that matters is not in the eight shown to the engine, the claim reads "not addressed" or is judged on weaker evidence. On the golden set that is 17 of 24 cases with keyword retrieval alone. No layer after retrieval can see what retrieval left out.
 - **Correlated reviewers.** The builder, the stand-in that answered the prompts and every reviewer are Claude models. Their mistakes are not independent. No person has yet read the golden cases or the code.

@@ -92,7 +92,7 @@ screenshots:
 	$(COMPOSE) run --rm shots --window-size=1280,720 --screenshot=/work/docs/screenshots/first-screen.png "http://app:8000/" && \
 	$(COMPOSE) run --rm shots --window-size=1280,4500 --screenshot=/work/docs/screenshots/sample-run.png "http://app:8000/?sample" && \
 	$(COMPOSE) run --rm shots --window-size=390,1400 --screenshot=/work/docs/screenshots/sample-run-phone.png "http://app:8000/?sample" && \
-	$(COMPOSE) run --rm shots --window-size=1280,5700 --screenshot=/work/docs/screenshots/sample-synthetic.png "http://app:8000/?sample=synthetic"
+	$(COMPOSE) run --rm shots --window-size=1280,6900 --screenshot=/work/docs/screenshots/sample-synthetic.png "http://app:8000/?sample=synthetic"
 
 fixtures:
 	$(RUN) python -m app.record_fixtures $(if $(filter 1,$(REFRESH)),--refresh,)

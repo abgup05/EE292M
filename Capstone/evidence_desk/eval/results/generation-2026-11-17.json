@@ -1,7 +1,7 @@
 {
   "kind": "generation-evaluation",
-  "generated_at": "2026-11-17T12:43:54.290720+00:00",
-  "models": "replayed from cassette golden: 36 responses recorded via Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the engine's rules with claude-sonnet-5-5, 2026-11-17 to 2026-11-17",
+  "generated_at": "2026-11-17T13:28:32.442495+00:00",
+  "models": "replayed from cassette golden: 70 responses recorded via Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the engine's rules and Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the rules with claude-haiku-5-5 and claude-sonnet-5-5, 2026-11-17 to 2026-11-17",
   "stand_in_note": "A recording answered by a stand-in (any `via` other than the model a run calls) is an upper bound for quote validity: a stand-in that copies from the prompt in front of it quotes more exactly than a model may, so the quote and citation scores may be lower live.",
   "decision": "Whether the thesis still holds after the latest filings",
   "inputs": {
@@ -34,15 +34,15 @@
     "answerable": {
       "cases": 24,
       "verdict_agreement": {
-        "hits": 17,
+        "hits": 20,
         "total": 24,
-        "rate": 0.7083333333333334
+        "rate": 0.8333333333333334
       },
       "confusion_expected_by_obtained": {
         "supports": {
-          "supported": 9,
+          "supported": 10,
           "challenged": 0,
-          "mixed": 3,
+          "mixed": 2,
           "unjudged": 0,
           "not_addressed": 0
         },
@@ -55,8 +55,8 @@
         },
         "mixed": {
           "supported": 0,
-          "challenged": 2,
-          "mixed": 0,
+          "challenged": 0,
+          "mixed": 2,
           "unjudged": 0,
           "not_addressed": 0
         }
@@ -69,9 +69,9 @@
       "by_retrieval": {
         "hit": {
           "verdict_agreement": {
-            "hits": 12,
+            "hits": 15,
             "total": 18,
-            "rate": 0.6666666666666666
+            "rate": 0.8333333333333334
           },
           "citation": {
             "hits": 15,
@@ -104,19 +104,18 @@
     "all": {
       "cases": 30,
       "findings_proposed": 79,
-      "findings_verified": 76,
-      "findings_withheld": 3,
+      "findings_verified": 77,
+      "findings_withheld": 2,
       "withheld_reasons": {
-        "a number in the statement is not in its quotes or cited figures": 2,
-        "no verified quote or reported figure": 1
+        "a number in the statement is not in its quotes or cited figures": 2
       },
-      "quotes_offered": 82,
-      "quotes_verified": 81,
-      "quotes_rejected": 1,
-      "excerpts_kept": 79,
-      "numbers_checked": 73,
-      "numbers_unmatched": 4,
-      "figures_cited": 17,
+      "quotes_offered": 84,
+      "quotes_verified": 84,
+      "quotes_rejected": 0,
+      "excerpts_kept": 82,
+      "numbers_checked": 70,
+      "numbers_unmatched": 3,
+      "figures_cited": 12,
       "unusable_answers": 0,
       "cases_without_passages": 0
     }
@@ -504,23 +503,25 @@
         "paid members",
         "membership renewal rate decline"
       ],
-      "passages_offered": 5,
+      "passages_offered": 8,
       "offered_position": 5,
       "rank": 5,
       "cited_right_passage": true,
       "findings_verified": 3,
-      "findings_withheld": 0,
-      "withheld_reasons": [],
+      "findings_withheld": 1,
+      "withheld_reasons": [
+        "a number in the statement is not in its quotes or cited figures"
+      ],
       "verified_stances": [
         "supports",
         "context",
         "context"
       ],
-      "quotes_offered": 3,
+      "quotes_offered": 4,
       "quotes_rejected": 0,
       "excerpts_kept": 3,
-      "numbers_checked": 5,
-      "numbers_unmatched": 0,
+      "numbers_checked": 8,
+      "numbers_unmatched": 1,
       "figures_offered": 35,
       "figures_cited": 0,
       "engine_error": "",
@@ -534,38 +535,36 @@
       "ticker": "COST",
       "kind": "answerable",
       "expected": "mixed",
-      "verdict": "challenged",
+      "verdict": "mixed",
       "queries": [
         "gross margin percentage",
         "merchandise costs",
         "gross margin decrease",
         "core merchandise categories margin"
       ],
-      "passages_offered": 5,
+      "passages_offered": 8,
       "offered_position": 1,
       "rank": 1,
       "cited_right_passage": true,
       "findings_verified": 3,
-      "findings_withheld": 1,
-      "withheld_reasons": [
-        "a number in the statement is not in its quotes or cited figures"
-      ],
+      "findings_withheld": 0,
+      "withheld_reasons": [],
       "verified_stances": [
-        "context",
-        "context",
-        "challenges"
+        "challenges",
+        "supports",
+        "context"
       ],
-      "quotes_offered": 4,
+      "quotes_offered": 3,
       "quotes_rejected": 0,
       "excerpts_kept": 3,
-      "numbers_checked": 8,
-      "numbers_unmatched": 2,
+      "numbers_checked": 2,
+      "numbers_unmatched": 0,
       "figures_offered": 35,
-      "figures_cited": 2,
+      "figures_cited": 0,
       "engine_error": "",
       "problems": [],
       "retrieval_hit": true,
-      "agrees": false,
+      "agrees": true,
       "refused": null
     },
     {
@@ -580,7 +579,7 @@
         "tariff refund",
         "pricing pressure from tariffs and cost increases"
       ],
-      "passages_offered": 5,
+      "passages_offered": 8,
       "offered_position": 1,
       "rank": 1,
       "cited_right_passage": true,
@@ -590,7 +589,7 @@
       "verified_stances": [
         "challenges",
         "challenges",
-        "context",
+        "challenges",
         "supports"
       ],
       "quotes_offered": 5,
@@ -618,7 +617,7 @@
         "international operations",
         "foreign currency and concentration of sales"
       ],
-      "passages_offered": 5,
+      "passages_offered": 8,
       "offered_position": null,
       "rank": null,
       "cited_right_passage": false,
@@ -654,7 +653,7 @@
         "third-party operated locations",
         "ownership of warehouses and leases"
       ],
-      "passages_offered": 5,
+      "passages_offered": 8,
       "offered_position": null,
       "rank": null,
       "cited_right_passage": false,
@@ -687,7 +686,7 @@
         "Greater China decrease",
         "Greater China net sales increase"
       ],
-      "passages_offered": 5,
+      "passages_offered": 8,
       "offered_position": 1,
       "rank": 1,
       "cited_right_passage": true,
@@ -701,7 +700,7 @@
       "quotes_offered": 2,
       "quotes_rejected": 0,
       "excerpts_kept": 2,
-      "numbers_checked": 0,
+      "numbers_checked": 1,
       "numbers_unmatched": 0,
       "figures_offered": 37,
       "figures_cited": 0,
@@ -716,40 +715,36 @@
       "ticker": "AAPL",
       "kind": "answerable",
       "expected": "mixed",
-      "verdict": "challenged",
+      "verdict": "mixed",
       "queries": [
         "products gross margin percentage",
         "product mix",
         "gross margin decline",
         "foreign exchange and tariff cost pressure"
       ],
-      "passages_offered": 5,
+      "passages_offered": 8,
       "offered_position": 1,
       "rank": 1,
       "cited_right_passage": true,
       "findings_verified": 3,
-      "findings_withheld": 1,
-      "withheld_reasons": [
-        "no verified quote or reported figure"
-      ],
+      "findings_withheld": 0,
+      "withheld_reasons": [],
       "verified_stances": [
-        "context",
+        "supports",
         "challenges",
         "context"
       ],
       "quotes_offered": 3,
-      "quotes_rejected": 1,
-      "excerpts_kept": 2,
-      "numbers_checked": 3,
+      "quotes_rejected": 0,
+      "excerpts_kept": 3,
+      "numbers_checked": 0,
       "numbers_unmatched": 0,
       "figures_offered": 37,
-      "figures_cited": 3,
+      "figures_cited": 0,
       "engine_error": "",
-      "problems": [
-        "f3: quote in s1 (Item 1A. Risk Factors › Financial Risks) is too long: 1612 characters, at most 600 allowed"
-      ],
+      "problems": [],
       "retrieval_hit": true,
-      "agrees": false,
+      "agrees": true,
       "refused": null
     },
     {
@@ -764,22 +759,23 @@
         "supply chain concentration",
         "manufacturing in China India Vietnam risk"
       ],
-      "passages_offered": 5,
+      "passages_offered": 8,
       "offered_position": 1,
       "rank": 1,
       "cited_right_passage": true,
-      "findings_verified": 3,
+      "findings_verified": 4,
       "findings_withheld": 0,
       "withheld_reasons": [],
       "verified_stances": [
         "supports",
         "supports",
-        "supports"
+        "supports",
+        "context"
       ],
-      "quotes_offered": 3,
+      "quotes_offered": 4,
       "quotes_rejected": 0,
-      "excerpts_kept": 3,
-      "numbers_checked": 0,
+      "excerpts_kept": 4,
+      "numbers_checked": 2,
       "numbers_unmatched": 0,
       "figures_offered": 37,
       "figures_cited": 0,
@@ -801,7 +797,7 @@
         "App Store terms and fees",
         "legal proceedings antitrust"
       ],
-      "passages_offered": 5,
+      "passages_offered": 8,
       "offered_position": 1,
       "rank": 1,
       "cited_right_passage": true,
@@ -812,11 +808,11 @@
         "supports",
         "supports",
         "context",
-        "supports"
+        "context"
       ],
-      "quotes_offered": 4,
+      "quotes_offered": 5,
       "quotes_rejected": 0,
-      "excerpts_kept": 4,
+      "excerpts_kept": 5,
       "numbers_checked": 1,
       "numbers_unmatched": 0,
       "figures_offered": 37,
@@ -839,7 +835,7 @@
         "new products and services development",
         "risks of entering new product categories"
       ],
-      "passages_offered": 5,
+      "passages_offered": 8,
       "offered_position": null,
       "rank": null,
       "cited_right_passage": false,
@@ -1085,7 +1081,7 @@
       "ticker": "KO",
       "kind": "answerable",
       "expected": "supports",
-      "verdict": "mixed",
+      "verdict": "supported",
       "queries": [
         "gross profit margin",
         "operating margin price/mix",
@@ -1114,7 +1110,7 @@
       "engine_error": "",
       "problems": [],
       "retrieval_hit": true,
-      "agrees": false,
+      "agrees": true,
       "refused": null
     },
     {

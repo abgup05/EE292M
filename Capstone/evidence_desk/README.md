@@ -2,9 +2,11 @@
 
 Evidence Desk tests the claims of an investment thesis against a company's own SEC filings. It is for an equity analyst who has to decide whether a thesis still holds after a new filing: you enter a ticker, the decision and the claims; it reads the latest annual report (10-K) and the quarterly reports (10-Q) filed after it, computes the company's reported figures from its XBRL facts, and returns a verdict for each claim with the exact passages and figures behind it.
 
-Two things are checked by the backend before anything reaches the page or the Markdown export: every quote is found word for word in the stored filing text, and every number in a finding is matched to one of its quotes or to a reported figure it cites. One thing is not checked: whether a quote means what the finding says. That is the engine's reading, and the page says so beside every verdict. So you accept or reject each finding yourself, and a second verdict follows, by the same rule, from the findings you accepted. A thesis can be saved and run again when a new filing arrives; the page then shows which verdicts moved.
+Two things are checked mechanically by the backend before anything reaches the page or the Markdown export: every quote is found word for word in a passage that was shown to the engine, and every number in a finding or in its reason is matched to one of its quotes or to a reported figure it cites. A third check is a model's: a second model, which is not shown the first one's reasoning, reads each finding's evidence and says whether it supports the statement. That is still a model's reading, of the same family as the first, so you accept or reject each finding yourself, and a second verdict follows, by the same rule, from the findings you accepted. A thesis can be saved and run again when a new filing arrives; the page then shows which verdicts moved.
 
-This is version 4 (tag `capstone-v4`) of the capstone. The plan and the milestones are in [`../README.md`](../README.md), the design is in [`ARCHITECTURE.md`](ARCHITECTURE.md), and the tests are described in [`docs/testing.md`](docs/testing.md).
+"Word for word" means a span of the text this tool extracted from the filing. Table rows are flattened in that text, and a quote is located under the Item and sub-heading the parser found.
+
+This is version 5 (tag `capstone-v5`) of the capstone. The plan and the milestones are in [`../README.md`](../README.md), the design is in [`ARCHITECTURE.md`](ARCHITECTURE.md), and the tests are described in [`docs/testing.md`](docs/testing.md).
 
 ![A recorded run: verdicts first, then the summary and the reported figures](docs/screenshots/sample-run.png)
 
@@ -107,42 +109,64 @@ flowchart LR
 
 ## Measured results (17 November 2026)
 
-**A recorded, model-backed run** (`make replay`; the record is [`demo/recorded-run-v3.md`](demo/recorded-run-v3.md)). The example thesis on NVIDIA's 10-Q for the period ended 2026-07-26, its 10-Q for 2026-04-26 and its 10-K for 2026-01-25:
+Every number below was produced by the command named. Where the output is not otherwise in the repository it is committed under [`docs/evidence/`](docs/evidence/).
+
+**A recorded, model-backed run** (`make replay`; the record is [`demo/recorded-run-v5.md`](demo/recorded-run-v5.md)). The example thesis on NVIDIA's 10-Q for the period ended 2026-07-26, its 10-Q for 2026-04-26 and its 10-K for 2026-01-25:
 
 | | |
 | --- | --- |
 | Status | **COMPLETE** |
 | Sources read | 3 of 3 filings, plus the XBRL company facts; 636 passages indexed |
 | Verdicts | 2 supported, 3 mixed evidence, of 5 claims |
-| Findings | 18 of 18 proposed findings verified, 0 withheld |
-| Quotes | 18 of 18 found word for word in the stored filings |
-| Numbers in findings | 25 checked against quotes and cited figures, 0 unmatched |
+| Findings | 18 of 18 proposed findings verified, 0 withheld. 17 rest on a quote; **1 rests on reported figures only** |
+| Quotes | 18 of 18 found word for word in a passage shown to the engine |
+| Numbers in findings and their reasons | 25 checked against quotes and cited figures, 0 unmatched |
+| Meaning check | 18 findings read by a second model: 17 agreed, 1 agreed only in part, 0 withheld |
 | Reported figures | 156 computed (2 more reported as unavailable, with the reason) |
 
-The model answers in that run did **not** come through the Anthropic API. The API refused every call from this project for lack of credit, so the engine's exact prompts were answered by Claude Sonnet 5.5 running as a Claude Code subagent and recorded ([how, and what that limits](demo/cassettes/nvda-example/README.md)). The instructions around those prompts repeated the engine's rule about exact quotes, so 18 of 18 is an upper bound on what the API path would give. The first recording verified 15 of 18: three quotes read "Compute &amp;amp; Networking", as the prompt had escaped them, and the gate could not find them. That was a bug in the engine, now fixed with a test.
+The model answers in that run did **not** come through the Anthropic API, which refused every call from this project for lack of credit. The engine's exact prompts were answered by Claude Sonnet 5.5, and the meaning check's by Claude Haiku 5.5, each running as a Claude Code subagent, and recorded ([how, and what that limits](demo/cassettes/nvda-example/README.md)). The first recording verified 15 of 18 findings: three quotes read "Compute &amp;amp; Networking", as the prompt had escaped them. That was a bug in the engine, now fixed with a test.
 
-**Reported figures against an answer key.** Fiscal-year revenue and net income computed from XBRL facts equal the values published in the companies' annual reports for Apple (fiscal 2022 to 2024), Microsoft (2023, 2024) and NVIDIA (2024, 2025), fourteen figures in all, and the revenue growth rates derived from them. Wherever a company reported both a quarter and the year-to-date totals around it, the differenced value equals the reported one, except one NVIDIA quarter that differs by USD 1 million because each figure was rounded on its own.
+The one finding that rests on figures alone is the case a hostile review singled out ([`docs/referee-triage.md`](docs/referee-triage.md)): it sets company-wide revenue against a claim about China. Such a finding now counts toward a verdict only if the second model agrees that the figure bears on the claim. Here the second model did agree, so the verdict is unchanged. Two models of one family agreed with each other; that is a reason to reject the finding yourself if you disagree, not evidence that it is right.
 
-**Filing structure on eight companies** (`make probe`, 14 filings): NVIDIA, Apple, Microsoft, Coca-Cola, Tesla, Costco and Amazon split into their Items with 95.8% to 98.6% of their text under a numbered Item. JPMorgan's 10-Q does not (1.6%): it prints no Item headings over its body. Its 10-K scores 99.4%, which overstates it, because its annual report follows Item 15 and is all labelled under that Item. The probe found three parser faults that NVIDIA's filings had hidden; all three are fixed and Costco's 10-K is now a second full-size fixture.
+**Retrieval and generation on a golden set, scored apart** (`make eval`; [`eval/README.md`](eval/README.md), [`docs/retrieval.md`](docs/retrieval.md)). Thirty cases over five companies, each an analyst's claim in its own words with the excerpt a correct answer must cite; six are unanswerable on purpose.
 
-**The live application, end to end** (`make live-walk`: the running app over HTTP, live EDGAR, recorded answers). One walk on 17 November: the example run finished complete with 3 of 3 filings fetched live, 18 of 18 findings verified and no engine fallback; two decisions were recorded and the reviewed verdicts returned; the thesis was saved and run twice more, the later runs reading all three filings from the cache; the comparison reported "No verdict moved and no filing is new."
+| Retrieval: the passage that must come back, of 24 answerable cases | Top 3 | Top 8 (what the engine is shown) | Top 20 |
+| --- | --- | --- | --- |
+| The claim's own words | 5 | 9 | 13 |
+| With the planner's queries (the pipeline when a model is configured) | 12 | 18 | 21 |
+| Three other rankings, defined before any was measured | 10 to 13 | 16 to 18 | 20 to 22 |
 
-**Retrieval, measured on a golden set** (`make eval ARGS="run --variant claim"`). Thirty cases over five companies, each an analyst's claim in its own words with the excerpt a correct answer must cite. With BM25 on the claim's words alone, the passage is in the eight shown to the engine for **7 of 24** answerable cases (29.2%), and in the top twenty for 13 of 24. The claims are paraphrases, and keyword matching misses them. The cases were drafted by a model from the filing text and validated mechanically; no person has yet read them one by one ([`eval/README.md`](eval/README.md)).
+None of the three other rankings beat the planner's queries without losing a case it had, so none is wired in.
 
-**Backup and restore** (`make backup`, `make restore-check`). On the live record after that walk: "PASS: record-20261117T123824Z.sqlite restores to the live record: 5 runs, 2 decisions, 1 theses".
+| Generation, with the planner's queries | |
+| --- | --- |
+| Verdict agrees with the expected stance | 20 of 24 answerable cases; no case where "supports" came back "challenged" or the reverse |
+| ... where the passage that must come back was among the eight shown | 15 of 18 |
+| Unanswerable claims refused | 6 of 6 |
+| Quotes found word for word | 84 of 84 |
+| Numbers matched | 67 of 70; the 3 unmatched withheld 2 findings |
+| Meaning check | 77 findings read: 66 agreed, 10 agreed only in part, 1 withheld. It changed no verdict: 20 of 24 before and after |
 
-**Speed** ([`docs/speed.md`](docs/speed.md)). The offline profile is not where a real run's time goes: a real run waits on EDGAR and, with a key, on the model, which has never been timed. What was measured: a first live keyless run took 1.01 s and a second, with all three filings read from the cache, 0.38 s (one pair of runs). Offline, cutting the inline-XBRL header before parsing saves a median of 28.8 ms per run over 20 alternating pairs (faster in 18 of 20), about 7 to 9% of the offline run and well under 1% of a live one, with identical output on all 14 probed filings. Saving progress without forcing each commit to disk took 24 saves from 33 ms to 14 ms. Concurrent assessment of claims is a mechanism that is tested; its gain with a real model is unmeasured.
+Read these with three cautions. The cases and their expected stances were drafted by a model from the filing text and validated mechanically; **no person has read them one by one yet**, so "agrees" means agrees with that model's reading. The model answers are recorded from a stand-in (with a minimal wrapper around the prompts, no reminder of the rules). And 24 cases is a small set: an earlier run of the same evaluation, before the per-filing cap was fixed and ten answers were recorded again, gave 17 of 24, so a difference of three cases is within what re-recording alone can move.
 
-**The live keyless path** was measured in version 2: three filings fetched from EDGAR and parsed, 636 passages indexed, 15 of 15 quotes verified, 3.2 s ([`demo/demo-2026-11-17-v2.md`](demo/demo-2026-11-17-v2.md)).
+**Reported figures against an answer key.** Twenty-eight published values, entered by hand with the statement each comes from: fiscal-year revenue, net income, diluted earnings per share and gross margin for Apple (fiscal 2022 to 2024), Microsoft (2023, 2024) and NVIDIA (2024, 2025). All match the recorded XBRL data. Nothing else is keyed: the other margins, cash flow and every quarterly figure rest on identities and on agreement between reported and differenced values, which is self-consistency, not truth. Free cash flow here is operating cash flow less purchases of property and equipment, which may differ from a company's own definition.
+
+**Filing structure on eight companies** (`make probe`, 14 filings; [`docs/speed/probe-v4.md`](docs/speed/probe-v4.md)): NVIDIA, Apple, Microsoft, Coca-Cola, Tesla, Costco and Amazon have 95.8% to 98.6% of their text under a numbered Item. That is a share of text, not a count of Items found against Items present, and it cannot show a wrong boundary. JPMorgan's 10-Q has 1.6%: it prints no Item headings over its body, and a run on it is now marked partial. Its 10-K scores 99.4%, which overstates it, because its annual report follows Item 15.
+
+**The live application, end to end** (`make live-walk`; output in `docs/evidence/`): the running app over HTTP, filings fetched live, recorded answers. The walk fails unless the run is judged. It will fail after NVIDIA's next filing, when the recording no longer matches.
+
+**Backup and restore** (`make backup`, `make restore-check`; output in `docs/evidence/`): a restore of the newest backup is compared with the live record, every run, decision and thesis. Same disk, same machine.
+
+**Speed** ([`docs/speed.md`](docs/speed.md)). The offline profile is not where a real run's time goes: a real run waits on EDGAR and, with a key, on the model, which has never been timed. What was measured: a first live keyless run took 1.01 s and a second, with all three filings read from the cache, 0.38 s (one pair of runs). Offline, cutting the inline-XBRL header before parsing saves a median of 28.8 ms per run over 20 alternating pairs, about 7 to 9% of the offline run and well under 1% of a live one. Concurrent assessment of claims is a tested mechanism; its gain with a real model is unmeasured.
 
 ## Verification
 
 ```sh
-make verify         # build, lint, 805 offline tests, smoke test, browser-level test
+make verify         # build, lint, 1,067 offline tests, smoke test, browser-level test
 make test           # offline tests only (T=tests/test_gate.py for one file)
 make golden-check   # the tripwire: one recorded run, compared stage by stage
 make replay         # the recorded model-backed run, offline
-make uitest         # headless Chromium renders two records; 33 assertions on the DOM
+make uitest         # headless Chromium renders two records; 60 assertions on the DOM
 make live-walk      # the running app end to end over HTTP: needs EDGAR, no key
 make eval ARGS="run --variant claim"   # score retrieval on the golden set
 make backup         # copy the record to backups/; make restore-check proves it restores
@@ -153,11 +177,15 @@ make screenshots    # renders the page into docs/screenshots, for a person to lo
 
 ## Known limitations
 
-- **The Anthropic API path has not been exercised live since version 1** (22 October). The engine is tested against a stub client and through recorded answers; neither exercises the SDK call.
-- **Whether a quote supports the statement made about it is not checked.** The quote check and the number check are mechanical. A second-model check of meaning is milestone 5; until then a "Supported" verdict rests on a model's reading of real sentences.
-- **Retrieval is the weakest part.** With keyword ranking on the claim's own words, the passage that matters is among the eight shown to the engine in 7 of 24 golden cases. A claim can read "not addressed", or be judged on weaker evidence, when the filing does address it. Model-written queries are used when a model is configured; their effect is not yet measured.
+- **The link that opens a filing at a passage has not been checked in a browser.** It is built with a text fragment from the excerpt's first and last words. An excerpt that spans lines links by its first line; a table row links to the filing without a passage, and the page says which. A headless browser sent to sec.gov to check one link was refused as an undeclared automated tool. Click one before relying on them.
+- **The Anthropic API path has not been exercised live since version 1** (22 October). The engine and the checker are tested against stub clients and through recorded answers; neither exercises the SDK call.
+- **The meaning check is a second model of the same family.** It reads without the first model's reasoning, but it is not an independent party. On the golden set it withheld 1 of 77 findings and changed no verdict.
+- **Retrieval decides what the engine can see.** With the planner's queries the passage that matters is among the eight shown in 18 of 24 golden cases. In the other six a claim is judged on weaker evidence, and no later check can see what retrieval left out.
+- **The golden set is a model's reading until a person has read it.**
+- **Tables are flattened.** A table row is one line of numbers with its column headers lost, so the number check can match a figure from the wrong period, and a link cannot locate it.
+- **The number check has blind spots.** It ignores numbers written as words and bare integers up to 12. A cited figure only has to contain a matching number of the right unit; whether it is the right figure is left to the meaning check and to you.
+- **Pages a user adds are fetched with the address checked at lookup, not pinned at connection.** A hostile DNS server could change its answer in between. This is a local, single-user tool; pinning is later work.
 - **The record has no copy off this laptop.** `make backup` writes to the same disk.
-- **The number check has blind spots.** It ignores numbers written as words, bare integers up to 12, and years; it accepts a table number at any of four scales. It catches a figure that is nowhere in the evidence, not one that is attached to the wrong thing.
-- **Filings without Item headings over their body** (JPMorgan's 10-Q) are kept and quotable but located by sub-heading only; the run says so.
-- **The page was checked by eye from four screenshots** and by a DOM test, not by a user. Dark mode and the links that open a filing at a passage were not checked in a real browser.
+- **Filings without Item headings over their body** (JPMorgan's 10-Q) are kept and quotable, located by sub-heading only, and a run on one is partial.
+- **The page was checked by eye from screenshots** and by a DOM test, not by a user. Dark mode was not checked.
 - Only 10-K and 10-Q filers. No PDFs, 8-K exhibits, foreign filers or transcripts. Runs execute in a worker thread inside the API process; there is no queue and no resume after a restart.

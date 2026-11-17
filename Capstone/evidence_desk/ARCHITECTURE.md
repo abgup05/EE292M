@@ -54,8 +54,10 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/demo.py, probe.py, changes.py, breakdowns.py, record_fixtures.py, record_facts.py   live demo; live parser check; the filing comparison and the tagged breakdowns from the command line; fixture recorders
     src/app/evaluation/golden.py, corpus.py   load and validate the golden set; the filings it is measured on, pinned by hash
     src/app/evaluation/retrieval_eval.py  scores where the right passage ranks; the variant registry
-    src/app/evaluation/cli.py   `python -m app.evaluation`: validate, run, fetch, pin, show, plan, generate
+    src/app/evaluation/cli.py   `python -m app.evaluation`: validate, run, fetch, pin, show, plan, generate, mismatch
     src/app/evaluation/companies.py, planning.py, generation_eval.py   pinned figures, planned queries, answer scoring
+    src/app/evaluation/mismatch_eval.py   plants real quotes under statements they do not belong to and scores what the meaning check says
+    src/app/evaluation/reading_sheet.py   lays the golden cases out for a person to read (`make golden-sheet`)
     src/web/                    index.html, app.js, styles.css, sample-run.json, sample-synthetic.json, sample-changes.json, sample-run-changes.json, sample-breakdowns.json, sample-breakdowns-gap.json (synthetic)
     eval/                       the golden set, its pinned filings, cache/ and results/; README.md
     tests/                      offline tests, fakes.py (EDGAR, pages, engine, clock), smoke.py; replay_run.py, golden_run.py, speed_run.py
@@ -195,7 +197,10 @@ finding, 409 while running, 422 withheld finding); `GET .../export.md?reviewed=t
 
 The backend computes every result: verified excerpts, verdicts, status, every count in `Run.coverage`, the reviewed
 verdicts and the comparison. The frontend collects input and decisions, polls, and draws the record with the wording
-from `/api/meta`; it computes no verdict and no excerpt context. Requests are validated at the API: the schema in
+from `/api/meta`; it computes no verdict and no excerpt context. The same holds for the three records that are not
+part of a run (the comparison of two filings, the changed paragraphs listed under each claim, the tagged breakdowns):
+each arrives with its counts, its links and what they open, its column headings, its cells and its changes already
+computed and formatted, and the page only places them. Requests are validated at the API: the schema in
 `core/models`, extra URLs (public, distinct) in `api.py`, the ticker against EDGAR. Refusals are 422 `{"error",
 "details": [{"field", "message"}]}`; EDGAR unreachable is 503; a valid request the state forbids is 409. Filing and
 page text reaches the model only as escaped data inside `<passage>` elements, and the gate, not the model, decides

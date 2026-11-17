@@ -18,6 +18,7 @@ from typing import Any
 
 import pytest
 from bs4 import BeautifulSoup, Tag
+from test_dom import require_fresh
 
 ROOT = Path(__file__).resolve().parents[1]
 WEB = ROOT / "src" / "web"
@@ -55,8 +56,7 @@ def record() -> dict[str, Any]:
 @cache
 def page() -> BeautifulSoup:
     """The DOM the headless browser dumped after the page rendered the comparison."""
-    if not DOM.is_file() or DOM.stat().st_size == 0:
-        pytest.fail(f"{DOM} is missing or empty: run `make uitest`, which renders it first")
+    require_fresh(DOM, WEB / "sample-changes.json")
     soup = BeautifulSoup(DOM.read_text(encoding="utf-8"), "html.parser")
     view = soup.select_one("#changes-view")
     if view is None or view.has_attr("hidden"):

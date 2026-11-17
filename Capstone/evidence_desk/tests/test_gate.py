@@ -405,6 +405,45 @@ def test_quote_repeated_in_the_source_is_located_inside_its_passage() -> None:
     assert result.evidence[0].start > body_start
 
 
+@pytest.mark.parametrize("named", ["risk", "mdna"])
+def test_a_quote_in_two_offered_passages_is_located_in_the_one_the_finding_names(
+    named: str,
+) -> None:
+    # Review 5, finding 10: the same sentence under two Items, both offered to the engine.
+    repeated = "Customer concentration could harm our business and results."
+    risk_heading, mdna_heading = "Item 1A. Risk Factors", "Item 7. Management's Discussion"
+    text = f"{risk_heading}\n{repeated}\nOther risks follow.\n\n{mdna_heading}\n{repeated}\nEnd."
+    risk_start = text.index(repeated)
+    mdna_start = text.index(repeated, risk_start + 1)
+    passages = {
+        "risk": Passage(
+            id="risk",
+            source_id="s1",
+            locator=risk_heading,
+            text=text[risk_start : text.index("\n\n")],
+            start=risk_start,
+        ),
+        "mdna": Passage(
+            id="mdna",
+            source_id="s1",
+            locator=mdna_heading,
+            text=text[mdna_start:],
+            start=mdna_start,
+        ),
+    }
+    result = gate_claim(
+        claim_id="c1",
+        draft=ClaimDraft(findings=[_finding((named, repeated))]),
+        passages=passages,
+        sources={"s1": StoredSource(text=text, url=URL_1)},
+        ids=RunIds(),
+    )
+    (item,) = result.evidence
+    expected = {"risk": (risk_start, risk_heading), "mdna": (mdna_start, mdna_heading)}[named]
+    assert (item.start, item.locator) == expected
+    assert text[item.start : item.start + len(item.excerpt)] == repeated == item.excerpt
+
+
 def test_context_is_trimmed_to_whole_words_and_bounded() -> None:
     words = [f"w{i:03d}" for i in range(300)]
     text = " ".join(words)

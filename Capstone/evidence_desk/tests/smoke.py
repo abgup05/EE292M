@@ -11,6 +11,8 @@ import time
 import urllib.error
 import urllib.request
 
+from app import __version__
+
 ROOT = "http://127.0.0.1:8000"
 DECISION = "Whether to keep an overweight position in NVIDIA into the next earnings report"
 CLAIM = "Data center revenue is still growing year over year."
@@ -51,7 +53,8 @@ wait_for_startup()
 
 status, body, _ = request("/api/health")
 health = json.loads(body)
-assert status == 200 and health["status"] == "ok" and health["version"] == "0.7.0", health
+# The running app reports the version of the package in this image, whatever that is.
+assert status == 200 and health["status"] == "ok" and health["version"] == __version__, health
 assert health["engine"] in ("claude", "extractive"), health
 
 status, body, _ = request("/api/meta")

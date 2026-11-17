@@ -14,6 +14,8 @@ order, so a difference names the first stage that moved:
     verdicts   per claim: verdict and finding ids
     coverage   the run status and every coverage count
     figures    every metric of the newest quarter and newest fiscal year
+    changes    the comparison of the two newest quarterly reports: per Item, the nine
+               counts, the sub-headings in one filing only, and a hash of every listed paragraph
 
 ``tests/golden/golden.json`` is the checked-in record and ``tests/test_golden.py``
 compares against it. ``make golden-baseline`` (``python -m tests.golden_run``)
@@ -37,7 +39,9 @@ from typing import Any
 from unittest import mock
 
 from app.core import limits
+from app.core.change_models import ItemChanges
 from app.core.documents import Document, Passage
+from app.core.filing_diff import diff_documents
 from app.core.metric_models import Metric
 from app.core.models import Claim, Company, Finding, Run, ThesisRequest
 from app.core.ports import ClaimDraft, SummaryDraft
@@ -63,6 +67,7 @@ STAGES: tuple[str, ...] = (
     "verdicts",
     "coverage",
     "figures",
+    "changes",
 )
 SIGNIFICANT_DIGITS = 6
 
@@ -217,6 +222,69 @@ def _figures(run: Run) -> list[dict[str, Any]]:
     ]
 
 
+def _listed(item: ItemChanges) -> list[list[Any]]:
+    """Every paragraph the comparison lists for one Item: its class, where it starts, its length."""
+    rows: list[list[Any]] = []
+    rows += [["added", p.start, len(p.text), p.link_kind] for p in item.added_paragraphs]
+    rows += [["removed", p.start, len(p.text), p.link_kind] for p in item.removed_paragraphs]
+    for kind, pairs in (
+        ("reworded", item.reworded_paragraphs),
+        ("numbers_only", item.numbers_only_paragraphs),
+    ):
+        rows += [
+            [kind, pair.before.start, pair.after.start, len(pair.after.text), pair.similarity]
+            for pair in pairs
+        ]
+    return rows
+
+
+def _changes(run: Run, parsed: dict[str, Document]) -> dict[str, Any]:
+    """The filing comparison on the run's two newest quarterly reports, with no list cut.
+
+    Any change to the parser's lines, to what counts as a paragraph or a table row, to the
+    pairing or to the links moves a count or the hash of what is listed for some Item.
+    """
+    quarterly = sorted(
+        (source for source in run.sources if source.form == "10-Q" and source.url in parsed),
+        key=lambda source: source.period_end or "",
+    )
+    if len(quarterly) < 2:
+        return {"compared": None, "items": []}
+    earlier, later = quarterly[-2], quarterly[-1]
+    items = diff_documents(
+        parsed[earlier.url],
+        parsed[later.url],
+        earlier_url=earlier.url,
+        later_url=later.url,
+        max_listed=None,
+    )
+    counts = (
+        "unchanged",
+        "numbers_only",
+        "reworded",
+        "added",
+        "removed",
+        "minor_unchanged",
+        "minor_numbers_only",
+        "minor_added",
+        "minor_removed",
+    )
+    return {
+        "compared": [earlier.period_end, later.period_end],
+        "items": [
+            {
+                "item": item.item,
+                "present_in": item.present_in,
+                **{name: getattr(item, name) for name in counts},
+                "subheadings_added": item.subheadings_added,
+                "subheadings_removed": item.subheadings_removed,
+                "listed": sha256_text(canonical_json(_listed(item))),
+            }
+            for item in items
+        ],
+    }
+
+
 def golden_record(run: Run, analyst: RecordingAnalyst, parsed: dict[str, Document]) -> dict:
     """The stages of :data:`STAGES` for one finished run, plus their ``sha256``."""
     record: dict[str, Any] = {
@@ -262,6 +330,7 @@ def golden_record(run: Run, analyst: RecordingAnalyst, parsed: dict[str, Documen
             "counts": run.coverage.model_dump(mode="json"),
         },
         "figures": _figures(run),
+        "changes": _changes(run, parsed),
     }
     record["sha256"] = sha256_text(canonical_json(record))
     return record

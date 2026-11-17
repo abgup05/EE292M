@@ -1,4 +1,195 @@
 {
+  "changes": {
+    "compared": [
+      "2026-04-26",
+      "2026-07-26"
+    ],
+    "items": [
+      {
+        "added": 0,
+        "item": "Cover page",
+        "listed": "f3684fddd33deac478ec5ea774be01454d7756c58d373946d4f8178f0397a148",
+        "minor_added": 5,
+        "minor_numbers_only": 13,
+        "minor_removed": 4,
+        "minor_unchanged": 32,
+        "numbers_only": 1,
+        "present_in": "both",
+        "removed": 0,
+        "reworded": 0,
+        "subheadings_added": [],
+        "subheadings_removed": [],
+        "unchanged": 11
+      },
+      {
+        "added": 29,
+        "item": "Part I, Item 1. Financial Statements (Unaudited)",
+        "listed": "b82d1ea22b070d581c0131a2ff6c8a834a9133ef23b42d853d155424d61713b8",
+        "minor_added": 180,
+        "minor_numbers_only": 125,
+        "minor_removed": 128,
+        "minor_unchanged": 152,
+        "numbers_only": 6,
+        "present_in": "both",
+        "removed": 15,
+        "reworded": 50,
+        "subheadings_added": [
+          "Note 4 - Intangible Assets and Goodwill",
+          "+42.8+Note 5 - Cash Equivalents and Marketable Securities",
+          "Note 7 - Supplemental Financial Statement Information",
+          "Other Income, Net",
+          "Land, Power, and Shell Guarantees for AI Clouds",
+          "Public Company Warrants",
+          "Derivative Financial Instrument Notional Values",
+          "Additional Commitments and Guarantees",
+          "Additional Commitments",
+          "Guarantees"
+        ],
+        "subheadings_removed": [
+          "Note 4 - Amortizable Intangible Assets and Goodwill",
+          "Note 5 - Cash Equivalents and Marketable Securities",
+          "Investment Commitments",
+          "Note 7 - Balance Sheet Components",
+          "Facility Lease Guarantee"
+        ],
+        "unchanged": 35
+      },
+      {
+        "added": 19,
+        "item": "Part I, Item 2. Management’s Discussion and Analysis of Financial Condition and Results of Operations",
+        "listed": "cb20bbfd2022aa8de0caae671169aba0a9b223256458cca699b20526c7277a79",
+        "minor_added": 42,
+        "minor_numbers_only": 25,
+        "minor_removed": 44,
+        "minor_unchanged": 15,
+        "numbers_only": 4,
+        "present_in": "both",
+        "removed": 15,
+        "reworded": 37,
+        "subheadings_added": [
+          "Second Quarter of Fiscal Year 2027 Summary",
+          "Other Income, Net"
+        ],
+        "subheadings_removed": [
+          "First Quarter of Fiscal Year 2027 Summary",
+          "Total Other Income, Net"
+        ],
+        "unchanged": 17
+      },
+      {
+        "added": 2,
+        "item": "Part I, Item 3. Quantitative and Qualitative Disclosures About Market Risk",
+        "listed": "1f493ae7ea493fb88ac6b1ee916e4362b9d8d74128834dc48d496e0c3ab44f9d",
+        "minor_added": 0,
+        "minor_numbers_only": 0,
+        "minor_removed": 0,
+        "minor_unchanged": 0,
+        "numbers_only": 1,
+        "present_in": "both",
+        "removed": 1,
+        "reworded": 3,
+        "subheadings_added": [],
+        "subheadings_removed": [],
+        "unchanged": 0
+      },
+      {
+        "added": 1,
+        "item": "Part I, Item 4. Controls and Procedures",
+        "listed": "4a93a152a6c3bf6202ff694fd157b6147d2d2c4cd526a34db09f50775865c1d6",
+        "minor_added": 0,
+        "minor_numbers_only": 0,
+        "minor_removed": 1,
+        "minor_unchanged": 0,
+        "numbers_only": 1,
+        "present_in": "both",
+        "removed": 0,
+        "reworded": 1,
+        "subheadings_added": [],
+        "subheadings_removed": [],
+        "unchanged": 1
+      },
+      {
+        "added": 0,
+        "item": "Part II, Item 1. Legal Proceedings",
+        "listed": "0b1978586b1fb64802c8e1d5c39bd43f60a4fedc3aa734c924649ef54733f1cf",
+        "minor_added": 0,
+        "minor_numbers_only": 0,
+        "minor_removed": 0,
+        "minor_unchanged": 0,
+        "numbers_only": 0,
+        "present_in": "both",
+        "removed": 0,
+        "reworded": 1,
+        "subheadings_added": [],
+        "subheadings_removed": [],
+        "unchanged": 0
+      },
+      {
+        "added": 17,
+        "item": "Part II, Item 1A. Risk Factors",
+        "listed": "6eb770793393e202764bf456fa3c8321104d4eb2165e72f4eb622080aece83f4",
+        "minor_added": 0,
+        "minor_numbers_only": 0,
+        "minor_removed": 6,
+        "minor_unchanged": 0,
+        "numbers_only": 0,
+        "present_in": "both",
+        "removed": 32,
+        "reworded": 11,
+        "subheadings_added": [],
+        "subheadings_removed": [],
+        "unchanged": 22
+      },
+      {
+        "added": 0,
+        "item": "Part II, Item 2. Unregistered Sales of Equity Securities and Use of Proceeds",
+        "listed": "bb6a60d8057e57e54556987c78ef0612ccb760e21f79a7f33ff90e5542e83006",
+        "minor_added": 0,
+        "minor_numbers_only": 4,
+        "minor_removed": 0,
+        "minor_unchanged": 0,
+        "numbers_only": 1,
+        "present_in": "both",
+        "removed": 1,
+        "reworded": 5,
+        "subheadings_added": [],
+        "subheadings_removed": [],
+        "unchanged": 5
+      },
+      {
+        "added": 2,
+        "item": "Part II, Item 5. Other Information",
+        "listed": "a4f5c9a498b6996f9a83668837f20f73b14c9ffbe0e9f5856269c2ab9857aec9",
+        "minor_added": 3,
+        "minor_numbers_only": 0,
+        "minor_removed": 2,
+        "minor_unchanged": 0,
+        "numbers_only": 0,
+        "present_in": "both",
+        "removed": 2,
+        "reworded": 0,
+        "subheadings_added": [],
+        "subheadings_removed": [],
+        "unchanged": 2
+      },
+      {
+        "added": 1,
+        "item": "Part II, Item 6. Exhibits",
+        "listed": "6da81c2f8faec564ab7627c5d7fb1ddecce64077dc8bc756adfd63994dfa0bf2",
+        "minor_added": 9,
+        "minor_numbers_only": 1,
+        "minor_removed": 2,
+        "minor_unchanged": 16,
+        "numbers_only": 0,
+        "present_in": "both",
+        "removed": 0,
+        "reworded": 0,
+        "subheadings_added": [],
+        "subheadings_removed": [],
+        "unchanged": 6
+      }
+    ]
+  },
   "coverage": {
     "counts": {
       "claims_total": 5,
@@ -527,7 +718,7 @@
     ],
     "passages_indexed": 636
   },
-  "sha256": "cb1db0f3232a6281c5458a9ce13e128ab643de16dad698abf2d6ed9b49373e4d",
+  "sha256": "bd294c7594348d6188b505d47c4960ae76fc7f73cc98eb8bd3c0bbb9ae35de03",
   "sources": [
     {
       "characters": 151303,

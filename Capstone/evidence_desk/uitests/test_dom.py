@@ -59,12 +59,27 @@ def record(name: str) -> dict[str, Any]:
     return json.loads((WEB / PAGES[name][0]).read_text(encoding="utf-8"))
 
 
+def require_fresh(dump: Path, sample: Path) -> None:
+    """Fail unless ``dump`` exists and was rendered after the page and its sample last changed.
+
+    A dump left over from an earlier `make uitest` would let these tests pass against a page
+    that no longer exists (review 5, finding 11).
+    """
+    if not dump.is_file() or dump.stat().st_size == 0:
+        pytest.fail(f"{dump} is missing or empty: run `make uitest`, which renders it first")
+    sources = [WEB / "index.html", WEB / "app.js", WEB / "styles.css", sample]
+    stale = [source.name for source in sources if source.stat().st_mtime > dump.stat().st_mtime]
+    if stale:
+        pytest.fail(
+            f"{dump.name} is older than {', '.join(stale)}: run `make uitest`, which renders it again"
+        )
+
+
 @cache
 def page(name: str) -> BeautifulSoup:
     """The DOM the headless browser dumped after the page rendered that record."""
     path = RESULTS / PAGES[name][1]
-    if not path.is_file() or path.stat().st_size == 0:
-        pytest.fail(f"{path} is missing or empty: run `make uitest`, which renders it first")
+    require_fresh(path, WEB / PAGES[name][0])
     soup = BeautifulSoup(path.read_text(encoding="utf-8"), "html.parser")
     if soup.select_one("#run-view[hidden]") is not None or soup.select_one("#run-view") is None:
         pytest.fail(f"{path.name}: the page did not render a run (is the sample file served?)")

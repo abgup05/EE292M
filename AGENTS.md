@@ -93,7 +93,7 @@ only when it earns its place, and say why.
 ### Mistakes made more than once
 
 - A count that survives a failure upstream. When a step can fail, check what every count and denominator after it then means.
-- Testing on one company. A parser or figures change is not done until `make probe` on the eight companies and the three XBRL fixtures agree.
+- Testing on one company. A parser change is not done until `make probe` on the eight companies agrees, and a change to the reported figures until `make figures` on the same eight does, run before and after (`make probe` says nothing about figures: three of the eight were wrong for seven versions under it). A change that moves a company's figures invalidates the recorded answers of its golden cases; record them again (`Capstone/evidence_desk/eval/README.md`).
 - Reporting a measurement the numbers do not support. Every number in a README or a docs file needs the command that produced it and its denominator; a speed claim needs a before and after measured alternately.
 - Text shown to a model comes back as the model saw it. Whatever is escaped on the way in must be unescaped on the way out.
 - XBRL `fy` and `fp` describe the filing, not the fact. Place a period by its dates.

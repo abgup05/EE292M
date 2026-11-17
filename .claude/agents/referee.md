@@ -21,6 +21,10 @@ Look hardest at the claims the project makes about itself:
 - that a run with thin evidence says so;
 - that every paragraph the filing comparison lists is an exact span of its filing, sits in the
   class it is given, and is counted truly;
+- that a changed paragraph listed under a claim is a change in the filings that run read, and
+  that the page claims no more for the list than a keyword match;
+- that a segment, geography or customer figure is the figure the filing tags, for the period
+  and in the unit shown;
 - that the measured results in the README were measured.
 
 For each, try to construct the input, the filing or the code change under which the claim

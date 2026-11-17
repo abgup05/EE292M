@@ -19,9 +19,12 @@ The rules:
   "Revenue $ 46,743") also matches at 1e3, 1e6 or 1e9 times its value.
 - Direction: an unsigned statement number matches a positive source; it
   matches a *negative* source ("(3)%", "-3%") only when the statement's
-  sentence that holds it has a word of :data:`NEGATIVE_WORDS` ("revenue
-  declined 3%" against "(3)%" passes; "revenue grew 3%" against it fails). A
-  negative statement number needs a negative source.
+  sentence that holds it has a word that allows it ("revenue declined 3%"
+  against "(3)%" passes; "revenue grew 3%" against it fails). For a percentage
+  that word must be one of decline (:data:`DECLINE_WORDS`); for an amount a word
+  for an outflow (:data:`OUTFLOW_WORDS`) will also do, since filings print
+  expenses and payments in parentheses. A negative statement number needs a
+  negative source. The reverse is not checked: "fell 56%" matches "up 56%".
 - Not quantities:
 
   - a four-digit number from 1900 to 2100 in a date-like context only
@@ -70,10 +73,13 @@ SCALE_ABBREVIATIONS: dict[str, float] = {"K": 1e3, "M": 1e6, "B": 1e9, "bn": 1e9
 TABLE_SCALES: tuple[float, ...] = (1.0, 1e3, 1e6, 1e9)
 MAX_EXEMPT_COUNT = 12
 YEARS = range(1900, 2101)
-# Words that let a number written without a sign stand for a negative source figure: words
-# of decline, and the words a filing uses for amounts it prints in parentheses (losses,
-# expenses, outflows). Matched as whole words, case ignored, in the number's own sentence.
-NEGATIVE_WORDS: tuple[str, ...] = (
+# Words that let a number written without a sign stand for a negative source figure, matched
+# as whole words, case ignored, in the number's own sentence. Two kinds. Words of decline
+# say the figure fell or is below zero; they are needed for a percentage, because a
+# percentage in parentheses is a fall. Words for an outflow are what a filing uses for
+# amounts it prints in parentheses (expenses, purchases, cash paid); they let an amount
+# match, never a percentage: "expenses grew 3%" must not match "(3)%".
+DECLINE_WORDS: tuple[str, ...] = (
     "decline",
     "declined",
     "declines",
@@ -100,6 +106,8 @@ NEGATIVE_WORDS: tuple[str, ...] = (
     "contraction",
     "contracted",
     "deficit",
+)
+OUTFLOW_WORDS: tuple[str, ...] = (
     "expense",
     "expenses",
     "outflow",
@@ -113,6 +121,7 @@ NEGATIVE_WORDS: tuple[str, ...] = (
     "capital expenditure",
     "capital expenditures",
 )
+NEGATIVE_WORDS: tuple[str, ...] = DECLINE_WORDS + OUTFLOW_WORDS
 
 _MONTH = (
     r"(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|Aug(?:ust)?|"
@@ -147,10 +156,15 @@ _YEAR_BEFORE = re.compile(
     re.IGNORECASE,
 )
 _YEAR_AFTER = re.compile(r"\s*(?:(?:and|to|through|or)\s+|[-–]\s*)(?:19|20|21)\d\d\b")
-_NEGATIVE = re.compile(
-    r"\b(?:" + "|".join(re.escape(word).replace(r"\ ", r"\s+") for word in NEGATIVE_WORDS) + r")\b",
-    re.IGNORECASE,
-)
+
+
+def _whole_words(words: tuple[str, ...]) -> re.Pattern[str]:
+    alternatives = "|".join(re.escape(word).replace(r"\ ", r"\s+") for word in words)
+    return re.compile(r"\b(?:" + alternatives + r")\b", re.IGNORECASE)
+
+
+_NEGATIVE = _whole_words(NEGATIVE_WORDS)
+_DECLINE = _whole_words(DECLINE_WORDS)
 _SENTENCE_BREAK = re.compile(r"[.!?;](?=\s)|\n")
 _NUMBER = re.compile(r"\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?|\.\d+")
 _CURRENCY_BEFORE = re.compile(r"(?:US\$|\$|\bUSD)\s?$")
@@ -352,6 +366,11 @@ def says_negative(sentence: str) -> bool:
     return _NEGATIVE.search(sentence) is not None
 
 
+def says_decline(sentence: str) -> bool:
+    """True when ``sentence`` has a word of :data:`DECLINE_WORDS`."""
+    return _DECLINE.search(sentence) is not None
+
+
 # Matching
 
 
@@ -383,7 +402,7 @@ def _matches(quantity: Quantity, candidate: _Candidate, negative_allowed: bool) 
     """True when ``candidate`` gives ``quantity`` within tolerance and in a compatible unit.
 
     An unsigned ``quantity`` may match a negative candidate only when
-    ``negative_allowed`` (its sentence has a word of :data:`NEGATIVE_WORDS`).
+    ``negative_allowed`` (its sentence has a word that allows it: see :func:`check_numbers`).
     """
     if candidate.unit not in _COMPATIBLE[quantity.unit]:
         return False
@@ -461,7 +480,11 @@ def check_numbers(
 
     Quotes are tried before cited figures, and the first match is reported. An
     unsigned quantity matches a negative source only when its own sentence of
-    ``statement`` has a word of decline (:data:`NEGATIVE_WORDS`).
+    ``statement`` has a word that allows it: for a percentage a word of decline
+    (:data:`DECLINE_WORDS`), for an amount a word of decline or of an outflow
+    (:data:`NEGATIVE_WORDS`). The reverse is not checked: "fell 56%" matches a source
+    that says "up 56%", because a filing writes most declines as positive numbers with
+    a word, and a sign cannot tell the two apart.
     """
     candidates = [*_excerpt_candidates(excerpts), *_metric_candidates(metrics)]
     details: list[str] = []
@@ -469,7 +492,9 @@ def check_numbers(
     placed = _placed_quantities(statement)
     wanted = [quantity for quantity, _ in placed]
     for quantity, position in placed:
-        negative_allowed = says_negative(_sentence_at(statement, position))
+        sentence = _sentence_at(statement, position)
+        is_change = quantity.unit in ("percent", "bps")
+        negative_allowed = says_decline(sentence) if is_change else says_negative(sentence)
         hit = next((c for c in candidates if _matches(quantity, c, negative_allowed)), None)
         if hit is None:
             unmatched.append(quantity.raw)

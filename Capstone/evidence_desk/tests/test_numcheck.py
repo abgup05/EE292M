@@ -288,6 +288,35 @@ def test_an_unsigned_number_still_matches_a_positive_source_whatever_the_wording
     assert check_numbers("Revenue fell 3% short of plan.", ["up 3%"], []).status == "passed"
 
 
+# The second referee's demonstration (docs/reviews/referee-2-version-6.md, finding 7) ---------
+
+
+@pytest.mark.parametrize(
+    "statement",
+    [
+        "Operating expenses grew 3% from a year ago.",
+        "The company paid 3% more in dividends than a year ago.",
+        "Purchases of inventory rose 3%.",
+    ],
+)
+def test_a_word_for_an_outflow_does_not_let_a_percentage_match_a_decline(statement: str) -> None:
+    """A percentage in parentheses is a fall; "expenses" or "paid" beside it says nothing of one."""
+    check = check_numbers(statement, ["Change from a year ago (3)%"], [])
+    assert check.status == "failed" and check.unmatched == ["3%"]
+
+
+def test_a_word_of_decline_beside_an_outflow_still_matches_the_fall() -> None:
+    statement = "Operating expenses declined 3% from a year ago."
+    assert check_numbers(statement, ["Change from a year ago (3)%"], []).status == "passed"
+
+
+def test_a_word_for_an_outflow_still_lets_an_amount_match_one_printed_in_parentheses() -> None:
+    source = "Payments for repurchases of common stock were $(3,236) million in the year."
+    statement = "The company spent $3,236 million on repurchases."
+    assert check_numbers(statement, [source], []).status == "passed"
+    assert check_numbers("Cash received was $3,236 million.", [source], []).status == "failed"
+
+
 def test_a_negative_cited_figure_needs_a_word_of_decline() -> None:
     figure = metric(value=-2.8, display="-2.8%")
     assert check_numbers("Revenue grew 2.8% in fiscal 2026.", [], [figure]).status == "failed"

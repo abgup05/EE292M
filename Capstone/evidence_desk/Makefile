@@ -1,4 +1,4 @@
-.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench eval eval-validate
+.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench eval eval-validate backup restore-check up-recorded live-walk
 
 export COMPOSE_PROJECT_NAME := ee292m-evidence-desk
 export LOCAL_UID := $(shell id -u)
@@ -8,6 +8,8 @@ RUN := $(COMPOSE) run --rm --no-deps app
 
 help:
 	@echo 'Everyday: build up down verify clean (verify-fresh: clone the committed branch under results/ and verify it)'
+	@echo 'Recorded demo: up-recorded (the app with model answers replayed from demo/cassettes/nvda-example: Load example, then Test the thesis; needs EDGAR, no key)'
+	@echo 'Live walk: live-walk (the running app over HTTP with live EDGAR and recorded answers: a run, decisions, the reviewed brief, a saved thesis run twice, the comparison)'
 	@echo 'Development: test lint fmt smoke logs shell (test T=tests/test_x.py; lint/fmt FILES="src/app/x.py")'
 	@echo "Command line: run ARGS='example' or ARGS='run --ticker NVDA --decision \"...\" --claim \"...\"' (synchronous; writes results/<run-id>.json and .md)"
 	@echo 'Dependencies: lock'
@@ -22,12 +24,21 @@ help:
 	@echo 'Fixtures: fixtures-facts (record XBRL company facts of NVDA, AAPL, MSFT under tests/fixtures/edgar; REFRESH=1 to overwrite)'
 	@echo 'Fixtures: fixtures (record SEC EDGAR responses for NVIDIA under tests/fixtures/edgar; REFRESH=1 to overwrite)'
 	@echo 'Diagnostics: probe TICKERS="AAPL MSFT" (live: parse each company'"'"'s latest 10-K and 10-Q, report Item coverage; writes results/probe-<UTC>.md)'
+	@echo 'Backup: backup (the record, online, to backups/record-<UTC>.sqlite with its .sha256, and backups/decisions-<UTC>.jsonl)'
+	@echo 'Backup: restore-check (restore the newest backup into a temporary directory and compare it with the live record; PASS or FAIL)'
 
 build:
 	$(COMPOSE) build app
 
 up:
 	$(COMPOSE) up --build --force-recreate -d app
+
+up-recorded:
+	EVIDENCE_DESK_CASSETTE=demo/cassettes/nvda-example $(COMPOSE) up --build --force-recreate -d app
+
+live-walk:
+	EVIDENCE_DESK_CASSETTE=demo/cassettes/nvda-example $(COMPOSE) up --build --force-recreate -d app
+	@trap '$(COMPOSE) down' EXIT; $(COMPOSE) exec -T app python tests/live_walk.py
 
 down:
 	$(COMPOSE) down
@@ -79,9 +90,9 @@ screenshots:
 	@trap '$(COMPOSE) down' EXIT; \
 	$(COMPOSE) exec -T app python uitests/wait_ready.py && \
 	$(COMPOSE) run --rm shots --window-size=1280,720 --screenshot=/work/docs/screenshots/first-screen.png "http://app:8000/" && \
-	$(COMPOSE) run --rm shots --window-size=1280,2600 --screenshot=/work/docs/screenshots/sample-run.png "http://app:8000/?sample" && \
+	$(COMPOSE) run --rm shots --window-size=1280,4500 --screenshot=/work/docs/screenshots/sample-run.png "http://app:8000/?sample" && \
 	$(COMPOSE) run --rm shots --window-size=390,1400 --screenshot=/work/docs/screenshots/sample-run-phone.png "http://app:8000/?sample" && \
-	$(COMPOSE) run --rm shots --window-size=1280,4560 --screenshot=/work/docs/screenshots/sample-synthetic.png "http://app:8000/?sample=synthetic"
+	$(COMPOSE) run --rm shots --window-size=1280,5700 --screenshot=/work/docs/screenshots/sample-synthetic.png "http://app:8000/?sample=synthetic"
 
 fixtures:
 	$(RUN) python -m app.record_fixtures $(if $(filter 1,$(REFRESH)),--refresh,)
@@ -125,3 +136,9 @@ shell:
 
 clean:
 	$(COMPOSE) down --rmi local --remove-orphans
+
+backup:
+	$(RUN) python -m app.backup backup
+
+restore-check:
+	$(RUN) python -m app.backup restore-check

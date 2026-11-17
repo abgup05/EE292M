@@ -4,15 +4,9 @@ Each file here is one review of a tagged version, kept as the reviewer wrote it.
 
 ## How a review is run
 
-There were no colleague review sessions for these hand-ins. Each review was done by a model that did not write the code, so that it could not agree with the author by construction:
+There were no colleague review sessions for these hand-ins. Each review was done by a model that did not write the code, in a fresh context, read-only, from a clean checkout of the tag, with the session's checklist and nothing else: not the planning conversation, not the author's logs, not an earlier review. Its text is saved unedited.
 
-1. **Pick the version.** A tag, so the review can be read against exactly what was reviewed.
-2. **Pick a reviewer that did not write it.** The code is written by Claude Opus sessions directed by one planning session. The reviewer is a different model (Claude Sonnet) started in a fresh context. It is never shown the planning conversation.
-3. **Give it only the work.** The repository at that tag and the session's checklist, quoted from the course slide. It is told not to read `Work Logs/`, `Homework/`, `Slides/` or the earlier reviews, so it cannot pick up the author's own account of the work.
-4. **Read-only.** It may read and search; it may not edit, run the app or touch git.
-5. **Ask for evidence.** Every finding names a file and a line the reviewer opened. No praise.
-6. **Keep the text.** The review is saved unedited, with a header saying what was reviewed, by which model, and when.
-7. **Triage every finding.** Build it in, or answer it in one line with the reason.
+The steps are in one place, the skill at `.claude/skills/blind-review/SKILL.md` (`/blind-review` in Claude Code), with the four session checklists beside it. They used to be listed here as well; a test of the skill showed that an agent follows whichever copy it finds, so there is now one ([`../skill-test.md`](../skill-test.md)).
 
 What this does not replace: a colleague who knows the field and can say whether the result is useful to a real analyst. A model reviewer checks the work against its own stated purpose; it does not know my purpose better than the README tells it.
 

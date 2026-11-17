@@ -70,6 +70,19 @@ compares eight times the text with the base text (best of five each; linear ≈ 
 bound 20x) instead of a wall-clock bound, and failed at 33.6x on a planted quadratic build.
 `test_demo.py` asserts each fact of the Markdown (claim, label, counts), not whole lines.
 
+## The filing comparison (version 6)
+
+| Wrong program | Fails | Seen failing as |
+| --- | --- | --- |
+| `REWORD_THRESHOLD` 0.5 → 0.0 in `core/filing_diff.py`: every new paragraph pairs with some old one | 12 tests of `tests/test_filing_diff.py`, among them the plan's exit check `::test_a_planted_paragraph_change_is_reported_as_added_and_removed`, and 2 of `tests/test_filing_changes.py` | run on 17 November: 14 failed; restored, 37 passed |
+| No route for the comparison | `tests/test_api.py::test_filing_changes_for_a_ticker` and the three beside it | written before the route: `assert 404 == 200` |
+| The index's older pages are never read, so a company that files daily has "1 10-K filing(s)" | ten tests of `tests/test_edgar.py`, from `::test_an_earlier_filing_of_the_form_is_found_in_an_older_page_of_the_index` on | written before the change: 10 failed, 47 passed. The same failure live: `make changes ARGS="JPM --form 10-K"` ended with that message |
+| A page name from the index used in a URL unchecked (another company's file, a path, another host) | `tests/test_edgar.py::test_an_older_page_with_an_unexpected_name_is_refused_and_never_requested` (six names) | failed with the ten above |
+| A recorded comparison whose total, list, link or changed words disagree | `tests/test_sample_changes.py::test_each_kind_of_damage_to_the_record_is_reported` | the test itself damages a copy in eight ways and expects each to be reported; it runs with the suite |
+| The page drawing the comparison wrongly (a count from the wrong field, a link into the wrong filing, added and removed words given the same mark, a cut list not saying so) | the nine tests of `uitests/test_changes_dom.py` | written after the view, so they first passed; the page was then broken in eight places and all nine failed, by the session that built it |
+
+What these cannot see: whether a paragraph called "reworded" is the same paragraph to a reader. Nothing checks the classification against a person's reading.
+
 ## The replay test
 
 `tests/test_replay.py` replays a copy of `demo/cassettes/nvda-example`: the Claude engine's own

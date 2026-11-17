@@ -4,9 +4,11 @@ Evidence Desk tests the claims of an investment thesis against a company's own S
 
 Two things are checked mechanically by the backend before anything reaches the page or the Markdown export: every quote is found word for word in a passage that was shown to the engine, and every number in a finding or in its reason is matched to one of its quotes or to a reported figure it cites. A third check is a model's: a second model, which is not shown the first one's reasoning, reads each finding's evidence and says whether it supports the statement. That is still a model's reading, of the same family as the first, so you accept or reject each finding yourself, and a second verdict follows, by the same rule, from the findings you accepted. A thesis can be saved and run again when a new filing arrives; the page then shows which verdicts moved.
 
+Separately from any thesis, it shows what a company added, removed and reworded between its two latest annual or quarterly reports.
+
 "Word for word" means a span of the text this tool extracted from the filing. Table rows are flattened in that text, and a quote is located under the Item and sub-heading the parser found.
 
-This is version 5 (tag `capstone-v5`) of the capstone. The plan and the milestones are in [`../README.md`](../README.md), the design is in [`ARCHITECTURE.md`](ARCHITECTURE.md), and the tests are described in [`docs/testing.md`](docs/testing.md).
+This is version 6 (tag `capstone-v6`) of the capstone. The plan and the milestones are in [`../README.md`](../README.md), the design is in [`ARCHITECTURE.md`](ARCHITECTURE.md), and the tests are described in [`docs/testing.md`](docs/testing.md).
 
 ![A recorded run: verdicts first, then the summary and the reported figures](docs/screenshots/sample-run.png)
 
@@ -22,7 +24,7 @@ make down
 
 - **Without any key** the app works on real filings: the deterministic engine quotes the sentences that best match each claim and judges no stance, so claims read "passages found, not judged". **Reported figures only** needs just a ticker.
 - **With `ANTHROPIC_API_KEY`** Claude plans the retrieval queries, drafts findings with a stance and writes the summary. The same checks apply to everything it returns.
-- **Without the network or a key** you can still see a judged run: open <http://127.0.0.1:8766/?sample>, or run `make replay`. Both use three recorded NVIDIA filings and model answers replayed from a cassette ([`docs/cassettes.md`](docs/cassettes.md)).
+- **Without the network or a key** you can still see a judged run: open <http://127.0.0.1:8766/?sample>, or run `make replay`. <http://127.0.0.1:8766/?sample=changes> shows a recorded comparison of NVIDIA's two latest annual reports. Both use three recorded NVIDIA filings and model answers replayed from a cassette ([`docs/cassettes.md`](docs/cassettes.md)).
 - **With the network and no key**, `make up-recorded` starts the app with those recorded answers: **Load example**, then **Test the thesis**, gives the judged run on filings fetched live, and you can review it and save it. This works while NVIDIA's reported facts are as they were on 17 November 2026; after its next filing the prompts will no longer match the recording, and the run will fall back to the keyless engine and say so.
 
 ## What you see
@@ -35,8 +37,11 @@ make down
 6. **Accept** or **Reject** each finding, with a note if you like. The scorecard shows two verdicts per claim: the engine's, and the one that follows from the findings you accepted. Undecided findings do not count toward yours.
 7. **Save this thesis**, and later **Run again on the latest filings**. **What moved** compares the two newest runs: which verdicts changed, which excerpts are new, which filing is new.
 8. **Download Markdown brief** exports the verified record; once every finding is decided, **Download reviewed brief** includes your decisions.
+9. **What changed in the filings** needs only a ticker. It compares the latest annual report with the one before it (or the latest quarterly report with the previous one), Item by Item: how many paragraphs are unchanged, changed only in their numbers, reworded, added and removed, and then the paragraphs themselves, each linked into its filing, the reworded ones with the changed words marked.
 
-From the command line, `make run ARGS='example'` runs the same pipeline and writes `results/<run-id>.json` and `.md`. `make probe TICKERS="AAPL COST"` reports how well a company's filings split into their Items.
+![What changed between NVIDIA's two latest annual reports: counts by Item, then the paragraphs, with changed words marked](docs/screenshots/sample-changes.png)
+
+From the command line, `make run ARGS='example'` runs the same pipeline and writes `results/<run-id>.json` and `.md`; `make changes ARGS="NVDA --form 10-K"` writes the filing comparison. `make probe TICKERS="AAPL COST"` reports how well a company's filings split into their Items.
 
 ## The system
 
@@ -153,6 +158,16 @@ Read these with three cautions. The cases and their expected stances were drafte
 
 **Filing structure on eight companies** (`make probe`, 14 filings; [`docs/speed/probe-v4.md`](docs/speed/probe-v4.md)): NVIDIA, Apple, Microsoft, Coca-Cola, Tesla, Costco and Amazon have 95.8% to 98.6% of their text under a numbered Item. That is a share of text, not a count of Items found against Items present, and it cannot show a wrong boundary. JPMorgan's 10-Q has 1.6%: it prints no Item headings over its body, and a run on it is now marked partial. Its 10-K scores 99.4%, which overstates it, because its annual report follows Item 15.
 
+**What changed between two filings** (`make changes`; [`docs/filing-changes.md`](docs/filing-changes.md)), measured on NVIDIA on 17 November from filings fetched live:
+
+| Paragraphs | Unchanged | Numbers only | Reworded | Added | Removed |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Annual report for fiscal 2026 against fiscal 2025 | 606 | 417 | 218 | 133 | 132 |
+| of which Item 1A, Risk Factors | 139 | 1 | 51 | 34 | 22 |
+| Quarterly report for the second quarter of fiscal 2027 against the first | 314 | 182 | 108 | 71 | 66 |
+
+Among the risk factors added in the annual report is one about an investment and partnership agreement with OpenAI that was not yet final; among those removed, a group of paragraphs about an export rule that has since been rescinded. The method's one threshold (how similar two paragraphs must be to count as reworded) was set by reading the pairs each candidate value would add, on these two comparisons only. The comparison has since been run on the annual reports of the other seven probe companies ([`docs/evidence/changes-eight-companies.md`](docs/evidence/changes-eight-companies.md)): it ran on all eight and matched every Item of one report to its Item in the other, but nobody has read those seven results, and no person has checked the classification on any. Running it on JPMorgan found two things: its earlier annual report was not in EDGAR's recent index at all (fixed: older index pages are now read, up to twelve), and 6,460 of its 7,253 paragraphs sit under "Item 15", because the bank's annual report follows its last Item heading. The exit check of the plan is a test: one planted paragraph comes back as exactly one added and one removed.
+
 **The live application, end to end** (`make live-walk`; output in `docs/evidence/`): the running app over HTTP, filings fetched live, recorded answers. The walk fails unless the run is judged. It will fail after NVIDIA's next filing, when the recording no longer matches.
 
 **Backup and restore** (`make backup`, `make restore-check`; output in `docs/evidence/`): a restore of the newest backup is compared with the live record, every run, decision and thesis. Same disk, same machine.
@@ -162,14 +177,15 @@ Read these with three cautions. The cases and their expected stances were drafte
 ## Verification
 
 ```sh
-make verify         # build, lint, 1,004 offline tests, smoke test, browser-level test
+make verify         # build, lint, 1,094 offline tests, smoke test, browser-level test
 make test           # offline tests only (T=tests/test_gate.py for one file)
 make golden-check   # the tripwire: one recorded run, compared stage by stage
 make replay         # the recorded model-backed run, offline
-make uitest         # headless Chromium renders two records; 60 assertions on the DOM
+make uitest         # headless Chromium renders three records; 69 assertions on the DOM
 make live-walk      # the running app end to end over HTTP: needs EDGAR, no key
 make eval ARGS="run --variant claim"   # score retrieval on the golden set
 make backup         # copy the record to backups/; make restore-check proves it restores
+make changes ARGS="NVDA --form 10-K"    # what changed between a company's two latest annual reports
 make screenshots    # renders the page into docs/screenshots, for a person to look at
 ```
 
@@ -188,4 +204,5 @@ make screenshots    # renders the page into docs/screenshots, for a person to lo
 - **The record has no copy off this laptop.** `make backup` writes to the same disk.
 - **Filings without Item headings over their body** (JPMorgan's 10-Q) are kept and quotable, located by sub-heading only, and a run on one is partial.
 - **The page was checked by eye from screenshots** and by a DOM test, not by a user. Dark mode was not checked.
+- **The filing comparison is tuned on one company.** Its threshold was set on NVIDIA's reports; on seven other companies it has run but its results are unread. A paragraph rewritten into several reads as one removed and several added. Tables are not compared. Where a filing's body does not sit under its Item headings (JPMorgan), the Item named beside a change is not meaningful.
 - Only 10-K and 10-Q filers. No PDFs, 8-K exhibits, foreign filers or transcripts. Runs execute in a worker thread inside the API process; there is no queue and no resume after a restart.

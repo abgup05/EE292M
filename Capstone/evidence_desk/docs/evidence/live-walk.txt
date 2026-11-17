@@ -1,9 +1,9 @@
 # make live-walk
-# 2026-11-17T13:25:42Z, version 0.5.0, with recorded answers (demo/cassettes/nvda-example) and live SEC EDGAR
+# 2026-11-17T13:41:40Z, version 0.6.0, with recorded answers (demo/cassettes/nvda-example) and live SEC EDGAR
 
-engine: claude; version 0.5.0
+engine: claude; version 0.6.0
 ok: a run on the example thesis starts (202)
-   run run-fa3bc4b2c0e8: complete; 3 of 3 filings from live EDGAR; 18 of 18 findings verified; 0 engine fallback(s)
+   run run-615958f6bc77: complete; 3 of 3 filings from live EDGAR; 18 of 18 findings verified; 0 engine fallback(s)
    c1 supported: Data center revenue is still growing year over year.
    c2 supported: A small number of customers account for a large share of revenue.
    c3 mixed: Export controls on sales to China are restricting revenue.
@@ -27,4 +27,9 @@ ok: the later run read its filings from the cache: ['3 of 3 filings were read fr
 ok: the two runs are compared
    No verdict moved and no filing is new.
 ok: no verdict moved between two runs on the same filings and the same answers
+ok: a filing comparison of a form other than 10-K or 10-Q is refused (422)
+ok: the two latest annual reports are compared (live EDGAR or the cache)
+   10-K for 2026-01-25 against 2025-01-26: 606 unchanged, 417 numbers only, 218 reworded, 133 added, 132 removed
+ok: the earlier filing is the earlier one, and each total is the sum over the Items
+ok: the risk factors were found in both reports
 live walk: PASS

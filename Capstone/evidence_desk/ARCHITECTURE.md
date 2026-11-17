@@ -1,6 +1,6 @@
 # Architecture
 
-Evidence Desk (version 0.5.0) tests an equity analyst's thesis claims against the company's own SEC filings and shows,
+Evidence Desk (version 0.6.0) tests an equity analyst's thesis claims against the company's own SEC filings and shows,
 per claim, the verbatim passages and figures that support or challenge it. A reviewer can accept or reject each
 finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the brief; `docs/reviews/` the review.
 
@@ -20,6 +20,7 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/core/review.py      a reviewer's decisions on one run, and the reviewed verdict per claim
     src/app/core/compare.py     what moved between two runs of one thesis
     src/app/core/links.py, text.py   text-fragment links to an excerpt; word tokens and sentence spans
+    src/app/core/filing_diff.py what was added, removed, reworded or renumbered between two filings, Item by Item; change_models.py is its pure data
     src/app/core/facts.py       FactBook: values from XBRL company facts, placed by their dates
     src/app/core/metrics.py     computes the metrics report from facts; metric_models.py is its pure data
     src/app/core/numcheck.py    the numeric check: each number a statement writes is in what it cites
@@ -39,21 +40,22 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/services/thesis_run.py  one run, stage by stage; the only place a run advances
     src/app/services/theses.py  saved theses: create, start a run of one, the latest comparison
     src/app/services/export.py  the Markdown brief, plain or with the reviewer's decisions
+    src/app/services/filing_changes.py  selects a company's two latest filings of one form, reads them through the cache, compares them
     src/app/store.py            SQLite: Store (the record) and FilingCache (disposable)
     src/app/backup.py           backs up the record; checks that the newest backup restores
     src/app/wiring.py           composition root: reads the environment, builds collaborators
     src/app/api.py              HTTP routes and static files
     src/app/cli.py              command line onto the same use case
-    src/app/demo.py, probe.py, record_fixtures.py, record_facts.py   live demo; live parser check; fixture recorders
+    src/app/demo.py, probe.py, changes.py, record_fixtures.py, record_facts.py   live demo; live parser check; the filing comparison from the command line; fixture recorders
     src/app/evaluation/golden.py, corpus.py   load and validate the golden set; the filings it is measured on, pinned by hash
     src/app/evaluation/retrieval_eval.py  scores where the right passage ranks; the variant registry
     src/app/evaluation/cli.py   `python -m app.evaluation`: validate, run, fetch, pin, show, plan, generate
     src/app/evaluation/companies.py, planning.py, generation_eval.py   pinned figures, planned queries, answer scoring
-    src/web/                    index.html, app.js, styles.css, sample-run.json, sample-synthetic.json
+    src/web/                    index.html, app.js, styles.css, sample-run.json, sample-synthetic.json, sample-changes.json
     eval/                       the golden set, its pinned filings, cache/ and results/; README.md
     tests/                      offline tests, fakes.py (EDGAR, pages, engine, clock), smoke.py; replay_run.py, golden_run.py, speed_run.py
     tests/live_walk.py          the live end-to-end walk over HTTP; tests/golden/ the tripwire and replayed verdicts
-    uitests/                    browser tests: the rendered DOM of the two samples against their JSON
+    uitests/                    browser tests: the rendered DOM of the two sample runs and the sample filing comparison against their JSON
 
 ## Storage: the record and the cache
 
@@ -180,6 +182,7 @@ finding, 409 while running, 422 withheld finding); `GET .../export.md?reviewed=t
   as JSON, so no new column. Back up first.
 - **A new retrieval variant**: a `Variant` in `VARIANTS` in `evaluation/retrieval_eval.py`. Measure it on the golden
   set (`make eval ARGS='run --variant NAME'`) before it is wired into `retrieval/search.py` or the pipeline.
+- **A change to how two filings are compared** (the threshold for "reworded", what counts as a table row): `core/filing_diff.py`, whose constants sit at its top, with `tests/test_filing_diff.py`. The comparison is separate from a thesis run: `GET /api/companies/{ticker}/changes` and `make changes` both call `services/filing_changes.filing_changes`. Read the pairs a new threshold adds before keeping it (`docs/filing-changes.md`).
 
 ## The boundary
 
@@ -195,8 +198,8 @@ what counts. Filings come only from `www.sec.gov` and `data.sec.gov` (7 requests
 ## Verification and operation
 
 - `make verify`: image build, ruff, `node --check`, the offline tests, `tests/smoke.py` against the live container
-  (no internet), and `make uitest` (headless Chromium renders both samples; `uitests/` checks the DOM against their
-  JSON). Offline tests use `tests/fakes.py`; `make fixtures` re-records EDGAR responses.
+  (no internet), and `make uitest` (headless Chromium renders the two sample runs and the sample filing comparison; `uitests/`
+  checks the DOM against their JSON). Offline tests use `tests/fakes.py`; `make fixtures` re-records EDGAR responses.
 - `make golden-check` compares the offline example run with `tests/golden/golden.json` and names the first stage that
   moved; `make golden-baseline` rewrites it. `make profile` and `make bench` time the offline run (`docs/testing.md`,
   `docs/speed.md`).

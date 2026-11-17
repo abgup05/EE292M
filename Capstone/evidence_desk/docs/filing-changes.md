@@ -4,8 +4,9 @@
 one before it and writes `results/changes-<ticker>-<form>-<UTC>.md` and `.json` (the `FilingChanges` record of
 `core/change_models.py`). Code: `core/filing_diff.py` (pure), `services/filing_changes.py`, `changes.py`.
 
-**What it does.** It compares the parser's text, Item by Item, line by line. Every line of each filing lands in
-exactly one count. Each listed paragraph is an exact span of the stored text, with its locator and a link that
+**What it does.** It compares the parser's text, Item by Item, line by line. Every line of the text under an Item
+lands in exactly one count (sub-heading lines and "Part" lines are not lines of that text; sub-headings are compared
+apart). Each listed paragraph is an exact span of the stored text, with its locator and a link that
 says what it opens. A paragraph whose figures alone moved is listed with those figures marked. Sub-headings found
 in only one filing are named. **Not:** it does not know why anything changed, and it does not read tables: a table
 row whose figures moved is counted and not shown. It inherits the parser's lines: a paragraph split in two reads as
@@ -177,6 +178,11 @@ documents, and doubling 900 paragraphs does not triple the time (ratio of best-o
   `core/limits.py`: that module is the contract of a thesis run, which no part of this comparison touches.
 - A line of 59 characters in one filing and 61 in the other is a short line there and a paragraph here: if it also
   changed its words it reads as one short line removed and one paragraph added.
+- A prose bullet with no full stop that ends in a figure, or whose words are mostly capitalised, is taken for a
+  table row: counted, never listed, so a change in it does not appear in any list.
+- *Unchanged* ignores case, spacing and the style of quotation marks, so an edit of those alone is unchanged.
+  *Numbers only* also covers a figure that only changed its format ("$1,000" to "$1000"); the pair is listed and
+  the marked words show it.
 - *Numbers only* masks every figure, so "Item 1A" against "Item 7A" and "over 10%" against "over 50%" are the same
   class. For a paragraph the pair is listed with the figures marked; for a table row nothing is shown.
 - What the parser takes for a sub-heading depends on bold type and a missing full stop, so the same kind of line

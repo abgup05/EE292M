@@ -78,7 +78,7 @@ Two SQLite files under the data directory (`EVIDENCE_DESK_DATA_DIR`; `data/`, gi
   `backups/record-<UTC>.sqlite` with a `.sha256`, and writes `backups/decisions-<UTC>.jsonl`, one line per decision.
   `make restore-check` verifies the newest backup's hash, restores it to a temporary directory and compares run ids,
   decisions and theses with the live record: PASS, or FAIL with the first difference.
-- **Deleting the cache loses nothing.** The next run fetches the filings from EDGAR, parses them again and refills it.
+- **Deleting the cache loses no record, and one thing a record points at.** The next run fetches the filings from EDGAR, parses them again and refills it. But the stored text that an old run's excerpts are offsets into lives only in the cache. With it gone, the excerpts are still in the record as text; checking that they are spans of the stored text again needs the same filing fetched and parsed by the parser that produced it.
   Runs in the record are unchanged. A version 3 database at `data/runs/runs.sqlite` is not read.
 
 ## The pipeline (`services/thesis_run.execute_run`)

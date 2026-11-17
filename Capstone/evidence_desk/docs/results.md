@@ -17,7 +17,7 @@ Every number below was produced by the command named. Where the output is not ot
 | Meaning check | 18 findings read by a second model: 17 agreed, 1 agreed only in part, 0 withheld |
 | Reported figures | 156 computed (2 more reported as unavailable, with the reason) |
 
-The model answers in that run did **not** come through the Anthropic API, which refused every call from this project for lack of credit. The engine's exact prompts were answered by Claude Sonnet 5.5, and the meaning check's by Claude Haiku 5.5, each running as a Claude Code subagent, and recorded ([how, and what that limits](../demo/cassettes/nvda-example/README.md)). The first recording verified 15 of 18 findings: three quotes read "Compute &amp;amp; Networking", as the prompt had escaped them. That was a bug in the engine, now fixed with a test.
+The model answers in that run did **not** come through the Anthropic API, which refused every call from this project for lack of credit. The engine's exact prompts were answered by Claude Sonnet 5.5, and the meaning check's by Claude Haiku 5.5, each running as a Claude Code subagent, and recorded ([how, and what that limits](../demo/cassettes/nvda-example/README.md)). The first recording verified 15 of 18 findings: three quotes read "Compute &amp;amp; Networking", as the prompt had escaped them. That was a bug in the engine, now fixed with a test. **These counts are an upper bound.** The instructions around this run's prompts reminded the stand-in of two of the engine's rules (copy each quote exactly; write no number that is not in a quote or a cited figure), which a plain API call would not get. The stand-ins that answered the golden set, below, were given no such reminder.
 
 The one finding that rests on figures alone is the case a hostile review singled out ([`docs/referee-triage.md`](referee-triage.md)): it sets company-wide revenue against a claim about China. Such a finding now counts toward a verdict only if the second model agrees that the figure bears on the claim. Here the second model did agree, so the verdict is unchanged. Two models of one family agreed with each other; that is a reason to reject the finding yourself if you disagree, not evidence that it is right.
 
@@ -34,7 +34,7 @@ None of the three other rankings beat the planner's queries without losing a cas
 | Generation, with the planner's queries | |
 | --- | --- |
 | Verdict agrees with the expected stance | 20 of 24 answerable cases; no case where "supports" came back "challenged" or the reverse |
-| ... where the passage that must come back was among the eight shown | 15 of 18 |
+| ... where the passage that must come back was among the eight shown (a passage counts when it holds at least half of one of the case's excerpts) | 15 of 18 |
 | Unanswerable claims refused | 6 of 6 |
 | Quotes found word for word | 84 of 84 |
 | Numbers matched | 67 of 70; the 3 unmatched withheld 2 findings |
@@ -55,7 +55,7 @@ Read these with three cautions. The cases and their expected stances were drafte
 | of which Item 1A, Risk Factors | 124 | 1 | 51 | 34 | 22 | 15 / 0 / 2 / 1 |
 | Quarterly report for the second quarter of fiscal 2027 against the first | 99 | 14 | 108 | 71 | 66 | 215 / 168 / 239 / 187 |
 
-The five counts are of paragraphs: lines of at least 60 characters that are not table rows. Shorter lines and table rows are counted apart and never listed. Every line of each filing is in exactly one count, which a test checks on two real filings. (Until version 7 the first two columns counted every line, table rows included, under the heading "paragraphs": the annual report's "606 unchanged, 417 numbers only" were 251 and 60 paragraphs.)
+The five counts are of paragraphs: lines of at least 60 characters that are not table rows. Shorter lines and table rows are counted apart and never listed. Every line of text under an Item in each filing is in exactly one count, which a test checks on two real filings. (Until version 7 the first two columns counted every line, table rows included, under the heading "paragraphs": the annual report's "606 unchanged, 417 numbers only" were 251 and 60 paragraphs.)
 
 What the annual-report comparison shows, as the tool found it in the two filings: among the risk factors added is one about an investment and partnership agreement with OpenAI that was not yet final; among those removed, paragraphs about an export rule which, the later report says, the government announced in May 2025 it would rescind. A risk factor whose words did not change now says the company generated 31% of its revenue from sales outside the United States, where the year before it said 53%. Seven sub-headings under Item 1 are in the earlier report only, among them "Climate Change" and "Diversity, Inclusion and Belonging at NVIDIA"; the notes gained one headed "Note 2 - Groq".
 
@@ -65,13 +65,13 @@ The method's one threshold (how similar two paragraphs must be to count as rewor
 
 **Tagged breakdowns** (`make breakdowns`; [`docs/breakdowns.md`](breakdowns.md)), from filings fetched live on 17 November. NVIDIA's annual report for the year ended 25 January 2026, as the filing tags it:
 
-| Revenue, USD millions | Fiscal 2026 | Change | Fiscal 2025 |
+| Revenue, USD millions: the breakdown, and the row as the tool labels it | Fiscal 2026 | Change | Fiscal 2025 |
 | --- | ---: | ---: | ---: |
-| Data Center | 193,737 | +68.2% | 115,186 |
-| Gaming | 16,042 | +41.3% | 11,350 |
-| United States | 149,617 | +93.1% | 77,482 |
-| China including Hong Kong | 19,677 | -21.4% | 25,048 |
-| Total | 215,938 | +65.5% | 130,497 |
+| By product or service: Data Center | 193,737 | +68.2% | 115,186 |
+| By product or service: Gaming | 16,042 | +41.3% | 11,350 |
+| By geography: US | 149,617 | +93.1% | 77,482 |
+| By geography: China Including Hong Kong | 19,677 | -21.4% | 25,048 |
+| Total (tagged, no dimension) | 215,938 | +65.5% | 130,497 |
 
 One direct customer is tagged at 22% of revenue and another at 14%. The tests check these against the filing's own text: the table row "Data Center $193,737 $115,186", and the sentences "Data Center revenue for fiscal year 2026 was up 68% from a year ago" and "sales to one direct customer represented 22% of total revenue and sales to another direct customer represented 14%". That shows the reader attaches each number to the right member, period and scale; it does not prove the company's number. The same command ran on the annual and the quarterly reports of all eight probe companies ([`docs/evidence/breakdowns-eight-companies.md`](evidence/breakdowns-eight-companies.md)): wherever a filing tags a total, every breakdown's members add up to it. No person has compared a table with the printed one.
 

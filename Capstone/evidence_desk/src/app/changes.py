@@ -28,7 +28,7 @@ from app.core.change_models import (
     Paragraph,
     RewordedParagraph,
 )
-from app.core.filing_diff import MIN_PARAGRAPH_CHARS, REWORD_THRESHOLD
+from app.core.filing_diff import MIN_PARAGRAPH_CHARS, REWORD_THRESHOLD, pairs_near_threshold
 from app.core.ports import SourceError, UnknownTicker
 from app.services.filing_changes import (
     FORMS,
@@ -233,10 +233,57 @@ def measure(pair: FilingPair, repeats: int, timer: Callable[[], float] = time.pe
     return "\n".join(lines) + "\n"
 
 
+def review(pair: FilingPair, low: float) -> str:
+    """The pairs a person should read before trusting the threshold, as a Markdown section.
+
+    Those the comparison paired with a similarity just above :data:`REWORD_THRESHOLD`,
+    and those a threshold of ``low`` would pair, which it reports as one removed and one
+    added paragraph. The band above is as wide as the band below.
+    """
+    high = min(1.0, round(2 * REWORD_THRESHOLD - low, 6))
+    above, below = pairs_near_threshold(
+        pair.earlier,
+        pair.later,
+        earlier_url=pair.earlier_ref.url,
+        later_url=pair.later_ref.url,
+        low=low,
+        high=high,
+    )
+    lines = [
+        f"## Pairs to read before trusting the threshold ({REWORD_THRESHOLD})",
+        "",
+        "For each pair, ask whether the two are one paragraph rewritten. A pair just above "
+        'the threshold that is not hides an added paragraph inside "reworded"; a pair just '
+        "below it that is shows one rewritten paragraph as one removed and one added. "
+        "Removed words are ~~struck through~~; added words are **bold**.",
+        "",
+        f"### Paired, just above it (similarity {REWORD_THRESHOLD} to under {high:g}): "
+        f"{len(above)}",
+        "",
+    ]
+    for _, near in above:
+        lines += _reworded(near)
+    lines += [
+        f"### Not paired, just below it (similarity {low:g} to under {REWORD_THRESHOLD}): "
+        f"{len(below)}",
+        "",
+    ]
+    for _, near in below:
+        lines += _reworded(near)
+    return "\n".join(lines).rstrip("\n") + "\n"
+
+
 def _positive(value: str) -> int:
     number = int(value)
     if number < 1:
         raise argparse.ArgumentTypeError("must be at least 1")
+    return number
+
+
+def _below_threshold(value: str) -> float:
+    number = float(value)
+    if not 0 < number < REWORD_THRESHOLD:
+        raise argparse.ArgumentTypeError(f"must be above 0 and below {REWORD_THRESHOLD}")
     return number
 
 
@@ -258,6 +305,13 @@ def main(
         metavar="N",
         help="also time the comparison N times with the candidate index and N times over all pairs",
     )
+    parser.add_argument(
+        "--review",
+        type=_below_threshold,
+        metavar="LOW",
+        help="also list the pairs to read before trusting the threshold: those paired just "
+        "above it and those a threshold of LOW (such as 0.44) would pair",
+    )
     args = parser.parse_args(argv)
     try:
         if source is None:
@@ -275,6 +329,8 @@ def main(
     report = render_markdown(changes)
     if args.time:
         report += "\n" + measure(pair, args.time)
+    if args.review:
+        report += "\n" + review(pair, args.review)
     stamp = (now or datetime.now(UTC)).astimezone(UTC).strftime("%Y%m%dT%H%M%SZ")
     ticker = _UNSAFE_NAME.sub("", changes.company.ticker.upper())
     stem = out_dir / f"changes-{ticker}-{args.form}-{stamp}"

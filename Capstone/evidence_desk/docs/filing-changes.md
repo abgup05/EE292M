@@ -80,6 +80,40 @@ threshold were read, and by a model.
   files the whole of it there. The paragraphs compared are the right ones; the Item named beside them is not where
   a reader would look for them. Item coverage (99.4%) cannot see this: it measures text under *an* Item.
 
+## The threshold on two more companies (read by a model, not by a person)
+
+`make changes ARGS="<TICKER> --form 10-K --review 0.44"` adds a section, "Pairs to read before trusting the
+threshold": the pairs the comparison paired with a similarity from 0.50 to under 0.56, and the pairs a threshold
+of 0.44 would add, which it reports as one removed and one added paragraph. Neither list is cut. The session that
+built this read every pair it printed for Apple and Coca-Cola on 17 November and asked of each: is this one
+paragraph rewritten?
+
+| Annual reports | Paired just above: one paragraph rewritten | Not paired just below: one paragraph rewritten |
+| --- | ---: | ---: |
+| NVIDIA (from "The threshold" above; its bands were 0.50 to 0.55 and 0.45 to 0.50, on two filing pairs) | 19 of 20 | 8 of 10 |
+| Apple | 10 of 11 | 5 of 5 |
+| Coca-Cola | 7 of 10 | 4 of 9 |
+
+- **Apple.** The one wrong pair above joins two different sentences that end alike ("…materially adversely affect
+  the Company's business, results of operations, financial condition and stock price"). One of the ten is a piece
+  of a paragraph the later report split. All five pairs below are the same paragraph rewritten and are shown as
+  removed and added: a risk-factor heading turned from "Losses or unauthorized access…" into "The Company
+  experiences cybersecurity incidents…", the Epic Games paragraph, the net sales lines for Greater China and Japan.
+- **Coca-Cola.** Three of the ten pairs above are template matches: a bullet about one operating segment paired with
+  a bullet about another, the paragraph on other income for 2023 paired with the one for 2025, and two unrelated
+  footnotes about Latin America. Below, four are the same paragraph and five are not.
+
+What this says: on risk factors, which are prose, the threshold behaves as it did on NVIDIA, and on Apple it is
+if anything too strict. In a discussion of results that has one paragraph per year, one bullet per segment and
+numbered footnotes, paragraphs built on one template are told apart mostly by their figures, and figures are
+exactly what the similarity leaves out. There a pair just above the threshold is wrong about three times in ten,
+and lowering the threshold would add more wrong pairs than right ones. So 0.5 stays, and "reworded" in those
+sections needs reading, which the marked words make possible. Two ways to do better were not tried: let the year
+a paragraph names keep two template paragraphs apart, and prefer the pair nearest in order within the Item.
+
+This is still a model's reading of 35 pairs for two companies, by the session that built the feature. The command
+is there so that a person can do the same in a few minutes.
+
 ## Speed
 
 `make changes ARGS="NVDA --form 10-K --time 20"` times the comparison alone (`compare_pair`, no reading or
@@ -92,8 +126,8 @@ documents, and doubling 900 paragraphs does not triple the time (ratio of best-o
 
 ## Limits
 
-- One machine, and two filing pairs read by the model session that built this; the threshold is unchecked on the
-  other seven companies, whose comparisons nobody has read. A company whose earlier filing lies more than twelve
+- One machine. Pairs near the threshold were read for NVIDIA, Apple and Coca-Cola, by the model session that built
+  this and by nobody else; the other five companies' comparisons are unread. A company whose earlier filing lies more than twelve
   index pages back is refused with a message that says how far the search went.
 - A paragraph rewritten into several (NVIDIA's 3,700-character export-control paragraph became about six) shares
   under half its words with each piece: one removed, several added. A reworded pair at 1.00 differs only in

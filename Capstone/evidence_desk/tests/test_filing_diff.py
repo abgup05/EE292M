@@ -18,6 +18,7 @@ from app.core.filing_diff import (
     is_table_row,
     item_key,
     pair_reworded,
+    pairs_near_threshold,
     totals,
     word_changes,
 )
@@ -235,6 +236,74 @@ def test_paragraphs_sharing_half_their_words_are_reworded_and_fewer_are_not() ->
     less = "alpha bravo charlie delta echo foxtrot golf hotel xray yankee zulu oscar papa"
     assert [score for _, _, score in pair_reworded([base], [half])] == [9 / 17]
     assert pair_reworded([base], [less]) == []
+
+
+# Reviewing the threshold: the pairs a person should read ----------------------------------
+
+# Three pairs of paragraphs with vocabularies of their own: X shares 9 of 17 words (0.529,
+# just above the threshold), Y 8 of 18 (0.444, just below), Z 12 of 14 (0.857, far above).
+X_BEFORE = "alpha bravo charlie delta echo foxtrot golf hotel india juliet kilo lima mike"
+X_AFTER = "alpha bravo charlie delta echo foxtrot golf hotel india xray yankee zulu oscar"
+Y_BEFORE = "amber birch cedar daisy elder fern grape hazel iris jasmine kale lilac maple"
+Y_AFTER = "amber birch cedar daisy elder fern grape hazel onion pansy quince rose sage"
+Z_BEFORE = "anchor barge canoe dinghy ferry galley harbor jetty keel lagoon mast nautical oar"
+Z_AFTER = "anchor barge canoe dinghy ferry galley harbor jetty keel lagoon mast nautical paddle"
+
+
+def test_a_lower_threshold_pairs_what_the_default_reports_as_removed_and_added() -> None:
+    earlier, later = document((RISK, [Y_BEFORE])), document((RISK, [Y_AFTER]))
+    default = only(diff(earlier, later))
+    assert (default.reworded, default.added, default.removed) == (0, 1, 1)
+    lower = only(diff(earlier, later, threshold=0.4))
+    assert (lower.reworded, lower.added, lower.removed) == (1, 0, 0)
+    assert lower.reworded_paragraphs[0].similarity == round(8 / 18, 3)
+
+
+def test_every_paragraph_is_listed_when_the_cap_is_lifted() -> None:
+    fresh = [f"{NEW} Paragraph {chr(65 + n % 26)}{chr(97 + n // 26)} of many." for n in range(45)]
+    later = document((RISK, [P[0], *fresh]))
+    item = only(diff(document((RISK, [P[0]])), later, max_listed=None))
+    assert item.added == len(item.added_paragraphs) == 45
+    assert not item.truncated.added
+
+
+def near(earlier: Document, later: Document, low: float, high: float):
+    return pairs_near_threshold(
+        earlier, later, earlier_url=EARLIER_URL, later_url=LATER_URL, low=low, high=high
+    )
+
+
+def test_the_pairs_to_read_are_those_just_above_the_threshold_and_those_just_below() -> None:
+    earlier = document((RISK, [X_BEFORE, Y_BEFORE, Z_BEFORE, P[0]]))
+    later = document((RISK, [X_AFTER, Y_AFTER, Z_AFTER, P[1]]))
+    above, below = near(earlier, later, 0.4, 0.6)
+    assert [(name, p.before.text, p.after.text, p.similarity) for name, p in above] == [
+        (RISK, X_BEFORE, X_AFTER, round(9 / 17, 3))
+    ]
+    assert [(name, p.before.text, p.after.text, p.similarity) for name, p in below] == [
+        (RISK, Y_BEFORE, Y_AFTER, round(8 / 18, 3))
+    ]
+    # The comparison itself is untouched: Y is still one removed and one added paragraph.
+    item = only(diff(earlier, later))
+    assert (item.reworded, item.added, item.removed) == (2, 2, 2)
+
+
+def test_the_pairs_to_read_are_not_cut_at_the_list_cap() -> None:
+    count = MAX_LISTED + 5
+    stems = [f"{chr(97 + n // 26)}{chr(97 + n % 26)}" for n in range(count)]
+    before = [" ".join(f"{stem}{word}" for word in X_BEFORE.split()) for stem in stems]
+    after = [" ".join(f"{stem}{word}" for word in X_AFTER.split()) for stem in stems]
+    above, below = near(document((RISK, before)), document((RISK, after)), 0.4, 0.6)
+    assert len(above) == count and below == []
+
+
+@pytest.mark.parametrize(
+    ("low", "high"), [(0.5, 0.6), (0.0, 0.6), (-0.1, 0.6), (0.4, 0.5), (0.6, 0.7), (0.4, 1.01)]
+)
+def test_the_band_must_straddle_the_threshold(low: float, high: float) -> None:
+    filing = document((RISK, [P[0]]))
+    with pytest.raises(ValueError, match="threshold"):
+        near(filing, filing, low, high)
 
 
 def test_word_changes_mark_a_replaced_word_as_removed_then_added() -> None:

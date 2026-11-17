@@ -22,7 +22,16 @@ from app.core.ports import SourceError
 from app.services.filing_changes import filing_changes
 from app.store import FilingCache
 from tests.fakes import NVIDIA, synthetic_ref
-from tests.test_filing_changes import DROPPED, PLANTED, FormFilings, two_annual_reports
+from tests.test_filing_changes import (
+    DROPPED,
+    EARLIER,
+    LATER,
+    PLANTED,
+    FormFilings,
+    annual_report,
+    two_annual_reports,
+)
+from tests.test_filing_diff import X_AFTER, X_BEFORE, Y_AFTER, Y_BEFORE
 
 NOW = datetime(2026, 11, 17, 12, 30, 5, tzinfo=UTC)
 STEM = "changes-NVDA-10-K-20261117T123005Z"
@@ -175,3 +184,46 @@ def test_timing_compares_the_candidate_index_with_all_pairs_and_saves_it(
 def test_timing_needs_a_positive_count(tmp_path: Path) -> None:
     with pytest.raises(SystemExit):
         run(tmp_path, "NVDA", "--time", "0")
+
+
+# Reviewing the threshold
+
+
+def near_threshold_reports() -> FormFilings:
+    """Two annual reports with one pair of risk factors just above the threshold, one below."""
+    return FormFilings(
+        refs=[LATER, EARLIER],
+        documents={
+            LATER.url: annual_report(X_AFTER, Y_AFTER),
+            EARLIER.url: annual_report(X_BEFORE, Y_BEFORE),
+        },
+    )
+
+
+def test_review_lists_the_pairs_just_above_and_just_below_the_threshold(tmp_path: Path) -> None:
+    assert run(tmp_path, "NVDA", "--review", "0.4", filings=near_threshold_reports()) == 0
+    markdown = (tmp_path / f"{STEM}.md").read_text()
+    review = markdown[markdown.index("## Pairs to read before trusting the threshold") :]
+    above, below = review.split("### Not paired, just below it")
+    assert "### Paired, just above it (similarity 0.5 to under 0.6): 1" in above
+    assert "similarity 0.53" in above and "juliet" in above and "xray" in above
+    assert below.startswith(" (similarity 0.4 to under 0.5): 1")
+    assert "similarity 0.44" in below and "jasmine" in below and "quince" in below
+    assert "juliet" not in below and "jasmine" not in above
+
+
+def test_review_changes_neither_the_comparison_nor_the_record(tmp_path: Path) -> None:
+    plain, reviewed = tmp_path / "plain", tmp_path / "reviewed"
+    run(plain, "NVDA", filings=near_threshold_reports())
+    run(reviewed, "NVDA", "--review", "0.4", filings=near_threshold_reports())
+    assert (plain / f"{STEM}.json").read_text() == (reviewed / f"{STEM}.json").read_text()
+    report = (plain / f"{STEM}.md").read_text()
+    assert "Pairs to read" not in report
+    assert (reviewed / f"{STEM}.md").read_text().startswith(report)
+
+
+@pytest.mark.parametrize("value", ["0.5", "0.6", "0", "-0.2", "half"])
+def test_review_needs_a_similarity_below_the_threshold(tmp_path: Path, value: str) -> None:
+    with pytest.raises(SystemExit) as stopped:
+        run(tmp_path, "NVDA", "--review", value)
+    assert stopped.value.code == 2

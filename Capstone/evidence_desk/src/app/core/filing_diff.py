@@ -354,14 +354,20 @@ def _compare_group(
     earlier_url: str,
     later_url: str,
     exhaustive: bool,
+    threshold: float,
+    max_listed: int | None,
 ) -> ItemChanges:
     unchanged, earlier, later = _match_by("exact", earlier, later)
     numbers_only, earlier, later = _match_by("numbers", earlier, later)
     old = [line for line in earlier if line.listable]
     new = [line for line in later if line.listable]
     pairs = pair_reworded(
-        [line.text for line in old], [line.text for line in new], exhaustive=exhaustive
+        [line.text for line in old],
+        [line.text for line in new],
+        threshold=threshold,
+        exhaustive=exhaustive,
     )
+    cut = slice(max_listed)  # slice(None) lists everything
     paired_old = {i for i, _, _ in pairs}
     paired_new = {j for _, j, _ in pairs}
     added = [line for j, line in enumerate(new) if j not in paired_new]
@@ -373,7 +379,7 @@ def _compare_group(
             similarity=round(score, 3),
             segments=word_changes(old[i].text, new[j].text),
         )
-        for i, j, score in pairs[:MAX_LISTED]
+        for i, j, score in pairs[cut]
     ]
     return ItemChanges(
         item=name,
@@ -385,13 +391,13 @@ def _compare_group(
         removed=len(removed),
         minor_added=sum(not line.listable for line in later),
         minor_removed=sum(not line.listable for line in earlier),
-        added_paragraphs=[_paragraph(line, later_url) for line in added[:MAX_LISTED]],
-        removed_paragraphs=[_paragraph(line, earlier_url) for line in removed[:MAX_LISTED]],
+        added_paragraphs=[_paragraph(line, later_url) for line in added[cut]],
+        removed_paragraphs=[_paragraph(line, earlier_url) for line in removed[cut]],
         reworded_paragraphs=reworded,
         truncated=TruncatedLists(
-            added=len(added) > MAX_LISTED,
-            removed=len(removed) > MAX_LISTED,
-            reworded=len(pairs) > MAX_LISTED,
+            added=max_listed is not None and len(added) > max_listed,
+            removed=max_listed is not None and len(removed) > max_listed,
+            reworded=max_listed is not None and len(pairs) > max_listed,
         ),
     )
 
@@ -418,13 +424,18 @@ def diff_documents(
     earlier_url: str,
     later_url: str,
     exhaustive: bool = False,
+    threshold: float = REWORD_THRESHOLD,
+    max_listed: int | None = MAX_LISTED,
 ) -> list[ItemChanges]:
     """What changed from ``earlier`` to ``later``, one record per Item in filing order.
 
     ``earlier_url`` and ``later_url`` are the filings' addresses, for each
     paragraph's link. ``exhaustive`` scores every pair of paragraphs instead of
-    using the candidate index (same result; for tests and measuring). Raises
-    ValueError if a section is not a substring of its document's text.
+    using the candidate index (same result; for tests and measuring). ``threshold``
+    and ``max_listed`` (None lists every paragraph) are the method's two settings;
+    they are parameters only so that the threshold can be reviewed
+    (:func:`pairs_near_threshold`). Raises ValueError if a section is not a substring
+    of its document's text.
     """
     old, new = _groups(earlier), _groups(later)
     items: list[ItemChanges] = []
@@ -443,9 +454,58 @@ def diff_documents(
                 earlier_url=earlier_url,
                 later_url=later_url,
                 exhaustive=exhaustive,
+                threshold=threshold,
+                max_listed=max_listed,
             )
         )
     return items
+
+
+NearPair = tuple[str, RewordedParagraph]
+
+
+def pairs_near_threshold(
+    earlier: Document,
+    later: Document,
+    *,
+    earlier_url: str,
+    later_url: str,
+    low: float,
+    high: float,
+) -> tuple[list[NearPair], list[NearPair]]:
+    """The pairs to read to judge :data:`REWORD_THRESHOLD`: (just above it, just below it).
+
+    Just above: the pairs the comparison reports as reworded with a similarity under
+    ``high``. Just below: the pairs a threshold of ``low`` would add, which the
+    comparison reports as one removed and one added paragraph. Each comes with its
+    Item's name, in filing order, and neither list is cut. The band must straddle the
+    threshold, ``0 < low < REWORD_THRESHOLD < high <= 1``, else ValueError.
+    """
+    if not 0 < low < REWORD_THRESHOLD < high <= 1:
+        raise ValueError(
+            f"the band must straddle the threshold: 0 < low < {REWORD_THRESHOLD} < high <= 1"
+        )
+
+    def pairs(threshold: float) -> list[NearPair]:
+        items = diff_documents(
+            earlier,
+            later,
+            earlier_url=earlier_url,
+            later_url=later_url,
+            threshold=threshold,
+            max_listed=None,
+        )
+        return [(item.item, pair) for item in items for pair in item.reworded_paragraphs]
+
+    def key(entry: NearPair) -> tuple[str, int, int]:
+        name, pair = entry
+        return (name, pair.before.start, pair.after.start)
+
+    reported = pairs(REWORD_THRESHOLD)
+    paired = {key(entry) for entry in reported}
+    above = [entry for entry in reported if entry[1].similarity < high]
+    below = [entry for entry in pairs(low) if key(entry) not in paired]
+    return above, below
 
 
 def totals(items: Sequence[ChangeCounts]) -> ChangeCounts:

@@ -186,6 +186,7 @@ make live-walk      # the running app end to end over HTTP: needs EDGAR, no key
 make eval ARGS="run --variant claim"   # score retrieval on the golden set
 make backup         # copy the record to backups/; make restore-check proves it restores
 make changes ARGS="NVDA --form 10-K"    # what changed between a company's two latest annual reports
+make changes ARGS="AAPL --form 10-K --review 0.44"   # the same, plus the pairs to read near the threshold
 make screenshots    # renders the page into docs/screenshots, for a person to look at
 ```
 
@@ -204,5 +205,5 @@ make screenshots    # renders the page into docs/screenshots, for a person to lo
 - **The record has no copy off this laptop.** `make backup` writes to the same disk.
 - **Filings without Item headings over their body** (JPMorgan's 10-Q) are kept and quotable, located by sub-heading only, and a run on one is partial.
 - **The page was checked by eye from screenshots** and by a DOM test, not by a user. Dark mode was not checked.
-- **The filing comparison is tuned on one company.** Its threshold was set on NVIDIA's reports; on seven other companies it has run but its results are unread. A paragraph rewritten into several reads as one removed and several added. Tables are not compared. Where a filing's body does not sit under its Item headings (JPMorgan), the Item named beside a change is not meaningful.
+- **The filing comparison's one threshold has been read only by a model.** It was set on NVIDIA's reports. For Apple and Coca-Cola the pairs near it were read by the session that built it (`make changes ARGS="AAPL --form 10-K --review 0.44"` prints them): in risk factors it holds; in Coca-Cola's discussion of results, about three in ten pairs just above it join two different paragraphs built on one template. The other five companies' results are unread. A paragraph rewritten into several reads as one removed and several added. Tables are not compared. Where a filing's body does not sit under its Item headings (JPMorgan), the Item named beside a change is not meaningful.
 - Only 10-K and 10-Q filers. No PDFs, 8-K exhibits, foreign filers or transcripts. Runs execute in a worker thread inside the API process; there is no queue and no resume after a restart.

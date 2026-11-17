@@ -10,6 +10,18 @@ The steps are in one place, the skill at `.claude/skills/blind-review/SKILL.md` 
 
 What this does not replace: a colleague who knows the field and can say whether the result is useful to a real analyst. A model reviewer checks the work against its own stated purpose; it does not know my purpose better than the README tells it.
 
+## How the referee is run
+
+The referee is not a checklist review. It is the agent in `.claude/agents/referee.md`: another model, with Read, Grep and Glob only, told to expect the work to be wrong and to attack the claims the project makes about itself.
+
+1. Make a worktree of the commit to be read: `git worktree add --detach .claude/worktrees/referee-<tag> <commit>`.
+2. Delete from that checkout what the referee must not see: `Work Logs/`, `Homework/`, `Capstone/evidence_desk/docs/reviews/` and both triage files under `docs/`. Then `touch .claude/worktrees/referee-<tag>.started`.
+3. From the root of that checkout: `make -s referee > <somewhere outside it>/referee.json`. The target starts a fresh headless session that uses the agent by name and returns its text; the `result` field is the report.
+4. Check that nothing in the checkout is newer than the `.started` file and that every file the referee says it opened is inside the checkout. Save the text unedited under a header that says what was read, by which model, and what was removed. Triage every finding in a file of its own.
+5. Remove the worktree.
+
+Both referee runs so far were started with that command typed directly, before the target existed.
+
 ## Index
 
 | Review | Session | Version | Topic |

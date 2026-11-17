@@ -37,7 +37,7 @@
     },
     "status_notes": {
       "running": "The run is in progress.",
-      "complete": "Every claim has verified evidence from the sources requested, and nothing was withheld.",
+      "complete": "Every stage ran on every source that was read: each claim has verified evidence and nothing was withheld. This is not a measure of how much evidence stands behind a verdict.",
       "partial": "Part of the thesis could not be assessed with verified evidence. The reasons are listed under coverage limits.",
       "failed": "No source could be read, so there is no brief."
     },
@@ -91,7 +91,7 @@
     }
   },
   "run": {
-    "id": "run-ebf4fc792230",
+    "id": "run-91c1f63d20d4",
     "inputs": {
       "ticker": "NVDA",
       "decision": "Whether to keep an overweight position in NVIDIA into the next earnings report",
@@ -111,8 +111,8 @@
     "status": "partial",
     "stage": "done",
     "stage_detail": "",
-    "started_at": "2026-11-17T18:11:54.733977Z",
-    "finished_at": "2026-11-17T18:11:55.185758Z",
+    "started_at": "2026-11-17T18:17:02.483137Z",
+    "finished_at": "2026-11-17T18:17:02.936378Z",
     "company": {
       "cik": 1045810,
       "ticker": "NVDA",
@@ -291,7 +291,7 @@
         "accession": null,
         "period_end": null,
         "published_date": null,
-        "retrieved_at": "2026-11-17T18:11:55.058103Z",
+        "retrieved_at": "2026-11-17T18:17:02.808241Z",
         "content_hash": "f6870031195cd1dc226506fcf891f4096679d400ac6139b9909a117dc9648f9b",
         "extraction_status": "extracted",
         "sections": 0,

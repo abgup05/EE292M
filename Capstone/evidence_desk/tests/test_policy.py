@@ -306,3 +306,11 @@ def test_the_provenance_note_says_when_a_page_you_added_was_read() -> None:
     )
     second = page.model_copy(update={"id": "s5"})
     assert "from 2 pages you added" in provenance_note([filing, page, second])
+
+
+def test_the_complete_note_says_what_complete_means_and_what_it_does_not() -> None:
+    """The third referee, finding 1: the note promised evidence "from the sources requested"."""
+    note = STATUS_NOTES[RunStatus.complete]
+    assert "sources requested" not in note
+    assert "Every stage ran on every source that was read" in note
+    assert "not a measure of how much evidence stands behind a verdict" in note

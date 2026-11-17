@@ -1,7 +1,7 @@
 {
   "note": "A recorded run of the NVIDIA example thesis on three recorded filings. The model answers are replayed from the cassette demo/cassettes/nvda-example; see its README for how they were produced.",
   "meta": {
-    "version": "0.5.0",
+    "version": "0.10.0",
     "figures_note": "Reported figures are computed by the backend from the XBRL facts the company filed with the SEC; each shows the facts it used and its arithmetic.",
     "limits": {
       "CONTEXT_CHARS": 240,
@@ -22,6 +22,7 @@
       "MAX_QUERIES_PER_CLAIM": 4,
       "MAX_SCOPE_CHARS": 2000,
       "MAX_SUPPORT_REASON_CHARS": 300,
+      "MAX_TAGGED_FIGURES_OFFERED": 40,
       "MAX_THESIS_NAME_CHARS": 80,
       "METRICS_CACHE_SECONDS": 900,
       "MIN_CLAIMS": 1,
@@ -36,7 +37,7 @@
     },
     "status_notes": {
       "running": "The run is in progress.",
-      "complete": "Every claim has verified evidence from the sources requested, and nothing was withheld.",
+      "complete": "Every stage ran on every source that was read: each claim has verified evidence and nothing was withheld. This is not a measure of how much evidence stands behind a verdict.",
       "partial": "Part of the thesis could not be assessed with verified evidence. The reasons are listed under coverage limits.",
       "failed": "No source could be read, so there is no brief."
     },
@@ -85,11 +86,12 @@
       ],
       "scope_notes": "",
       "filings": 3,
-      "extra_urls": []
+      "extra_urls": [],
+      "tagged_figures": false
     }
   },
   "run": {
-    "id": "run-1527564cf069",
+    "id": "run-c5c86b7b18c8",
     "inputs": {
       "ticker": "NVDA",
       "decision": "Whether to keep an overweight position in NVIDIA into the next earnings report",
@@ -102,14 +104,15 @@
       ],
       "scope_notes": "",
       "filings": 3,
-      "extra_urls": []
+      "extra_urls": [],
+      "tagged_figures": false
     },
     "thesis_id": null,
     "status": "complete",
     "stage": "done",
     "stage_detail": "",
-    "started_at": "2026-11-17T13:22:37.294945Z",
-    "finished_at": "2026-11-17T13:22:37.707500Z",
+    "started_at": "2026-11-17T18:17:01.095828Z",
+    "finished_at": "2026-11-17T18:17:01.507682Z",
     "company": {
       "cik": 1045810,
       "ticker": "NVDA",
@@ -288,7 +291,7 @@
         "accession": null,
         "period_end": null,
         "published_date": null,
-        "retrieved_at": "2026-11-17T13:22:37.618020Z",
+        "retrieved_at": "2026-11-17T18:17:01.419273Z",
         "content_hash": "f6870031195cd1dc226506fcf891f4096679d400ac6139b9909a117dc9648f9b",
         "extraction_status": "extracted",
         "sections": 0,
@@ -1019,6 +1022,7 @@
       "quotes_rejected": 0,
       "metrics_computed": 156,
       "figures_offered": 37,
+      "tagged_figures_offered": 0,
       "figures_cited": 9,
       "numbers_checked": 25,
       "numbers_unmatched": 0,
@@ -9469,7 +9473,7 @@
         "Examine what drives gross margin beyond the H20 charge and Blackwell Ultra mix."
       ],
       "coverage_status": "complete",
-      "status_note": "Every claim has verified evidence from the sources requested, and nothing was withheld.",
+      "status_note": "Every stage ran on every source that was read: each claim has verified evidence and nothing was withheld. This is not a measure of how much evidence stands behind a verdict.",
       "provenance_note": "Evidence comes from the company's own filings with the SEC. It shows what the company reported, not whether an outside party agrees."
     }
   }

@@ -24,7 +24,8 @@ from app.core.models import (
 STATUS_NOTES: dict[RunStatus, str] = {
     RunStatus.running: "The run is in progress.",
     RunStatus.complete: (
-        "Every claim has verified evidence from the sources requested, and nothing was withheld."
+        "Every stage ran on every source that was read: each claim has verified evidence and "
+        "nothing was withheld. This is not a measure of how much evidence stands behind a verdict."
     ),
     RunStatus.partial: (
         "Part of the thesis could not be assessed with verified evidence. "

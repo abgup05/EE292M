@@ -32,3 +32,4 @@ Both referee runs so far were started with that command typed directly, before t
 | [review-4-check-in-safety.md](review-4-check-in-safety.md) | Week 8A | `capstone-v4` plus the safety-nets note (commit `413efe9`) | The check-in, the agent notes, the skill, safety nets |
 | [referee-1-version-4.md](referee-1-version-4.md) | Week 8B | `capstone-v4` plus the safety-nets note (commit `413efe9`) | A hostile referee: the project's own claims |
 | [referee-2-version-6.md](referee-2-version-6.md) | before Week 9B | `capstone-v6` plus three commits without code (commit `a79cf92`) | A hostile referee again: the filing comparison's claims, and the older ones |
+| [review-5-message-interface-tests.md](review-5-message-interface-tests.md) | before Week 9B | `capstone-v7` | The message, the interface, the tests, time and limits, on the page as it now stands |

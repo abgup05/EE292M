@@ -1,7 +1,7 @@
 {
   "kind": "generation-evaluation",
-  "generated_at": "2026-11-17T13:22:04.797770+00:00",
-  "models": "replayed from cassette golden: 70 responses recorded via Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the engine's rules and Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the rules with claude-haiku-5-5 and claude-sonnet-5-5, 2026-11-17 to 2026-11-17",
+  "generated_at": "2026-11-17T18:10:27.890242+00:00",
+  "models": "replayed from cassette golden: 79 responses recorded via Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the engine's rules, Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the rules and Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17 with claude-haiku-5-5 and claude-sonnet-5-5, 2026-11-17 to 2026-11-17",
   "stand_in_note": "A recording answered by a stand-in (any `via` other than the model a run calls) is an upper bound for quote validity: a stand-in that copies from the prompt in front of it quotes more exactly than a model may, so the quote and citation scores may be lower live.",
   "decision": "Whether the thesis still holds after the latest filings",
   "inputs": {
@@ -26,7 +26,7 @@
   },
   "figures": {
     "NVDA": "37 figures from the XBRL facts (fixture, SHA-256 5b264d77a76a...)",
-    "COST": "35 figures from the XBRL facts (cache, SHA-256 b675ced201b2...)",
+    "COST": "36 figures from the XBRL facts (cache, SHA-256 b675ced201b2...)",
     "AAPL": "37 figures from the XBRL facts (cache, SHA-256 f085735b4d08...)",
     "MSFT": "37 figures from the XBRL facts (cache, SHA-256 8c1903c041f5...)",
     "KO": "38 figures from the XBRL facts (cache, SHA-256 87a4173fcd3d...)"
@@ -70,9 +70,9 @@
       "by_retrieval": {
         "hit": {
           "verdict_agreement": {
-            "hits": 15,
+            "hits": 14,
             "total": 18,
-            "rate": 0.8333333333333334
+            "rate": 0.7777777777777778
           },
           "citation": {
             "hits": 15,
@@ -82,9 +82,9 @@
         },
         "miss": {
           "verdict_agreement": {
-            "hits": 5,
+            "hits": 6,
             "total": 6,
-            "rate": 0.8333333333333334
+            "rate": 1.0
           },
           "citation": {
             "hits": 0,
@@ -105,25 +105,25 @@
     "all": {
       "cases": 30,
       "findings_proposed": 79,
-      "findings_verified": 77,
-      "findings_withheld": 2,
+      "findings_verified": 78,
+      "findings_withheld": 1,
       "withheld_reasons": {
-        "a number in the statement is not in its quotes or cited figures": 2
+        "a number in the statement is not in its quotes or cited figures": 1
       },
       "quotes_offered": 84,
       "quotes_verified": 84,
       "quotes_rejected": 0,
-      "excerpts_kept": 82,
-      "numbers_checked": 70,
-      "numbers_unmatched": 3,
-      "figures_cited": 12,
+      "excerpts_kept": 83,
+      "numbers_checked": 68,
+      "numbers_unmatched": 2,
+      "figures_cited": 14,
       "unusable_answers": 0,
       "cases_without_passages": 0
     },
     "meaning_check": {
-      "findings_verified": 77,
-      "findings_checked": 77,
-      "passed": 66,
+      "findings_verified": 78,
+      "findings_checked": 78,
+      "passed": 67,
       "partly": 10,
       "failed": 1,
       "unchecked": 0,
@@ -621,7 +621,7 @@
       "ticker": "COST",
       "kind": "answerable",
       "expected": "supports",
-      "verdict": "supported",
+      "verdict": "mixed",
       "queries": [
         "membership fee income",
         "renewal rate",
@@ -632,22 +632,21 @@
       "offered_position": 5,
       "rank": 5,
       "cited_right_passage": true,
-      "findings_verified": 3,
-      "findings_withheld": 1,
-      "withheld_reasons": [
-        "a number in the statement is not in its quotes or cited figures"
-      ],
+      "findings_verified": 4,
+      "findings_withheld": 0,
+      "withheld_reasons": [],
       "verified_stances": [
         "supports",
         "context",
-        "context"
+        "context",
+        "challenges"
       ],
       "quotes_offered": 4,
       "quotes_rejected": 0,
-      "excerpts_kept": 3,
-      "numbers_checked": 8,
-      "numbers_unmatched": 1,
-      "figures_offered": 35,
+      "excerpts_kept": 4,
+      "numbers_checked": 5,
+      "numbers_unmatched": 0,
+      "figures_offered": 36,
       "figures_cited": 0,
       "engine_error": "",
       "problems": [],
@@ -655,15 +654,16 @@
         "judged": [
           "supported",
           "supported",
+          "supported",
           "supported"
         ],
-        "verdict_after": "supported",
+        "verdict_after": "mixed",
         "error": ""
       },
       "retrieval_hit": true,
-      "agrees": true,
+      "agrees": false,
       "refused": null,
-      "agrees_after_check": true
+      "agrees_after_check": false
     },
     {
       "case_id": "cost-markup-widened",
@@ -687,15 +687,15 @@
       "verified_stances": [
         "challenges",
         "supports",
-        "context"
+        "challenges"
       ],
-      "quotes_offered": 3,
+      "quotes_offered": 2,
       "quotes_rejected": 0,
-      "excerpts_kept": 3,
-      "numbers_checked": 2,
+      "excerpts_kept": 2,
+      "numbers_checked": 3,
       "numbers_unmatched": 0,
-      "figures_offered": 35,
-      "figures_cited": 0,
+      "figures_offered": 36,
+      "figures_cited": 2,
       "engine_error": "",
       "problems": [],
       "check": {
@@ -734,15 +734,15 @@
       "verified_stances": [
         "challenges",
         "challenges",
-        "challenges",
-        "supports"
+        "supports",
+        "context"
       ],
-      "quotes_offered": 5,
+      "quotes_offered": 6,
       "quotes_rejected": 0,
-      "excerpts_kept": 5,
+      "excerpts_kept": 6,
       "numbers_checked": 4,
       "numbers_unmatched": 0,
-      "figures_offered": 35,
+      "figures_offered": 36,
       "figures_cited": 0,
       "engine_error": "",
       "problems": [],
@@ -750,7 +750,7 @@
         "judged": [
           "supported",
           "supported",
-          "supported",
+          "partly",
           "supported"
         ],
         "verdict_after": "mixed",
@@ -766,7 +766,7 @@
       "ticker": "COST",
       "kind": "answerable",
       "expected": "supports",
-      "verdict": "mixed",
+      "verdict": "supported",
       "queries": [
         "operations in United States and Canada",
         "segment information geographic",
@@ -782,29 +782,29 @@
       "withheld_reasons": [],
       "verified_stances": [
         "supports",
-        "challenges"
+        "context"
       ],
       "quotes_offered": 2,
       "quotes_rejected": 0,
       "excerpts_kept": 2,
       "numbers_checked": 3,
       "numbers_unmatched": 0,
-      "figures_offered": 35,
+      "figures_offered": 36,
       "figures_cited": 1,
       "engine_error": "",
       "problems": [],
       "check": {
         "judged": [
-          "partly",
+          "supported",
           "supported"
         ],
-        "verdict_after": "mixed",
+        "verdict_after": "supported",
         "error": ""
       },
       "retrieval_hit": false,
-      "agrees": false,
+      "agrees": true,
       "refused": null,
-      "agrees_after_check": false
+      "agrees_after_check": true
     },
     {
       "case_id": "cost-franchising",
@@ -831,7 +831,7 @@
       "excerpts_kept": 0,
       "numbers_checked": 0,
       "numbers_unmatched": 0,
-      "figures_offered": 35,
+      "figures_offered": 36,
       "figures_cited": 0,
       "engine_error": "",
       "problems": [],

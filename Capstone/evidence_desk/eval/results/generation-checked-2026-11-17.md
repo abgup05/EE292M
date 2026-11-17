@@ -1,17 +1,17 @@
 # Generation evaluation
 
-Model answers: replayed from cassette golden: 70 responses recorded via Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the engine's rules and Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the rules with claude-haiku-5-5 and claude-sonnet-5-5, 2026-11-17 to 2026-11-17.
+Model answers: replayed from cassette golden: 79 responses recorded via Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the engine's rules, Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the rules and Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17 with claude-haiku-5-5 and claude-sonnet-5-5, 2026-11-17 to 2026-11-17.
 
 A recording answered by a stand-in (any `via` other than the model a run calls) is an upper bound for quote validity: a stand-in that copies from the prompt in front of it quotes more exactly than a model may, so the quote and citation scores may be lower live.
 
-Generated 2026-11-17T13:22:04.797770+00:00. Each case is run as a one-claim thesis with the decision "Whether the thesis still holds after the latest filings"; the gate and the verdict rule are the pipeline's own.
+Generated 2026-11-17T18:10:27.890242+00:00. Each case is run as a one-claim thesis with the decision "Whether the thesis still holds after the latest filings"; the gate and the verdict rule are the pipeline's own.
 Golden set SHA-256 `4ef5c8d35bf11a1e…`; queries from `eval/queries.json` (SHA-256 `7609070a134303ab…`).
 The meaning check ran: a second model read every case's verified findings through the same cassette (step `check`), as a run would.
 
 Reported figures offered with every claim:
 
 - NVDA: 37 figures from the XBRL facts (fixture, SHA-256 5b264d77a76a...)
-- COST: 35 figures from the XBRL facts (cache, SHA-256 b675ced201b2...)
+- COST: 36 figures from the XBRL facts (cache, SHA-256 b675ced201b2...)
 - AAPL: 37 figures from the XBRL facts (cache, SHA-256 f085735b4d08...)
 - MSFT: 37 figures from the XBRL facts (cache, SHA-256 8c1903c041f5...)
 - KO: 38 figures from the XBRL facts (cache, SHA-256 87a4173fcd3d...)
@@ -21,8 +21,8 @@ Reported figures offered with every claim:
 | Score | Value | Cases |
 |---|---|---|
 | Verdict agreement | 83.3% | 20 / 24 |
-| where a must-retrieve passage was offered | 83.3% | 15 / 18 |
-| where none was offered | 83.3% | 5 / 6 |
+| where a must-retrieve passage was offered | 77.8% | 14 / 18 |
+| where none was offered | 100.0% | 6 / 6 |
 | Cites a must-retrieve passage (verified excerpt holds half of it) | 62.5% | 15 / 24 |
 | where a must-retrieve passage was offered | 83.3% | 15 / 18 |
 | where none was offered | 0.0% | 0 / 6 |
@@ -47,12 +47,12 @@ Expected stance (rows) against the verdict obtained (columns):
 |---|---|---|
 | Quotes verified (located in the stored text) | 84 | 84 / 84 offered |
 | Quotes rejected | 0 | 0 / 84 offered |
-| Excerpts kept as evidence (verified findings only) | 82 |  |
-| Numbers unmatched | 3 | 3 / 70 checked |
-| Findings verified | 77 | 77 / 79 proposed |
-| Findings withheld | 2 | 2 / 79 proposed |
-| withheld: a number in the statement is not in its quotes or cited figures | 2 | 2 / 2 withheld |
-| Reported figures cited by verified findings | 12 |  |
+| Excerpts kept as evidence (verified findings only) | 83 |  |
+| Numbers unmatched | 2 | 2 / 68 checked |
+| Findings verified | 78 | 78 / 79 proposed |
+| Findings withheld | 1 | 1 / 79 proposed |
+| withheld: a number in the statement is not in its quotes or cited figures | 1 | 1 / 1 withheld |
+| Reported figures cited by verified findings | 14 |  |
 | Model answers that could not be parsed | 0 | 0 / 30 cases |
 | Cases with no passage offered (model not asked) | 0 | 0 / 30 cases |
 
@@ -62,11 +62,11 @@ A second model read each verified finding's excerpts and cited figures, without 
 
 | Score | Value | Of |
 |---|---|---|
-| Findings checked | 77 | 77 / 77 verified |
-| supported (passed) | 66 | 66 / 77 checked |
-| partly supported (kept) | 10 | 10 / 77 checked |
-| not supported (failed, withheld) | 1 | 1 / 77 checked |
-| Findings left unchecked (the check could not run) | 0 | 0 / 77 verified |
+| Findings checked | 78 | 78 / 78 verified |
+| supported (passed) | 67 | 67 / 78 checked |
+| partly supported (kept) | 10 | 10 / 78 checked |
+| not supported (failed, withheld) | 1 | 1 / 78 checked |
+| Findings left unchecked (the check could not run) | 0 | 0 / 78 verified |
 | Verdict agreement before the check | 83.3% | 20 / 24 |
 | Verdict agreement after the check | 83.3% | 20 / 24 |
 | Disagreeing cases that now agree | 0 | 0 / 4 disagreeing before |
@@ -91,10 +91,10 @@ Verdict agreement and citation are over the answerable cases; refusal over the u
 | nvda-custom-silicon-threat | NVDA | supports | supported | not offered (rank 23) | no | 2 / 0 | supported (1 supported, 1 partly, 0 failed) |
 | nvda-crypto-lawsuit-over | NVDA | challenges | challenged | offered #2 of 8 | yes | 4 / 0 | challenged (4 supported, 0 partly, 0 failed) |
 | nvda-workforce-unionising | NVDA | none | not_addressed | n/a | n/a | 0 / 0 | nothing to check |
-| cost-members-renew | COST | supports | supported | offered #5 of 8 | yes | 3 / 1 | supported (3 supported, 0 partly, 0 failed) |
+| cost-members-renew | COST | supports | mixed | offered #5 of 8 | yes | 4 / 0 | mixed (4 supported, 0 partly, 0 failed) |
 | cost-markup-widened | COST | mixed | mixed | offered #1 of 8 | yes | 3 / 0 | mixed (3 supported, 0 partly, 0 failed) |
-| cost-tariffs-unrecovered | COST | challenges | mixed | offered #1 of 8 | yes | 4 / 0 | mixed (4 supported, 0 partly, 0 failed) |
-| cost-north-america-dependence | COST | supports | mixed | not offered (not in top 50) | no | 2 / 0 | mixed (1 supported, 1 partly, 0 failed) |
+| cost-tariffs-unrecovered | COST | challenges | mixed | offered #1 of 8 | yes | 4 / 0 | mixed (3 supported, 1 partly, 0 failed) |
+| cost-north-america-dependence | COST | supports | supported | not offered (not in top 50) | no | 2 / 0 | supported (2 supported, 0 partly, 0 failed) |
 | cost-franchising | COST | none | not_addressed | n/a | n/a | 0 / 0 | nothing to check |
 | aapl-china-shrinking | AAPL | challenges | challenged | offered #1 of 8 | yes | 2 / 0 | challenged (2 supported, 0 partly, 0 failed) |
 | aapl-margin-runway | AAPL | mixed | mixed | offered #1 of 8 | yes | 3 / 0 | mixed (3 supported, 0 partly, 0 failed) |

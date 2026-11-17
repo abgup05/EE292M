@@ -1,0 +1,21 @@
+{
+  "key": "d3f4f258bb641dd4d4b6369d",
+  "step": "check",
+  "via": "Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-17T17:54:00+00:00",
+  "response": {
+    "judgements": [
+      {
+        "finding_number": 1,
+        "verdict": "not_supported",
+        "reason": "The excerpt is about the worldwide renewal rate and membership mix; it shows no gross margin percentage or basis-point change, so the statement is unsupported by its evidence."
+      },
+      {
+        "finding_number": 2,
+        "verdict": "not_supported",
+        "reason": "The excerpt gives auditor-report revenue totals for the U.S. and Canada; it contains no merchandise margin or basis-point figures, so the 15 basis point increase is not shown."
+      }
+    ]
+  }
+}

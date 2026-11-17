@@ -1,0 +1,31 @@
+{
+  "key": "891d7ae69f9d9c975dc44924",
+  "step": "check",
+  "via": "Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-17T17:54:00+00:00",
+  "response": {
+    "judgements": [
+      {
+        "finding_number": 1,
+        "verdict": "not_supported",
+        "reason": "The excerpt only lists the countries where the company operates warehouses. It says nothing about customer concentration or whether that trend may continue."
+      },
+      {
+        "finding_number": 2,
+        "verdict": "not_supported",
+        "reason": "The excerpts concern tariff refunds of $184 and $155. They report no customer revenue percentages, so the 22% and 14% figures are not shown."
+      },
+      {
+        "finding_number": 3,
+        "verdict": "not_supported",
+        "reason": "The excerpt describes strategies for absorbing cost increases. It gives no customer percentages, so the 21%, 17% and 16% figures are not shown."
+      },
+      {
+        "finding_number": 4,
+        "verdict": "not_supported",
+        "reason": "The excerpts cover IEEPA tariff payments and their possible effects. They do not show indirect customers or any customer at 10% or more of revenue."
+      }
+    ]
+  }
+}

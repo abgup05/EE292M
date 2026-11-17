@@ -1,0 +1,21 @@
+{
+  "key": "2bf801881bc39e9bd68a0f51",
+  "step": "check",
+  "via": "Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-17T17:54:00+00:00",
+  "response": {
+    "judgements": [
+      {
+        "finding_number": 1,
+        "verdict": "not_supported",
+        "reason": "The excerpt concerns IEEPA tariff refund class actions, not revenue by country or profit; the cited US and Canada revenue figures appear only in the statement, so the sales claim is unsupported and profit is not shown."
+      },
+      {
+        "finding_number": 2,
+        "verdict": "not_supported",
+        "reason": "The excerpt covers gross margin percentage changes and says nothing about warehouses or countries, so it does not show that the company operates in many countries beyond the US and Canada."
+      }
+    ]
+  }
+}

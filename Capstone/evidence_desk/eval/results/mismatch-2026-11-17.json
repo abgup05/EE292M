@@ -1,9 +1,9 @@
 {
   "kind": "meaning-check-mismatch-evaluation",
-  "generated_at": "2026-11-17T16:55:49.398336+00:00",
+  "generated_at": "2026-11-17T18:10:30.725429+00:00",
   "models": {
-    "mismatch": "replayed from cassette mismatch: 48 responses recorded via Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the rules with claude-haiku-5-5, 2026-11-17 to 2026-11-17",
-    "findings": "replayed from cassette golden: 70 responses recorded via Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the engine's rules and Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the rules with claude-haiku-5-5 and claude-sonnet-5-5, 2026-11-17 to 2026-11-17"
+    "mismatch": "replayed from cassette mismatch: 64 responses recorded via Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the rules and Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17 with claude-haiku-5-5, 2026-11-17 to 2026-11-17",
+    "findings": "replayed from cassette golden: 79 responses recorded via Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the engine's rules, Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the rules and Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17 with claude-haiku-5-5 and claude-sonnet-5-5, 2026-11-17 to 2026-11-17"
   },
   "checker": "claude",
   "donor_rule": "The verified findings with at least one quote are sorted by (case id, position of the finding in its case). For the finding at place k of that order, the candidate donors of a kind are the findings, in the same order, of every case about a different company (other-company) or of every other case about the same company (other-claim). The donor is the first candidate, starting at place k modulo the number of candidates and wrapping round, that shares no quote with the finding: no whitespace-normalised quote of one equals, contains or is contained in a quote of the other. A finding with no candidate, or whose every candidate shares a quote, is skipped and counted. No randomness and no seed.",
@@ -31,9 +31,9 @@
     "cassette": "eval/cassettes/mismatch"
   },
   "construction": {
-    "findings_verified": 77,
+    "findings_verified": 78,
     "findings_with_a_quote": 76,
-    "findings_without_quotes": 1,
+    "findings_without_quotes": 2,
     "mismatches": {
       "other-company": 76,
       "other-claim": 76
@@ -50,8 +50,8 @@
         "kind": "other-company",
         "mismatched": {
           "total": 76,
-          "not_supported": 75,
-          "partly": 1,
+          "not_supported": 74,
+          "partly": 2,
           "supported": 0,
           "unjudged": 0
         },
@@ -69,8 +69,8 @@
         "kind": "other-claim",
         "mismatched": {
           "total": 76,
-          "not_supported": 74,
-          "partly": 2,
+          "not_supported": 76,
+          "partly": 0,
           "supported": 0,
           "unjudged": 0
         },
@@ -112,7 +112,7 @@
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt reports a gross margin percentage change and gasoline price effects; it does not say where hardware products are manufactured or by which outsourcing partners.",
+      "reason": "The excerpt covers gross margin percentage and gasoline price effects; it says nothing about where hardware is manufactured or by whom, so it does not support the statement.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -134,7 +134,7 @@
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt reports gross margin increases across merchandise categories; it says nothing about final assembly partners in Asia or single-source components.",
+      "reason": "The excerpt reports gross margin increases in core merchandise categories; it does not mention final assembly, partner locations, or single-source components.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -145,18 +145,18 @@
       "finding_index": 2,
       "statement": "The company itself flags this concentration as a risk, citing geopolitical tensions and trade restrictions that could disrupt supply.",
       "stance": "supports",
-      "donor_case_id": "cost-markup-widened",
+      "donor_case_id": "cost-members-renew",
       "donor_ticker": "COST",
-      "donor_finding_index": 2,
+      "donor_finding_index": 0,
       "swapped_quotes": [
-        "We do not focus in the short-term on maximizing prices charged, but instead seek to maintain what we believe is a perception among our members of our “pricing authority” – consistently providing the most competitive values."
+        "Membership fee revenue increased 11% in 2026, driven by new member sign-ups, membership fee increases, and upgrades to Executive memberships. At the end of 2026, member renewal rates were 92.3% in the U.S. and Canada and 89.8% worldwide."
       ],
       "own_quotes": [
         "Global supply chains can be highly concentrated, and an escalation of geopolitical tensions, conflict or instability, particularly in regions where the Company relies on single or limited sources for critical components, such as advanced semiconductors, memory and storage, or that are significant to global commodity markets such as oil, gas, rare earths, and other raw materials, could result in significant disruptions."
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt describes pricing authority and competitive values; it does not flag supply concentration or cite geopolitical tensions or trade restrictions as a risk.",
+      "reason": "The excerpt concerns membership fee revenue and renewal rates; it contains no risk disclosure about geopolitical tensions, trade restrictions, or supply disruption.",
       "error": "",
       "true_verdict": "partly"
     },
@@ -169,16 +169,16 @@
       "stance": "context",
       "donor_case_id": "cost-members-renew",
       "donor_ticker": "COST",
-      "donor_finding_index": 0,
+      "donor_finding_index": 1,
       "swapped_quotes": [
-        "Membership fee revenue increased 11% in 2026, driven by new member sign-ups, membership fee increases, and upgrades to Executive memberships. At the end of 2026, member renewal rates were 92.3% in the U.S. and Canada and 89.8% worldwide."
+        "The fee income increase accounted for approximately 30% and 40% of membership income growth during 2026 and 2025."
       ],
       "own_quotes": [
         "As of September 26, 2026, the Company had manufacturing purchase obligations of $89.7 billion, with $82.7 billion payable within 12 months."
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt reports membership fee revenue and renewal rates; it contains no manufacturing purchase obligation amounts, so the statement is not evidenced.",
+      "reason": "The excerpt gives the share of membership income growth from fee increases; it does not show manufacturing purchase obligations of $89.7 billion or $82.7 billion payable within 12 months.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -191,16 +191,16 @@
       "stance": "challenges",
       "donor_case_id": "cost-members-renew",
       "donor_ticker": "COST",
-      "donor_finding_index": 1,
+      "donor_finding_index": 2,
       "swapped_quotes": [
-        "The fee income increase accounted for approximately 30% and 40% of membership income growth during 2026 and 2025."
+        "This rate is a trailing calculation that captures renewals during the period seven to eighteen months prior to the reporting date."
       ],
       "own_quotes": [
         "Greater China net sales increased during 2026 compared to 2025 primarily due to higher net sales of iPhone and Mac."
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt covers membership fee income and says nothing about Greater China net sales or iPhone and Mac sales, so it does not show the statement.",
+      "reason": "The excerpt is about how the membership renewal rate is calculated and says nothing about Greater China net sales, iPhone or Mac sales, or their change in 2026, so it does not support the statement or a challenge stance.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -213,7 +213,7 @@
       "stance": "context",
       "donor_case_id": "cost-members-renew",
       "donor_ticker": "COST",
-      "donor_finding_index": 2,
+      "donor_finding_index": 3,
       "swapped_quotes": [
         "Our worldwide renewal rate is adversely impacted by membership growth in certain international markets and a higher penetration of memberships sold online, including through digital membership promotions, which renew at a slightly lower rate on average."
       ],
@@ -222,7 +222,7 @@
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt discusses worldwide renewal rates and membership penetration, with no mention of renminbi strength or its effect on Greater China sales.",
+      "reason": "The excerpt covers the worldwide renewal rate and international membership mix, with no mention of renminbi exchange rates or their effect on Greater China net sales, so it gives no context for the statement.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -244,7 +244,7 @@
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt gives US and Canada revenue by category and does not mention Digital Markets Act App Store changes, business terms or fee structures.",
+      "reason": "The excerpt covers U.S. and Canada revenue by category in the auditor's report and says nothing about EU App Store changes, the DMA, or fee structures.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -267,7 +267,7 @@
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt is a description of warehouse locations and does not mention a European Commission fine, a cease and desist order or an appeal.",
+      "reason": "The excerpt lists the countries where the company operates warehouses; it contains no EU fine, cease and desist order, or appeal.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -282,15 +282,15 @@
       "donor_ticker": "COST",
       "donor_finding_index": 0,
       "swapped_quotes": [
-        "In February 2026, the U.S. Supreme Court ruled that the IEEPA tariffs were unlawful.",
-        "During 2026, we began filing for refunds and received $184, made up of $174 in refunds, recorded as a reduction to merchandise costs, and $10 recorded as interest income."
+        "During 2026, we began filing for refunds and received $184, made up of $174 in refunds, recorded as a reduction to merchandise costs, and $10 recorded as interest income.",
+        "Subsequent to 2026, we received $155 in additional refunds and we intend to continue to invest the majority of the refunds in increased value for the member."
       ],
       "own_quotes": [
         "The Company believes that it complies with the DMA and has continued to make changes to its compliance plan in response to feedback and engagement with the Commission."
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt covers tariff refunds after a Supreme Court ruling and says nothing about DMA compliance or the preliminary-findings investigation.",
+      "reason": "The excerpts describe tariff refunds and their accounting; neither mentions the DMA, compliance, or the preliminary-findings investigation the statement relies on.",
       "error": "",
       "true_verdict": "partly"
     },
@@ -305,14 +305,14 @@
       "donor_ticker": "COST",
       "donor_finding_index": 1,
       "swapped_quotes": [
-        "Subsequent to 2026, we received $155 in additional refunds and we intend to continue to invest the majority of the refunds in increased value for the member."
+        "Those strategies can include, but are not limited to, working with our suppliers to share in absorbing cost increases, earlier-than-usual purchasing and in greater volumes, sourcing in the countries and regions where items are sold, as well as passing cost increases on to our members."
       ],
       "own_quotes": [
         "Although the Company’s DMA compliance plan is intended to address the DMA’s obligations, it has been challenged by the Commission and may be challenged further by private litigants."
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt reports additional tariff refunds and says nothing about a Commission challenge to a DMA compliance plan.",
+      "reason": "The excerpt describes strategies for absorbing cost increases; it does not mention a DMA compliance plan, a Commission challenge, or further changes.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -327,14 +327,15 @@
       "donor_ticker": "COST",
       "donor_finding_index": 2,
       "swapped_quotes": [
-        "IEEPA tariff refunds, net of investment in price reductions for members, positively impacted gross margin by three basis points."
+        "We paid the government approximately $500 in IEEPA tariffs. In February 2026, the U.S. Supreme Court ruled that the IEEPA tariffs were unlawful.",
+        "Higher tariffs are more likely to adversely impact rather than improve our results."
       ],
       "own_quotes": [
         "Products gross margin and gross margin percentage increased during 2026 compared to 2025 primarily due to product mix and tariff refunds, partially offset by higher costs, including memory."
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt shows only that IEEPA tariff refunds added three basis points to gross margin; it does not show that product mix was the primary driver of a 2026 increase.",
+      "reason": "The excerpts cover a roughly $500 IEEPA tariff payment, a Supreme Court ruling that the tariffs were unlawful, and a statement that higher tariffs hurt results; none shows a 2026 products gross margin increase, a mix effect or refund amounts.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -349,14 +350,14 @@
       "donor_ticker": "COST",
       "donor_finding_index": 3,
       "swapped_quotes": [
-        "Higher tariffs are more likely to adversely impact rather than improve our results."
+        "In March 2026, four class actions were filed against the Company seeking a refund of tariffs paid by the Company under IEEPA that were passed on to members through higher prices."
       ],
       "own_quotes": [
         "As a result, the Company believes, in general, gross margins will be subject to volatility and downward pressure."
       ],
       "figures_dropped": 0,
-      "verdict": "partly",
-      "reason": "The excerpt says higher tariffs are more likely to hurt results, which supports downward pressure from tariffs only, not a general expectation of volatility across gross margins.",
+      "verdict": "not_supported",
+      "reason": "The excerpt describes class actions seeking refunds of IEEPA tariffs passed on to members, and says nothing about gross margin volatility or downward pressure.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -378,7 +379,7 @@
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt concerns IRS litigation over tax years 2007 to 2009 and says nothing about competition or price cuts, so it is not relevant to the statement.",
+      "reason": "The excerpt concerns IRS litigation over tax years 2007 to 2009 and does not mention competition, price cuts or product margins, so it is not relevant context for the statement.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -387,7 +388,7 @@
       "case_id": "cost-markup-widened",
       "ticker": "COST",
       "finding_index": 0,
-      "statement": "Reported gross margin percentage fell by three basis points; excluding gasoline price inflation it rose 10 basis points, which is not a noticeable widening of the markup.",
+      "statement": "Reported gross margin percentage did not widen this year: it decreased three basis points, though it rose 10 basis points excluding gasoline price inflation.",
       "stance": "challenges",
       "donor_case_id": "ko-irs-dispute-settled",
       "donor_ticker": "KO",
@@ -400,7 +401,7 @@
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt is about an IRS tax litigation. It contains no gross margin figures, so it cannot show that margin fell or rose or what it did excluding gasoline, and the stance is not established.",
+      "reason": "The excerpt is about IRS tax litigation for 2007-2009 and contains no gross margin figures, so it neither shows the 3 bp decline nor the 10 bp rise excluding gasoline.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -409,7 +410,7 @@
       "case_id": "cost-markup-widened",
       "ticker": "COST",
       "finding_index": 1,
-      "statement": "Gross margin in core merchandise categories, as a percentage of their own sales, increased 15 basis points, across all categories.",
+      "statement": "Margin in core merchandise categories, measured on their own sales, increased 15 basis points across all categories.",
       "stance": "supports",
       "donor_case_id": "ko-irs-dispute-settled",
       "donor_ticker": "KO",
@@ -422,30 +423,7 @@
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt says the IRS tax matter cannot be settled while under litigation designation. It reports no core merchandise gross margin change, so the 15 basis point increase is unsupported.",
-      "error": "",
-      "true_verdict": "supported"
-    },
-    {
-      "kind": "other-company",
-      "case_id": "cost-markup-widened",
-      "ticker": "COST",
-      "finding_index": 2,
-      "statement": "Management describes a pricing philosophy that does not seek to maximize prices charged in the short term.",
-      "stance": "context",
-      "donor_case_id": "ko-irs-dispute-settled",
-      "donor_ticker": "KO",
-      "donor_finding_index": 2,
-      "swapped_quotes": [
-        "On September 17, 2015, the Company received a Statutory Notice of Deficiency (“Notice”) from the United States Internal Revenue Service (“IRS”) seeking approximately $3.3 billion of additional federal income tax for years 2007 through 2009.",
-        "This rate does not include the impact of the ongoing tax litigation with the IRS, if the Company were not to prevail."
-      ],
-      "own_quotes": [
-        "We do not focus in the short-term on maximizing prices charged, but instead seek to maintain what we believe is a perception among our members of our “pricing authority” – consistently providing the most competitive values."
-      ],
-      "figures_dropped": 0,
-      "verdict": "not_supported",
-      "reason": "The excerpts describe an IRS deficiency notice and tax litigation. They say nothing about pricing philosophy or short-term price maximization, so the statement is not supported and the context stance is not shown.",
+      "reason": "The excerpt concerns the IRS litigation designation and settlement restrictions; it shows no merchandise category margin data, and its stance of supports is not borne out.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -454,20 +432,21 @@
       "case_id": "cost-members-renew",
       "ticker": "COST",
       "finding_index": 0,
-      "statement": "Membership fee revenue increased 11% in 2026, and renewal rates were 92.3% in the U.S. and Canada and 89.8% worldwide at the end of 2026.",
+      "statement": "Membership fee revenue rose 11% in 2026, and renewal rates were 92.3% in the U.S. and Canada and 89.8% worldwide at the end of 2026, which supports both parts of the claim.",
       "stance": "supports",
-      "donor_case_id": "ko-north-america-volume",
+      "donor_case_id": "ko-irs-dispute-settled",
       "donor_ticker": "KO",
-      "donor_finding_index": 0,
+      "donor_finding_index": 2,
       "swapped_quotes": [
-        "Unit case volume in North America was even, which included 2% growth in Trademark Coca-Cola, 1% growth in juice, value-added dairy and plant-based beverages, as well as growth in energy drinks, offset by a 4% decline in water, sports, coffee and tea as well as a 2% decline in sparkling flavors."
+        "On September 17, 2015, the Company received a Statutory Notice of Deficiency (“Notice”) from the United States Internal Revenue Service (“IRS”) seeking approximately $3.3 billion of additional federal income tax for years 2007 through 2009.",
+        "This rate does not include the impact of the ongoing tax litigation with the IRS, if the Company were not to prevail."
       ],
       "own_quotes": [
         "Membership fee revenue increased 11% in 2026, driven by new member sign-ups, membership fee increases, and upgrades to Executive memberships. At the end of 2026, member renewal rates were 92.3% in the U.S. and Canada and 89.8% worldwide."
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt reports North American unit case volume by beverage category; it contains no membership fee revenue or renewal rate figures.",
+      "reason": "The excerpts concern an IRS tax notice and tax litigation; neither mentions membership fees, fee growth, or renewal rates, so they cannot support the 11% rise or the 92.3% and 89.8% renewal figures.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -476,20 +455,20 @@
       "case_id": "cost-members-renew",
       "ticker": "COST",
       "finding_index": 1,
-      "statement": "Part of the fee income growth came from the fee increase rather than from renewals alone: the increase accounted for approximately 30% and 40% of membership income growth during 2026 and 2025.",
+      "statement": "Part of the growth in membership income comes from the fee increase rather than from renewals alone: the fee increase accounted for approximately 30% and 40% of membership income growth during 2026 and 2025.",
       "stance": "context",
       "donor_case_id": "ko-north-america-volume",
       "donor_ticker": "KO",
-      "donor_finding_index": 1,
+      "donor_finding_index": 0,
       "swapped_quotes": [
-        "Unit case volume in North America increased 2%, which included 4% growth in Trademark Coca-Cola, 2% growth in juice, value-added dairy and plant-based beverages, as well as growth in energy drinks."
+        "Unit case volume in North America was even, which included 2% growth in Trademark Coca-Cola, 1% growth in juice, value-added dairy and plant-based beverages, as well as growth in energy drinks, offset by a 4% decline in water, sports, coffee and tea as well as a 2% decline in sparkling flavors."
       ],
       "own_quotes": [
         "The fee income increase accounted for approximately 30% and 40% of membership income growth during 2026 and 2025."
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt reports unit case volume growth; it does not mention a fee increase or its share of membership income growth in 2026 and 2025.",
+      "reason": "The excerpt covers North American unit case volume by beverage category and says nothing about membership income, fee increases, or their share of membership growth.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -498,8 +477,30 @@
       "case_id": "cost-members-renew",
       "ticker": "COST",
       "finding_index": 2,
-      "statement": "The company says its worldwide renewal rate is adversely affected by international membership growth and by online-sold memberships, which renew at a slightly lower rate.",
+      "statement": "The reported renewal rate is a trailing measure covering renewals seven to eighteen months before the reporting date, so it lags current renewal behavior.",
       "stance": "context",
+      "donor_case_id": "ko-north-america-volume",
+      "donor_ticker": "KO",
+      "donor_finding_index": 1,
+      "swapped_quotes": [
+        "Unit case volume in North America increased 2%, which included 4% growth in Trademark Coca-Cola, 2% growth in juice, value-added dairy and plant-based beverages, as well as growth in energy drinks."
+      ],
+      "own_quotes": [
+        "This rate is a trailing calculation that captures renewals during the period seven to eighteen months prior to the reporting date."
+      ],
+      "figures_dropped": 0,
+      "verdict": "not_supported",
+      "reason": "The excerpt reports unit case volume growth by beverage category and does not mention renewal rates, their measurement window, or any lag in them.",
+      "error": "",
+      "true_verdict": "supported"
+    },
+    {
+      "kind": "other-company",
+      "case_id": "cost-members-renew",
+      "ticker": "COST",
+      "finding_index": 3,
+      "statement": "Management says the worldwide renewal rate is adversely impacted by international membership growth and by online memberships, including digital promotions, which renew at a slightly lower rate on average.",
+      "stance": "challenges",
       "donor_case_id": "ko-north-america-volume",
       "donor_ticker": "KO",
       "donor_finding_index": 2,
@@ -511,7 +512,7 @@
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt reports unit case volume declines; it says nothing about renewal rates, international membership growth, or online-sold memberships.",
+      "reason": "The excerpt reports a North American unit case volume decline by beverage category and does not mention renewal rates, international membership growth, or online memberships.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -520,7 +521,7 @@
       "case_id": "cost-north-america-dependence",
       "ticker": "COST",
       "finding_index": 0,
-      "statement": "In fiscal 2026 the U.S. and Canada generated $219,823 million and $40,561 million of total revenue, within company total revenue of $303.15B.",
+      "statement": "The auditor's critical audit matter reports $219,823 million of revenue in the United States and $40,561 million in Canada for the year ended August 30, 2026, against total fiscal 2026 revenue of $303.15B. The two countries are by far the largest revenue contributors, which supports the sales half of the claim.",
       "stance": "supports",
       "donor_case_id": "ko-pricing-lifts-margin",
       "donor_ticker": "KO",
@@ -533,18 +534,18 @@
         "As discussed in Note 11 to the consolidated financial statements, the Company generated $219,823 million and $40,561 million of total revenue in the United States (U.S.) and Canada, respectively, for the year ended August 30, 2026, which included revenue from membership fees, merchandise sales, and gasoline sales (U.S. and Canada revenue)."
       ],
       "figures_dropped": 1,
-      "verdict": "not_supported",
-      "reason": "The excerpt is about gross margin percentage and says nothing about U.S. or Canada revenue figures, so the cited $219,823M and $40,561M are not shown.",
+      "verdict": "partly",
+      "reason": "The cited figures put US and Canada at about 86% of $303.15B revenue, supporting the sales half, but the excerpts are gross margin text that does not show these revenue figures, and nothing addresses profit.",
       "error": "",
-      "true_verdict": "partly"
+      "true_verdict": "supported"
     },
     {
       "kind": "other-company",
       "case_id": "cost-north-america-dependence",
       "ticker": "COST",
       "finding_index": 1,
-      "statement": "The company operates membership warehouses in many countries beyond the U.S. and Canada, which indicates some geographic diversification.",
-      "stance": "challenges",
+      "statement": "The company operates membership warehouses in many countries beyond the US and Canada, which bears on how little geographic diversification there is.",
+      "stance": "context",
       "donor_case_id": "ko-pricing-lifts-margin",
       "donor_ticker": "KO",
       "donor_finding_index": 1,
@@ -555,8 +556,8 @@
         "We are principally engaged in the operation of membership warehouses in the United States (U.S.) and Puerto Rico, Canada, Mexico, Japan, the United Kingdom (U.K.), Korea, Australia, Taiwan, China, Spain, France, Sweden, Iceland, and New Zealand."
       ],
       "figures_dropped": 0,
-      "verdict": "not_supported",
-      "reason": "The excerpt on gross margin lists no countries or warehouses, so it does not show the company operating outside the U.S. and Canada or any diversification.",
+      "verdict": "partly",
+      "reason": "The excerpts name operations in the Philippines, Bangladesh, India and Nigeria, but as bottling or finished product operations since refranchised or sold, not membership warehouses, so they show only a narrower version of the statement.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -565,7 +566,7 @@
       "case_id": "cost-tariffs-unrecovered",
       "ticker": "COST",
       "finding_index": 0,
-      "statement": "The company has begun recovering IEEPA tariffs it paid: it received $184 in 2026, made up of $174 in refunds recorded as a reduction to merchandise costs and $10 as interest income, after the Supreme Court ruled the tariffs unlawful. This directly contradicts the idea that the duties cannot be clawed back.",
+      "statement": "Costco has recovered part of its IEEPA duties: it received $184 in refunds and interest, of which $174 reduced merchandise costs, and a further $155 arrived after the period.",
       "stance": "challenges",
       "donor_case_id": "msft-ai-harm",
       "donor_ticker": "MSFT",
@@ -574,12 +575,12 @@
         "We have experienced, and expect to continue to experience, instances in which the AI solutions we enable or offer produce unintended consequences, are used or customized in unforeseen ways, or operate in a manner inconsistent with our responsible AI policies and practices."
       ],
       "own_quotes": [
-        "In February 2026, the U.S. Supreme Court ruled that the IEEPA tariffs were unlawful.",
-        "During 2026, we began filing for refunds and received $184, made up of $174 in refunds, recorded as a reduction to merchandise costs, and $10 recorded as interest income."
+        "During 2026, we began filing for refunds and received $184, made up of $174 in refunds, recorded as a reduction to merchandise costs, and $10 recorded as interest income.",
+        "Subsequent to 2026, we received $155 in additional refunds and we intend to continue to invest the majority of the refunds in increased value for the member."
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt is about AI solutions producing unintended consequences and does not mention tariff refunds, so the $184 recovery is not shown.",
+      "reason": "The excerpt is about AI solutions producing unintended consequences. It says nothing about IEEPA duty refunds, interest, or merchandise cost reductions, so it does not show the recovery claimed.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -588,7 +589,7 @@
       "case_id": "cost-tariffs-unrecovered",
       "ticker": "COST",
       "finding_index": 1,
-      "statement": "Refunds continued after year end: $155 in additional refunds were received, and the company intends to invest the majority of refunds in increased value for the member.",
+      "statement": "Costco describes ways to offset cost increases besides absorbing them: sharing the cost with suppliers, buying earlier and in greater volume, sourcing locally, and passing increases on to members.",
       "stance": "challenges",
       "donor_case_id": "msft-ai-harm",
       "donor_ticker": "MSFT",
@@ -597,11 +598,11 @@
         "Our implementation of AI systems could result in legal liability, regulatory action, litigation, brand, reputational, or competitive harm, or other adverse impacts. These risks may stem from issues related to AI model and system capabilities, intellectual property, data privacy, product liability, and other claims associated with AI training, outputs, and system behavior."
       ],
       "own_quotes": [
-        "Subsequent to 2026, we received $155 in additional refunds and we intend to continue to invest the majority of the refunds in increased value for the member."
+        "Those strategies can include, but are not limited to, working with our suppliers to share in absorbing cost increases, earlier-than-usual purchasing and in greater volumes, sourcing in the countries and regions where items are sold, as well as passing cost increases on to our members."
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt covers AI system liability risks and says nothing about the $155 additional refunds or how they will be invested.",
+      "reason": "The excerpt concerns AI system liability and regulatory risk. It does not mention supplier cost sharing, buying ahead, local sourcing, or passing increases to members.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -610,8 +611,8 @@
       "case_id": "cost-tariffs-unrecovered",
       "ticker": "COST",
       "finding_index": 2,
-      "statement": "The refunds, net of the investment in price reductions for members, positively affected gross margin by three basis points, so the recovery had a small but visible effect on results.",
-      "stance": "challenges",
+      "statement": "Tariffs were a real cost: Costco paid approximately $500 in IEEPA tariffs, and it expects higher tariffs to hurt rather than help its results.",
+      "stance": "supports",
       "donor_case_id": "msft-ai-harm",
       "donor_ticker": "MSFT",
       "donor_finding_index": 2,
@@ -619,21 +620,22 @@
         "Content generated by AI systems may be offensive, illegal, inaccurate, or otherwise harmful."
       ],
       "own_quotes": [
-        "IEEPA tariff refunds, net of investment in price reductions for members, positively impacted gross margin by three basis points."
+        "We paid the government approximately $500 in IEEPA tariffs. In February 2026, the U.S. Supreme Court ruled that the IEEPA tariffs were unlawful.",
+        "Higher tariffs are more likely to adversely impact rather than improve our results."
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt says AI content may be harmful and gives no refund netting or 3 basis point gross margin effect.",
+      "reason": "The excerpt says AI-generated content may be offensive or harmful. It contains no tariff amounts and nothing on expected effects of higher tariffs, so it does not support the statement.",
       "error": "",
-      "true_verdict": "supported"
+      "true_verdict": "partly"
     },
     {
       "kind": "other-company",
       "case_id": "cost-tariffs-unrecovered",
       "ticker": "COST",
       "finding_index": 3,
-      "statement": "Management still describes tariffs as more likely to hurt than help results, which is consistent with duties being a cost while they are in force.",
-      "stance": "supports",
+      "statement": "Class actions allege that the IEEPA tariffs were passed on to members through higher prices, and they seek a refund of those tariffs.",
+      "stance": "context",
       "donor_case_id": "msft-ai-harm",
       "donor_ticker": "MSFT",
       "donor_finding_index": 3,
@@ -641,11 +643,11 @@
         "Our efforts to detect, prevent, and mitigate such misuse may not be successful, which could result in reputational harm, regulatory scrutiny, service disruptions, or adverse impacts on our business, financial condition, and results of operations."
       ],
       "own_quotes": [
-        "Higher tariffs are more likely to adversely impact rather than improve our results."
+        "In March 2026, four class actions were filed against the Company seeking a refund of tariffs paid by the Company under IEEPA that were passed on to members through higher prices."
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt concerns misuse mitigation efforts and does not describe management's view of tariffs or duties as a cost.",
+      "reason": "The excerpt concerns detecting and preventing misuse of AI systems. It does not mention class actions, pass-through of tariffs to members, or refund claims.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -1421,7 +1423,7 @@
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt reports a 15 basis point rise in merchandise category gross margin and says nothing about customers designing their own ASICs or about demand risk.",
+      "reason": "The excerpt is about gross margin in core merchandise categories rising 15 basis points; it says nothing about customer ASICs, competition or lower demand, so the statement is not shown.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -1432,18 +1434,18 @@
       "finding_index": 1,
       "statement": "Despite that risk, the latest quarter shows no sign of demand loss in the reported figures: revenue growth was +105.9% year over year, and the business section says all major cloud service providers use its platforms.",
       "stance": "context",
-      "donor_case_id": "cost-markup-widened",
+      "donor_case_id": "cost-members-renew",
       "donor_ticker": "COST",
-      "donor_finding_index": 2,
+      "donor_finding_index": 0,
       "swapped_quotes": [
-        "We do not focus in the short-term on maximizing prices charged, but instead seek to maintain what we believe is a perception among our members of our “pricing authority” – consistently providing the most competitive values."
+        "Membership fee revenue increased 11% in 2026, driven by new member sign-ups, membership fee increases, and upgrades to Executive memberships. At the end of 2026, member renewal rates were 92.3% in the U.S. and Canada and 89.8% worldwide."
       ],
       "own_quotes": [
         "AI model makers use our infrastructure and software hosted at CSPs to develop, build and run AI models, product offerings, and services."
       ],
       "figures_dropped": 1,
       "verdict": "not_supported",
-      "reason": "The excerpt is about maintaining pricing authority and gives no revenue growth figure or customer-platform statement, so it does not back the no-demand-loss point.",
+      "reason": "The excerpt covers membership fee revenue (up 11%) and renewal rates; it shows no revenue growth of 105.9%, no demand trend and no cloud provider usage, so it does not support the statement or its context stance.",
       "error": "",
       "true_verdict": "partly"
     },
@@ -1456,16 +1458,16 @@
       "stance": "supports",
       "donor_case_id": "cost-members-renew",
       "donor_ticker": "COST",
-      "donor_finding_index": 0,
+      "donor_finding_index": 1,
       "swapped_quotes": [
-        "Membership fee revenue increased 11% in 2026, driven by new member sign-ups, membership fee increases, and upgrades to Executive memberships. At the end of 2026, member renewal rates were 92.3% in the U.S. and Canada and 89.8% worldwide."
+        "The fee income increase accounted for approximately 30% and 40% of membership income growth during 2026 and 2025."
       ],
       "own_quotes": [
         "Revenue from Data Center computing grew 59% driven by demand for our Blackwell computing platform. Revenue from Data Center networking grew 142% driven by the introduction and continued ramp of NVLink compute fabric for GB200 and GB300 systems and the growth of Ethernet and InfiniBand platforms."
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt covers membership fee revenue and renewal rates and says nothing about Data Center computing or networking growth.",
+      "reason": "The excerpt covers membership fee income growth (30% and 40% of membership income growth in 2026 and 2025), not Compute & Networking segment revenue, Data Center computing or networking growth.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -1478,16 +1480,16 @@
       "stance": "supports",
       "donor_case_id": "cost-members-renew",
       "donor_ticker": "COST",
-      "donor_finding_index": 1,
+      "donor_finding_index": 2,
       "swapped_quotes": [
-        "The fee income increase accounted for approximately 30% and 40% of membership income growth during 2026 and 2025."
+        "This rate is a trailing calculation that captures renewals during the period seven to eighteen months prior to the reporting date."
       ],
       "own_quotes": [
         "The year-over-year increase in the second quarter and first half of fiscal year 2027 was driven by the ramp of our Blackwell Ultra infrastructure."
       ],
       "figures_dropped": 1,
       "verdict": "not_supported",
-      "reason": "The excerpt gives the share of membership income growth from fees and does not mention Blackwell Ultra, Compute & Networking, or 105.9% revenue growth.",
+      "reason": "The excerpt is a note on the trailing membership renewal rate. It says nothing about Blackwell Ultra, Compute & Networking attribution or the latest quarter's +105.9% revenue growth.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -1500,7 +1502,7 @@
       "stance": "context",
       "donor_case_id": "cost-members-renew",
       "donor_ticker": "COST",
-      "donor_finding_index": 2,
+      "donor_finding_index": 3,
       "swapped_quotes": [
         "Our worldwide renewal rate is adversely impacted by membership growth in certain international markets and a higher penetration of memberships sold online, including through digital membership promotions, which renew at a slightly lower rate on average."
       ],
@@ -1509,7 +1511,7 @@
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt discusses membership renewal rates and says nothing about graphics revenue or Blackwell sales.",
+      "reason": "The excerpt explains that renewal rates are hurt by international membership growth and online promotions. It does not mention Graphics revenue or Blackwell sales, so it neither shows the growth nor its source.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -1531,7 +1533,7 @@
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt reports U.S. and Canada revenue by type and does not show concentration among a limited number of customers.",
+      "reason": "The excerpt gives total U.S. and Canada revenue by figure. It does not discuss customer concentration or a trend in it, so it cannot support the statement.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -1553,7 +1555,7 @@
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt describes where the company operates membership warehouses by country. It says nothing about customer concentration or revenue from a limited number of customers, so it does not support the statement.",
+      "reason": "The excerpt only lists the countries where the company operates warehouses. It says nothing about customer concentration or whether that trend may continue.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -1568,15 +1570,15 @@
       "donor_ticker": "COST",
       "donor_finding_index": 0,
       "swapped_quotes": [
-        "In February 2026, the U.S. Supreme Court ruled that the IEEPA tariffs were unlawful.",
-        "During 2026, we began filing for refunds and received $184, made up of $174 in refunds, recorded as a reduction to merchandise costs, and $10 recorded as interest income."
+        "During 2026, we began filing for refunds and received $184, made up of $174 in refunds, recorded as a reduction to merchandise costs, and $10 recorded as interest income.",
+        "Subsequent to 2026, we received $155 in additional refunds and we intend to continue to invest the majority of the refunds in increased value for the member."
       ],
       "own_quotes": [
         "Direct Customers – For fiscal year 2026, sales to one direct customer represented 22% of total revenue and sales to another direct customer represented 14% of total revenue, all of which were primarily attributable to the Compute & Networking segment."
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpts cover a court ruling on IEEPA tariffs and tariff refunds. Neither mentions a direct customer's share of revenue, so the 22% and 14% figures are unsupported.",
+      "reason": "The excerpts concern tariff refunds of $184 and $155. They report no customer revenue percentages, so the 22% and 14% figures are not shown.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -1591,14 +1593,14 @@
       "donor_ticker": "COST",
       "donor_finding_index": 1,
       "swapped_quotes": [
-        "Subsequent to 2026, we received $155 in additional refunds and we intend to continue to invest the majority of the refunds in increased value for the member."
+        "Those strategies can include, but are not limited to, working with our suppliers to share in absorbing cost increases, earlier-than-usual purchasing and in greater volumes, sourcing in the countries and regions where items are sold, as well as passing cost increases on to our members."
       ],
       "own_quotes": [
         "For the first quarter of fiscal year 2027, three direct customers represented 21%, 17%, and 16% of total revenue, all of which was primarily attributable to the Compute & Networking segment."
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt concerns additional tariff refunds and their intended use. It does not report customer revenue shares for any quarter, so the 21%, 17% and 16% figures are unsupported.",
+      "reason": "The excerpt describes strategies for absorbing cost increases. It gives no customer percentages, so the 21%, 17% and 16% figures are not shown.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -1613,14 +1615,15 @@
       "donor_ticker": "COST",
       "donor_finding_index": 2,
       "swapped_quotes": [
-        "IEEPA tariff refunds, net of investment in price reductions for members, positively impacted gross margin by three basis points."
+        "We paid the government approximately $500 in IEEPA tariffs. In February 2026, the U.S. Supreme Court ruled that the IEEPA tariffs were unlawful.",
+        "Higher tariffs are more likely to adversely impact rather than improve our results."
       ],
       "own_quotes": [
         "We generate a significant amount of our revenue from a limited number of indirect customers, some individually representing 10% or more of our revenue."
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt describes tariff refunds and their effect on gross margin. It says nothing about indirect customers or any customer's share of revenue, so it does not support the statement.",
+      "reason": "The excerpts cover IEEPA tariff payments and their possible effects. They do not show indirect customers or any customer at 10% or more of revenue.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -1635,14 +1638,14 @@
       "donor_ticker": "COST",
       "donor_finding_index": 3,
       "swapped_quotes": [
-        "Higher tariffs are more likely to adversely impact rather than improve our results."
+        "In March 2026, four class actions were filed against the Company seeking a refund of tariffs paid by the Company under IEEPA that were passed on to members through higher prices."
       ],
       "own_quotes": [
         "Gross margin increased to 75.0% for the second quarter of fiscal year 2027 compared to 72.4% for the second quarter of fiscal year 2026, and 75.0% for the first half of fiscal year 2027 compared to 66.6% for the first half of fiscal year 2026 due to improved mix from Blackwell Ultra."
       ],
       "figures_dropped": 1,
       "verdict": "not_supported",
-      "reason": "The excerpt says higher tariffs are more likely to hurt results; it contains no gross margin figures and no attribution of an improvement to product mix.",
+      "reason": "The excerpt concerns tariff refund class actions and says nothing about gross margin, the 75.0% or 72.4% figures, or product mix, so it does not support the statement.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -1664,7 +1667,7 @@
       ],
       "figures_dropped": 1,
       "verdict": "not_supported",
-      "reason": "The excerpt is a statement about ongoing IRS litigation for 2007 through 2009; it contains no gross margin percentages or the $4.5 billion H20 charge.",
+      "reason": "The excerpt concerns IRS litigation for tax years 2007 to 2009 and does not mention gross margin, the 74.9% or 60.5% figures, or the H20 charge.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -1686,7 +1689,7 @@
       ],
       "figures_dropped": 2,
       "verdict": "not_supported",
-      "reason": "The excerpt concerns the IRS litigation designation and inability to settle; it gives no full-year gross margin figures for fiscal 2026 or 2025.",
+      "reason": "The excerpt covers the IRS litigation designation and gives no gross margin figures, so it cannot show the full-year decline from 75.0% to 71.1% or bear on profit per dollar of sales.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -2073,20 +2076,20 @@
       "case_id": "cost-markup-widened",
       "ticker": "COST",
       "finding_index": 0,
-      "statement": "Reported gross margin percentage fell by three basis points; excluding gasoline price inflation it rose 10 basis points, which is not a noticeable widening of the markup.",
+      "statement": "Reported gross margin percentage did not widen this year: it decreased three basis points, though it rose 10 basis points excluding gasoline price inflation.",
       "stance": "challenges",
-      "donor_case_id": "cost-north-america-dependence",
+      "donor_case_id": "cost-members-renew",
       "donor_ticker": "COST",
-      "donor_finding_index": 1,
+      "donor_finding_index": 3,
       "swapped_quotes": [
-        "We are principally engaged in the operation of membership warehouses in the United States (U.S.) and Puerto Rico, Canada, Mexico, Japan, the United Kingdom (U.K.), Korea, Australia, Taiwan, China, Spain, France, Sweden, Iceland, and New Zealand."
+        "Our worldwide renewal rate is adversely impacted by membership growth in certain international markets and a higher penetration of memberships sold online, including through digital membership promotions, which renew at a slightly lower rate on average."
       ],
       "own_quotes": [
         "Gross margin percentage decreased three basis points. Excluding the impact of gasoline price inflation on net sales, gross margin percentage was 11.22%, an increase of 10 basis points."
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt lists countries of operation and gives no gross margin figures, so the 3 and 10 basis point movements excluding gasoline are not shown.",
+      "reason": "The excerpt is about the worldwide renewal rate and membership mix; it shows no gross margin percentage or basis-point change, so the statement is unsupported by its evidence.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -2095,43 +2098,20 @@
       "case_id": "cost-markup-widened",
       "ticker": "COST",
       "finding_index": 1,
-      "statement": "Gross margin in core merchandise categories, as a percentage of their own sales, increased 15 basis points, across all categories.",
+      "statement": "Margin in core merchandise categories, measured on their own sales, increased 15 basis points across all categories.",
       "stance": "supports",
-      "donor_case_id": "cost-tariffs-unrecovered",
+      "donor_case_id": "cost-north-america-dependence",
       "donor_ticker": "COST",
       "donor_finding_index": 0,
       "swapped_quotes": [
-        "In February 2026, the U.S. Supreme Court ruled that the IEEPA tariffs were unlawful.",
-        "During 2026, we began filing for refunds and received $184, made up of $174 in refunds, recorded as a reduction to merchandise costs, and $10 recorded as interest income."
+        "As discussed in Note 11 to the consolidated financial statements, the Company generated $219,823 million and $40,561 million of total revenue in the United States (U.S.) and Canada, respectively, for the year ended August 30, 2026, which included revenue from membership fees, merchandise sales, and gasoline sales (U.S. and Canada revenue)."
       ],
       "own_quotes": [
         "The gross margin in core merchandise categories when expressed as a percentage of their own sales increased 15 basis points. The increase was across all categories."
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt covers the tariff ruling and refunds and does not report a 15 basis point gross margin increase in core merchandise categories.",
-      "error": "",
-      "true_verdict": "supported"
-    },
-    {
-      "kind": "other-claim",
-      "case_id": "cost-markup-widened",
-      "ticker": "COST",
-      "finding_index": 2,
-      "statement": "Management describes a pricing philosophy that does not seek to maximize prices charged in the short term.",
-      "stance": "context",
-      "donor_case_id": "cost-tariffs-unrecovered",
-      "donor_ticker": "COST",
-      "donor_finding_index": 1,
-      "swapped_quotes": [
-        "Subsequent to 2026, we received $155 in additional refunds and we intend to continue to invest the majority of the refunds in increased value for the member."
-      ],
-      "own_quotes": [
-        "We do not focus in the short-term on maximizing prices charged, but instead seek to maintain what we believe is a perception among our members of our “pricing authority” – consistently providing the most competitive values."
-      ],
-      "figures_dropped": 0,
-      "verdict": "partly",
-      "reason": "The excerpt says most refunds will be reinvested in member value, which is a narrower commitment than a described pricing philosophy of not maximizing short-term prices.",
+      "reason": "The excerpt gives auditor-report revenue totals for the U.S. and Canada; it contains no merchandise margin or basis-point figures, so the 15 basis point increase is not shown.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -2140,20 +2120,20 @@
       "case_id": "cost-members-renew",
       "ticker": "COST",
       "finding_index": 0,
-      "statement": "Membership fee revenue increased 11% in 2026, and renewal rates were 92.3% in the U.S. and Canada and 89.8% worldwide at the end of 2026.",
+      "statement": "Membership fee revenue rose 11% in 2026, and renewal rates were 92.3% in the U.S. and Canada and 89.8% worldwide at the end of 2026, which supports both parts of the claim.",
       "stance": "supports",
       "donor_case_id": "cost-tariffs-unrecovered",
       "donor_ticker": "COST",
-      "donor_finding_index": 2,
+      "donor_finding_index": 3,
       "swapped_quotes": [
-        "IEEPA tariff refunds, net of investment in price reductions for members, positively impacted gross margin by three basis points."
+        "In March 2026, four class actions were filed against the Company seeking a refund of tariffs paid by the Company under IEEPA that were passed on to members through higher prices."
       ],
       "own_quotes": [
         "Membership fee revenue increased 11% in 2026, driven by new member sign-ups, membership fee increases, and upgrades to Executive memberships. At the end of 2026, member renewal rates were 92.3% in the U.S. and Canada and 89.8% worldwide."
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt covers IEEPA tariff refunds and gross margin; it shows no membership fee revenue growth and no renewal rate figures, so the statement is unsupported.",
+      "reason": "The excerpt concerns tariff refund class actions filed in March 2026 and says nothing about membership fee revenue growth or renewal rates, so it does not support the statement.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -2162,29 +2142,7 @@
       "case_id": "cost-members-renew",
       "ticker": "COST",
       "finding_index": 1,
-      "statement": "Part of the fee income growth came from the fee increase rather than from renewals alone: the increase accounted for approximately 30% and 40% of membership income growth during 2026 and 2025.",
-      "stance": "context",
-      "donor_case_id": "cost-tariffs-unrecovered",
-      "donor_ticker": "COST",
-      "donor_finding_index": 3,
-      "swapped_quotes": [
-        "Higher tariffs are more likely to adversely impact rather than improve our results."
-      ],
-      "own_quotes": [
-        "The fee income increase accounted for approximately 30% and 40% of membership income growth during 2026 and 2025."
-      ],
-      "figures_dropped": 0,
-      "verdict": "not_supported",
-      "reason": "The excerpt says higher tariffs may hurt results; it contains no fee-increase share of membership income growth, so the quantified statement is not shown.",
-      "error": "",
-      "true_verdict": "supported"
-    },
-    {
-      "kind": "other-claim",
-      "case_id": "cost-members-renew",
-      "ticker": "COST",
-      "finding_index": 2,
-      "statement": "The company says its worldwide renewal rate is adversely affected by international membership growth and by online-sold memberships, which renew at a slightly lower rate.",
+      "statement": "Part of the growth in membership income comes from the fee increase rather than from renewals alone: the fee increase accounted for approximately 30% and 40% of membership income growth during 2026 and 2025.",
       "stance": "context",
       "donor_case_id": "cost-markup-widened",
       "donor_ticker": "COST",
@@ -2193,11 +2151,55 @@
         "Gross margin percentage decreased three basis points. Excluding the impact of gasoline price inflation on net sales, gross margin percentage was 11.22%, an increase of 10 basis points."
       ],
       "own_quotes": [
+        "The fee income increase accounted for approximately 30% and 40% of membership income growth during 2026 and 2025."
+      ],
+      "figures_dropped": 0,
+      "verdict": "not_supported",
+      "reason": "The excerpt covers gross margin percentage changes and gives no membership income figures or fee-increase share of growth, so it does not show the statement's 30% and 40% contributions.",
+      "error": "",
+      "true_verdict": "supported"
+    },
+    {
+      "kind": "other-claim",
+      "case_id": "cost-members-renew",
+      "ticker": "COST",
+      "finding_index": 2,
+      "statement": "The reported renewal rate is a trailing measure covering renewals seven to eighteen months before the reporting date, so it lags current renewal behavior.",
+      "stance": "context",
+      "donor_case_id": "cost-markup-widened",
+      "donor_ticker": "COST",
+      "donor_finding_index": 1,
+      "swapped_quotes": [
+        "The gross margin in core merchandise categories when expressed as a percentage of their own sales increased 15 basis points. The increase was across all categories."
+      ],
+      "own_quotes": [
+        "This rate is a trailing calculation that captures renewals during the period seven to eighteen months prior to the reporting date."
+      ],
+      "figures_dropped": 0,
+      "verdict": "not_supported",
+      "reason": "The excerpt reports core merchandise gross margin rising 15 basis points and says nothing about the renewal rate measurement period or its lag.",
+      "error": "",
+      "true_verdict": "supported"
+    },
+    {
+      "kind": "other-claim",
+      "case_id": "cost-members-renew",
+      "ticker": "COST",
+      "finding_index": 3,
+      "statement": "Management says the worldwide renewal rate is adversely impacted by international membership growth and by online memberships, including digital promotions, which renew at a slightly lower rate on average.",
+      "stance": "challenges",
+      "donor_case_id": "cost-north-america-dependence",
+      "donor_ticker": "COST",
+      "donor_finding_index": 0,
+      "swapped_quotes": [
+        "As discussed in Note 11 to the consolidated financial statements, the Company generated $219,823 million and $40,561 million of total revenue in the United States (U.S.) and Canada, respectively, for the year ended August 30, 2026, which included revenue from membership fees, merchandise sales, and gasoline sales (U.S. and Canada revenue)."
+      ],
+      "own_quotes": [
         "Our worldwide renewal rate is adversely impacted by membership growth in certain international markets and a higher penetration of memberships sold online, including through digital membership promotions, which renew at a slightly lower rate on average."
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt reports gross margin movements and does not mention renewal rates, international growth or online memberships, so it does not support the stated renewal explanation.",
+      "reason": "The excerpt gives U.S. and Canada revenue totals and does not mention renewal rates, international growth, or online memberships, so it cannot challenge the statement.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -2206,30 +2208,30 @@
       "case_id": "cost-north-america-dependence",
       "ticker": "COST",
       "finding_index": 0,
-      "statement": "In fiscal 2026 the U.S. and Canada generated $219,823 million and $40,561 million of total revenue, within company total revenue of $303.15B.",
+      "statement": "The auditor's critical audit matter reports $219,823 million of revenue in the United States and $40,561 million in Canada for the year ended August 30, 2026, against total fiscal 2026 revenue of $303.15B. The two countries are by far the largest revenue contributors, which supports the sales half of the claim.",
       "stance": "supports",
       "donor_case_id": "cost-tariffs-unrecovered",
       "donor_ticker": "COST",
       "donor_finding_index": 3,
       "swapped_quotes": [
-        "Higher tariffs are more likely to adversely impact rather than improve our results."
+        "In March 2026, four class actions were filed against the Company seeking a refund of tariffs paid by the Company under IEEPA that were passed on to members through higher prices."
       ],
       "own_quotes": [
         "As discussed in Note 11 to the consolidated financial statements, the Company generated $219,823 million and $40,561 million of total revenue in the United States (U.S.) and Canada, respectively, for the year ended August 30, 2026, which included revenue from membership fees, merchandise sales, and gasoline sales (U.S. and Canada revenue)."
       ],
       "figures_dropped": 1,
-      "verdict": "partly",
-      "reason": "The cited revenue figures for the U.S. and Canada sum to about 86% of total revenue, which supports concentration in sales. The figures do not cover profit, and the quoted excerpt is about tariffs and does not show them.",
+      "verdict": "not_supported",
+      "reason": "The excerpt concerns IEEPA tariff refund class actions, not revenue by country or profit; the cited US and Canada revenue figures appear only in the statement, so the sales claim is unsupported and profit is not shown.",
       "error": "",
-      "true_verdict": "partly"
+      "true_verdict": "supported"
     },
     {
       "kind": "other-claim",
       "case_id": "cost-north-america-dependence",
       "ticker": "COST",
       "finding_index": 1,
-      "statement": "The company operates membership warehouses in many countries beyond the U.S. and Canada, which indicates some geographic diversification.",
-      "stance": "challenges",
+      "statement": "The company operates membership warehouses in many countries beyond the US and Canada, which bears on how little geographic diversification there is.",
+      "stance": "context",
       "donor_case_id": "cost-markup-widened",
       "donor_ticker": "COST",
       "donor_finding_index": 0,
@@ -2241,7 +2243,7 @@
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt covers gross margin percentage changes and says nothing about warehouses in other countries. The statement that the company has diversification beyond the U.S. and Canada is not shown.",
+      "reason": "The excerpt covers gross margin percentage changes and says nothing about warehouses or countries, so it does not show that the company operates in many countries beyond the US and Canada.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -2250,21 +2252,21 @@
       "case_id": "cost-tariffs-unrecovered",
       "ticker": "COST",
       "finding_index": 0,
-      "statement": "The company has begun recovering IEEPA tariffs it paid: it received $184 in 2026, made up of $174 in refunds recorded as a reduction to merchandise costs and $10 as interest income, after the Supreme Court ruled the tariffs unlawful. This directly contradicts the idea that the duties cannot be clawed back.",
+      "statement": "Costco has recovered part of its IEEPA duties: it received $184 in refunds and interest, of which $174 reduced merchandise costs, and a further $155 arrived after the period.",
       "stance": "challenges",
       "donor_case_id": "cost-members-renew",
       "donor_ticker": "COST",
-      "donor_finding_index": 2,
+      "donor_finding_index": 3,
       "swapped_quotes": [
         "Our worldwide renewal rate is adversely impacted by membership growth in certain international markets and a higher penetration of memberships sold online, including through digital membership promotions, which renew at a slightly lower rate on average."
       ],
       "own_quotes": [
-        "In February 2026, the U.S. Supreme Court ruled that the IEEPA tariffs were unlawful.",
-        "During 2026, we began filing for refunds and received $184, made up of $174 in refunds, recorded as a reduction to merchandise costs, and $10 recorded as interest income."
+        "During 2026, we began filing for refunds and received $184, made up of $174 in refunds, recorded as a reduction to merchandise costs, and $10 recorded as interest income.",
+        "Subsequent to 2026, we received $155 in additional refunds and we intend to continue to invest the majority of the refunds in increased value for the member."
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt is about renewal rates for memberships. It does not mention the $184 tariff refund, the court ruling, or the accounting for refunds, so the statement is not shown by its evidence.",
+      "reason": "The excerpt is about the renewal rate and membership penetration. It says nothing about IEEPA duty refunds, the $184 or $174 amounts, or the $155 received later.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -2273,7 +2275,7 @@
       "case_id": "cost-tariffs-unrecovered",
       "ticker": "COST",
       "finding_index": 1,
-      "statement": "Refunds continued after year end: $155 in additional refunds were received, and the company intends to invest the majority of refunds in increased value for the member.",
+      "statement": "Costco describes ways to offset cost increases besides absorbing them: sharing the cost with suppliers, buying earlier and in greater volume, sourcing locally, and passing increases on to members.",
       "stance": "challenges",
       "donor_case_id": "cost-north-america-dependence",
       "donor_ticker": "COST",
@@ -2282,11 +2284,11 @@
         "As discussed in Note 11 to the consolidated financial statements, the Company generated $219,823 million and $40,561 million of total revenue in the United States (U.S.) and Canada, respectively, for the year ended August 30, 2026, which included revenue from membership fees, merchandise sales, and gasoline sales (U.S. and Canada revenue)."
       ],
       "own_quotes": [
-        "Subsequent to 2026, we received $155 in additional refunds and we intend to continue to invest the majority of the refunds in increased value for the member."
+        "Those strategies can include, but are not limited to, working with our suppliers to share in absorbing cost increases, earlier-than-usual purchasing and in greater volumes, sourcing in the countries and regions where items are sold, as well as passing cost increases on to our members."
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt reports U.S. and Canada revenue for fiscal 2026. It does not mention the $155 additional refunds or any intent to reinvest them, so the statement is not shown.",
+      "reason": "The excerpt gives US and Canada revenue by category for the auditor's report. It does not describe supplier cost sharing, early or bulk buying, local sourcing or passing costs to members.",
       "error": "",
       "true_verdict": "supported"
     },
@@ -2295,8 +2297,8 @@
       "case_id": "cost-tariffs-unrecovered",
       "ticker": "COST",
       "finding_index": 2,
-      "statement": "The refunds, net of the investment in price reductions for members, positively affected gross margin by three basis points, so the recovery had a small but visible effect on results.",
-      "stance": "challenges",
+      "statement": "Tariffs were a real cost: Costco paid approximately $500 in IEEPA tariffs, and it expects higher tariffs to hurt rather than help its results.",
+      "stance": "supports",
       "donor_case_id": "cost-north-america-dependence",
       "donor_ticker": "COST",
       "donor_finding_index": 1,
@@ -2304,21 +2306,22 @@
         "We are principally engaged in the operation of membership warehouses in the United States (U.S.) and Puerto Rico, Canada, Mexico, Japan, the United Kingdom (U.K.), Korea, Australia, Taiwan, China, Spain, France, Sweden, Iceland, and New Zealand."
       ],
       "own_quotes": [
-        "IEEPA tariff refunds, net of investment in price reductions for members, positively impacted gross margin by three basis points."
+        "We paid the government approximately $500 in IEEPA tariffs. In February 2026, the U.S. Supreme Court ruled that the IEEPA tariffs were unlawful.",
+        "Higher tariffs are more likely to adversely impact rather than improve our results."
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt lists countries where warehouses operate. It does not report any gross margin effect from refunds or any basis point figure, so the statement is not shown.",
+      "reason": "The excerpt lists the countries where the company operates. It gives no figure for IEEPA tariffs paid and says nothing about expectations for higher tariffs.",
       "error": "",
-      "true_verdict": "supported"
+      "true_verdict": "partly"
     },
     {
       "kind": "other-claim",
       "case_id": "cost-tariffs-unrecovered",
       "ticker": "COST",
       "finding_index": 3,
-      "statement": "Management still describes tariffs as more likely to hurt than help results, which is consistent with duties being a cost while they are in force.",
-      "stance": "supports",
+      "statement": "Class actions allege that the IEEPA tariffs were passed on to members through higher prices, and they seek a refund of those tariffs.",
+      "stance": "context",
       "donor_case_id": "cost-markup-widened",
       "donor_ticker": "COST",
       "donor_finding_index": 0,
@@ -2326,11 +2329,11 @@
         "Gross margin percentage decreased three basis points. Excluding the impact of gasoline price inflation on net sales, gross margin percentage was 11.22%, an increase of 10 basis points."
       ],
       "own_quotes": [
-        "Higher tariffs are more likely to adversely impact rather than improve our results."
+        "In March 2026, four class actions were filed against the Company seeking a refund of tariffs paid by the Company under IEEPA that were passed on to members through higher prices."
       ],
       "figures_dropped": 0,
       "verdict": "not_supported",
-      "reason": "The excerpt covers a three basis point gross margin decrease and an 11.22% adjusted margin. It does not show management describing tariffs as more likely to hurt than help, so the statement is not shown.",
+      "reason": "The excerpt covers gross margin basis points and gasoline inflation. It does not mention class actions, pass-through of tariffs to members, or refund claims.",
       "error": "",
       "true_verdict": "supported"
     },

@@ -1,0 +1,26 @@
+{
+  "key": "a258ff82acf26f8c6cc76816",
+  "step": "check",
+  "via": "Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-17T17:54:00+00:00",
+  "response": {
+    "judgements": [
+      {
+        "finding_number": 1,
+        "verdict": "not_supported",
+        "reason": "The excerpt concerns tariff refund class actions and says nothing about gross margin, the 75.0% or 72.4% figures, or product mix, so it does not support the statement."
+      },
+      {
+        "finding_number": 2,
+        "verdict": "not_supported",
+        "reason": "The excerpt concerns IRS litigation for tax years 2007 to 2009 and does not mention gross margin, the 74.9% or 60.5% figures, or the H20 charge."
+      },
+      {
+        "finding_number": 3,
+        "verdict": "not_supported",
+        "reason": "The excerpt covers the IRS litigation designation and gives no gross margin figures, so it cannot show the full-year decline from 75.0% to 71.1% or bear on profit per dollar of sales."
+      }
+    ]
+  }
+}

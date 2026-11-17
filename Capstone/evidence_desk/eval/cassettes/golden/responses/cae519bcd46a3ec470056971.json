@@ -1,0 +1,31 @@
+{
+  "key": "cae519bcd46a3ec470056971",
+  "step": "check",
+  "via": "Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-17T17:52:07+00:00",
+  "response": {
+    "judgements": [
+      {
+        "finding_number": 1,
+        "verdict": "supported",
+        "reason": "The excerpt states membership fee revenue rose 11% in 2026 and gives renewal rates of 92.3% (U.S./Canada) and 89.8% (worldwide), which support both renewal and continued fee growth."
+      },
+      {
+        "finding_number": 2,
+        "verdict": "supported",
+        "reason": "The excerpt says the fee income increase accounted for approximately 30% and 40% of membership income growth in 2026 and 2025, matching the statement's figures and its context stance."
+      },
+      {
+        "finding_number": 3,
+        "verdict": "supported",
+        "reason": "The excerpt describes the renewal rate as a trailing calculation covering renewals 7 to 18 months before the reporting date, which supports the lag point."
+      },
+      {
+        "finding_number": 4,
+        "verdict": "supported",
+        "reason": "The excerpt attributes the worldwide renewal rate's decline to international growth and online/digital memberships, which renew at a slightly lower rate, so it challenges the renewal part of the claim."
+      }
+    ]
+  }
+}

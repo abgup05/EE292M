@@ -1,0 +1,21 @@
+{
+  "key": "cf38de4301c3b32e9504fe6f",
+  "step": "check",
+  "via": "Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-17T17:54:00+00:00",
+  "response": {
+    "judgements": [
+      {
+        "finding_number": 1,
+        "verdict": "partly",
+        "reason": "The cited figures put US and Canada at about 86% of $303.15B revenue, supporting the sales half, but the excerpts are gross margin text that does not show these revenue figures, and nothing addresses profit."
+      },
+      {
+        "finding_number": 2,
+        "verdict": "partly",
+        "reason": "The excerpts name operations in the Philippines, Bangladesh, India and Nigeria, but as bottling or finished product operations since refranchised or sold, not membership warehouses, so they show only a narrower version of the statement."
+      }
+    ]
+  }
+}

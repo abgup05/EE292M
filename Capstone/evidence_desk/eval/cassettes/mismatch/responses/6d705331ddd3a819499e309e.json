@@ -1,0 +1,26 @@
+{
+  "key": "6d705331ddd3a819499e309e",
+  "step": "check",
+  "via": "Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-17T17:54:00+00:00",
+  "response": {
+    "judgements": [
+      {
+        "finding_number": 1,
+        "verdict": "not_supported",
+        "reason": "The excerpts cover a roughly $500 IEEPA tariff payment, a Supreme Court ruling that the tariffs were unlawful, and a statement that higher tariffs hurt results; none shows a 2026 products gross margin increase, a mix effect or refund amounts."
+      },
+      {
+        "finding_number": 2,
+        "verdict": "not_supported",
+        "reason": "The excerpt describes class actions seeking refunds of IEEPA tariffs passed on to members, and says nothing about gross margin volatility or downward pressure."
+      },
+      {
+        "finding_number": 3,
+        "verdict": "not_supported",
+        "reason": "The excerpt concerns IRS litigation over tax years 2007 to 2009 and does not mention competition, price cuts or product margins, so it is not relevant context for the statement."
+      }
+    ]
+  }
+}

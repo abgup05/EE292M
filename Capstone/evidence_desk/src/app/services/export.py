@@ -2,13 +2,23 @@
 
 All status, verdict and decision wording comes from :mod:`app.core.policy`, so
 the export and the page say the same thing. The export computes no verdict; it
-only counts the verified findings the backend already decided per claim, and,
-for a reviewed brief, shows the :class:`~app.core.models.Review` the backend built.
+only counts the verified findings the backend already decided per claim, and
+the distinct filings their excerpts quote, and, for a reviewed brief, shows the
+:class:`~app.core.models.Review` the backend built.
+
+Every piece of text the export did not write itself (excerpts, statements,
+reasons, titles, names, notes) is backslash-escaped so a Markdown viewer shows
+it literally: it cannot become an image fetched when the brief is opened, a
+link, emphasis, code, a heading or a list. Undoing the escapes gives back the
+stored text exactly. The links the export writes itself have percent-encoded
+destinations that cannot end early.
 """
 
 from __future__ import annotations
 
+import re
 from datetime import UTC, datetime
+from urllib.parse import quote as percent_encode
 
 from app.core.claim_change_models import RelevantChange, RunChanges
 from app.core.metric_models import Metric
@@ -51,6 +61,8 @@ QUOTE_CHECKS = {"passed": "found in the filing", "none": "none cited", "failed":
 # The line under a finding whose period check could not place a year it names.
 PERIOD_UNVERIFIED_PREFIX = "Period not found in its evidence: "
 NO_CHECKER = "none"
+# The verdict table's column of distinct SEC filings a claim's verified findings quote.
+FILINGS_QUOTED = "Filings quoted"
 # Statuses whose claims carry a final verdict worth tabulating.
 _DECIDED = (RunStatus.complete, RunStatus.partial)
 
@@ -64,30 +76,76 @@ def _utc(value: datetime | None) -> str:
     return value.astimezone(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
 
 
-def _text(value: str) -> str:
-    """Untrusted inline text (model output, filing text): no raw HTML."""
-    return value.replace("<", "\\<")
+# Untrusted text: everything the export did not write itself (excerpts from a filing or from a
+# page the user added, statements, reasons and notes from a model, titles, names). Each piece is
+# backslash-escaped so a Markdown viewer shows it literally: CommonMark makes a backslash before
+# any ASCII punctuation character stand for that character, and nothing else.
+#
+# Escaped anywhere in a line: the characters that open or close inline syntax (images, links,
+# emphasis, code spans, raw HTML and autolinks, GFM strikethrough and table cells) and the
+# backslash itself.
+_INLINE_ACTIVE = re.compile(r"[\\`*_\[\]<~|]")
+# "&" only where it would start an entity or character reference ("&amp;" would show as "&").
+_REFERENCE = re.compile(r"&(?=#[0-9]{1,7};|#[xX][0-9a-fA-F]{1,6};|[A-Za-z][A-Za-z0-9]{0,31};)")
+# Escaped only at the start of a line (after any indentation): the markers of a heading, a
+# block quote, a list item, a setext underline or a thematic break, and an ordered list's
+# "1." or "1)". Within a line they are text, so ordinary text keeps them unescaped.
+_LINE_MARKER = re.compile(r"^([ \t]*)([#>+=-])", re.MULTILINE)
+_ORDERED_MARKER = re.compile(r"^([ \t]*[0-9]{1,9})([.)])(?=[ \t]|$)", re.MULTILINE)
+# A link destination the export writes keeps the characters a URL may hold and that Markdown
+# does not read in a destination; everything else is percent-encoded, so ")", a space, "<" or a
+# trailing "\" cannot end the link early or turn it into something else.
+_URL_SAFE = "/:?#[]@!$&'*+,;=%~"
+
+
+def _escape(value: str, *, line_start: bool) -> str:
+    """``value`` backslash-escaped so it renders as the text it is.
+
+    Line-leading markers are escaped on every line after the first, and on the first too
+    when ``line_start`` (the text begins a line or a list item of the brief).
+    """
+    escaped = _INLINE_ACTIVE.sub(r"\\\g<0>", value)
+    escaped = _REFERENCE.sub(r"\\&", escaped)
+    if line_start:
+        escaped = _LINE_MARKER.sub(r"\1\\\2", escaped)
+        return _ORDERED_MARKER.sub(r"\1\\\2", escaped)
+    first, newline, rest = escaped.partition("\n")
+    if not newline:
+        return first
+    rest = _ORDERED_MARKER.sub(r"\1\\\2", _LINE_MARKER.sub(r"\1\\\2", rest))
+    return f"{first}\n{rest}"
+
+
+def _text(value: str, *, line_start: bool = False) -> str:
+    """Untrusted text, escaped to render literally (see :func:`_escape`).
+
+    ``line_start`` when the text begins a line of the brief or a list item, where a
+    leading "#", ">", "-", "+", "=" or "1." would otherwise start a block.
+    """
+    return _escape(value, line_start=line_start)
 
 
 def _cell(value: str) -> str:
-    """Text safe inside one Markdown table cell."""
-    return _text(" ".join(value.split())).replace("|", "\\|")
+    """Untrusted text safe inside one Markdown table cell: one line, every "|" escaped."""
+    return _text(" ".join(value.split()))
 
 
 def _link_text(value: str) -> str:
-    return _text(" ".join(value.split())).replace("[", "\\[").replace("]", "\\]")
+    """Untrusted text as the text of a link the export writes: one line, brackets escaped."""
+    return _text(" ".join(value.split()))
 
 
 def _url(value: str) -> str:
-    return value.replace(" ", "%20").replace("(", "%28").replace(")", "%29")
+    """A URL as the destination of a link the export writes; it cannot close the link early."""
+    return percent_encode(value, safe=_URL_SAFE)
 
 
 def _bullets(items: list[str], empty: str) -> list[str]:
-    return [f"- {_text(item)}" for item in items] if items else [f"- {empty}"]
+    return [f"- {_text(item, line_start=True)}" for item in items] if items else [f"- {empty}"]
 
 
 def _blockquote(text: str) -> list[str]:
-    return [f"> {_text(line)}".rstrip() for line in text.splitlines() or [""]]
+    return [f"> {_text(line, line_start=True)}".rstrip() for line in text.splitlines() or [""]]
 
 
 def _verified_for(run: Run, claim: Claim) -> list[Finding]:
@@ -142,20 +200,42 @@ def _header(run: Run, review: Review | None) -> list[str]:
     if run.status == RunStatus.running:
         detail = f" ({_text(run.stage_detail)})" if run.stage_detail else ""
         lines.append(f"- Stage: {run.stage}{detail}")
-    lines += ["", "## Decision", "", _text(run.inputs.decision), ""]
+    lines += ["", "## Decision", "", _text(run.inputs.decision, line_start=True), ""]
     if run.inputs.scope_notes:
         lines += [f"**Scope notes:** {_text(run.inputs.scope_notes)}", ""]
     return lines
 
 
+def _filings_quoted(run: Run, findings: list[Finding]) -> int:
+    """How many distinct SEC filings the excerpts of ``findings`` quote: evidence to source.
+
+    A page the user added is a source but not a filing, and is not counted; nor is an
+    excerpt whose evidence or source is missing from the record.
+    """
+    evidence = {item.id: item for item in run.evidence}
+    filings = {s.id for s in run.sources if s.kind == SourceKind.sec_filing}
+    quoted = {
+        evidence[evidence_id].source_id
+        for finding in findings
+        for evidence_id in finding.evidence_ids
+        if evidence_id in evidence
+    }
+    return len(quoted & filings)
+
+
 def _verdict_table(run: Run, review: Review | None) -> list[str]:
+    """Each claim's verdict, its verified findings by stance, and the filings they quote.
+
+    "Filings quoted" tells a claim judged on one quote from one filing from one judged on
+    many; the page shows the same thing per finding.
+    """
     reviewed = {c.claim_id: c.reviewed_verdict for c in review.claims} if review else {}
     after = " After your review |" if review is not None else ""
     lines = [
         "## Verdicts",
         "",
-        f"| Claim | Verdict |{after} Supporting | Challenging | Context |",
-        f"| --- | --- |{' --- |' if review is not None else ''} ---: | ---: | ---: |",
+        f"| Claim | Verdict |{after} Supporting | Challenging | Context | {FILINGS_QUOTED} |",
+        f"| --- | --- |{' --- |' if review is not None else ''} ---: | ---: | ---: | ---: |",
     ]
     for claim in run.claims:
         findings = _verified_for(run, claim)
@@ -169,6 +249,7 @@ def _verdict_table(run: Run, review: Review | None) -> list[str]:
             verdict = reviewed.get(claim.id)
             cells.append(VERDICT_LABELS[verdict] if verdict else DECISION_LABELS[UNDECIDED])
         cells += [str(count) for count in counts]
+        cells.append(str(_filings_quoted(run, findings)))
         lines.append("| " + " | ".join(cells) + " |")
     return [*lines, ""]
 
@@ -184,7 +265,8 @@ def _excerpt(item: Evidence, sources: dict[str, Source]) -> list[str]:
 def _figure_line(metric: Metric) -> str:
     """ "Gross margin, Quarter ended 2026-07-26: 75.0% (72,142 ÷ 96,221; USD millions)"."""
     formula = f" ({_text(metric.formula)})" if metric.formula else ""
-    return f"{_text(metric.label)}, {_text(metric.period_label)}: {_text(metric.display)}{formula}"
+    label = _text(metric.label, line_start=True)  # it begins a list item in "Reported figures"
+    return f"{label}, {_text(metric.period_label)}: {_text(metric.display)}{formula}"
 
 
 def _newest(metrics: list[Metric], period: str) -> list[Metric]:
@@ -235,7 +317,8 @@ def _checks_line(finding: Finding) -> str:
     else:
         matched = sum(1 for d in statement if not d.endswith(UNMATCHED_SUFFIX))
         numbers = f"{matched} of {len(statement)} matched"
-    withheld = f"; reason: withheld ({', '.join(reason)})" if reason else ""
+    # The reason's numbers are words from the model's text.
+    withheld = f"; reason: withheld ({_text(', '.join(reason))})" if reason else ""
     return f"quote: {quote}; numbers: {numbers}{withheld}"
 
 
@@ -289,7 +372,7 @@ def _claims(run: Run, review: Review | None) -> list[str]:
                 "",
             ]
         if claim.rationale:
-            lines += [_text(claim.rationale), ""]
+            lines += [_text(claim.rationale, line_start=True), ""]
         findings = _verified_for(run, claim)
         if not findings:
             note = VERDICT_NOTES[claim.verdict] if claim.verdict else "This claim was not assessed."
@@ -368,13 +451,18 @@ CHANGE_KINDS = {
     "reworded": "Reworded",
     "numbers_only": "Numbers only",
 }
-READING_LIST_HEADING = "Changed since the filing before each one this run read"
+# What app.services.claim_changes.filings_read compares: the newest 10-K and the newest 10-Q
+# the run read, each with the filing of its form filed before it, and nothing else.
+READING_LIST_HEADING = "Changed since the previous annual and quarterly report"
 READING_LIST_NOTE = (
-    "A reading list, not findings. Each paragraph below changed between a filing this run read "
-    "and the filing of the same form before it. The run did not read that earlier filing: it "
-    "was fetched for this comparison. A paragraph is listed because it shares at least two "
-    "words with the claim or with the search queries the run wrote for it. No model chose or "
-    "judged these, and none counts toward a verdict."
+    "A reading list, not findings. Each paragraph below changed between the newest annual "
+    "report this run read and the annual report filed before it, or between the newest "
+    "quarterly report it read and the quarterly report filed before that. An older quarterly "
+    "report the run read is not compared with the one before it, though it may be the earlier "
+    "filing of the quarterly pair. The earlier filing of a pair may be one the run did not "
+    "read: then it was fetched for this comparison. A paragraph is listed because it shares at "
+    "least two words with the claim or with the search queries the run wrote for it. No model "
+    "chose or judged these, and none counts toward a verdict."
 )
 
 
@@ -383,8 +471,9 @@ def _compared(changes: RunChanges) -> list[str]:
     for pair in changes.compared:
         later, earlier = pair.later, pair.earlier
         lines.append(
-            f"- [{pair.form} for the period ended {later.period_end}]({_url(later.url)}) against "
-            f"[the one for {earlier.period_end}]({_url(earlier.url)})"
+            f"- [{_link_text(pair.form)} for the period ended {_link_text(later.period_end)}]"
+            f"({_url(later.url)}) against "
+            f"[the one for {_link_text(earlier.period_end)}]({_url(earlier.url)})"
         )
     return lines
 
@@ -395,7 +484,8 @@ def _relevant_change(number: int, change: RelevantChange) -> list[str]:
     also = change.also_under
     repeated = f" Also under {_text('; '.join(also))}." if also else ""
     kind = CHANGE_KINDS.get(change.kind, change.kind)
-    head = f"{number}. **{kind}** in the {change.form}, {_text(change.item)}.{shares}{repeated}"
+    where = f"{_text(change.form)}, {_text(change.item)}"
+    head = f"{number}. **{_text(kind)}** in the {where}.{shares}{repeated}"
     if change.pair is not None:
         text, later, earlier = change.pair.after.text, change.pair.after, change.pair.before
         links = (
@@ -413,12 +503,16 @@ def _relevant_change(number: int, change: RelevantChange) -> list[str]:
 
 
 def _reading_list(run: Run, changes: RunChanges) -> list[str]:
-    """The changed paragraphs listed under each claim (``docs/claim-changes.md``)."""
+    """The changed paragraphs listed under each claim (``docs/claim-changes.md``).
+
+    Only the newest annual and the newest quarterly report the run read are compared, each
+    with the filing of its form before it; :data:`READING_LIST_NOTE` says so.
+    """
     lines = [f"## {READING_LIST_HEADING}", "", READING_LIST_NOTE, ""]
     if changes.compared:
         lines += ["Compared:", "", *_compared(changes), ""]
     if changes.notes:
-        lines += [*(f"- {_text(note)}" for note in changes.notes), ""]
+        lines += [*(f"- {_text(note, line_start=True)}" for note in changes.notes), ""]
     by_claim = {found.claim_id: found for found in changes.claims}
     for claim in run.claims:
         found = by_claim.get(claim.id)
@@ -468,7 +562,7 @@ def render_markdown(
         lines += [
             "## Summary",
             "",
-            _text(brief.summary),
+            _text(brief.summary, line_start=True),
             "",
             f"_Summary written by: {_text(brief.summary_origin)}_",
             "",
@@ -485,7 +579,8 @@ def render_markdown(
     lines += ["## Errors", "", *_bullets(run.errors, "None."), ""]
     # The run's own note; a record written before runs kept one gets it from its sources.
     note = brief.provenance_note if brief is not None and brief.provenance_note else ""
-    lines += ["## Provenance", "", _text(note or provenance_note(run.sources)), ""]
+    provenance = note or provenance_note(run.sources)
+    lines += ["## Provenance", "", _text(provenance, line_start=True), ""]
     lines += ["## Withheld findings", ""]
     if run.unsupported_findings:
         lines += [

@@ -1,5 +1,6 @@
 """The Markdown brief: same record and same wording as the API and the page."""
 
+import re
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -50,7 +51,7 @@ from app.core.policy import (
     VERDICT_NOTES,
 )
 from app.core.review import build_review
-from app.services.export import READING_LIST_HEADING, render_markdown
+from app.services.export import READING_LIST_HEADING, READING_LIST_NOTE, render_markdown
 
 URL = "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm"
 CLAIMS = [
@@ -220,15 +221,82 @@ def test_sections_are_in_order() -> None:
 def test_verdict_table_uses_policy_labels_and_counts_verified_findings() -> None:
     table = _between(render_markdown(_complete_run()), "## Verdicts", "## Summary")
     rows = [line for line in table.splitlines() if line.startswith("|")]
-    assert rows[0].replace(" ", "") == "|Claim|Verdict|Supporting|Challenging|Context|"
+    assert rows[0].replace(" ", "") == (
+        "|Claim|Verdict|Supporting|Challenging|Context|Filingsquoted|"
+    )
     assert rows[2].replace(" ", "") == (
-        f"|{CLAIMS[0]}|{VERDICT_LABELS[Verdict.mixed]}|1|1|1|".replace(" ", "")
+        f"|{CLAIMS[0]}|{VERDICT_LABELS[Verdict.mixed]}|1|1|1|1|".replace(" ", "")
     )
     # f5 supports c2 but was withheld: it is not counted.
     assert rows[3].replace(" ", "") == (
-        f"|{CLAIMS[1]}|{VERDICT_LABELS[Verdict.unjudged]}|0|0|1|".replace(" ", "")
+        f"|{CLAIMS[1]}|{VERDICT_LABELS[Verdict.unjudged]}|0|0|1|1|".replace(" ", "")
     )
     assert VERDICT_LABELS[Verdict.not_addressed] in rows[4]
+    assert rows[4].replace(" ", "").endswith("|0|0|0|0|")
+
+
+def _table_rows(markdown: str) -> dict[str, list[str]]:
+    """The verdict table's rows by claim text, each as its stripped cells."""
+    table = _between(markdown, "## Verdicts", "## Summary")
+    rows = [line for line in table.splitlines() if line.startswith("|")]
+    cells = [[cell.strip() for cell in row.strip("|").split("|")] for row in rows]
+    return {row[0]: row for row in [cells[0], *cells[2:]]}
+
+
+def test_the_verdict_table_counts_the_distinct_filings_each_claims_verified_findings_quote() -> (
+    None
+):
+    """One quote from one filing must not look like quotes from several (thin evidence).
+
+    Counted from the run record, evidence to source: distinct SEC filings only, from verified
+    findings only. A page the user added is not a filing; a withheld finding's quote is not
+    counted, and two quotes from one filing count once.
+    """
+    run = _complete_run()
+    annual = _source(
+        id="s4",
+        title="NVIDIA 10-K for the period ended 2026-01-25",
+        form="10-K",
+        accession="0001045810-26-000021",
+        period_end="2026-01-25",
+        published_date="2026-02-25",
+    )
+    page = _source(
+        id="s5",
+        kind=SourceKind.public_html,
+        title="Investor page",
+        url="https://investor.example.com/q",
+        form=None,
+        accession=None,
+    )
+    run.sources += [annual, page]
+
+    def quote(evidence_id: str, source_id: str, finding_id: str) -> Evidence:
+        return Evidence(
+            id=evidence_id,
+            source_id=source_id,
+            finding_id=finding_id,
+            excerpt=f"Quote {evidence_id}",
+            locator="Item 7",
+            start=0,
+        )
+
+    run.evidence += [
+        quote("e5", "s4", "f3"),
+        quote("e6", "s5", "f4"),
+        quote("e7", "s4", "f5"),
+        quote("e8", "s1", "f1"),
+    ]
+    by_id = {finding.id: finding for finding in run.findings}
+    by_id["f3"].evidence_ids.append("e5")
+    by_id["f4"].evidence_ids.append("e6")
+    by_id["f1"].evidence_ids.append("e8")
+    run.unsupported_findings[0].evidence_ids = ["e7"]  # f5, c2: withheld
+    rows = _table_rows(render_markdown(run))
+    column = rows["Claim"].index("Filings quoted")
+    assert rows[CLAIMS[0]][column] == "2"  # s1 (twice) and s4
+    assert rows[CLAIMS[1]][column] == "1"  # s1; the page and the withheld quote do not count
+    assert rows[CLAIMS[2]][column] == "0"
 
 
 def test_summary_names_who_wrote_it() -> None:
@@ -522,11 +590,11 @@ def test_the_verdict_table_gains_the_reviewed_verdict() -> None:
     table = _between(render_markdown(run, _review_of(run)), "## Verdicts", "## Summary")
     rows = [line for line in table.splitlines() if line.startswith("|")]
     assert rows[0].replace(" ", "") == (
-        "|Claim|Verdict|Afteryourreview|Supporting|Challenging|Context|"
+        "|Claim|Verdict|Afteryourreview|Supporting|Challenging|Context|Filingsquoted|"
     )
     # c1: f1 (supports) accepted and f2 (challenges) rejected, so supported.
     assert rows[2].replace(" ", "") == (
-        f"|{CLAIMS[0]}|{VERDICT_LABELS[Verdict.mixed]}|{VERDICT_LABELS[Verdict.supported]}|1|1|1|"
+        f"|{CLAIMS[0]}|{VERDICT_LABELS[Verdict.mixed]}|{VERDICT_LABELS[Verdict.supported]}|1|1|1|1|"
     ).replace(" ", "")
     # c2 has no decision yet.
     assert f"| {DECISION_LABELS[UNDECIDED]} |" in rows[3]
@@ -585,7 +653,7 @@ def test_the_export_says_which_findings_were_counted_as_context() -> None:
     # The table counts each finding as the verdict rule counted it.
     table = _between(markdown, "## Verdicts", "## Summary")
     row = [line for line in table.splitlines() if line.startswith(f"| {CLAIMS[0]}")][0]
-    assert row.replace(" ", "").endswith("|1|0|2|")
+    assert row.replace(" ", "").endswith("|1|0|2|1|")
 
 
 def test_the_export_uses_the_runs_own_provenance_note() -> None:
@@ -612,7 +680,8 @@ def test_a_withheld_reason_is_not_counted_among_the_statements_numbers() -> None
     claims = _between(render_markdown(run), "## Claims", "## Unknowns")
     f1_block = _between(claims, "Statement f1.", "Statement f2.")
     assert "numbers: 2 of 2 matched; reason: withheld (65%)" in f1_block
-    assert "Rationale: [Reason withheld" in f1_block
+    # The rationale is untrusted text, escaped; a viewer shows "[Reason withheld".
+    assert "Rationale: \\[Reason withheld" in f1_block
 
 
 # The reading list of changed paragraphs under each claim (docs/claim-changes.md)
@@ -694,10 +763,10 @@ def test_the_brief_has_no_reading_list_unless_the_changes_are_given() -> None:
 
 def test_the_reading_list_sits_after_the_claims_and_says_what_it_is() -> None:
     markdown = render_markdown(_complete_run(), changes=_run_changes())
-    assert READING_LIST_HEADING == "Changed since the filing before each one this run read"
     section = _between(markdown, f"## {READING_LIST_HEADING}", "## Unknowns")
     assert markdown.index("## Claims") < markdown.index(f"## {READING_LIST_HEADING}")
-    assert "The run did not read that earlier filing" in section
+    assert READING_LIST_NOTE in section
+    assert "may be one the run did not read" in section
     assert "the claim or with the search queries the run wrote for it" in section
     assert "A reading list, not findings" in section
     assert "No model chose or judged" in section and "counts toward a verdict" in section
@@ -706,6 +775,20 @@ def test_the_reading_list_sits_after_the_claims_and_says_what_it_is() -> None:
         f"[the one for 2025-01-26]({EARLIER_FILING})"
     ) in section
     assert "- No earlier 10-Q was found to compare with." in section
+
+
+def test_the_reading_list_says_which_filings_are_compared_and_no_more() -> None:
+    """``filings_read`` keeps the newest 10-K and the newest 10-Q a run read, and no other.
+
+    A default run reads one 10-K and two 10-Qs, so the older 10-Q is never compared with the
+    one before it; the heading and the note said every filing the run read was.
+    """
+    assert READING_LIST_HEADING == "Changed since the previous annual and quarterly report"
+    assert "newest annual report" in READING_LIST_NOTE
+    assert "newest quarterly report" in READING_LIST_NOTE
+    assert "filed before" in READING_LIST_NOTE
+    assert "An older quarterly report the run read is not compared" in READING_LIST_NOTE
+    assert "each one" not in READING_LIST_NOTE and "each filing" not in READING_LIST_NOTE
 
 
 def test_each_claim_lists_its_changed_paragraphs_with_kind_place_words_and_links() -> None:
@@ -773,3 +856,102 @@ def test_a_finding_whose_period_is_not_in_its_evidence_says_so_and_a_passed_one_
     ) in f1
     assert "fiscal 2026" not in f1
     assert "Period" not in f2 and "fiscal" not in f2
+
+
+# Untrusted text renders literally (an excerpt is quoted from a filing or from a page the user
+# added; a Markdown viewer must not turn it into an image, a link, emphasis or a heading)
+
+HOSTILE_EXCERPT = "\n".join(
+    [
+        "# Not a heading",
+        "See ![x](http://host/p.png) and [x](http://host), *bold*, _x_ and `code` \\ here.",
+        "> not a quote",
+        "- not an item",
+        "+ not an item",
+        "1. not a list",
+        "&amp; <b>raw</b> ~~struck~~ a | b",
+    ]
+)
+ORDINARY_EXCERPT = "Data Center revenue was $41.1 billion, up 56% (from $26.3 billion) in Q2, 2026."
+# CommonMark: a backslash before any ASCII punctuation character stands for that character.
+_ESCAPED = re.compile(r"\\([!-/:-@\[-`{-~])")
+
+
+def _unescape(markdown: str) -> str:
+    """Undo the export's backslash escapes: what a CommonMark viewer shows as text."""
+    return _ESCAPED.sub(r"\1", markdown)
+
+
+def _quoted(markdown: str, after: str) -> list[str]:
+    """The lines of the first blockquote after ``after``, without their "> " marker."""
+    lines = markdown.split(after, 1)[1].splitlines()
+    start = next(i for i, line in enumerate(lines) if line.startswith(">"))
+    quote = []
+    for line in lines[start:]:
+        if not line.startswith(">"):
+            break
+        quote.append(line.removeprefix(">").removeprefix(" "))
+    return quote
+
+
+def _run_quoting(excerpt: str) -> Run:
+    run = _complete_run()
+    run.evidence[0].excerpt = excerpt  # e1, quoted under f1
+    return run
+
+
+def test_an_excerpt_cannot_become_an_image_a_link_emphasis_code_or_a_heading() -> None:
+    quote = _quoted(render_markdown(_run_quoting(HOSTILE_EXCERPT)), "#### f1.")
+    assert quote[0] == "\\# Not a heading"
+    assert "See !\\[x\\](http://host/p.png) and \\[x\\](http://host)," in quote[1]
+    assert "![x](" not in quote[1] and "[x](http://host)" not in quote[1]
+    assert "\\*bold\\*" in quote[1] and "\\_x\\_" in quote[1] and "\\`code\\`" in quote[1]
+    assert "\\\\ here" in quote[1]
+    assert quote[2] == "\\> not a quote"
+    assert quote[3] == "\\- not an item" and quote[4] == "\\+ not an item"
+    assert quote[5] == "1\\. not a list"
+    assert "\\&amp;" in quote[6] and "\\<b>" in quote[6] and "\\~\\~struck" in quote[6]
+
+
+def test_undoing_the_escapes_gives_back_the_exact_stored_excerpt() -> None:
+    quote = _quoted(render_markdown(_run_quoting(HOSTILE_EXCERPT)), "#### f1.")
+    assert _unescape("\n".join(quote)) == HOSTILE_EXCERPT
+
+
+def test_an_ordinary_excerpt_is_written_unchanged() -> None:
+    quote = _quoted(render_markdown(_run_quoting(ORDINARY_EXCERPT)), "#### f1.")
+    assert quote == [ORDINARY_EXCERPT]
+
+
+def test_every_piece_of_untrusted_text_is_escaped_not_only_excerpts() -> None:
+    """Statements, reasons, titles, company names, notes: anything the export did not write."""
+    run = _complete_run()
+    assert run.company is not None and run.brief is not None
+    run.company.name = "*NVIDIA*"
+    run.claims[0].text = "Revenue is [growing](http://host)"
+    run.claims[0].rationale = "_Because_ `it` is"
+    finding = run.findings[0]
+    finding.statement = "![s](http://host/s.png)"
+    finding.rationale = "see [x](http://host)\n# second line"
+    run.brief.summary = "Fine.\n# Injected heading\n- injected item"
+    run.sources[0].title = "Title ](http://host) [x"
+    run.errors = ["1. not a list"]
+    markdown = render_markdown(run)
+    assert markdown.splitlines()[0] == "# Evidence Desk brief: \\*NVIDIA\\* (NVDA)"
+    assert "Revenue is \\[growing\\](http://host)" in markdown
+    assert "[growing](" not in markdown and "![s](" not in markdown
+    assert "\\_Because\\_ \\`it\\` is" in markdown
+    assert "- Rationale: see \\[x\\](http://host)\n\\# second line" in markdown
+    summary = _between(markdown, "## Summary", "_Summary written by")
+    assert "\n\\# Injected heading\n\\- injected item" in summary
+    assert "Title \\](http://host) \\[x" in markdown
+    assert "- 1\\. not a list" in markdown
+
+
+def test_the_links_the_export_writes_still_work_and_a_url_cannot_close_one_early() -> None:
+    run = _complete_run()
+    run.sources[1].url = "https://investor.example.com/a b(c)\\"
+    table = _between(render_markdown(run), "## Sources", "## Coverage limits")
+    assert "[Investor page](https://investor.example.com/a%20b%28c%29%5C)" in table
+    claims = _between(render_markdown(run), "## Claims", "## Unknowns")
+    assert f"[NVIDIA 10-Q for the period ended 2026-07-26]({URL}#:~:text=Data%20Center)" in claims

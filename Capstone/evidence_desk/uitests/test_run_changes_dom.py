@@ -1,4 +1,4 @@
-"""Browser-level checks of the run view's "Changed since the filing before each one this run read" blocks.
+"""Browser-level checks of the run view's "Changed since the previous annual and quarterly report" blocks.
 
 `make uitest` renders /?sample, which loads src/web/sample-run.json and, beside it,
 src/web/sample-run-changes.json (a RunChanges record), and dumps the DOM to

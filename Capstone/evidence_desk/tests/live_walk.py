@@ -120,7 +120,7 @@ def main() -> int:
     )
     expect(
         bool(linked["compared"]) or bool(linked["notes"]),
-        "each filing was compared with the one before it, or a note says why not",
+        "the newest report of each form was compared with the one before it, or a note says why",
     )
     for claim in linked["claims"]:
         print(

@@ -1,8 +1,9 @@
 """Record, for the page's sample run, which changed paragraphs bear on each claim.
 
 ``python -m tests.sample_run_changes [--out src/web/sample-run-changes.json]`` loads the
-recorded run of ``src/web/sample-run.json``, asks SEC EDGAR for the filing before each
-filing that run read (through the project's client and filing cache), compares them and
+recorded run of ``src/web/sample-run.json``, takes the newest annual and the newest quarterly
+report that run read, asks SEC EDGAR for the filing of the same form before each (through
+the project's client and filing cache), compares them and
 ranks the changed paragraphs against each claim, exactly as
 ``GET /api/runs/{id}/changes`` does. It writes ``{"note", "changes"}`` for the page's
 sample mode and prints one line per claim. No model is involved. Needs the network.
@@ -25,9 +26,10 @@ from app.sources.edgar import EdgarClient
 SAMPLE_RUN = WEB_DIR / "sample-run.json"
 DEFAULT_OUT = WEB_DIR / "sample-run-changes.json"
 NOTE = (
-    "Recorded on {day} for the sample run beside it: each filing that run read, compared "
-    "with the filing of the same form before it (fetched from SEC EDGAR), and every changed "
-    "paragraph ranked against each claim by keyword overlap. No model is involved."
+    "Recorded on {day} for the sample run beside it: the newest annual and the newest "
+    "quarterly report that run read, each compared with the filing of the same form before it "
+    "(from SEC EDGAR or the filing cache), and every changed paragraph ranked against each "
+    "claim by keyword overlap. No model is involved."
 )
 
 

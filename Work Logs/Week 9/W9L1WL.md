@@ -29,7 +29,7 @@ Versions 2 to 5 were all built on 17 November. The tags mark the order of the wo
 4. Click an "open in filing" link in a real browser.
 5. Read the code, starting with `core/gate.py`, `core/numcheck.py` and `core/policy.py`: the three files the draft's claims rest on.
 6. The reviews of colleagues' capstones that I owe for five sessions, and asking a colleague to review this one.
-7. The lecture feedback for each session since 19 October, in my own words.
+7. The lecture feedback for each session since 19 October, in my own words. Each hand-in has a draft by the session, written from the slides and from applying them; it was not at the lectures, so each is mine to rewrite.
 
 **Status**
 

@@ -19,6 +19,8 @@ Look hardest at the claims the project makes about itself:
 - that every number in a finding is in its quotes or its cited figures;
 - that the reported figures are right;
 - that a run with thin evidence says so;
+- that every paragraph the filing comparison lists is an exact span of its filing, sits in the
+  class it is given, and is counted truly;
 - that the measured results in the README were measured.
 
 For each, try to construct the input, the filing or the code change under which the claim

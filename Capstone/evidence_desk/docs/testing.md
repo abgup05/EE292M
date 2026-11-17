@@ -160,6 +160,21 @@ names and not told they were planted). A swapped quote is the easy kind of misma
 another topic. A quote on the right topic that does not carry the statement is the hard kind,
 and nothing here measures it.
 
+## The two features of versions 8 and 9
+
+| Wrong program | Fails | Seen failing as |
+| --- | --- | --- |
+| A changed paragraph listed under a claim it shares no words with (`MIN_SHARED_TERMS` 2 → 0 in `core/claim_changes.py`) | 7 tests of `tests/test_claim_changes.py`, among them the plan's exit check `::test_exit_check_a_planted_china_paragraph_reaches_the_china_claim_only` | run by the session that built it; restored |
+| The run's filing compared with the wrong earlier one (the oldest listed, not the one just before) | `::test_the_run_filing_is_compared_with_the_one_before_it_not_with_the_newest` | the same way |
+| A paragraph printed under two Items taking two of a claim's five places | the two tests on repeats in `tests/test_claim_changes.py` | written first, failed with the second copy listed |
+| No route for a run's changes, or its answer never kept | `tests/test_api.py::test_the_changes_of_a_run_are_listed_under_each_of_its_claims` and the two beside it | route renamed and the cache write removed: 3 failed |
+| A tagged number read without its `scale` | 25 of the 67 tests of `tests/test_ixbrl.py` and `tests/test_breakdowns.py`, among them the answer key against the filing's text | run by the session that built it; restored |
+| A value placed by the filing's fiscal year and not by its context's dates; a quarter mixed with year to date | `tests/test_breakdowns.py::test_an_annual_report_gives_three_fiscal_years_newest_first`, `::test_a_quarterly_report_gives_quarters_and_never_year_to_date` | written first |
+| No route for the breakdowns | the four tests on it in `tests/test_api.py` | route renamed: 4 failed |
+| A page that draws a breakdown cell it computed, or a changed paragraph with a stance mark | `uitests/test_breakdowns_dom.py`, `uitests/test_run_changes_dom.py` | each new assertion under its own deliberate break, by the session that built the page |
+
+What these cannot see: whether a changed paragraph listed under a claim bears on it, and whether a breakdown's label is the company's. Both are stated on the page.
+
 ## How long the gate takes
 
 Measured on this laptop on 17 November 2026 at version 8, with the Docker image's layers already

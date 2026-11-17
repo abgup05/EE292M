@@ -4,11 +4,11 @@ Evidence Desk tests the claims of an investment thesis against a company's own S
 
 Two things are checked mechanically by the backend before anything reaches the page or the Markdown export: every quote is found word for word in a passage that was shown to the engine, and every number in a finding or in its reason is matched to one of its quotes or to a reported figure it cites. A third check is a model's: a second model, which is not shown the first one's reasoning, reads each finding's evidence and says whether it supports the statement. That is still a model's reading, of the same family as the first, so you accept or reject each finding yourself, and a second verdict follows, by the same rule, from the findings you accepted. A thesis can be saved and run again when a new filing arrives; the page then shows which verdicts moved.
 
-It also shows what a company added, removed and reworded between its two latest annual or quarterly reports, and, under each claim of a run, which of the paragraphs that changed in the filings it read share words with that claim: a reading list for the question the tool exists for, what is new since the last filing.
+It also shows what a company added, removed and reworded between its two latest annual or quarterly reports, and, under each claim of a run, which of the paragraphs that changed in the filings it read share words with that claim: a reading list for the question the tool exists for, what is new since the last filing. And it reads from a filing's own tagged facts the figures a thesis is usually about and the SEC's company-facts data does not carry: revenue by segment, by product and by geography, and each large customer's share.
 
 "Word for word" means a span of the text this tool extracted from the filing. Table rows are flattened in that text, and a quote is located under the Item and sub-heading the parser found.
 
-This is version 8 (tag `capstone-v8`) of the capstone. It joins the tool's two halves: under each claim of a run it lists what changed in the filings that run read ([`docs/claim-changes.md`](docs/claim-changes.md)). It also builds in a fifth blind review ([`docs/reviews/review-5-message-interface-tests.md`](docs/reviews/review-5-message-interface-tests.md)). The plan and the milestones are in [`../README.md`](../README.md), the design is in [`ARCHITECTURE.md`](ARCHITECTURE.md), and the tests are described in [`docs/testing.md`](docs/testing.md).
+This is version 9 (tag `capstone-v9`) of the capstone. Version 8 joined the tool's two halves: under each claim of a run it lists what changed in the filings that run read ([`docs/claim-changes.md`](docs/claim-changes.md)), and it built in a fifth blind review. Version 9 reads revenue by segment, product and geography and customers' shares from each filing's own tagged facts ([`docs/breakdowns.md`](docs/breakdowns.md)). The plan and the milestones are in [`../README.md`](../README.md), the design is in [`ARCHITECTURE.md`](ARCHITECTURE.md), and the tests are described in [`docs/testing.md`](docs/testing.md).
 
 ![A recorded run: verdicts first, then the summary and the reported figures](docs/screenshots/sample-run.png)
 
@@ -24,7 +24,7 @@ make down
 
 - **Without any key** the app works on real filings: the deterministic engine quotes the sentences that best match each claim and judges no stance, so claims read "passages found, not judged". **Reported figures only** needs just a ticker.
 - **With `ANTHROPIC_API_KEY`** Claude plans the retrieval queries, drafts findings with a stance and writes the summary. The same checks apply to everything it returns. This path has not run through the API since version 1 (22 October): both keys tried on 17 November were refused for lack of credit, so every model-backed result below comes from recorded answers.
-- **Without the network or a key** you can still see a judged run: open <http://127.0.0.1:8766/?sample>, or run `make replay`. <http://127.0.0.1:8766/?sample=changes> shows a recorded comparison of NVIDIA's two latest annual reports. Both use three recorded NVIDIA filings and model answers replayed from a cassette ([`docs/cassettes.md`](docs/cassettes.md)).
+- **Without the network or a key** you can still see a judged run: open <http://127.0.0.1:8766/?sample>, or run `make replay`. <http://127.0.0.1:8766/?sample=changes> shows a recorded comparison of NVIDIA's two latest annual reports, and <http://127.0.0.1:8766/?sample=breakdowns> the tagged breakdowns of the latest one. Both use three recorded NVIDIA filings and model answers replayed from a cassette ([`docs/cassettes.md`](docs/cassettes.md)).
 - **With the network and no key**, `make up-recorded` starts the app with those recorded answers: **Load example**, then **Test the thesis**, gives the judged run on filings fetched live, and you can review it and save it. This works while NVIDIA's reported facts are as they were on 17 November 2026; after its next filing the prompts will no longer match the recording, and the run will fall back to the keyless engine and say so.
 
 ## What you see
@@ -39,6 +39,7 @@ make down
 8. **Download Markdown brief** exports the verified record, followed by the reading list of item 9, set apart; once every finding is decided, **Download reviewed brief** includes your decisions.
 9. **Changed in the filings since the one before**, under each claim, lists the paragraphs that were added, removed, reworded or changed in their figures in the filings this run read, when they share at least two words with the claim: the five best by keyword overlap, each linked into its filing. It is a reading list. No model chose or judged these, none counts toward the verdict, and the block is marked as a keyword match that nobody has checked.
 10. **What changed in the filings** needs only a ticker. It compares the latest annual report with the one before it (or the latest quarterly report with the previous one), Item by Item: how many paragraphs are unchanged, changed only in their numbers, reworded, added and removed, with short lines and table rows counted apart. Under each Item it names the sub-headings found in only one filing and lists the paragraphs, each linked into its own filing: the added and the removed ones, the reworded ones with the changed words marked, and those whose figures alone moved with the figures marked.
+11. **Segments and customers (tagged facts)** needs only a ticker too. It reads the latest annual or quarterly report's own tagged numbers into tables: revenue by business segment, by product or service and by geography, and customers' shares of revenue, each with its change from the year before and a line saying whether the members add up to the filing's tagged total. The labels are made from tag names and are not the company's own.
 
 ![What changed between NVIDIA's two latest annual reports: counts by Item, then the paragraphs, with changed words marked](docs/screenshots/sample-changes.png)
 
@@ -176,6 +177,18 @@ The method's one threshold (how similar two paragraphs must be to count as rewor
 
 **Changes that bear on each claim** (`make sample-run-changes`; [`docs/claim-changes.md`](docs/claim-changes.md)). For the recorded example, on 17 November: the annual report for fiscal 2026 against the one for fiscal 2025 and the second-quarter report of fiscal 2027 against the first hold 802 changed paragraphs. Between 126 and 276 distinct changes share two words with each of the five claims; the five best are listed. Under "Gross margin is expanding" the first is a sentence the newest annual report added: "Gross margin decreased in fiscal year 2026 as our business model transitioned from offering Hopper HGX systems to Blackwell full-scale datacenter solutions." Under the claim about suppliers the first is a paragraph about vendor questionnaires under the cybersecurity Item: keyword overlap is not relevance. Nobody has judged these lists, and no number here says how often they help.
 
+**Tagged breakdowns** (`make breakdowns`; [`docs/breakdowns.md`](docs/breakdowns.md)), from filings fetched live on 17 November. NVIDIA's annual report for the year ended 25 January 2026, as the filing tags it:
+
+| Revenue, USD millions | Fiscal 2026 | Change | Fiscal 2025 |
+| --- | ---: | ---: | ---: |
+| Data Center | 193,737 | +68.2% | 115,186 |
+| Gaming | 16,042 | +41.3% | 11,350 |
+| United States | 149,617 | +93.1% | 77,482 |
+| China including Hong Kong | 19,677 | -21.4% | 25,048 |
+| Total | 215,938 | +65.5% | 130,497 |
+
+One direct customer is tagged at 22% of revenue and another at 14%. The tests check these against the filing's own text: the table row "Data Center $193,737 $115,186", and the sentences "Data Center revenue for fiscal year 2026 was up 68% from a year ago" and "sales to one direct customer represented 22% of total revenue and sales to another direct customer represented 14%". That shows the reader attaches each number to the right member, period and scale; it does not prove the company's number. The same command ran on the annual and the quarterly reports of all eight probe companies ([`docs/evidence/breakdowns-eight-companies.md`](docs/evidence/breakdowns-eight-companies.md)): wherever a filing tags a total, every breakdown's members add up to it. No person has compared a table with the printed one.
+
 **The live application, end to end** (`make live-walk`; output in `docs/evidence/`): the running app over HTTP, filings fetched live, recorded answers. The walk fails unless the run is judged. It will fail after NVIDIA's next filing, when the recording no longer matches.
 
 **Backup and restore** (`make backup`, `make restore-check`; output in `docs/evidence/`): a restore of the newest backup is compared with the live record, every run, decision and thesis. Same disk, same machine.
@@ -195,6 +208,7 @@ make eval ARGS="run --variant claim"   # score retrieval on the golden set
 make backup         # copy the record to backups/; make restore-check proves it restores
 make changes ARGS="NVDA --form 10-K"    # what changed between a company's two latest annual reports
 make changes ARGS="AAPL --form 10-K --review 0.44"   # the same, plus the pairs to read near the threshold
+make breakdowns ARGS="NVDA --form 10-K"   # segments, products, geographies and customers from the filing's tags
 make screenshots    # renders the page into docs/screenshots, for a person to look at
 ```
 
@@ -207,6 +221,7 @@ make screenshots    # renders the page into docs/screenshots, for a person to lo
 - **The meaning check is a second model of the same family.** It reads without the first model's reasoning, but it is not an independent party. On the golden set it withheld 1 of 77 findings and changed no verdict. Shown 152 planted mismatches (real quotes moved under a statement they do not belong to) it rejected 149 and agreed with none; that is the easy kind of mismatch, and a quote on the right topic that does not carry the statement has not been tried.
 - **Retrieval decides what the engine can see.** With the planner's queries the passage that matters is among the eight shown in 18 of 24 golden cases. In the other six a claim is judged on weaker evidence, and no later check can see what retrieval left out.
 - **The list of changes under a claim is a keyword match.** A changed paragraph is listed because it shares two words with the claim and ranks among the five best by BM25. One that bears on the claim in other words is not found, and one that merely shares vocabulary is. No person and no model has judged the lists.
+- **The tagged breakdowns are shown, not used.** A finding cannot cite them yet, so they cannot support or challenge a claim; offering them to the engine would change its prompt and every recorded answer. Their labels are made from tag names ("Wearables Homeand Accessories"). Outside NVIDIA's annual report the only check is that members add up to the tagged total, which would not notice a number under the wrong label.
 - **"Complete" is not a measure of evidence.** A run is complete when every stage ran on everything it was given: every filing read, no finding withheld, every claim judged, no fallback, no time limit, and the meaning check ran. A verdict in a complete run can still rest on one short quote from one filing; how many findings and filings stand behind each verdict is shown per claim, and no threshold on that is applied.
 - **A quote is verified as present, not as relevant.** The quote check finds the words in a passage the engine was shown; the number check matches figures. Whether the quote bears on the statement is judged only by the second model and by you.
 - **The golden set is a model's reading until a person has read it.**

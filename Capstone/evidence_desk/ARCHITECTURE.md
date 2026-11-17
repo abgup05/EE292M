@@ -1,6 +1,6 @@
 # Architecture
 
-Evidence Desk (version 0.8.0) tests an equity analyst's thesis claims against the company's own SEC filings and shows,
+Evidence Desk (version 0.9.0) tests an equity analyst's thesis claims against the company's own SEC filings and shows,
 per claim, the verbatim passages and figures that support or challenge it. A reviewer can accept or reject each
 finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the brief; `docs/reviews/` the review.
 
@@ -22,6 +22,7 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/core/links.py, text.py   text-fragment links to an excerpt; word tokens and sentence spans
     src/app/core/filing_diff.py what was added, removed, reworded or renumbered between two filings, Item by Item; change_models.py is its pure data
     src/app/core/claim_changes.py   which changed paragraphs of a run's filings share words with each claim (BM25 and a rule of two shared terms; no model); claim_change_models.py is its pure data
+    src/app/core/breakdowns.py  builds revenue by segment, product and geography and customers' shares from one filing's tagged facts; checks members against the tagged total; breakdown_models.py is its pure data
     src/app/core/facts.py       FactBook: values from XBRL company facts, placed by their dates
     src/app/core/metrics.py     computes the metrics report from facts; metric_models.py is its pure data
     src/app/core/numcheck.py    the numeric check: each number a statement writes is in what it cites
@@ -30,6 +31,7 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/sources/filing.py   splits a 10-K/10-Q into Part and Item sections
     src/app/sources/http.py     bounded fetch of a public page, every redirect hop revalidated
     src/app/sources/urls.py, web.py, xbrl.py   public-URL validation; page text; the company-facts URL and body
+    src/app/sources/ixbrl.py    reads a filing's own tagged numbers (inline XBRL: contexts, units, ix:nonFraction) with a targeted scan; what it cannot read is counted with its reason
     src/app/retrieval/chunk.py, bm25.py   sections into passages (exact substrings); Okapi BM25 scoring
     src/app/retrieval/search.py ranks a run's passages for one claim (top 8; at most 5 per source when there are several)
     src/app/engines/claude.py   Claude engine: builds each request and parses each answer
@@ -43,17 +45,18 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/services/export.py  the Markdown brief, plain or with the reviewer's decisions
     src/app/services/filing_changes.py  selects a company's two latest filings of one form, reads them through the cache, compares them
     src/app/services/claim_changes.py   for a run: the filing before each filing it read, the two comparisons, the ranking per claim; a comparison that cannot be made is a note, never an error
+    src/app/services/breakdowns.py   the latest filing of a form, fetched and read into breakdowns
     src/app/store.py            SQLite: Store (the record) and FilingCache (disposable)
     src/app/backup.py           backs up the record; checks that the newest backup restores
     src/app/wiring.py           composition root: reads the environment, builds collaborators
     src/app/api.py              HTTP routes and static files
     src/app/cli.py              command line onto the same use case
-    src/app/demo.py, probe.py, changes.py, record_fixtures.py, record_facts.py   live demo; live parser check; the filing comparison from the command line; fixture recorders
+    src/app/demo.py, probe.py, changes.py, breakdowns.py, record_fixtures.py, record_facts.py   live demo; live parser check; the filing comparison and the tagged breakdowns from the command line; fixture recorders
     src/app/evaluation/golden.py, corpus.py   load and validate the golden set; the filings it is measured on, pinned by hash
     src/app/evaluation/retrieval_eval.py  scores where the right passage ranks; the variant registry
     src/app/evaluation/cli.py   `python -m app.evaluation`: validate, run, fetch, pin, show, plan, generate
     src/app/evaluation/companies.py, planning.py, generation_eval.py   pinned figures, planned queries, answer scoring
-    src/web/                    index.html, app.js, styles.css, sample-run.json, sample-synthetic.json, sample-changes.json, sample-run-changes.json
+    src/web/                    index.html, app.js, styles.css, sample-run.json, sample-synthetic.json, sample-changes.json, sample-run-changes.json, sample-breakdowns.json
     eval/                       the golden set, its pinned filings, cache/ and results/; README.md
     tests/                      offline tests, fakes.py (EDGAR, pages, engine, clock), smoke.py; replay_run.py, golden_run.py, speed_run.py
     tests/live_walk.py          the live end-to-end walk over HTTP; tests/golden/ the tripwire and replayed verdicts
@@ -186,6 +189,7 @@ finding, 409 while running, 422 withheld finding); `GET .../export.md?reviewed=t
   set (`make eval ARGS='run --variant NAME'`) before it is wired into `retrieval/search.py` or the pipeline.
 - **A change to how two filings are compared** (the threshold for "reworded", what counts as a table row): `core/filing_diff.py`, whose constants sit at its top, with `tests/test_filing_diff.py`. The comparison is separate from a thesis run: `GET /api/companies/{ticker}/changes` and `make changes` both call `services/filing_changes.filing_changes`. Read the pairs a new threshold adds before keeping it (`docs/filing-changes.md`).
 - **A change to which changed paragraphs are listed under a claim** (how many words must be shared, how many are listed, how repeats are folded): `core/claim_changes.py`, whose two constants sit at its top, with `tests/test_claim_changes.py`. It is computed on demand by `GET /api/runs/{id}/changes` from the filings the run read and is not part of the run record, so the tripwire does not move. After a change, run `make sample-run-changes` and read what each claim now lists (`docs/claim-changes.md`).
+- **A change to the breakdowns** (another axis, another revenue concept, a new shape of nested members): `core/breakdowns.py`, whose specifications and constants sit at its top, with `tests/test_breakdowns.py`; a number format the reader does not know: `sources/ixbrl.py` with `tests/test_ixbrl.py`. Start from a failing test built on a small excerpt of the real filing, then run `make breakdowns` on the eight probe companies, annual and quarterly, and check that every breakdown still adds up to its tagged total (`docs/breakdowns.md`).
 
 ## The boundary
 

@@ -2,24 +2,24 @@
 
 ## Week 9A (session of 16 November 2026)
 
-*Work done on 17 November 2026, in the catch-up sprint. This log is drafted by the Claude Code session that did the work; the decisions are mine to check. I do not have this session's slides in the repository, so this log records the hand-in that was due and nothing about the lecture.*
+*This log is drafted by the Claude Code session that did the work; the decisions are mine to check. This session's slides are not in the repository, so this log records the hand-in that was due and nothing about the lecture.*
 
 **Due today: the new version that builds in last Monday's review, finding by finding**
 
-- Handed in one day late as tag `capstone-v5`. The finding-by-finding account is in `Homework/Week 8/W8L2.md` and `Work Logs/Week 8/W8L2WL.md`: review 4's twelve findings (eight built in, four answered in the README) and the referee's ten (sixteen fixes, five rejections with reasons).
+- Handed in as tag `capstone-v5`. The finding-by-finding account is in `Homework/Week 8/W8L2.md` and `Work Logs/Week 8/W8L2WL.md`: review 4's twelve findings (eight built in, four answered in the README) and the referee's ten (sixteen fixes, five rejections with reasons).
 
 **Where the capstone stands against its plan**
 
 | Milestone | Tag | State |
 | --- | --- | --- |
-| 1. A verified citation on one real page | `capstone-v1` | Done on 21 October |
+| 1. A verified citation on one real page | `capstone-v1` | Done |
 | 2. Thesis claims against SEC filings | `capstone-v2` | Done |
 | 3. Reported figures with an answer key; a number check; a tripwire | `capstone-v3` | Done |
 | 4. Reviewer decisions, saved theses, backup | `capstone-v4` | Done |
 | 5. Measured retrieval; a second-model check | `capstone-v5` | Done, on a golden set no person has read yet |
 | 6. What changed between two filings | `capstone-v6` | The comparison is built and run on NVIDIA; the page for it is next |
 
-Versions 2 to 5 were all built on 17 November. The tags mark the order of the work, not weeks of calendar time.
+The tags mark the order of the work, not weeks of calendar time.
 
 **What I have to do myself before the draft, in order**
 

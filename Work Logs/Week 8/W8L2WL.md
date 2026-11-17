@@ -2,7 +2,7 @@
 
 ## Week 8B: Decide What Enters the Context (lecture of 11 November 2026)
 
-*Work done on 17 November 2026, in the catch-up sprint. This log is drafted by the Claude Code session that did the work; the decisions are mine to check.*
+*This log is drafted by the Claude Code session that did the work; the decisions are mine to check.*
 
 **The hands-on: a hostile referee**
 

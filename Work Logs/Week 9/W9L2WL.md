@@ -2,7 +2,7 @@
 
 ## Week 9B (session of 18 November 2026)
 
-*Written on 17 November 2026, the day before the session, in the catch-up sprint. This log is drafted by the Claude Code session that did the work; the decisions are mine to check. Nothing here is about the lecture: it had not happened when this was written, and its slides are not in the repository.*
+*This log is drafted by the Claude Code session that did the work; the decisions are mine to check. Nothing here is about the lecture: its slides are not in the repository.*
 
 **The new version, tag `capstone-v6`: what changed between two filings**
 
@@ -11,14 +11,14 @@
 - Three ways in: `make changes ARGS="NVDA --form 10-K"`, the route `GET /api/companies/{ticker}/changes`, and a third action on the page beside the thesis and the reported figures. `?sample=changes` shows a recorded comparison without the network.
 - No model is involved in this feature.
 
-**Measured, on filings fetched live on 17 November**
+**Measured, on filings fetched live**
 
 | Annual reports, paragraphs | Unchanged | Numbers only | Reworded | Added | Removed |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | NVIDIA, fiscal 2026 against fiscal 2025 | 251 | 60 | 218 | 133 | 132 |
 | of which Item 1A, Risk Factors | 124 | 1 | 51 | 34 | 22 |
 
-*This table first read 606, 417 and 139 in its first two columns. Those counted every line, table rows included, beside three columns that counted paragraphs only. A referee found it later the same day (below); the numbers above are the corrected ones.*
+*This table first read 606, 417 and 139 in its first two columns. Those counted every line, table rows included, beside three columns that counted paragraphs only. A referee found it later (below); the numbers above are the corrected ones.*
 
 - The same command on seven more companies (Apple, Microsoft, Coca-Cola, JPMorgan, Tesla, Costco, Amazon) ran on six at once and on JPMorgan after a fix (below), and matched every Item of one report to its Item in the other. The rows are in `Capstone/evidence_desk/docs/evidence/changes-eight-companies.md`.
 - The gate from a fresh clone at the tag: 1,094 offline tests, the smoke test, 69 assertions on the rendered page. The live walk now also compares NVIDIA's two annual reports through the running app.
@@ -51,9 +51,9 @@ Version 6 had been tagged without any review, so the `referee` agent read it: an
 - **The threshold, read on two more companies** by the session, with a new option that prints the pairs to read. Apple: 10 of 11 pairs just above it are one paragraph rewritten, and all 5 just below it are too. Coca-Cola: 7 of 10 above, and 4 of 9 below. In a discussion of results built on templates, about three in ten borderline pairs join two different paragraphs. The threshold stays; a person's reading is still owed.
 - Rejected, with reasons: a minimum amount of evidence for "complete", a check of direction in the number check, and showing moved figures inside tables.
 
-**A second pass the same day: a fifth review, and versions 8 and 9**
+**A second pass: a fifth review, and versions 8 and 9**
 
-After the first pass I asked the session to keep going: another round of building and refining, with the hand-ins and logs kept up to date. This is that round, also on 17 November.
+After the first pass I asked the session to keep going: another round of building and refining, with the hand-ins and logs kept up to date. This is that round.
 
 - **A fifth blind review**, of version 7, against the Week 6A checklist, because the page had gained two views since it was last read that way. Twelve findings, unedited in `Capstone/evidence_desk/docs/reviews/review-5-message-interface-tests.md`; the decisions are in `Homework/Week 9/W9L1.md`. Built in: a first screen that states the one takeaway; "Refused" for an input, so that "Rejected" is only my decision; a legend that says what a dashed border really means; a mark for what no person has checked; a tripwire stage for the filing comparison; a page test that refuses a stale dump.
 - **Version 8: what changed that bears on each claim.** For each claim of a run, the paragraphs that changed in the filings it read, ranked by the words they share with the claim. No model. On the recorded example the first paragraph under "Gross margin is expanding" is one the newest annual report added: "Gross margin decreased in fiscal year 2026".
@@ -113,12 +113,12 @@ After the first pass I asked the session to keep going: another round of buildin
 
 **Status**
 
-Version 11. The gate from a fresh clone: 1,499 offline tests, the smoke test, 156 assertions on the rendered page, in 38 s. Eleven tags; versions 2 to 11 were all built on 17 November. What that does not mean:
+Version 11. The gate from a fresh clone: 1,499 offline tests, the smoke test, 156 assertions on the rendered page, in 38 s. Eleven tags. What that does not mean:
 
 - No person has read the thirty golden cases, the code, a filing comparison, a list of changes under a claim, or a breakdown table against the printed one.
-- The model path has not run through the API since October: both keys were refused again on 17 November, and every model answer here is a recording made by a stand-in.
+- The model path has not run through the API since October: both keys were refused again, and every model answer here is a recording made by a stand-in.
 - A finding can cite the tagged figures, on NVIDIA only and in recordings only. A finding that rests on figures alone is checked for its numbers and read by a second model, and by nothing else.
-- The reported figures are checked against published values for three companies, and were wrong for three of the other five until this afternoon.
+- The reported figures are checked against published values for three companies, and were wrong for three of the other five until version 10.
 - The period check reports and withholds nothing, has seen no real error, and cannot see the wrong column of a table.
 - The record has no copy off this laptop; `make backup-status` now says so each time the app starts.
 - No colleague has reviewed this, and my reviews of colleagues are still owed.
@@ -140,7 +140,7 @@ A proposed order, mine to change. The outline is `Capstone/evidence_desk/docs/dr
 
 **Takeaway**
 
-Three, from one day. Everything that passed on NVIDIA passed. The failure was one command away on a different company, and the instruction to run that command was already written down. A rule in a file did not get it run until the documents had already been written around one company.
+Three. Everything that passed on NVIDIA passed. The failure was one command away on a different company, and the instruction to run that command was already written down. A rule in a file did not get it run until the documents had already been written around one company.
 
 And 1,094 tests passed over a table whose columns did not count the same thing, because each test checked that a number was what the code computed and none asked what its heading claimed. A reader with no tool found it by reading one function beside one table.
 

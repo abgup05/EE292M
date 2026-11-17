@@ -25,6 +25,13 @@ Look hardest at the claims the project makes about itself:
   that the page claims no more for the list than a keyword match;
 - that a segment, geography or customer figure is the figure the filing tags, for the period
   and in the unit shown;
+- that a tagged figure a finding cites is one the run was offered and the one the filing
+  tags, and that a run which did not ask for tagged figures is unchanged by them;
+- that the period check reports every year a finding names that its evidence does not carry,
+  raises no false alarm, and catches what its documented measurement says it catches;
+- that the restore check fails on any difference between a backup and the record;
+- that the timings and benchmarks in the README and in `docs/speed.md` were measured as
+  described and support the sentences written about them;
 - that the measured results in the README were measured.
 
 For each, try to construct the input, the filing or the code change under which the claim

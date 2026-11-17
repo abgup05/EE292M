@@ -1,10 +1,10 @@
 # make verify-fresh
-# 2026-11-17T17:19:49Z, a fresh clone of commit 6b77048 on capstone/evidence-desk
+# 2026-11-17T18:22:10Z, a fresh clone of commit 65bf20f on capstone/evidence-desk
 
 All checks passed!
-135 files already formatted
-1265 passed in 20.61s
+143 files already formatted
+1361 passed in 23.06s
 smoke: ok
-124 passed in 1.14s
+142 passed in 1.49s
 
-# wall clock for the whole command, with the Docker image's layers cached: 31 s
+# wall clock for the whole command, with the Docker image's layers cached: 34 s

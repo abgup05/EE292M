@@ -206,7 +206,10 @@ Measured on this laptop on 17 November 2026 at version 8, with the Docker image'
 built (review 5, finding 12): the offline tests take 21 s (pytest reports 21.14 s for 1,182
 tests), and `make verify-fresh`, the whole gate on a fresh clone (clone, lint, the tests, the
 smoke test, three page renders and 99 page assertions), took 33 s by the wall clock. One run of
-each; a first build of the image takes minutes and was not timed.
+each; a first build of the image takes minutes and was not timed. At version 10 the same two
+measurements, once each: 23 s (pytest reports 23.06 s for 1,361 tests) and 34 s for the whole
+gate on a fresh clone, now with seven page renders and 142 page assertions
+(`docs/evidence/verify-fresh.txt`).
 
 ## What no test here can see
 

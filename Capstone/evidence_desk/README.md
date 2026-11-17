@@ -132,7 +132,7 @@ Every number has the command that produced it and its denominator in [`docs/resu
 | Changes that bear on each claim | 802 changed paragraphs behind the example; the five best by keyword overlap listed per claim. Nobody has judged the lists | [`docs/claim-changes.md`](docs/claim-changes.md) |
 | Tagged breakdowns (`make breakdowns`) | On sixteen filings of eight companies every breakdown adds up to the filing's tagged total. NVIDIA's are checked against the filing's own text | [`docs/breakdowns.md`](docs/breakdowns.md) |
 | Tagged figures offered to the engine (`make replay` on two recordings made the same day) | Five verified findings cite one, and citations of figures go from 8 to 20. Not shown: that the option changes a verdict. Asking the same prompts again moved a verdict too | [`docs/tagged-figures.md`](docs/tagged-figures.md) |
-| The gate from a fresh clone (`make verify-fresh`) | 1,265 offline tests, the smoke test, 124 assertions on the rendered page, in 31 s | [`docs/evidence/verify-fresh.txt`](docs/evidence/verify-fresh.txt), [`docs/testing.md`](docs/testing.md) |
+| The gate from a fresh clone (`make verify-fresh`) | 1,361 offline tests, the smoke test, 142 assertions on the rendered page, in 34 s | [`docs/evidence/verify-fresh.txt`](docs/evidence/verify-fresh.txt), [`docs/testing.md`](docs/testing.md) |
 | The running app, end to end, on live filings (`make live-walk`) | Passes: a judged run, decisions, the reviewed brief, a saved thesis run twice, the comparisons, the breakdowns, and a run that asks for the tagged figures and is offered 40 | [`docs/evidence/live-walk.txt`](docs/evidence/live-walk.txt) |
 | Speed | One change saves a median of 28.8 ms per offline run (20 paired runs), roughly 3% of the one live run without a key that was timed. A second live run reads its filings from the cache: 0.38 s against 1.01 s | [`docs/speed.md`](docs/speed.md) |
 
@@ -141,11 +141,11 @@ Read all of it with three cautions. **The model answers are recordings made by s
 ## Verification
 
 ```sh
-make verify         # build, lint, 1,265 offline tests, smoke test, browser-level test
+make verify         # build, lint, 1,361 offline tests, smoke test, browser-level test
 make test           # offline tests only (T=tests/test_gate.py for one file)
 make golden-check   # the tripwire: one recorded run, compared stage by stage
 make replay         # the recorded model-backed run, offline
-make uitest         # headless Chromium renders five records; 124 assertions on the DOM
+make uitest         # headless Chromium renders seven pages of six records; 142 assertions on the DOM
 make live-walk      # the running app end to end over HTTP: needs EDGAR, no key
 make eval ARGS="run --variant claim"   # score retrieval on the golden set
 make backup         # copy the record to backups/; make restore-check proves it restores

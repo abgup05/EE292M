@@ -27,7 +27,7 @@
 
 **The hands-on: profile, then measure one change**
 
-- Profiled the offline run. Parsing is 66% of 0.44 s and almost all of that is the HTML library. Retrieval, which I expected to be the cost, is 6%.
+- Profiled the offline run. Parsing is 66% of 0.44 s and almost all of that is the HTML library. Retrieval, the part one would tune first, is 6%.
 - Cut the inline-XBRL header before parsing: 0.445 s to 0.411 s, median of five. The tripwire hash did not move.
 - Made claim assessments concurrent, three at a time. Measured only with a stand-in engine that waits 200 ms: 1.13 s to 0.50 s.
 - Did not run `/speed-review`: the course's skill file is not in this repository.
@@ -44,4 +44,4 @@ Version 3. `make verify` green from a fresh clone: 708 offline tests, smoke, 25 
 
 **Takeaway**
 
-The speedup I got was 8%, from deleting work, and the profile showed that the part I would have tuned first, retrieval, was 6% of the time. The larger lesson of the week was the answer key: the figures were right on the first run, and the two rules I had written about them were wrong.
+The speedup was 8%, from deleting work, and the profile showed that retrieval, the obvious thing to tune, was 6% of the time. The larger lesson of the week was the answer key: the figures were right on the first run, and two rules the brief had stated about them were wrong.

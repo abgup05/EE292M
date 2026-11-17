@@ -491,6 +491,8 @@ def execute_run(
         ),
         filings_read=len(filings_read),
         facts_error=numbers.error,
+        unchecked_findings=unchecked.findings,
+        verified_findings=run.coverage.findings_verified,
     )
     run.coverage_limits.extend(reasons)
     for claim in run.claims:
@@ -513,11 +515,12 @@ def execute_run(
 def _record_meaning_limits(
     run: Run, reader: Checker | None, analyst: Analyst, unchecked: _Unchecked
 ) -> None:
-    """Say on the run where the meaning check fell short: one error line, and coverage limits.
+    """Say on the run where the meaning check fell short: a coverage limit, or one error line.
 
-    A checker that read with the engine's own model is no independent reading;
-    a check that could not run leaves its findings unchecked. Neither changes
-    the status: nothing was withheld or left unread because of it.
+    A checker that read with the engine's own model is no independent reading: a
+    coverage limit. A check that could not run leaves its findings unchecked: one
+    error line here, and the status rule makes the run partial for it
+    (:func:`app.core.policy.run_status`).
     """
     if reader is None:
         return
@@ -530,11 +533,6 @@ def _record_meaning_limits(
                 claims=unchecked.claims,
                 findings=unchecked.findings,
                 reasons="; ".join(_distinct(unchecked.reasons)),
-            )
-        )
-        run.coverage_limits.append(
-            policy.MEANING_UNCHECKED_LIMIT.format(
-                findings=unchecked.findings, verified=run.coverage.findings_verified
             )
         )
 

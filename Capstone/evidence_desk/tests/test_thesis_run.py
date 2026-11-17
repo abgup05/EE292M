@@ -961,7 +961,7 @@ def test_a_partly_supported_finding_is_kept_counts_and_is_shown_as_such(store: S
     assert run.status == RunStatus.complete and run.coverage_limits == []
 
 
-def test_a_checker_that_fails_leaves_findings_unchecked_with_one_error_and_a_limit(
+def test_a_checker_that_fails_leaves_findings_unchecked_and_the_run_partial(
     store: Store,
 ) -> None:
     checker = ScriptedChecker(fail_with=RuntimeError("secret detail of the checker"))
@@ -977,11 +977,14 @@ def test_a_checker_that_fails_leaves_findings_unchecked_with_one_error_and_a_lim
         "RuntimeError."
     ]
     assert not any("secret detail" in error for error in run.errors)
-    assert (
-        "2 of 2 verified finding(s) were not checked for meaning by a second model; for those, "
-        "whether the excerpts support the statement rests on the engine's reading."
-    ) in run.coverage_limits
-    assert run.status == RunStatus.complete  # nothing was withheld or left unread
+    reason = (
+        "The meaning check could not run for 2 of 2 verified finding(s); for those, whether "
+        "the excerpts support the statement rests on the engine's reading alone."
+    )
+    assert run.coverage_limits.count(reason) == 1
+    # A check that was configured and did not run makes the run partial, as an engine
+    # that fell back does (the second referee's finding 6).
+    assert run.status == RunStatus.partial
     assert run.coverage.findings_checked == 0
 
 

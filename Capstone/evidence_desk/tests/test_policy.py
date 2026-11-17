@@ -138,6 +138,11 @@ def test_complete_when_nothing_limits_the_brief() -> None:
             "The model engine failed for 1 step(s); the deterministic engine was used for those.",
         ),
         ({"time_limit_hit": True}, "The run time limit was reached before every step finished."),
+        (
+            {"unchecked_findings": 2, "verified_findings": 5},
+            "The meaning check could not run for 2 of 5 verified finding(s); for those, whether "
+            "the excerpts support the statement rests on the engine's reading alone.",
+        ),
     ],
 )
 def test_each_reason_alone_makes_the_run_partial(change: dict, reason: str) -> None:

@@ -127,9 +127,10 @@ FIGURE_ONLY_NOTE = (
 # the engine's reasoning, and judges whether they support the statement. A finding it judges
 # unsupported is withheld; one it judges partly supported is kept, counts toward the verdict
 # (unless it rests on reported figures alone: see FIGURE_ONLY_NOTE) and is shown as such (it
-# does not make the run partial: the evidence still points the way stated). A check that cannot
-# run leaves its findings unchecked and is a coverage limit: the status is unaffected, because
-# nothing was withheld or left unread.
+# does not make the run partial: the evidence still points the way stated). A check that was
+# configured and could not run leaves its findings unchecked and makes the run partial, as an
+# engine that fell back does: the run did less than it was set up to do. Having no checker at
+# all is a configuration, shown on the run, and does not.
 SUPPORT_LABELS: dict[str, str] = {
     "passed": "supported",
     "partly": "partly supported",
@@ -143,9 +144,9 @@ MEANING_UNCHECKED_ERROR = (
     "The meaning check could not run for {claims} claim(s), so {findings} finding(s) were "
     "left unchecked: {reasons}."
 )
-MEANING_UNCHECKED_LIMIT = (
-    "{findings} of {verified} verified finding(s) were not checked for meaning by a second "
-    "model; for those, whether the excerpts support the statement rests on the engine's reading."
+MEANING_CHECK_FAILED = (
+    "The meaning check could not run for {findings} of {verified} verified finding(s); for "
+    "those, whether the excerpts support the statement rests on the engine's reading alone."
 )
 MEANING_SAME_MODEL = (
     "The meaning check used the same model as the engine; it is not an independent reading."
@@ -230,13 +231,19 @@ def run_status(
     thin_filings: int = 0,
     filings_read: int = 0,
     facts_error: str | None = None,
+    unchecked_findings: int = 0,
+    verified_findings: int = 0,
 ) -> tuple[RunStatus, list[str]]:
     """Complete only when nothing limits the brief; otherwise partial, with each reason.
 
     Failed when no source at all was read. The reasons are sentences a reader
     can act on, each with its denominator. ``thin_filings`` of the
     ``filings_read`` filings have most of their text outside numbered Items;
-    ``facts_error`` says why the reported figures could not be read.
+    ``facts_error`` says why the reported figures could not be read;
+    ``unchecked_findings`` of the ``verified_findings`` were left unchecked because
+    the meaning check failed. Complete says that every stage ran on everything it was
+    given. It says nothing about how much evidence stands behind a verdict: that is
+    shown per claim, as the findings and filings it rests on.
     """
     if sources_extracted == 0:
         return RunStatus.failed, ["No source could be retrieved and read; no brief was produced."]
@@ -279,4 +286,10 @@ def run_status(
         )
     if time_limit_hit:
         reasons.append("The run time limit was reached before every step finished.")
+    if unchecked_findings:
+        reasons.append(
+            MEANING_CHECK_FAILED.format(
+                findings=unchecked_findings, verified=max(verified_findings, unchecked_findings)
+            )
+        )
     return (RunStatus.partial if reasons else RunStatus.complete), reasons

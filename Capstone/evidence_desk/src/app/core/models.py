@@ -195,6 +195,19 @@ class Evidence(BaseModel):
     link_kind: str = ""
 
 
+class UnplacedPeriod(BaseModel):
+    """A year a finding's statement names that its evidence does not carry.
+
+    ``mention`` is the words that name it ("fiscal 2023"), ``detail`` the sentence the
+    period check wrote about it, and ``comparative`` whether it is one or two years before
+    the fiscal year of a filing quoted or a cited figure, as a report's comparison year is.
+    """
+
+    mention: str
+    comparative: bool = False
+    detail: str
+
+
 class FindingChecks(BaseModel):
     """Which automatic checks a finding went through. A check that did not run says so.
 
@@ -208,7 +221,12 @@ class FindingChecks(BaseModel):
     mean what the statement says: "passed" (supported), "partly" (they support a weaker
     statement; the finding is kept and counts), "failed" (the finding is withheld) or
     "unchecked" (no checker, or the check could not run). ``support_detail`` is the
-    checker's one-sentence reason.
+    checker's one-sentence reason. ``periods`` (:mod:`app.core.periods`): "passed" when every
+    year or fiscal label the statement names is in its quotes, its cited figures or the
+    period of a filing quoted, "unverified" when one is not, "none" when it names no year (and
+    in records written before the check). It reports and withholds nothing.
+    ``periods_detail`` has one sentence per year named; ``periods_unverified`` holds the years
+    not found, as records, so that no reader of a run has to read a sentence back.
     """
 
     quotes: str = "none"
@@ -216,6 +234,9 @@ class FindingChecks(BaseModel):
     numbers_detail: list[str] = Field(default_factory=list)
     support: str = "unchecked"
     support_detail: str = ""
+    periods: str = "none"
+    periods_detail: list[str] = Field(default_factory=list)
+    periods_unverified: list[UnplacedPeriod] = Field(default_factory=list)
 
 
 class Finding(BaseModel):
@@ -413,6 +434,13 @@ class Coverage(BaseModel):
     findings_checked: int = 0
     findings_partly: int = 0
     findings_failed_meaning: int = 0
+    # The period check, over verified findings: years and fiscal labels their statements name,
+    # those not found in their evidence, and of those, how many are one or two years before
+    # the fiscal year of a filing quoted or a cited figure (a report's comparison years).
+    # Counted, never withheld.
+    periods_checked: int = 0
+    periods_unverified: int = 0
+    periods_comparative: int = 0
 
 
 class Run(BaseModel):

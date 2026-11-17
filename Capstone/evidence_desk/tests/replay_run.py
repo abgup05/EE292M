@@ -106,6 +106,20 @@ def sample_record(run: Run, cassette: Path, data_dir: Path) -> dict[str, object]
     }
 
 
+def period_lines(run: Run) -> list[str]:
+    """The period check of a run: its counts, then each year not found with its statement."""
+    coverage = run.coverage
+    lines = [
+        f"periods checked {coverage.periods_checked}, unverified {coverage.periods_unverified} "
+        f"({coverage.periods_comparative} comparative)"
+    ]
+    for finding in run.findings:
+        for year in finding.checks.periods_unverified:
+            note = " (comparative)" if year.comparative else ""
+            lines.append(f"  {finding.id} {year.mention}{note}: {finding.statement}")
+    return lines
+
+
 def main(argv: list[str] | None = None) -> int:
     """Replay the example and print its verdicts; write the record when it is complete."""
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
@@ -149,6 +163,8 @@ def main(argv: list[str] | None = None) -> int:
         f"meaning check ({run.checker}): judged {coverage.findings_checked}, "
         f"partly {coverage.findings_partly}, withheld {coverage.findings_failed_meaning}"
     )
+    for line in period_lines(run):
+        print(line)
     if args.out:
         args.out.mkdir(parents=True, exist_ok=True)
         (args.out / f"{args.name}.json").write_text(run.model_dump_json(indent=2) + "\n")

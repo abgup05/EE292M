@@ -6,9 +6,11 @@ and the command line) call it. It depends on the ports in
 leaves this module only after :func:`app.core.gate.gate_claim` has checked
 every quote, cited figure and stated number (and each finding's reason), a
 configured checker has read each verified finding's meaning
-(:mod:`app.core.meaning`), every number in a claim's commentary, the unknowns
-and the next steps has been checked against the verified evidence, and
-:mod:`app.core.policy` has computed the verdicts and status.
+(:mod:`app.core.meaning`), the years each verified finding names have been
+checked against its evidence (:mod:`app.core.periods`; reported, never
+withheld), every number in a claim's commentary, the unknowns and the next steps
+has been checked against the verified evidence, and :mod:`app.core.policy` has
+computed the verdicts and status.
 """
 
 from __future__ import annotations
@@ -21,7 +23,7 @@ from collections.abc import Callable, Iterator
 from concurrent.futures import Future, ThreadPoolExecutor
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
 from app.core import limits, policy
 from app.core.documents import Passage
@@ -39,9 +41,11 @@ from app.core.models import (
     RunStatus,
     SourceKind,
     ThesisRequest,
+    UnplacedPeriod,
     Verdict,
 )
 from app.core.numcheck import check_numbers
+from app.core.periods import check_periods
 from app.core.ports import (
     Analyst,
     Checker,
@@ -57,7 +61,7 @@ from app.engines.fallback import FallbackAnalyst
 from app.retrieval.chunk import chunk_document
 from app.retrieval.search import PassageIndex
 from app.services.ingest import ingest
-from app.services.numbers import load_numbers, select_figures
+from app.services.numbers import NumbersResult, load_numbers, select_figures
 from app.services.tagged_figures import load_tagged_figures
 from app.sources.http import fetch_page as default_fetch_page
 from app.store import FilingCache, Store
@@ -289,9 +293,7 @@ def execute_run(
     if run.inputs.tagged_figures:
         # Opt-in: the figures join the prompt after the company-facts figures and the record
         # with the other metrics, so a finding's metric_ids resolve on the page and in the brief.
-        tagged = load_tagged_figures(
-            company, filings, ingested.filing_refs.values(), cache=cache
-        )
+        tagged = load_tagged_figures(company, filings, ingested.filing_refs.values(), cache=cache)
         run.metrics += tagged.figures
         run.metrics_notes += tagged.notes
         figures = [*figures, *tagged.figures]
@@ -326,6 +328,7 @@ def execute_run(
     run.coverage.passages_indexed = len(passages)
 
     _stage(run, store, "assessing")
+    period_ends = {source.id: _day(source.period_end) for source in run.sources}
     ids = RunIds()
     unknowns: list[str] = []
     time_limit_hit = ingested.time_limit_hit
@@ -436,6 +439,8 @@ def execute_run(
                 unchecked.claims += 1
                 unchecked.findings += len(verified)
                 unchecked.reasons.append(assessment.check_error)
+            # Reported, never withheld: the check changes no finding, verdict or status.
+            _check_periods(verified, evidence, offered_figures, period_ends, numbers, coverage)
             run.findings.extend(verified)
             run.unsupported_findings.extend(withheld)
             run.evidence.extend(evidence)
@@ -549,6 +554,52 @@ def _record_meaning_limits(
                 reasons="; ".join(_distinct(unchecked.reasons)),
             )
         )
+
+
+def _day(value: str | None) -> date | None:
+    """A source's ``YYYY-MM-DD`` period end as a date; None for none or an unreadable one."""
+    if not value:
+        return None
+    try:
+        return date.fromisoformat(value)
+    except ValueError:
+        return None
+
+
+def _check_periods(
+    findings: list[Finding],
+    evidence: list[Evidence],
+    figures: dict[str, Metric],
+    period_ends: dict[str, date | None],
+    numbers: NumbersResult,
+    coverage: Coverage,
+) -> None:
+    """Record the period check on each verified finding of one claim, and count it.
+
+    Each finding is checked against its own excerpts (``evidence`` is the claim's
+    verified evidence), each with the period end of the source it is from
+    (``period_ends``, by source id), and its cited figures (``figures`` are those
+    offered, by id), with the company's fiscal calendar when it was read
+    (:func:`app.core.periods.check_periods`). Nothing is withheld.
+    """
+    excerpts = {item.id: item for item in evidence}
+    for finding in findings:
+        quoted = [excerpts[i] for i in finding.evidence_ids if i in excerpts]
+        check = check_periods(
+            finding.statement,
+            [(item.excerpt, period_ends.get(item.source_id)) for item in quoted],
+            [figures[metric_id] for metric_id in finding.metric_ids if metric_id in figures],
+            numbers.calendar,
+        )
+        finding.checks.periods = check.status
+        finding.checks.periods_detail = list(check.details)
+        finding.checks.periods_unverified = [
+            UnplacedPeriod(mention=year.raw, comparative=year.comparative, detail=year.detail)
+            for year in check.unplaced
+        ]
+        coverage.periods_checked += check.checked
+        coverage.periods_unverified += len(check.unverified)
+        coverage.periods_comparative += len(check.comparative)
 
 
 def _checked_commentary(

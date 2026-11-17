@@ -48,6 +48,8 @@ UNMATCHED_SUFFIX = "was not found in the quotes or the cited figures"
 # A numbers_detail line about the finding's reason, not its statement.
 REASON_DETAIL_PREFIX = "in the reason: "
 QUOTE_CHECKS = {"passed": "found in the filing", "none": "none cited", "failed": "not found"}
+# The line under a finding whose period check could not place a year it names.
+PERIOD_UNVERIFIED_PREFIX = "Period not found in its evidence: "
 NO_CHECKER = "none"
 # Statuses whose claims carry a final verdict worth tabulating.
 _DECIDED = (RunStatus.complete, RunStatus.partial)
@@ -253,6 +255,18 @@ def _meaning_line(finding: Finding) -> str:
     return f"- Meaning: {label}" + (f": {_text(reason)}" if reason else "")
 
 
+def _period_lines(finding: Finding) -> list[str]:
+    """ "- Period not found in its evidence: <each year not found>.", only when one was not.
+
+    A passed check, or a statement that names no year, adds nothing.
+    """
+    checks: FindingChecks = finding.checks
+    if checks.periods != "unverified":
+        return []
+    missing = [year.detail for year in checks.periods_unverified]
+    return [f"- {PERIOD_UNVERIFIED_PREFIX}{_text('; '.join(missing))}."] if missing else []
+
+
 def _decision_line(finding_id: str, decisions: dict[str, Decision]) -> str:
     """ "- Your decision: Rejected. <the reviewer's note>"."""
     decision = decisions.get(finding_id)
@@ -294,6 +308,7 @@ def _claims(run: Run, review: Review | None) -> list[str]:
                 f"- Sources cited: {finding.filings_cited}",
                 f"- Checks: {_checks_line(finding)}",
                 _meaning_line(finding),
+                *_period_lines(finding),
             ]
             if finding.count_note:
                 counted = finding.counted_as or Stance.context

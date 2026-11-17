@@ -36,6 +36,7 @@ from app.core.models import (
     SourceKind,
     Stance,
     ThesisRequest,
+    UnplacedPeriod,
     Verdict,
 )
 from app.core.policy import (
@@ -731,3 +732,44 @@ def test_a_claim_with_no_changed_paragraph_says_so() -> None:
     assert (
         "No changed paragraph shares two words with this claim or its search queries (6 searched)."
     ) in second
+
+
+# The period check
+
+
+def test_a_finding_whose_period_is_not_in_its_evidence_says_so_and_a_passed_one_says_nothing() -> (
+    None
+):
+    run = _complete_run()
+    by_id = {finding.id: finding for finding in run.findings}
+    by_id["f1"].checks = FindingChecks(
+        quotes="passed",
+        periods="unverified",
+        periods_detail=[
+            "fiscal 2026 is the fiscal year of a filing quoted (period ended 2026-01-25)",
+            "fiscal 2023 is not in the quotes, the cited figures or the period of a filing quoted",
+        ],
+        periods_unverified=[
+            UnplacedPeriod(
+                mention="fiscal 2023",
+                detail=(
+                    "fiscal 2023 is not in the quotes, the cited figures or the period of a "
+                    "filing quoted"
+                ),
+            )
+        ],
+    )
+    by_id["f2"].checks = FindingChecks(
+        quotes="passed",
+        periods="passed",
+        periods_detail=["fiscal 2026 is in a quote"],
+    )
+    claims = _between(render_markdown(run), "## Claims", "## Unknowns")
+    f1 = _between(claims, "Statement f1.", "Statement f2.")
+    f2 = _between(claims, "Statement f2.", "Statement f3.")
+    assert (
+        "- Period not found in its evidence: fiscal 2023 is not in the quotes, the cited "
+        "figures or the period of a filing quoted.\n"
+    ) in f1
+    assert "fiscal 2026" not in f1
+    assert "Period" not in f2 and "fiscal" not in f2

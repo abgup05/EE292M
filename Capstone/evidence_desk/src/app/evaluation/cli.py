@@ -40,7 +40,7 @@ import re
 import sys
 from collections.abc import Sequence
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -344,6 +344,9 @@ def cmd_generate(args: argparse.Namespace, corpus: Corpus, client: EdgarClient |
         out_dir=args.out,
         inputs={**setup.inputs, "cassette": _display(args.cassette)},
         check=args.check,
+        filing_periods={
+            pin.accession: date.fromisoformat(pin.period_end) for pin in corpus.pins.values()
+        },
     )
 
 

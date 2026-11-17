@@ -403,6 +403,13 @@ def test_2000_employees_is_checked_against_the_quote() -> None:
         "at fiscal year-end 2026",
         "at year end 2025",
         "inventory at quarter-end 2026",
+        "share was higher versus 2025",
+        "margins vs. 2024",
+        "margins vs 2024",
+        "debt at end-of-2026",
+        "net sales increased during 2026 compared to 2025",
+        "margin was higher compared with 2024",
+        "costs fell relative to 2023",
     ],
 )
 def test_a_year_in_a_date_like_context_is_exempt(text: str) -> None:

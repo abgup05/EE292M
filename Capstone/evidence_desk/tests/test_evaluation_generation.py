@@ -11,7 +11,7 @@ import hashlib
 import json
 import re
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -19,6 +19,7 @@ import pytest
 
 from app.core import limits
 from app.core.models import Company
+from app.core.periods import FiscalCalendar
 from app.engines.cassette import Cassette, CassetteMiss
 from app.engines.checker import ClaudeChecker
 from app.engines.transport import ModelRequest
@@ -753,3 +754,138 @@ def test_generate_with_the_check_waits_for_the_checks_then_writes_its_own_record
     record = json.loads(written.read_text())
     assert record["inputs"]["meaning_check"] == "claude"
     assert record["summary"]["meaning_check"]["findings_checked"] == 4
+
+
+# The period check: every year a verified finding names, against its evidence
+
+PERIOD_ANSWERS: dict[str, Script] = {
+    **synthetic_answers(),
+    CASES[0][1]: lambda u: [
+        finding("In fiscal 2023 it depended on manufacturers.", "supports", [quote(u, RISK_TEXT)]),
+        finding("In fiscal 2025 it depended on manufacturers.", "context", [quote(u, RISK_TEXT)]),
+    ],
+    CASES[3][1]: lambda u: [
+        finding("Revenue rose in fiscal 2026.", "supports", [quote(u, MDA_TEXT)])
+    ],
+}
+NVIDIA_LIKE = FiscalCalendar(end_month=1, end_day=25, label_offset=0)
+PERIOD_FIGURES = {TICKER: CompanyFigures([], "no figures in this test", calendar=NVIDIA_LIKE)}
+FILING_PERIODS = {ACCESSION: date(2026, 1, 25)}
+NOT_IN_EVIDENCE = "is not in the quotes, the cited figures or the period of a filing quoted"
+
+
+def period_run(checker_judged: dict[str, list[str]] | None = None) -> list:
+    transport = (
+        scripted(PERIOD_ANSWERS)
+        if checker_judged is None
+        else scripted_with_checks(PERIOD_ANSWERS, checker_judged)
+    )
+    run = evaluate_generation(
+        synthetic_cases(),
+        LOADER,
+        synthetic_book(),
+        {TICKER: COMPANY},
+        PERIOD_FIGURES,
+        transport,
+        None if checker_judged is None else ClaudeChecker(transport=transport),
+        filing_periods=FILING_PERIODS,
+    )
+    assert run.pending == [] and run.check_pending == []
+    return run.outcomes
+
+
+def test_the_period_check_counts_each_year_verified_findings_name() -> None:
+    periods = summarize_generation(period_run()).periods
+    assert periods is not None
+    counts = (periods.checked, periods.passed, periods.unverified, periods.comparative)
+    assert counts == (3, 1, 2, 1)
+    assert [(m.case_id, m.mention, m.comparative) for m in periods.mentions] == [
+        ("supports-right", "fiscal 2023", False),
+        ("supports-right", "fiscal 2025", True),
+    ]
+
+
+def test_a_finding_the_meaning_check_rejects_is_not_period_checked() -> None:
+    judged = {
+        CASES[0][1]: ["supported", "not_supported"],
+        CASES[1][1]: ["supported"],
+        CASES[3][1]: ["supported"],
+        CASES[5][1]: ["partly"],
+    }
+    periods = summarize_generation(period_run(judged)).periods
+    assert periods is not None
+    counts = (periods.checked, periods.passed, periods.unverified, periods.comparative)
+    assert counts == (2, 1, 1, 0)
+
+
+def test_the_report_lists_every_unverified_year_with_its_statement() -> None:
+    outcomes = period_run()
+    record = build_record(
+        outcomes, models="a script", inputs={}, figures={}, generated_at=datetime(2026, 11, 17)
+    )
+    markdown = render_markdown(record, outcomes)
+    section = markdown.split("## Periods named in findings", 1)[1].split("## How to read it", 1)[0]
+    for text in ("1 / 3 checked", "2 / 3 checked", "1 / 2 unverified"):
+        assert text in section, text
+    assert (
+        f"| supports-right | fiscal 2023 | no | fiscal 2023 {NOT_IN_EVIDENCE} | "
+        "In fiscal 2023 it depended on manufacturers. |"
+    ) in section
+    assert "| supports-right | fiscal 2025 | yes | fiscal 2025 " in section
+    summary = record["summary"]["periods"]
+    assert (summary["checked"], summary["unverified"], summary["comparative"]) == (3, 2, 1)
+    assert [m["mention"] for m in summary["unverified_mentions"]] == ["fiscal 2023", "fiscal 2025"]
+    cases = {case["case_id"]: case for case in record["cases"]}
+    assert cases["supports-right"]["periods_checked"] == 2
+    assert cases["retrieval-miss"]["periods_checked"] == 1
+    assert list(cases["retrieval-miss"]["periods_unverified"]) == []
+    [unplaced, comparative] = cases["supports-right"]["periods_unverified"]
+    assert unplaced["mention"] == "fiscal 2023" and comparative["comparative"] is True
+
+
+def test_planted_wrong_years_are_counted_by_how_far_the_year_was_moved() -> None:
+    """Every finding that names a year has its years moved, and the check is run again.
+
+    The evidence is left as it is. A finding is flagged when the check then finds a year
+    its evidence does not carry. This measures what the check catches, on real findings,
+    without a model.
+    """
+    periods = summarize_generation(period_run()).periods
+    assert periods is not None
+    by_shift = {row.shift: row for row in periods.planted_by_shift()}
+    assert sorted(by_shift) == [-3, -2, -1, 1]
+    # Three findings of the scripted run name a year.
+    assert {row.findings for row in by_shift.values()} == {3}
+    for row in by_shift.values():
+        assert 0 <= row.flagged <= row.findings
+        assert row.flagged + len(row.not_flagged) == row.findings
+    # Moving a year three back puts it outside everything a filing prints beside its own.
+    assert by_shift[-3].flagged >= by_shift[-1].flagged
+    for planted in periods.planted:
+        assert planted.statement != "" and planted.shift in (-3, -2, -1, 1)
+        assert planted.flagged == any("is not in the quotes" in d for d in planted.details)
+
+
+def test_the_report_has_the_planted_years_table_and_lists_what_was_not_flagged() -> None:
+    outcomes = period_run()
+    record = build_record(
+        outcomes, models="a script", inputs={}, figures={}, generated_at=datetime(2026, 11, 17)
+    )
+    markdown = render_markdown(record, outcomes)
+    section = markdown.split("### Planted wrong years", 1)[1].split("## How to read it", 1)[0]
+    assert "| Years moved by | Findings that name a year | Flagged | Not flagged |" in section
+    for shift in ("-1", "-2", "-3", "+1"):
+        assert f"| {shift} | 3 | " in section, shift
+    planted = record["summary"]["periods"]["planted"]
+    assert [row["shift"] for row in planted["by_shift"]] == [-1, -2, -3, 1]
+    assert all(row["findings"] == 3 for row in planted["by_shift"])
+    missed = sum(row["findings"] - row["flagged"] for row in planted["by_shift"])
+    assert len(planted["not_flagged"]) == missed
+    if missed:
+        assert "Every planted error that was not flagged" in section
+
+
+def test_the_recorded_nvidia_facts_give_the_figures_a_fiscal_calendar(tmp_path: Path) -> None:
+    figures = figures_for(read_facts("NVDA", NVIDIA, None, cache_dir=tmp_path, fetch=None))
+    assert figures.calendar is not None
+    assert figures.calendar.fiscal_year(date(2026, 7, 26)) == 2027

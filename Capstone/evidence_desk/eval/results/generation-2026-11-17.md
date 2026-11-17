@@ -4,7 +4,7 @@ Model answers: replayed from cassette golden: 79 responses recorded via Claude C
 
 A recording answered by a stand-in (any `via` other than the model a run calls) is an upper bound for quote validity: a stand-in that copies from the prompt in front of it quotes more exactly than a model may, so the quote and citation scores may be lower live.
 
-Generated 2026-11-17T18:10:33.559644+00:00. Each case is run as a one-claim thesis with the decision "Whether the thesis still holds after the latest filings"; the gate and the verdict rule are the pipeline's own.
+Generated 2026-11-17T18:58:16.123831+00:00. Each case is run as a one-claim thesis with the decision "Whether the thesis still holds after the latest filings"; the gate and the verdict rule are the pipeline's own.
 Golden set SHA-256 `4ef5c8d35bf11a1e…`; queries from `eval/queries.json` (SHA-256 `7609070a134303ab…`).
 
 Reported figures offered with every claim:
@@ -47,13 +47,51 @@ Expected stance (rows) against the verdict obtained (columns):
 | Quotes verified (located in the stored text) | 84 | 84 / 84 offered |
 | Quotes rejected | 0 | 0 / 84 offered |
 | Excerpts kept as evidence (verified findings only) | 83 |  |
-| Numbers unmatched | 2 | 2 / 68 checked |
+| Numbers unmatched | 2 | 2 / 67 checked |
 | Findings verified | 78 | 78 / 79 proposed |
 | Findings withheld | 1 | 1 / 79 proposed |
 | withheld: a number in the statement is not in its quotes or cited figures | 1 | 1 / 1 withheld |
 | Reported figures cited by verified findings | 14 |  |
 | Model answers that could not be parsed | 0 | 0 / 30 cases |
 | Cases with no passage offered (model not asked) | 0 | 0 / 30 cases |
+
+## Periods named in findings
+
+Each year or fiscal label a verified finding's statement names, checked against its quotes, its cited figures and the period of each filing quoted (a finding the second model rejected is not checked). The check reports and withholds nothing. A year is comparative when it is one or two years before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be.
+
+| Count | Value | Of |
+|---|---|---|
+| Years and fiscal labels named | 34 |  |
+| found in the evidence | 34 | 34 / 34 checked |
+| not found (unverified) | 0 | 0 / 34 checked |
+| of which comparative | 0 | 0 / 0 unverified |
+
+Every year not found:
+
+None.
+
+### Planted wrong years
+
+Every verified finding that names a year, with each year in its statement moved by the same number of years and its evidence left as it is. A finding is flagged when the check then finds at least one year the evidence does not carry. No model is involved: this measures the check on true findings made wrong.
+
+| Years moved by | Findings that name a year | Flagged | Not flagged |
+|---|---|---|---|
+| -1 | 25 | 21 | 4 |
+| -2 | 25 | 24 | 1 |
+| -3 | 25 | 25 | 0 |
+| +1 | 25 | 23 | 2 |
+
+Every planted error that was not flagged, with the reason each of its years passed:
+
+| Case | Moved by | Statement as planted | Why its years passed |
+|---|---|---|---|
+| nvda-margin-widened | -1 | Gross margin for the first quarter of fiscal year 2026 was 74.9% against 60.5% a year earlier, largely because the prior year carried a $4.5 billion H20 charge. | fiscal year 2026 is in a quote |
+| nvda-cash-returned | -1 | Dividends paid in the second quarter of fiscal 2026 were $6.0 billion against $244 million in the same quarter a year earlier. | fiscal 2026 is in a quote |
+| nvda-no-borrowing | -1 | The company reports higher cash proceeds from debt issuance in the first half of fiscal year 2026, so it is not funding itself entirely from operations. | fiscal year 2026 is in a quote |
+| aapl-margin-runway | -1 | Products gross margin percentage increased in 2025, primarily due to product mix and tariff refunds, partially offset by higher costs including memory. | 2025 is in a quote |
+| nvda-crypto-lawsuit-over | -2 | The case was not finished: after the Supreme Court dismissed the writ, the Ninth Circuit judgment took effect on February 20, 2023 and the case went back to the district court for further proceedings. | February 20, 2023 is in a quote |
+| nvda-china-reopened | +1 | Licences granted in August 2026 for certain H20 products produced approximately $60 million in H20 revenue. | August 2026 is the calendar year of a filing quoted (period ended 2026-01-25) |
+| nvda-crypto-lawsuit-over | +1 | The case was not finished: after the Supreme Court dismissed the writ, the Ninth Circuit judgment took effect on February 20, 2026 and the case went back to the district court for further proceedings. | February 20, 2026 is the calendar year of a filing quoted (period ended 2026-07-26) |
 
 ## How to read it
 

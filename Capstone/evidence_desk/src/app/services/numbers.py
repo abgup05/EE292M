@@ -1,7 +1,8 @@
 """Reported numbers for one company: XBRL company facts in, a metrics report out.
 
 One job: ask the :class:`~app.core.ports.FilingSource` for the company facts,
-build the report with :mod:`app.core.metrics`, and describe what was read as a
+build the report with :mod:`app.core.metrics`, read the company's fiscal calendar
+(:mod:`app.core.periods`), and describe what was read as a
 :class:`~app.core.models.Source` of kind ``sec_xbrl``. A failure is returned
 as ``error``, never raised, so a run continues from the filings alone.
 :func:`select_figures` chooses the few figures an engine is shown.
@@ -21,6 +22,7 @@ from app.core.facts import FactBook, FactsError
 from app.core.metric_models import Metric, MetricsReport
 from app.core.metrics import build_report
 from app.core.models import Company, ExtractionStatus, Source, SourceKind
+from app.core.periods import FiscalCalendar, fiscal_calendar
 from app.core.ports import FilingSource, SourceError
 from app.sources.xbrl import company_facts_url
 
@@ -42,12 +44,18 @@ INSTANT_KEYS: tuple[str, ...] = ("cash", "inventory", "receivables")
 
 @dataclass
 class NumbersResult:
-    """The report (None when it could not be built), its source record, notes and error."""
+    """The report (None when it could not be built), its source record, notes and error.
+
+    ``calendar`` is the company's fiscal calendar, read from the newest annual report in
+    the facts (:func:`app.core.periods.fiscal_calendar`); None when the facts could not be
+    read or name no annual report.
+    """
 
     report: MetricsReport | None
     source: Source | None
     notes: list[str] = field(default_factory=list)
     error: str | None = None
+    calendar: FiscalCalendar | None = None
 
 
 def facts_title(company: Company) -> str:
@@ -106,7 +114,9 @@ def load_numbers(
             None, _source(source_id, company, retrieved_at, digest, error), error=error
         )
     source = _source(source_id, company, retrieved_at, digest, None)
-    return NumbersResult(report, source, notes=list(report.notes))
+    return NumbersResult(
+        report, source, notes=list(report.notes), calendar=fiscal_calendar(payload)
+    )
 
 
 def _newest(metrics: list[Metric], period: str, count: int) -> list[str]:

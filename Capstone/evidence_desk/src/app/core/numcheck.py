@@ -36,10 +36,11 @@ The rules:
 - Not quantities:
 
   - a four-digit number from 1900 to 2100 in a date-like context only
-    (:func:`_is_year`): after "fiscal", "FY", "in", "since", "during", "by",
+    (:func:`is_year`): after "fiscal", "FY", "in", "since", "during", "by",
     "for", "of", "ended", "ending", "due" and similar, after a month or a quarter
-    label, after "year-end", "year end", "quarter-end" and the like, or paired
-    with another year ("2024 and 2025", "2023 to 2025"). "2000 employees" and
+    label, after "year-end", "year end", "quarter-end", "end-of-", "versus",
+    "vs.", "compared to", "compared with" or "relative to", or paired with
+    another year ("2024 and 2025", "2023 to 2025"). "2000 employees" and
     "2025 stores" are checked;
   - a reference: a *capitalised* word such as "Note", "Item", "Part",
     "Section", "Rule" or "Form" directly followed by its own number or Roman
@@ -52,6 +53,10 @@ The rules:
     out ("two customers", "three segments"), so a digit the statement writes
     could never be matched to its source and checking it would withhold true
     findings; the cost is that a wrong small count goes unchecked.
+
+What this module reads as a date, a period label or a year is public
+(:func:`date_spans`, :func:`period_label_spans`, :func:`year_spans`), so that
+:mod:`app.core.periods` reads the years a statement names the same way.
 
 Known gap (not fixable here): table rows are flattened by the parser and lose
 their column headers, so a number from the wrong column or period matches.
@@ -171,12 +176,15 @@ _MONTH = (
     r"(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|Aug(?:ust)?|"
     r"Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)"
 )
-# Spans whose digits are labels or dates, not quantities.
-_MASKS: tuple[re.Pattern[str], ...] = (
+# Spans whose digits are labels or dates, not quantities, in three groups that
+# :mod:`app.core.periods` reads too: dates, references and form names, period labels.
+_DATE_MASKS: tuple[re.Pattern[str], ...] = (
     re.compile(rf"\b{_MONTH}\.?\s+\d{{1,2}}(?:st|nd|rd|th)?(?:,?\s+\d{{4}})?\b"),
     re.compile(rf"\b{_MONTH}\.?,?\s+\d{{4}}\b"),
     re.compile(r"\b\d{4}-\d{2}-\d{2}\b"),
     re.compile(r"\b\d{1,2}/\d{1,2}/\d{2,4}\b"),
+)
+_NAME_MASKS: tuple[re.Pattern[str], ...] = (
     re.compile(r"\b\d{1,2}-[A-Z]{1,2}(?:/A)?\b"),  # 10-K, 10-Q, 8-K, 20-F, 10-K/A
     # A reference: a capitalised word directly followed by its own number or Roman numeral.
     # Case matters ("senior notes 3.5%" is not a reference), and the possessive match keeps
@@ -186,15 +194,19 @@ _MASKS: tuple[re.Pattern[str], ...] = (
         r"Regulation|Chapter|Level|Tier|Phase|Page)\s+"
         r"(?:[IVXLC]+\b|\d[\w.\-]*+)(?!\s?%|\s?percent)"
     ),
+)
+_PERIOD_LABEL_MASKS: tuple[re.Pattern[str], ...] = (
     re.compile(r"\bfiscal(?:\s+years?)?\s+'?\d{2,4}\b", re.IGNORECASE),
     re.compile(r"\b(?:FY|CY)\s?'?\d{2,4}\b", re.IGNORECASE),
 )
+_MASKS: tuple[re.Pattern[str], ...] = (*_DATE_MASKS, *_NAME_MASKS, *_PERIOD_LABEL_MASKS)
 # What directly before a four-digit number makes it a year: a period word, a preposition
 # of time, a month or a quarter label, or another year joined by "and", "to" or a dash.
 _YEAR_BEFORE = re.compile(
     r"(?:\b(?:fiscal(?:\s+years?)?|calendar(?:\s+years?)?|years?|FY|CY|in|since|during|by|"
     r"for|of|ended|ending|from|through|until|between|before|after|due|maturing|expiring|"
-    r"quarter|half|(?:year|quarter|period|month)[-–\s]end|"
+    r"quarter|half|(?:year|quarter|period|month)[-–\s]end|end-of-|versus|vs\.?|"
+    r"compared\s+(?:to|with)|relative\s+to|"
     rf"Q[1-4]|H[12]|{_MONTH}\.?,?)"
     r"|\b(?:19|20|21)\d\d\s*(?:and|to|through|or)|\b(?:19|20|21)\d\d\s*[-–])\s*'?$",
     re.IGNORECASE,
@@ -297,7 +309,7 @@ def _unit_after(text: str, position: int) -> tuple[Unit | None, int]:
     return None, position
 
 
-def _is_year(text: str, begin: int, end: int) -> bool:
+def is_year(text: str, begin: int, end: int) -> bool:
     """True when the four digits at ``text[begin:end]`` are a year in a date-like context.
 
     The number must be from 1900 to 2100 and either follow a period word, a
@@ -358,7 +370,7 @@ def _read(text: str, match: re.Match[str]) -> Quantity | None:
     decimals = len(digits.split(".", 1)[1]) if "." in digits else 0
     bare = unit == "plain" and scale == 1.0 and decimals == 0 and "," not in digits
     if bare and not negative:
-        if int(number) <= MAX_EXEMPT_COUNT or _is_year(text, begin, end):
+        if int(number) <= MAX_EXEMPT_COUNT or is_year(text, begin, end):
             return None
         caps = _CAPS_WORD_BEFORE.search(text[max(0, begin - 24) : begin])
         if caps and caps.group(1) != "USD":
@@ -394,6 +406,47 @@ def _placed_quantities(text: str) -> list[tuple[Quantity, int]]:
 def quantities(text: str) -> list[Quantity]:
     """Every quantity ``text`` writes, in order. See the module notes for what is excluded."""
     return [quantity for quantity, _ in _placed_quantities(text)]
+
+
+# What this module reads as a date or a period, not a quantity. :mod:`app.core.periods` takes
+# the years a statement names from these three functions, so the two checks cannot disagree
+# about what is a year and what is a quantity.
+
+
+def date_spans(text: str) -> list[tuple[int, int]]:
+    """The ``(begin, end)`` spans of ``text`` read as dates, whose digits are never quantities.
+
+    "January 25, 2026", "July 26", "July 2026", "2026-01-25" and "1/25/2026", in
+    the order of the patterns that found them; spans may overlap.
+    """
+    return [match.span() for pattern in _DATE_MASKS for match in pattern.finditer(text)]
+
+
+def period_label_spans(text: str) -> list[tuple[int, int]]:
+    """The spans of ``text`` read as fiscal or calendar period labels, never quantities.
+
+    "fiscal 2026", "fiscal year 2026", "fiscal years 2025", "fiscal '26",
+    "FY2026", "FY 26", "CY2025" (case ignored), in the order found.
+    """
+    return [match.span() for pattern in _PERIOD_LABEL_MASKS for match in pattern.finditer(text)]
+
+
+def year_spans(text: str) -> list[tuple[int, int]]:
+    """The four-digit runs of ``text`` that are not quantities because they are years.
+
+    Each is outside every date, reference and label span, is a year in a
+    date-like context (:func:`is_year`), and is skipped by the reading of
+    quantities: "in 2025", "Q2 2026", "2024 and 2025". "2000 employees",
+    "$2025" and "2025%" are quantities, not years.
+    """
+    masks = _masked(text)
+    return [
+        match.span()
+        for match in _NUMBER.finditer(text)
+        if not _inside(match.span(), masks)
+        and is_year(text, *match.span())
+        and _read(text, match) is None
+    ]
 
 
 def _sentence_at(text: str, position: int) -> tuple[str, int]:

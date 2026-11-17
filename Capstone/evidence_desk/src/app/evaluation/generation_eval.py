@@ -33,6 +33,12 @@ failed finding drops out of the verdict); and, of the cases whose verdict
 disagreed with the expected stance before the check, how many now agree and
 how many still disagree, and how many agreeing cases the check broke. Without
 it the record and the report are what they were.
+
+Every report also counts the period check (:mod:`app.core.periods`) over the
+verified findings a run would keep (less those the meaning check rejected,
+when it ran): years and fiscal labels named, found and not found, how many of
+those not found are comparative, and every one of them with its case, its
+detail and its finding's statement. The check withholds nothing here either.
 """
 
 from __future__ import annotations
@@ -41,7 +47,7 @@ import json
 from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -49,7 +55,8 @@ from app.core import limits, policy
 from app.core.documents import Passage
 from app.core.gate import NUMBER_REASON, GateResult, RunIds, StoredSource, gate_claim
 from app.core.meaning import IncompleteJudgements, by_index, check_items
-from app.core.models import Claim, Company, ThesisRequest, Verdict
+from app.core.models import Claim, Company, Finding, ThesisRequest, Verdict
+from app.core.periods import check_periods, shift_years
 from app.core.ports import Checker, CheckItem, ClaimDraft, SupportVerdict
 from app.engines.cassette import CassetteMiss, CassetteTransport
 from app.engines.checker import ClaudeChecker
@@ -79,13 +86,19 @@ __all__ = [
     "GenerationRun",
     "GenerationSummary",
     "MeaningSummary",
+    "PLANTED_SHIFTS",
+    "PeriodSummary",
+    "PlantedPeriod",
+    "PlantedShift",
     "Rate",
+    "UnverifiedPeriod",
     "build_record",
     "case_request",
     "evaluate_generation",
     "render_markdown",
     "run_generation",
     "summarize_generation",
+    "summarize_periods",
     "verified_check_items",
     "write_record",
 ]
@@ -152,6 +165,57 @@ class CheckOutcome:
         return sum(1 for judged in self.judged if judged == verdict.value)
 
 
+# How far the years of a statement are moved to plant a wrong period: the year before (a
+# report's comparison column, the commonest slip), two and three years before, and one after.
+PLANTED_SHIFTS: tuple[int, ...] = (-1, -2, -3, 1)
+
+
+@dataclass(frozen=True)
+class PlantedPeriod:
+    """One verified finding whose statement had every year it names moved by ``shift`` years.
+
+    The evidence was left as it is. ``flagged`` when the period check then finds
+    at least one year the evidence does not carry; ``details`` are its sentences
+    on the planted statement, which say why each year passed when it did.
+    """
+
+    case_id: str
+    finding_id: str
+    shift: int
+    statement: str
+    flagged: bool
+    details: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class PlantedShift:
+    """The planted statements of one shift: how many, how many flagged, and those that were not."""
+
+    shift: int
+    findings: int
+    flagged: int
+    not_flagged: tuple[PlantedPeriod, ...] = ()
+
+
+@dataclass(frozen=True)
+class UnverifiedPeriod:
+    """One year a verified finding names that its evidence does not carry.
+
+    ``comparative`` when it is one or two years before the fiscal year of a
+    filing quoted or a cited figure; ``detail`` is the check's sentence;
+    ``excerpts`` the finding's verified excerpts, each with the period end of
+    its filing, for whoever reads the mention against its evidence.
+    """
+
+    case_id: str
+    finding_id: str
+    mention: str
+    comparative: bool
+    detail: str
+    statement: str
+    excerpts: tuple[tuple[str, str], ...] = ()
+
+
 @dataclass(frozen=True)
 class CaseOutcome:
     """What one case's run produced, and how it compares with the golden set."""
@@ -180,6 +244,13 @@ class CaseOutcome:
     engine_error: str = ""
     problems: tuple[str, ...] = field(default_factory=tuple)
     check: CheckOutcome | None = None  # set only when the meaning check ran
+    # The period check over the verified findings (those the meaning check kept, when it ran):
+    # years named, and each one not found in its finding's evidence.
+    periods_checked: int = 0
+    periods_unverified: tuple[UnverifiedPeriod, ...] = field(default_factory=tuple)
+    # Each of those findings that names a year, with its years moved (PLANTED_SHIFTS) and
+    # checked again against the same evidence.
+    periods_planted: tuple[PlantedPeriod, ...] = field(default_factory=tuple)
 
     @property
     def answerable(self) -> bool:
@@ -324,6 +395,77 @@ def _check(
     )
 
 
+def _kept(result: GateResult, check: CheckOutcome | None) -> list[Finding]:
+    """The verified findings a run would keep: all, less those the meaning check rejected."""
+    if check is None or not check.judged:
+        return list(result.findings)
+    return [
+        finding
+        for finding, verdict in zip(result.findings, check.judged, strict=True)
+        if verdict != SupportVerdict.not_supported.value
+    ]
+
+
+def _periods(
+    case: GoldenCase,
+    findings: Sequence[Finding],
+    result: GateResult,
+    figures: CompanyFigures,
+    filing_periods: Mapping[str, date],
+) -> tuple[int, tuple[UnverifiedPeriod, ...], tuple[PlantedPeriod, ...]]:
+    """The period check of each kept finding, as a run makes it: years checked, those unplaced.
+
+    Source ``sN`` is the case's N-th filing; its period end comes from
+    ``filing_periods`` (by accession), the calendar from ``figures``. Each finding
+    that names a year is also checked with its years moved by each of
+    :data:`PLANTED_SHIFTS` and its evidence unchanged: the third value.
+    """
+    ends = {
+        f"s{number}": filing_periods.get(accession)
+        for number, accession in enumerate(case.filings, start=1)
+    }
+    evidence = {item.id: item for item in result.evidence}
+    offered = {figure.id: figure for figure in figures.figures}
+    checked = 0
+    unverified: list[UnverifiedPeriod] = []
+    planted: list[PlantedPeriod] = []
+    for finding in findings:
+        quoted = [evidence[i] for i in finding.evidence_ids if i in evidence]
+        excerpts = [(item.excerpt, ends.get(item.source_id)) for item in quoted]
+        cited = [offered[metric_id] for metric_id in finding.metric_ids if metric_id in offered]
+        period_check = check_periods(finding.statement, excerpts, cited, figures.calendar)
+        checked += period_check.checked
+        for year in period_check.unplaced:
+            unverified.append(
+                UnverifiedPeriod(
+                    case_id=case.id,
+                    finding_id=finding.id,
+                    mention=year.raw,
+                    comparative=year.comparative,
+                    detail=year.detail,
+                    statement=finding.statement,
+                    excerpts=tuple(
+                        (text, end.isoformat() if end else "") for text, end in excerpts
+                    ),
+                )
+            )
+        if period_check.checked:
+            for shift in PLANTED_SHIFTS:
+                moved = shift_years(finding.statement, shift)
+                again = check_periods(moved, excerpts, cited, figures.calendar)
+                planted.append(
+                    PlantedPeriod(
+                        case_id=case.id,
+                        finding_id=finding.id,
+                        shift=shift,
+                        statement=moved,
+                        flagged=again.status == "unverified",
+                        details=tuple(again.details),
+                    )
+                )
+    return checked, tuple(unverified), tuple(planted)
+
+
 def _outcome(
     case: GoldenCase,
     spans: Sequence[Span],
@@ -334,6 +476,7 @@ def _outcome(
     figures: CompanyFigures,
     engine_error: str,
     check: CheckOutcome | None = None,
+    periods: tuple[int, tuple[UnverifiedPeriod, ...], tuple[PlantedPeriod, ...]] = (0, (), ()),
 ) -> CaseOutcome:
     """Compare one case's gated result (and its meaning check, if any) with the case."""
     verdict = policy.claim_verdict(result.findings)
@@ -366,6 +509,9 @@ def _outcome(
         engine_error=engine_error,
         problems=tuple(result.problems),
         check=check,
+        periods_checked=periods[0],
+        periods_unverified=periods[1],
+        periods_planted=periods[2],
     )
 
 
@@ -377,6 +523,8 @@ def evaluate_generation(
     figures: Mapping[str, CompanyFigures],
     transport: Transport,
     checker: Checker | None = None,
+    *,
+    filing_periods: Mapping[str, date] | None = None,
 ) -> GenerationRun:
     """Run every case through retrieval, the model (via ``transport``), the gate and the rule.
 
@@ -385,9 +533,12 @@ def evaluate_generation(
     draft with ``engine_error`` set (a run would fall back to the extractive
     engine; the evaluation scores the model, so it does not). With ``checker``
     each case's verified findings are read again (:func:`_check`); a case whose
-    check answer is missing is skipped and listed in ``check_pending``. Raises
-    ValueError when ``book`` has no entry for a case.
+    check answer is missing is skipped and listed in ``check_pending``. The
+    findings kept are then period-checked (:func:`_periods`) against the period
+    end of each filing (``filing_periods``, by accession; none known without it).
+    Raises ValueError when ``book`` has no entry for a case.
     """
+    filing_periods = filing_periods or {}
     analyst = ClaudeAnalyst(transport=transport)
     materials = _Materials(loader)
     run = GenerationRun()
@@ -429,6 +580,7 @@ def evaluate_generation(
                 run.check_pending.append(case.id)
                 continue
         spans = spans_for(case, targets)
+        periods = _periods(case, _kept(result, check), result, company_figures, filing_periods)
         run.outcomes.append(
             _outcome(
                 case,
@@ -440,6 +592,7 @@ def evaluate_generation(
                 company_figures,
                 engine_error,
                 check,
+                periods,
             )
         )
     return run
@@ -544,6 +697,63 @@ def summarize_meaning(outcomes: Sequence[CaseOutcome]) -> MeaningSummary | None:
 
 
 @dataclass(frozen=True)
+class PeriodSummary:
+    """The period check over every case: years named, passed and not, and each one not found.
+
+    ``comparative`` counts the unverified years that are one or two years
+    before the fiscal year of a filing quoted or a cited figure.
+    """
+
+    checked: int
+    passed: int
+    unverified: int
+    comparative: int
+    mentions: tuple[UnverifiedPeriod, ...]
+    planted: tuple[PlantedPeriod, ...] = ()
+
+    def planted_by_shift(self) -> list[PlantedShift]:
+        """The planted statements grouped by how far their years were moved, in that order."""
+        rows: list[PlantedShift] = []
+        for shift in PLANTED_SHIFTS:
+            of_shift = [planted for planted in self.planted if planted.shift == shift]
+            missed = tuple(planted for planted in of_shift if not planted.flagged)
+            rows.append(PlantedShift(shift, len(of_shift), len(of_shift) - len(missed), missed))
+        return rows
+
+    def as_dict(self) -> dict[str, Any]:
+        """The counts, every unverified year and the planted years, for the JSON record."""
+        by_shift = self.planted_by_shift()
+        return {
+            "checked": self.checked,
+            "passed": self.passed,
+            "unverified": self.unverified,
+            "comparative": self.comparative,
+            "unverified_mentions": [asdict(mention) for mention in self.mentions],
+            "planted": {
+                "by_shift": [
+                    {"shift": row.shift, "findings": row.findings, "flagged": row.flagged}
+                    for row in by_shift
+                ],
+                "not_flagged": [asdict(missed) for row in by_shift for missed in row.not_flagged],
+            },
+        }
+
+
+def summarize_periods(outcomes: Sequence[CaseOutcome]) -> PeriodSummary:
+    """The period check's counts over ``outcomes``, and every unverified year in case order."""
+    mentions = tuple(mention for o in outcomes for mention in o.periods_unverified)
+    checked = sum(o.periods_checked for o in outcomes)
+    return PeriodSummary(
+        checked=checked,
+        passed=checked - len(mentions),
+        unverified=len(mentions),
+        comparative=sum(1 for mention in mentions if mention.comparative),
+        mentions=mentions,
+        planted=tuple(planted for o in outcomes for planted in o.periods_planted),
+    )
+
+
+@dataclass(frozen=True)
 class GenerationSummary:
     """Every score of one generation run, each with its denominator."""
 
@@ -556,6 +766,7 @@ class GenerationSummary:
     refusal: Rate
     totals: Totals
     meaning: MeaningSummary | None = None
+    periods: PeriodSummary | None = None
 
     def as_dict(self) -> dict[str, Any]:
         """The summary for the JSON record; the meaning check only when it ran."""
@@ -572,6 +783,8 @@ class GenerationSummary:
         }
         if self.meaning is not None:
             record["meaning_check"] = self.meaning.as_dict()
+        if self.periods is not None:
+            record["periods"] = self.periods.as_dict()
         return record
 
 
@@ -619,6 +832,7 @@ def summarize_generation(outcomes: Sequence[CaseOutcome]) -> GenerationSummary:
         refusal=_rate([o.refused for o in unanswerable]),
         totals=totals,
         meaning=summarize_meaning(outcomes),
+        periods=summarize_periods(outcomes),
     )
 
 
@@ -790,6 +1004,79 @@ def _meaning_section(meaning: MeaningSummary) -> list[str]:
     return lines
 
 
+def _periods_section(periods: PeriodSummary) -> list[str]:
+    """The period check's counts, each with its denominator, and every year not found."""
+    p = periods
+    rows: list[tuple[str, int, str]] = [
+        ("Years and fiscal labels named", p.checked, ""),
+        ("  found in the evidence", p.passed, f"{p.passed} / {p.checked} checked"),
+        ("  not found (unverified)", p.unverified, f"{p.unverified} / {p.checked} checked"),
+        (
+            "    of which comparative",
+            p.comparative,
+            f"{p.comparative} / {p.unverified} unverified",
+        ),
+    ]
+    lines = [
+        "## Periods named in findings",
+        "",
+        "Each year or fiscal label a verified finding's statement names, checked against its "
+        "quotes, its cited figures and the period of each filing quoted (a finding the second "
+        "model rejected is not checked). The check reports and withholds nothing. A year is "
+        "comparative when it is one or two years before the fiscal year of a filing quoted or "
+        "a cited figure, as a report's comparison year would be.",
+        "",
+        "| Count | Value | Of |",
+        "|---|---|---|",
+    ]
+    lines += [_row(name, value, whole) for name, value, whole in rows]
+    lines += ["", "Every year not found:", ""]
+    if p.mentions:
+        lines += [
+            _row("Case", "Year", "Comparative", "Detail", "Statement"),
+            "|---|---|---|---|---|",
+        ]
+        lines += [
+            _row(m.case_id, m.mention, "yes" if m.comparative else "no", m.detail, m.statement)
+            for m in p.mentions
+        ]
+    else:
+        lines.append("None.")
+    return [*lines, "", *_planted_section(p)]
+
+
+def _planted_section(periods: PeriodSummary) -> list[str]:
+    """What the period check catches when a wrong year is planted, and what it lets through."""
+    by_shift = periods.planted_by_shift()
+    lines = [
+        "### Planted wrong years",
+        "",
+        "Every verified finding that names a year, with each year in its statement moved by "
+        "the same number of years and its evidence left as it is. A finding is flagged when "
+        "the check then finds at least one year the evidence does not carry. No model is "
+        "involved: this measures the check on true findings made wrong.",
+        "",
+        _row("Years moved by", "Findings that name a year", "Flagged", "Not flagged"),
+        "|---|---|---|---|",
+    ]
+    lines += [
+        _row(f"{row.shift:+d}", row.findings, row.flagged, row.findings - row.flagged)
+        for row in by_shift
+    ]
+    missed = [planted for row in by_shift for planted in row.not_flagged]
+    if not missed:
+        return [*lines, "", "Every planted error was flagged."]
+    lines += [
+        "",
+        "Every planted error that was not flagged, with the reason each of its years passed:",
+        "",
+        _row("Case", "Moved by", "Statement as planted", "Why its years passed"),
+        "|---|---|---|---|",
+    ]
+    lines += [_row(m.case_id, f"{m.shift:+d}", m.statement, "; ".join(m.details)) for m in missed]
+    return lines
+
+
 def _answerable_section(summary: GenerationSummary) -> list[str]:
     hit, miss = summary.by_retrieval["hit"], summary.by_retrieval["miss"]
     rows = [
@@ -907,6 +1194,7 @@ def render_markdown(record: Mapping[str, Any], outcomes: Sequence[CaseOutcome]) 
         ),
     ]
     meaning = [*_meaning_section(summary.meaning), ""] if summary.meaning is not None else []
+    periods = [*_periods_section(summary.periods), ""] if summary.periods is not None else []
     lines += [
         "",
         *_answerable_section(summary),
@@ -916,6 +1204,7 @@ def render_markdown(record: Mapping[str, Any], outcomes: Sequence[CaseOutcome]) 
         *_totals_section(summary.totals),
         "",
         *meaning,
+        *periods,
         "## How to read it",
         "",
         "Verdict agreement and citation are over the answerable cases; refusal over the "
@@ -960,16 +1249,27 @@ def run_generation(
     inputs: Mapping[str, Any],
     now: datetime | None = None,
     check: bool = False,
+    filing_periods: Mapping[str, date] | None = None,
 ) -> int:
     """Assess every case through ``cassette``; write the record only when nothing is pending.
 
     With ``check`` the meaning checker reads every case's verified findings
-    through the same cassette. Returns 0 when written and 3 while assess or
-    check requests are pending.
+    through the same cassette. ``filing_periods`` gives each filing's period end
+    by accession, for the period check. Returns 0 when written and 3 while
+    assess or check requests are pending.
     """
     transport = CassetteTransport(cassette)
     checker = ClaudeChecker(transport=transport) if check else None
-    run = evaluate_generation(cases, loader, book, companies, figures, transport, checker)
+    run = evaluate_generation(
+        cases,
+        loader,
+        book,
+        companies,
+        figures,
+        transport,
+        checker,
+        filing_periods=filing_periods,
+    )
     if run.pending or run.check_pending:
         if run.pending:
             print(

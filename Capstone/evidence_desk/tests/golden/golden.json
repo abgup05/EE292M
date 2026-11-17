@@ -210,6 +210,9 @@
       "numbers_checked": 10,
       "numbers_unmatched": 0,
       "passages_indexed": 636,
+      "periods_checked": 3,
+      "periods_comparative": 0,
+      "periods_unverified": 0,
       "quotes_found": 15,
       "quotes_offered": 15,
       "quotes_rejected": 0,
@@ -720,7 +723,7 @@
     ],
     "passages_indexed": 636
   },
-  "sha256": "fd08a7ee57ca82cc3451388c3f0175fecc0025543c83589f1503537dc6c7df41",
+  "sha256": "a95ce509390cc42a29e02ace2d2255d8c3ddce47a9c6a904a11adb3971304007",
   "sources": [
     {
       "characters": 151303,

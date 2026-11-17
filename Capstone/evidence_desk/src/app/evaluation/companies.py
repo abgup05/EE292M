@@ -27,6 +27,7 @@ from app.core.facts import FactBook, FactsError
 from app.core.metric_models import Metric
 from app.core.metrics import build_report
 from app.core.models import Company
+from app.core.periods import FiscalCalendar, fiscal_calendar
 from app.core.ports import SourceError
 from app.evaluation.corpus import FIXTURE_DIR, CorpusError, Fetch, PinnedFacts, PinnedFiling
 from app.evaluation.corpus import sha256_hex as _sha256
@@ -164,10 +165,15 @@ def read_facts(
 
 @dataclass(frozen=True)
 class CompanyFigures:
-    """The figures offered for every claim of one company, and a note saying where from."""
+    """The figures offered for every claim of one company, and a note saying where from.
+
+    ``calendar`` is the company's fiscal calendar read from the same facts, for the
+    period check (:mod:`app.core.periods`); None when the facts could not be read.
+    """
 
     figures: list[Metric] = field(default_factory=list)
     note: str = ""
+    calendar: FiscalCalendar | None = None
 
 
 def figures_for(facts: FactsRead) -> CompanyFigures:
@@ -180,5 +186,7 @@ def figures_for(facts: FactsRead) -> CompanyFigures:
         return CompanyFigures([], f"assessed without reported figures: {exc}")
     sha = facts.pin.sha256[:12] if facts.pin else "?"
     return CompanyFigures(
-        figures, f"{len(figures)} figures from the XBRL facts ({facts.origin}, SHA-256 {sha}...)"
+        figures,
+        f"{len(figures)} figures from the XBRL facts ({facts.origin}, SHA-256 {sha}...)",
+        calendar=fiscal_calendar(facts.payload),
     )

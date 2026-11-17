@@ -1241,3 +1241,64 @@ def test_safe_message_shows_our_own_messages_and_only_the_type_of_any_other() ->
     assert safe_message(SourceError("EDGAR answered HTTP 503")) == "EDGAR answered HTTP 503"
     assert safe_message(SourceError("x" * 400)) == "x" * 320
     assert safe_message(KeyError("sk-secret-key")) == "KeyError"
+
+
+# The period check: reported on a verified finding, never withheld
+
+
+NOT_IN_EVIDENCE = "is not in the quotes, the cited figures or the period of a filing quoted"
+
+
+def test_a_wrong_fiscal_year_is_reported_and_changes_no_verdict_or_status(store: Store) -> None:
+    # The synthetic 10-Q's period ends 2026-01-01: NVIDIA's fiscal 2026, by its recorded facts.
+    plain = _growth_run(store, _stating("Data Center revenue grew 56% from a year ago."))
+    wrong_year = "Data Center revenue grew 56% from a year ago in fiscal 2023."
+    wrong = _growth_run(store, _stating(wrong_year))
+    [finding] = wrong.findings
+    assert finding.verified and finding.counted_as == Stance.supports
+    assert finding.checks.periods == "unverified"
+    assert finding.checks.periods_detail == [f"fiscal 2023 {NOT_IN_EVIDENCE}"]
+    [unplaced] = finding.checks.periods_unverified
+    assert (unplaced.mention, unplaced.comparative) == ("fiscal 2023", False)
+    assert unplaced.detail == f"fiscal 2023 {NOT_IN_EVIDENCE}"
+    coverage = wrong.coverage
+    counts = (coverage.periods_checked, coverage.periods_unverified, coverage.periods_comparative)
+    assert counts == (1, 1, 0)
+    assert wrong.claims[0].verdict == plain.claims[0].verdict == Verdict.supported
+    assert wrong.status == plain.status and wrong.coverage_limits == plain.coverage_limits
+    assert plain.findings[0].checks.periods == "none" and plain.coverage.periods_checked == 0
+
+
+def test_the_fiscal_year_of_the_filing_quoted_passes_and_the_year_before_is_comparative(
+    store: Store,
+) -> None:
+    run = _growth_run(store, _stating("Data Center revenue grew 56% in fiscal 2026."))
+    [finding] = run.findings
+    assert finding.checks.periods == "passed"
+    assert finding.checks.periods_detail == [
+        "fiscal 2026 is the fiscal year of a filing quoted (period ended 2026-01-01)"
+    ]
+    before = _growth_run(store, _stating("Data Center revenue grew 56% in fiscal 2025."))
+    assert before.coverage.periods_unverified == before.coverage.periods_comparative == 1
+
+
+def test_a_withheld_finding_is_not_period_checked(store: Store) -> None:
+    run = _growth_run(store, _stating("Data Center revenue grew 65% in fiscal 2023."))
+    [withheld] = run.unsupported_findings
+    assert withheld.checks.periods == "none" and run.coverage.periods_checked == 0
+
+
+def test_a_run_whose_facts_could_not_be_read_checks_periods_with_the_fallback(
+    store: Store,
+) -> None:
+    filings = FakeFilings.synthetic(filing_html(GROWTH_SENTENCE, EXPORT_SENTENCE))
+    filings.facts_error = SourceError("EDGAR answered HTTP 503 for company facts")
+    statement = "Data Center revenue grew 56% in fiscal 2027, after fiscal 2023."
+    run = run_with(store, request(GROWTH), filings, ScriptedAnalyst(_stating(statement)))
+    [finding] = run.findings
+    assert finding.checks.periods == "unverified"
+    detail = finding.checks.periods_detail
+    assert any("fiscal calendar could not be read" in line for line in detail)
+    assert "fiscal 2027 is the fiscal year of a filing quoted (period ended 2026-01-01)" in detail
+    assert f"fiscal 2023 {NOT_IN_EVIDENCE}" in detail
+    assert (run.coverage.periods_checked, run.coverage.periods_unverified) == (2, 1)

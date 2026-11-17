@@ -1,10 +1,12 @@
 """Request validation the model owns (PROMPT.md 3 and the Rejection truth in 5)."""
 
+from pathlib import Path
+
 import pytest
 from pydantic import ValidationError
 
 from app.core import limits
-from app.core.models import ThesisRequest
+from app.core.models import Coverage, FindingChecks, Run, ThesisRequest
 
 VALID = {
     "ticker": "NVDA",
@@ -111,3 +113,24 @@ def test_text_fields_are_trimmed() -> None:
     )
     assert request.decision == "Keep the position for now"
     assert request.scope_notes == "GAAP only"
+
+
+# Records written before the period check
+
+
+def test_checks_and_coverage_written_before_the_period_check_still_load() -> None:
+    checks = FindingChecks.model_validate(
+        {"quotes": "passed", "numbers": "passed", "numbers_detail": ["56% matched 56% in a quote"]}
+    )
+    assert checks.periods == "none" and checks.periods_detail == []
+    assert checks.periods_unverified == []
+    coverage = Coverage.model_validate({"findings_verified": 3, "numbers_checked": 2})
+    counts = (coverage.periods_checked, coverage.periods_unverified, coverage.periods_comparative)
+    assert counts == (0, 0, 0)
+
+
+def test_a_recorded_run_from_before_the_period_check_still_loads() -> None:
+    recorded = Path(__file__).parent.parent / "demo" / "recorded-run-v5.json"
+    run = Run.model_validate_json(recorded.read_text())
+    assert run.findings and all(finding.checks.periods == "none" for finding in run.findings)
+    assert run.coverage.periods_checked == 0

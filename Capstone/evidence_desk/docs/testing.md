@@ -200,6 +200,17 @@ What these cannot see: whether a changed paragraph listed under a claim bears on
 
 **Two more recordings replayed** (`tests/test_replay_tagged.py`). Each builds every prompt afresh, as `test_replay.py` does for the first, and compares the verdicts and counts with a baseline read once from the first complete replay. A baseline is not an answer key: it says what the gate, the number check and the verdict rule make of those recorded answers, so a change in any of them is seen.
 
+## The sixth review: the backup, two writers, and the header cut (after version 10)
+
+| Wrong program | Fails | Seen failing as |
+| --- | --- | --- |
+| A restore check that compares runs by their ids only: a run rewritten after the backup passes | `tests/test_backup.py::test_restore_check_fails_when_a_run_changed_though_its_id_did_not` | written first: the old check passed it |
+| A restore check that skips what it cannot parse on both sides, and so agrees | `::test_restore_check_fails_on_records_this_version_cannot_read`, `::test_a_record_changed_in_a_way_no_parser_sees_still_fails` | written first, from the reviewer's reading of the code |
+| A backup of any age reported as if it were current | `::test_the_pass_line_says_how_old_the_backup_is`, `::test_status_says_what_the_newest_backup_does_not_hold` | written first |
+| A header-cut check that reports "the same" whatever it finds | `tests/test_header_cut_check.py::test_a_difference_is_seen_and_fails_the_command` | the uncut parse made to differ: the row says NO and the command exits 1 |
+
+Two checks are commands, not tests, because they need what the gate must not need. `make two-writers` starts the app on a scratch record and has it and a one-off container write that record at the same time, then checks SQLite's integrity and every row (`docs/evidence/two-writers.txt`). `make header-cut-check` parses live filings with and without the parser's header cut and compares the documents whole (`docs/evidence/header-cut-fourteen-filings.md`). Each shows that something held once, on one laptop, on one day.
+
 ## How long the gate takes
 
 Measured on this laptop on 17 November 2026 at version 8, with the Docker image's layers already

@@ -78,8 +78,12 @@ Two SQLite files under the data directory (`EVIDENCE_DESK_DATA_DIR`; `data/`, gi
   time. The record holds only the hash, never the text.
 - **Backup.** `make backup` copies the record with SQLite's online backup (safe while the app runs) to
   `backups/record-<UTC>.sqlite` with a `.sha256`, and writes `backups/decisions-<UTC>.jsonl`, one line per decision.
-  `make restore-check` verifies the newest backup's hash, restores it to a temporary directory and compares run ids,
-  decisions and theses with the live record: PASS, or FAIL with the first difference.
+  `make restore-check` verifies the newest backup's hash, restores it to a temporary directory and compares it with
+  the live record: every run, decision and thesis as the text that is stored, so a record that no longer parses is
+  compared too. It then fails if any record in the backup cannot be read by this version. PASS with the backup's age,
+  or FAIL with the first difference. `make backup-status` says in one line what was made or changed since the newest
+  backup; `make up` prints it. `make two-writers` has the app and a one-off container write one scratch record at
+  once (`EVIDENCE_DESK_DATA_DIR`, overridden for that target only) and checks its integrity and every row.
 - **Deleting the cache loses no record, and one thing a record points at.** The next run fetches the filings from EDGAR, parses them again and refills it. But the stored text that an old run's excerpts are offsets into lives only in the cache. With it gone, the excerpts are still in the record as text; checking that they are spans of the stored text again needs the same filing fetched and parsed by the parser that produced it.
   Runs in the record are unchanged. A version 3 database at `data/runs/runs.sqlite` is not read.
 
@@ -188,8 +192,8 @@ finding, 409 while running, 422 withheld finding); `GET .../export.md?reviewed=t
 - **A new engine**: a class with `name`, `plan`, `assess`, `summarize` in `engines/`, chosen in `wiring.py`. The gate
   and the policy apply to it unchanged.
 - **A schema change to the record** (`RECORD_SCHEMA` in `store.py`): it only creates missing tables and there is no
-  migration code, so write the migration with the change. `make backup` first, `make restore-check` after; records
-  that no longer validate are skipped with a warning, so compare counts too. The cache needs no care: delete it.
+  migration code, so write the migration with the change. `make backup` first, `make restore-check` after; the app
+  skips a record that no longer validates with a warning, and `restore-check` fails on one, naming it. The cache needs no care: delete it.
 - **A new kind of reviewer decision**: a value in `DecisionValue` (`core/models.py`), its label in
   `policy.DECISION_LABELS`, its effect in `core/review.build_review`, then the page and export. Decisions are stored
   as JSON, so no new column. Back up first.

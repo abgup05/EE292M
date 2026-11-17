@@ -11,7 +11,7 @@ from enum import StrEnum
 
 from pydantic import BaseModel, Field, field_validator
 
-from app.urls import UnsafeURL, canonicalize, validate_public_url
+from app.sources.urls import UnsafeURL, canonicalize, validate_public_url
 
 
 class RunStatus(StrEnum):

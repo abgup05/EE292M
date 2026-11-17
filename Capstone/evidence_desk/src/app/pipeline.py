@@ -13,8 +13,6 @@ import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime
 
-from app.extract import ExtractedDocument, extract_document
-from app.fetch import FetchedPage, FetchError, fetch_page
 from app.models import (
     Brief,
     ExtractionStatus,
@@ -25,9 +23,11 @@ from app.models import (
     Subquestion,
     SubquestionStatus,
 )
+from app.sources.http import FetchedPage, FetchError, fetch_page
+from app.sources.urls import canonicalize
+from app.sources.web import ExtractedDocument, extract_document
 from app.store import Store
 from app.synthesize import Draft, ExtractiveSynthesizer, Synthesizer
-from app.urls import canonicalize
 from app.verify import verify_findings
 
 RUN_TIME_LIMIT_SECONDS = 180.0

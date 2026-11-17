@@ -8,7 +8,7 @@ RUN := $(COMPOSE) run --rm --no-deps app
 
 help:
 	@echo 'Everyday: build up down verify clean (verify-fresh: clone the committed branch under results/ and verify it)'
-	@echo 'Development: test lint fmt smoke logs shell'
+	@echo 'Development: test lint fmt smoke logs shell (test T=tests/test_x.py; lint/fmt FILES="src/app/x.py")'
 	@echo 'Dependencies: lock'
 	@echo 'Demonstration: demo (live run against the two real seed URLs; writes results/)'
 	@echo 'Fixtures: fixtures (record the two real seed pages under tests/fixtures; REFRESH=1 to overwrite)'
@@ -32,16 +32,16 @@ verify-fresh:
 	rm -rf "$$checkout"
 
 test:
-	$(RUN) pytest -q -p no:cacheprovider tests
+	$(RUN) pytest -q -p no:cacheprovider $(or $(T),tests)
 
 lint:
-	$(RUN) ruff check --no-cache --config docker/pyproject.toml src tests
-	$(RUN) ruff format --check --config docker/pyproject.toml src tests
+	$(RUN) ruff check --no-cache --config docker/pyproject.toml $(or $(FILES),src tests)
+	$(RUN) ruff format --check --config docker/pyproject.toml $(or $(FILES),src tests)
 	$(COMPOSE) run --rm --no-deps jscheck
 
 fmt:
-	$(RUN) ruff check --fix --no-cache --config docker/pyproject.toml src tests
-	$(RUN) ruff format --config docker/pyproject.toml src tests
+	$(RUN) ruff check --fix --no-cache --config docker/pyproject.toml $(or $(FILES),src tests)
+	$(RUN) ruff format --config docker/pyproject.toml $(or $(FILES),src tests)
 
 smoke:
 	$(COMPOSE) up --force-recreate -d app

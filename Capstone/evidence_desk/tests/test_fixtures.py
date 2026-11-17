@@ -11,8 +11,8 @@ from pathlib import Path
 
 import pytest
 
-from app.extract import extract_document
 from app.models import ResearchRequest
+from app.sources.web import extract_document
 from app.synthesize import ExtractiveSynthesizer
 
 FIXTURES = Path(__file__).parent / "fixtures"

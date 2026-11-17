@@ -14,7 +14,6 @@ from typing import Any
 
 from pydantic import ValidationError
 
-from app.extract import ExtractedDocument
 from app.models import (
     Confidence,
     Evidence,
@@ -23,6 +22,7 @@ from app.models import (
     Stance,
     Subquestion,
 )
+from app.sources.web import ExtractedDocument
 from app.synthesize import Draft
 
 DEFAULT_MODEL = "claude-opus-5-5"

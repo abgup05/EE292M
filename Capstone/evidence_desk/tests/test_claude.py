@@ -9,8 +9,8 @@ from types import SimpleNamespace
 import pytest
 
 from app.claude import ClaudeSynthesizer, SynthesisError
-from app.extract import extract_document
 from app.models import ResearchRequest, Subquestion
+from app.sources.web import extract_document
 
 REQUEST = ResearchRequest(
     question="What risks should an organization examine before using generative AI internally?",

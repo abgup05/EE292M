@@ -5,8 +5,6 @@ from pathlib import Path
 
 import pytest
 
-from app.extract import ExtractedDocument
-from app.fetch import FetchedPage, FetchError
 from app.models import (
     Confidence,
     Evidence,
@@ -17,6 +15,8 @@ from app.models import (
     Subquestion,
 )
 from app.pipeline import RUN_TIME_LIMIT_SECONDS, execute_run, new_run
+from app.sources.http import FetchedPage, FetchError
+from app.sources.web import ExtractedDocument
 from app.store import Store
 from app.synthesize import Draft, ExtractiveSynthesizer
 

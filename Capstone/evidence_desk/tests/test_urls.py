@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.urls import UnsafeURL, canonicalize, is_private_address, validate_public_url
+from app.sources.urls import UnsafeURL, canonicalize, is_private_address, validate_public_url
 
 
 @pytest.mark.parametrize(

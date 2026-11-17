@@ -1,6 +1,6 @@
 """HTML extraction: boilerplate removed, headings kept, metadata and hash recorded."""
 
-from app.extract import extract_document
+from app.sources.web import extract_document
 
 PAGE = """<!doctype html>
 <html><head>

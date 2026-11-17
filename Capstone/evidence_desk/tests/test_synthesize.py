@@ -1,7 +1,7 @@
 """Deterministic extractive synthesis: works without credentials and only quotes stored text."""
 
-from app.extract import extract_document
 from app.models import ResearchRequest
+from app.sources.web import extract_document
 from app.synthesize import ExtractiveSynthesizer
 
 REQUEST = ResearchRequest(

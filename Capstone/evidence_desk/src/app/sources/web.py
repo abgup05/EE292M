@@ -9,10 +9,12 @@ from __future__ import annotations
 
 import hashlib
 import re
-from dataclasses import dataclass, field
 from urllib.parse import urlsplit
 
 from bs4 import BeautifulSoup, Comment, NavigableString, Tag
+
+from app.core.documents import Document as ExtractedDocument
+from app.core.documents import Section
 
 REMOVED_TAGS = (
     "script",
@@ -63,27 +65,6 @@ DATE_META_NAMES = (
 )
 ISO_DATE = re.compile(r"(\d{4}-\d{2}-\d{2})")
 WHITESPACE = re.compile(r"\s+")
-
-
-@dataclass(frozen=True)
-class Section:
-    """Text under one heading; ``heading`` is the citation locator."""
-
-    heading: str
-    text: str
-
-
-@dataclass(frozen=True)
-class ExtractedDocument:
-    """Stored source text plus the metadata the brief shows for it."""
-
-    url: str
-    title: str
-    publisher: str
-    published_date: str | None
-    text: str
-    content_hash: str
-    sections: list[Section] = field(default_factory=list)
 
 
 def _clean(value: str) -> str:

@@ -19,10 +19,10 @@ from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 
 from app.claude import ClaudeSynthesizer
 from app.export import render_markdown
-from app.fetch import fetch_page
 from app.models import ResearchRequest, Run
 from app.pipeline import Fetcher, Searcher, execute_run, new_run
 from app.search import searcher_from_env
+from app.sources.http import fetch_page
 from app.store import Store
 from app.synthesize import ExtractiveSynthesizer, Synthesizer
 

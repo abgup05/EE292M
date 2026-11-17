@@ -3,8 +3,8 @@
 import httpx
 import pytest
 
-from app.fetch import MAX_BYTES, FetchError, fetch_page
-from app.urls import UnsafeURL
+from app.sources.http import MAX_BYTES, FetchError, fetch_page
+from app.sources.urls import UnsafeURL
 
 PUBLIC = ["93.184.216.34"]
 

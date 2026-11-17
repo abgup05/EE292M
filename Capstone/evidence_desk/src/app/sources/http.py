@@ -15,7 +15,7 @@ from urllib.parse import urljoin, urlsplit
 
 import httpx
 
-from app.urls import UnsafeURL, resolve_public_address, validate_public_url
+from app.sources.urls import UnsafeURL, resolve_public_address, validate_public_url
 
 TIMEOUT_SECONDS = 12.0
 MAX_BYTES = 2 * 1024 * 1024

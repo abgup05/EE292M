@@ -13,8 +13,8 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-from app.extract import extract_document
-from app.fetch import FetchError, fetch_page
+from app.sources.http import FetchError, fetch_page
+from app.sources.web import extract_document
 
 FIXTURE_DIR = Path("tests/fixtures")
 SEEDS = {

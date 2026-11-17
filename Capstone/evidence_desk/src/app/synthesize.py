@@ -12,7 +12,6 @@ import re
 from dataclasses import dataclass, field
 from typing import Protocol
 
-from app.extract import ExtractedDocument
 from app.models import (
     Confidence,
     Evidence,
@@ -21,6 +20,7 @@ from app.models import (
     Stance,
     Subquestion,
 )
+from app.sources.web import ExtractedDocument
 
 STOPWORDS = frozenset(
     [

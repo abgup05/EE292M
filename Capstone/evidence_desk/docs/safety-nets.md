@@ -52,17 +52,18 @@ The layers, in the order a result meets them. The point of stacking them is that
 | Request validation at the API | Malformed input, unknown tickers, private-network URLs | A well-formed claim that is vague or untestable |
 | The quote check | A quote that is not word for word in the filing | A real quote that does not mean what the finding says |
 | The number check | A number in a finding that is in neither its quotes nor its cited figures | A right number attached to the wrong thing; numbers written as words |
-| The meaning check | A verified finding whose excerpts a second model judges do not support the statement or stance; it is withheld with the reason | A misreading the checker shares (same model family; same model is flagged as a coverage limit); a check that could not run leaves findings "not checked", shown as such |
+| The meaning check | A verified finding whose excerpts a second model judges do not support the statement or stance; it is withheld with the reason | A misreading the checker shares (same model family; same model is flagged as a coverage limit). Measured on planted mismatches, real quotes moved under a statement they do not belong to: it rejected 149 of 152, the easy kind; a quote on the right topic that does not carry the statement has not been tried. A check that could not run leaves findings "not checked" and makes the run partial |
 | The verdict rule | A model asserting a verdict without verified evidence | A wrong stance on a verified finding that the meaning check passed |
 | The answer key for figures | A wrong formula, period or restatement, on three companies | A company whose XBRL tags differ from those three |
-| The tripwire | Any change upstream of a recorded run | A change that is wrong and was re-baselined without reading the diff |
+| The tripwire | Any change upstream of a recorded run, and since version 8 any change to the comparison of two recorded filings | A change that is wrong and was re-baselined without reading the diff |
 | The replay test | A prompt edited without re-recording | Whatever the recorded answers got wrong, replayed faithfully |
-| The page test | A wrong label, glyph, count or missing badge | Layout, contrast, whether a person understands it |
+| The page test | A wrong label, glyph, count or missing badge; a figure drawn under the wrong period; a page rendered before its last change | Layout, contrast, whether a person understands it |
+| The tagged total | A breakdown whose members do not add up to the filing's own tagged total: a member missed, counted twice, or read at the wrong scale | A number under the wrong label that still adds up; a filing that tags no total |
 | A blind review by another model | Claims the repository does not support | Blind spots the reviewer shares with the builder: both are Claude models |
 | The reader's accept or reject | A finding that misreads its quote | A reader who accepts without opening the passage |
 
 **What slips past all of them today:**
 
-- **A wrong stance.** Every mechanical layer passes a real sentence that the engine misread. The meaning check now asks a second model, but it is another Claude model reading the same excerpts, and until its cassette requests are answered it has not judged a recorded run; the reader is still the last layer.
-- **A passage that was never retrieved.** If the passage that matters is not in the eight shown to the engine, the claim reads "not addressed" or is judged on weaker evidence. On the golden set that is 17 of 24 cases with keyword retrieval alone. No layer after retrieval can see what retrieval left out.
+- **A wrong stance on the right topic.** Every mechanical layer passes a real sentence that the engine misread. The meaning check asks a second model, and it does reject quotes that are about something else (149 of 152 planted ones). But it is another Claude model reading the same excerpts, it rejected only 1 of 77 real findings, and nothing has measured what it does with a quote that is on the topic and does not carry the statement. The reader is still the last layer.
+- **A passage that was never retrieved.** If the passage that matters is not in the eight shown to the engine, the claim reads "not addressed" or is judged on weaker evidence. On the golden set that is 15 of 24 cases with the claim's own words and 6 of 24 with the planner's queries. No layer after retrieval can see what retrieval left out. The list of changed paragraphs under each claim is a second, independent look at the newest filing, by keyword only.
 - **Correlated reviewers.** The builder, the stand-in that answered the prompts and every reviewer are Claude models. Their mistakes are not independent. No person has yet read the golden cases or the code.

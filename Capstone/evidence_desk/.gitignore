@@ -10,3 +10,6 @@ backups/**
 !backups/.gitkeep
 results/**
 !results/.gitkeep
+# Requests a cassette could not answer: work in progress, never committed.
+demo/cassettes/*/pending/
+eval/cassettes/*/pending/

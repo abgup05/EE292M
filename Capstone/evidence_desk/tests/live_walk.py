@@ -212,6 +212,35 @@ def main() -> int:
     for row in (found.get("revenue_by_product") or {"rows": []})["rows"][:3]:
         newest = row["values"][0]
         print(f"   {row['label']}: {newest['shown']} for the period ended {newest['period_end']}")
+
+    status, refused = call("POST", "/api/runs", {**example, "tagged_figure": True})
+    expect(status == 422, "a misspelt option is refused, not ignored (422)")
+    status, started = call("POST", "/api/runs", {**example, "tagged_figures": True})
+    expect(status == 202, "a run that asks for the tagged figures starts (202)")
+    # Its assessment prompts are not in the recording this app replays, so its engine steps
+    # fall back. What is checked here is that the figures are read live, offered and recorded.
+    with_tags = finished(started["id"])
+    offered = [m for m in with_tags["metrics"] if m["id"].startswith("tagged:")]
+    print(
+        f"   {with_tags['coverage']['figures_offered']} reported and "
+        f"{with_tags['coverage']['tagged_figures_offered']} tagged figures offered; "
+        f"status {with_tags['status']}"
+    )
+    expect(
+        with_tags["coverage"]["tagged_figures_offered"] == len(offered) > 0,
+        "the run offers tagged figures and records each one it offered",
+    )
+    expect(
+        run["coverage"]["tagged_figures_offered"] == 0
+        and not any(m["id"].startswith("tagged:") for m in run["metrics"]),
+        "the run that did not ask was offered none",
+    )
+    data_center = [
+        m for m in offered if ":DataCenterMember:" in m["id"] and ":change:" not in m["id"]
+    ]
+    expect(bool(data_center), "Data Center revenue is among the tagged figures offered")
+    for metric in data_center[:2]:
+        print(f"   {metric['display']}: {metric['label'][:90]}")
     print("live walk: PASS")
     return 0
 

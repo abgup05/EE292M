@@ -1,4 +1,4 @@
-.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench eval eval-validate backup restore-check up-recorded live-walk changes breakdowns sample-run-changes golden-sheet
+.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench eval eval-validate backup restore-check up-recorded live-walk changes breakdowns sample-run-changes golden-sheet backup-status figures two-writers
 
 export COMPOSE_PROJECT_NAME := ee292m-evidence-desk
 export LOCAL_UID := $(shell id -u)
@@ -19,7 +19,7 @@ help:
 	@echo "Replay: replay ARGS='--out demo' (the example thesis on recorded filings with model answers from the cassette; no network, no key)"
 	@echo 'Tripwire: golden-check (the offline example run against tests/golden/golden.json; names the first stage that moved)'
 	@echo 'Tripwire: golden-baseline (rewrite tests/golden/golden.json, and replay.json when the replay has nothing pending; read the diff before committing a new baseline)'
-	@echo 'Speed: profile (cProfile of the offline example run, top 25 by cumulative time, to results/profile-<UTC>.txt); bench RUNS=5 (median wall time of the offline run, in seconds)'
+	@echo 'Speed: profile (the offline example run timed stage by stage, then cProfile of it, to results/profile-<UTC>.txt); bench RUNS=12 (the offline run with and without the parser'"'"'s header cut, in alternating pairs: the median saving and its spread, to results/bench-<UTC>.txt)'
 	@echo "Evaluation: eval ARGS='run --variant claim' (score retrieval on the golden set; ARGS='fetch' fills eval/cache from EDGAR), eval-validate (check every golden case against its filing)"
 	@echo "Filing changes: changes ARGS='NVDA --form 10-K' (what was added, removed and reworded between a company's two latest annual or quarterly reports)"
 	@echo 'Tagged facts: breakdowns ARGS="NVDA --form 10-K" (segments, geographies and customers from a filing'\''s inline XBRL)'
@@ -27,13 +27,16 @@ help:
 	@echo 'Fixtures: fixtures (record SEC EDGAR responses for NVIDIA under tests/fixtures/edgar; REFRESH=1 to overwrite)'
 	@echo 'Diagnostics: probe TICKERS="AAPL MSFT" (live: parse each company'"'"'s latest 10-K and 10-Q, report Item coverage; writes results/probe-<UTC>.md)'
 	@echo 'Backup: backup (the record, online, to backups/record-<UTC>.sqlite with its .sha256, and backups/decisions-<UTC>.jsonl)'
-	@echo 'Backup: restore-check (restore the newest backup into a temporary directory and compare it with the live record; PASS or FAIL)'
+	@echo 'Backup: restore-check (restore the newest backup into a temporary directory and compare it with the live record, record by record, and fail on any record this version cannot read; PASS with the backup'"'"'s age, or FAIL)'
+	@echo 'Two writers: two-writers (starts the app on a scratch record under results/ and has it and a one-off container write that record at once; integrity and every row checked)'
+	@echo 'Backup: backup-status (one line: how old the newest backup is and how many runs, decisions and theses were made or changed since)'
 
 build:
 	$(COMPOSE) build app
 
 up:
 	$(COMPOSE) up --build --force-recreate -d app
+	@-$(COMPOSE) exec -T app python -m app.backup status
 
 up-recorded:
 	EVIDENCE_DESK_CASSETTE=demo/cassettes/nvda-example $(COMPOSE) up --build --force-recreate -d app
@@ -175,6 +178,17 @@ clean:
 
 backup:
 	$(RUN) python -m app.backup backup
+
+backup-status:
+	@$(RUN) python -m app.backup status
+
+# The app and a one-off container write one record at the same time, on a scratch record under
+# results/ (never the real one). Starts the app, so only one session may run it at a time.
+SCRATCH_DATA := /work/results/two-writers
+two-writers:
+	@rm -rf results/two-writers
+	EVIDENCE_DESK_DATA_DIR=$(SCRATCH_DATA) $(COMPOSE) up --build --force-recreate -d app
+	@trap '$(COMPOSE) down' EXIT; EVIDENCE_DESK_DATA_DIR=$(SCRATCH_DATA) $(RUN) python -m tests.two_writers $(ARGS)
 
 restore-check:
 	$(RUN) python -m app.backup restore-check

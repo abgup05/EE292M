@@ -135,11 +135,11 @@ def test_restore_check_passes_on_an_unchanged_record(
 ) -> None:
     directory = tmp_path / "backups"
     backup.main(["backup", "--dir", str(directory)], store=store, now=NOON)
-    code = backup.main(["restore-check", "--dir", str(directory)], store=store)
+    code = backup.main(["restore-check", "--dir", str(directory)], store=store, now=NOON)
     assert code == 0
     assert capsys.readouterr().out.splitlines()[-1] == (
         "PASS: record-20261117T120000Z.sqlite restores to the live record: "
-        "2 runs, 1 decisions, 1 theses"
+        "2 runs, 1 decisions, 1 theses; taken less than a minute before this check"
     )
 
 
@@ -203,4 +203,126 @@ def test_the_backup_file_is_left_exactly_as_its_checksum_says(store: Store, tmp_
     assert backup.file_sha256(written.database) == before
     assert sorted(p.name for p in directory.iterdir()) == sorted(
         [written.database.name, written.checksum.name, written.decisions.name]
+    )
+
+
+# Review 6 (docs/reviews/review-6-speed-system.md), findings 6 and 7 ---------------------------
+
+
+def _write_row(store: Store, sql: str, parameters: tuple[str, ...]) -> None:
+    """Put a row into the record behind the store's back, as an older version left it."""
+    with closing(sqlite3.connect(store.path)) as connection:
+        connection.execute(sql, parameters)
+        connection.commit()
+
+
+def test_restore_check_fails_when_a_run_changed_though_its_id_did_not(
+    store: Store, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Runs were compared by id only: a run rewritten after the backup passed."""
+    directory = tmp_path / "backups"
+    backup.main(["backup", "--dir", str(directory)], store=store, now=NOON)
+    changed = _run("run-2")
+    changed.status = RunStatus.partial
+    store.save_run(changed)
+    assert backup.main(["restore-check", "--dir", str(directory)], store=store, now=NOON) == 1
+    assert capsys.readouterr().out.splitlines()[-1] == (
+        "FAIL: record-20261117T120000Z.sqlite: run run-2 differs between the backup and the "
+        "live record"
+    )
+
+
+def test_restore_check_fails_on_records_this_version_cannot_read(
+    store: Store, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A thesis and a decision that no longer validate were skipped on both sides, so they agreed.
+
+    The backup and the live record hold the same rows; the check passed while the app could
+    show neither. That is what a restore check after a change of schema is run to find.
+    """
+    _write_row(
+        store,
+        "INSERT INTO theses (id, created_at, record) VALUES (?, ?, ?)",
+        ("th-old", NOON.isoformat(), '{"id": "th-old", "title": "a field this version dropped"}'),
+    )
+    _write_row(
+        store,
+        "INSERT INTO decisions (run_id, finding_id, decided_at, record) VALUES (?, ?, ?, ?)",
+        ("run-2", "f1", NOON.isoformat(), '{"verdict": "yes"}'),
+    )
+    directory = tmp_path / "backups"
+    backup.main(["backup", "--dir", str(directory)], store=store, now=NOON)
+    assert backup.main(["restore-check", "--dir", str(directory)], store=store, now=NOON) == 1
+    last = capsys.readouterr().out.splitlines()[-1]
+    assert last.startswith("FAIL: record-20261117T120000Z.sqlite: 2 record(s) in it cannot be read")
+    assert "the decision on run-2/f1" in last and "thesis th-old" in last
+
+
+def test_a_record_changed_in_a_way_no_parser_sees_still_fails(
+    store: Store, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Two unreadable rows with the same key and different text are a difference too."""
+    _write_row(
+        store,
+        "INSERT INTO theses (id, created_at, record) VALUES (?, ?, ?)",
+        ("th-old", NOON.isoformat(), '{"id": "th-old", "note": "as backed up"}'),
+    )
+    directory = tmp_path / "backups"
+    backup.main(["backup", "--dir", str(directory)], store=store, now=NOON)
+    _write_row(store, "UPDATE theses SET record = ? WHERE id = ?", ('{"id": "th-old"}', "th-old"))
+    assert backup.main(["restore-check", "--dir", str(directory)], store=store, now=NOON) == 1
+    assert (
+        "thesis th-old differs between the backup and the live record"
+        in (capsys.readouterr().out.splitlines()[-1])
+    )
+
+
+@pytest.mark.parametrize(
+    ("later", "words"),
+    [
+        (timedelta(seconds=20), "less than a minute"),
+        (timedelta(minutes=5, seconds=10), "5 minutes"),
+        (timedelta(hours=3, minutes=59), "3 hours"),
+        (timedelta(days=2, hours=1), "2 days"),
+        (timedelta(minutes=1), "1 minute"),
+    ],
+)
+def test_the_pass_line_says_how_old_the_backup_is(
+    store: Store,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    later: timedelta,
+    words: str,
+) -> None:
+    directory = tmp_path / "backups"
+    backup.main(["backup", "--dir", str(directory)], store=store, now=NOON)
+    code = backup.main(["restore-check", "--dir", str(directory)], store=store, now=NOON + later)
+    assert code == 0
+    assert capsys.readouterr().out.splitlines()[-1].endswith(f"; taken {words} before this check")
+
+
+def test_status_says_what_the_newest_backup_does_not_hold(
+    store: Store, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Without comparing anything by hand: how old the newest backup is, and what it lacks."""
+    directory = tmp_path / "backups"
+    assert backup.main(["status", "--dir", str(directory)], store=store, now=NOON) == 0
+    assert capsys.readouterr().out.strip() == (
+        f"backup status: no backup in {directory}/. The record holds 2 runs, 1 decisions and "
+        "1 theses with no copy (run `make backup`)."
+    )
+    backup.main(["backup", "--dir", str(directory)], store=store, now=NOON)
+    capsys.readouterr()
+    assert backup.main(["status", "--dir", str(directory)], store=store, now=NOON) == 0
+    assert capsys.readouterr().out.strip() == (
+        "backup status: record-20261117T120000Z.sqlite, taken less than a minute ago, holds "
+        "everything in the record."
+    )
+    store.save_run(_run("run-3"))
+    store.save_decision(_decision(DecisionValue.rejected, note="Changed my mind."))
+    two_days = NOON + timedelta(days=2)
+    assert backup.main(["status", "--dir", str(directory)], store=store, now=two_days) == 0
+    assert capsys.readouterr().out.strip() == (
+        "backup status: record-20261117T120000Z.sqlite, taken 2 days ago, does not hold 1 run "
+        "and 1 decision made or changed since (run `make backup`)."
     )

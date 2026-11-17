@@ -270,6 +270,40 @@ class Store:
 
     # Backup
 
+    def raw_records(self, table: str) -> dict[str, str]:
+        """Every stored record of ``table`` as its text, by key, without parsing any of them.
+
+        ``table`` is "runs", "decisions" or "theses". A decision's key is
+        "<run id>/<finding id>". This is what a backup is compared by: a record that
+        no longer validates is still a record, and still has to be the same on both sides.
+        """
+        queries = {
+            "runs": "SELECT id, record FROM runs",
+            "decisions": "SELECT run_id || '/' || finding_id, record FROM decisions",
+            "theses": "SELECT id, record FROM theses",
+        }
+        if table not in queries:
+            raise ValueError(f"no table {table!r} in the record")
+        return {key: record for key, record in self._db.query(queries[table])}
+
+    def unreadable(self) -> list[str]:
+        """Stored records that no longer validate against the current models, named.
+
+        "run <id>", "the decision on <run id>/<finding id>" or "thesis <id>", sorted
+        within each kind. The app skips these with a warning; this is how to see them.
+        """
+        kinds: tuple[tuple[str, str, type[BaseModel]], ...] = (
+            ("runs", "run", Run),
+            ("decisions", "the decision on", Decision),
+            ("theses", "thesis", Thesis),
+        )
+        return [
+            f"{word} {key}"
+            for table, word, model in kinds
+            for key, record in sorted(self.raw_records(table).items())
+            if _parse(model, key, record) is None
+        ]
+
     def counts(self) -> dict[str, int]:
         """Rows in the record: runs, decisions and theses (outdated records included)."""
         queries = {

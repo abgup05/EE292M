@@ -11,9 +11,16 @@ prints what it wrote and how many runs, decisions and theses the copy holds.
 ``python -m app.backup restore-check`` (``make restore-check``) checks the
 newest backup's SHA-256, restores it into a temporary directory, opens it
 with :class:`~app.store.Store` and compares it with the live record: the same
-run ids, the same decisions (every field) and the same saved theses. It prints
-PASS, or FAIL with the first difference, and exits 1 on FAIL or when there is
-no backup.
+runs, decisions and saved theses, each compared as the text that is stored, so
+a record that no longer parses is compared too. It then fails if any record in
+the backup cannot be read by this version of the app: a restore would keep
+such a record in the file and the app would show nothing of it. It prints
+PASS with the backup's age, or FAIL with the first difference, and exits 1 on
+FAIL or when there is no backup.
+
+``python -m app.backup status`` (``make backup-status``) prints one line: how
+old the newest backup is and how many runs, decisions and theses were made or
+changed since. It always exits 0; it is a reminder, not a check.
 
 Only the record is backed up. The filing cache is disposable by design.
 """
@@ -207,8 +214,74 @@ def _thesis_difference(backup: list[Thesis], live: list[Thesis]) -> str | None:
     return None
 
 
-def restore_check(live: Store, directory: Path) -> str:
-    """Restore the newest backup and compare it with ``live``; the PASS line, or raise."""
+RECORD_KINDS: tuple[tuple[str, str], ...] = (
+    ("runs", "run"),
+    ("decisions", "the decision on"),
+    ("theses", "thesis"),
+)
+MAX_NAMED = 3  # unreadable records named in a failure; the rest are counted
+
+
+def _stored_difference(table: str, word: str, backup: Store, live: Store) -> str | None:
+    """The first record of ``table`` that the two do not hold as the same text, if any."""
+    in_backup, in_live = backup.raw_records(table), live.raw_records(table)
+    missing = _first_set_difference(word, list(in_backup), list(in_live))
+    if missing:
+        return missing
+    for key in sorted(in_live):
+        if in_backup[key] != in_live[key]:
+            return f"{word} {key} differs between the backup and the live record"
+    return None
+
+
+def _difference(restored: Store, live: Store) -> str | None:
+    """The first difference between a restored backup and the live record, most telling first.
+
+    Runs by id, then every decision field by field (so a changed decision is named
+    with what changed), then every stored record as text, which also covers runs
+    whose content changed and records neither side can parse.
+    """
+    return (
+        _first_set_difference("run", restored.run_ids(), live.run_ids())
+        or _decision_difference(restored.all_decisions(), live.all_decisions())
+        or next(
+            (
+                found
+                for table, word in RECORD_KINDS
+                if (found := _stored_difference(table, word, restored, live))
+            ),
+            None,
+        )
+    )
+
+
+def backup_time(database: Path) -> datetime | None:
+    """When ``database`` was taken, from its name (``record-<UTC>.sqlite``); None if unreadable."""
+    stamp = database.name.removeprefix(RECORD_PREFIX).removesuffix(".sqlite")
+    try:
+        return datetime.strptime(stamp, STAMP_FORMAT).replace(tzinfo=UTC)
+    except ValueError:
+        return None
+
+
+def age_words(taken: datetime | None, now: datetime) -> str:
+    """How long before ``now`` a backup was taken: whole minutes, hours or days."""
+    if taken is None:
+        return "an unknown time"
+    seconds = max(0, int((now - taken).total_seconds()))
+    for size, word in ((86400, "day"), (3600, "hour"), (60, "minute")):
+        if seconds >= size:
+            count = seconds // size
+            return f"{count} {word}" if count == 1 else f"{count} {word}s"
+    return "less than a minute"
+
+
+def restore_check(live: Store, directory: Path, now: datetime | None = None) -> str:
+    """Restore the newest backup and compare it with ``live``; the PASS line, or raise.
+
+    Fails on the first record the two do not hold as the same stored text, and
+    then on any record in the backup that this version cannot read.
+    """
     database = newest_backup(directory)
     if database is None:
         raise RestoreCheckFailed(f"no backup in {directory}/ (run `make backup` first)")
@@ -216,19 +289,55 @@ def restore_check(live: Store, directory: Path) -> str:
     copy = _open_copy(database)
     try:
         restored = copy.store
-        difference = (
-            _first_set_difference("run", restored.run_ids(), live.run_ids())
-            or _decision_difference(restored.all_decisions(), live.all_decisions())
-            or _thesis_difference(restored.list_theses(), live.list_theses())
-        )
+        difference = _difference(restored, live)
+        unreadable = restored.unreadable()
         counts = restored.counts()
     finally:
         copy.close()
     if difference:
         raise RestoreCheckFailed(f"{database.name}: {difference}")
+    if unreadable:
+        named = ", ".join(unreadable[:MAX_NAMED])
+        more = f" and {len(unreadable) - MAX_NAMED} more" if len(unreadable) > MAX_NAMED else ""
+        raise RestoreCheckFailed(
+            f"{database.name}: {len(unreadable)} record(s) in it cannot be read by this version "
+            f"of the app ({named}{more}); a restore would keep them in the file and show none"
+        )
+    age = age_words(backup_time(database), now or datetime.now(UTC))
     return (
         f"PASS: {database.name} restores to the live record: {counts['runs']} runs, "
-        f"{counts['decisions']} decisions, {counts['theses']} theses"
+        f"{counts['decisions']} decisions, {counts['theses']} theses; taken {age} before this check"
+    )
+
+
+def status(live: Store, directory: Path, now: datetime | None = None) -> str:
+    """One line on the newest backup: its age, and what was made or changed since."""
+    database = newest_backup(directory)
+    if database is None:
+        counts = live.counts()
+        return (
+            f"backup status: no backup in {directory}/. The record holds {counts['runs']} runs, "
+            f"{counts['decisions']} decisions and {counts['theses']} theses with no copy "
+            "(run `make backup`)."
+        )
+    age = age_words(backup_time(database), now or datetime.now(UTC))
+    copy = _open_copy(database)
+    try:
+        behind: list[str] = []
+        for table, noun in (("runs", "run"), ("decisions", "decision"), ("theses", "thesis")):
+            held, current = copy.store.raw_records(table), live.raw_records(table)
+            count = sum(1 for key, record in current.items() if held.get(key) != record)
+            if count:
+                plural = "theses" if noun == "thesis" else f"{noun}s"
+                behind.append(f"{count} {noun}" if count == 1 else f"{count} {plural}")
+    finally:
+        copy.close()
+    if not behind:
+        return f"backup status: {database.name}, taken {age} ago, holds everything in the record."
+    listed = " and ".join([", ".join(behind[:-1]), behind[-1]] if len(behind) > 1 else behind)
+    return (
+        f"backup status: {database.name}, taken {age} ago, does not hold {listed} made or "
+        "changed since (run `make backup`)."
     )
 
 
@@ -238,11 +347,14 @@ def main(
     store: Store | None = None,
     now: datetime | None = None,
 ) -> int:
-    """``backup`` or ``restore-check`` [``--dir DIR``]; returns the exit code."""
+    """``backup``, ``restore-check`` or ``status`` [``--dir DIR``]; returns the exit code.
+
+    ``now`` stamps a backup, and is the time a backup's age is measured at.
+    """
     parser = argparse.ArgumentParser(
         prog="python -m app.backup", description=__doc__.split("\n")[0]
     )
-    parser.add_argument("command", choices=("backup", "restore-check"))
+    parser.add_argument("command", choices=("backup", "restore-check", "status"))
     parser.add_argument("--dir", type=Path, default=DEFAULT_DIRECTORY, help="backup directory")
     args = parser.parse_args(argv)
     live = store or wiring.store_from_env()
@@ -257,8 +369,11 @@ def main(
             f"and {counts['theses']} theses"
         )
         return 0
+    if args.command == "status":
+        print(status(live, args.dir, now))
+        return 0
     try:
-        print(restore_check(live, args.dir))
+        print(restore_check(live, args.dir, now))
     except RestoreCheckFailed as failure:
         print(f"FAIL: {failure}")
         return 1

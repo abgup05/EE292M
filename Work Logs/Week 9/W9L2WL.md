@@ -69,13 +69,35 @@ After the first pass I asked the session to keep going: another round of buildin
 - **A relabelled count that was not true.** The page's count of quotes that failed the check was renamed "not found" while fixing another label; a quote can also fail for its length. Caught on reading the report, before it was committed.
 - **The evaluation measures the easy case.** A swapped quote is usually about another topic. Whether the second model catches a quote on the right topic that does not carry the statement is still not known.
 
+**The second pass, continued: a third referee, and version 10**
+
+- **A third hostile reading**, of version 9, which nobody but its builders had read: the `referee` agent again, another model, read-only, from a checkout with my notes, the earlier reviews and both triages removed. Nine findings, unedited in `Capstone/evidence_desk/docs/reviews/referee-3-version-9.md`. Each is accepted with a fix, accepted as a stated limit, or rejected with a reason in `docs/referee-3-triage.md`; the table is in `Homework/Week 9/W9L2.md`.
+- **Sentences that said more than the code.** The plan's own "when the evidence is thin the brief says partial"; "shares two words with the claim", where the rule also counts the run's search queries; "the filings this run read", where the earlier filing of each pair never was; a README table with labels the tool does not print. All corrected, on the page too.
+- **Two false passes in the number check**, each now a test that failed first: "revenue grew 3% while gross margin fell" against a source saying "(3)%", and "$46 million" against "46 customers".
+- **Three faults a filing could reach**: one broken comparison failed the whole request for a run's changes; a second tagged total was taken without a word; and an `assert` stopped the breakdown reader. The referee wrote that it "constructed no input" for the last; the session constructed one.
+- **Version 10: a finding can cite the tagged figures.** A run can ask to be offered the segment, product, geography and customer figures of the newest annual and quarterly report it read, at most 40. Off by default, because they change the engine's prompt and a recorded answer belongs to its prompt. Built by a Claude Opus session from a written brief; the page by another.
+- **Two recordings to see what it changes**, made the same day by the same stand-in models, each told only to answer: the example without the option and with it. Without the option and without any reminder of the rules, 18 of 18 findings verified and no number went unmatched, which answers the referee's point that the first recording was an upper bound. With the option, five verified findings cite a tagged figure and citations of figures go from 8 to 20: Data Center revenue under the growth claim, customers' shares under the concentration claim, revenue tagged for China under the claim about export controls.
+- **A command that prints each company's figures**, `make figures`, written to check one fix on eight companies. It found two more faults on its first run (below).
+
+**What went wrong in this part**
+
+- **Testing on few companies, for the third time, and this time in the oldest part of the tool.** The reported figures have been checked against published values for Apple, Microsoft and NVIDIA since version 3, and nothing looked at the others. Costco's year is in weeks, so its fourth quarter was never derived and the newest quarter shown was three months stale. Amazon tags cash flows for the twelve months to each quarter end, which were taken for fiscal years, so its real annual figures were never offered to a run. JPMorgan had no revenue figure at all. The referee suspected the first from reading; the other two showed the first time anyone printed the figures side by side. Each is fixed from a failing test, and after each fix only that company's lines moved.
+- **A fix with a cost downstream.** Costco's figures changed, so 25 recorded answers no longer matched their prompts: five assessments and four meaning checks of the golden set, and sixteen planted-mismatch checks. All were answered again. Verdict agreement stayed at 20 of 24, with one case moving each way; planted mismatches rejected went from 149 to 150 of 152.
+- **The number check withheld a true finding.** A stand-in wrote "at fiscal year-end 2026" and the check read 2026 as a quantity nothing cited. Only a recording made without reminders showed it. Fixed with the statement itself as a test.
+- **A planted fault passed every unit test of the new module.** Offering a customer's share of 0.22 as 0.22% failed nothing in the feature's own tests; only the replay of the recording caught it. The unit test was added and seen failing.
+- **The new sample told the reader its answers came from another recording.** The note was a fixed sentence. Found by reading the first screenshot; a test now holds each sample to the recording it was made from.
+- **One check that checked nothing.** A script meant to switch a rule off before a test run stopped on an error and changed nothing, so the run passed and proved nothing. It was noticed from the output and done again; the tests then failed as they should.
+- **What the comparison cannot say.** The verdict on one claim differs between the recording with tagged figures and the one without, and no finding under that claim cites a tagged figure. With one answer per prompt, nothing here shows that the option changes a verdict.
+- **A year in a statement is still not checked** against its evidence. The referee is right that it is the commonest error in this kind of work. It is the next milestone, not built.
+
 **Status**
 
-Version 9. The gate from a fresh clone: 1,265 offline tests, the smoke test, 124 assertions on the rendered page. Nine tags; versions 2 to 9 were all built on 17 November. What that does not mean:
+Version 10. The gate from a fresh clone: 1,361 offline tests, the smoke test, 142 assertions on the rendered page, in 34 s. Ten tags; versions 2 to 10 were all built on 17 November. What that does not mean:
 
 - No person has read the thirty golden cases, the code, a filing comparison, a list of changes under a claim, or a breakdown table against the printed one.
 - The model path has not run through the API since October: both keys were refused again on 17 November, and every model answer here is a recording made by a stand-in.
-- The breakdowns are shown beside a run and cannot yet be cited by a finding.
+- A finding can cite the tagged figures, on NVIDIA only and in recordings only. A finding that rests on figures alone is checked for its numbers and read by a second model, and by nothing else.
+- The reported figures are checked against published values for three companies, and were wrong for three of the other five until this afternoon.
 - No colleague has reviewed this, and my reviews of colleagues are still owed.
 - The link that opens a filing at a passage has never been clicked in a real browser.
 
@@ -87,9 +109,10 @@ A proposed order, mine to change. The outline is `Capstone/evidence_desk/docs/dr
 2. Rotate the API key that was pasted into a conversation; get credit; record the cassettes again through the API.
 3. Use the tool on a thesis of my own and write down where it was wrong.
 4. Read five reworded pairs and five added paragraphs for a company other than NVIDIA, and say whether the classes hold.
-5. Read the five changed paragraphs listed under each claim of the example, and say for each whether it bears on the claim. Hold one breakdown table for a company other than NVIDIA against the table the filing prints.
+5. Read the five changed paragraphs listed under each claim of the example, and say for each whether it bears on the claim. Hold one breakdown table for a company other than NVIDIA against the table the filing prints, and one quarter of `make figures` for Costco, Amazon and JPMorgan against the filing.
 6. Ask a colleague to review it, and review theirs.
-7. Write the draft from the outline, with the results table as it then stands.
+7. Decide on the check of periods (milestone 11 in the plan): build it and measure its false alarms, or leave it as a stated limit.
+8. Write the draft from the outline, with the results table as it then stands.
 
 **Takeaway**
 
@@ -98,3 +121,5 @@ Three, from one day. Everything that passed on NVIDIA passed. The failure was on
 And 1,094 tests passed over a table whose columns did not count the same thing, because each test checked that a number was what the code computed and none asked what its heading claimed. A reader with no tool found it by reading one function beside one table.
 
 And in the second pass each new feature's first fault showed in its first real output, not in its tests: a duplicated paragraph, a dropped quarter. Running the thing on real filings and reading what comes out is a check of its own kind, and the cheapest one here.
+
+A fourth, from the end of the day. The oldest figures in the tool had been wrong for three companies of eight since version 3, under an answer key that covered the other three. An answer key says the checked values are right; it says nothing about the rows nobody keyed. Printing every company's figures side by side took one small command, and it had not been written because nothing was failing.

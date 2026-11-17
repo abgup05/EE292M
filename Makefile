@@ -1,4 +1,4 @@
-.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe replay golden-check golden-baseline profile bench eval eval-validate golden-sheet backup restore-check up-recorded live-walk changes breakdowns lock clean data vercel-deps referee versions-up versions-down versions-status versions-logs pr pr-merge
+.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe replay golden-check golden-baseline profile bench eval eval-validate golden-sheet backup restore-check up-recorded live-walk changes breakdowns lock clean data vercel-deps referee versions-up versions-down versions-status versions-logs pr pr-describe pr-merge
 
 # make <target> runs the capstone by default; make APP=week2 <target> runs the Week 2 app.
 APP ?= capstone
@@ -63,9 +63,17 @@ versions-logs:
 # main changes only by a pull request its owner has approved. make pr opens the one from this
 # branch; make pr-merge merges it with a merge commit, so every tag stays in main's history.
 #   make pr TITLE="..." BODY=path/to/body.md
+# TITLE and BODY reach the recipes through the environment, so a title may hold any character.
+export TITLE BODY
 pr:
-	@test -n '$(TITLE)' && test -f '$(BODY)' || { echo 'Usage: make pr TITLE="..." BODY=path/to/body.md'; exit 1; }
-	@gh pr create --base main --head "$$(git branch --show-current)" --title '$(TITLE)' --body-file '$(BODY)'
+	@test -n "$$TITLE" && test -f "$$BODY" || { echo 'Usage: make pr TITLE="..." BODY=path/to/body.md'; exit 1; }
+	@gh pr create --base main --head "$$(git branch --show-current)" --title "$$TITLE" --body-file "$$BODY"
+
+# make pr-describe gives this branch's open pull request a new title and description, for when
+# commits pushed after it was opened have made the old ones incomplete.
+pr-describe:
+	@test -n "$$TITLE" && test -f "$$BODY" || { echo 'Usage: make pr-describe TITLE="..." BODY=path/to/body.md'; exit 1; }
+	@gh pr edit "$$(git branch --show-current)" --title "$$TITLE" --body-file "$$BODY"
 
 pr-merge:
 	@gh pr merge "$$(git branch --show-current)" --merge

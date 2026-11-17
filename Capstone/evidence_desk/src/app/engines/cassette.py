@@ -106,7 +106,10 @@ class CassetteTransport:
     On a hit the stored answer is returned. On a miss with ``live``, ``live``
     answers, and the answer is recorded with ``via`` (default: ``live.via``)
     and ``live.model``. On a miss without ``live``, the request is written to
-    ``pending/<key>.json`` and :class:`CassetteMiss` is raised.
+    ``pending/<key>.json`` and :class:`CassetteMiss` is raised. A ``read_only``
+    cassette answers what it holds and never writes: a miss raises
+    :class:`CassetteMiss` and saves nothing (for replaying a cassette that must
+    stay as recorded, such as the golden set's).
 
     The steps of a run depend on each other (:data:`~app.engines.transport.STEPS`):
     once a request is missing, a request for a later step was built on a
@@ -116,9 +119,19 @@ class CassetteTransport:
     checked in turn, so an assessment after a pending check does not.
     """
 
-    def __init__(self, directory: Path | str, live: Transport | None = None, via: str = "") -> None:
+    def __init__(
+        self,
+        directory: Path | str,
+        live: Transport | None = None,
+        via: str = "",
+        *,
+        read_only: bool = False,
+    ) -> None:
+        if read_only and live is not None:
+            raise ValueError("a read-only cassette cannot record live answers")
         self.directory = Path(directory)
         self.live = live
+        self.read_only = read_only
         self.via = via or str(getattr(live, "via", "")) or UNKNOWN
         self._run = _RunState()
 
@@ -129,7 +142,7 @@ class CassetteTransport:
         them, as the engine's own would, while a recorded answer names the
         checker's model rather than the engine's.
         """
-        twin = CassetteTransport(self.directory, live=live, via=via)
+        twin = CassetteTransport(self.directory, live=live, via=via, read_only=self.read_only)
         twin._run = self._run
         return twin
 
@@ -156,8 +169,14 @@ class CassetteTransport:
             self._start_new_run_if_earlier(request.step)
             if response_path.exists():
                 answer = self._stored_answer(response_path)
-                pending_path.unlink(missing_ok=True)
+                if not self.read_only:
+                    pending_path.unlink(missing_ok=True)
                 return answer
+            if self.read_only:
+                raise CassetteMiss(
+                    f"no recorded response for {request.step}; the cassette is read-only, "
+                    "so nothing was saved"
+                )
             if self.live is None:
                 raise self._miss(request, key, pending_path)
         answer = self.live(request)

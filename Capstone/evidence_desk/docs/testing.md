@@ -12,7 +12,7 @@ program, before it was kept.
 | Unit | `tests/test_gate.py::test_identity_holds_for_every_evidence_record` | a gate that shows the model's wording, a wrong offset, a lost quote | whether real filings parse, or whether the pipeline calls the gate at all |
 | Integration | `tests/test_thesis_run.py::test_every_excerpt_is_an_exact_slice_of_the_stored_filing` | broken wiring from ingest to chunk, retrieval, gate and store, on a recorded 10-Q | EDGAR's live answers, what a model would say |
 | System | `tests/test_api.py::test_each_invalid_request_is_refused_naming_its_field` (and `tests/smoke.py` on the container) | validation at the API boundary, status codes, the field named in each refusal | anything the browser draws (`uitests/test_dom.py` covers the page) |
-| End to end | `tests/test_golden.py::test_the_example_run_matches_the_golden_record` | any change upstream that moves an answer of the whole example run | whether that answer is right: it proves only that nothing moved |
+| End to end, offline | `tests/test_golden.py::test_the_example_run_matches_the_golden_record` | any change upstream that moves an answer of the whole example run | whether that answer is right: it proves only that nothing moved. It runs on recorded filings through a fake EDGAR with the deterministic engine, so it is a regression check of the whole pipeline, not a test of the live one. The only live end-to-end check is `make live-walk`, which needs EDGAR and is outside `make verify` |
 
 ## The tripwire
 
@@ -23,13 +23,16 @@ keeps no timestamp and no run id, and groups the record into stages in pipeline 
 constant), `prompts` (SHA-256 of each Claude system prompt and schema), `retrieval` (passages
 indexed, per claim its queries and the passages offered, in order, with locators), `evidence`
 (per excerpt: source, start, length, locator, SHA-256 of the text), `verdicts`, `coverage`
-(status and every count) and `figures` (every metric of the newest quarter and year). A
+(status and every count), `figures` (every metric of the newest quarter and year) and `changes`
+(the comparison of the two newest quarterly reports with no list cut: per Item the nine counts,
+the sub-headings in one filing only and a hash of every listed paragraph). A
 `sha256` of the whole record closes it. `tests/golden/golden.json` is the checked-in copy.
 
 **Reading a failure.** `make golden-check` names the first stage that differs, lists the later
 ones, and shows the first differing entries. Every stage before the named one is proven
 unchanged, so start there: `sources` moved means the parser; `limits` a constant; `retrieval`
-chunking or ranking; `evidence` the gate or the extractive engine; `figures` the metrics.
+chunking or ranking; `evidence` the gate or the extractive engine; `figures` the metrics;
+`changes` what counts as a paragraph, the pairing, or a link.
 
 **When a new baseline is legitimate.** Only when the change was meant to move exactly the
 stages that moved. Run `make golden-baseline`, read `git diff tests/golden` stage by stage, and
@@ -38,7 +41,12 @@ commit it with the change that caused it. Adding `MAX_CONCURRENT_ASSESSMENTS` mo
 baseline before re-baselining. The fixes for the referee's findings on version 4 moved only
 `coverage`, by four new counts (`filings_asked` 3, `quotes_found` 15, `findings_without_quote` 0,
 `reasons_withheld` 0) with the status and every other count unchanged; that was checked the same
-way. A diff in a stage the change should not touch is a bug, not a baseline.
+way. Adding the `changes` stage (review 5, finding 7) moved only that stage, which was new. A
+diff in a stage the change should not touch is a bug, not a baseline.
+
+The tripwire cannot tell a wrong change from an intended one; only the reading of the diff
+does. There is no CI here to make that reading a condition of a merge, so it rests on the rule
+in `AGENTS.md` and on whoever reviews the pull request.
 
 ## Wrong programs, and the test that now fails on each
 
@@ -125,7 +133,7 @@ supported. Its tests run with scripted checkers and transports, never the API:
   out, the three verdicts, and a table of malformed answers that each raise `EngineError`.
 - `tests/test_thesis_run.py` ("The meaning check"): a rejected finding is withheld with its reason
   and moves the verdict (mixed to supported); "partly" is kept and counted; a failing checker
-  leaves findings unchecked with one error line and one coverage limit, and the run complete; a
+  leaves findings unchecked with one error line, and the run partial (complete until version 7); a
   checker on the engine's own model is a coverage limit; checking claims concurrently gives the
   sequential record.
 - `tests/test_cassette.py`: a pending check blocks the summary but not the next claim's
@@ -137,6 +145,20 @@ supported. Its tests run with scripted checkers and transports, never the API:
 Each was seen failing on a planted fault (the rationale sent to the checker, unescaped excerpts,
 a rejected finding kept, a checker exception not caught, the old cassette reset rule, the export
 without its meaning line, the eval's "broken" count reversed) before it passed.
+
+**Whether the check would catch anything.** None of the tests above can say: they script the
+checker. `make eval ARGS="mismatch --cassette eval/cassettes/mismatch --queries eval/queries.json"`
+(`evaluation/mismatch_eval.py`, review 5 finding 6) keeps each of the 76 verified golden-set
+findings that has a quote, with its claim, statement and stance, and swaps in real, verified quotes
+that belong to a finding about another company, or to another claim about the same company. The
+request is built by the production prompt builder and judged like any other. Of 152 such
+mismatches the second model judged 149 not supported, 3 partly and none supported; on the same 76
+findings with their own quotes it had judged 1 not supported, 10 partly and 65 supported
+(`eval/results/mismatch-2026-11-17.md`). The answers are a stand-in's (Claude Haiku as a Claude
+Code subagent, in six fresh contexts of eight requests, given the prompts under neutral file
+names and not told they were planted). A swapped quote is the easy kind of mismatch: usually
+another topic. A quote on the right topic that does not carry the statement is the hard kind,
+and nothing here measures it.
 
 ## What no test here can see
 

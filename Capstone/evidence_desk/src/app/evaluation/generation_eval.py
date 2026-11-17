@@ -50,7 +50,7 @@ from app.core.documents import Passage
 from app.core.gate import NUMBER_REASON, GateResult, RunIds, StoredSource, gate_claim
 from app.core.meaning import IncompleteJudgements, by_index, check_items
 from app.core.models import Claim, Company, ThesisRequest, Verdict
-from app.core.ports import Checker, ClaimDraft, SupportVerdict
+from app.core.ports import Checker, CheckItem, ClaimDraft, SupportVerdict
 from app.engines.cassette import CassetteMiss, CassetteTransport
 from app.engines.checker import ClaudeChecker
 from app.engines.claude import ClaudeAnalyst
@@ -81,10 +81,12 @@ __all__ = [
     "MeaningSummary",
     "Rate",
     "build_record",
+    "case_request",
     "evaluate_generation",
     "render_markdown",
     "run_generation",
     "summarize_generation",
+    "verified_check_items",
     "write_record",
 ]
 
@@ -248,13 +250,33 @@ class _Materials:
 
 @dataclass
 class GenerationRun:
-    """The cases scored, and the ids of the cases whose model answer is still pending."""
+    """The cases scored, and the ids of the cases whose model answer is still pending.
+
+    ``gated`` keeps each case's gated result (its verified findings and their
+    excerpts) for an evaluation that builds on them; the record never reads it.
+    """
 
     outcomes: list[CaseOutcome] = field(default_factory=list)
     pending: list[str] = field(default_factory=list)
     assessed: int = 0  # cases that asked the model (every case with a passage offered)
     check_pending: list[str] = field(default_factory=list)  # cases whose check is unanswered
     checks_asked: int = 0  # cases that asked the checker (every case with a verified finding)
+    gated: dict[str, GateResult] = field(default_factory=dict)  # each gated case, by id
+
+
+def case_request(case: GoldenCase) -> tuple[ThesisRequest, Claim]:
+    """The one-claim request a run would make for ``case``, and its claim (id ``c1``)."""
+    request = ThesisRequest(ticker=case.ticker, decision=DECISION, claims=[case.claim])
+    return request, Claim(id="c1", text=request.claims[0])
+
+
+def verified_check_items(result: GateResult, figures: CompanyFigures) -> list[CheckItem]:
+    """What the meaning check is shown of ``result``'s verified findings, in order."""
+    return check_items(
+        result.findings,
+        {item.id: item for item in result.evidence},
+        {figure.id: figure for figure in figures.figures},
+    )
 
 
 def _gate(
@@ -283,11 +305,7 @@ def _check(
     before = policy.claim_verdict(result.findings).value
     if not result.findings:
         return CheckOutcome(judged=(), verdict_after=before)
-    items = check_items(
-        result.findings,
-        {item.id: item for item in result.evidence},
-        {figure.id: figure for figure in figures.figures},
-    )
+    items = verified_check_items(result, figures)
     try:
         keyed = by_index(checker.check(request, company, claim, items), len(items))
     except CassetteMiss:
@@ -376,8 +394,7 @@ def evaluate_generation(
     for case, targets in cases:
         if case.id not in book:
             raise ValueError(f"the queries file has no entry for {case.id}; run plan again")
-        request = ThesisRequest(ticker=case.ticker, decision=DECISION, claims=[case.claim])
-        claim = Claim(id="c1", text=request.claims[0])
+        request, claim = case_request(case)
         queries = [query for query in book[case.id] if query.strip()][
             : limits.MAX_QUERIES_PER_CLAIM
         ]
@@ -400,6 +417,7 @@ def evaluate_generation(
         else:
             draft = ClaimDraft()  # a run does not ask the model when no passage is offered
         result = _gate(draft, offered, material, company_figures)
+        run.gated[case.id] = result
         check: CheckOutcome | None = None
         if checker is not None:
             if result.findings:

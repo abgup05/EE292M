@@ -17,6 +17,11 @@ Commands:
   every case through the cassette, gate it and score the answers; exit 3 while any
   assess request is pending, writing nothing. ``--check`` also runs the meaning check
   on every case's verified findings and adds its scores (``generation-checked-*``).
+- ``mismatch --cassette DIR --queries FILE [--findings-cassette DIR] [--out eval/results]``:
+  replay the golden generation run read-only from ``--findings-cassette`` (default
+  ``eval/cassettes/golden``), plant mismatches (each verified finding's statement with
+  another finding's quotes) and put them to the meaning checker through ``--cassette``;
+  exit 3 while any check request is pending, writing nothing (``mismatch-*``).
 
 ``plan``, ``generate`` and ``fetch`` pin each company's CIK and name, and
 ``generate`` and ``fetch`` its XBRL facts, in ``eval/filings.json`` the first time.
@@ -34,8 +39,10 @@ import hashlib
 import re
 import sys
 from collections.abc import Sequence
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from app.core.documents import Document
 from app.core.models import Company
@@ -64,12 +71,14 @@ from app.evaluation.generation_eval import run_generation
 from app.evaluation.golden import (
     GOLDEN_PATH,
     GoldenCase,
+    Target,
     Validation,
     heading_matches,
     read_golden,
     render_validation,
     validate_golden,
 )
+from app.evaluation.mismatch_eval import run_mismatch
 from app.evaluation.planning import run_plan
 from app.evaluation.retrieval_eval import (
     VARIANTS,
@@ -82,11 +91,12 @@ from app.evaluation.retrieval_eval import (
 )
 from app.sources.edgar import EdgarClient
 
-COMMANDS = ("validate", "run", "fetch", "pin", "show", "plan", "generate")
+COMMANDS = ("validate", "run", "fetch", "pin", "show", "plan", "generate", "mismatch")
 GLOBAL_OPTIONS_WITH_VALUE = ("--golden", "--filings")
 RESULTS_DIR = EVAL_DIR / "results"
 QUERIES_PATH = EVAL_DIR / "queries.json"
 CASSETTE_DIR = EVAL_DIR / "cassettes" / "golden"
+MISMATCH_CASSETTE_DIR = EVAL_DIR / "cassettes" / "mismatch"
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -122,6 +132,23 @@ def _parser() -> argparse.ArgumentParser:
         action="store_true",
         help="also run the meaning check on every case's verified findings, through the cassette",
     )
+    mismatch = commands.add_parser(
+        "mismatch", help="plant quote mismatches and see whether the meaning check rejects them"
+    )
+    mismatch.add_argument(
+        "--cassette",
+        type=Path,
+        default=MISMATCH_CASSETTE_DIR,
+        help="the cassette the mismatch checks are answered from",
+    )
+    mismatch.add_argument(
+        "--findings-cassette",
+        type=Path,
+        default=CASSETTE_DIR,
+        help="the golden run's cassette, replayed read-only for the findings",
+    )
+    mismatch.add_argument("--queries", type=Path, default=QUERIES_PATH, help="from plan")
+    mismatch.add_argument("--out", type=Path, default=RESULTS_DIR, help="where the record goes")
     return parser
 
 
@@ -257,22 +284,39 @@ def cmd_plan(args: argparse.Namespace, corpus: Corpus, client: EdgarClient | Non
     return run_plan(cases, companies, args.cassette, args.out, inputs=inputs)
 
 
-def cmd_generate(args: argparse.Namespace, corpus: Corpus, client: EdgarClient | None) -> int:
-    """Assess and score every case through the cassette; 3 while any request is pending."""
+@dataclass
+class _GenerationSetup:
+    """What a one-claim-per-case run of the golden set needs, checked and pinned."""
+
+    cases: list[tuple[GoldenCase, list[Target]]]
+    book: dict[str, list[str]]
+    companies: dict[str, Company]
+    figures: dict[str, CompanyFigures]
+    inputs: dict[str, Any]
+
+
+def _generation_setup(
+    args: argparse.Namespace, corpus: Corpus, client: EdgarClient | None
+) -> _GenerationSetup | None:
+    """Validate, read the queries planned for this golden set, pin companies and facts.
+
+    Prints why and returns None when the golden set does not validate or the
+    queries were planned for another one.
+    """
     validation, golden_sha = _validate(args.golden, corpus)
     if not validation.ok:
         print(render_validation(validation))
-        print("generate: the golden set does not validate; nothing was asked")
-        return 1
+        print(f"{args.command}: the golden set does not validate; nothing was asked")
+        return None
     cases = validation.cases()
     book, provenance = read_queries_file(args.queries, {case.id for case, _ in cases})
     planned_for = (provenance or {}).get("golden_sha256")
     if planned_for != golden_sha:
         print(
-            f"generate: {_display(args.queries)} was not planned for this golden set "
+            f"{args.command}: {_display(args.queries)} was not planned for this golden set "
             f"(planned for {str(planned_for)[:12]}, golden is {golden_sha[:12]}); run plan again"
         )
-        return 1
+        return None
     golden_cases = [case for case, _ in cases]
     companies = _companies(args, corpus, client, _tickers(golden_cases))
     figures = _figures(args, companies, client)
@@ -281,18 +325,48 @@ def cmd_generate(args: argparse.Namespace, corpus: Corpus, client: EdgarClient |
         "queries_file": _display(args.queries),
         "queries_sha256": sha256_hex(args.queries.read_bytes()),
         "queries_planned_by": (provenance or {}).get("cassette_description"),
+    }
+    return _GenerationSetup(cases, book, companies, figures, inputs)
+
+
+def cmd_generate(args: argparse.Namespace, corpus: Corpus, client: EdgarClient | None) -> int:
+    """Assess and score every case through the cassette; 3 while any request is pending."""
+    setup = _generation_setup(args, corpus, client)
+    if setup is None:
+        return 1
+    return run_generation(
+        setup.cases,
+        corpus.load_filing,
+        setup.book,
+        setup.companies,
+        setup.figures,
+        cassette=args.cassette,
+        out_dir=args.out,
+        inputs={**setup.inputs, "cassette": _display(args.cassette)},
+        check=args.check,
+    )
+
+
+def cmd_mismatch(args: argparse.Namespace, corpus: Corpus, client: EdgarClient | None) -> int:
+    """Plant quote mismatches in the golden run's findings; 3 while any check is pending."""
+    setup = _generation_setup(args, corpus, client)
+    if setup is None:
+        return 1
+    inputs = {
+        **setup.inputs,
+        "findings_cassette": _display(args.findings_cassette),
         "cassette": _display(args.cassette),
     }
-    return run_generation(
-        cases,
+    return run_mismatch(
+        setup.cases,
         corpus.load_filing,
-        book,
-        companies,
-        figures,
+        setup.book,
+        setup.companies,
+        setup.figures,
+        findings_cassette=args.findings_cassette,
         cassette=args.cassette,
         out_dir=args.out,
         inputs=inputs,
-        check=args.check,
     )
 
 
@@ -421,6 +495,8 @@ def _dispatch(args: argparse.Namespace, corpus: Corpus, client: EdgarClient | No
         return cmd_plan(args, corpus, client)
     if args.command == "generate":
         return cmd_generate(args, corpus, client)
+    if args.command == "mismatch":
+        return cmd_mismatch(args, corpus, client)
     if args.command == "pin":
         return cmd_pin(args, corpus, client)
     if args.command == "show":

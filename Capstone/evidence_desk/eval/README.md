@@ -29,6 +29,7 @@ truth. The cases are an answer key; never edit one to improve a score.
     make eval ARGS="run --variant claim+queries --queries eval/queries.json"  # retrieval
     make eval ARGS="generate --cassette eval/cassettes/golden --queries eval/queries.json"
     make eval ARGS="generate --cassette eval/cassettes/golden --queries eval/queries.json --check"
+    make eval ARGS="mismatch --cassette eval/cassettes/mismatch --queries eval/queries.json"
 
 Add `--offline` after `ARGS="` to forbid EDGAR. Adding a case: `ARGS="pin TICKER"`, find the
 passage with `ARGS='show TICKER ACCESSION "Item 1A" --grep margin'`, copy it exactly, validate.
@@ -67,6 +68,31 @@ Generation (`results/generation-*`), every rate with its denominator:
 - *Refusal* (6 unanswerable): no verified finding and the verdict not_addressed.
 - *Counts* (all 30): quotes offered, verified, rejected; numbers checked and unmatched;
   findings proposed, verified and withheld, with the reasons. A withheld finding never counts.
+
+## Planted mismatches (`results/mismatch-*`)
+
+The `--check` run shows what the meaning check said about findings as the engine wrote them: it
+rejected 1 of 77. It cannot show whether the check would reject a finding whose quotes do not
+support it. `mismatch` asks that directly. It replays the golden cassette read-only, takes the 76
+verified findings that have a quote, keeps each one's claim, statement and stance, and replaces its
+quotes with the real, verified quotes of another finding: one about a different company
+(`other-company`) and one about a different claim of the same company (`other-claim`), chosen by a
+fixed rotation over the findings sorted by case and position. Cited figures are dropped, so the
+judgement rests on the swapped quotes. Each (case, kind) is one request through the production
+checker and prompt, on its own cassette, `cassettes/mismatch/`.
+
+| Pairs | Count | Not supported | Partly | Supported |
+| --- | ---: | ---: | ---: | ---: |
+| Another company's quotes | 76 | 75 | 1 | 0 |
+| Another claim's quotes, same company | 76 | 74 | 2 | 0 |
+| The findings' own quotes (the `--check` run) | 76 | 1 | 10 | 65 |
+
+A run keeps a finding judged "partly", so 3 of the 152 planted mismatches would still have been
+shown and counted. The 48 requests were answered on 17 November 2026 by Claude Haiku as a Claude
+Code subagent, in six fresh contexts of eight requests each; the prompts were handed over under
+neutral file names and the stand-in was not told they were planted. Each request held only
+mismatched items, where a run shows the checker a claim's findings together, most of them true.
+And a swapped quote is usually about another topic altogether: this measures the easy case.
 
 ## What it does not show
 

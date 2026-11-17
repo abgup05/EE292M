@@ -6,7 +6,7 @@
 
 **The check-in**
 
-- Written at `Capstone/evidence_desk/docs/check-in.md`, with a pointer at `docs/check-in.md`. Its first paragraph says how the work was done.
+- Written at `docs/check-in.md`, in the root of the repository. Its first paragraph says how the work was done.
 
 **The new version, tag `capstone-v4`: Monday's feedback, finding by finding**
 

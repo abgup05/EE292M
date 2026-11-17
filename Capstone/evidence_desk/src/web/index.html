@@ -77,10 +77,19 @@
         <div class="actions">
           <button type="submit" id="submit" class="primary">Test the thesis</button>
           <button type="button" id="figures-only" class="secondary">Reported figures only</button>
+          <span class="changes-action">
+            <button type="button" id="filing-changes" class="secondary">What changed in the filings</button>
+            <label class="visually-hidden" for="changes_form">Filings to compare</label>
+            <select id="changes_form" name="changes_form" aria-describedby="err-changes_form">
+              <option value="10-K">annual reports (10-K)</option>
+              <option value="10-Q">quarterly reports (10-Q)</option>
+            </select>
+          </span>
           <button type="button" id="load-example" class="secondary">Load example</button>
           <button type="button" id="save-thesis" class="secondary" aria-expanded="false" aria-controls="save-panel" hidden>Save this thesis</button>
         </div>
-        <p class="hint actions-hint">"Reported figures only" needs just the ticker: it shows the company's reported numbers without starting a run.</p>
+        <p id="err-changes_form" class="field-error" hidden></p>
+        <p class="hint actions-hint">"Reported figures only" and "What changed in the filings" need just the ticker: the first shows the company's reported numbers, the second compares its two latest annual or quarterly reports, paragraph by paragraph. Neither starts a run.</p>
         <div id="save-panel" class="save-panel" hidden>
           <div class="field">
             <label for="thesis_name">Name for this thesis</label>
@@ -118,6 +127,7 @@
         </ol>
         <p class="sample-links">
           <a id="sample-link" href="?sample">See a sample record</a>
+          <a id="changes-link" href="?sample=changes">See what changed between two annual reports</a>
           <a id="synthetic-link" href="?sample=synthetic">See an illustrative record with every kind of mark</a>
         </p>
       </div>
@@ -131,6 +141,24 @@
           <h3 id="figures-only-title" class="block-title">Reported figures</h3>
           <div id="figures-standalone"></div>
         </section>
+      </div>
+
+      <div id="changes-view" hidden>
+        <div id="changes-head" class="run-head"></div>
+        <div id="changes-body"></div>
+        <details id="changes-legend" class="legend" open>
+          <summary>How to read this comparison</summary>
+          <dl class="legend-list">
+            <div><dt><span class="chg-mark c-numbers_only"><span class="glyph g-chg" aria-hidden="true">#</span><span class="chg-label">Numbers only</span></span></dt><dd>The same paragraph once numbers, dates and amounts are set aside: only those changed.</dd></div>
+            <div><dt><span class="chg-mark c-reworded"><span class="glyph g-chg" aria-hidden="true">~</span><span class="chg-label">Reworded</span></span></dt><dd>A paragraph in the later filing that mostly matches one in the earlier filing.</dd></div>
+            <div><dt><span class="chg-mark c-added"><span class="glyph g-chg" aria-hidden="true">+</span><span class="chg-label">Added</span></span></dt><dd>A paragraph in the later filing with no counterpart in the earlier one.</dd></div>
+            <div><dt><span class="chg-mark c-removed"><span class="glyph g-chg" aria-hidden="true">−</span><span class="chg-label">Removed</span></span></dt><dd>A paragraph in the earlier filing with no counterpart in the later one.</dd></div>
+            <div><dt><ins class="seg seg-add">added words</ins></dt><dd>Inside a reworded paragraph: words only the later filing has, underlined.</dd></div>
+            <div><dt><del class="seg seg-del">removed words</del></dt><dd>Inside a reworded paragraph: words only the earlier filing had, struck through where they stood.</dd></div>
+            <div><dt><span class="mark-limit"><span class="glyph g-limit" aria-hidden="true">▲</span> Limit</span></dt><dd>Something limits this comparison.</dd></div>
+            <div><dt><span class="legend-link">blue text</span></dt><dd>Something you can click: a link opens the filing it names.</dd></div>
+          </dl>
+        </details>
       </div>
 
       <div id="thesis-view" hidden>

@@ -19,6 +19,9 @@
  *   --ink, inverted (a dark tag in light mode, a light one in dark mode):
  *                ▣ accepted, ☒ rejected: your own decision on a finding, never
  *                the engine's; ☐ undecided is the same tag, dashed and hollow
+ *   --change     cyan, square-cornered tags: what changed between two filings,
+ *                # numbers only, ~ reworded, + added, − removed; inside a reworded
+ *                paragraph added words are underlined, removed words struck through
  * A dashed border means only "not judged or provisional".
  */
 
@@ -45,6 +48,8 @@
   --reject-bg: #fdeceb;
   --mark-bg: #fff1a6;
   --mark-ink: #1b1f27;
+  --change: #0a6872;
+  --change-bg: #def2f4;
   --chart-ink: #2b313c;
   --chart-bar: #6b7484;
 
@@ -85,6 +90,8 @@
     --reject-bg: #3a1515;
     --mark-bg: #5c4c06;
     --mark-ink: #fff8d6;
+    --change: #6fd6e2;
+    --change-bg: #0f2a2e;
     --chart-ink: #d5d9e0;
     --chart-bar: #8d96a6;
   }
@@ -864,6 +871,90 @@ svg.chart { display: block; width: 100%; height: auto; font-family: var(--font-u
 .sources .num { text-align: right; font-variant-numeric: tabular-nums; }
 .sources .gloss { color: var(--ink-2); }
 .sources .not-read { font-weight: 600; }
+
+/* ------------------------------------------------------------ what changed between two filings */
+
+.changes-action { display: inline-flex; flex-wrap: wrap; gap: 0.35rem; align-items: stretch; }
+.changes-action select {
+  font: inherit;
+  font-size: var(--step--1);
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  padding: 0 0.4rem;
+}
+
+/* The change family: square corners (pills are round) and its own cyan, never a verdict colour. */
+.chg-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  padding: 0 0.4rem;
+  font-size: var(--step--1);
+  font-weight: 650;
+  color: var(--change);
+  background: var(--change-bg);
+  border: 1px solid var(--change);
+  border-radius: 2px;
+  white-space: nowrap;
+  vertical-align: baseline;
+}
+.g-chg { color: var(--change); font-family: var(--font-mono); font-weight: 800; }
+
+/* Words inside a reworded paragraph: never colour alone. */
+.seg { color: inherit; text-decoration-thickness: 2px; text-underline-offset: 0.2em; }
+ins.seg-add { text-decoration-line: underline; text-decoration-color: var(--change); background: var(--change-bg); }
+del.seg-del { text-decoration-line: line-through; text-decoration-color: var(--ink-2); color: var(--ink-2); }
+
+.changes-lead { margin: 0 0 0.5rem; font-size: var(--step-1); }
+.changes-explain, .changes-unknown { margin: 0 0 0.5rem; max-width: 80ch; }
+.changes-explain .chg-mark { margin: 0 0.1rem; }
+
+.chg-totals { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.35rem 1.2rem; align-items: baseline; }
+.chg-totals li { white-space: nowrap; }
+.chg-minor { font-size: var(--step--1); color: var(--ink-2); }
+
+.chg-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) repeat(5, 5.6rem);
+  gap: 0.2rem 0.6rem;
+  align-items: baseline;
+}
+.chg-header { padding: 0 0.7rem 0.3rem 1.9rem; font-size: var(--step--1); color: var(--ink-2); font-weight: 600; border-bottom: 1px solid var(--line); }
+.chg-num { text-align: right; font-variant-numeric: tabular-nums; }
+.chg-num .g-chg { margin-right: 0.3rem; font-size: var(--step--1); }
+
+.chg-item { border-bottom: 1px solid var(--line); }
+.chg-item > summary { padding: 0.45rem 0.7rem; cursor: pointer; list-style: none; }
+.chg-item > summary::-webkit-details-marker { display: none; }
+.chg-name { display: flex; flex-direction: column; min-width: 0; padding-left: 1.2rem; position: relative; }
+.chg-name::before { content: "▸"; position: absolute; left: 0; color: var(--ink-2); transition: transform 0.15s; }
+.chg-item[open] .chg-name::before { transform: rotate(90deg); }
+.chg-item-title { font-weight: 600; }
+.chg-presence { font-size: var(--step--1); font-weight: 600; }
+.chg-item[open] > summary { background: var(--surface-2); }
+
+.chg-lists { padding: 0.4rem 0.7rem 0.8rem 1.9rem; }
+.chg-list + .chg-list { margin-top: 0.8rem; }
+.chg-list-title { margin: 0.3rem 0 0.4rem; font-size: var(--step-0); font-weight: 600; }
+.chg-trunc { font-weight: 400; font-size: var(--step--1); color: var(--ink-2); }
+.chg-paras { margin: 0; padding-left: 1.4rem; }
+.chg-paras > li + li { margin-top: 0.6rem; }
+.chg-text, .chg-reworded { margin: 0; font-family: var(--font-quote); line-height: 1.55; }
+.chg-where { margin: 0.15rem 0 0; font-size: var(--step--1); color: var(--ink-2); }
+.chg-where .ext { font-weight: 600; }
+
+@media (max-width: 720px) {
+  .chg-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .chg-name { grid-column: 1 / -1; }
+  .chg-header > span:first-child { display: none; }
+  .chg-header { padding-left: 0.7rem; }
+  /* Five narrow columns: a heading may wrap between words ("Numbers only"), never inside one. */
+  .chg-header > span { font-size: 0.7rem; overflow-wrap: normal; word-break: normal; hyphens: manual; }
+  .chg-header .g-chg { display: block; margin-right: 0; }
+  .chg-lists { padding-left: 0.7rem; }
+}
 
 /* ------------------------------------------------------------ the rest */
 

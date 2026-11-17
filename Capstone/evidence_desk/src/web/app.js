@@ -27,6 +27,9 @@
 //   stances   reuse ✓ and ✕; context is •
 //   decisions ▣ accepted, ☒ rejected (dark, inverted tag: the reader's own);
 //             ☐ undecided is dashed, because the verdict after review is provisional
+//   changes   between two filings (`/api/companies/{ticker}/changes`), cyan, square tags:
+//             # numbers only, ~ reworded, + added, − removed; inside a reworded
+//             paragraph, added words are underlined and removed ones struck through
 
 "use strict";
 
@@ -112,7 +115,21 @@ const FIELD_NAMES = {
   filings: "Number of filings",
   extra_urls: "Extra public pages",
   thesis_name: "Thesis name",
+  changes_form: "Filings to compare",
 };
+
+/**
+ * What changed between two filings: its own family of marks, never a verdict, stance,
+ * limit, model, decision or meaning mark. Unchanged paragraphs carry no mark.
+ */
+const CHANGE_MARK = {
+  numbers_only: ["#", "Numbers only"],
+  reworded: ["~", "Reworded"],
+  added: ["+", "Added"],
+  removed: ["−", "Removed"],
+};
+/** The five per-Item counts, in the order the rows show them. */
+const CHANGE_COUNTS = ["unchanged", "numbers_only", "reworded", "added", "removed"];
 
 /** Charts drawn from `series`, in order; each picks the quarterly series, else the annual one. */
 const CHARTS = [
@@ -172,6 +189,8 @@ const els = {
   formErrors: $("form-errors"),
   submit: $("submit"),
   figuresOnly: $("figures-only"),
+  filingChanges: $("filing-changes"),
+  changesForm: $("changes_form"),
   example: $("load-example"),
   saveThesis: $("save-thesis"),
   savePanel: $("save-panel"),
@@ -189,6 +208,9 @@ const els = {
   figuresView: $("figures-view"),
   figuresHead: $("figures-head"),
   figuresStandalone: $("figures-standalone"),
+  changesView: $("changes-view"),
+  changesHead: $("changes-head"),
+  changesBody: $("changes-body"),
   thesisView: $("thesis-view"),
   thesisHead: $("thesis-head"),
   runAgain: $("run-again"),
@@ -562,6 +584,8 @@ function applyMeta(meta) {
 function setFormEnabled(enabled) {
   els.submit.disabled = !enabled;
   els.figuresOnly.disabled = !enabled;
+  els.filingChanges.disabled = !enabled;
+  els.changesForm.disabled = !enabled;
   els.example.disabled = !enabled;
   els.saveThesis.disabled = !enabled;
 }
@@ -818,6 +842,7 @@ function renderFiguresOnly(report) {
   els.empty.hidden = true;
   els.runView.hidden = true;
   els.thesisView.hidden = true;
+  els.changesView.hidden = true;
   els.figuresView.hidden = false;
   document.body.classList.add("has-run");
   els.figuresHead.replaceChildren(
@@ -834,6 +859,283 @@ function renderFiguresOnly(report) {
     ),
   );
   renderFigures(els.figuresStandalone, { metrics: report.metrics, series: report.series, notes: report.notes });
+}
+
+// ---------------------------------------------------------------- what changed between two filings
+
+/** Compare the company's two latest filings of the chosen form, without starting a run. */
+async function onFilingChanges() {
+  if (state.sample || !state.meta) return;
+  const ticker = els.ticker.value.trim();
+  const form = els.changesForm.value;
+  if (!ticker) {
+    showProblems([{ field: "ticker", message: "Enter a ticker, such as NVDA." }], "Check this field before comparing filings:");
+    return;
+  }
+  clearFieldErrors();
+  stopWatching();
+  const seq = ++state.viewSeq;
+  state.runId = null;
+  state.run = null;
+  state.thesisId = null;
+  markRecent();
+  history.replaceState(null, "", `${location.pathname}${location.search}`);
+  hideRunView();
+  els.loading.textContent = `Comparing the two latest ${form} filings of ${ticker.toUpperCase()}…`;
+  els.loading.hidden = false;
+  els.filingChanges.disabled = true;
+  try {
+    const record = await api(`/api/companies/${encodeURIComponent(ticker.toUpperCase())}/changes?form=${encodeURIComponent(form)}`);
+    if (seq !== state.viewSeq) return;
+    renderChanges(record, "");
+    focusResults();
+  } catch (error) {
+    if (seq !== state.viewSeq) return;
+    els.loading.hidden = true;
+    if (error.status === 422 && error.details.length) {
+      // The server names the form choice "form"; on this page it is the "changes_form" select.
+      const details = error.details.map((d) => ({ ...d, field: rootField(d.field) === "form" ? "changes_form" : d.field }));
+      showProblems(details, "The server refused the comparison:");
+    } else {
+      // 503: EDGAR could not be read, or it lists fewer than two such filings; the server says which.
+      showLoadError(`The filings could not be compared: ${error.message}.`, onFilingChanges);
+    }
+  } finally {
+    els.filingChanges.disabled = state.sample;
+  }
+}
+
+/** A change mark: its glyph and label, in the change family's own style. */
+function changeMark(kind) {
+  const [glyph, label] = CHANGE_MARK[kind];
+  return h(
+    "span",
+    { class: `chg-mark c-${kind}` },
+    h("span", { class: "glyph g-chg", "aria-hidden": "true", text: glyph }),
+    h("span", { class: "chg-label", text: label }),
+  );
+}
+
+/** Only the glyph of a change mark, for a column of counts; its label is in the column head. */
+function changeGlyph(kind) {
+  return h("span", { class: `glyph g-chg c-${kind}`, "aria-hidden": "true", text: CHANGE_MARK[kind][0] });
+}
+
+/** One filing of the pair in words, as a link to its document. */
+function filingLink(side) {
+  return externalLink(side?.url, `the ${str(side?.form) || "filing"} for the period ended ${str(side?.period_end) || "—"}, filed ${str(side?.filed_date) || "—"}`);
+}
+
+/** Draw a FilingChanges record exactly as the server computed it: message, notes, totals, then each Item. */
+function renderChanges(record, sampleNote) {
+  if (!record || typeof record !== "object" || !Array.isArray(record.items) || !record.earlier || !record.later) {
+    showLoadError("The comparison could not be shown: the record names no filings or Items.", null);
+    return;
+  }
+  els.loading.hidden = true;
+  els.loadError.hidden = true;
+  els.empty.hidden = true;
+  els.runView.hidden = true;
+  els.figuresView.hidden = true;
+  els.thesisView.hidden = true;
+  els.changesView.hidden = false;
+  document.body.classList.add("has-run");
+
+  const company = record.company ?? {};
+  els.changesHead.replaceChildren(
+    h(
+      "div",
+      { class: "run-head-main" },
+      h(
+        "p",
+        { class: "company" },
+        state.sample ? h("span", { class: "page-tag inline", text: "Sample record" }) : "",
+        h("strong", { text: str(company.ticker) || "Company" }),
+        str(company.name) ? ` · ${company.name}` : "",
+        Number.isFinite(company.cik) ? h("span", { class: "muted small" }, " · ", h("abbr", { title: "The SEC's numeric identifier for this company", text: "CIK" }), ` ${company.cik}`) : "",
+      ),
+      h("p", { class: "run-meta", text: "What changed between two of the company's filings, Item by Item. No run was started and no claim was tested." }),
+      sampleNote ? h("p", { class: "run-meta", text: `Sample: ${sampleNote}` }) : "",
+    ),
+  );
+
+  const later = record.later;
+  const earlier = record.earlier;
+  const t = record.totals ?? {};
+  const total = (field) => h("span", { class: "count-value", "data-chg-total": field, text: num(t[field]) });
+  const parts = [
+    h("p", { class: "changes-lead" }, "This compares the later filing, ", filingLink(later), ", against the earlier one, ", filingLink(earlier), "."),
+    h(
+      "p",
+      { class: "changes-explain" },
+      "Each paragraph is matched with the other filing's paragraphs in the same Item. Unchanged: the same text, perhaps moved within its Item. ",
+      changeMark("numbers_only"),
+      ": the same once numbers, dates and amounts are set aside. ",
+      changeMark("reworded"),
+      ": a paragraph in the later filing that mostly matches one in the earlier. ",
+      changeMark("added"),
+      " and ",
+      changeMark("removed"),
+      ": a paragraph with no counterpart in the other filing. Short lines and table rows found in only one filing are counted, not listed.",
+    ),
+    h(
+      "p",
+      { class: "changes-unknown" },
+      h("strong", { text: "What this does not know: " }),
+      "it compares the text this tool extracted from each filing, not the filing as printed; it does not know why anything changed; and a paragraph split in two reads as one reworded paragraph and one added.",
+    ),
+  ];
+  if (Number.isFinite(later.item_coverage) && Number.isFinite(earlier.item_coverage)) {
+    parts.push(h("p", { class: "hint", text: `Share of each filing's text that sits under a numbered Item, as the record gives it: later ${later.item_coverage}, earlier ${earlier.item_coverage}.` }));
+  }
+  const notes = list(record.notes);
+  if (notes.length) {
+    const notesList = h("ul", { class: "mark-list", id: "changes-notes" });
+    fillList(notesList, notes, "", true);
+    parts.push(h("section", { class: "block", "aria-label": "Notes on this comparison" }, h("h3", { class: "block-title", text: "Notes on this comparison" }), notesList));
+  }
+  parts.push(
+    h(
+      "section",
+      { class: "block", "aria-labelledby": "chg-totals-title" },
+      h("h3", { class: "block-title", id: "chg-totals-title", text: "All Items" }),
+      h(
+        "ul",
+        { class: "chg-totals" },
+        h("li", null, total("unchanged"), " unchanged"),
+        ["numbers_only", "reworded", "added", "removed"].map((kind) => h("li", null, total(kind), " ", changeMark(kind))),
+        h("li", { class: "chg-minor" }, "Short lines and table rows: ", total("minor_added"), " added, ", total("minor_removed"), " removed"),
+      ),
+    ),
+  );
+  const items = record.items;
+  // The first Item that lists any paragraph starts open, so a reader sees one example of each list.
+  const listed = (item) => list(item.added_paragraphs).length + list(item.removed_paragraphs).length + list(item.reworded_paragraphs).length > 0;
+  const firstOpen = items.findIndex(listed);
+  parts.push(
+    h(
+      "section",
+      { class: "block", "aria-labelledby": "chg-items-title" },
+      h("h3", { class: "block-title", id: "chg-items-title", text: "By Item" }),
+      h("p", { class: "hint", text: "Open an Item to read what was added, removed and reworded in it." }),
+      h(
+        "div",
+        { class: "chg-grid chg-header", "aria-hidden": "true" },
+        h("span", { text: "Item" }),
+        h("span", { class: "chg-num", text: "Unchanged" }),
+        ["numbers_only", "reworded", "added", "removed"].map((kind) => h("span", { class: "chg-num" }, changeGlyph(kind), ` ${CHANGE_MARK[kind][1]}`)),
+      ),
+      items.length ? items.map((item, index) => renderChangeItem(item, index, index === firstOpen)) : h("p", { class: "muted", text: "The record lists no Item." }),
+    ),
+  );
+  els.changesBody.replaceChildren(...parts);
+}
+
+/** One Item: its five counts as a row, opening to its three lists. */
+function renderChangeItem(item, index, open = false) {
+  const presence = { later: "Only in the later filing", earlier: "Only in the earlier filing" }[item.present_in] ?? "";
+  const word = (field) => (field === "unchanged" ? "unchanged" : CHANGE_MARK[field][1].toLowerCase());
+  const cell = (field) =>
+    h(
+      "span",
+      { class: "chg-num" },
+      field === "unchanged" ? "" : changeGlyph(field),
+      h("span", { class: "chg-count count-value", "data-chg-field": field, text: num(item[field]) }),
+      h("span", { class: "visually-hidden", text: ` ${word(field)}` }),
+    );
+  const summary = h(
+    "summary",
+    { class: "chg-grid" },
+    h(
+      "span",
+      { class: "chg-name" },
+      h("span", { class: "chg-item-title", text: str(item.item) }),
+      presence ? h("span", { class: "chg-presence", "data-present-in": item.present_in, text: presence }) : "",
+      h(
+        "span",
+        { class: "chg-minor" },
+        "Short lines and table rows: ",
+        h("span", { "data-chg-field": "minor_added", text: num(item.minor_added) }),
+        " added, ",
+        h("span", { "data-chg-field": "minor_removed", text: num(item.minor_removed) }),
+        " removed",
+      ),
+    ),
+    CHANGE_COUNTS.map(cell),
+  );
+  return h("details", { class: "chg-item", "data-item-index": index, "data-item": str(item.item), open }, summary, renderChangeLists(item));
+}
+
+/** An Item's added, removed and reworded paragraphs, each list with its truncation as the record states it. */
+function renderChangeLists(item) {
+  const body = h("div", { class: "chg-lists" });
+  const added = list(item.added_paragraphs);
+  const removed = list(item.removed_paragraphs);
+  const reworded = list(item.reworded_paragraphs);
+  if (!added.length && !removed.length && !reworded.length) {
+    body.append(h("p", { class: "muted", text: "No paragraph was added, removed or reworded in this Item." }));
+    return body;
+  }
+  const cut = item.truncated ?? {};
+  if (added.length) body.append(changeList("added", "Added in the later filing", added, item.added, cut.added, (p) => paragraphEntry(p, "Open in the later filing, at this paragraph")));
+  if (removed.length) body.append(changeList("removed", "Removed from the earlier filing", removed, item.removed, cut.removed, (p) => paragraphEntry(p, "Open in the earlier filing, at this paragraph")));
+  if (reworded.length) body.append(changeList("reworded", "Reworded: the later paragraph, with the words it added and dropped", reworded, item.reworded, cut.reworded, rewordedEntry));
+  return body;
+}
+
+function changeList(kind, title, entries, count, truncated, draw) {
+  return h(
+    "section",
+    { class: `chg-list l-${kind}`, "data-list": kind },
+    h(
+      "h4",
+      { class: "chg-list-title" },
+      changeMark(kind),
+      ` ${title}`,
+      truncated ? h("span", { class: "chg-trunc", "data-truncated": kind, text: ` · showing the first ${num(entries.length)} of ${num(count)}` }) : "",
+    ),
+    h("ol", { class: "chg-paras" }, entries.map(draw)),
+  );
+}
+
+/** An added or removed paragraph: its text, where it sits, and a link into its filing. */
+function paragraphEntry(paragraph, linkText) {
+  return h(
+    "li",
+    null,
+    h("p", { class: "chg-text", text: str(paragraph.text) }),
+    h("p", { class: "chg-where" }, h("span", { class: "label", text: "Located under: " }), str(paragraph.locator) || "location not recorded", " · ", externalLink(paragraph.link, linkText)),
+  );
+}
+
+/** A reworded pair: the later paragraph drawn from `segments`, in reading order, then the record's similarity. */
+function rewordedEntry(pair) {
+  const quote = h("blockquote", { class: "chg-reworded" });
+  list(pair.segments).forEach((segment, position) => {
+    if (position > 0) quote.append(" ");
+    const words = str(segment.text);
+    if (segment.kind === "added") quote.append(h("ins", { class: "seg seg-add" }, h("span", { class: "visually-hidden", text: "[added] " }), words));
+    else if (segment.kind === "removed") quote.append(h("del", { class: "seg seg-del" }, h("span", { class: "visually-hidden", text: "[removed] " }), words));
+    else quote.append(words);
+  });
+  return h(
+    "li",
+    null,
+    quote,
+    h(
+      "p",
+      { class: "chg-where" },
+      h("span", { class: "label", text: "Word overlap with the earlier paragraph (Jaccard similarity, 0 to 1): " }),
+      h("span", { "data-similarity": "", text: Number.isFinite(pair.similarity) ? String(pair.similarity) : "not recorded" }),
+      " · ",
+      h("span", { class: "label", text: "Located under: " }),
+      str(pair.after?.locator) || "location not recorded",
+      " · ",
+      externalLink(pair.after?.link, "Open in the later filing"),
+      " · ",
+      externalLink(pair.before?.link, "Open the earlier paragraph"),
+    ),
+  );
 }
 
 // ---------------------------------------------------------------- recent runs
@@ -1029,6 +1331,7 @@ function renderThesis(thesis, runs) {
   els.empty.hidden = true;
   els.runView.hidden = true;
   els.figuresView.hidden = true;
+  els.changesView.hidden = true;
   els.thesisView.hidden = false;
   document.body.classList.add("has-run");
   const request = thesis.request ?? {};
@@ -1478,6 +1781,7 @@ function watchRun(runId) {
 function hideRunView() {
   els.runView.hidden = true;
   els.figuresView.hidden = true;
+  els.changesView.hidden = true;
   els.thesisView.hidden = true;
   els.loadError.hidden = true;
   els.empty.hidden = true;
@@ -1512,6 +1816,7 @@ async function loadSample(name) {
   link.textContent = "Leave the sample";
   link.href = location.pathname;
   $("synthetic-link").hidden = true;
+  $("changes-link").hidden = true;
   hideRunView();
   if (!SAMPLE_NAME.test(name)) {
     showLoadError("That sample name is not valid: use lower-case letters, digits and hyphens.", null);
@@ -1519,6 +1824,12 @@ async function loadSample(name) {
   }
   try {
     const payload = await api(`sample-${name}.json`, { cache: "no-store" });
+    // A recorded filing comparison ({note, changes}) has no run and needs no wording from /api/meta.
+    if (payload.changes && !payload.run) {
+      if (str(payload.note)) els.formNote.textContent = `Sample mode: ${payload.note} This page does not look anything up; open it without ?sample to compare a company's filings.`;
+      renderChanges(payload.changes, str(payload.note));
+      return;
+    }
     if (!payload.meta || !payload.run) throw new ApiError("the file has no meta or run", 0);
     applyMeta(payload.meta);
     if (str(payload.note)) els.formNote.textContent = `Sample mode: ${payload.note} This page does not start runs; open it without ?sample to test a thesis.`;
@@ -1551,6 +1862,7 @@ function renderRun(run) {
   els.loadError.hidden = true;
   els.empty.hidden = true;
   els.figuresView.hidden = true;
+  els.changesView.hidden = true;
   els.thesisView.hidden = true;
   els.runView.hidden = false;
   document.body.classList.add("has-run");
@@ -2549,6 +2861,7 @@ function openHashTarget() {
 function init() {
   els.form.addEventListener("submit", onSubmit);
   els.figuresOnly.addEventListener("click", onFiguresOnly);
+  els.filingChanges.addEventListener("click", onFilingChanges);
   els.example.addEventListener("click", loadExample);
   els.saveThesis.addEventListener("click", () => toggleSavePanel(els.savePanel.hidden));
   els.saveConfirm.addEventListener("click", onSaveThesis);

@@ -255,3 +255,122 @@ def test_property_an_amount_matches_itself_written_with_separators_and_scale_wor
             assert check.status == "passed", (statement, source, check.details)
         rounded = f"Revenue was ${millions / 1000:.1f} billion."
         assert check_numbers(rounded, [sources[1]], []).status == "passed", (rounded, sources[1])
+
+
+# The referee's demonstrations (docs/reviews/referee-1-version-4.md, finding 3) ---------------
+
+
+@pytest.mark.parametrize("source", ["Revenue change (3)%", "Revenue change -3%"])
+def test_growth_does_not_match_a_negative_source(source: str) -> None:
+    """3b: "grew 3%" against a source that says the figure fell 3%."""
+    check = check_numbers("Revenue grew 3% from a year ago.", [source], [])
+    assert check.status == "failed" and check.unmatched == ["3%"]
+
+
+@pytest.mark.parametrize("source", ["Revenue change (3)%", "Revenue change -3%"])
+def test_a_word_of_decline_lets_an_unsigned_number_match_a_negative_source(source: str) -> None:
+    assert check_numbers("Revenue declined 3% from a year ago.", [source], []).status == "passed"
+
+
+def test_the_word_of_decline_must_be_in_the_same_sentence() -> None:
+    statement = "Revenue grew 3% from a year ago. Gross margin fell."
+    assert check_numbers(statement, ["Revenue change (3)%"], []).status == "failed"
+    statement = "Gross margin fell. Revenue grew 3% from a year ago."
+    assert check_numbers(statement, ["Revenue change (3)%"], []).status == "failed"
+
+
+def test_a_negative_statement_number_still_needs_a_negative_source() -> None:
+    assert check_numbers("Revenue declined -3%.", ["Revenue change 3%"], []).status == "failed"
+    assert check_numbers("Revenue declined -3%.", ["Revenue change (3)%"], []).status == "passed"
+
+
+def test_an_unsigned_number_still_matches_a_positive_source_whatever_the_wording() -> None:
+    assert check_numbers("Revenue fell 3% short of plan.", ["up 3%"], []).status == "passed"
+
+
+def test_a_negative_cited_figure_needs_a_word_of_decline() -> None:
+    figure = metric(value=-2.8, display="-2.8%")
+    assert check_numbers("Revenue grew 2.8% in fiscal 2026.", [], [figure]).status == "failed"
+    assert check_numbers("Revenue fell 2.8% in fiscal 2026.", [], [figure]).status == "passed"
+
+
+def test_lower_case_notes_followed_by_a_rate_are_checked() -> None:
+    """3c: the exemption for "Note 5" hid the 3.5 of "senior notes 3.5%"."""
+    assert [(q.value, q.unit) for q in quantities("the senior notes 3.5% due")] == [
+        (3.5, "percent")
+    ]
+    check = check_numbers(
+        "The senior notes 3.5% are the company's cheapest debt.",
+        ["The senior notes bear interest at 2.5% per year."],
+        [],
+    )
+    assert check.status == "failed" and check.unmatched == ["3.5%"]
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "see Note 5 to the financial statements",
+        "described in Note 14",
+        "as Notes 13 explains",
+        "Item 1A and Item 7A",
+        "our annual report on Form 10-K",
+        "Part II of the 10-K",
+        "tariffs under Section 232",
+        "a Rule 10b5-1 trading plan",
+        "Exhibit 31.1 and Exhibit 32.1",
+    ],
+)
+def test_a_capitalised_reference_followed_by_its_number_stays_exempt(text: str) -> None:
+    assert quantities(text) == []
+
+
+def test_a_capitalised_reference_followed_by_a_rate_is_checked() -> None:
+    assert [q.value for q in quantities("Notes 3.5% due 2030")] == [3.5]
+
+
+@pytest.mark.parametrize(
+    ("text", "value"),
+    [
+        ("the company had 2000 employees", 2000),
+        ("it opened 2025 stores last year", 2025),
+        ("a fee of $2025", 2025),
+        ("about 1950 suppliers", 1950),
+    ],
+)
+def test_a_four_digit_number_outside_a_date_is_checked(text: str, value: float) -> None:
+    """3e: "2000 employees" was exempt as a year."""
+    assert [q.value for q in quantities(text)] == [value]
+
+
+def test_2000_employees_is_checked_against_the_quote() -> None:
+    check = check_numbers("The company has 2000 employees.", ["We had 1,800 employees."], [])
+    assert check.status == "failed" and check.unmatched == ["2000"]
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "In 2025 the company grew.",
+        "revenue in 2025",
+        "since 2019",
+        "during 2024",
+        "by 2030",
+        "guidance for 2026",
+        "the end of 2025",
+        "the year ended 2025",
+        "the period ending 2026",
+        "fiscal 2026 and fiscal year 2025",
+        "FY 2026",
+        "in June 2025",
+        "Q3 2025",
+        "the third quarter 2025",
+        "2024 and 2025",
+        "2023 to 2025",
+        "from 2023 through 2025",
+        "on 2026-07-26",
+        "as of July 26, 2026",
+    ],
+)
+def test_a_year_in_a_date_like_context_is_exempt(text: str) -> None:
+    assert quantities(text) == []

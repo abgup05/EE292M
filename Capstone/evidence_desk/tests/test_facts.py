@@ -426,14 +426,23 @@ def test_no_gross_profit_without_cost_of_revenue() -> None:
     assert book.annuals("gross_profit") == {}
 
 
-# Recorded filers: the answer key (USD millions, from each company's annual report)
+# Recorded filers: the answer key, typed in by hand from each company's Form 10-K. Never edit
+# a value here to make a test pass: when the recorded data and the key disagree, find out from
+# the filing which is wrong.
 
+# Revenue and net income, USD millions.
 KNOWN_ANNUAL = [
+    # Apple Form 10-K, consolidated statements of operations, fiscal years 2022 to 2024
+    # (total net sales; net income).
     ("AAPL", "2022-09-24", 394_328, 99_803),
     ("AAPL", "2023-09-30", 383_285, 96_995),
     ("AAPL", "2024-09-28", 391_035, 93_736),
+    # Microsoft Form 10-K, income statements, fiscal years 2023 and 2024
+    # (total revenue; net income).
     ("MSFT", "2023-06-30", 211_915, 72_361),
     ("MSFT", "2024-06-30", 245_122, 88_136),
+    # NVIDIA Form 10-K, consolidated statements of income, fiscal years 2024 and 2025
+    # (revenue; net income).
     ("NVDA", "2024-01-28", 60_922, 29_760),
     ("NVDA", "2025-01-26", 130_497, 72_880),
 ]
@@ -447,6 +456,41 @@ def test_known_annual_revenue_and_net_income(
     year_end = date.fromisoformat(end)
     assert book.annuals("revenue")[year_end].value == revenue * MILLION
     assert book.annuals("net_income")[year_end].value == net_income * MILLION
+
+
+# Diluted earnings per share, USD; and gross margin as a percent of revenue, one decimal.
+KNOWN_ANNUAL_PER_SHARE_AND_MARGIN = [
+    # Apple Form 10-K, consolidated statements of operations, fiscal years 2022 to 2024
+    # (diluted earnings per share; gross margin ÷ total net sales).
+    ("AAPL", "2022-09-24", 6.11, 43.3),
+    ("AAPL", "2023-09-30", 6.13, 44.1),
+    ("AAPL", "2024-09-28", 6.08, 46.2),
+    # Microsoft Form 10-K, income statements, fiscal years 2023 and 2024
+    # (diluted earnings per share; gross margin ÷ total revenue).
+    ("MSFT", "2023-06-30", 9.68, 68.9),
+    ("MSFT", "2024-06-30", 11.80, 69.8),
+    # NVIDIA Form 10-K, consolidated statements of income, fiscal years 2024 and 2025
+    # (net income per share, diluted; gross profit ÷ revenue). Fiscal 2024 EPS is $1.19 as
+    # restated in the fiscal 2025 10-K for the ten-for-one split of June 2024; the fiscal 2024
+    # 10-K first reported $11.93.
+    ("NVDA", "2024-01-28", 1.19, 72.7),
+    ("NVDA", "2025-01-26", 2.94, 75.0),
+]
+
+
+@pytest.mark.parametrize(("ticker", "end", "eps", "_margin"), KNOWN_ANNUAL_PER_SHARE_AND_MARGIN)
+def test_known_annual_diluted_eps(ticker: str, end: str, eps: float, _margin: float) -> None:
+    book = FactBook(load_fixture(ticker))
+    assert book.annuals("eps_diluted")[date.fromisoformat(end)].value == eps
+
+
+@pytest.mark.parametrize(("ticker", "end", "_eps", "margin"), KNOWN_ANNUAL_PER_SHARE_AND_MARGIN)
+def test_known_annual_gross_margin(ticker: str, end: str, _eps: float, margin: float) -> None:
+    book = FactBook(load_fixture(ticker))
+    year_end = date.fromisoformat(end)
+    gross = book.annuals("gross_profit")[year_end].value
+    revenue = book.annuals("revenue")[year_end].value
+    assert round(gross / revenue * 100, 1) == margin
 
 
 @pytest.mark.parametrize("ticker", list(CIKS))

@@ -63,6 +63,8 @@ SPECS: dict[str, MetricSpec] = {
         MetricSpec("rnd_ratio", "R&D as a share of revenue", "percent"),
         MetricSpec("operating_cash_flow", "Operating cash flow", "USD"),
         MetricSpec("capex", "Capital expenditure", "USD"),
+        # The label is part of the prompt (engines.claude._figure_lines), and recorded model
+        # answers are keyed by the prompt, so the definition is carried in DEFINITIONS instead.
         MetricSpec("free_cash_flow", "Free cash flow", "USD"),
         MetricSpec("fcf_margin", "Free cash flow margin", "percent"),
         MetricSpec("cash", "Cash and cash equivalents", "USD"),
@@ -72,6 +74,16 @@ SPECS: dict[str, MetricSpec] = {
         MetricSpec("receivables", "Accounts receivable", "USD"),
         MetricSpec("receivables_yoy", "Accounts receivable, change over one year", "percent"),
     )
+}
+FREE_CASH_FLOW_DEFINITION = (
+    "Free cash flow here is operating cash flow less purchases of property and equipment "
+    "(PaymentsToAcquirePropertyPlantAndEquipment), a house definition that can differ from "
+    "the company's own."
+)
+# Metrics whose definition is the project's, not the filing's: said first in their note.
+DEFINITIONS: dict[str, str] = {
+    "free_cash_flow": FREE_CASH_FLOW_DEFINITION,
+    "fcf_margin": f"{FREE_CASH_FLOW_DEFINITION} The margin divides it by revenue.",
 }
 ANNUAL_KEYS: tuple[str, ...] = (
     "revenue",
@@ -100,13 +112,20 @@ PERIOD_WORDS: dict[PeriodKind, str] = {
 
 
 def usd_text(value: float) -> str:
-    """USD for reading: "$46.74B", "$812.0M", "$12,345"; negatives as "-$1.20B"."""
+    """USD for reading: "$46.74B", "$812.0M", "$12,345"; negatives as "-$1.20B".
+
+    The unit is chosen by the value as it will be *shown*, not as it is: 999.95
+    million rounds to "1000.0M", so it is shown as "$1.00B"; 999,999.5 rounds
+    to "1,000,000", so it is shown as "$1.0M".
+    """
     sign, size = ("-" if value < 0 else ""), abs(value)
-    if size >= 1e9:
+    millions = f"{size / 1e6:.1f}"
+    if size >= 1e9 or float(millions) >= 1000:
         return f"{sign}${size / 1e9:.2f}B"
-    if size >= 1e6:
-        return f"{sign}${size / 1e6:.1f}M"
-    return f"{sign}${size:,.0f}"
+    whole = f"{size:,.0f}"
+    if size >= 1e6 or float(whole.replace(",", "")) >= 1e6:
+        return f"{sign}${millions}M"
+    return f"{sign}${whole}"
 
 
 def percent_text(value: float, *, signed: bool = False) -> str:
@@ -310,7 +329,7 @@ def to_metric(key: str, kind: PeriodKind, end: date, outcome: Outcome) -> Metric
         display=display_text(outcome.value, spec.unit, signed=outcome.signed),
         formula=outcome.formula if outcome.value is not None else "",
         inputs=_refs(outcome.used),
-        note=_note(outcome),
+        note=" ".join(text for text in (DEFINITIONS.get(key, ""), _note(outcome)) if text),
     )
 
 

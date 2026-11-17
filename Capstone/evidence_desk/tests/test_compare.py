@@ -193,8 +193,9 @@ def test_a_claim_present_in_one_run_only() -> None:
     rows = {c.claim: (c.before, c.after, c.moved) for c in comparison.claims}
     assert rows == {
         CLAIMS[0]: (Verdict.supported, Verdict.supported, False),
-        CLAIMS[2]: (None, Verdict.challenged, True),
-        CLAIMS[1]: (Verdict.unjudged, None, True),
+        # A claim in one run only is "new" or "dropped", not a verdict that moved.
+        CLAIMS[2]: (None, Verdict.challenged, False),
+        CLAIMS[1]: (Verdict.unjudged, None, False),
     }
     # The later run's claims come first, in its order; then claims only the earlier run had.
     assert [c.claim for c in comparison.claims] == [CLAIMS[0], CLAIMS[2], CLAIMS[1]]
@@ -225,3 +226,61 @@ def test_reviewed_verdicts_come_from_each_runs_review() -> None:
     assert first.reviewed_after == Verdict.not_addressed
     assert not first.moved  # moved compares the engine's verdicts
     assert compare_runs(earlier, later).claims[0].reviewed_after is None
+
+
+# The referee's finding 8: what moved, and what only looks as if it moved ---------------------
+
+
+def test_a_keyless_rerun_after_a_model_run_is_not_blamed_on_the_filings() -> None:
+    """A model run, then a run with no key: the verdict changes because the engine did."""
+    earlier = make_run("run-a", THREE).model_copy(update={"engine": "claude"})
+    later = make_run(
+        "run-b", [Verdict.unjudged, Verdict.unjudged, Verdict.not_addressed]
+    ).model_copy(update={"engine": "extractive"})
+    comparison = compare_runs(earlier, later)
+    assert (comparison.earlier_engine, comparison.later_engine) == ("claude", "extractive")
+    assert comparison.engines_differ
+    assert comparison.claims[0].change == "moved" and comparison.verdicts_moved == 1
+    assert comparison.note.startswith("1 of 3 verdicts moved and no filing is new.")
+    assert comparison.note.endswith(
+        "The two runs used different engines (claude, then extractive), so a verdict that "
+        "moved may reflect the engine and not the filings."
+    )
+
+
+def test_the_same_engine_says_nothing_about_engines() -> None:
+    comparison = compare_runs(make_run("run-a", THREE), make_run("run-b", THREE))
+    assert (comparison.earlier_engine, comparison.later_engine) == ("extractive", "extractive")
+    assert not comparison.engines_differ
+    assert "engine" not in comparison.note
+
+
+def test_a_claim_that_hit_the_time_limit_is_not_assessed_and_not_moved() -> None:
+    """``None -> verdict`` after a time limit is not a moved verdict."""
+    earlier = make_run("run-a", THREE)
+    earlier.claims[1].verdict = None  # stopped by the time limit before it was assessed
+    later = make_run("run-b", [Verdict.supported, Verdict.challenged, Verdict.not_addressed])
+    comparison = compare_runs(earlier, later)
+    change = comparison.claims[1]
+    assert (change.before, change.after) == (None, Verdict.challenged)
+    assert change.change == "not_assessed" and not change.moved
+    assert comparison.verdicts_moved == 0
+    assert comparison.note == "No verdict moved and no filing is new."
+
+
+def test_each_claim_says_how_it_changed() -> None:
+    earlier = make_run("run-a", THREE[:2])
+    later = make_run(
+        "run-b",
+        [Verdict.challenged, Verdict.challenged],
+        claim_texts=[CLAIMS[0], CLAIMS[2]],
+    )
+    comparison = compare_runs(earlier, later)
+    assert {c.claim: (c.change, c.moved) for c in comparison.claims} == {
+        CLAIMS[0]: ("moved", True),
+        CLAIMS[2]: ("new", False),
+        CLAIMS[1]: ("dropped", False),
+    }
+    assert comparison.verdicts_moved == 1
+    unchanged = compare_runs(make_run("run-a", THREE), make_run("run-b", THREE)).claims
+    assert {c.change for c in unchanged} == {"unchanged"}

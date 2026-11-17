@@ -256,7 +256,8 @@ def test_one_changed_word_withholds_the_finding() -> None:
     assert not withheld.verified and withheld.evidence_ids == [] and withheld.claim_id == "c1"
     assert result.quotes_rejected == 1
     assert result.problems == [
-        f"{withheld.id}: quote not found in s1 (Part II, Item 1A. Risk Factors)"
+        f"{withheld.id}: quote is not in any passage offered for this claim "
+        "(it names p1, s1 (Part II, Item 1A. Risk Factors))"
     ]
 
 
@@ -268,7 +269,8 @@ def test_good_and_bad_quote_keeps_the_good_one() -> None:
     assert [item.excerpt for item in result.evidence] == [good]
     assert finding.evidence_ids == [result.evidence[0].id]
     assert result.quotes_offered == 2 and result.quotes_rejected == 1
-    assert len(result.problems) == 1 and "not found" in result.problems[0]
+    assert len(result.problems) == 1
+    assert "not in any passage offered" in result.problems[0]
 
 
 def test_too_short_quote_is_rejected() -> None:
@@ -314,7 +316,7 @@ def test_quote_from_a_different_source_than_its_passage_is_rejected() -> None:
     # The text is in s2 (MD&A) but the quote names p1, a Risk Factors passage of s1.
     result = _gate(_finding(("p1", "Data Center revenue was $41.1 billion, up 56%")))
     assert result.findings == []
-    assert "not found in s1" in result.problems[0]
+    assert "not in any passage offered for this claim (it names p1, s1" in result.problems[0]
 
 
 def test_unknown_passage_is_rejected() -> None:
@@ -510,6 +512,8 @@ def test_a_number_not_in_the_quote_withholds_the_finding_and_names_the_number() 
         "a number in the statement is not in its quotes or cited figures: 65%"
     )
     assert result.numbers_checked == 1 and result.numbers_unmatched == 1
+    # The quote itself was found word for word, whatever became of its finding.
+    assert (result.quotes_offered, result.quotes_found, result.quotes_rejected) == (1, 1, 0)
 
 
 def test_the_quoted_number_passes_the_numeric_check() -> None:
@@ -560,3 +564,138 @@ def test_a_finding_with_no_quote_and_no_figure_says_why_it_was_withheld() -> Non
     (withheld,) = result.unsupported
     assert withheld.withheld_reason == "no verified quote or reported figure"
     assert withheld.checks.quotes == "none"
+
+
+# Quotes come from what the engine was shown (referee 1 of version 4, finding 2) ------------
+
+MDNA_HEADING = "Part I, Item 2. Management's Discussion and Analysis"
+RISK_HEADING = "Part II, Item 1A. Risk Factors"
+LEGAL_HEADING = "Part II, Item 3. Legal Proceedings"
+MDNA_LINE = "Data Center revenue was $41.1 billion, up 56% from a year ago."
+RISK_LINE = "A limited number of customers account for a significant share of our revenue."
+LEGAL_LINE = "We are subject to legal proceedings in the ordinary course of our business."
+# Stored the way the filing parser lays a document out: each heading line, then its text.
+FILING = "\n\n".join(
+    f"{heading}\n{line}"
+    for heading, line in (
+        (MDNA_HEADING, MDNA_LINE),
+        (RISK_HEADING, RISK_LINE),
+        (LEGAL_HEADING, LEGAL_LINE),
+    )
+)
+
+
+def _section_passage(pid: str, line: str, heading: str) -> Passage:
+    """A passage as the chunker makes it: the text under a heading, never the heading line."""
+    return Passage(id=pid, source_id="s1", locator=heading, text=line, start=FILING.index(line))
+
+
+# X (MD&A) and Y (Risk Factors) were offered for the claim; Legal Proceedings was not.
+OFFERED = {
+    "x": _section_passage("x", MDNA_LINE, MDNA_HEADING),
+    "y": _section_passage("y", RISK_LINE, RISK_HEADING),
+}
+
+
+def _gate_offered(*findings: FindingDraft) -> GateResult:
+    return gate_claim(
+        claim_id="c1",
+        draft=ClaimDraft(findings=list(findings)),
+        passages=OFFERED,
+        sources={"s1": StoredSource(text=FILING, url=URL_1)},
+        ids=RunIds(),
+    )
+
+
+def test_a_quote_from_a_section_that_was_not_offered_is_rejected() -> None:
+    # The referee's demonstration: name passage X, quote a sentence of an unoffered section.
+    result = _gate_offered(_finding(("x", LEGAL_LINE)))
+    assert result.findings == [] and result.evidence == []
+    assert result.quotes_rejected == 1 and result.quotes_found == 0
+    (withheld,) = result.unsupported
+    assert result.problems == [
+        f"{withheld.id}: quote is not in any passage offered for this claim "
+        f"(it names x, s1 ({MDNA_HEADING}))"
+    ]
+
+
+def test_a_quote_from_another_offered_passage_is_kept_under_that_passages_locator() -> None:
+    result = _gate_offered(_finding(("x", RISK_LINE)))
+    (finding,) = result.findings
+    (item,) = result.evidence
+    assert item.excerpt == RISK_LINE and item.start == FILING.index(RISK_LINE)
+    assert item.locator == RISK_HEADING, "labelled with the passage that holds the quote"
+    assert finding.evidence_ids == [item.id]
+    assert result.quotes_found == 1 and result.quotes_rejected == 0
+
+
+def test_a_quote_inside_the_named_passage_keeps_its_locator() -> None:
+    result = _gate_offered(_finding(("x", MDNA_LINE)))
+    (item,) = result.evidence
+    assert item.locator == MDNA_HEADING and item.start == FILING.index(MDNA_LINE)
+
+
+def test_a_quote_that_includes_a_heading_line_is_rejected() -> None:
+    # The heading is the parser's, not the filing's; no passage contains it.
+    quote = f"{MDNA_HEADING}\nData Center revenue was $41.1 billion"
+    assert quote in FILING
+    result = _gate_offered(_finding(("x", quote)))
+    assert result.findings == [] and result.quotes_rejected == 1
+    assert "not in any passage offered for this claim" in result.problems[0]
+
+
+def test_found_and_rejected_quotes_add_up_to_the_quotes_offered() -> None:
+    result = _gate_offered(
+        _finding(("x", MDNA_LINE), ("x", LEGAL_LINE)),
+        _finding(("y", RISK_LINE), ("y", RISK_LINE)),  # one span twice: found twice, kept once
+        _finding(("q", MDNA_LINE)),
+    )
+    assert result.quotes_offered == 5
+    assert (result.quotes_found, result.quotes_rejected) == (3, 2)
+    assert len(result.evidence) == 2
+
+
+def test_evidence_says_what_its_link_opens() -> None:
+    result = _gate_offered(_finding(("x", MDNA_LINE)))
+    assert result.evidence[0].link_kind == "passage"
+
+
+# The number check reads the reason too (referee 1 of version 4, finding 3) ---------------
+
+REASON_WITHHELD = (
+    "[Reason withheld: it cited a number (65%) that is in neither the finding's quotes nor "
+    "its cited figures.]"
+)
+
+
+def _reasoned(statement: str, rationale: str) -> FindingDraft:
+    return FindingDraft(
+        statement=statement,
+        stance=Stance.supports,
+        quotes=[Quote(passage_id="p2", text=GROWTH_QUOTE)],
+        confidence=Confidence.high,
+        rationale=rationale,
+    )
+
+
+def test_a_reason_citing_a_number_its_quotes_lack_is_withheld_and_the_finding_kept() -> None:
+    # The referee's demonstration: an honest statement and a 56% quote under "grew 65%".
+    result = _gate_figures(_reasoned("Data Center revenue grew 56%.", "Revenue grew 65%"))
+    (finding,) = result.findings
+    assert finding.verified and finding.statement == "Data Center revenue grew 56%."
+    assert finding.rationale == REASON_WITHHELD
+    assert finding.checks.numbers == "passed"
+    assert finding.checks.numbers_detail == [
+        "56% matched 56% in a quote",
+        "in the reason: 65% was not found in the quotes or the cited figures",
+    ]
+    assert result.reasons_withheld == 1
+    assert result.numbers_checked == 1 and result.numbers_unmatched == 0  # statements only
+
+
+def test_a_reason_whose_numbers_are_in_the_quotes_is_kept_as_written() -> None:
+    reason = "The filing reports 56% growth in Data Center revenue."
+    result = _gate_figures(_reasoned("Data Center revenue grew 56%.", reason))
+    (finding,) = result.findings
+    assert finding.rationale == reason and result.reasons_withheld == 0
+    assert finding.checks.numbers_detail == ["56% matched 56% in a quote"]

@@ -19,6 +19,7 @@ from tests.test_facts import (
     FY_END,
     FY_START,
     H1_END,
+    KNOWN_ANNUAL_PER_SHARE_AND_MARGIN,
     MILLION,
     N9_END,
     Q1_END,
@@ -79,10 +80,50 @@ def two_year_company(**overrides: list[dict[str, Any]]) -> dict[str, Any]:
         (-46_743_000_000, "-$46.74B"),
         (-812_000_000, "-$812.0M"),
         (0, "$0"),
+        # Boundaries: a value that would round up to 1000.0M is shown in billions, and one
+        # that would round up to 1,000,000 is shown in millions.
+        (999_950_000, "$1.00B"),
+        (999_949_999, "$999.9M"),
+        (-999_950_000, "-$1.00B"),
+        (999_999.5, "$1.0M"),
+        (999_999.4, "$999,999"),
+        (-999_999.5, "-$1.0M"),
     ],
 )
 def test_usd_display(value: float, text: str) -> None:
     assert usd_text(value) == text
+
+
+def test_free_cash_flow_says_how_it_is_defined() -> None:
+    """A house definition, which can differ from the company's own: the label says which."""
+    report = build_report(FactBook(two_year_company()))
+    fcf = metric(report, "free_cash_flow", "annual", FY_END)
+    margin = metric(report, "fcf_margin", "annual", FY_END)
+    definition = (
+        "Free cash flow here is operating cash flow less purchases of property and equipment "
+        "(PaymentsToAcquirePropertyPlantAndEquipment), a house definition that can differ "
+        "from the company's own."
+    )
+    assert fcf.note == definition
+    assert margin.note == f"{definition} The margin divides it by revenue."
+    # The label is unchanged: it is part of the model's prompt, which recorded answers key on.
+    assert (fcf.label, margin.label) == ("Free cash flow", "Free cash flow margin")
+    # A missing value keeps its reason after the definition.
+    missing = build_report(
+        FactBook(two_year_company(PaymentsToAcquirePropertyPlantAndEquipment=[]))
+    )
+    note = metric(missing, "free_cash_flow", "annual", FY_END).note
+    assert note.startswith(definition) and "No value for" in note
+
+
+@pytest.mark.parametrize(("ticker", "end", "eps", "margin"), KNOWN_ANNUAL_PER_SHARE_AND_MARGIN)
+def test_reported_eps_and_gross_margin_match_the_answer_key(
+    ticker: str, end: str, eps: float, margin: float
+) -> None:
+    """The figures as shown, against the hand-typed key in ``test_facts.py``."""
+    report = build_report(FactBook(load_fixture(ticker)), years=10)
+    assert metric(report, "eps_diluted", "annual", end).display == f"${eps:.2f}"
+    assert metric(report, "gross_margin", "annual", end).display == f"{margin:.1f}%"
 
 
 @pytest.mark.parametrize(

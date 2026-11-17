@@ -17,11 +17,32 @@ The rules:
   matches 55.6% and 56.4% but not 55.4%; "$46.7 billion" matches $46,743 million.
 - A plain or USD number in a quote with no scale word (a table cell such as
   "Revenue $ 46,743") also matches at 1e3, 1e6 or 1e9 times its value.
-- An unsigned statement number matches a source of either sign ("fell 3%"
-  against "(3)%"); a negative statement number needs a negative source.
-- Not quantities: years 1900-2100 written as four bare digits, form and item
-  names, quarter and fiscal labels, ordinals, alphanumeric product names,
-  numbers inside a date, and bare integers from 0 to 12 with no unit.
+- Direction: an unsigned statement number matches a positive source; it
+  matches a *negative* source ("(3)%", "-3%") only when the statement's
+  sentence that holds it has a word of :data:`NEGATIVE_WORDS` ("revenue
+  declined 3%" against "(3)%" passes; "revenue grew 3%" against it fails). A
+  negative statement number needs a negative source.
+- Not quantities:
+
+  - a four-digit number from 1900 to 2100 in a date-like context only
+    (:func:`_is_year`): after "fiscal", "FY", "in", "since", "during", "by",
+    "for", "of", "ended", "ending", "due" and similar, after a month or a quarter
+    label, or paired with another year ("2024 and 2025", "2023 to 2025").
+    "2000 employees" and "2025 stores" are checked;
+  - a reference: a *capitalised* word such as "Note", "Item", "Part",
+    "Section", "Rule" or "Form" directly followed by its own number or Roman
+    numeral ("Note 5", "Item 1A", "Part II", "Rule 10b5-1"), never a
+    lower-case word ("senior notes 3.5%" is checked) and never a number
+    followed by a percent sign;
+  - form names ("10-K"), quarter and fiscal labels, ordinals, alphanumeric
+    product names and numbers inside a date;
+  - bare integers from 0 to 12 with no unit. Filings usually spell such counts
+    out ("two customers", "three segments"), so a digit the statement writes
+    could never be matched to its source and checking it would withhold true
+    findings; the cost is that a wrong small count goes unchecked.
+
+Known gap (not fixable here): table rows are flattened by the parser and lose
+their column headers, so a number from the wrong column or period matches.
 
 Pure: no I/O.
 """
@@ -49,6 +70,49 @@ SCALE_ABBREVIATIONS: dict[str, float] = {"K": 1e3, "M": 1e6, "B": 1e9, "bn": 1e9
 TABLE_SCALES: tuple[float, ...] = (1.0, 1e3, 1e6, 1e9)
 MAX_EXEMPT_COUNT = 12
 YEARS = range(1900, 2101)
+# Words that let a number written without a sign stand for a negative source figure: words
+# of decline, and the words a filing uses for amounts it prints in parentheses (losses,
+# expenses, outflows). Matched as whole words, case ignored, in the number's own sentence.
+NEGATIVE_WORDS: tuple[str, ...] = (
+    "decline",
+    "declined",
+    "declines",
+    "declining",
+    "decrease",
+    "decreased",
+    "decreases",
+    "decreasing",
+    "fell",
+    "fall",
+    "falls",
+    "falling",
+    "drop",
+    "dropped",
+    "drops",
+    "down",
+    "lower",
+    "loss",
+    "losses",
+    "negative",
+    "reduction",
+    "reduced",
+    "shrank",
+    "contraction",
+    "contracted",
+    "deficit",
+    "expense",
+    "expenses",
+    "outflow",
+    "outflows",
+    "used in",
+    "paid",
+    "purchases",
+    "repurchases",
+    "repurchased",
+    "spent",
+    "capital expenditure",
+    "capital expenditures",
+)
 
 _MONTH = (
     r"(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|Aug(?:ust)?|"
@@ -61,14 +125,33 @@ _MASKS: tuple[re.Pattern[str], ...] = (
     re.compile(r"\b\d{4}-\d{2}-\d{2}\b"),
     re.compile(r"\b\d{1,2}/\d{1,2}/\d{2,4}\b"),
     re.compile(r"\b\d{1,2}-[A-Z]{1,2}(?:/A)?\b"),  # 10-K, 10-Q, 8-K, 20-F, 10-K/A
+    # A reference: a capitalised word directly followed by its own number or Roman numeral.
+    # Case matters ("senior notes 3.5%" is not a reference), and the possessive match keeps
+    # a number followed by a percent sign ("Notes 3.5% due 2030") from being masked.
     re.compile(
         r"\b(?:Items?|Parts?|Rules?|Sections?|Notes?|Form|Schedules?|Exhibits?|Articles?|"
-        r"Regulation|Chapter|Level|Tier|Phase|Page)\s+[\w.\-]+",
-        re.IGNORECASE,
+        r"Regulation|Chapter|Level|Tier|Phase|Page)\s+"
+        r"(?:[IVXLC]+\b|\d[\w.\-]*+)(?!\s?%|\s?percent)"
     ),
     re.compile(r"\bfiscal(?:\s+years?)?\s+'?\d{2,4}\b", re.IGNORECASE),
     re.compile(r"\b(?:FY|CY)\s?'?\d{2,4}\b", re.IGNORECASE),
 )
+# What directly before a four-digit number makes it a year: a period word, a preposition
+# of time, a month or a quarter label, or another year joined by "and", "to" or a dash.
+_YEAR_BEFORE = re.compile(
+    r"(?:\b(?:fiscal(?:\s+years?)?|calendar(?:\s+years?)?|years?|FY|CY|in|since|during|by|"
+    r"for|of|ended|ending|from|through|until|between|before|after|due|maturing|expiring|"
+    r"quarter|half|"
+    rf"Q[1-4]|H[12]|{_MONTH}\.?,?)"
+    r"|\b(?:19|20|21)\d\d\s*(?:and|to|through|or)|\b(?:19|20|21)\d\d\s*[-–])\s*'?$",
+    re.IGNORECASE,
+)
+_YEAR_AFTER = re.compile(r"\s*(?:(?:and|to|through|or)\s+|[-–]\s*)(?:19|20|21)\d\d\b")
+_NEGATIVE = re.compile(
+    r"\b(?:" + "|".join(re.escape(word).replace(r"\ ", r"\s+") for word in NEGATIVE_WORDS) + r")\b",
+    re.IGNORECASE,
+)
+_SENTENCE_BREAK = re.compile(r"[.!?;](?=\s)|\n")
 _NUMBER = re.compile(r"\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?|\.\d+")
 _CURRENCY_BEFORE = re.compile(r"(?:US\$|\$|\bUSD)\s?$")
 _SCALE_AFTER = re.compile(r"\s?(thousand|million|billion|trillion)\b", re.IGNORECASE)
@@ -154,6 +237,20 @@ def _unit_after(text: str, position: int) -> tuple[Unit | None, int]:
     return None, position
 
 
+def _is_year(text: str, begin: int, end: int) -> bool:
+    """True when the four digits at ``text[begin:end]`` are a year in a date-like context.
+
+    The number must be from 1900 to 2100 and either follow a period word, a
+    preposition of time, a month or a quarter label (:data:`_YEAR_BEFORE`), or
+    be joined to another year by "and", "to", "through", "or" or a dash.
+    """
+    digits = text[begin:end]
+    if len(digits) != 4 or not digits.isdigit() or int(digits) not in YEARS:
+        return False
+    before = text[max(0, begin - 40) : begin]
+    return bool(_YEAR_BEFORE.search(before) or _YEAR_AFTER.match(text, end))
+
+
 def _read(text: str, match: re.Match[str]) -> Quantity | None:
     """The quantity at one digit run, or None when it is a label, a date part or a count."""
     begin, end = match.span()
@@ -201,7 +298,7 @@ def _read(text: str, match: re.Match[str]) -> Quantity | None:
     decimals = len(digits.split(".", 1)[1]) if "." in digits else 0
     bare = unit == "plain" and scale == 1.0 and decimals == 0 and "," not in digits
     if bare and not negative:
-        if int(number) <= MAX_EXEMPT_COUNT or int(number) in YEARS:
+        if int(number) <= MAX_EXEMPT_COUNT or _is_year(text, begin, end):
             return None
         caps = _CAPS_WORD_BEFORE.search(text[max(0, begin - 24) : begin])
         if caps and caps.group(1) != "USD":
@@ -217,17 +314,42 @@ def _read(text: str, match: re.Match[str]) -> Quantity | None:
     )
 
 
-def quantities(text: str) -> list[Quantity]:
-    """Every quantity ``text`` writes, in order. See the module notes for what is excluded."""
+def _placed_quantities(text: str) -> list[tuple[Quantity, int]]:
+    """Every quantity ``text`` writes with the offset of its digits, in order."""
     masks = _masked(text)
-    found: list[Quantity] = []
+    found: list[tuple[Quantity, int]] = []
     for match in _NUMBER.finditer(text):
         if _inside(match.span(), masks):
             continue
         quantity = _read(text, match)
         if quantity is not None:
-            found.append(quantity)
+            found.append((quantity, match.start()))
     return found
+
+
+def quantities(text: str) -> list[Quantity]:
+    """Every quantity ``text`` writes, in order. See the module notes for what is excluded."""
+    return [quantity for quantity, _ in _placed_quantities(text)]
+
+
+def _sentence_at(text: str, position: int) -> str:
+    """The sentence of ``text`` that holds ``position``.
+
+    A sentence ends at ".", "!", "?" or ";" followed by white space, or at a line
+    break; a decimal point ("46.7") is never followed by white space, so it does
+    not end one.
+    """
+    start = 0
+    for found in _SENTENCE_BREAK.finditer(text):
+        if found.end() > position:
+            return text[start : found.end()]
+        start = found.end()
+    return text[start:]
+
+
+def says_negative(sentence: str) -> bool:
+    """True when ``sentence`` has a word of :data:`NEGATIVE_WORDS`."""
+    return _NEGATIVE.search(sentence) is not None
 
 
 # Matching
@@ -257,7 +379,12 @@ def _as_percent(value: float, unit: Unit) -> float:
     return value / 100 if unit == "bps" else value
 
 
-def _matches(quantity: Quantity, candidate: _Candidate) -> bool:
+def _matches(quantity: Quantity, candidate: _Candidate, negative_allowed: bool) -> bool:
+    """True when ``candidate`` gives ``quantity`` within tolerance and in a compatible unit.
+
+    An unsigned ``quantity`` may match a negative candidate only when
+    ``negative_allowed`` (its sentence has a word of :data:`NEGATIVE_WORDS`).
+    """
     if candidate.unit not in _COMPATIBLE[quantity.unit]:
         return False
     wanted, tolerance = quantity.value, quantity.tolerance
@@ -272,7 +399,8 @@ def _matches(quantity: Quantity, candidate: _Candidate) -> bool:
         scaled = source * factor
         if abs(scaled - wanted) <= slack:
             return True
-        if not quantity.signed and abs(abs(scaled) - abs(wanted)) <= slack:
+        unsigned_against_negative = not quantity.signed and negative_allowed
+        if unsigned_against_negative and abs(abs(scaled) - abs(wanted)) <= slack:
             return True
     return False
 
@@ -331,14 +459,18 @@ def check_numbers(
 ) -> NumberCheck:
     """Check that every quantity in ``statement`` is in ``excerpts`` or ``metrics``.
 
-    Quotes are tried before cited figures, and the first match is reported.
+    Quotes are tried before cited figures, and the first match is reported. An
+    unsigned quantity matches a negative source only when its own sentence of
+    ``statement`` has a word of decline (:data:`NEGATIVE_WORDS`).
     """
     candidates = [*_excerpt_candidates(excerpts), *_metric_candidates(metrics)]
     details: list[str] = []
     unmatched: list[str] = []
-    wanted = quantities(statement)
-    for quantity in wanted:
-        hit = next((c for c in candidates if _matches(quantity, c)), None)
+    placed = _placed_quantities(statement)
+    wanted = [quantity for quantity, _ in placed]
+    for quantity, position in placed:
+        negative_allowed = says_negative(_sentence_at(statement, position))
+        hit = next((c for c in candidates if _matches(quantity, c, negative_allowed)), None)
         if hit is None:
             unmatched.append(quantity.raw)
             details.append(f"{quantity.raw} was not found in the quotes or the cited figures")

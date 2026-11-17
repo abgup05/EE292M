@@ -1,14 +1,22 @@
 """The citation gate: the step between an engine's drafts and anything a reader sees.
 
 An engine says it copied a quote from a named passage. The gate looks for that
-quote in the stored text of the passage's source, exactly or after collapsing
-whitespace and folding typographic quotes, dashes and the ellipsis, and keeps
-the *stored* span, never the engine's wording. So every excerpt shown is
-byte-exact: ``stored_text[e.start : e.start + len(e.excerpt)] == e.excerpt``.
+quote inside a passage that was *offered* to the engine for the claim: first the
+passage it names, then the other offered passages of the same source. It
+matches exactly or after collapsing whitespace and folding typographic quotes,
+dashes and the ellipsis, and keeps the *stored* span, never the engine's
+wording. So every excerpt shown is byte-exact:
+``stored_text[e.start : e.start + len(e.excerpt)] == e.excerpt``, and carries
+the locator of the offered passage that holds it. A quote found only elsewhere
+in the source is rejected: the engine was not shown it, and a passage never
+holds a heading line the parser wrote.
+
 A finding is verified when it keeps at least one quote or cites at least one
 reported figure that was offered to the engine, and every number its statement
 writes is found in those quotes or figures (:mod:`app.core.numcheck`). Any
-other finding is withheld with the reason, and reported (PROMPT.md 4.8).
+other finding is withheld with the reason, and reported (PROMPT.md 4.8). A
+verified finding's reason is checked the same way; a reason citing a number
+its quotes and figures lack is replaced, and the finding stands.
 
 Pure: no network, no I/O, no clock.
 """
@@ -17,13 +25,13 @@ from __future__ import annotations
 
 import re
 from bisect import bisect_right
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from types import MappingProxyType
 
-from app.core import limits
+from app.core import limits, policy
 from app.core.documents import Passage
-from app.core.links import passage_link
+from app.core.links import link_kind, passage_link
 from app.core.metric_models import Metric
 from app.core.models import Evidence, Finding, FindingChecks
 from app.core.numcheck import check_numbers
@@ -31,6 +39,9 @@ from app.core.ports import ClaimDraft, FindingDraft
 
 NO_SUPPORT_REASON = "no verified quote or reported figure"
 NUMBER_REASON = "a number in the statement is not in its quotes or cited figures: {numbers}"
+NOT_OFFERED = (
+    "quote is not in any passage offered for this claim (it names {passage}, {source} ({locator}))"
+)
 NO_FIGURES: Mapping[str, Metric] = MappingProxyType({})
 
 # Typographic characters folded to their plain forms before comparison.
@@ -200,17 +211,26 @@ class StoredSource:
 
 @dataclass
 class GateResult:
-    """What survived the gate for one claim, what did not, and why."""
+    """What survived the gate for one claim, what did not, and why.
+
+    Every quote offered is counted once, as found (inside an offered passage and
+    of an allowed length, whatever became of its finding) or rejected, so
+    ``quotes_found + quotes_rejected == quotes_offered``. ``numbers_checked``
+    and ``numbers_unmatched`` count the numbers of statements;
+    ``reasons_withheld`` the verified findings whose reason was replaced.
+    """
 
     findings: list[Finding] = field(default_factory=list)
     unsupported: list[Finding] = field(default_factory=list)
     evidence: list[Evidence] = field(default_factory=list)
     problems: list[str] = field(default_factory=list)
     quotes_offered: int = 0
+    quotes_found: int = 0
     quotes_rejected: int = 0
     numbers_checked: int = 0
     numbers_unmatched: int = 0
     figures_cited: int = 0
+    reasons_withheld: int = 0
 
 
 def _context_before(text: str, start: int) -> str:
@@ -233,12 +253,39 @@ def _context_after(text: str, end: int) -> str:
     return window.rstrip()
 
 
-def _place(passage: Passage, source: StoredSource, quote: str) -> tuple[int, int] | None:
-    """Locate ``quote`` in its source, preferring an occurrence inside the passage."""
+def _within(passage: Passage, source: StoredSource, quote: str) -> tuple[int, int] | None:
+    """The span of ``quote`` inside ``passage`` of ``source``, or None when it is not there."""
     span = source.index.locate(quote, start=passage.start)
     if span is not None and span[1] <= passage.start + len(passage.text):
         return span
-    return source.index.locate(quote)
+    return None
+
+
+def _place(
+    named: Passage, offered: Sequence[Passage], source: StoredSource, quote: str
+) -> tuple[Passage, tuple[int, int]] | None:
+    """The offered passage holding ``quote`` and its span: the named passage first.
+
+    ``offered`` are the passages of the named passage's source that were offered
+    for the claim, in document order. None when no offered passage holds it.
+    """
+    span = _within(named, source, quote)
+    if span is not None:
+        return named, span
+    for passage in offered:
+        if passage.id != named.id and (span := _within(passage, source, quote)) is not None:
+            return passage, span
+    return None
+
+
+def _offered_by_source(passages: Mapping[str, Passage]) -> dict[str, list[Passage]]:
+    """The offered passages grouped by source id, each group in document order."""
+    grouped: dict[str, list[Passage]] = {}
+    for passage in passages.values():
+        grouped.setdefault(passage.source_id, []).append(passage)
+    for group in grouped.values():
+        group.sort(key=lambda passage: passage.start)
+    return grouped
 
 
 def _check_finding(
@@ -248,38 +295,60 @@ def _check_finding(
     sources: Mapping[str, StoredSource],
     result: GateResult,
 ) -> list[tuple[Passage, StoredSource, int, int]]:
-    """The located, in-bounds, distinct spans of one draft finding; problems go to ``result``."""
+    """The located, in-bounds, distinct spans of one draft finding; problems go to ``result``.
+
+    Each span comes with the offered passage that holds it, which may differ from
+    the passage the quote names.
+    """
     kept: list[tuple[Passage, StoredSource, int, int]] = []
     seen: set[tuple[str, int, int]] = set()
+    offered = _offered_by_source(passages)
     for quote in draft.quotes:
         result.quotes_offered += 1
-        passage = passages.get(quote.passage_id)
-        problem: str | None = None
-        if passage is None:
-            problem = f"quote names unknown passage {quote.passage_id}"
-        elif (source := sources.get(passage.source_id)) is None:
-            problem = f"source {passage.source_id} of passage {passage.id} has no stored text"
-        elif (span := _place(passage, source, quote.text)) is None:
-            problem = f"quote not found in {passage.source_id} ({passage.locator})"
-        elif (length := span[1] - span[0]) < limits.MIN_EXCERPT_CHARS:
-            problem = (
-                f"quote in {passage.source_id} ({passage.locator}) is too short: {length} "
-                f"characters, at least {limits.MIN_EXCERPT_CHARS} required"
-            )
-        elif length > limits.MAX_EXCERPT_CHARS:
-            problem = (
-                f"quote in {passage.source_id} ({passage.locator}) is too long: {length} "
-                f"characters, at most {limits.MAX_EXCERPT_CHARS} allowed"
-            )
-        if problem is not None:
+        located = _locate_quote(quote.passage_id, quote.text, passages, offered, sources)
+        if isinstance(located, str):
             result.quotes_rejected += 1
-            result.problems.append(f"{finding_id}: {problem}")
+            result.problems.append(f"{finding_id}: {located}")
             continue
-        key = (passage.source_id, span[0], span[1])
+        result.quotes_found += 1
+        passage, _, start, end = located
+        key = (passage.source_id, start, end)
         if key not in seen:
             seen.add(key)
-            kept.append((passage, source, span[0], span[1]))
+            kept.append(located)
     return kept
+
+
+def _locate_quote(
+    passage_id: str,
+    text: str,
+    passages: Mapping[str, Passage],
+    offered: Mapping[str, Sequence[Passage]],
+    sources: Mapping[str, StoredSource],
+) -> tuple[Passage, StoredSource, int, int] | str:
+    """One quote placed in an offered passage, as (passage, source, start, end), or the problem."""
+    named = passages.get(passage_id)
+    if named is None:
+        return f"quote names unknown passage {passage_id}"
+    source = sources.get(named.source_id)
+    if source is None:
+        return f"source {named.source_id} of passage {named.id} has no stored text"
+    placed = _place(named, offered[named.source_id], source, text)
+    if placed is None:
+        return NOT_OFFERED.format(passage=named.id, source=named.source_id, locator=named.locator)
+    passage, (start, end) = placed
+    length = end - start
+    if length < limits.MIN_EXCERPT_CHARS:
+        return (
+            f"quote in {passage.source_id} ({passage.locator}) is too short: {length} "
+            f"characters, at least {limits.MIN_EXCERPT_CHARS} required"
+        )
+    if length > limits.MAX_EXCERPT_CHARS:
+        return (
+            f"quote in {passage.source_id} ({passage.locator}) is too long: {length} "
+            f"characters, at most {limits.MAX_EXCERPT_CHARS} allowed"
+        )
+    return passage, source, start, end
 
 
 def _cited_figures(
@@ -310,13 +379,17 @@ def gate_claim(
     passage id; ``sources`` maps every source id to its :class:`StoredSource`;
     ``figures`` are the reported figures offered to the engine, by metric id.
     Each draft finding gets the next finding id from ``ids`` whether or not it
-    survives. A quote survives only if it is located in the stored text of its
-    passage's source and the located span is ``MIN_EXCERPT_CHARS`` to
-    ``MAX_EXCERPT_CHARS`` long; a cited figure survives only if it was offered.
-    A finding is verified when something survived and every number in its
-    statement matches its surviving excerpts or figures; only a verified
-    finding's excerpts become evidence, each with the next evidence id.
-    Drafts beyond ``MAX_FINDINGS_PER_CLAIM`` are not checked and are reported.
+    survives. A quote survives only if it is located inside an offered passage
+    (the one it names, else another offered passage of the same source, whose
+    locator the evidence then carries) and the located span is
+    ``MIN_EXCERPT_CHARS`` to ``MAX_EXCERPT_CHARS`` long; a cited figure survives
+    only if it was offered. A finding is verified when something survived and
+    every number in its statement matches its surviving excerpts or figures;
+    only a verified finding's excerpts become evidence, each with the next
+    evidence id. A verified finding whose reason writes a number its excerpts
+    and figures do not hold keeps its place, with the reason replaced by
+    :data:`app.core.policy.REASON_WITHHELD`. Drafts beyond
+    ``MAX_FINDINGS_PER_CLAIM`` are not checked and are reported.
     """
     result = GateResult()
     drafts = draft.findings
@@ -353,11 +426,24 @@ def gate_claim(
                 context_before=_context_before(source.text, start),
                 context_after=_context_after(source.text, end),
                 link=passage_link(source.url, excerpt),
+                link_kind=link_kind(excerpt),
             )
             result.evidence.append(item)
             evidence_ids.append(item.id)
+        rationale = finding_draft.rationale
+        details = list(numbers.details)
         if verified:
             result.figures_cited += len(cited)
+            reason_numbers = check_numbers(rationale, excerpts, cited)
+            if reason_numbers.status == "failed":
+                result.reasons_withheld += 1
+                rationale = policy.REASON_WITHHELD.format(
+                    numbers=", ".join(reason_numbers.unmatched)
+                )
+                details += [
+                    policy.REASON_NUMBER_DETAIL.format(number=number)
+                    for number in reason_numbers.unmatched
+                ]
         finding = Finding(
             id=finding_id,
             claim_id=claim_id,
@@ -365,14 +451,14 @@ def gate_claim(
             stance=finding_draft.stance,
             evidence_ids=evidence_ids,
             confidence=finding_draft.confidence,
-            rationale=finding_draft.rationale,
+            rationale=rationale,
             verified=verified,
             filings_cited=len({p.source_id for p, *_ in kept}) if verified else 0,
             metric_ids=[figure.id for figure in cited],
             checks=FindingChecks(
                 quotes="passed" if kept else "none",
                 numbers=numbers.status,
-                numbers_detail=numbers.details,
+                numbers_detail=details,
             ),
             withheld_reason=reason,
         )

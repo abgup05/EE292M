@@ -192,7 +192,8 @@ def ingest(
             result.duplicates += 1
         run.sources.append(source)
         if document is not None and isinstance(item, FilingRef):
-            if item_coverage(document) < limits.MIN_ITEM_COVERAGE:
+            coverage = source.item_coverage
+            if coverage is not None and coverage < limits.MIN_ITEM_COVERAGE:
                 run.coverage_limits.append(ITEM_COVERAGE_NOTE.format(title=source.title))
         if document is not None:
             hashes[document.content_hash] = source_id
@@ -301,7 +302,11 @@ def _read_filing(
 def _filing_source(
     source_id: str, ref: FilingRef, title: str, document: Document, retrieved_at: datetime
 ) -> Source:
-    """The source record of a filing that was read; ``retrieved_at`` is when EDGAR sent it."""
+    """The source record of a filing that was read; ``retrieved_at`` is when EDGAR sent it.
+
+    It keeps the filing's Item coverage (:func:`~app.sources.filing.item_coverage`), which
+    the run status reads.
+    """
     return Source(
         id=source_id,
         kind=SourceKind.sec_filing,
@@ -318,6 +323,7 @@ def _filing_source(
         extraction_status=ExtractionStatus.extracted,
         sections=len(document.sections),
         characters=len(document.text),
+        item_coverage=item_coverage(document),
     )
 
 

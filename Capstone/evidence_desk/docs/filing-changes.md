@@ -132,7 +132,7 @@ each: is this one paragraph rewritten?
   cloud revenue and on sales and marketing expense, an accounting policy, and a sentence on other income.
 - **Tesla.** All eleven pairs above are one paragraph rewritten, among them the company's opening description of
   itself, which went from "We design, develop, manufacture, sell and lease high-performance fully electric vehicles"
-  to "We are focused on bringing artificial intelligence (\"AI\") into the real world". Ten of the eleven below are
+  to "We are focused on bringing artificial intelligence (“AI”) into the real world". Ten of the eleven below are
   rewordings too.
 - **Amazon.** All seven above; three of the four below. The fourth is two pieces of different paragraphs cut by a
   page break.

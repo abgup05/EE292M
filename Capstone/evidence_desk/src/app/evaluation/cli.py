@@ -13,9 +13,10 @@ Commands:
 - ``plan --cassette DIR [--out eval/queries.json]``: ask the planner, through the
   cassette, for every case's retrieval queries; write the queries file when every
   request is answered, otherwise list what is pending and exit 3.
-- ``generate --cassette DIR --queries FILE [--out eval/results]``: assess every case
-  through the cassette, gate it and score the answers; exit 3 while any assess
-  request is pending, writing nothing.
+- ``generate --cassette DIR --queries FILE [--out eval/results] [--check]``: assess
+  every case through the cassette, gate it and score the answers; exit 3 while any
+  assess request is pending, writing nothing. ``--check`` also runs the meaning check
+  on every case's verified findings and adds its scores (``generation-checked-*``).
 
 ``plan``, ``generate`` and ``fetch`` pin each company's CIK and name, and
 ``generate`` and ``fetch`` its XBRL facts, in ``eval/filings.json`` the first time.
@@ -116,6 +117,11 @@ def _parser() -> argparse.ArgumentParser:
     generate.add_argument("--cassette", type=Path, default=CASSETTE_DIR, help="the cassette")
     generate.add_argument("--queries", type=Path, default=QUERIES_PATH, help="from plan")
     generate.add_argument("--out", type=Path, default=RESULTS_DIR, help="where the record goes")
+    generate.add_argument(
+        "--check",
+        action="store_true",
+        help="also run the meaning check on every case's verified findings, through the cassette",
+    )
     return parser
 
 
@@ -286,6 +292,7 @@ def cmd_generate(args: argparse.Namespace, corpus: Corpus, client: EdgarClient |
         cassette=args.cassette,
         out_dir=args.out,
         inputs=inputs,
+        check=args.check,
     )
 
 

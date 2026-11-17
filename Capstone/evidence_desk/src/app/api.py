@@ -41,8 +41,16 @@ from app.core.models import (
     ThesisCreate,
     ThesisRequest,
 )
-from app.core.ports import Analyst, FilingSource, PageFetcher, SourceError, UnknownTicker
+from app.core.ports import (
+    Analyst,
+    Checker,
+    FilingSource,
+    PageFetcher,
+    SourceError,
+    UnknownTicker,
+)
 from app.core.review import build_review
+from app.engines.checker import NoChecker
 from app.services import theses, thesis_run
 from app.services.examples import EXAMPLE_THESIS
 from app.services.export import render_markdown
@@ -220,18 +228,24 @@ def create_app(
     fetch_page: PageFetcher = default_fetch_page,
     monotonic: Callable[[], float] = time.monotonic,
     cache: FilingCache | None = None,
+    checker: Checker | None = None,
 ) -> FastAPI:
     """Build the application. Collaborators not given are built by :mod:`app.wiring`.
 
     ``monotonic`` is the clock of the metrics cache (injectable for tests).
     ``cache`` is the filing cache every run shares: the configured one when the
     store is the configured one, otherwise one in memory for this application.
+    ``checker`` reads every run's findings again: the configured one when the
+    engine is the configured one, otherwise none unless one is given.
     """
     if cache is None:
         cache = wiring.cache_from_env() if store is None else FilingCache()
     store = store or wiring.store_from_env()
     filings = filings or wiring.filings_from_env()
-    analyst = analyst or wiring.analyst_from_env()
+    if analyst is None:
+        analyst = wiring.analyst_from_env()
+        checker = checker or wiring.checker_from_env(analyst)
+    checker = checker or NoChecker()
     executor = ThreadPoolExecutor(max_workers=RUN_WORKERS, thread_name_prefix="run")
     metrics_cache = MetricsCache(monotonic)
 
@@ -261,7 +275,13 @@ def create_app(
     def execute(run: Run) -> None:
         try:
             thesis_run.execute_run(
-                run, store, filings=filings, analyst=analyst, fetch_page=fetch_page, cache=cache
+                run,
+                store,
+                filings=filings,
+                analyst=analyst,
+                fetch_page=fetch_page,
+                cache=cache,
+                checker=checker,
             )
         except Exception:  # noqa: BLE001 - last resort: a run must never stay "running"
             log.exception("Run %s crashed", run.id)
@@ -469,6 +489,9 @@ def create_app(
             "decision_labels": policy.DECISION_LABELS,
             "review_note": policy.REVIEW_NOTE,
             "engine": analyst.name,
+            "checker": {"name": checker.name, "detail": str(checker.detail or "")},
+            "support_labels": policy.SUPPORT_LABELS,
+            "no_checker_note": policy.NO_CHECKER_NOTE,
             "example": EXAMPLE_THESIS.model_dump(mode="json"),
         }
 

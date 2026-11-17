@@ -18,6 +18,7 @@ import json
 import os
 import tempfile
 import threading
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -90,6 +91,15 @@ def _step_rank(step: str) -> int | None:
     return STEPS.index(step) if step in STEPS else None
 
 
+@dataclass
+class _RunState:
+    """What one run has missed so far; shared by the transports of one run (see ``sibling``)."""
+
+    lock: threading.Lock = field(default_factory=threading.Lock)
+    missed_step: str | None = None
+    pending_keys: list[str] = field(default_factory=list)
+
+
 class CassetteTransport:
     """A :data:`~app.engines.transport.Transport` that answers from a cassette directory.
 
@@ -101,16 +111,36 @@ class CassetteTransport:
     The steps of a run depend on each other (:data:`~app.engines.transport.STEPS`):
     once a request is missing, a request for a later step was built on a
     stand-in answer, so it raises :class:`CassetteMiss` without being saved.
-    A request for an earlier step starts a new run and lifts that block.
+    A request for the first step (a plan) after a later step was missed starts
+    a new run and lifts that block. Within one run claims are assessed and
+    checked in turn, so an assessment after a pending check does not.
     """
 
     def __init__(self, directory: Path | str, live: Transport | None = None, via: str = "") -> None:
         self.directory = Path(directory)
         self.live = live
         self.via = via or str(getattr(live, "via", "")) or UNKNOWN
-        self.pending_keys: list[str] = []
-        self._missed_step: str | None = None
-        self._lock = threading.Lock()
+        self._run = _RunState()
+
+    def sibling(self, live: Transport | None = None, via: str = "") -> CassetteTransport:
+        """A transport over the same cassette and the same run, with its own ``live`` answerer.
+
+        The meaning checker uses one: its misses block the summary built on
+        them, as the engine's own would, while a recorded answer names the
+        checker's model rather than the engine's.
+        """
+        twin = CassetteTransport(self.directory, live=live, via=via)
+        twin._run = self._run
+        return twin
+
+    @property
+    def pending_keys(self) -> list[str]:
+        """The keys saved to ``pending/`` in the current run, in the order they were saved."""
+        return self._run.pending_keys
+
+    @property
+    def _lock(self) -> threading.Lock:
+        return self._run.lock
 
     @property
     def detail(self) -> str:
@@ -147,10 +177,10 @@ class CassetteTransport:
         return answer
 
     def _start_new_run_if_earlier(self, step: str) -> None:
-        rank, missed = _step_rank(step), self._missed_step
-        if rank is not None and missed is not None and rank < STEPS.index(missed):
-            self._missed_step = None
-            self.pending_keys = []
+        rank, missed = _step_rank(step), self._run.missed_step
+        if rank == 0 and missed is not None and rank < STEPS.index(missed):
+            self._run.missed_step = None
+            self._run.pending_keys.clear()
 
     @staticmethod
     def _stored_answer(path: Path) -> dict[str, Any]:
@@ -160,7 +190,7 @@ class CassetteTransport:
         return answer
 
     def _miss(self, request: ModelRequest, key: str, pending_path: Path) -> CassetteMiss:
-        rank, missed = _step_rank(request.step), self._missed_step
+        rank, missed = _step_rank(request.step), self._run.missed_step
         if rank is not None and missed is not None and rank > STEPS.index(missed):
             return CassetteMiss(
                 f"no recorded response for {request.step}; not saved, because an earlier "
@@ -177,10 +207,11 @@ class CassetteTransport:
                 "how_to_answer": HOW_TO_ANSWER,
             },
         )
-        if rank is not None:
-            self._missed_step = request.step
-        if key not in self.pending_keys:
-            self.pending_keys.append(key)
+        if rank is not None and (missed is None or rank < STEPS.index(missed)):
+            # The earliest step missed is what later requests may depend on.
+            self._run.missed_step = request.step
+        if key not in self._run.pending_keys:
+            self._run.pending_keys.append(key)
         return CassetteMiss(
             f"no recorded response for {request.step}; request saved as pending/{key}.json"
         )

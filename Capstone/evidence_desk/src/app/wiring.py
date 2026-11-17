@@ -1,7 +1,7 @@
 """The composition root: the one place that reads the environment and builds collaborators.
 
-The HTTP API and the command line ask this module for an engine, an EDGAR
-client, the record store and the filing cache; nothing else reads
+The HTTP API and the command line ask this module for an engine, a meaning
+checker, an EDGAR client, the record store and the filing cache; nothing else reads
 configuration. Nothing here runs at import time: each function builds its
 object when it is called.
 
@@ -17,8 +17,9 @@ import logging
 import os
 from pathlib import Path
 
-from app.core.ports import Analyst
+from app.core.ports import Analyst, Checker
 from app.engines.cassette import CassetteTransport
+from app.engines.checker import ClaudeChecker, NoChecker, configured_check_model
 from app.engines.claude import ClaudeAnalyst
 from app.engines.extractive import ExtractiveAnalyst
 from app.engines.transport import AnthropicTransport
@@ -95,6 +96,71 @@ def analyst_named(engine: str, cassette: Path | None = None) -> Analyst:
     raise ConfigurationError(
         f"unknown engine {engine!r}; choose one of {', '.join(ENGINE_CHOICES)}"
     )
+
+
+def _cassette_of(analyst: Analyst | None) -> CassetteTransport | None:
+    """The cassette transport ``analyst`` replays, if it is the Claude engine over one."""
+    transport = analyst.transport if isinstance(analyst, ClaudeAnalyst) else None
+    return transport if isinstance(transport, CassetteTransport) else None
+
+
+def cassette_checker(directory: Path, *, record: bool = False) -> ClaudeChecker:
+    """The meaning checker answering from the cassette at ``directory``.
+
+    With ``record`` a request the cassette lacks is sent to the Anthropic API,
+    to the check model, and its answer recorded; without it, saved as pending.
+    """
+    live = AnthropicTransport(model=configured_check_model()) if record else None
+    return ClaudeChecker(transport=CassetteTransport(directory, live=live))
+
+
+def _checker_beside(transport: CassetteTransport) -> ClaudeChecker:
+    """A checker over the engine's own cassette and run, recording only when the engine does.
+
+    Sharing the run means a pending check blocks the summary built on it; a
+    recorded check names the check model, not the engine's.
+    """
+    live = AnthropicTransport(model=configured_check_model()) if transport.live else None
+    return ClaudeChecker(transport=transport.sibling(live=live))
+
+
+def checker_from_env(analyst: Analyst | None = None) -> Checker:
+    """The meaning checker the environment configures.
+
+    With ``EVIDENCE_DESK_CASSETTE`` set: Claude over that cassette (over
+    ``analyst``'s own cassette transport when it replays one), recording as the
+    engine does (``ANTHROPIC_API_KEY`` and ``EVIDENCE_DESK_CASSETTE_RECORD=1``).
+    Otherwise Claude over the API when ``ANTHROPIC_API_KEY`` is set, with
+    ``ANTHROPIC_CHECK_MODEL``; else :class:`NoChecker`. Never falls back from
+    one to another once a run has started.
+    """
+    cassette = os.environ.get(CASSETTE_VARIABLE, "").strip()
+    if cassette:
+        shared = _cassette_of(analyst)
+        if shared is not None:
+            return _checker_beside(shared)
+        record = model_key_present() and os.environ.get(RECORD_VARIABLE, "").strip() == "1"
+        return cassette_checker(Path(cassette), record=record)
+    if model_key_present():
+        return ClaudeChecker()
+    return NoChecker()
+
+
+def checker_named(engine: str, analyst: Analyst) -> Checker:
+    """The meaning checker that goes with the engine called ``engine`` (see :func:`analyst_named`).
+
+    "cassette" checks over the engine's own cassette and never calls the API;
+    "claude" over the API; "extractive" not at all; "auto" as the environment
+    says (:func:`checker_from_env`).
+    """
+    shared = _cassette_of(analyst)
+    if engine == "cassette" and shared is not None:
+        return _checker_beside(shared)
+    if engine == "claude":
+        return ClaudeChecker()
+    if engine == "auto":
+        return checker_from_env(analyst)
+    return NoChecker()
 
 
 def filings_from_env() -> EdgarClient:

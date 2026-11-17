@@ -1,14 +1,15 @@
 """The narrow interfaces the pipeline depends on, and the drafts that cross them.
 
 The pipeline imports this module and nothing concrete: an SEC client, a page
-fetcher and an analysis engine are handed to it. Each outside system has one
-adapter that satisfies one of these protocols.
+fetcher, an analysis engine and a meaning checker are handed to it. Each outside
+system has one adapter that satisfies one of these protocols.
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
+from enum import StrEnum
 from typing import Protocol
 
 from app.core.documents import FetchedFiling, FilingRef, Passage
@@ -122,6 +123,80 @@ class Summarizer(Protocol):
 
 class Analyst(Planner, Assessor, Summarizer, Protocol):
     """An engine that does all three jobs. Engines are interchangeable behind this."""
+
+
+class SupportVerdict(StrEnum):
+    """A second reader's judgement of whether a finding's evidence supports its statement."""
+
+    supported = "supported"
+    partly = "partly"
+    not_supported = "not_supported"
+
+
+@dataclass(frozen=True)
+class CheckExcerpt:
+    """One verified excerpt as the reader sees it: the stored text and where it sits."""
+
+    text: str
+    locator: str
+
+
+@dataclass(frozen=True)
+class CheckFigure:
+    """One cited reported figure as the reader sees it."""
+
+    label: str
+    period: str
+    display: str
+
+
+@dataclass(frozen=True)
+class CheckItem:
+    """One verified finding, reduced to what a reader would see and nothing else.
+
+    The engine's rationale and confidence are left out on purpose: the checker
+    must judge the evidence, not be persuaded by the writer's reasoning.
+    """
+
+    statement: str
+    stance: Stance
+    excerpts: tuple[CheckExcerpt, ...] = ()
+    figures: tuple[CheckFigure, ...] = ()
+
+
+@dataclass(frozen=True)
+class Judgement:
+    """A checker's verdict on the item at ``index`` (0-based) and a one-sentence reason."""
+
+    index: int
+    verdict: SupportVerdict
+    reason: str
+
+
+class Checker(Protocol):
+    """A second reader that judges, finding by finding, whether the evidence means what is said.
+
+    ``name`` and ``detail`` are recorded on the run. ``check`` returns one
+    :class:`Judgement` per item, by index, and raises on any failure; the
+    pipeline then leaves the findings unchecked and says so.
+    """
+
+    name: str
+    detail: str
+
+    def check(
+        self,
+        request: ThesisRequest,
+        company: Company,
+        claim: Claim,
+        findings: Sequence[CheckItem],
+    ) -> list[Judgement]:
+        """One judgement per item of ``findings``."""
+        ...
+
+    def same_model_as(self, engine_model: str | None) -> bool:
+        """True when this checker reads with the model that wrote the findings."""
+        ...
 
 
 # A page fetcher for the optional extra URLs: URL in, FetchedPage out, FetchError on failure.

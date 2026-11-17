@@ -7,10 +7,13 @@ claim's verdict with the policy's wording, and write ``<out>/<run-id>.json``
 (the run record) and ``<out>/<run-id>.md`` (the exported brief).
 
 ``--engine cassette --cassette DIR`` replays recorded model answers and never
-calls the API. If the run asked for answers the cassette lacks, they are saved
-under ``DIR/pending``, no result file is written and the exit code is 3; answer
-them (``docs/cassettes.md``) and run again. ``python -m app.cli cassette DIR``
-describes a cassette and lists its pending requests.
+calls the API; the meaning check answers from the same cassette (with
+``--engine claude`` it calls the API with ``ANTHROPIC_CHECK_MODEL``; with
+``--engine extractive`` nothing checks meaning). If the run asked for answers
+the cassette lacks, they are saved under ``DIR/pending``, no result file is
+written and the exit code is 3; answer them (``docs/cassettes.md``) and run
+again. ``python -m app.cli cassette DIR`` describes a cassette and lists its
+pending requests.
 
 Exit codes: 0 when the run finished (complete or partial), 1 when it failed or
 EDGAR could not be consulted, 2 when the thesis or the options are invalid, 3
@@ -33,6 +36,7 @@ from app.core.models import Run, RunStatus, ThesisRequest
 from app.core.policy import STATUS_NOTES, VERDICT_LABELS
 from app.core.ports import Analyst, FilingSource, PageFetcher, SourceError, UnknownTicker
 from app.engines.cassette import Cassette, CassetteTransport
+from app.engines.checker import NoChecker
 from app.engines.claude import ClaudeAnalyst
 from app.services.examples import EXAMPLE_THESIS
 from app.services.export import render_markdown
@@ -52,7 +56,8 @@ def coverage_sentence(run: Run) -> str:
         f"Read {c.sources_read} of {c.sources_requested} source(s); "
         f"{c.claims_with_evidence} of {c.claims_total} claim(s) have verified excerpts or figures; "
         f"{c.findings_verified} finding(s) verified and {c.findings_withheld} withheld; "
-        f"{c.excerpts_verified} of {c.quotes_offered} quote(s) verified."
+        f"{c.quotes_found} of {c.quotes_offered} quote(s) found word for word, "
+        f"{c.quotes_rejected} rejected; {c.excerpts_verified} kept as evidence."
     )
 
 
@@ -157,6 +162,12 @@ def _report(run: Run, out: Path) -> None:
         label = VERDICT_LABELS[claim.verdict] if claim.verdict else NOT_ASSESSED
         print(f"  {claim.id}  {label} ({len(claim.finding_ids)} finding(s))  {claim.text}")
     print(coverage_sentence(run))
+    if run.checker != NoChecker.name:
+        c = run.coverage
+        print(
+            f"Meaning check ({run.checker}): {c.findings_checked} finding(s) judged, "
+            f"{c.findings_partly} partly supported, {c.findings_failed_meaning} withheld."
+        )
     for heading, items in (("Coverage limits", run.coverage_limits), ("Errors", run.errors)):
         if items:
             print(f"{heading}:")
@@ -210,11 +221,20 @@ def main(
         cache = cache or wiring.cache_from_env()
     run = new_run(thesis)
     store.save_run(run)
+    checker = wiring.checker_named(args.engine, analyst)
     detail = getattr(analyst, "detail", "")
     engine = f"{analyst.name} ({detail})" if detail else analyst.name
     print(f"{run.id}: testing {len(thesis.claims)} claim(s) on {thesis.ticker} with {engine}")
+    if not isinstance(checker, NoChecker):
+        print(f"{run.id}: meaning checked by {checker.name} ({checker.detail})")
     run = execute_run(
-        run, store, filings=filings, analyst=analyst, fetch_page=fetch_page, cache=cache
+        run,
+        store,
+        filings=filings,
+        analyst=analyst,
+        fetch_page=fetch_page,
+        cache=cache,
+        checker=checker,
     )
 
     cassette = _cassette_of(analyst)

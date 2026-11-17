@@ -1,6 +1,7 @@
 # Cassettes: recorded model answers
 
-A cassette is a directory of the Claude engine's requests and the answers recorded for them.
+A cassette is a directory of the Claude engine's requests, and the meaning checker's, and the
+answers recorded for them.
 Replaying one makes a model-backed run reproducible: the same filings and thesis give the same
 prompts, the same prompts find the same answers, and the gate and verdict rule run unchanged on
 them. It also gives a way to produce such a run when the Anthropic API cannot be called (this
@@ -16,7 +17,7 @@ whitespace, UTF-8) of `{step, system, user, schema}`; the output-token limit is 
 A pending file holds `key`, `step`, `system`, `user`, `schema` and `how_to_answer`. A response
 file is this envelope:
 
-    {"key": "<key>", "step": "plan" | "assess" | "summarize",
+    {"key": "<key>", "step": "plan" | "assess" | "check" | "summarize",
      "via": "<how it was produced, e.g. the Anthropic API>",
      "model": "<the model that produced it>",
      "recorded_at": "<UTC ISO 8601, e.g. 2026-11-17T12:00:00+00:00>",
@@ -30,13 +31,23 @@ file is this envelope:
 2. Answer each pending file: respond to its `system` and `user` prompt exactly as the model would,
    with one JSON object that satisfies its `schema`, and save the envelope above as
    `responses/<key>.json`. `make run ARGS='cassette cassettes/nvda'` lists what is pending.
-3. Run again. A full run takes three rounds of answers: the plan, then one assessment per claim,
+3. Run again. A full run takes up to four rounds of answers: the plan, then one assessment per
+   claim, then one meaning check per claim with a verified finding (step `check`, see below),
    then the summary. Each step's prompt depends on the answers before it, so a request built on
-   a missing answer is not saved; once all three rounds are answered the run replays end to end.
+   a missing answer is not saved; once all four rounds are answered the run replays end to end.
+   A claim's check reads only that claim's assessment, but the summary reads the verdicts the
+   checks decide, so the summary waits for every check.
+
+The meaning checker (`engines/checker.py`) answers from the same cassette and the same run as
+the engine (`CassetteTransport.sibling`): a pending check blocks the summary, and a new plan
+request starts a new run for both. Its system prompt is `CHECK_SYSTEM`; it is shown each
+finding's statement, stance, verified excerpts and cited figures, never the engine's rationale
+or confidence. A check that is pending leaves that claim's findings "unchecked" for this run.
 
 With `EVIDENCE_DESK_CASSETTE=<dir>` the API and `--engine auto` use the cassette too; adding
 `EVIDENCE_DESK_CASSETTE_RECORD=1` and `ANTHROPIC_API_KEY` sends missing requests to the API and
-records the answers (`via` "the Anthropic API", `model` the configured model name).
+records the answers (`via` "the Anthropic API", `model` the configured model name: the engine's
+`ANTHROPIC_MODEL`, or for a check `ANTHROPIC_CHECK_MODEL`, default `claude-haiku-5-5`).
 
 ## The honesty rule
 
@@ -54,3 +65,6 @@ change a verdict; record a new cassette instead. A cassette holds no key and no 
   as faithful as that channel, which is why `via` names it.
 - A changed prompt, filing or thesis changes the key, so old answers stop matching and new
   requests become pending; nothing stale is replayed silently.
+- A check answered by the same stand-in that answered the assessments is not an independent
+  reading, whatever `model` the envelope names: the check is only as independent as the channel
+  that answered it. Record who answered each check in `via` and `model`.

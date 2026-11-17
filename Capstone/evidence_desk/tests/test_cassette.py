@@ -188,6 +188,73 @@ def test_a_new_plan_starts_a_new_run(tmp_path: Path) -> None:
         transport(summary)
 
 
+def test_a_pending_check_blocks_the_summary_but_not_the_next_claims_assessment(
+    tmp_path: Path,
+) -> None:
+    """Claims are assessed and checked in turn; assessing after a pending check is no new run."""
+    transport = CassetteTransport(tmp_path)
+    assess_1 = ModelRequest(**{**REQUEST.__dict__, "step": "assess", "user": "claim one"})
+    assess_2 = ModelRequest(**{**REQUEST.__dict__, "step": "assess", "user": "claim two"})
+    check_1 = ModelRequest(**{**REQUEST.__dict__, "step": "check", "user": "check one"})
+    check_2 = ModelRequest(**{**REQUEST.__dict__, "step": "check", "user": "check two"})
+    summary = ModelRequest(**{**REQUEST.__dict__, "step": "summarize"})
+    for request in (REQUEST, assess_1, assess_2):
+        write_response(tmp_path, request, ANSWER)
+    assert transport(REQUEST) == ANSWER and transport(assess_1) == ANSWER
+    with pytest.raises(CassetteMiss, match="pending/"):
+        transport(check_1)
+    assert transport(assess_2) == ANSWER
+    with pytest.raises(CassetteMiss, match="pending/"):
+        transport(check_2)
+    with pytest.raises(CassetteMiss, match="earlier check request"):
+        transport(summary)
+    assert transport.pending_keys == [request_key(check_1), request_key(check_2)]
+    assert sorted(p.stem for p in Cassette(tmp_path).pending()) == sorted(transport.pending_keys)
+
+
+def test_a_check_built_on_a_missing_assessment_is_not_saved(tmp_path: Path) -> None:
+    transport = CassetteTransport(tmp_path)
+    assess = ModelRequest(**{**REQUEST.__dict__, "step": "assess"})
+    check = ModelRequest(**{**REQUEST.__dict__, "step": "check"})
+    with pytest.raises(CassetteMiss, match="pending/"):
+        transport(assess)
+    with pytest.raises(CassetteMiss, match="earlier assess request"):
+        transport(check)
+    assert transport.pending_keys == [request_key(assess)]
+
+
+def test_a_sibling_shares_the_run_so_the_engines_miss_blocks_its_check(tmp_path: Path) -> None:
+    engine = CassetteTransport(tmp_path)
+    sibling = engine.sibling()
+    assess = ModelRequest(**{**REQUEST.__dict__, "step": "assess"})
+    check = ModelRequest(**{**REQUEST.__dict__, "step": "check"})
+    with pytest.raises(CassetteMiss):
+        engine(assess)
+    with pytest.raises(CassetteMiss, match="earlier assess request"):
+        sibling(check)
+    assert sibling.pending_keys == engine.pending_keys == [request_key(assess)]
+    assert sibling.detail == engine.detail and sibling.directory == engine.directory
+
+
+def test_a_recording_sibling_records_with_its_own_model(tmp_path: Path) -> None:
+    def engine_model(request: ModelRequest) -> dict[str, Any]:
+        return ANSWER
+
+    def check_model(request: ModelRequest) -> dict[str, Any]:
+        return {"judgements": []}
+
+    engine_model.model = "claude-engine-test"  # type: ignore[attr-defined]
+    check_model.model = "claude-check-test"  # type: ignore[attr-defined]
+    engine = CassetteTransport(tmp_path, live=engine_model, via="the Anthropic API")
+    sibling = engine.sibling(live=check_model, via="the Anthropic API")
+    check = ModelRequest(**{**REQUEST.__dict__, "step": "check"})
+    assert engine(REQUEST) == ANSWER and sibling(check) == {"judgements": []}
+    envelope = json.loads((tmp_path / "responses" / f"{request_key(check)}.json").read_text())
+    assert envelope["model"] == "claude-check-test" and envelope["step"] == "check"
+    plan = json.loads((tmp_path / "responses" / f"{request_key(REQUEST)}.json").read_text())
+    assert plan["model"] == "claude-engine-test"
+
+
 @pytest.mark.parametrize(
     "content",
     ["not json", json.dumps([1, 2]), json.dumps({"key": "k"})],

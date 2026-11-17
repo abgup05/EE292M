@@ -222,7 +222,9 @@ def _unescape(value: str) -> str:
     form it was shown ("Compute &amp; Networking"). The filing says "&", so the
     escapes this module wrote are reversed here, ``&amp;`` last, which makes this
     the exact inverse: a filing that really contains "&lt;" was sent as "&amp;lt;"
-    and comes back as "&lt;".
+    and comes back as "&lt;". It is an exact inverse only when the model echoes the
+    escaped text; a model that decodes an entity once and returns a literal "&lt;"
+    has it decoded again, and the quote is then withheld, never wrongly accepted.
     """
     return (
         value.replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", '"').replace("&amp;", "&")

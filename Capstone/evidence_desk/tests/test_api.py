@@ -21,9 +21,11 @@ from app.core.models import Confidence, RunStatus, Stance, ThesisRequest, Verdic
 from app.core.policy import (
     DECISION_LABELS,
     FIGURES_NOTE,
+    NO_CHECKER_NOTE,
     PROVENANCE_NOTE,
     REVIEW_NOTE,
     STATUS_NOTES,
+    SUPPORT_LABELS,
     VERDICT_LABELS,
     VERDICT_NOTES,
 )
@@ -36,6 +38,7 @@ from tests.fakes import (
     FakeFilings,
     FakePages,
     ScriptedAnalyst,
+    ScriptedChecker,
     filing_html,
     recorded_facts,
     synthetic_ref,
@@ -274,9 +277,59 @@ def test_meta_gives_every_view_its_limits_and_wording(client: TestClient) -> Non
     assert meta["figures_note"] == FIGURES_NOTE
     assert meta["decision_labels"] == DECISION_LABELS
     assert meta["review_note"] == REVIEW_NOTE
-    assert meta["version"] == "0.4.0"
+    assert meta["version"] == "0.5.0"
     assert meta["engine"] == "extractive"
+    assert meta["checker"] == {"name": "none", "detail": ""}
+    assert meta["support_labels"] == SUPPORT_LABELS
+    assert meta["no_checker_note"] == NO_CHECKER_NOTE
     assert meta["example"] == EXAMPLE_THESIS.model_dump(mode="json")
+
+
+def test_meta_names_the_checker_and_every_run_is_checked(tmp_path: Path) -> None:
+    def supports(claim: object, passages: list[Any]) -> Any:
+        return ClaimDraft(
+            findings=[
+                FindingDraft(
+                    "Revenue grew.",
+                    Stance.supports,
+                    [Quote(passages[0].id, SENTENCE)],
+                    Confidence.high,
+                    "Stated.",
+                )
+            ]
+        )
+
+    checker = ScriptedChecker()
+    app = create_app(
+        store=Store(tmp_path / "runs.sqlite"),
+        filings=FakeFilings.synthetic(filing_html(SENTENCE)),
+        analyst=ScriptedAnalyst(supports),
+        fetch_page=FakePages({}),
+        checker=checker,
+    )
+    with TestClient(app) as client:
+        meta = client.get("/api/meta").json()
+        record = wait_for(client, client.post("/api/runs", json=VALID).json()["id"])
+    assert meta["checker"] == {"name": "scripted-check", "detail": "scripted test checker"}
+    assert record["checker"] == "scripted-check"
+    assert record["findings"][0]["checks"]["support"] == "passed"
+    assert record["coverage"]["findings_checked"] == 1
+    assert list(checker.seen) == [CLAIM]
+
+
+def test_an_injected_engine_without_a_checker_gets_no_checker(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A key in the environment does not attach the API checker to an engine a test injected."""
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-not-real")
+    app = create_app(
+        store=Store(tmp_path / "runs.sqlite"),
+        filings=FakeFilings.synthetic(filing_html(SENTENCE)),
+        analyst=ExtractiveAnalyst(),
+        fetch_page=FakePages({}),
+    )
+    with TestClient(app) as client:
+        assert client.get("/api/meta").json()["checker"]["name"] == "none"
 
 
 def test_health(client: TestClient) -> None:
@@ -286,7 +339,7 @@ def test_health(client: TestClient) -> None:
         "engine": "extractive",
         "model": None,
     }
-    assert __version__ == "0.4.0"
+    assert __version__ == "0.5.0"
 
 
 # Static files

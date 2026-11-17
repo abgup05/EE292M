@@ -11,6 +11,7 @@ import hashlib
 import json
 import re
 from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -19,6 +20,7 @@ import pytest
 from app.core import limits
 from app.core.models import Company
 from app.engines.cassette import Cassette, CassetteMiss
+from app.engines.checker import ClaudeChecker
 from app.engines.transport import ModelRequest
 from app.evaluation.cli import normalize_argv
 from app.evaluation.companies import (
@@ -38,6 +40,7 @@ from app.evaluation.corpus import (
 )
 from app.evaluation.generation_eval import (
     CompanyFigures,
+    build_record,
     evaluate_generation,
     render_markdown,
     run_generation,
@@ -562,3 +565,191 @@ def test_make_eval_reaches_the_new_commands_with_global_options() -> None:
     assert normalize_argv(["run", "--offline", "generate"]) == ["--offline", "generate"]
     assert normalize_argv(["run", "--golden", "g.json", "plan"]) == ["--golden", "g.json", "plan"]
     assert normalize_argv(["run", "--variant", "claim"]) == ["run", "--variant", "claim"]
+
+
+# The meaning check (generate --check)
+
+CHECKED_ANSWERS: dict[str, Script] = {
+    **synthetic_answers(),
+    # Supports-right now also offers a challenge, so it reads mixed until the check rejects it.
+    CASES[0][1]: lambda u: [
+        finding("It depends on manufacturers.", "supports", [quote(u, RISK_TEXT)]),
+        finding("Revenue fell.", "challenges", [quote(u, MDA_TEXT)]),
+    ],
+}
+JUDGED: dict[str, list[str]] = {
+    CASES[0][1]: ["supported", "not_supported"],  # mixed -> supported: now agrees
+    CASES[1][1]: ["not_supported"],  # supported -> not_addressed: still disagrees
+    CASES[3][1]: ["not_supported"],  # supported -> not_addressed: an agreeing case broken
+    CASES[5][1]: ["partly"],  # unanswerable: kept
+}
+
+
+def scripted_with_checks(
+    answers: dict[str, Script], judged: dict[str, list[str]]
+) -> Callable[[ModelRequest], dict[str, Any]]:
+    """Assess as :func:`scripted` does; answer each check request with ``judged`` by claim."""
+    assess = scripted(answers)
+
+    def transport(request: ModelRequest) -> dict[str, Any]:
+        if request.step == "assess":
+            return assess(request)
+        assert request.step == "check"
+        assert "scripted" not in request.user, "the engine's rationale must not reach the checker"
+        verdicts = judged[claim_of(request.user)]
+        assert request.user.count("<finding number=") == len(verdicts)
+        return {
+            "judgements": [
+                {"finding_number": n, "verdict": v, "reason": f"Judged {v}."}
+                for n, v in enumerate(verdicts, start=1)
+            ]
+        }
+
+    return transport
+
+
+@pytest.fixture(scope="module")
+def checked_outcomes() -> list:
+    transport = scripted_with_checks(CHECKED_ANSWERS, JUDGED)
+    run = evaluate_generation(
+        synthetic_cases(),
+        LOADER,
+        synthetic_book(),
+        {TICKER: COMPANY},
+        NO_FIGURES,
+        transport,
+        ClaudeChecker(transport=transport),
+    )
+    assert run.pending == [] and run.check_pending == []
+    assert run.checks_asked == 4
+    return run.outcomes
+
+
+def test_the_check_counts_findings_and_moves_verdicts(checked_outcomes: list) -> None:
+    meaning = summarize_generation(checked_outcomes).meaning
+    assert meaning is not None
+    assert (meaning.findings_verified, meaning.findings_checked) == (5, 5)
+    assert (meaning.passed, meaning.partly, meaning.failed, meaning.unchecked) == (1, 1, 3, 0)
+    outcomes = by_id(checked_outcomes)
+    assert (outcomes["supports-right"].verdict, outcomes["supports-right"].verdict_after_check) == (
+        "mixed",
+        "supported",
+    )
+    assert outcomes["retrieval-miss"].verdict_after_check == "not_addressed"
+    assert outcomes["unanswerable-context"].verdict_after_check == "unjudged"  # partly is kept
+
+
+def test_agreement_before_and_after_the_check(checked_outcomes: list) -> None:
+    meaning = summarize_generation(checked_outcomes).meaning
+    assert meaning is not None
+    before, after = meaning.agreement_before, meaning.agreement_after
+    assert (before.hits, before.total) == (1, 5) and (after.hits, after.total) == (1, 5)
+    assert (meaning.disagreed_before, meaning.now_agree, meaning.still_disagree) == (4, 1, 3)
+    assert (meaning.agreed_before, meaning.broken) == (1, 1)
+    # The existing score is the verdict before the check, unchanged by it.
+    assert summarize_generation(checked_outcomes).verdict_agreement == before
+
+
+def test_the_report_adds_the_check_with_its_denominators(checked_outcomes: list) -> None:
+    record = build_record(
+        checked_outcomes,
+        models="a script",
+        inputs={},
+        figures={},
+        generated_at=datetime(2026, 11, 17, tzinfo=UTC),
+    )
+    markdown = render_markdown(record, checked_outcomes)
+    section = markdown.split("## The meaning check", 1)[1].split("## How to read it", 1)[0]
+    for text in (
+        "5 / 5 verified",
+        "1 / 5 checked",
+        "3 / 5 checked",
+        "1 / 4 disagreeing before",
+        "3 / 4 disagreeing before",
+        "1 / 1 agreeing before",
+    ):
+        assert text in section, text
+    assert "After the meaning check" in markdown
+    assert "supported (1 supported, 0 partly, 1 failed)" in markdown
+    assert record["summary"]["meaning_check"]["broken"] == 1
+    cases = {case["case_id"]: case for case in record["cases"]}
+    assert list(cases["supports-right"]["check"]["judged"]) == ["supported", "not_supported"]
+    assert cases["supports-right"]["agrees_after_check"] is True
+
+
+def test_without_the_check_the_record_and_report_are_unchanged(scored: list) -> None:
+    record = build_record(
+        scored, models="a script", inputs={}, figures={}, generated_at=datetime(2026, 11, 17)
+    )
+    markdown = render_markdown(record, scored)
+    assert "meaning" not in markdown.lower()
+    assert "meaning_check" not in record["summary"]
+    assert all("check" not in case and "agrees_after_check" not in case for case in record["cases"])
+    assert summarize_generation(scored).meaning is None
+    header = markdown.split("\n## Per case\n", 1)[1].splitlines()[1]
+    assert header == (
+        "| Case | Ticker | Expected | Obtained | Must-retrieve passage | Cited it | "
+        "Findings verified / withheld |"
+    )
+
+
+def test_a_malformed_check_answer_leaves_the_case_unchecked(tmp_path: Path) -> None:
+    transport = scripted_with_checks(synthetic_answers(), {})
+
+    def malformed(request: ModelRequest) -> dict[str, Any]:
+        return {"judgements": []} if request.step == "check" else transport(request)
+
+    cases = [case for case in synthetic_cases() if case[0].id == "supports-right"]
+    run = evaluate_generation(
+        cases,
+        LOADER,
+        synthetic_book(),
+        {TICKER: COMPANY},
+        NO_FIGURES,
+        malformed,
+        ClaudeChecker(transport=malformed),
+    )
+    [outcome] = run.outcomes
+    assert outcome.check is not None and "did not judge" in outcome.check.error
+    assert outcome.verdict_after_check == outcome.verdict == "supported"
+    meaning = summarize_generation(run.outcomes).meaning
+    assert meaning is not None and (meaning.unchecked, meaning.cases_check_failed) == (1, 1)
+
+
+def test_generate_with_the_check_waits_for_the_checks_then_writes_its_own_record(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    cassette, out = tmp_path / "cassette", tmp_path / "results"
+    args = (synthetic_cases(), LOADER, synthetic_book(), {TICKER: COMPANY}, NO_FIGURES)
+    answers = synthetic_answers()
+
+    def respond(request: dict[str, Any]) -> dict[str, Any]:
+        if request["step"] == "check":
+            count = request["user"].count("<finding number=")
+            return {
+                "judgements": [
+                    {"finding_number": n, "verdict": "supported", "reason": "It says so."}
+                    for n in range(1, count + 1)
+                ]
+            }
+        found = answers[claim_of(request["user"])](request["user"])
+        return {"findings": found, "rationale": "scripted", "unknowns": []}
+
+    assert run_generation(*args, cassette=cassette, out_dir=out, inputs={}, check=True) == 3
+    assert "7 of 7 assess request(s) pending" in capsys.readouterr().out
+    assert answer_pending(cassette, respond) == 7
+    assert run_generation(*args, cassette=cassette, out_dir=out, inputs={}, check=True) == 3
+    printed = capsys.readouterr().out
+    assert "4 of 4 check request(s) unanswered; 4 saved" in printed
+    assert not out.exists() or not any(out.iterdir())
+    steps = [json.loads(p.read_text())["step"] for p in Cassette(cassette).pending()]
+    assert steps == ["check"] * 4
+    assert answer_pending(cassette, respond) == 4
+    assert run_generation(*args, cassette=cassette, out_dir=out, inputs={}, check=True) == 0
+    printed = capsys.readouterr().out
+    assert "all 4 check request(s) answered" in printed
+    [written] = [p for p in out.iterdir() if p.suffix == ".json"]
+    assert written.name.startswith("generation-checked-")
+    record = json.loads(written.read_text())
+    assert record["inputs"]["meaning_check"] == "claude"
+    assert record["summary"]["meaning_check"]["findings_checked"] == 4

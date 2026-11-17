@@ -90,7 +90,8 @@ def test_coverage_sentence_counts_what_the_backend_counted(tmp_path: Path) -> No
     run = written(out)
     assert cli.coverage_sentence(run) == (
         "Read 1 of 1 source(s); 1 of 1 claim(s) have verified excerpts or figures; "
-        "1 finding(s) verified and 0 withheld; 1 of 1 quote(s) verified."
+        "1 finding(s) verified and 0 withheld; 1 of 1 quote(s) found word for word, "
+        "0 rejected; 1 kept as evidence."
     )
 
 
@@ -178,6 +179,14 @@ def answer(pending: dict) -> dict:
             "rationale": "The MD&A reports growth.",
             "unknowns": [],
         }
+    if pending["step"] == "check":
+        numbers = re.findall(r'<finding number="(\d+)"', pending["user"])
+        return {
+            "judgements": [
+                {"finding_number": int(n), "verdict": "supported", "reason": "The excerpt says so."}
+                for n in numbers
+            ]
+        }
     return {"summary": "Data Center growth supports keeping the position.", "next_steps": []}
 
 
@@ -216,30 +225,39 @@ def test_pending_requests_exit_3_and_write_no_results(
     assert json.loads(pending.read_text())["step"] == "plan"
 
 
-def test_answering_the_pending_requests_takes_three_rounds_then_replays(
+def test_answering_the_pending_requests_takes_four_rounds_then_replays(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     cassette, out = tmp_path / "cassette", tmp_path / "results"
     filings = FakeFilings.synthetic(filing_html(SENTENCE))
-    answered: list[int] = []
-    for _ in range(5):
+    answered: list[list[str]] = []
+    for _ in range(6):
         code, _ = run_cli(cassette_argv(cassette, out), tmp_path, filings)
         if code != 3:
             break
-        answered.append(answer_all(cassette))
-    assert code == 0 and answered == [1, 1, 1]
+        steps = [json.loads(p.read_text())["step"] for p in (cassette / "pending").glob("*.json")]
+        answered.append(steps)
+        answer_all(cassette)
+    assert code == 0
+    assert answered == [["plan"], ["assess"], ["check"], ["summarize"]]
     run = written(out)
-    assert run.engine == "claude"
+    assert run.engine == "claude" and run.checker == "claude"
+    assert run.checker_detail.startswith("replayed from cassette cassette")
     assert not any("engine failed" in error for error in run.errors)
+    assert not any("meaning check" in error for error in run.errors)
     [claim] = run.claims
     assert claim.verdict is not None and VERDICT_LABELS[claim.verdict] == "Supported"
+    [finding] = run.findings
+    assert finding.checks.support == "passed"
+    assert finding.checks.support_detail == "The excerpt says so."
+    assert run.coverage.findings_checked == 1
     assert run.brief is not None
     assert run.brief.summary == "Data Center growth supports keeping the position."
 
     capsys.readouterr()
     assert cli.main(["cassette", str(cassette)]) == 0
     printed = capsys.readouterr().out
-    assert "replayed from cassette cassette: 3 responses recorded via a scripted test" in printed
+    assert "replayed from cassette cassette: 4 responses recorded via a scripted test" in printed
     assert "No pending requests." in printed
 
 

@@ -28,6 +28,7 @@ truth. The cases are an answer key; never edit one to improve a score.
     make eval ARGS="plan --cassette eval/cassettes/golden --out eval/queries.json"
     make eval ARGS="run --variant claim+queries --queries eval/queries.json"  # retrieval
     make eval ARGS="generate --cassette eval/cassettes/golden --queries eval/queries.json"
+    make eval ARGS="generate --cassette eval/cassettes/golden --queries eval/queries.json --check"
 
 Add `--offline` after `ARGS="` to forbid EDGAR. Adding a case: `ARGS="pin TICKER"`, find the
 passage with `ARGS='show TICKER ACCESSION "Item 1A" --grep margin'`, copy it exactly, validate.
@@ -38,17 +39,23 @@ passage with `ARGS='show TICKER ACCESSION "Item 1A" --grep margin'`, copy it exa
 unanswerable ones too, so the planner is not told which they are) and asks
 `ClaudeAnalyst.plan` through the cassette, as a run would with the decision "Whether the thesis
 still holds after the latest filings". `generate` runs every case as a one-claim run: retrieval
-with the claim and its queries (top 8, at most 5 per filing), the company's reported figures,
+with the claim and its queries (top 8, at most 5 per filing when there are several), the company's reported figures,
 `assess` through the cassette, the citation gate, and the verdict rule. A request with no
 answer is saved under `cassettes/golden/pending/`; the command prints how many, writes nothing
 and exits 3. Answer them (`docs/cassettes.md`), run again; exit 0 means the file was written.
 Expect 6 plan requests, then one assess request per case offered a passage (30).
 
+`generate --check` then asks the meaning checker about each case with a verified finding (one
+`check` request per case; 24 on the current answers) and writes `results/generation-checked-*`
+beside the plain record: verdict agreement before and after the check, the cases it brought into
+agreement, those it left disagreeing and those it broke, each with its denominator. Without
+`--check` the output is unchanged.
+
 ## Reading the numbers
 
 Retrieval (`results/retrieval-*`): a passage is relevant when it is in the excerpt's filing and
 holds at least half the excerpt's characters. recall@3 and @20 and MRR use the uncapped ranking
-(beyond 50 is a miss); recall@8 is what a run offers, with 5 passages per filing at most.
+(beyond 50 is a miss); recall@8 is what a run offers: 5 passages per filing at most when there are several (`docs/retrieval.md`).
 Every rate is over the 24 answerable cases.
 
 Generation (`results/generation-*`), every rate with its denominator:

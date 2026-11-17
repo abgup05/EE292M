@@ -10,6 +10,7 @@ import pytest
 
 from app import wiring
 from app.engines.cassette import CassetteTransport
+from app.engines.checker import ClaudeChecker, NoChecker
 from app.engines.claude import ClaudeAnalyst
 from app.engines.extractive import ExtractiveAnalyst
 from app.engines.transport import AnthropicTransport
@@ -146,3 +147,75 @@ def test_the_cassette_engine_replays_the_named_directory_only(
     assert transport.directory == tmp_path and transport.live is None
     with pytest.raises(wiring.ConfigurationError, match="cassette directory"):
         wiring.analyst_named("cassette")
+
+
+# The meaning checker
+
+
+def checker_transport(checker: object) -> CassetteTransport:
+    assert isinstance(checker, ClaudeChecker)
+    assert isinstance(checker.transport, CassetteTransport)
+    return checker.transport
+
+
+@pytest.mark.parametrize("key", [None, "", "   "])
+def test_no_key_and_no_cassette_means_no_checker(
+    monkeypatch: pytest.MonkeyPatch, key: str | None
+) -> None:
+    if key is None:
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    else:
+        monkeypatch.setenv("ANTHROPIC_API_KEY", key)
+    assert isinstance(wiring.checker_from_env(), NoChecker)
+
+
+def test_a_key_means_the_claude_checker_on_its_own_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-not-real")
+    monkeypatch.setenv("ANTHROPIC_MODEL", "claude-engine-model")
+    monkeypatch.setenv("ANTHROPIC_CHECK_MODEL", "claude-check-model")
+    checker = wiring.checker_from_env(wiring.analyst_from_env())
+    assert isinstance(checker, ClaudeChecker) and checker.model == "claude-check-model"
+    assert isinstance(checker.transport, AnthropicTransport)
+    assert checker.transport.model == "claude-check-model"
+
+
+def test_with_a_cassette_the_checker_shares_the_engines_run(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("EVIDENCE_DESK_CASSETTE", str(tmp_path))
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    analyst = wiring.analyst_from_env()
+    engine = cassette_of(analyst)
+    shared = checker_transport(wiring.checker_from_env(analyst))
+    assert shared is not engine and shared.directory == tmp_path and shared.live is None
+    assert shared.pending_keys is engine.pending_keys  # one run: a pending check blocks the summary
+    alone = checker_transport(wiring.checker_from_env())
+    assert alone.directory == tmp_path and alone.live is None
+
+
+def test_a_recording_cassette_records_checks_with_the_check_model(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("EVIDENCE_DESK_CASSETTE", str(tmp_path))
+    monkeypatch.setenv("EVIDENCE_DESK_CASSETTE_RECORD", "1")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-not-real")
+    monkeypatch.setenv("ANTHROPIC_MODEL", "claude-engine-model")
+    monkeypatch.setenv("ANTHROPIC_CHECK_MODEL", "claude-check-model")
+    live = checker_transport(wiring.checker_from_env(wiring.analyst_from_env())).live
+    assert isinstance(live, AnthropicTransport) and live.model == "claude-check-model"
+
+
+def test_each_named_engine_has_its_checker(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-not-real")
+    replaying = wiring.analyst_named("cassette", cassette=tmp_path)
+    over_cassette = checker_transport(wiring.checker_named("cassette", replaying))
+    assert (
+        over_cassette.live is None
+        and over_cassette.pending_keys is cassette_of(replaying).pending_keys
+    )
+    assert isinstance(wiring.checker_named("extractive", ExtractiveAnalyst()), NoChecker)
+    over_api = wiring.checker_named("claude", wiring.analyst_named("claude"))
+    assert isinstance(over_api, ClaudeChecker)
+    assert isinstance(over_api.transport, AnthropicTransport)
+    monkeypatch.delenv("ANTHROPIC_API_KEY")
+    assert isinstance(wiring.checker_named("auto", ExtractiveAnalyst()), NoChecker)

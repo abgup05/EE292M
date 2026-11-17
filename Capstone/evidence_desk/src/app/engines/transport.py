@@ -24,8 +24,10 @@ FALLBACK_BETA = "server-side-fallback-2026-07-01"
 MAX_API_MESSAGE_CHARS = 200
 API_VIA = "the Anthropic API"
 
-# The engine's steps, in the order a run makes them: each depends on the answers before it.
-STEPS = ("plan", "assess", "summarize")
+# The model steps, in the order a run makes them: each depends on the answers before it. A
+# claim's "check" (app.engines.checker) reads that claim's assessment; the summary reads the
+# verdicts the checks decide.
+STEPS = ("plan", "assess", "check", "summarize")
 
 
 class EngineError(RuntimeError):
@@ -36,7 +38,7 @@ class EngineError(RuntimeError):
 class ModelRequest:
     """One structured-output request, complete: what a model needs to answer it.
 
-    ``step`` names the engine step ("plan", "assess" or "summarize");
+    ``step`` names the model step ("plan", "assess", "check" or "summarize");
     ``schema`` is the JSON schema the answer must satisfy; ``max_tokens``
     bounds the answer's length.
     """

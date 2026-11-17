@@ -33,6 +33,54 @@ make down
 
 From the command line, `make run ARGS='example'` runs the same pipeline and writes `results/<run-id>.json` and `.md`. `make probe TICKERS="AAPL COST"` reports how well a company's filings split into their Items.
 
+## The system
+
+```mermaid
+flowchart LR
+  subgraph LAPTOP["My laptop (macOS)"]
+    BROWSER["Browser<br/>runs the page's JavaScript:<br/>draws and polls, computes no result"]
+    subgraph CLONE["Git clone of this repository"]
+      CODE["Code<br/>src/, tests/, uitests/, docker/"]
+      REC["Recorded data, in git<br/>EDGAR fixtures, cassette, golden records"]
+      ENVF[".env<br/>API key, SEC user agent<br/>gitignored"]
+      DB[("data/runs/runs.sqlite<br/>run records, stored filing text<br/>gitignored: this laptop only")]
+    end
+    subgraph DOCKER["Docker Compose, started only by make"]
+      APP["app container<br/>FastAPI routes, pipeline, gate, policy<br/>published on 127.0.0.1:8766 only"]
+      TOOLS["short-lived tool containers<br/>lock, jscheck, shots"]
+    end
+  end
+  GITHUB["GitHub, private repository<br/>the second copy of code and recorded data"]
+  SEC["SEC EDGAR<br/>www.sec.gov, data.sec.gov<br/>the original filings and XBRL facts"]
+  MODEL["Anthropic API<br/>optional"]
+  BROWSER -->|"HTTP, 127.0.0.1:8766"| APP
+  CODE -->|"bind mount at /work;<br/>dependencies built into the image"| APP
+  ENVF -->|"environment variables"| APP
+  REC -->|"recorded filings for tests,<br/>recorded model answers for replay"| APP
+  APP <-->|"reads and writes"| DB
+  SEC -->|"HTTPS, one way,<br/>at most 7 requests a second"| APP
+  APP -->|"HTTPS: passages as data in,<br/>drafted findings out"| MODEL
+  CODE <-->|"git over HTTPS"| GITHUB
+  REC <-->|"git over HTTPS"| GITHUB
+  TOOLS -->|"http://app:8000"| APP
+```
+
+**Where each part runs.** Everything runs on one laptop. The backend is one container; the page's JavaScript runs in the browser, not in the container that serves it. Nothing listens beyond `127.0.0.1`.
+
+**How code reaches it.** The repository is mounted into the container, so the running code is the working tree; dependencies are installed when the image is built, never while it runs. The only other copy of the code is the private GitHub repository, reached by `git push` over HTTPS.
+
+**How data reaches it.** Filings and XBRL facts come one way from SEC EDGAR over HTTPS and are stored per run in SQLite. With a key, passages go to the Anthropic API as data and drafted findings come back. Nothing is ever written to EDGAR.
+
+**What cannot be rebuilt.**
+
+| Data | Can it be rebuilt? | Copies |
+| --- | --- | --- |
+| Filings and XBRL facts | Yes: EDGAR keeps them, and a filing never changes | EDGAR; a per-run copy in SQLite |
+| Recorded fixtures, the cassette, the golden records | The fixtures yes. The cassette no: a model will not give the same answers twice | Laptop and GitHub |
+| Run records in `data/runs/runs.sqlite` | No: a run with model answers cannot be reproduced | **This laptop only. No backup** |
+| Decisions on findings | None are stored yet; accepting or rejecting a finding is milestone 4 | — |
+| Keys in `.env` | Yes, from the provider's console | Laptop only |
+
 ## Measured results (17 November 2026)
 
 **A recorded, model-backed run** (`make replay`; the record is [`demo/recorded-run-v3.md`](demo/recorded-run-v3.md)). The example thesis on NVIDIA's 10-Q for the period ended 2026-07-26, its 10-Q for 2026-04-26 and its 10-K for 2026-01-25:

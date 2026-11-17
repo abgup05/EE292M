@@ -7,7 +7,8 @@ Writes under ``tests/fixtures/edgar/``:
 - ``company_tickers.json``: SEC's company list trimmed to a few tickers;
 - ``submissions-CIK0001045810.json``: NVIDIA's filing index, each
   ``filings.recent`` column trimmed to its first entries (``filings.files`` dropped);
-- the primary documents of one NVIDIA 10-Q and one 10-K, gzip-compressed;
+- the primary documents of one NVIDIA 10-Q, one NVIDIA 10-K and one Costco 10-K,
+  gzip-compressed;
 - ``manifest.json``: URL, UTC retrieval time, SHA-256 and byte size of each
   original response, before trimming or compression.
 
@@ -24,6 +25,7 @@ import json
 import sys
 from collections.abc import Callable
 from datetime import UTC, datetime
+from functools import partial
 from pathlib import Path
 from typing import Any
 
@@ -38,8 +40,24 @@ INDEX_ROWS_KEPT = 60
 # (fixture file, accession number, primary document) for each recorded filing.
 DOCUMENTS = (
     ("nvda-10q-20260726.htm.gz", "0001045810-26-000075", "nvda-20260726.htm"),
+    ("nvda-10q-20260426.htm.gz", "0001045810-26-000052", "nvda-20260426.htm"),
     ("nvda-10k-20260125.htm.gz", "0001045810-26-000021", "nvda-20260125.htm"),
 )
+# (fixture file, ticker, accession number) for filings whose primary document is looked
+# up in the company's filing index. Costco's 10-K is a second full-size filing from a
+# different sector, with "Item 1A—Risk Factors" headings (an em dash, not a full stop).
+LOOKED_UP_DOCUMENTS = (("cost-10k-20260830.htm.gz", "COST", "0000909832-26-000093"),)
+
+URLSource = str | Callable[[], str]
+
+
+def lookup_url(client: EdgarClient, ticker: str, accession: str) -> str:
+    """The primary-document URL of one of a company's current periodic filings."""
+    company = client.company(ticker)
+    for ref in client.periodic_filings(company, 5):
+        if ref.accession == accession:
+            return ref.url
+    raise SourceError(f"{accession} is no longer among {ticker}'s current periodic filings")
 
 
 def trim_tickers(body: bytes) -> bytes:
@@ -78,15 +96,19 @@ def record(
     directory: Path,
     manifest: dict[str, Any],
     name: str,
-    url: str,
+    source: URLSource,
     transform: Callable[[bytes], bytes],
     refresh: bool,
 ) -> None:
-    """Fetch ``url`` and save ``transform(body)`` as ``name`` with its manifest entry."""
+    """Fetch ``source`` (a URL, or a function that looks one up) and save ``transform(body)``.
+
+    The manifest entry records the original response, before ``transform``.
+    """
     path = directory / name
     if path.exists() and not refresh:
         print(f"fixtures: keeping {path}")
         return
+    url = source if isinstance(source, str) else source()
     body = client.get(url)
     retrieved_at = datetime.now(UTC)
     path.write_bytes(transform(body))
@@ -109,23 +131,27 @@ def main(argv: list[str] | None = None) -> int:
     manifest: dict[str, Any] = (
         json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
     )
-    jobs: list[tuple[str, str, Callable[[bytes], bytes]]] = [
-        ("company_tickers.json", TICKERS_URL, trim_tickers),
-        (
-            f"submissions-CIK{NVIDIA_CIK:010d}.json",
-            SUBMISSIONS_URL.format(cik=NVIDIA_CIK),
-            trim_submissions,
-        ),
-        *(
-            (name, archive_url(NVIDIA_CIK, accession, document), gzip_bytes)
-            for name, accession, document in DOCUMENTS
-        ),
-    ]
     failures = 0
     with EdgarClient.from_env() as client:
-        for name, url, transform in jobs:
+        jobs: list[tuple[str, URLSource, Callable[[bytes], bytes]]] = [
+            ("company_tickers.json", TICKERS_URL, trim_tickers),
+            (
+                f"submissions-CIK{NVIDIA_CIK:010d}.json",
+                SUBMISSIONS_URL.format(cik=NVIDIA_CIK),
+                trim_submissions,
+            ),
+            *(
+                (name, archive_url(NVIDIA_CIK, accession, document), gzip_bytes)
+                for name, accession, document in DOCUMENTS
+            ),
+            *(
+                (name, partial(lookup_url, client, ticker, accession), gzip_bytes)
+                for name, ticker, accession in LOOKED_UP_DOCUMENTS
+            ),
+        ]
+        for name, source, transform in jobs:
             try:
-                record(client, FIXTURE_DIR, manifest, name, url, transform, args.refresh)
+                record(client, FIXTURE_DIR, manifest, name, source, transform, args.refresh)
             except (SourceError, ValueError, KeyError, TypeError) as exc:
                 # One failed fixture should not stop the others; report it and fail at the end.
                 print(f"fixtures: {name} failed: {exc.__class__.__name__}: {exc}")

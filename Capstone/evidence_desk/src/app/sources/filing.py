@@ -3,8 +3,10 @@
 The document is inline-XBRL HTML whose headings are styled text, not ``<h1>``
 tags. Extraction runs in two linear passes:
 
-1. **Lines.** One walk over the parsed tree drops the ``ix:header`` block,
-   scripts, styles and anything hidden with ``display:none``, and emits one line
+1. **Lines.** The ``ix:header`` block (inline-XBRL metadata, never report text)
+   is cut out before the HTML is parsed, so the parser never builds the subtree
+   the walk would only discard. One walk over the parsed tree drops scripts,
+   styles and anything hidden with ``display:none``, and emits one line
    per paragraph-like block and one per table row (cells joined by single spaces,
    with a lone ``$`` joined to the number after it and a lone ``%`` or ``)`` to
    the number before it). Bare page numbers and the running "Table of Contents"
@@ -34,6 +36,13 @@ from app.core.documents import Document, Section
 
 PUBLISHER = "SEC EDGAR"
 COVER_HEADING = "Cover page"
+UNNUMBERED_HEADING = "Unnumbered text"
+# Text before the first Item is a cover page only up to this size. A real cover page
+# with its table of contents and forward-looking-statements notice is far shorter (10,191
+# characters in NVIDIA's 10-K, 5,079 in its 10-Q); a filing that cross-references Items
+# to pages instead puts hundreds of thousands of characters there (618,101 in JPMorgan's
+# 10-Q). 20,000 leaves twice the largest real cover page measured before mislabelling.
+COVER_MAX_CHARS = 20_000
 FALLBACK_HEADING = "Full document"
 SUBHEADING_SEPARATOR = " › "
 MAX_SUBHEADING_CHARS = 140
@@ -87,15 +96,21 @@ CELL_TAGS = ("td", "th")
 JOIN_TO_NEXT = frozenset({"$"})
 JOIN_TO_PREVIOUS = frozenset({"%", ")", "%)"})
 
+# The inline-XBRL header: contexts, units and hidden facts. 14-17% of the tags of NVIDIA's
+# filings sit inside it, and parsing tags is most of the cost of reading a filing.
+IX_HEADER = re.compile(r"<ix:header\b.*?</ix:header\s*>", re.IGNORECASE | re.DOTALL)
 HIDDEN = re.compile(r"display\s*:\s*none", re.IGNORECASE)
 FONT_WEIGHT = re.compile(r"font-weight\s*:\s*([a-z]+|\d+)", re.IGNORECASE)
 WHITESPACE = re.compile(r"\s+")
-INVISIBLE = re.compile("[​‌‍﻿]")
+INVISIBLE = re.compile(r"[​‌‍﻿]")  # zero-width spaces and joiners
 PAGE_NUMBER = re.compile(r"^(?:(?:page\s+)?\d{1,3}|[ivxl]{1,6})$", re.IGNORECASE)
 PAGE_NUMBER_SUFFIX = re.compile(r"\s(?:\d{1,3}|[ivxl]{1,6})$")
 CONTENTS_LINK = re.compile(r"^(?:(?:return|back) to )?table of contents$", re.IGNORECASE)
 PART_LINE = re.compile(r"^part\s+(iv|iii|ii|i)\b\s*[.:,\-–—]?\s*(.*)$", re.IGNORECASE)
-ITEM_LINE = re.compile(r"^item\s+(\d{1,2}[a-z]?)\s*[.:]\s*(.*)$", re.IGNORECASE)
+# "Item 1A. Risk Factors", "Item 1A—Risk Factors", "Item 1A: ...", "Item 1A - ...", "Item 1A Risk".
+ITEM_LINE = re.compile(r"^item\s+(\d{1,2}[a-z]?)(?:\s*([.:\-–—])\s*|\s+|$)(.*)$", re.IGNORECASE)
+# A section heading produced for a numbered Item (see _heading_label).
+ITEM_SECTION = re.compile(r"^(?:Part (?:IV|III|II|I), )?Item \d{1,2}[A-Z]?\.")
 LETTER = re.compile(r"[A-Za-z]")
 
 
@@ -118,10 +133,19 @@ class _Heading:
     """An Item heading found in the line sequence."""
 
     line: int
-    body_start: int
+    body_start: int  # after the title line, when the title stood on the next line
     part: str | None
     number: str
     title: str
+
+    @property
+    def key(self) -> tuple[str | None, str]:
+        return (self.part, self.number)
+
+    @property
+    def own_title(self) -> bool:
+        """The title was on the heading line itself (not borrowed from the next line)."""
+        return bool(self.title) and self.body_start == self.line + 1
 
 
 def _clean(value: str) -> str:
@@ -252,6 +276,17 @@ def _document_type(soup: BeautifulSoup) -> str | None:
     return _clean(tag.get_text()) if isinstance(tag, Tag) else None
 
 
+def _cut_ix_headers(html: str) -> tuple[str, str]:
+    """``html`` without its ``ix:header`` blocks, and those blocks joined.
+
+    The header is never report text, and the line walk skips it anyway; cutting
+    it before parsing saves building its subtree. The blocks are kept only so
+    the document type can still be read from them when the body does not tag it.
+    """
+    headers = [match.group() for match in IX_HEADER.finditer(html)]
+    return (IX_HEADER.sub("", html), "".join(headers)) if headers else (html, "")
+
+
 def _title_like(line: _Line) -> bool:
     """Could ``line`` be the title of an Item whose number stood alone on the line before?"""
     text = line.text
@@ -275,29 +310,60 @@ def _clean_title(title: str) -> str | None:
     return title
 
 
+def _standalone_part(text: str) -> str | None:
+    """The Part numeral of a line such as "PART II — OTHER INFORMATION", else None."""
+    match = PART_LINE.match(text) if len(text) <= MAX_PART_LINE_CHARS else None
+    if match is None or "item" in match.group(2).casefold():
+        return None
+    return match.group(1).upper()
+
+
+def _part_headings(lines: list[_Line]) -> set[int]:
+    """Indexes of the Part lines that set the current Part: each Part's own headings.
+
+    A Part line in a table row or a link is an index entry. It counts only when the
+    Part has no heading of its own in the body, and then only its last mention does,
+    so an index at the front never labels Items that precede the Part's real heading.
+    """
+    mentions: dict[str, list[tuple[int, bool]]] = {}
+    for index, line in enumerate(lines):
+        part = _standalone_part(line.text)
+        if part is not None:
+            mentions.setdefault(part, []).append((index, line.row or line.linked))
+    setters: set[int] = set()
+    for found in mentions.values():
+        own = [index for index, is_index_entry in found if not is_index_entry]
+        setters.update(own or [found[-1][0]])
+    return setters
+
+
 def _find_headings(lines: list[_Line]) -> tuple[list[_Heading], set[int]]:
     """Item headings in order, and the indexes of Part lines (never emitted as text)."""
     headings: list[_Heading] = []
     part_lines: set[int] = set()
+    setters = _part_headings(lines)
     part: str | None = None
     index = 0
     while index < len(lines):
         line = lines[index]
         text = line.text
+        standalone = _standalone_part(text)
+        if standalone is not None:
+            if index in setters:
+                part = standalone
+            part_lines.add(index)
+            index += 1
+            continue
         part_match = PART_LINE.match(text) if len(text) <= MAX_PART_LINE_CHARS else None
-        if part_match:
-            rest = part_match.group(2)
-            if ITEM_LINE.match(rest):
-                part = part_match.group(1).upper()
-                text = rest
-            elif "item" not in rest.casefold():
-                part = part_match.group(1).upper()
-                part_lines.add(index)
-                index += 1
-                continue
+        if part_match and ITEM_LINE.match(part_match.group(2)):
+            # "PART II Item 7" (often a running page header) names its Part itself.
+            part = part_match.group(1).upper()
+            text = part_match.group(2)
         item_match = ITEM_LINE.match(text)
         if item_match and len(text) <= MAX_ITEM_LINE_CHARS and not line.toc_like:
-            title = _clean_title(item_match.group(2))
+            title = _clean_title(item_match.group(3))
+            if item_match.group(2) is None and title and not title[0].isupper():
+                title = None  # "Item 7 of our report ...": a reference, not a heading
             body_start = index + 1
             if title == "" and body_start < len(lines) and _title_like(lines[body_start]):
                 title = _clean_title(lines[body_start].text)
@@ -345,27 +411,57 @@ def _item_sections(
     lines: list[_Line],
     candidates: list[bool],
     label: str,
-    span: tuple[int, int],
+    spans: list[tuple[int, int]],
     part_lines: set[int],
 ) -> list[Section]:
-    """Sections of one Item: a candidate line followed by a non-candidate opens a sub-section."""
-    start, end = span
+    """Sections of one Item, whose lines lie in ``spans`` (line ranges, in order).
+
+    A candidate line followed by a non-candidate opens a sub-section.
+    """
     sections: list[Section] = []
     heading = label
     buffer: list[str] = []
-    for index in range(start, end):
-        if index in part_lines:
-            continue
-        if candidates[index] and index + 1 < end and not candidates[index + 1]:
-            if buffer:
-                sections.append(Section(heading=heading, text="\n".join(buffer)))
-            heading = f"{label}{SUBHEADING_SEPARATOR}{lines[index].text}"
-            buffer = []
-            continue
-        buffer.append(lines[index].text)
+    for start, end in spans:
+        for index in range(start, end):
+            if index in part_lines:
+                continue
+            if candidates[index] and index + 1 < end and not candidates[index + 1]:
+                if buffer:
+                    sections.append(Section(heading=heading, text="\n".join(buffer)))
+                heading = f"{label}{SUBHEADING_SEPARATOR}{lines[index].text}"
+                buffer = []
+                continue
+            buffer.append(lines[index].text)
     if buffer:
         sections.append(Section(heading=heading, text="\n".join(buffer)))
     return sections
+
+
+def _occurrences(
+    headings: list[_Heading], line_count: int
+) -> list[tuple[_Heading, list[tuple[int, int]]]]:
+    """Each occurrence of an Item: the heading that names it and the line ranges under it.
+
+    Consecutive headings of the same Part and Item (a running page header such as
+    "PART II Item 7" repeated on every page) are one occurrence. It is named by the
+    first heading whose title stood on its own line; the others contribute only the
+    lines after them, so a body line is never swallowed as a repeated header's title.
+    """
+    ends = [heading.line for heading in headings[1:]] + [line_count]
+    runs: list[list[tuple[_Heading, int]]] = []
+    for heading, end in zip(headings, ends, strict=True):
+        if runs and runs[-1][0][0].key == heading.key:
+            runs[-1].append((heading, end))
+        else:
+            runs.append([(heading, end)])
+    occurrences: list[tuple[_Heading, list[tuple[int, int]]]] = []
+    for run in runs:
+        named = next((h for h, _ in run if h.own_title), None) or next(
+            (h for h, _ in run if h.title), run[0][0]
+        )
+        spans = [(h.body_start if h is named else h.line + 1, end) for h, end in run]
+        occurrences.append((named, spans))
+    return occurrences
 
 
 def _sections(lines: list[_Line], document_type: str | None) -> list[Section]:
@@ -379,32 +475,38 @@ def _sections(lines: list[_Line], document_type: str | None) -> list[Section]:
         if document_type
         else len({(h.part, h.number) for h in headings}) > len({h.number for h in headings})
     )
-    ends = [heading.line for heading in headings[1:]] + [len(lines)]
-    spans = list(zip(headings, ends, strict=True))
+    groups = _occurrences(headings, len(lines))
 
     # Where the same Part and Item occur more than once, keep the one with the most text.
     best: dict[tuple[str | None, str], tuple[int, int]] = {}
-    for position, (heading, end) in enumerate(spans):
+    for position, (heading, spans) in enumerate(groups):
         size = sum(
             len(lines[index].text)
-            for index in range(heading.body_start, end)
+            for start, end in spans
+            for index in range(start, end)
             if index not in part_lines
         )
-        key = (heading.part, heading.number)
-        if key not in best or size >= best[key][1]:
-            best[key] = (position, size)
+        if heading.key not in best or size >= best[heading.key][1]:
+            best[heading.key] = (position, size)
     kept = {position for position, _ in best.values()}
 
-    sections: list[Section] = []
-    cover = [lines[index].text for index in range(headings[0].line) if index not in part_lines]
-    if cover:
-        sections.append(Section(heading=COVER_HEADING, text="\n".join(cover)))
     candidates = _subheading_candidates(lines)
-    for position, (heading, end) in enumerate(spans):
+    sections: list[Section] = []
+    first = headings[0].line
+    before = sum(len(lines[index].text) for index in range(first) if index not in part_lines)
+    if before <= COVER_MAX_CHARS:
+        cover = [lines[index].text for index in range(first) if index not in part_lines]
+        if cover:
+            sections.append(Section(heading=COVER_HEADING, text="\n".join(cover)))
+    else:
+        # A filing that cross-references Items to pages: most of its text precedes any
+        # numbered Item, so it is not a cover page. Bold sub-headings still split it.
+        unnumbered = (UNNUMBERED_HEADING, [(0, first)])
+        sections.extend(_item_sections(lines, candidates, *unnumbered, part_lines))
+    for position, (heading, spans) in enumerate(groups):
         if position in kept:
             label = _heading_label(heading, with_part)
-            span = (heading.body_start, end)
-            sections.extend(_item_sections(lines, candidates, label, span, part_lines))
+            sections.extend(_item_sections(lines, candidates, label, spans, part_lines))
     return sections
 
 
@@ -413,8 +515,11 @@ def parse_filing(html: str, *, url: str, title: str, published_date: str | None)
 
     Falls back to one section headed "Full document" when no Item heading is found.
     """
-    soup = BeautifulSoup(html, "html.parser")
+    body, headers = _cut_ix_headers(html)
+    soup = BeautifulSoup(body, "html.parser")
     document_type = _document_type(soup)
+    if document_type is None and headers:
+        document_type = _document_type(BeautifulSoup(headers, "html.parser"))
     collector = _LineCollector()
     collector.walk(soup, False)
     collector.flush()
@@ -429,3 +534,29 @@ def parse_filing(html: str, *, url: str, title: str, published_date: str | None)
         content_hash=hashlib.sha256(text.encode("utf-8")).hexdigest(),
         sections=sections,
     )
+
+
+def _is_item_section(section: Section) -> bool:
+    return ITEM_SECTION.match(section.heading) is not None
+
+
+def item_labels(document: Document) -> list[str]:
+    """The distinct numbered Items found, in document order (sub-headings folded in)."""
+    labels = (
+        section.heading.split(SUBHEADING_SEPARATOR)[0]
+        for section in document.sections
+        if _is_item_section(section)
+    )
+    return list(dict.fromkeys(labels))
+
+
+def item_coverage(document: Document) -> float:
+    """Share of the document's section text (0.0 to 1.0) that sits under numbered Items.
+
+    Cover page, unnumbered text and the "Full document" fallback count against it.
+    """
+    total = sum(len(section.text) for section in document.sections)
+    if total == 0:
+        return 0.0
+    under_items = sum(len(s.text) for s in document.sections if _is_item_section(s))
+    return under_items / total

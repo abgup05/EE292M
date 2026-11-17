@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 
 from app.core.documents import Document
-from app.sources.filing import parse_filing
+from app.sources.filing import COVER_MAX_CHARS, FALLBACK_HEADING, item_coverage, parse_filing
 
 EDGAR = Path(__file__).parent / "fixtures" / "edgar"
 Q_FIXTURE = "nvda-10q-20260726.htm.gz"
@@ -198,15 +198,68 @@ def test_table_of_contents_duplicates_keep_the_body_occurrence() -> None:
 
 
 def test_repeated_item_keeps_the_occurrence_with_the_most_text() -> None:
+    # An unlinked contents list without page numbers: each Item appears twice, apart.
     html = page(
         bold("Item 1A. Risk Factors")
         + para("See below.")
+        + bold("Item 7. Discussion")
         + bold("Item 1A. Risk Factors")
         + para("Demand for our products may fall sharply in a downturn.")
+        + bold("Item 7. Discussion")
+        + para("Revenue grew.")
     )
     document = parse(html)
-    assert headings(document) == ["Item 1A. Risk Factors"]
+    assert headings(document) == ["Item 1A. Risk Factors", "Item 7. Discussion"]
     assert document.sections[0].text == "Demand for our products may fall sharply in a downturn."
+    assert document.sections[1].text == "Revenue grew."
+
+
+def test_running_page_headers_repeating_an_item_are_merged_into_it() -> None:
+    html = page(
+        bold("PART II")
+        + bold("Item 7")
+        + bold("ITEM 7. MANAGEMENT’S DISCUSSION AND ANALYSIS")
+        + para("Revenue grew in the year.")
+        + bold("PART II Item 7")
+        + bold("Cash, Cash Equivalents, and Investments")
+        + para("Cash was ample.")
+        + bold("PART II Item 7")
+        + para("Debt was repaid.")
+        + bold("Item 8. Financial Statements")
+        + para("Statements.")
+    )
+    document = parse(html)
+    label = "Item 7. MANAGEMENT’S DISCUSSION AND ANALYSIS"
+    assert headings(document) == [
+        label,
+        f"{label} › Cash, Cash Equivalents, and Investments",
+        "Item 8. Financial Statements",
+    ]
+    assert document.sections[0].text == "Revenue grew in the year."
+    assert document.sections[1].text == "Cash was ample.\nDebt was repaid."
+
+
+def test_an_index_part_label_never_reaches_an_item_before_that_parts_own_heading() -> None:
+    index = (
+        "<table><tr><td>Part I</td></tr>"
+        "<tr><td>Item 1. Financial Statements</td><td>80</td></tr>"
+        "<tr><td>Part II</td></tr>"
+        "<tr><td>Item 1. Legal Proceedings</td><td>190</td></tr></table>"
+    )
+    html = page(
+        index
+        + bold("Item 4. Controls and Procedures")
+        + para("Controls were effective.")
+        + bold("PART II — OTHER INFORMATION")
+        + bold("Item 1. Legal Proceedings")
+        + para("See Note 29."),
+        document_type="10-Q",
+    )
+    assert headings(parse(html)) == [
+        "Cover page",
+        "Part I, Item 4. Controls and Procedures",
+        "Part II, Item 1. Legal Proceedings",
+    ]
 
 
 def test_table_is_rendered_one_line_per_row() -> None:
@@ -326,3 +379,94 @@ def test_running_headers_and_parentheticals_are_not_sub_headings() -> None:
         "Item 8. Financial Statements",
         "Item 8. Financial Statements › Risks Related to Our Industry",
     ]
+
+
+@pytest.mark.parametrize("separator", [". ", ": ", " - ", " – ", "—", " — ", " ", "&#160;&#8212;"])
+def test_item_number_and_title_may_be_separated_by_any_common_mark(separator: str) -> None:
+    html = page(
+        "<table><tr><td>Item 1A. Risk Factors</td><td>9</td></tr></table>"
+        + bold(f"Item 1A{separator}Risk Factors")
+        + para("Demand may fall.")
+    )
+    assert headings(parse(html)) == ["Cover page", "Item 1A. Risk Factors"]
+
+
+def test_item_followed_by_lowercase_words_is_a_reference_not_a_heading() -> None:
+    html = page(bold("Item 7. Discussion") + para("Item 7 of our report discusses revenue"))
+    document = parse(html)
+    assert headings(document) == ["Item 7. Discussion"]
+    assert document.sections[0].text == "Item 7 of our report discusses revenue"
+
+
+def long_paragraphs(total: int) -> str:
+    sentence = "The firm reported results across its lines of business in the period. "
+    return "".join(para(sentence * 10) for _ in range(total // (len(sentence) * 10) + 1))
+
+
+def test_short_text_before_the_first_item_is_the_cover_page() -> None:
+    html = page(long_paragraphs(COVER_MAX_CHARS // 2) + bold("Item 1. Business") + para("Text."))
+    assert headings(parse(html))[0] == "Cover page"
+
+
+def test_long_text_before_the_first_item_is_unnumbered_text_with_sub_sections() -> None:
+    html = page(
+        para("JPMorgan Chase &amp; Co. Form 10-Q")
+        + long_paragraphs(COVER_MAX_CHARS)
+        + bold("Management’s discussion and analysis")
+        + long_paragraphs(5000)
+        + bold("Item 1. Legal Proceedings")
+        + para("See Note 29.")
+    )
+    document = parse(html)
+    assert headings(document) == [
+        "Unnumbered text",
+        "Unnumbered text › Management’s discussion and analysis",
+        "Item 1. Legal Proceedings",
+    ]
+    assert 0 < item_coverage(document) < 0.01
+
+
+def test_item_coverage_counts_characters_under_numbered_items() -> None:
+    html = page(
+        para("Cover " * 10)
+        + bold("Item 1. Business")
+        + para("B" * 50)
+        + bold("Overview")
+        + para("O" * 30)
+    )
+    document = parse(html)
+    under_items = 50 + 30
+    cover = len("Cover " * 10) - 1
+    assert item_coverage(document) == pytest.approx(under_items / (under_items + cover))
+    assert item_coverage(parse(page(para("No items here at all.")))) == 0.0
+
+
+def test_recorded_nvidia_filings_have_high_item_coverage(
+    quarterly: Document, annual: Document
+) -> None:
+    assert item_coverage(quarterly) > 0.9
+    assert item_coverage(annual) > 0.9
+
+
+# Recorded 10-K (Costco, fiscal year ended 2026-08-30, accession 0000909832-26-000093):
+# a retailer whose body headings read "Item 1A—Risk Factors" (an em dash).
+
+COSTCO_FIXTURE = "cost-10k-20260830.htm.gz"
+
+
+@pytest.fixture(scope="module")
+def costco() -> Document:
+    return parse_recorded(COSTCO_FIXTURE, "Costco 10-K for fiscal 2026", "2026-10-07")
+
+
+def test_costco_finds_business_risk_factors_and_mda(costco: Document) -> None:
+    assert FALLBACK_HEADING not in headings(costco)
+    assert any(h.startswith("Item 1. Business") for h in headings(costco))
+    assert item_chars(costco, "Item 1A") > 10000
+    assert item_chars(costco, "Item 7") > 10000
+    assert item_coverage(costco) > 0.9
+
+
+def test_costco_sections_are_exact_substrings(costco: Document) -> None:
+    for section in costco.sections:
+        assert section.text in costco.text

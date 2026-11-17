@@ -11,9 +11,11 @@ from __future__ import annotations
 
 import re
 from collections import Counter
+from collections.abc import Sequence
 
 from app.core import limits, policy
 from app.core.documents import Passage
+from app.core.metric_models import Metric
 from app.core.models import (
     Claim,
     Company,
@@ -70,6 +72,7 @@ class ExtractiveAnalyst:
     """Keyword-overlap quoting with no stance and no invented facts."""
 
     name = "extractive"
+    detail = "deterministic sentence matching, no model"
 
     def plan(self, request: ThesisRequest, company: Company) -> list[list[str]]:
         """One query per claim: the claim's content words."""
@@ -81,12 +84,14 @@ class ExtractiveAnalyst:
         company: Company,
         claim: Claim,
         passages: list[Passage],
+        figures: Sequence[Metric] = (),
     ) -> ClaimDraft:
         """Quote up to three sentences sharing the most tokens (at least two) with the claim.
 
         Candidates are sentences of 40 to 400 characters; ties go to the earlier
         passage, then the earlier sentence. Each quote is an exact substring of
-        its passage.
+        its passage. ``figures`` are accepted for the interface and ignored:
+        this engine judges nothing, so it cites no figure.
         """
         wanted = set(tokenize(claim.text))
         candidates: list[tuple[int, int, int, str, str]] = []

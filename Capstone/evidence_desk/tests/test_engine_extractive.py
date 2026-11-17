@@ -168,3 +168,27 @@ def test_summary_of_judged_verdicts_does_not_call_them_unjudged() -> None:
     )
     assert not any("model key" in step for step in summary.next_steps)
     assert summary.next_steps
+
+
+def test_assess_accepts_figures_and_ignores_them() -> None:
+    from app.core.metric_models import Metric
+
+    figure = Metric(
+        id="revenue-q-2026-07-26",
+        key="revenue",
+        label="Revenue",
+        period="quarter",
+        period_end="2026-07-26",
+        period_label="Q2 FY2027",
+        value=46.7e9,
+        unit="USD",
+        display="$46.7 billion",
+    )
+    engine = ExtractiveAnalyst()
+    with_figures = engine.assess(REQUEST, COMPANY, CLAIM, PASSAGES, [figure])
+    assert with_figures == engine.assess(REQUEST, COMPANY, CLAIM, PASSAGES)
+    assert all(finding.metric_ids == [] for finding in with_figures.findings)
+
+
+def test_says_how_it_answers() -> None:
+    assert ExtractiveAnalyst().detail == "deterministic sentence matching, no model"

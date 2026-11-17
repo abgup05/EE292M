@@ -6,13 +6,21 @@ synchronously through :func:`app.services.thesis_run.execute_run`, print each
 claim's verdict with the policy's wording, and write ``<out>/<run-id>.json``
 (the run record) and ``<out>/<run-id>.md`` (the exported brief).
 
+``--engine cassette --cassette DIR`` replays recorded model answers and never
+calls the API. If the run asked for answers the cassette lacks, they are saved
+under ``DIR/pending``, no result file is written and the exit code is 3; answer
+them (``docs/cassettes.md``) and run again. ``python -m app.cli cassette DIR``
+describes a cassette and lists its pending requests.
+
 Exit codes: 0 when the run finished (complete or partial), 1 when it failed or
-EDGAR could not be consulted, 2 when the thesis or the options are invalid.
+EDGAR could not be consulted, 2 when the thesis or the options are invalid, 3
+when model requests are pending in the cassette.
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from collections.abc import Sequence
 from pathlib import Path
@@ -23,7 +31,9 @@ from app import wiring
 from app.core import limits
 from app.core.models import Run, RunStatus, ThesisRequest
 from app.core.policy import STATUS_NOTES, VERDICT_LABELS
-from app.core.ports import FilingSource, PageFetcher, SourceError, UnknownTicker
+from app.core.ports import Analyst, FilingSource, PageFetcher, SourceError, UnknownTicker
+from app.engines.cassette import Cassette, CassetteTransport
+from app.engines.claude import ClaudeAnalyst
 from app.services.examples import EXAMPLE_THESIS
 from app.services.export import render_markdown
 from app.services.thesis_run import execute_run, new_run
@@ -32,6 +42,7 @@ from app.store import Store
 
 DEFAULT_OUT = Path("results")
 NOT_ASSESSED = "Not assessed"
+EXIT_PENDING = 3
 
 
 def coverage_sentence(run: Run) -> str:
@@ -39,7 +50,7 @@ def coverage_sentence(run: Run) -> str:
     c = run.coverage
     return (
         f"Read {c.sources_read} of {c.sources_requested} source(s); "
-        f"{c.claims_with_evidence} of {c.claims_total} claim(s) have verified evidence; "
+        f"{c.claims_with_evidence} of {c.claims_total} claim(s) have verified excerpts or figures; "
         f"{c.findings_verified} finding(s) verified and {c.findings_withheld} withheld; "
         f"{c.excerpts_verified} of {c.quotes_offered} quote(s) verified."
     )
@@ -56,7 +67,13 @@ def _parser() -> argparse.ArgumentParser:
         "--engine",
         choices=wiring.ENGINE_CHOICES,
         default="auto",
-        help="auto: Claude when ANTHROPIC_API_KEY is set, else extractive (default)",
+        help=(
+            "auto: Claude when ANTHROPIC_API_KEY is set, else extractive (default); "
+            "cassette: replay the recorded answers in --cassette DIR"
+        ),
+    )
+    shared.add_argument(
+        "--cassette", type=Path, help="cassette directory replayed by --engine cassette"
     )
     shared.add_argument(
         "--out", type=Path, default=DEFAULT_OUT, help="directory for the record and the brief"
@@ -74,7 +91,50 @@ def _parser() -> argparse.ArgumentParser:
     run.add_argument("--filings", type=int, default=limits.DEFAULT_FILINGS)
     run.add_argument("--scope-notes", default="")
     commands.add_parser("example", parents=[shared], help="test the NVIDIA example thesis")
+    describe = commands.add_parser(
+        "cassette", help="describe a cassette and list its pending requests"
+    )
+    describe.add_argument("directory", type=Path)
     return parser
+
+
+def _analyst(args: argparse.Namespace) -> Analyst:
+    """The engine the options name; a cassette directory goes only with the cassette engine."""
+    if args.cassette is not None and args.engine != "cassette":
+        raise wiring.ConfigurationError("--cassette is used only with --engine cassette")
+    return wiring.analyst_named(args.engine, cassette=args.cassette)
+
+
+def _pending_step(path: Path) -> str:
+    """The step a pending request file names, or a note that it cannot be read."""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except OSError, UnicodeDecodeError, json.JSONDecodeError:
+        return "(unreadable)"
+    step = data.get("step") if isinstance(data, dict) else None
+    return str(step) if step else "(no step)"
+
+
+def _describe_cassette(directory: Path) -> int:
+    """Print what a cassette holds and which requests are pending."""
+    if not directory.is_dir():
+        print(f"no cassette at {directory}", file=sys.stderr)
+        return 2
+    cassette = Cassette(directory)
+    print(cassette.describe())
+    pending = cassette.pending()
+    if not pending:
+        print("No pending requests.")
+        return 0
+    print(f"{len(pending)} pending request(s) in {directory / 'pending'}:")
+    for path in pending:
+        print(f"  {path.stem}  {_pending_step(path)}")
+    return 0
+
+
+def _cassette_of(analyst: Analyst) -> CassetteTransport | None:
+    transport = analyst.transport if isinstance(analyst, ClaudeAnalyst) else None
+    return transport if isinstance(transport, CassetteTransport) else None
 
 
 def _thesis(args: argparse.Namespace) -> ThesisRequest:
@@ -117,9 +177,11 @@ def main(
     ``filings`` and ``store`` default to :mod:`app.wiring`; tests pass fakes.
     """
     args = _parser().parse_args(argv)
+    if args.command == "cassette":
+        return _describe_cassette(args.directory)
     try:
         thesis = _thesis(args)
-        analyst = wiring.analyst_named(args.engine)
+        analyst = _analyst(args)
     except ValidationError as exc:
         for error in exc.errors():
             field = ".".join(str(part) for part in error["loc"]) or "thesis"
@@ -143,8 +205,18 @@ def main(
     store = store or wiring.store_from_env()
     run = new_run(thesis)
     store.save_run(run)
-    print(f"{run.id}: testing {len(thesis.claims)} claim(s) on {thesis.ticker} with {analyst.name}")
+    detail = getattr(analyst, "detail", "")
+    engine = f"{analyst.name} ({detail})" if detail else analyst.name
+    print(f"{run.id}: testing {len(thesis.claims)} claim(s) on {thesis.ticker} with {engine}")
     run = execute_run(run, store, filings=filings, analyst=analyst, fetch_page=fetch_page)
+
+    cassette = _cassette_of(analyst)
+    if cassette is not None and cassette.pending_keys:
+        print(
+            f"{len(cassette.pending_keys)} model request(s) are pending in "
+            f"{cassette.directory / 'pending'}. Answer them (docs/cassettes.md) and run again."
+        )
+        return EXIT_PENDING
 
     args.out.mkdir(parents=True, exist_ok=True)
     (args.out / f"{run.id}.json").write_text(run.model_dump_json(indent=2) + "\n")

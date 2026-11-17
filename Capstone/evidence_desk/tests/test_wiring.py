@@ -8,9 +8,18 @@ from pathlib import Path
 import pytest
 
 from app import wiring
+from app.engines.cassette import CassetteTransport
 from app.engines.claude import ClaudeAnalyst
 from app.engines.extractive import ExtractiveAnalyst
+from app.engines.transport import AnthropicTransport
 from app.sources.edgar import DEFAULT_USER_AGENT, EdgarClient
+
+
+@pytest.fixture(autouse=True)
+def no_cassette(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Each test starts without the cassette variables, whatever the host's .env says."""
+    monkeypatch.delenv("EVIDENCE_DESK_CASSETTE", raising=False)
+    monkeypatch.delenv("EVIDENCE_DESK_CASSETTE_RECORD", raising=False)
 
 
 @pytest.mark.parametrize("key", [None, "", "   "])
@@ -73,3 +82,49 @@ def test_importing_the_entry_points_opens_nothing(
         importlib.reload(importlib.import_module(name))
     assert not (tmp_path / "runs").exists()
     assert not hasattr(importlib.import_module("app.api"), "app")
+
+
+def cassette_of(analyst: object) -> CassetteTransport:
+    assert isinstance(analyst, ClaudeAnalyst)
+    assert isinstance(analyst.transport, CassetteTransport)
+    return analyst.transport
+
+
+@pytest.mark.parametrize("key", [None, "test-key-not-real"])
+def test_a_cassette_replays_without_recording_by_default(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, key: str | None
+) -> None:
+    monkeypatch.setenv("EVIDENCE_DESK_CASSETTE", str(tmp_path / "cassette"))
+    if key is None:
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    else:
+        monkeypatch.setenv("ANTHROPIC_API_KEY", key)
+    transport = cassette_of(wiring.analyst_from_env())
+    assert transport.directory == tmp_path / "cassette"
+    assert transport.live is None
+
+
+def test_a_cassette_records_only_with_a_key_and_the_record_switch(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("EVIDENCE_DESK_CASSETTE", str(tmp_path))
+    monkeypatch.setenv("EVIDENCE_DESK_CASSETTE_RECORD", "1")
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    assert cassette_of(wiring.analyst_from_env()).live is None
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-not-real")
+    monkeypatch.setenv("ANTHROPIC_MODEL", "claude-test-model")
+    live = cassette_of(wiring.analyst_from_env()).live
+    assert isinstance(live, AnthropicTransport) and live.model == "claude-test-model"
+    monkeypatch.setenv("EVIDENCE_DESK_CASSETTE_RECORD", "yes")
+    assert cassette_of(wiring.analyst_from_env()).live is None
+
+
+def test_the_cassette_engine_replays_the_named_directory_only(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-not-real")
+    monkeypatch.setenv("EVIDENCE_DESK_CASSETTE_RECORD", "1")
+    transport = cassette_of(wiring.analyst_named("cassette", cassette=tmp_path))
+    assert transport.directory == tmp_path and transport.live is None
+    with pytest.raises(wiring.ConfigurationError, match="cassette directory"):
+        wiring.analyst_named("cassette")

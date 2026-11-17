@@ -11,8 +11,10 @@ import os
 from pathlib import Path
 
 from app.core.ports import Analyst
+from app.engines.cassette import CassetteTransport
 from app.engines.claude import ClaudeAnalyst
 from app.engines.extractive import ExtractiveAnalyst
+from app.engines.transport import AnthropicTransport
 from app.sources.edgar import EdgarClient
 from app.store import Store
 
@@ -20,7 +22,9 @@ DATA_DIR_VARIABLE = "EVIDENCE_DESK_DATA_DIR"
 DEFAULT_DATA_DIR = "data/runs"
 DATABASE_NAME = "runs.sqlite"
 KEY_VARIABLE = "ANTHROPIC_API_KEY"
-ENGINE_CHOICES = ("auto", "claude", "extractive")
+CASSETTE_VARIABLE = "EVIDENCE_DESK_CASSETTE"
+RECORD_VARIABLE = "EVIDENCE_DESK_CASSETTE_RECORD"
+ENGINE_CHOICES = ("auto", "claude", "extractive", "cassette")
 
 
 class ConfigurationError(RuntimeError):
@@ -32,18 +36,39 @@ def model_key_present() -> bool:
     return bool(os.environ.get(KEY_VARIABLE, "").strip())
 
 
+def cassette_analyst(directory: Path, *, record: bool = False) -> ClaudeAnalyst:
+    """The Claude engine answering from the cassette at ``directory``.
+
+    With ``record`` a request the cassette lacks is sent to the Anthropic API
+    and its answer recorded; without it the request is saved as pending.
+    """
+    live = AnthropicTransport() if record else None
+    return ClaudeAnalyst(transport=CassetteTransport(directory, live=live))
+
+
 def analyst_from_env() -> Analyst:
-    """Claude when ``ANTHROPIC_API_KEY`` is set and non-blank, otherwise the extractive engine."""
+    """The engine the environment configures.
+
+    With ``EVIDENCE_DESK_CASSETTE`` set: the Claude engine over that cassette,
+    recording from the API only when ``ANTHROPIC_API_KEY`` is set and
+    ``EVIDENCE_DESK_CASSETTE_RECORD`` is ``1``. Otherwise Claude when
+    ``ANTHROPIC_API_KEY`` is set and non-blank, else the extractive engine.
+    """
+    cassette = os.environ.get(CASSETTE_VARIABLE, "").strip()
+    if cassette:
+        record = model_key_present() and os.environ.get(RECORD_VARIABLE, "").strip() == "1"
+        return cassette_analyst(Path(cassette), record=record)
     if model_key_present():
         return ClaudeAnalyst()
     return ExtractiveAnalyst()
 
 
-def analyst_named(engine: str) -> Analyst:
-    """The engine called ``engine`` ("auto", "claude" or "extractive").
+def analyst_named(engine: str, cassette: Path | None = None) -> Analyst:
+    """The engine called ``engine`` ("auto", "claude", "extractive" or "cassette").
 
-    Raises :class:`ConfigurationError` for an unknown name, or for "claude"
-    without a key.
+    "cassette" replays the cassette at ``cassette`` and never calls the API.
+    Raises :class:`ConfigurationError` for an unknown name, for "claude"
+    without a key, or for "cassette" without a directory.
     """
     if engine == "auto":
         return analyst_from_env()
@@ -53,6 +78,10 @@ def analyst_named(engine: str) -> Analyst:
         if not model_key_present():
             raise ConfigurationError(f"The claude engine needs {KEY_VARIABLE} to be set")
         return ClaudeAnalyst()
+    if engine == "cassette":
+        if cassette is None:
+            raise ConfigurationError("The cassette engine needs a cassette directory (--cassette)")
+        return cassette_analyst(cassette)
     raise ConfigurationError(
         f"unknown engine {engine!r}; choose one of {', '.join(ENGINE_CHOICES)}"
     )

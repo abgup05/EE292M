@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -88,7 +89,7 @@ def test_coverage_sentence_counts_what_the_backend_counted(tmp_path: Path) -> No
     run_cli(argv, tmp_path, FakeFilings.synthetic(filing_html(SENTENCE)))
     run = written(out)
     assert cli.coverage_sentence(run) == (
-        "Read 1 of 1 source(s); 1 of 1 claim(s) have verified evidence; "
+        "Read 1 of 1 source(s); 1 of 1 claim(s) have verified excerpts or figures; "
         "1 finding(s) verified and 0 withheld; 1 of 1 quote(s) verified."
     )
 
@@ -129,3 +130,148 @@ def test_the_claude_engine_needs_a_key(
     code, _ = run_cli(["example", "--engine", "claude"], tmp_path, FakeFilings.nvidia())
     assert code == 2
     assert "ANTHROPIC_API_KEY" in capsys.readouterr().err
+
+
+# Replaying a cassette
+
+
+def cassette_argv(cassette: Path, out: Path) -> list[str]:
+    return [
+        "run",
+        "--ticker",
+        "NVDA",
+        "--decision",
+        DECISION,
+        "--claim",
+        CLAIM,
+        "--filings",
+        "1",
+        "--engine",
+        "cassette",
+        "--cassette",
+        str(cassette),
+        "--out",
+        str(out),
+    ]
+
+
+def answer(pending: dict) -> dict:
+    """Answer one pending request as a model would, from what the request itself contains."""
+    if pending["step"] == "plan":
+        return {
+            "claims": [{"claim_number": 1, "queries": ["Data Center revenue", "revenue decline"]}]
+        }
+    if pending["step"] == "assess":
+        ids = re.findall(r'<passage id="([^"]+)"[^>]*>([^<]*)</passage>', pending["user"])
+        [passage_id] = [pid for pid, text in ids if SENTENCE in text]
+        return {
+            "findings": [
+                {
+                    "statement": "Data Center revenue grew 56% from a year ago.",
+                    "stance": "supports",
+                    "confidence": "high",
+                    "rationale": "The filing reports year-over-year growth.",
+                    "quotes": [{"passage_id": passage_id, "text": SENTENCE}],
+                    "figure_ids": [],
+                }
+            ],
+            "rationale": "The MD&A reports growth.",
+            "unknowns": [],
+        }
+    return {"summary": "Data Center growth supports keeping the position.", "next_steps": []}
+
+
+def answer_all(cassette: Path) -> int:
+    pending = sorted((cassette / "pending").glob("*.json"))
+    for path in pending:
+        request = json.loads(path.read_text())
+        envelope = {
+            "key": request["key"],
+            "step": request["step"],
+            "via": "a scripted test answerer",
+            "model": "scripted",
+            "recorded_at": "2026-11-17T12:00:00+00:00",
+            "response": answer(request),
+        }
+        target = cassette / "responses" / f"{request['key']}.json"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(json.dumps(envelope))
+    return len(pending)
+
+
+def test_pending_requests_exit_3_and_write_no_results(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    cassette, out = tmp_path / "cassette", tmp_path / "results"
+    code, _ = run_cli(
+        cassette_argv(cassette, out), tmp_path, FakeFilings.synthetic(filing_html(SENTENCE))
+    )
+    assert code == 3
+    assert not out.exists()
+    assert (
+        f"1 model request(s) are pending in {cassette / 'pending'}. "
+        "Answer them (docs/cassettes.md) and run again."
+    ) in capsys.readouterr().out
+    [pending] = (cassette / "pending").glob("*.json")
+    assert json.loads(pending.read_text())["step"] == "plan"
+
+
+def test_answering_the_pending_requests_takes_three_rounds_then_replays(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    cassette, out = tmp_path / "cassette", tmp_path / "results"
+    filings = FakeFilings.synthetic(filing_html(SENTENCE))
+    answered: list[int] = []
+    for _ in range(5):
+        code, _ = run_cli(cassette_argv(cassette, out), tmp_path, filings)
+        if code != 3:
+            break
+        answered.append(answer_all(cassette))
+    assert code == 0 and answered == [1, 1, 1]
+    run = written(out)
+    assert run.engine == "claude"
+    assert not any("engine failed" in error for error in run.errors)
+    [claim] = run.claims
+    assert claim.verdict is not None and VERDICT_LABELS[claim.verdict] == "Supported"
+    assert run.brief is not None
+    assert run.brief.summary == "Data Center growth supports keeping the position."
+
+    capsys.readouterr()
+    assert cli.main(["cassette", str(cassette)]) == 0
+    printed = capsys.readouterr().out
+    assert "replayed from cassette cassette: 3 responses recorded via a scripted test" in printed
+    assert "No pending requests." in printed
+
+
+def test_the_cassette_command_lists_pending_keys_with_their_step(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    cassette = tmp_path / "cassette"
+    run_cli(
+        cassette_argv(cassette, tmp_path / "results"),
+        tmp_path,
+        FakeFilings.synthetic(filing_html(SENTENCE)),
+    )
+    [pending] = (cassette / "pending").glob("*.json")
+    capsys.readouterr()
+    assert cli.main(["cassette", str(cassette)]) == 0
+    printed = capsys.readouterr().out
+    assert "replayed from cassette cassette: no responses recorded" in printed
+    assert f"{pending.stem}  plan" in printed
+    assert cli.main(["cassette", str(tmp_path / "missing")]) == 2
+
+
+@pytest.mark.parametrize(
+    ("extra", "message"),
+    [
+        (["--engine", "cassette"], "--cassette"),
+        (["--engine", "extractive", "--cassette", "somewhere"], "--engine cassette"),
+    ],
+)
+def test_the_cassette_options_go_together(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], extra: list[str], message: str
+) -> None:
+    code, store = run_cli(["example", *extra], tmp_path, FakeFilings.nvidia())
+    assert code == 2
+    assert message in capsys.readouterr().err
+    assert store.list_runs() == []

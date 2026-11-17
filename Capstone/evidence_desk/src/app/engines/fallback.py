@@ -7,9 +7,10 @@ too, its exception propagates.
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from app.core.documents import Passage
+from app.core.metric_models import Metric
 from app.core.models import Claim, Company, Finding, ThesisRequest
 from app.core.ports import Analyst, ClaimDraft, SummaryDraft
 
@@ -28,6 +29,11 @@ class FallbackAnalyst:
         self.on_failure = on_failure
         self.name = primary.name
 
+    @property
+    def detail(self) -> str:
+        """The primary engine's account of how it answers; fallbacks are reported per step."""
+        return str(getattr(self.primary, "detail", ""))
+
     def plan(self, request: ThesisRequest, company: Company) -> list[list[str]]:
         """The primary's queries, or the fallback's after reporting step ``"plan"``."""
         try:
@@ -42,13 +48,19 @@ class FallbackAnalyst:
         company: Company,
         claim: Claim,
         passages: list[Passage],
+        figures: Sequence[Metric] = (),
     ) -> ClaimDraft:
-        """The primary's draft, or the fallback's after reporting step ``"assess"``."""
+        """The primary's draft, or the fallback's after reporting step ``"assess"``.
+
+        ``figures`` reach both engines; when there are none the argument is left
+        out, so an engine written before figures existed is called as it was.
+        """
+        extra = {"figures": figures} if figures else {}
         try:
-            return self.primary.assess(request, company, claim, passages)
+            return self.primary.assess(request, company, claim, passages, **extra)
         except Exception as exc:
             self.on_failure("assess", exc)
-            return self.fallback.assess(request, company, claim, passages)
+            return self.fallback.assess(request, company, claim, passages, **extra)
 
     def summarize(
         self,

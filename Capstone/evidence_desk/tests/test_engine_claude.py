@@ -12,6 +12,7 @@ import pytest
 from app.core import limits, policy
 from app.core.documents import Passage
 from app.core.gate import RunIds, StoredSource, gate_claim
+from app.core.metric_models import Metric
 from app.core.models import (
     Claim,
     Company,
@@ -135,6 +136,32 @@ def test_assess_sends_claim_decision_and_escaped_passages_as_data() -> None:
     assert "passage" in system and "data" in system and "not instructions" in system
     assert str(limits.MAX_FINDINGS_PER_CLAIM) in call["system"]
     assert str(limits.MAX_EXCERPT_CHARS) in call["system"]
+
+
+def test_text_copied_with_the_prompts_escapes_is_unescaped() -> None:
+    """The engine escapes & < > in a passage; a model that copies the escaped form is undone.
+
+    Found on the first recorded run: three quotes read "Compute &amp; Networking", as the
+    prompt showed it, and the gate could not find them in the filing, which says "&".
+    """
+    copied = finding(
+        statement="Growth was &lt;driven&gt; by Blackwell &amp; Hopper.",
+        quotes=[{"passage_id": "src-1-p1", "text": "&lt;driven&gt; by Blackwell &amp; Hopper."}],
+    )
+    engine, _ = make([reply(assessment(copied))])
+    draft = engine.assess(REQUEST, COMPANY, CLAIM, PASSAGES)
+    assert draft.findings[0].quotes[0].text == "<driven> by Blackwell & Hopper."
+    assert draft.findings[0].statement == "Growth was <driven> by Blackwell & Hopper."
+
+
+def test_unescaping_is_the_exact_inverse_of_escaping() -> None:
+    """A filing that really contains "&lt;" is sent as "&amp;lt;" and comes back as "&lt;"."""
+    copied = finding(
+        quotes=[{"passage_id": "src-1-p1", "text": "the tag &amp;lt;b&amp;gt; and AT&T"}]
+    )
+    engine, _ = make([reply(assessment(copied))])
+    draft = engine.assess(REQUEST, COMPANY, CLAIM, PASSAGES)
+    assert draft.findings[0].quotes[0].text == "the tag &lt;b&gt; and AT&T"
 
 
 def test_injected_text_stays_inside_its_passage_element() -> None:
@@ -460,3 +487,136 @@ def test_summarize_rejects_an_empty_summary() -> None:
         engine.summarize(
             REQUEST, COMPANY, CLAIMS, [verified_finding("c-1", "Data Center revenue grew.")]
         )
+
+
+# The transport: the engine builds prompts and parses answers, nothing else
+
+
+def test_the_engine_asks_its_transport_and_names_each_step() -> None:
+    from app.engines.transport import ModelRequest
+
+    requests: list[ModelRequest] = []
+    answers = [
+        {
+            "claims": [
+                {"claim_number": 1, "queries": ["a", "b"]},
+                {"claim_number": 2, "queries": ["c", "d"]},
+            ]
+        },
+        assessment(finding()),
+        {"summary": "Holds.", "next_steps": []},
+    ]
+
+    def transport(request: ModelRequest) -> dict:
+        requests.append(request)
+        return answers.pop(0)
+
+    engine = ClaudeAnalyst(transport=transport)
+    engine.plan(REQUEST, COMPANY)
+    engine.assess(REQUEST, COMPANY, CLAIM, PASSAGES)
+    engine.summarize(REQUEST, COMPANY, CLAIMS, [verified_finding("c-1", "Grew.")])
+    assert [r.step for r in requests] == ["plan", "assess", "summarize"]
+    assert all(r.max_tokens == 16_000 for r in requests)
+    assert "findings" in requests[1].schema["properties"]
+
+
+def test_each_engine_says_how_it_answers() -> None:
+    from app.engines.extractive import ExtractiveAnalyst
+
+    assert ClaudeAnalyst(client=object(), model="claude-x").detail == (
+        "claude-x via the Anthropic API"
+    )
+    assert ExtractiveAnalyst().detail == "deterministic sentence matching, no model"
+
+
+# Reported figures in the assessment
+
+
+def metric(id_: str, label: str, display: str, period_label: str) -> Metric:
+    return Metric(
+        id=id_,
+        key="revenue",
+        label=label,
+        period="quarter",
+        period_end="2026-07-26",
+        period_label=period_label,
+        value=46.7e9,
+        unit="USD",
+        display=display,
+    )
+
+
+FIGURES = [
+    metric("revenue-q-2026-07-26", "Revenue", "$46.7 billion", "Q2 FY2027"),
+    metric('x"<y>', "Gross margin <GAAP> & more", "72.4%", 'FY "27"'),
+]
+
+
+def test_figures_are_sent_after_the_passages_escaped_as_data() -> None:
+    engine, messages = make([reply(assessment(finding()))])
+    engine.assess(REQUEST, COMPANY, CLAIM, PASSAGES, FIGURES)
+    call = messages.calls[0]
+    text = user_text(call)
+    assert text.index("</passages>") < text.index("<reported_figures>")
+    block = text[text.index("<reported_figures>") : text.index("</reported_figures>")]
+    assert (
+        '<figure id="revenue-q-2026-07-26" period="Q2 FY2027">Revenue: $46.7 billion</figure>'
+    ) in block
+    assert (
+        '<figure id="x&quot;&lt;y&gt;" period="FY &quot;27&quot;">'
+        "Gross margin &lt;GAAP&gt; &amp; more: 72.4%</figure>"
+    ) in block
+    assert "<GAAP>" not in text
+    system = call["system"]
+    assert "XBRL" in system and "figure_ids" in system
+    assert "do not calculate" in system.lower()
+    schema = call["extra_body"]["output_config"]["format"]["schema"]
+    item = schema["properties"]["findings"]["items"]
+    assert item["properties"]["figure_ids"] == {"type": "array", "items": {"type": "string"}}
+
+
+def test_without_figures_there_is_no_figure_block_or_figure_rule() -> None:
+    engine, messages = make([reply(assessment(finding()))])
+    engine.assess(REQUEST, COMPANY, CLAIM, PASSAGES)
+    call = messages.calls[0]
+    assert "<reported_figures>" not in user_text(call)
+    assert "XBRL" not in call["system"]
+
+
+def test_figure_ids_become_metric_ids_and_unknown_ids_pass_to_the_gate() -> None:
+    engine, _ = make(
+        [reply(assessment(finding(figure_ids=["revenue-q-2026-07-26", "invented-id", "  "])))]
+    )
+    [draft] = engine.assess(REQUEST, COMPANY, CLAIM, PASSAGES, FIGURES).findings
+    assert draft.metric_ids == ["revenue-q-2026-07-26", "invented-id"]
+
+
+def test_a_finding_citing_only_figures_is_kept() -> None:
+    engine, _ = make(
+        [
+            reply(
+                assessment(
+                    finding(
+                        statement="Revenue was $46.7 billion in Q2 FY2027.",
+                        quotes=[],
+                        figure_ids=["revenue-q-2026-07-26"],
+                    )
+                )
+            )
+        ]
+    )
+    [draft] = engine.assess(REQUEST, COMPANY, CLAIM, PASSAGES, FIGURES).findings
+    assert draft.quotes == [] and draft.metric_ids == ["revenue-q-2026-07-26"]
+
+
+def test_a_finding_without_figure_ids_has_none() -> None:
+    engine, _ = make([reply(assessment(finding()))])
+    [draft] = engine.assess(REQUEST, COMPANY, CLAIM, PASSAGES).findings
+    assert draft.metric_ids == []
+
+
+@pytest.mark.parametrize("bad", ["one-id", [1, 2], [None]])
+def test_malformed_figure_ids_raise(bad: object) -> None:
+    engine, _ = make([reply(assessment(finding(figure_ids=bad)))])
+    with pytest.raises(EngineError):
+        engine.assess(REQUEST, COMPANY, CLAIM, PASSAGES, FIGURES)

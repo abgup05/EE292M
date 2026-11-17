@@ -14,9 +14,10 @@
     <div class="masthead-inner">
       <div class="brand">
         <h1>Evidence Desk</h1>
-        <span id="sample-tag" class="sample-tag" hidden>Sample record</span>
+        <span id="sample-tag" class="page-tag" hidden>Sample record</span>
       </div>
-      <p class="lede">Test each claim in your thesis against the company's own SEC filings. Every verdict opens to the exact passage.</p>
+      <p class="lede">Test each claim in your thesis against the company's own SEC filings.
+        <span class="lede-more">Every quote is checked word for word against the stored filing. Whether a quote supports or challenges a claim is the engine's reading of it, which a number check and you then test.</span></p>
       <p id="engine-line" class="engine-line"></p>
     </div>
   </header>
@@ -75,8 +76,10 @@
 
         <div class="actions">
           <button type="submit" id="submit" class="primary">Test the thesis</button>
+          <button type="button" id="figures-only" class="secondary">Reported figures only</button>
           <button type="button" id="load-example" class="secondary">Load example</button>
         </div>
+        <p class="hint actions-hint">"Reported figures only" needs just the ticker: it shows the company's reported numbers without starting a run.</p>
         <p id="form-note" class="hint form-note" hidden></p>
       </form>
 
@@ -91,14 +94,26 @@
         <p class="empty-lead">How a run works</p>
         <ol class="how">
           <li>Enter a ticker, the decision you face, and the claims your thesis rests on.</li>
-          <li>The backend reads the company's latest annual report (10-K) and the quarterly reports (10-Q) filed after it, and finds the passages that bear on each claim.</li>
-          <li>Each claim gets a verdict computed from quotes that were checked word for word against the filing. Open any verdict to read the passage in place.</li>
+          <li>The backend reads the company's latest annual report (10-K), the quarterly reports (10-Q) filed after it, and the figures the company reported in machine-readable form (XBRL). It finds the passages that bear on each claim.</li>
+          <li>An engine reads those passages and proposes findings, each citing quotes or reported figures. Every quote is checked word for word against the stored filing, and every number in a finding is matched against its quotes and figures. A finding that fails a check is withheld.</li>
+          <li>Each claim's verdict follows by a fixed rule from the findings that passed. Whether a quote supports or challenges the claim is the engine's reading of it, not something the checks prove: open the claim and read the quote in place before you rely on it.</li>
         </ol>
-        <p><a id="sample-link" href="?sample">See a sample record</a></p>
+        <p class="sample-links">
+          <a id="sample-link" href="?sample">See a sample record</a>
+          <a id="synthetic-link" href="?sample=synthetic">See an illustrative record with every kind of mark</a>
+        </p>
       </div>
 
       <p id="loading" class="loading" hidden></p>
       <div id="load-error" class="alert" role="alert" hidden></div>
+
+      <div id="figures-view" hidden>
+        <div id="figures-head" class="run-head"></div>
+        <section class="block" aria-labelledby="figures-only-title">
+          <h3 id="figures-only-title" class="block-title">Reported figures</h3>
+          <div id="figures-standalone"></div>
+        </section>
+      </div>
 
       <div id="run-view" hidden>
         <div id="status-banner" class="banner" role="status" aria-live="polite"></div>
@@ -111,23 +126,49 @@
         <section class="block" aria-labelledby="scorecard-title">
           <h3 id="scorecard-title" class="block-title">Verdicts by claim</h3>
           <ol id="scorecard" class="scorecard"></ol>
+          <p class="distinction">Each verdict follows by a fixed rule from the findings that passed their checks. <strong>Checked:</strong> every quote was found word for word in the stored filing, and numbers were matched to quotes and reported figures. <strong>Not checked:</strong> whether a quote supports or challenges the claim is the engine's reading of it. Read the quotes before you rely on a verdict.</p>
+
+          <details id="legend" class="legend" open>
+            <summary>How to read this page</summary>
+            <dl class="legend-list">
+              <div><dt><span class="pill verdict v-supported"><span class="glyph" aria-hidden="true">✓</span><span>Supported</span></span></dt><dd>Verified findings support the claim and none challenge it. On a finding, the same mark means it supports the claim.</dd></div>
+              <div><dt><span class="pill verdict v-challenged"><span class="glyph" aria-hidden="true">✕</span><span>Challenged</span></span></dt><dd>Verified findings challenge the claim and none support it. On a finding: it challenges the claim.</dd></div>
+              <div><dt><span class="pill verdict v-mixed"><span class="glyph" aria-hidden="true">±</span><span>Mixed</span></span></dt><dd>Verified findings point both ways.</dd></div>
+              <div><dt><span class="pill verdict v-unjudged"><span class="glyph" aria-hidden="true">?</span><span>Not judged</span></span></dt><dd>Passages were quoted but no engine judged them. A dashed border always means not judged or provisional.</dd></div>
+              <div><dt><span class="pill verdict v-not_addressed"><span class="glyph" aria-hidden="true">∅</span><span>Not addressed</span></span></dt><dd>No verified quote or figure bears on the claim.</dd></div>
+              <div><dt><span class="pill stance s-context"><span class="glyph" aria-hidden="true">•</span><span>Context</span></span></dt><dd>A finding that informs the claim without taking a side.</dd></div>
+              <div><dt><span class="mark-limit"><span class="glyph g-limit" aria-hidden="true">▲</span> Limit</span></dt><dd>Something limits this record: a partial or failed run, a coverage limit, an error, a source not read, a failed check.</dd></div>
+              <div><dt><span class="badge-model legend-badge"><span class="glyph g-model" aria-hidden="true">✎</span> Model-written</span></dt><dd>Written by a language model and not checked for meaning.</dd></div>
+              <div><dt><span class="mark-reject"><span class="glyph g-reject" aria-hidden="true">!</span> Rejected</span></dt><dd>Your input was rejected; the message says how to fix it.</dd></div>
+              <div><dt><span class="page-tag">Sample record</span></dt><dd>A grey tag is a label about the page itself.</dd></div>
+              <div><dt><mark class="legend-mark">highlighted</mark></dt><dd>A quote found word for word in the filing, shown in its surrounding text.</dd></div>
+              <div><dt><span class="legend-link">blue text</span></dt><dd>Something you can click.</dd></div>
+            </dl>
+          </details>
         </section>
 
         <section id="summary-section" class="block" aria-labelledby="summary-title" hidden>
           <h3 id="summary-title" class="block-title">Summary</h3>
-          <p id="summary-origin" class="origin"></p>
-          <p id="summary" class="summary"></p>
+          <div id="summary-box" data-mw="summary">
+            <p id="summary-origin" class="origin"></p>
+            <p id="summary" class="summary"></p>
+          </div>
+        </section>
+
+        <section id="figures-section" class="block" aria-labelledby="figures-title" hidden>
+          <h3 id="figures-title" class="block-title">Reported figures</h3>
+          <div id="figures"></div>
         </section>
 
         <section class="block" aria-labelledby="claims-title">
           <h3 id="claims-title" class="block-title">Claims and their evidence</h3>
-          <p class="hint">Open a claim to read each finding and the exact passage it rests on.</p>
+          <p class="hint">Open a claim to read each finding, its checks, and the exact passage or figure it rests on.</p>
           <div id="claim-list"></div>
         </section>
 
         <section id="withheld-section" class="block withheld" aria-labelledby="withheld-title" hidden>
-          <h3 id="withheld-title" class="block-title">Withheld: no verified quote</h3>
-          <p class="hint">The engine proposed these findings, but none of their quotes was found in the filing text. They count toward no verdict.</p>
+          <h3 id="withheld-title" class="block-title"><span class="glyph g-limit" aria-hidden="true">▲</span> Withheld findings</h3>
+          <p class="hint">The engine proposed these findings, but each failed a check. They count toward no verdict.</p>
           <ul id="withheld" class="withheld-list"></ul>
         </section>
 
@@ -165,12 +206,13 @@
 
         <section id="coverage-limits" class="block" aria-labelledby="limits-title" tabindex="-1">
           <h3 id="limits-title" class="block-title">Coverage limits</h3>
-          <ul id="limits" class="plain-list limit-list"></ul>
+          <ul id="limits" class="mark-list"></ul>
         </section>
 
         <section class="block" aria-labelledby="errors-title">
           <h3 id="errors-title" class="block-title">Errors</h3>
-          <ul id="errors" class="plain-list limit-list"></ul>
+          <ul id="errors" class="mark-list"></ul>
+          <div id="errors-more"></div>
         </section>
 
         <p id="provenance" class="provenance"></p>
@@ -184,10 +226,12 @@
       <dl>
         <dt>10-K</dt><dd>The annual report a US public company files with the Securities and Exchange Commission (SEC).</dd>
         <dt>10-Q</dt><dd>The quarterly report, filed for each of the other three quarters.</dd>
+        <dt>XBRL</dt><dd>The machine-readable tags in a filing that state each reported number, its period and its unit. Reported figures on this page are read from them.</dd>
         <dt>Item</dt><dd>A numbered section of a filing, such as Item 1A, Risk Factors, or Item 7, Management's Discussion and Analysis (MD&amp;A).</dd>
         <dt>Period end</dt><dd>The last day of the quarter or fiscal year the filing reports on. Fiscal years need not match calendar years.</dd>
         <dt>Filed</dt><dd>The date the company submitted the filing to the SEC. "Retrieved" is when this run downloaded it, in UTC.</dd>
         <dt>Accession number</dt><dd>The SEC's identifier for one filing; hover over a form to see it.</dd>
+        <dt>Derived, restated</dt><dd>A derived value was worked out from reported ones (for example a fourth quarter as the year less nine months). A restated value was reported differently by a later filing.</dd>
         <dt>CIK</dt><dd>The SEC's numeric identifier for a company.</dd>
         <dt>EDGAR</dt><dd>The SEC's public filing system, where the filings linked on this page are published.</dd>
       </dl>

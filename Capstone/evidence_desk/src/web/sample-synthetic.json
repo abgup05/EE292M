@@ -1,0 +1,929 @@
+{
+  "note": "An illustrative record for a fictional company, Example Corp (EXMP). Every quote, figure and filing in it is invented so the page can show each kind of verdict, check and mark at once; it is not a real run and says nothing about any real company.",
+  "meta": {
+    "limits": {
+      "CONTEXT_CHARS": 240,
+      "DEFAULT_FILINGS": 3,
+      "MAX_CLAIMS": 6,
+      "MAX_CLAIM_CHARS": 400,
+      "MAX_DECISION_CHARS": 500,
+      "MAX_EXCERPT_CHARS": 600,
+      "MAX_EXTRA_URLS": 5,
+      "MAX_FILINGS": 5,
+      "MAX_FINDINGS_PER_CLAIM": 4,
+      "MAX_PASSAGES_PER_SOURCE": 5,
+      "MAX_QUERIES_PER_CLAIM": 4,
+      "MAX_SCOPE_CHARS": 2000,
+      "MIN_CLAIMS": 1,
+      "MIN_CLAIM_CHARS": 15,
+      "MIN_DECISION_CHARS": 10,
+      "MIN_EXCERPT_CHARS": 20,
+      "PASSAGES_PER_CLAIM": 8,
+      "PASSAGE_MAX_CHARS": 1800,
+      "PASSAGE_TARGET_CHARS": 1100,
+      "RUN_TIME_LIMIT_SECONDS": 300.0
+    },
+    "status_notes": {
+      "running": "The run is in progress.",
+      "complete": "Every claim has verified evidence from the sources requested, and nothing was withheld.",
+      "partial": "Part of the thesis could not be assessed with verified evidence. The reasons are listed under coverage limits.",
+      "failed": "No source could be read, so there is no brief."
+    },
+    "verdict_labels": {
+      "supported": "Supported",
+      "challenged": "Challenged",
+      "mixed": "Mixed evidence",
+      "unjudged": "Passages found, not judged",
+      "not_addressed": "Not addressed"
+    },
+    "verdict_notes": {
+      "supported": "Verified excerpts support the claim and none challenge it.",
+      "challenged": "Verified excerpts challenge the claim and none support it.",
+      "mixed": "Verified excerpts point both ways.",
+      "unjudged": "Relevant passages were found and quoted, but no engine judged whether they support or challenge the claim.",
+      "not_addressed": "No verified excerpt in the passages retrieved bears on the claim."
+    },
+    "provenance_note": "Evidence comes from the company's own filings with the SEC. It shows what the company reported, not whether an outside party agrees.",
+    "engine": "claude",
+    "example": {
+      "ticker": "EXMP",
+      "decision": "Whether to add to a position in Example Corp before its next quarterly report",
+      "claims": [
+        "Revenue is growing year over year.",
+        "Gross margin is expanding.",
+        "A few large customers account for a large share of revenue.",
+        "The company depends on a single contract manufacturer.",
+        "Export controls are restricting sales to China."
+      ],
+      "scope_notes": "",
+      "filings": 2,
+      "extra_urls": []
+    }
+  },
+  "run": {
+    "id": "run-example0001",
+    "inputs": {
+      "ticker": "EXMP",
+      "decision": "Whether to add to a position in Example Corp before its next quarterly report",
+      "claims": [
+        "Revenue is growing year over year.",
+        "Gross margin is expanding.",
+        "A few large customers account for a large share of revenue.",
+        "The company depends on a single contract manufacturer.",
+        "Export controls are restricting sales to China."
+      ],
+      "scope_notes": "",
+      "filings": 2,
+      "extra_urls": [
+        "https://example.com/investors/update-2026-07"
+      ]
+    },
+    "status": "partial",
+    "stage": "done",
+    "stage_detail": "",
+    "started_at": "2026-11-17T09:00:00Z",
+    "finished_at": "2026-11-17T09:01:12Z",
+    "company": {
+      "cik": 9999999,
+      "ticker": "EXMP",
+      "name": "EXAMPLE CORP (fictional)"
+    },
+    "engine": "claude",
+    "engine_detail": "language model claude-sonnet-4-5, with the deterministic engine as fallback for any step the model fails",
+    "claims": [
+      {
+        "id": "c1",
+        "text": "Revenue is growing year over year.",
+        "queries": [
+          "revenue increase from a year earlier",
+          "revenue growth fiscal year"
+        ],
+        "verdict": "supported",
+        "rationale": "Both the latest 10-Q and the 10-K report revenue above the year-earlier period, and the reported figures agree with the quoted growth rates.",
+        "finding_ids": [
+          "f1",
+          "f2"
+        ],
+        "passages_considered": 8,
+        "assessed_by": "claude"
+      },
+      {
+        "id": "c2",
+        "text": "Gross margin is expanding.",
+        "queries": [
+          "gross margin compared with prior year",
+          "component costs margin"
+        ],
+        "verdict": "challenged",
+        "rationale": "The latest quarter's gross margin is below the year-earlier quarter; management expects cost pressure to continue.",
+        "finding_ids": [
+          "f3",
+          "f4"
+        ],
+        "passages_considered": 8,
+        "assessed_by": "claude"
+      },
+      {
+        "id": "c3",
+        "text": "A few large customers account for a large share of revenue.",
+        "queries": [
+          "largest customers share of revenue",
+          "customer concentration"
+        ],
+        "verdict": "mixed",
+        "rationale": "The 10-K reports two customers at 31% of annual revenue, while the latest 10-Q says no single customer passed 10% in the quarter.",
+        "finding_ids": [
+          "f5",
+          "f6"
+        ],
+        "passages_considered": 7,
+        "assessed_by": "claude"
+      },
+      {
+        "id": "c4",
+        "text": "The company depends on a single contract manufacturer.",
+        "queries": [
+          "company depends single contract manufacturer"
+        ],
+        "verdict": "unjudged",
+        "rationale": "1 sentence(s) quoted because they share the most terms with the claim; no stance was judged.",
+        "finding_ids": [
+          "f7"
+        ],
+        "passages_considered": 8,
+        "assessed_by": "extractive"
+      },
+      {
+        "id": "c5",
+        "text": "Export controls are restricting sales to China.",
+        "queries": [
+          "export controls China sales",
+          "export licensing requirements"
+        ],
+        "verdict": "not_addressed",
+        "rationale": "No retrieved passage ties export controls to lower sales. Two proposed findings were withheld: one misstated its number, and one cited nothing.",
+        "finding_ids": [],
+        "passages_considered": 6,
+        "assessed_by": "claude"
+      }
+    ],
+    "sources": [
+      {
+        "id": "s1",
+        "kind": "sec_filing",
+        "title": "EXAMPLE CORP 10-Q, period ended 2026-06-28",
+        "publisher": "SEC EDGAR",
+        "url": "https://example.com/edgar/exmp-20260628-10q.htm",
+        "requested_url": "https://example.com/edgar/exmp-20260628-10q.htm",
+        "form": "10-Q",
+        "accession": "0009999999-26-000041",
+        "period_end": "2026-06-28",
+        "published_date": "2026-08-05",
+        "retrieved_at": "2026-11-17T09:00:04Z",
+        "content_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+        "extraction_status": "extracted",
+        "sections": 61,
+        "characters": 128410,
+        "error": null
+      },
+      {
+        "id": "s2",
+        "kind": "sec_filing",
+        "title": "EXAMPLE CORP 10-K, period ended 2025-12-28",
+        "publisher": "SEC EDGAR",
+        "url": "https://example.com/edgar/exmp-20251228-10k.htm",
+        "requested_url": "https://example.com/edgar/exmp-20251228-10k.htm",
+        "form": "10-K",
+        "accession": "0009999999-26-000012",
+        "period_end": "2025-12-28",
+        "published_date": "2026-02-20",
+        "retrieved_at": "2026-11-17T09:00:06Z",
+        "content_hash": "2222222222222222222222222222222222222222222222222222222222222222",
+        "extraction_status": "extracted",
+        "sections": 142,
+        "characters": 301877,
+        "error": null
+      },
+      {
+        "id": "s3",
+        "kind": "sec_xbrl",
+        "title": "EXAMPLE CORP company facts (XBRL)",
+        "publisher": "SEC EDGAR XBRL API",
+        "url": "https://example.com/edgar/companyfacts-CIK0009999999.json",
+        "requested_url": "https://example.com/edgar/companyfacts-CIK0009999999.json",
+        "form": null,
+        "accession": null,
+        "period_end": null,
+        "published_date": null,
+        "retrieved_at": "2026-11-17T09:00:07Z",
+        "content_hash": "3333333333333333333333333333333333333333333333333333333333333333",
+        "extraction_status": "extracted",
+        "sections": 0,
+        "characters": 182340,
+        "error": null
+      },
+      {
+        "id": "s4",
+        "kind": "public_html",
+        "title": "Example Corp investor update",
+        "publisher": "example.com",
+        "url": "https://example.com/investors/update-2026-07",
+        "requested_url": "https://example.com/investors/update-2026-07",
+        "form": null,
+        "accession": null,
+        "period_end": null,
+        "published_date": null,
+        "retrieved_at": "2026-11-17T09:00:08Z",
+        "content_hash": "",
+        "extraction_status": "failed",
+        "sections": 0,
+        "characters": 0,
+        "error": "HTTP 404 Not Found"
+      }
+    ],
+    "evidence": [
+      {
+        "id": "e1",
+        "source_id": "s1",
+        "finding_id": "f1",
+        "excerpt": "Revenue for the second quarter of fiscal 2026 was $2.74 billion, up 18.6% from $2.31 billion a year earlier.",
+        "locator": "Part I, Item 2. Management's Discussion and Analysis › Second Quarter Summary",
+        "start": 40210,
+        "context_before": "The following summary should be read with the condensed financial statements.\n",
+        "context_after": " Growth came mainly from the Systems segment, where unit shipments rose in every region.",
+        "link": "https://example.com/edgar/exmp-20260628-10q.htm#:~:text=Revenue%20for%20the%20second%20quarter"
+      },
+      {
+        "id": "e2",
+        "source_id": "s2",
+        "finding_id": "f1",
+        "excerpt": "Revenue for fiscal 2025 was $9.52 billion, an increase of 14.5% from fiscal 2024.",
+        "locator": "Item 7. Management's Discussion and Analysis › Results of Operations",
+        "start": 118344,
+        "context_before": "Fiscal 2025 was a 52-week year.\n",
+        "context_after": " The increase reflected higher Systems volume, partly offset by lower Services pricing.",
+        "link": "https://example.com/edgar/exmp-20251228-10k.htm#:~:text=Revenue%20for%20fiscal%202025"
+      },
+      {
+        "id": "e3",
+        "source_id": "s1",
+        "finding_id": "f3",
+        "excerpt": "Gross margin was 61.0% for the quarter, compared with 63.4% in the second quarter of fiscal 2025, reflecting higher component costs.",
+        "locator": "Part I, Item 2. Management's Discussion and Analysis › Gross Margin",
+        "start": 42876,
+        "context_before": "Cost of revenue rose faster than revenue.\n",
+        "context_after": " Freight costs were approximately flat.",
+        "link": "https://example.com/edgar/exmp-20260628-10q.htm#:~:text=Gross%20margin%20was%2061.0%25"
+      },
+      {
+        "id": "e4",
+        "source_id": "s2",
+        "finding_id": "f4",
+        "excerpt": "We expect component costs to remain elevated through the first half of fiscal 2026.",
+        "locator": "Item 1A. Risk Factors › Risks Related to Supply",
+        "start": 61502,
+        "context_before": "Prices for memory and power components rose during the year. ",
+        "context_after": " We may not be able to pass these costs on to customers.",
+        "link": "https://example.com/edgar/exmp-20251228-10k.htm#:~:text=We%20expect%20component%20costs"
+      },
+      {
+        "id": "e5",
+        "source_id": "s2",
+        "finding_id": "f5",
+        "excerpt": "Our two largest customers together accounted for 31% of revenue in fiscal 2025.",
+        "locator": "Item 1A. Risk Factors › Risks Related to Our Customers",
+        "start": 58233,
+        "context_before": "A significant portion of our revenue comes from a small number of customers. ",
+        "context_after": " The loss of either customer could reduce our revenue materially.",
+        "link": "https://example.com/edgar/exmp-20251228-10k.htm#:~:text=Our%20two%20largest%20customers"
+      },
+      {
+        "id": "e6",
+        "source_id": "s1",
+        "finding_id": "f6",
+        "excerpt": "No single customer accounted for more than 10% of revenue in the second quarter of fiscal 2026.",
+        "locator": "Part I, Item 1. Financial Statements › Note 12. Segment Information",
+        "start": 31090,
+        "context_before": "Revenue by geography is presented below.\n",
+        "context_after": "\nRevenue from the United States was 46% of the total.",
+        "link": "https://example.com/edgar/exmp-20260628-10q.htm#:~:text=No%20single%20customer"
+      },
+      {
+        "id": "e7",
+        "source_id": "s2",
+        "finding_id": "f7",
+        "excerpt": "We rely on a single contract manufacturer for the final assembly of most of our products.",
+        "locator": "Item 1A. Risk Factors › Risks Related to Supply",
+        "start": 60118,
+        "context_before": "Our supply chain is concentrated. ",
+        "context_after": " A disruption at its facilities could delay shipments for several months.",
+        "link": "https://example.com/edgar/exmp-20251228-10k.htm#:~:text=We%20rely%20on%20a%20single"
+      },
+      {
+        "id": "e8",
+        "source_id": "s1",
+        "finding_id": "f8",
+        "excerpt": "Sales to customers in China decreased 14% compared with the prior-year quarter, mainly because of lower demand for legacy products.",
+        "locator": "Part I, Item 2. Management's Discussion and Analysis › Revenue by Geography",
+        "start": 41388,
+        "context_before": "Revenue from Europe increased 9%.\n",
+        "context_after": " We do not expect demand for legacy products to recover.",
+        "link": "https://example.com/edgar/exmp-20260628-10q.htm#:~:text=Sales%20to%20customers%20in%20China"
+      }
+    ],
+    "findings": [
+      {
+        "id": "f1",
+        "claim_id": "c1",
+        "statement": "Revenue grew from the year-earlier period in both the latest quarter (up 18.6%) and the last fiscal year (up 14.5%).",
+        "stance": "supports",
+        "evidence_ids": [
+          "e1",
+          "e2"
+        ],
+        "confidence": "high",
+        "rationale": "Both filings state growth against the year-earlier period, and the reported figures give the same rates.",
+        "verified": true,
+        "filings_cited": 2,
+        "metric_ids": [
+          "revenue_yoy:quarter:2026-06-28",
+          "revenue_yoy:annual:2025-12-28"
+        ],
+        "checks": {
+          "quotes": "passed",
+          "numbers": "passed",
+          "numbers_detail": [
+            "18.6% matches the quote e1 and the reported figure revenue_yoy:quarter:2026-06-28 (+18.6%).",
+            "14.5% matches the quote e2 and the reported figure revenue_yoy:annual:2025-12-28 (+14.5%)."
+          ],
+          "support": "passed",
+          "support_detail": "A second model read both excerpts as stating higher revenue than a year earlier."
+        },
+        "withheld_reason": ""
+      },
+      {
+        "id": "f2",
+        "claim_id": "c1",
+        "statement": "Reported revenue for the quarter ended 2026-06-28 was $2.74B, up 18.6% year over year.",
+        "stance": "supports",
+        "evidence_ids": [],
+        "confidence": "high",
+        "rationale": "The reported figures alone show quarterly revenue above the year-earlier quarter.",
+        "verified": true,
+        "filings_cited": 1,
+        "metric_ids": [
+          "revenue:quarter:2026-06-28",
+          "revenue_yoy:quarter:2026-06-28"
+        ],
+        "checks": {
+          "quotes": "none",
+          "numbers": "passed",
+          "numbers_detail": [],
+          "support": "unchecked",
+          "support_detail": ""
+        },
+        "withheld_reason": ""
+      },
+      {
+        "id": "f3",
+        "claim_id": "c2",
+        "statement": "Gross margin fell to 61.0% in the latest quarter from 63.4% a year earlier.",
+        "stance": "challenges",
+        "evidence_ids": [
+          "e3"
+        ],
+        "confidence": "high",
+        "rationale": "A lower margin than a year earlier is the opposite of expansion.",
+        "verified": true,
+        "filings_cited": 1,
+        "metric_ids": [
+          "gross_margin:quarter:2026-06-28"
+        ],
+        "checks": {
+          "quotes": "passed",
+          "numbers": "passed",
+          "numbers_detail": [],
+          "support": "passed",
+          "support_detail": ""
+        },
+        "withheld_reason": ""
+      },
+      {
+        "id": "f4",
+        "claim_id": "c2",
+        "statement": "The company expects component costs to stay elevated into the next fiscal year.",
+        "stance": "context",
+        "evidence_ids": [
+          "e4"
+        ],
+        "confidence": "medium",
+        "rationale": "An outlook on costs bears on margins but states no margin.",
+        "verified": true,
+        "filings_cited": 1,
+        "metric_ids": [],
+        "checks": {
+          "quotes": "passed",
+          "numbers": "none",
+          "numbers_detail": [],
+          "support": "unchecked",
+          "support_detail": ""
+        },
+        "withheld_reason": ""
+      },
+      {
+        "id": "f5",
+        "claim_id": "c3",
+        "statement": "Two customers made up 31% of fiscal 2025 revenue.",
+        "stance": "supports",
+        "evidence_ids": [
+          "e5"
+        ],
+        "confidence": "high",
+        "rationale": "Nearly a third of annual revenue from two customers is a concentration.",
+        "verified": true,
+        "filings_cited": 1,
+        "metric_ids": [],
+        "checks": {
+          "quotes": "passed",
+          "numbers": "passed",
+          "numbers_detail": [],
+          "support": "passed",
+          "support_detail": ""
+        },
+        "withheld_reason": ""
+      },
+      {
+        "id": "f6",
+        "claim_id": "c3",
+        "statement": "In the latest quarter no single customer exceeded 10% of revenue.",
+        "stance": "challenges",
+        "evidence_ids": [
+          "e6"
+        ],
+        "confidence": "medium",
+        "rationale": "No customer above the 10% disclosure threshold in the quarter weakens the concentration claim.",
+        "verified": true,
+        "filings_cited": 1,
+        "metric_ids": [],
+        "checks": {
+          "quotes": "passed",
+          "numbers": "passed",
+          "numbers_detail": [],
+          "support": "unchecked",
+          "support_detail": ""
+        },
+        "withheld_reason": ""
+      },
+      {
+        "id": "f7",
+        "claim_id": "c4",
+        "statement": "The filing states: We rely on a single contract manufacturer for the final assembly of most of our products.",
+        "stance": "context",
+        "evidence_ids": [
+          "e7"
+        ],
+        "confidence": "low",
+        "rationale": "Quoted by keyword overlap with the claim; no stance was judged.",
+        "verified": true,
+        "filings_cited": 1,
+        "metric_ids": [],
+        "checks": {
+          "quotes": "passed",
+          "numbers": "none",
+          "numbers_detail": [],
+          "support": "unchecked",
+          "support_detail": ""
+        },
+        "withheld_reason": ""
+      }
+    ],
+    "unsupported_findings": [
+      {
+        "id": "f8",
+        "claim_id": "c5",
+        "statement": "Sales to China fell 40% after new export licensing rules.",
+        "stance": "supports",
+        "evidence_ids": [
+          "e8"
+        ],
+        "confidence": "medium",
+        "rationale": "A fall in China sales would fit export restrictions.",
+        "verified": false,
+        "filings_cited": 1,
+        "metric_ids": [],
+        "checks": {
+          "quotes": "passed",
+          "numbers": "failed",
+          "numbers_detail": [
+            "40% in the statement appears neither in the quote e8 (which states 14%) nor in any cited reported figure."
+          ],
+          "support": "unchecked",
+          "support_detail": ""
+        },
+        "withheld_reason": "A number in the statement (40%) matched neither its quote nor a cited reported figure."
+      },
+      {
+        "id": "f9",
+        "claim_id": "c5",
+        "statement": "Export licensing requirements delayed several shipments during the quarter.",
+        "stance": "supports",
+        "evidence_ids": [],
+        "confidence": "low",
+        "rationale": "Delayed shipments would restrict sales.",
+        "verified": false,
+        "filings_cited": 0,
+        "metric_ids": [],
+        "checks": {
+          "quotes": "none",
+          "numbers": "none",
+          "numbers_detail": [],
+          "support": "unchecked",
+          "support_detail": ""
+        },
+        "withheld_reason": "The finding cites no quote and no reported figure, so nothing in it could be checked."
+      }
+    ],
+    "coverage_limits": [
+      "1 of 4 source(s) could not be read.",
+      "2 finding(s) failed a check and were withheld.",
+      "1 of 5 claim(s) have no verified evidence in the passages retrieved.",
+      "1 of 5 claim(s) have relevant passages but no judged stance.",
+      "The model engine failed for 2 step(s); the deterministic engine was used for those."
+    ],
+    "errors": [
+      "The claude engine failed during assess for claim c4 (Model request failed: APITimeoutError (no answer within 60 s)); the deterministic engine was used for that step.",
+      "The claude engine failed during plan for claim c4 (Model request failed: APIConnectionError (connection reset)); the deterministic engine was used for that step.",
+      "Source s4 (https://example.com/investors/update-2026-07) could not be read: HTTP 404 Not Found.",
+      "Number check: finding f8 states 40%, which matches neither its quote nor any cited reported figure; the finding was withheld.",
+      "Reported figures: no value for capital expenditure (PaymentsToAcquirePropertyPlantAndEquipment) for the quarter ended 2026-06-28."
+    ],
+    "coverage": {
+      "sources_requested": 4,
+      "sources_read": 3,
+      "passages_indexed": 412,
+      "claims_total": 5,
+      "claims_with_evidence": 4,
+      "findings_proposed": 9,
+      "findings_verified": 7,
+      "findings_withheld": 2,
+      "engine_fallbacks": 2,
+      "excerpts_verified": 8,
+      "quotes_offered": 9,
+      "quotes_rejected": 1,
+      "metrics_computed": 15,
+      "numbers_checked": 6,
+      "numbers_unmatched": 1
+    },
+    "metrics": [
+      {
+        "id": "revenue:quarter:2026-06-28",
+        "key": "revenue",
+        "label": "Revenue",
+        "period": "quarter",
+        "period_end": "2026-06-28",
+        "period_label": "Quarter ended 2026-06-28",
+        "value": 2742000000.0,
+        "unit": "USD",
+        "display": "$2.74B",
+        "formula": "",
+        "inputs": [
+          {"concept": "Revenues", "unit": "USD", "start": "2026-03-30", "end": "2026-06-28", "value": 2742000000.0, "accession": "0009999999-26-000041", "form": "10-Q", "filed": "2026-08-05", "derived": false, "restated": false, "note": ""}
+        ],
+        "note": ""
+      },
+      {
+        "id": "revenue_yoy:quarter:2026-06-28",
+        "key": "revenue_yoy",
+        "label": "Revenue growth, year over year",
+        "period": "quarter",
+        "period_end": "2026-06-28",
+        "period_label": "Quarter ended 2026-06-28",
+        "value": 18.598615916955017,
+        "unit": "percent",
+        "display": "+18.6%",
+        "formula": "(2,742 − 2,312) ÷ 2,312; USD millions",
+        "inputs": [
+          {"concept": "Revenues", "unit": "USD", "start": "2026-03-30", "end": "2026-06-28", "value": 2742000000.0, "accession": "0009999999-26-000041", "form": "10-Q", "filed": "2026-08-05", "derived": false, "restated": false, "note": ""},
+          {"concept": "Revenues", "unit": "USD", "start": "2025-03-31", "end": "2025-06-29", "value": 2312000000.0, "accession": "0009999999-26-000041", "form": "10-Q", "filed": "2026-08-05", "derived": false, "restated": true, "note": "Restated: the 10-Q filed 2025-08-06 reported 2,298; the later value is used."}
+        ],
+        "note": "Restated: an input was restated by a later filing; see the inputs."
+      },
+      {
+        "id": "revenue_qoq:quarter:2026-06-28",
+        "key": "revenue_qoq",
+        "label": "Revenue growth, quarter over quarter",
+        "period": "quarter",
+        "period_end": "2026-06-28",
+        "period_label": "Quarter ended 2026-06-28",
+        "value": 7.487259898079185,
+        "unit": "percent",
+        "display": "+7.5%",
+        "formula": "(2,742 − 2,551) ÷ 2,551; USD millions",
+        "inputs": [
+          {"concept": "Revenues", "unit": "USD", "start": "2026-03-30", "end": "2026-06-28", "value": 2742000000.0, "accession": "0009999999-26-000041", "form": "10-Q", "filed": "2026-08-05", "derived": false, "restated": false, "note": ""},
+          {"concept": "Revenues", "unit": "USD", "start": "2025-12-29", "end": "2026-03-29", "value": 2551000000.0, "accession": "0009999999-26-000027", "form": "10-Q", "filed": "2026-05-06", "derived": false, "restated": false, "note": ""}
+        ],
+        "note": ""
+      },
+      {
+        "id": "gross_margin:quarter:2026-06-28",
+        "key": "gross_margin",
+        "label": "Gross margin",
+        "period": "quarter",
+        "period_end": "2026-06-28",
+        "period_label": "Quarter ended 2026-06-28",
+        "value": 61.01385849744712,
+        "unit": "percent",
+        "display": "61.0%",
+        "formula": "1,673 ÷ 2,742; USD millions",
+        "inputs": [
+          {"concept": "GrossProfit", "unit": "USD", "start": "2026-03-30", "end": "2026-06-28", "value": 1673000000.0, "accession": "0009999999-26-000041", "form": "10-Q", "filed": "2026-08-05", "derived": false, "restated": false, "note": ""},
+          {"concept": "Revenues", "unit": "USD", "start": "2026-03-30", "end": "2026-06-28", "value": 2742000000.0, "accession": "0009999999-26-000041", "form": "10-Q", "filed": "2026-08-05", "derived": false, "restated": false, "note": ""}
+        ],
+        "note": ""
+      },
+      {
+        "id": "operating_margin:quarter:2026-06-28",
+        "key": "operating_margin",
+        "label": "Operating margin",
+        "period": "quarter",
+        "period_end": "2026-06-28",
+        "period_label": "Quarter ended 2026-06-28",
+        "value": 26.00291757840992,
+        "unit": "percent",
+        "display": "26.0%",
+        "formula": "713 ÷ 2,742; USD millions",
+        "inputs": [
+          {"concept": "OperatingIncomeLoss", "unit": "USD", "start": "2026-03-30", "end": "2026-06-28", "value": 713000000.0, "accession": "0009999999-26-000041", "form": "10-Q", "filed": "2026-08-05", "derived": false, "restated": false, "note": ""},
+          {"concept": "Revenues", "unit": "USD", "start": "2026-03-30", "end": "2026-06-28", "value": 2742000000.0, "accession": "0009999999-26-000041", "form": "10-Q", "filed": "2026-08-05", "derived": false, "restated": false, "note": ""}
+        ],
+        "note": ""
+      },
+      {
+        "id": "net_margin:quarter:2026-06-28",
+        "key": "net_margin",
+        "label": "Net margin",
+        "period": "quarter",
+        "period_end": "2026-06-28",
+        "period_label": "Quarter ended 2026-06-28",
+        "value": 20.605397520058352,
+        "unit": "percent",
+        "display": "20.6%",
+        "formula": "565 ÷ 2,742; USD millions",
+        "inputs": [
+          {"concept": "NetIncomeLoss", "unit": "USD", "start": "2026-03-30", "end": "2026-06-28", "value": 565000000.0, "accession": "0009999999-26-000041", "form": "10-Q", "filed": "2026-08-05", "derived": false, "restated": false, "note": ""},
+          {"concept": "Revenues", "unit": "USD", "start": "2026-03-30", "end": "2026-06-28", "value": 2742000000.0, "accession": "0009999999-26-000041", "form": "10-Q", "filed": "2026-08-05", "derived": false, "restated": false, "note": ""}
+        ],
+        "note": ""
+      },
+      {
+        "id": "eps_diluted:quarter:2026-06-28",
+        "key": "eps_diluted",
+        "label": "Diluted EPS",
+        "period": "quarter",
+        "period_end": "2026-06-28",
+        "period_label": "Quarter ended 2026-06-28",
+        "value": 2.31,
+        "unit": "USD_per_share",
+        "display": "$2.31",
+        "formula": "",
+        "inputs": [
+          {"concept": "EarningsPerShareDiluted", "unit": "USD/shares", "start": "2026-03-30", "end": "2026-06-28", "value": 2.31, "accession": "0009999999-26-000041", "form": "10-Q", "filed": "2026-08-05", "derived": false, "restated": false, "note": ""}
+        ],
+        "note": ""
+      },
+      {
+        "id": "free_cash_flow:quarter:2026-06-28",
+        "key": "free_cash_flow",
+        "label": "Free cash flow",
+        "period": "quarter",
+        "period_end": "2026-06-28",
+        "period_label": "Quarter ended 2026-06-28",
+        "value": null,
+        "unit": "USD",
+        "display": "n/a",
+        "formula": "",
+        "inputs": [
+          {"concept": "NetCashProvidedByUsedInOperatingActivities", "unit": "USD", "start": "2026-03-30", "end": "2026-06-28", "value": 802000000.0, "accession": "0009999999-26-000041", "form": "10-Q", "filed": "2026-08-05", "derived": false, "restated": false, "note": ""}
+        ],
+        "note": "No value for capital expenditure (PaymentsToAcquirePropertyPlantAndEquipment) for the quarter ended 2026-06-28."
+      },
+      {
+        "id": "cash:instant:2026-06-28",
+        "key": "cash",
+        "label": "Cash and cash equivalents",
+        "period": "instant",
+        "period_end": "2026-06-28",
+        "period_label": "As of 2026-06-28",
+        "value": 4120000000.0,
+        "unit": "USD",
+        "display": "$4.12B",
+        "formula": "",
+        "inputs": [
+          {"concept": "CashAndCashEquivalentsAtCarryingValue", "unit": "USD", "start": null, "end": "2026-06-28", "value": 4120000000.0, "accession": "0009999999-26-000041", "form": "10-Q", "filed": "2026-08-05", "derived": false, "restated": false, "note": ""}
+        ],
+        "note": ""
+      },
+      {
+        "id": "revenue:annual:2025-12-28",
+        "key": "revenue",
+        "label": "Revenue",
+        "period": "annual",
+        "period_end": "2025-12-28",
+        "period_label": "Fiscal year ended 2025-12-28",
+        "value": 9519000000.0,
+        "unit": "USD",
+        "display": "$9.52B",
+        "formula": "",
+        "inputs": [
+          {"concept": "Revenues", "unit": "USD", "start": "2024-12-30", "end": "2025-12-28", "value": 9519000000.0, "accession": "0009999999-26-000012", "form": "10-K", "filed": "2026-02-20", "derived": false, "restated": false, "note": ""}
+        ],
+        "note": ""
+      },
+      {
+        "id": "revenue_yoy:annual:2025-12-28",
+        "key": "revenue_yoy",
+        "label": "Revenue growth, year over year",
+        "period": "annual",
+        "period_end": "2025-12-28",
+        "period_label": "Fiscal year ended 2025-12-28",
+        "value": 14.521174205967276,
+        "unit": "percent",
+        "display": "+14.5%",
+        "formula": "(9,519 − 8,312) ÷ 8,312; USD millions",
+        "inputs": [
+          {"concept": "Revenues", "unit": "USD", "start": "2024-12-30", "end": "2025-12-28", "value": 9519000000.0, "accession": "0009999999-26-000012", "form": "10-K", "filed": "2026-02-20", "derived": false, "restated": false, "note": ""},
+          {"concept": "Revenues", "unit": "USD", "start": "2024-01-01", "end": "2024-12-29", "value": 8312000000.0, "accession": "0009999999-25-000010", "form": "10-K", "filed": "2025-02-21", "derived": false, "restated": false, "note": ""}
+        ],
+        "note": ""
+      },
+      {
+        "id": "gross_margin:annual:2025-12-28",
+        "key": "gross_margin",
+        "label": "Gross margin",
+        "period": "annual",
+        "period_end": "2025-12-28",
+        "period_label": "Fiscal year ended 2025-12-28",
+        "value": 62.71667191931925,
+        "unit": "percent",
+        "display": "62.7%",
+        "formula": "(9,519 − 3,549) ÷ 9,519; USD millions",
+        "inputs": [
+          {"concept": "GrossProfit", "unit": "USD", "start": "2024-12-30", "end": "2025-12-28", "value": 5970000000.0, "accession": "0009999999-26-000012", "form": "10-K", "filed": "2026-02-20", "derived": true, "restated": false, "note": "Derived: Revenues less CostOfRevenue (9,519 − 3,549); no GrossProfit fact was reported for this period."},
+          {"concept": "Revenues", "unit": "USD", "start": "2024-12-30", "end": "2025-12-28", "value": 9519000000.0, "accession": "0009999999-26-000012", "form": "10-K", "filed": "2026-02-20", "derived": false, "restated": false, "note": ""}
+        ],
+        "note": "Derived: Revenues less CostOfRevenue (9,519 − 3,549); no GrossProfit fact was reported for this period."
+      },
+      {
+        "id": "operating_margin:annual:2025-12-28",
+        "key": "operating_margin",
+        "label": "Operating margin",
+        "period": "annual",
+        "period_end": "2025-12-28",
+        "period_label": "Fiscal year ended 2025-12-28",
+        "value": 25.63294463704171,
+        "unit": "percent",
+        "display": "25.6%",
+        "formula": "2,440 ÷ 9,519; USD millions",
+        "inputs": [
+          {"concept": "OperatingIncomeLoss", "unit": "USD", "start": "2024-12-30", "end": "2025-12-28", "value": 2440000000.0, "accession": "0009999999-26-000012", "form": "10-K", "filed": "2026-02-20", "derived": false, "restated": false, "note": ""},
+          {"concept": "Revenues", "unit": "USD", "start": "2024-12-30", "end": "2025-12-28", "value": 9519000000.0, "accession": "0009999999-26-000012", "form": "10-K", "filed": "2026-02-20", "derived": false, "restated": false, "note": ""}
+        ],
+        "note": ""
+      },
+      {
+        "id": "net_margin:annual:2025-12-28",
+        "key": "net_margin",
+        "label": "Net margin",
+        "period": "annual",
+        "period_end": "2025-12-28",
+        "period_label": "Fiscal year ended 2025-12-28",
+        "value": 20.38029204748398,
+        "unit": "percent",
+        "display": "20.4%",
+        "formula": "1,940 ÷ 9,519; USD millions",
+        "inputs": [
+          {"concept": "NetIncomeLoss", "unit": "USD", "start": "2024-12-30", "end": "2025-12-28", "value": 1940000000.0, "accession": "0009999999-26-000012", "form": "10-K", "filed": "2026-02-20", "derived": false, "restated": false, "note": ""},
+          {"concept": "Revenues", "unit": "USD", "start": "2024-12-30", "end": "2025-12-28", "value": 9519000000.0, "accession": "0009999999-26-000012", "form": "10-K", "filed": "2026-02-20", "derived": false, "restated": false, "note": ""}
+        ],
+        "note": ""
+      },
+      {
+        "id": "eps_diluted:annual:2025-12-28",
+        "key": "eps_diluted",
+        "label": "Diluted EPS",
+        "period": "annual",
+        "period_end": "2025-12-28",
+        "period_label": "Fiscal year ended 2025-12-28",
+        "value": 7.95,
+        "unit": "USD_per_share",
+        "display": "$7.95",
+        "formula": "",
+        "inputs": [
+          {"concept": "EarningsPerShareDiluted", "unit": "USD/shares", "start": "2024-12-30", "end": "2025-12-28", "value": 7.95, "accession": "0009999999-26-000012", "form": "10-K", "filed": "2026-02-20", "derived": false, "restated": false, "note": ""}
+        ],
+        "note": ""
+      }
+    ],
+    "series": [
+      {
+        "key": "revenue",
+        "label": "Revenue",
+        "unit": "USD",
+        "period": "quarter",
+        "points": [
+          {"period_end": "2024-09-29", "value": 2104000000.0, "display": "$2.10B"},
+          {"period_end": "2024-12-29", "value": 2251000000.0, "display": "$2.25B"},
+          {"period_end": "2025-03-30", "value": 2183000000.0, "display": "$2.18B"},
+          {"period_end": "2025-06-29", "value": 2312000000.0, "display": "$2.31B"},
+          {"period_end": "2025-09-28", "value": 2406000000.0, "display": "$2.41B"},
+          {"period_end": "2025-12-28", "value": 2618000000.0, "display": "$2.62B"},
+          {"period_end": "2026-03-29", "value": 2551000000.0, "display": "$2.55B"},
+          {"period_end": "2026-06-28", "value": 2742000000.0, "display": "$2.74B"}
+        ]
+      },
+      {
+        "key": "revenue_yoy",
+        "label": "Revenue growth, year over year",
+        "unit": "percent",
+        "period": "quarter",
+        "points": [
+          {"period_end": "2024-09-29", "value": 9.8, "display": "+9.8%"},
+          {"period_end": "2024-12-29", "value": 11.2, "display": "+11.2%"},
+          {"period_end": "2025-03-30", "value": null, "display": "n/a"},
+          {"period_end": "2025-06-29", "value": 12.6, "display": "+12.6%"},
+          {"period_end": "2025-09-28", "value": 14.353612167300382, "display": "+14.4%"},
+          {"period_end": "2025-12-28", "value": 16.303865,"display": "+16.3%"},
+          {"period_end": "2026-03-29", "value": 16.857535, "display": "+16.9%"},
+          {"period_end": "2026-06-28", "value": 18.598615916955017, "display": "+18.6%"}
+        ]
+      },
+      {
+        "key": "gross_margin",
+        "label": "Gross margin",
+        "unit": "percent",
+        "period": "quarter",
+        "points": [
+          {"period_end": "2024-09-29", "value": 64.1, "display": "64.1%"},
+          {"period_end": "2024-12-29", "value": 63.8, "display": "63.8%"},
+          {"period_end": "2025-03-30", "value": 63.9, "display": "63.9%"},
+          {"period_end": "2025-06-29", "value": 63.4, "display": "63.4%"},
+          {"period_end": "2025-09-28", "value": 62.7, "display": "62.7%"},
+          {"period_end": "2025-12-28", "value": 62.2, "display": "62.2%"},
+          {"period_end": "2026-03-29", "value": 61.6, "display": "61.6%"},
+          {"period_end": "2026-06-28", "value": 61.01385849744712, "display": "61.0%"}
+        ]
+      },
+      {
+        "key": "operating_margin",
+        "label": "Operating margin",
+        "unit": "percent",
+        "period": "quarter",
+        "points": [
+          {"period_end": "2024-09-29", "value": 24.5, "display": "24.5%"},
+          {"period_end": "2024-12-29", "value": 24.9, "display": "24.9%"},
+          {"period_end": "2025-03-30", "value": 23.8, "display": "23.8%"},
+          {"period_end": "2025-06-29", "value": 25.2, "display": "25.2%"},
+          {"period_end": "2025-09-28", "value": 25.6, "display": "25.6%"},
+          {"period_end": "2025-12-28", "value": 26.4, "display": "26.4%"},
+          {"period_end": "2026-03-29", "value": 25.1, "display": "25.1%"},
+          {"period_end": "2026-06-28", "value": 26.00291757840992, "display": "26.0%"}
+        ]
+      },
+      {
+        "key": "net_margin",
+        "label": "Net margin",
+        "unit": "percent",
+        "period": "quarter",
+        "points": [
+          {"period_end": "2024-09-29", "value": 19.1, "display": "19.1%"},
+          {"period_end": "2024-12-29", "value": 19.6, "display": "19.6%"},
+          {"period_end": "2025-03-30", "value": null, "display": "n/a"},
+          {"period_end": "2025-06-29", "value": 20.0, "display": "20.0%"},
+          {"period_end": "2025-09-28", "value": 20.4, "display": "20.4%"},
+          {"period_end": "2025-12-28", "value": 21.1, "display": "21.1%"},
+          {"period_end": "2026-03-29", "value": 19.9, "display": "19.9%"},
+          {"period_end": "2026-06-28", "value": 20.605397520058352, "display": "20.6%"}
+        ]
+      }
+    ],
+    "metrics_notes": [
+      "No value for capital expenditure (PaymentsToAcquirePropertyPlantAndEquipment) for the quarter ended 2026-06-28, so free cash flow is not available for it.",
+      "Revenue for the quarter ended 2025-06-29 was restated by a later filing; the later value is used."
+    ],
+    "brief": {
+      "summary": "Of the five claims, the filings support revenue growth and challenge margin expansion, and customer concentration points both ways. The supplier passage was quoted but not judged, and nothing verified bears on export controls, so the thesis rests mostly on growth.",
+      "summary_origin": "model",
+      "unknowns": [
+        "Whether the lower gross margin reflects a lasting cost change or a one-quarter effect.",
+        "How much revenue from China depends on export licences."
+      ],
+      "next_steps": [
+        "Read the supplier passage under c4 and judge its stance yourself.",
+        "Look for export-control disclosures in the next 10-Q."
+      ],
+      "coverage_status": "partial",
+      "status_note": "Part of the thesis could not be assessed with verified evidence. The reasons are listed under coverage limits."
+    }
+  }
+}

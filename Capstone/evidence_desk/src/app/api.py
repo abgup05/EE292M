@@ -27,6 +27,7 @@ from pydantic import BaseModel
 
 from app import __version__, wiring
 from app.core import limits, policy
+from app.core.change_models import FilingChanges
 from app.core.metric_models import MetricsReport
 from app.core.models import (
     TICKER_PATTERN,
@@ -54,6 +55,8 @@ from app.engines.checker import NoChecker
 from app.services import theses, thesis_run
 from app.services.examples import EXAMPLE_THESIS
 from app.services.export import render_markdown
+from app.services.filing_changes import FORMS as CHANGE_FORMS
+from app.services.filing_changes import filing_changes
 from app.services.numbers import load_numbers
 from app.sources.http import fetch_page as default_fetch_page
 from app.sources.urls import canonicalize, validate_public_url
@@ -194,10 +197,10 @@ def _refusal(problems: list[Problem]) -> JSONResponse:
     )
 
 
-class MetricsCache:
-    """Metrics reports by CIK, each kept for :data:`limits.METRICS_CACHE_SECONDS`.
+class TimedCache[K, V]:
+    """Values by key, each kept for :data:`limits.METRICS_CACHE_SECONDS`.
 
-    Only successful reports are kept, so an EDGAR outage is not remembered.
+    Only successful results are kept, so an EDGAR outage is not remembered.
     Safe to share between threads.
     """
 
@@ -205,20 +208,24 @@ class MetricsCache:
         """Measure age with ``monotonic`` (seconds)."""
         self._monotonic = monotonic
         self._lock = threading.Lock()
-        self._reports: dict[int, tuple[float, MetricsReport]] = {}
+        self._values: dict[K, tuple[float, V]] = {}
 
-    def get(self, cik: int) -> MetricsReport | None:
-        """The cached report for ``cik`` if it is fresh, else None."""
+    def get(self, key: K) -> V | None:
+        """The cached value for ``key`` if it is fresh, else None."""
         with self._lock:
-            entry = self._reports.get(cik)
+            entry = self._values.get(key)
             if entry is None or self._monotonic() - entry[0] >= limits.METRICS_CACHE_SECONDS:
                 return None
             return entry[1]
 
-    def put(self, cik: int, report: MetricsReport) -> None:
-        """Keep ``report`` for ``cik`` from now."""
+    def put(self, key: K, value: V) -> None:
+        """Keep ``value`` for ``key`` from now."""
         with self._lock:
-            self._reports[cik] = (self._monotonic(), report)
+            self._values[key] = (self._monotonic(), value)
+
+
+MetricsCache = TimedCache[int, MetricsReport]
+ChangesCache = TimedCache[tuple[int, str], FilingChanges]
 
 
 def create_app(
@@ -248,6 +255,7 @@ def create_app(
     checker = checker or NoChecker()
     executor = ThreadPoolExecutor(max_workers=RUN_WORKERS, thread_name_prefix="run")
     metrics_cache = MetricsCache(monotonic)
+    changes_cache = ChangesCache(monotonic)
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
@@ -474,6 +482,24 @@ def create_app(
             raise SourceError(result.error or "The XBRL company facts could not be read")
         metrics_cache.put(company.cik, result.report)
         return result.report
+
+    @app.get("/api/companies/{ticker}/changes")
+    def company_filing_changes(ticker: str, form: str = "10-K") -> FilingChanges:
+        """What was added, removed and reworded between a company's two latest ``form`` filings.
+
+        ``form`` is "10-K" or "10-Q". 422 for another form or for a malformed or unknown
+        ticker; 503 when EDGAR cannot be read or lists fewer than two such filings. A
+        result is cached per company and form for 15 minutes.
+        """
+        if form not in CHANGE_FORMS:
+            raise RequestRefused([Problem(field="form", message="form must be 10-K or 10-Q")])
+        company = resolve(ticker)
+        cached = changes_cache.get((company.cik, form))
+        if cached is not None:
+            return cached
+        result = filing_changes(company, form, filings=filings, cache=cache)
+        changes_cache.put((company.cik, form), result)
+        return result
 
     @app.get("/api/meta")
     def meta() -> dict[str, Any]:

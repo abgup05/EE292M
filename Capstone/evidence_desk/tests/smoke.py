@@ -51,7 +51,7 @@ wait_for_startup()
 
 status, body, _ = request("/api/health")
 health = json.loads(body)
-assert status == 200 and health["status"] == "ok" and health["version"] == "0.5.0", health
+assert status == 200 and health["status"] == "ok" and health["version"] == "0.6.0", health
 assert health["engine"] in ("claude", "extractive"), health
 
 status, body, _ = request("/api/meta")
@@ -69,11 +69,19 @@ for asset, media_type in (
     ("/app.js", "text/javascript"),
     ("/styles.css", "text/css"),
     ("/sample-run.json", "application/json"),
+    ("/sample-changes.json", "application/json"),
 ):
     status, body, content_type = request(asset)
     assert status == 200 and body and content_type.startswith(media_type), asset
 sample = json.loads(request("/sample-run.json")[1])
 assert {"note", "meta", "run"} <= set(sample)
+recorded_changes = json.loads(request("/sample-changes.json")[1])
+assert {"note", "changes"} <= set(recorded_changes)
+assert {"earlier", "later", "items", "totals"} <= set(recorded_changes["changes"])
+
+# The filing comparison is mounted; another form is refused before any filing is asked for.
+status, body, _ = request("/api/companies/NVDA/changes?form=8-K")
+assert status == 422 and [p["field"] for p in json.loads(body)["details"]] == ["form"]
 
 valid = {"ticker": "NVDA", "decision": DECISION, "claims": [CLAIM]}
 assert refused_fields(valid | {"ticker": "nv da$"}) == ["ticker"]

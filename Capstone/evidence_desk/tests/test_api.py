@@ -277,7 +277,7 @@ def test_meta_gives_every_view_its_limits_and_wording(client: TestClient) -> Non
     assert meta["figures_note"] == FIGURES_NOTE
     assert meta["decision_labels"] == DECISION_LABELS
     assert meta["review_note"] == REVIEW_NOTE
-    assert meta["version"] == "0.5.0"
+    assert meta["version"] == "0.6.0"
     assert meta["engine"] == "extractive"
     assert meta["checker"] == {"name": "none", "detail": ""}
     assert meta["support_labels"] == SUPPORT_LABELS
@@ -339,7 +339,7 @@ def test_health(client: TestClient) -> None:
         "engine": "extractive",
         "model": None,
     }
-    assert __version__ == "0.5.0"
+    assert __version__ == "0.6.0"
 
 
 # Static files
@@ -352,6 +352,7 @@ def test_health(client: TestClient) -> None:
         ("/app.js", "text/javascript", "/api/meta"),
         ("/styles.css", "text/css", "{"),
         ("/sample-run.json", "application/json", '"run"'),
+        ("/sample-changes.json", "application/json", '"changes"'),
     ],
 )
 def test_static_files_are_served(
@@ -780,3 +781,51 @@ def test_unknown_theses_and_review_routes_are_404(thesis_client: TestClient) -> 
         assert response.json() == {"detail": detail}
     response = decide(client, "run-nope", "f1", {"value": "accepted"})
     assert response.status_code == 404 and response.json() == {"detail": "Run not found"}
+
+
+# What changed between a company's two latest filings of one form
+
+
+@pytest.fixture
+def changes_client(tmp_path: Path) -> Iterator[TestClient]:
+    from tests.test_filing_changes import two_annual_reports
+
+    app = create_app(
+        store=Store(tmp_path / "runs.sqlite"),
+        filings=two_annual_reports(),
+        analyst=ExtractiveAnalyst(),
+        fetch_page=FakePages({}),
+    )
+    with TestClient(app) as test_client:
+        yield test_client
+
+
+def test_filing_changes_for_a_ticker(changes_client: TestClient) -> None:
+    response = changes_client.get("/api/companies/NVDA/changes?form=10-K")
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["earlier"]["form"] == body["later"]["form"] == "10-K"
+    risk = next(item for item in body["items"] if item["item"].startswith("Item 1A"))
+    assert risk["added"] == 1 and risk["removed"] == 1
+    assert len(risk["added_paragraphs"]) == 1 and len(risk["removed_paragraphs"]) == 1
+    assert risk["added_paragraphs"][0]["link"].startswith("https://www.sec.gov/")
+
+
+def test_filing_changes_default_to_the_annual_report(changes_client: TestClient) -> None:
+    assert changes_client.get("/api/companies/NVDA/changes").json()["later"]["form"] == "10-K"
+
+
+def test_filing_changes_refuse_another_form_and_an_unknown_ticker(
+    changes_client: TestClient,
+) -> None:
+    refused = changes_client.get("/api/companies/NVDA/changes?form=8-K")
+    assert refused.status_code == 422 and fields(refused) == ["form"]
+    unknown = changes_client.get("/api/companies/ZZZZ/changes")
+    assert unknown.status_code == 422 and fields(unknown) == ["ticker"]
+
+
+def test_filing_changes_with_one_filing_of_the_form_are_a_503_that_says_so(
+    changes_client: TestClient,
+) -> None:
+    response = changes_client.get("/api/companies/NVDA/changes?form=10-Q")
+    assert response.status_code == 503 and "10-Q" in response.json()["error"]

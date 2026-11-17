@@ -141,6 +141,28 @@ def main() -> int:
         changes["verdicts_moved"] == 0,
         "no verdict moved between two runs on the same filings and the same answers",
     )
+
+    status, _ = call("GET", "/api/companies/NVDA/changes?form=8-K")
+    expect(status == 422, "a filing comparison of a form other than 10-K or 10-Q is refused (422)")
+    status, diff = call("GET", "/api/companies/NVDA/changes?form=10-K")
+    expect(status == 200, "the two latest annual reports are compared (live EDGAR or the cache)")
+    totals = diff["totals"]
+    print(
+        f"   {diff['later']['form']} for {diff['later']['period_end']} against "
+        f"{diff['earlier']['period_end']}: {totals['unchanged']} unchanged, "
+        f"{totals['numbers_only']} numbers only, {totals['reworded']} reworded, "
+        f"{totals['added']} added, {totals['removed']} removed"
+    )
+    expect(
+        diff["earlier"]["period_end"] < diff["later"]["period_end"]
+        and all(totals[name] == sum(item[name] for item in diff["items"]) for name in totals),
+        "the earlier filing is the earlier one, and each total is the sum over the Items",
+    )
+    risk = next((item for item in diff["items"] if item["item"].startswith("Item 1A")), None)
+    expect(
+        risk is not None and risk["present_in"] == "both" and risk["unchanged"] > 0,
+        "the risk factors were found in both reports",
+    )
     print("live walk: PASS")
     return 0
 

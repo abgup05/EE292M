@@ -70,3 +70,39 @@ only when it earns its place, and say why.
 - The README is enough for a stranger, and ARCHITECTURE.md still describes the
   project.
 - Say what you did not verify.
+
+## This repository: what an agent could not find
+
+*Drafted on 17 November 2026 from the corrections made during the catch-up sprint. Mine to curate: a line stays only if an agent could not have found it in the code.*
+
+### Tooling
+
+- Docker Desktop's credential helper is not on an agent's `PATH`. Prefix every make call: `PATH="/Applications/Docker.app/Contents/Resources/bin:$PATH" make <target>`.
+- `make verify-fresh` is the gate for a tag. It clones the committed branch, so untracked work in the tree can neither pass nor fail it. Every capstone target runs from the repository root or from `Capstone/evidence_desk`.
+- `make up`, `smoke`, `uitest`, `screenshots` and `demo` all start the app on port 8766. When several agents work at once, exactly one of them may run these.
+- An agent worktree created by the harness branches from `main`, which has no capstone app. Make one from the ref you mean: `git worktree add .claude/worktrees/<name> <tag-or-branch>`.
+
+### Which data is the original
+
+- `Capstone/evidence_desk/data/record/record.sqlite` holds runs, decisions and saved theses. Nothing can rebuild it. Never delete it; run `make backup` before a schema change and `make restore-check` after.
+- `data/cache/` and `results/` are disposable.
+- `demo/cassettes/` are recordings of model answers. Never edit a response by hand; record it again and say who answered.
+- `tests/fixtures/edgar/` and `tests/golden/` are a baseline. Re-record or re-baseline only on purpose, and read which stage moved before committing it.
+- `eval/golden.json` is an answer key. Never change an expected value to make a result pass; find out which of the two is wrong.
+
+### Mistakes made more than once
+
+- A count that survives a failure upstream. When a step can fail, check what every count and denominator after it then means.
+- Testing on one company. A parser change is not done until `make probe` on the eight companies agrees, and a change to the reported figures until `make figures` on the same eight does, run before and after (`make probe` says nothing about figures: three of the eight were wrong for seven versions under it). A change that moves a company's figures invalidates the recorded answers of its golden cases; record them again (`Capstone/evidence_desk/eval/README.md`).
+- Reporting a measurement the numbers do not support. Every number in a README or a docs file needs the command that produced it and its denominator; a speed claim needs a before and after measured alternately.
+- Text shown to a model comes back as the model saw it. Whatever is escaped on the way in must be unescaped on the way out.
+- XBRL `fy` and `fp` describe the filing, not the fact. Place a period by its dates.
+
+### Never
+
+- Never report a model-backed result without saying where the answers came from: the API or a cassette.
+
+### Skills and agents in this repository
+
+- A review of a version for a course session: use `/blind-review`, never an ad hoc reviewer prompt. The reviewer is another Claude model, not an independent party.
+- Asked to attack the project's own claims: use the `referee` agent.

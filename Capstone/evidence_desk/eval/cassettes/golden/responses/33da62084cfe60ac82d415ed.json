@@ -1,0 +1,79 @@
+{
+  "key": "33da62084cfe60ac82d415ed",
+  "step": "assess",
+  "via": "Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-17T17:50:48+00:00",
+  "response": {
+    "findings": [
+      {
+        "statement": "Costco has recovered part of its IEEPA duties: it received $184 in refunds and interest, of which $174 reduced merchandise costs, and a further $155 arrived after the period.",
+        "stance": "challenges",
+        "confidence": "high",
+        "rationale": "The filing reports actual refunds of tariffs paid, recorded against merchandise costs. That contradicts the claim that duties cannot be clawed back, at least for the IEEPA tariffs the Supreme Court ruled unlawful.",
+        "quotes": [
+          {
+            "passage_id": "s1-p84",
+            "text": "During 2026, we began filing for refunds and received $184, made up of $174 in refunds, recorded as a reduction to merchandise costs, and $10 recorded as interest income."
+          },
+          {
+            "passage_id": "s1-p84",
+            "text": "Subsequent to 2026, we received $155 in additional refunds and we intend to continue to invest the majority of the refunds in increased value for the member."
+          }
+        ],
+        "figure_ids": []
+      },
+      {
+        "statement": "Costco describes ways to offset cost increases besides absorbing them: sharing the cost with suppliers, buying earlier and in greater volume, sourcing locally, and passing increases on to members.",
+        "stance": "challenges",
+        "confidence": "medium",
+        "rationale": "The passage is a general description of pricing and merchandising strategy for cost increases, not specific to duties. It still shows that cost increases are not always borne by the retailer alone.",
+        "quotes": [
+          {
+            "passage_id": "s1-p77",
+            "text": "Those strategies can include, but are not limited to, working with our suppliers to share in absorbing cost increases, earlier-than-usual purchasing and in greater volumes, sourcing in the countries and regions where items are sold, as well as passing cost increases on to our members."
+          }
+        ],
+        "figure_ids": []
+      },
+      {
+        "statement": "Tariffs were a real cost: Costco paid approximately $500 in IEEPA tariffs, and it expects higher tariffs to hurt rather than help its results.",
+        "stance": "supports",
+        "confidence": "medium",
+        "rationale": "The filing confirms duties were a genuine outlay and a risk to results. This supports the cost side of the claim but not the 'no way to claw back' side, which the refunds contradict.",
+        "quotes": [
+          {
+            "passage_id": "s1-p84",
+            "text": "We paid the government approximately $500 in IEEPA tariffs. In February 2026, the U.S. Supreme Court ruled that the IEEPA tariffs were unlawful."
+          },
+          {
+            "passage_id": "s1-p78",
+            "text": "Higher tariffs are more likely to adversely impact rather than improve our results."
+          }
+        ],
+        "figure_ids": []
+      },
+      {
+        "statement": "Class actions allege that the IEEPA tariffs were passed on to members through higher prices, and they seek a refund of those tariffs.",
+        "stance": "context",
+        "confidence": "low",
+        "rationale": "These are allegations in complaints, not findings. They suggest some of the duty cost may have been passed on to members and that any refund may be contested. The filing does not say how much was passed on.",
+        "quotes": [
+          {
+            "passage_id": "s1-p180",
+            "text": "In March 2026, four class actions were filed against the Company seeking a refund of tariffs paid by the Company under IEEPA that were passed on to members through higher prices."
+          }
+        ],
+        "figure_ids": []
+      }
+    ],
+    "rationale": "The claim has two parts: duties are a cost, and they cannot be recovered. The filings support the first part. They challenge the second, because Costco has received IEEPA refunds, recorded mostly as a reduction to merchandise costs, and expects more. Refunds apply to the IEEPA tariffs the Supreme Court ruled unlawful, so other duties are not covered by this evidence.",
+    "unknowns": [
+      "Whether any duties other than the IEEPA tariffs can be recovered.",
+      "How much of the approximately $500 paid will eventually be refunded, and when.",
+      "How much of the refunds will be reinvested in lower member prices rather than retained as margin.",
+      "How much of the tariff cost was passed on to members through higher prices.",
+      "How the class actions will turn out and whether they will affect the refunds Costco keeps."
+    ]
+  }
+}

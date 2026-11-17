@@ -1,0 +1,36 @@
+Live NVIDIA example, extractive engine, run twice with the filing cache (17 November 2026, 12:33 UTC).
+make run ARGS='example --engine extractive', data/cache empty before the first run.
+
+== run 1 ==
+docker compose -f docker/compose.yaml run --rm --no-deps app python -m app.cli example --engine extractive
+found a version 3 database at /work/data/runs/runs.sqlite; it is not read
+run-583df81d37dc: testing 5 claim(s) on NVDA with extractive (deterministic sentence matching, no model)
+run-583df81d37dc: PARTIAL (NVIDIA CORP, NVDA)
+Part of the thesis could not be assessed with verified evidence. The reasons are listed under coverage limits.
+  c1  Passages found, not judged (3 finding(s))  Data center revenue is still growing year over year.
+  c2  Passages found, not judged (3 finding(s))  A small number of customers account for a large share of revenue.
+  c3  Passages found, not judged (3 finding(s))  Export controls on sales to China are restricting revenue.
+  c4  Passages found, not judged (3 finding(s))  Gross margin is expanding.
+  c5  Passages found, not judged (3 finding(s))  The company depends on a limited number of suppliers to manufacture its products.
+Read 3 of 3 source(s); 5 of 5 claim(s) have verified excerpts or figures; 15 finding(s) verified and 0 withheld; 15 of 15 quote(s) verified.
+Coverage limits:
+  - 5 of 5 claim(s) have relevant passages but no judged stance.
+Wrote results/run-583df81d37dc.json and results/run-583df81d37dc.md
+
+== run 2 ==
+docker compose -f docker/compose.yaml run --rm --no-deps app python -m app.cli example --engine extractive
+found a version 3 database at /work/data/runs/runs.sqlite; it is not read
+run-c751228d9692: testing 5 claim(s) on NVDA with extractive (deterministic sentence matching, no model)
+run-c751228d9692: PARTIAL (NVIDIA CORP, NVDA)
+Part of the thesis could not be assessed with verified evidence. The reasons are listed under coverage limits.
+  c1  Passages found, not judged (3 finding(s))  Data center revenue is still growing year over year.
+  c2  Passages found, not judged (3 finding(s))  A small number of customers account for a large share of revenue.
+  c3  Passages found, not judged (3 finding(s))  Export controls on sales to China are restricting revenue.
+  c4  Passages found, not judged (3 finding(s))  Gross margin is expanding.
+  c5  Passages found, not judged (3 finding(s))  The company depends on a limited number of suppliers to manufacture its products.
+Read 3 of 3 source(s); 5 of 5 claim(s) have verified excerpts or figures; 15 finding(s) verified and 0 withheld; 15 of 15 quote(s) verified.
+Coverage limits:
+  - 3 of 3 filings were read from the local cache; for those, EDGAR was asked only for the filing list.
+  - 5 of 5 claim(s) have relevant passages but no judged stance.
+Wrote results/run-c751228d9692.json and results/run-c751228d9692.md
+

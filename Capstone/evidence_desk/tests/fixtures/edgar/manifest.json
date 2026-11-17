@@ -1,0 +1,38 @@
+{
+  "company_tickers.json": {
+    "bytes": 796319,
+    "retrieved_at": "2026-11-17T11:08:51.366752+00:00",
+    "sha256": "29e8eee5a85a68e837628b0e9623870af68db41e5427a154d17fe3b1af0a1b9a",
+    "url": "https://www.sec.gov/files/company_tickers.json"
+  },
+  "cost-10k-20260830.htm.gz": {
+    "bytes": 1456959,
+    "retrieved_at": "2026-11-17T11:47:12.254756+00:00",
+    "sha256": "dfe52a0780336d45cf79afdf17d18b2143ce805a7137af17b6bf7676adb63b19",
+    "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983226000093/cost-20260830.htm"
+  },
+  "nvda-10k-20260125.htm.gz": {
+    "bytes": 1968291,
+    "retrieved_at": "2026-11-17T11:08:51.748534+00:00",
+    "sha256": "1cb906f8e4c27c431667d1be19b11fe1f955703e20e338cfeffbd91cafec5149",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm"
+  },
+  "nvda-10q-20260426.htm.gz": {
+    "bytes": 1167528,
+    "retrieved_at": "2026-11-17T11:49:49.944228+00:00",
+    "sha256": "0d553f87180562434cdcb2e7d1be6e9ec7a1465c3671decb402d7f9c10d67d9b",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000052/nvda-20260426.htm"
+  },
+  "nvda-10q-20260726.htm.gz": {
+    "bytes": 1517522,
+    "retrieved_at": "2026-11-17T11:08:51.597885+00:00",
+    "sha256": "8374d4902f0b6fefee7f3f0828b79c8308ff69b25e00b9e4a3e2b2ab2e96e22c",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm"
+  },
+  "submissions-CIK0001045810.json": {
+    "bytes": 159933,
+    "retrieved_at": "2026-11-17T11:09:13.531769+00:00",
+    "sha256": "84d40a550596382bc042628d4fa11620b6feec9f588003ac1b4ec2307b97e3fc",
+    "url": "https://data.sec.gov/submissions/CIK0001045810.json"
+  }
+}

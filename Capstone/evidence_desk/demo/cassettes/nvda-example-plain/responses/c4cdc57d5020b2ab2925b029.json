@@ -1,0 +1,72 @@
+{
+  "key": "c4cdc57d5020b2ab2925b029",
+  "step": "assess",
+  "via": "Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-17T17:38:25+00:00",
+  "response": {
+    "findings": [
+      {
+        "statement": "The April 2025 H20 license requirement for China led to a $4.5 billion charge for excess inventory and purchase obligations as demand for H20 diminished.",
+        "stance": "supports",
+        "confidence": "high",
+        "rationale": "The filing itself ties a government license requirement for China to a charge and to diminished H20 demand, so export controls have restricted H20 business in China.",
+        "quotes": [
+          {
+            "passage_id": "s3-p165",
+            "text": "In April 2025, the USG informed us that a license is required for exports of our H20 product into the China market. As a result of these requirements, we incurred a $4.5 billion charge in the first quarter of fiscal year 2026 associated with H20 for excess inventory and purchase obligations, as the demand for H20 diminished."
+          }
+        ],
+        "figure_ids": []
+      },
+      {
+        "statement": "Licensed China sales have been small so far: about $60 million of H20 revenue under the August 2025 licenses, and no H200 revenue yet.",
+        "stance": "supports",
+        "confidence": "medium",
+        "rationale": "Limited licensed revenue is consistent with controls restricting China revenue, but the passages give no baseline for what China revenue would otherwise have been.",
+        "quotes": [
+          {
+            "passage_id": "s3-p165",
+            "text": "In August 2025, the USG granted licenses that would allow us to ship certain H20 products to certain China-based customers. We generated approximately $60 million in H20 revenue under those licenses."
+          },
+          {
+            "passage_id": "s3-p165",
+            "text": "To date, we have not generated any revenue under the H200 licensing program, and do not yet know whether any imports will be allowed into China."
+          }
+        ],
+        "figure_ids": []
+      },
+      {
+        "statement": "NVIDIA states that export controls have negatively affected, and may again negatively affect, demand in China and in other markets.",
+        "stance": "supports",
+        "confidence": "medium",
+        "rationale": "This is a general risk-factor statement. It supports the direction of the claim but does not measure the size of the revenue effect.",
+        "quotes": [
+          {
+            "passage_id": "s1-p141",
+            "text": "As a result, export controls have in the past and may in the future negatively impact demand for our products and services not only in China, but also in other markets, such as Europe, Latin America, and Southeast Asia."
+          }
+        ],
+        "figure_ids": []
+      },
+      {
+        "statement": "Reported company revenue is still growing strongly: $96.22B in the quarter ended 2026-07-26, up 105.9% year over year.",
+        "stance": "context",
+        "confidence": "low",
+        "rationale": "Strong total revenue shows the restriction is not visible as a decline in the total. The figures do not break out China revenue, so they cannot show how much revenue the controls cost.",
+        "quotes": [],
+        "figure_ids": [
+          "revenue:quarter:2026-07-26",
+          "revenue_yoy:quarter:2026-07-26"
+        ]
+      }
+    ],
+    "rationale": "The filings confirm that export controls restricted H20 sales to China, with a $4.5 billion charge and very small licensed revenue. They do not quantify China revenue or the revenue lost, and total revenue is still growing strongly. The claim is supported in direction but not in size.",
+    "unknowns": [
+      "China revenue as a share of total revenue, and how it changed.",
+      "How much revenue was lost to the controls compared with a no-controls baseline.",
+      "Whether H200 licenses will produce shipments, and whether China will allow imports.",
+      "Whether demand not met in China has been filled by sales elsewhere."
+    ]
+  }
+}

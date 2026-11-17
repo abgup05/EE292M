@@ -1,0 +1,15 @@
+# Version 3's database: left alone, never read (see src/app/wiring.py).
+data/runs/**
+!data/runs/.gitkeep
+# The record (back it up with `make backup`) and the disposable filing cache.
+data/record/**
+!data/record/.gitkeep
+data/cache/**
+!data/cache/.gitkeep
+backups/**
+!backups/.gitkeep
+results/**
+!results/.gitkeep
+# Requests a cassette could not answer: work in progress, never committed.
+demo/cassettes/*/pending/
+eval/cassettes/*/pending/

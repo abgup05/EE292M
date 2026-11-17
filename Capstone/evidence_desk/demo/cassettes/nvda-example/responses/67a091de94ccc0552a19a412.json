@@ -1,0 +1,16 @@
+{
+  "key": "67a091de94ccc0552a19a412",
+  "step": "summarize",
+  "via": "Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-17T11:57:17Z",
+  "response": {
+    "summary": "Data Center revenue is still growing year over year (Supported): $89.0 billion, up 117%, in the second quarter of fiscal year 2027. Customer concentration is Supported: three direct customers represented 16%, 15% and 13% of first-half revenue. Export controls restricting revenue is Mixed evidence: a $4.5 billion H20 charge, yet quarterly revenue was $96.22B, up 105.9%. Gross margin expansion is Mixed evidence: sequentially flat at 75.0%, and fiscal 2026 fell to 71.1% from 75.0%. Supplier dependence is Mixed evidence: concentration risk is disclosed, partly offset by expanded supplier relationships. For the overweight decision, growth and concentration are the firmest points.",
+    "next_steps": [
+      "Test whether Data Center growth can persist given the warned volatility from faster product transitions.",
+      "Assess how the largest direct customers' share of revenue could affect results if one reduces orders.",
+      "Check whether export controls are reducing demand outside China, such as Europe, Latin America and Southeast Asia.",
+      "Examine what drives gross margin beyond the H20 charge and Blackwell Ultra mix."
+    ]
+  }
+}

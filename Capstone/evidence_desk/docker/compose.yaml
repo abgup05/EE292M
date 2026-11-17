@@ -1,0 +1,47 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: app
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    env_file:
+      - path: ../.env
+        required: false
+    environment:
+      PYTHONPATH: /work/src
+      HOME: /tmp
+      # The record and the cache. `make two-writers` points it at a scratch directory under results/.
+      EVIDENCE_DESK_DATA_DIR: ${EVIDENCE_DESK_DATA_DIR:-/work/data}
+      # Set on the make command line to replay recorded model answers (make up-recorded).
+      EVIDENCE_DESK_CASSETTE: ${EVIDENCE_DESK_CASSETTE:-}
+    volumes:
+      - ..:/work
+    ports:
+      - "127.0.0.1:8766:8000"
+  lock:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: lock
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    environment:
+      HOME: /tmp
+      UV_CACHE_DIR: /tmp/uv-cache
+    volumes:
+      - ..:/work
+  jscheck:
+    image: node:24-slim
+    working_dir: /work
+    volumes:
+      - ..:/work:ro
+    command: ["node", "--check", "src/web/app.js"]
+  shots:
+    # Headless Chromium for `make screenshots`: a person looks at what no test can see.
+    image: zenika/alpine-chrome:124
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    environment:
+      HOME: /tmp
+    volumes:
+      - ..:/work
+    entrypoint: ["chromium-browser", "--headless", "--no-sandbox", "--disable-gpu", "--hide-scrollbars", "--virtual-time-budget=8000"]

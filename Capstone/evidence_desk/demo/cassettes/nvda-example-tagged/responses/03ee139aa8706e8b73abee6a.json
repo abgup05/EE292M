@@ -1,0 +1,31 @@
+{
+  "key": "03ee139aa8706e8b73abee6a",
+  "step": "check",
+  "via": "Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-17T17:39:18+00:00",
+  "response": {
+    "judgements": [
+      {
+        "finding_number": 1,
+        "verdict": "supported",
+        "reason": "The excerpt reports a $4.5 billion Q1 FY2026 charge for H20 excess inventory and purchase obligations, tied to the licence requirements and diminished H20 demand, matching the statement and its supports stance."
+      },
+      {
+        "finding_number": 2,
+        "verdict": "supported",
+        "reason": "The excerpts show about $60 million of H20 revenue under licences and no H200 licence revenue yet, with uncertainty over whether imports into China will be allowed; the small-scale characterisation follows from these figures."
+      },
+      {
+        "finding_number": 3,
+        "verdict": "supported",
+        "reason": "The figures match the statement exactly: China including Hong Kong revenue of $19.68B (-21.4%) for the fiscal year and $7.88B (+97.7%) for the quarter, offered as relevant context without a directional claim."
+      },
+      {
+        "finding_number": 4,
+        "verdict": "supported",
+        "reason": "The risk factor says export controls have in the past and may in the future negatively affect demand beyond China, in Europe, Latin America and Southeast Asia, which matches the statement and its supports stance."
+      }
+    ]
+  }
+}

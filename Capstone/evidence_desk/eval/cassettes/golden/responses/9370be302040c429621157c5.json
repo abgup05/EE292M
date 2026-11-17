@@ -1,0 +1,56 @@
+{
+ "key": "9370be302040c429621157c5",
+ "step": "plan",
+ "via": "Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the engine's rules",
+ "model": "claude-sonnet-5-5",
+ "recorded_at": "2026-11-17T12:41:22Z",
+ "response": {
+  "claims": [
+   {
+    "claim_number": 1,
+    "queries": [
+     "North America unit case volume",
+     "North America net operating revenues",
+     "volume decline North America",
+     "Americas concentrate volume change"
+    ]
+   },
+   {
+    "claim_number": 2,
+    "queries": [
+     "gross profit margin",
+     "operating margin price/mix",
+     "cost of goods sold increase commodity inflation",
+     "pricing impact on operating income"
+    ]
+   },
+   {
+    "claim_number": 3,
+    "queries": [
+     "IRS tax litigation foreign licensing",
+     "Tax Court ruling transfer pricing",
+     "tax litigation unrecognized tax benefits cash payment",
+     "IRS notice of deficiency appeal"
+    ]
+   },
+   {
+    "claim_number": 4,
+    "queries": [
+     "cannabis-infused beverage",
+     "equity method investment acquisition",
+     "investments in equity securities",
+     "regulatory risk cannabis products"
+    ]
+   },
+   {
+    "claim_number": 5,
+    "queries": [
+     "bitcoin digital assets",
+     "cash equivalents and short-term investments",
+     "marketable securities holdings",
+     "cryptocurrency risk"
+    ]
+   }
+  ]
+ }
+}

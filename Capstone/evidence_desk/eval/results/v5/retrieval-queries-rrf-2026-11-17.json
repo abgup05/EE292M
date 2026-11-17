@@ -1,0 +1,608 @@
+{
+  "kind": "retrieval-evaluation",
+  "generated_at": "2026-11-17T12:54:34.759213+00:00",
+  "variant": {
+    "name": "queries-rrf",
+    "description": "the claim plus up to 4 queries per case from --queries (a case without an entry falls back to the claim alone); ranked by reciprocal-rank fusion of the per-query rankings (k = 60) instead of the best score over queries"
+  },
+  "inputs": {
+    "golden_file": "eval/golden.json",
+    "golden_version": 1,
+    "golden_status": "Drafted by a Claude Opus session from the filing text on 2026-11-17 and validated mechanically. Not yet read case by case by the author.",
+    "golden_sha256": "4ef5c8d35bf11a1e146de46988d8cec54f547e1eb783c383bdf0e23cabb59150",
+    "filings_sha256": "ce02e068cd1d831e921a7e8118851c2a895bbbc58ee4b5a383872a9ba019a1bf",
+    "queries_file": "eval/queries.json",
+    "queries_sha256": "7609070a134303ab7ffcd32f0d6214ff0f3928104369fbffce47f1b845cf54f6",
+    "cases_total": 30,
+    "cases_answerable": 24,
+    "cases_unanswerable": 6,
+    "limits": {
+      "PASSAGE_TARGET_CHARS": 1100,
+      "PASSAGE_MAX_CHARS": 1800,
+      "PASSAGES_PER_CLAIM": 8,
+      "MAX_PASSAGES_PER_SOURCE": 5,
+      "MAX_QUERIES_PER_CLAIM": 4,
+      "bm25_k1": 1.5,
+      "bm25_b": 0.75,
+      "max_rank": 50
+    }
+  },
+  "summary": {
+    "cases_scored": 24,
+    "recall@3": {
+      "hits": 10,
+      "total": 24,
+      "rate": 0.4166666666666667
+    },
+    "recall@8_pipeline_capped": {
+      "hits": 16,
+      "total": 24,
+      "rate": 0.6666666666666666
+    },
+    "recall@20": {
+      "hits": 22,
+      "total": 24,
+      "rate": 0.9166666666666666
+    },
+    "mrr": {
+      "value": 0.429855157825404,
+      "total": 24,
+      "max_rank": 50
+    },
+    "cases_with_extra_queries": 24
+  },
+  "cases": [
+    {
+      "case_id": "nvda-data-center-drives-growth",
+      "ticker": "NVDA",
+      "rank": 4,
+      "pipeline_position": 4,
+      "extra_queries": true,
+      "queries": [
+        "Sales of AI server hardware are still the main engine of the chipmaker's top-line expansion.",
+        "Data Center revenue",
+        "compute and networking revenue",
+        "revenue growth year over year",
+        "decline in Data Center revenue"
+      ],
+      "passages": 636,
+      "top_passage": "s3 Item 7. Management's Discussion and Analysis of Financial Condition and Results of Operations \u203a Operating Income by Reportable Segments",
+      "expected": "supports",
+      "relevant_sections": [
+        "Part I, Item 2. Management\u2019s Discussion and Analysis of Financial Condition and Results of Operations \u203a Recent Developments, Future Objectives and Challenges",
+        "Part I, Item 2. Management\u2019s Discussion and Analysis of Financial Condition and Results of Operations \u203a Second Quarter of Fiscal Year 2027 Summary"
+      ],
+      "rank_label": "4",
+      "reciprocal_rank": 0.25
+    },
+    {
+      "case_id": "nvda-few-buyers-dominate",
+      "ticker": "NVDA",
+      "rank": 12,
+      "pipeline_position": null,
+      "extra_queries": true,
+      "queries": [
+        "A handful of large buyers make up a big slice of the company's sales.",
+        "customer concentration",
+        "direct customers percent of revenue",
+        "indirect customers cloud service providers",
+        "loss of a key customer"
+      ],
+      "passages": 636,
+      "top_passage": "s3 Item 7. Management's Discussion and Analysis of Financial Condition and Results of Operations \u203a Concentration of Revenue",
+      "expected": "supports",
+      "relevant_sections": [
+        "Part I, Item 2. Management\u2019s Discussion and Analysis of Financial Condition and Results of Operations \u203a Concentration of Revenue",
+        "Part I, Item 2. Management\u2019s Discussion and Analysis of Financial Condition and Results of Operations \u203a Concentration of Revenue"
+      ],
+      "rank_label": "12",
+      "reciprocal_rank": 0.08333333333333333
+    },
+    {
+      "case_id": "nvda-china-reopened",
+      "ticker": "NVDA",
+      "rank": 25,
+      "pipeline_position": null,
+      "extra_queries": true,
+      "queries": [
+        "Washington's licence approvals have made China a meaningful market again for its top data-centre chips.",
+        "China export license H20",
+        "export controls China",
+        "Data Center revenue China",
+        "export restrictions limit sales"
+      ],
+      "passages": 636,
+      "top_passage": "s3 Item 1. Business \u203a Government Regulations",
+      "expected": "challenges",
+      "relevant_sections": [
+        "Part I, Item 2. Management\u2019s Discussion and Analysis of Financial Condition and Results of Operations \u203a Recent Developments, Future Objectives and Challenges",
+        "Part II, Item 1A. Risk Factors"
+      ],
+      "rank_label": "25",
+      "reciprocal_rank": 0.04
+    },
+    {
+      "case_id": "nvda-margin-widened",
+      "ticker": "NVDA",
+      "rank": 2,
+      "pipeline_position": 2,
+      "extra_queries": true,
+      "queries": [
+        "Profit on each dollar of sales has improved compared with a year earlier.",
+        "gross margin percentage",
+        "operating income as percent of revenue",
+        "gross margin decrease inventory provisions",
+        "net income margin"
+      ],
+      "passages": 636,
+      "top_passage": "s1 Part I, Item 2. Management\u2019s Discussion and Analysis of Financial Condition and Results of Operations \u203a Second Quarter of Fiscal Year 2027 Summary",
+      "expected": "supports",
+      "relevant_sections": [
+        "Part I, Item 2. Management\u2019s Discussion and Analysis of Financial Condition and Results of Operations \u203a Gross Profit and Gross Margin"
+      ],
+      "rank_label": "2",
+      "reciprocal_rank": 0.5
+    },
+    {
+      "case_id": "nvda-cash-returned",
+      "ticker": "NVDA",
+      "rank": 6,
+      "pipeline_position": 6,
+      "extra_queries": true,
+      "queries": [
+        "Management is handing large sums back to owners through buybacks and a much bigger quarterly payout.",
+        "share repurchase program",
+        "dividends per share quarterly",
+        "repurchases of common stock",
+        "dividend increase"
+      ],
+      "passages": 636,
+      "top_passage": "s2 Part II, Item 2. Unregistered Sales of Equity Securities and Use of Proceeds \u203a Issuer Purchases of Equity Securities",
+      "expected": "supports",
+      "relevant_sections": [
+        "Part I, Item 2. Management\u2019s Discussion and Analysis of Financial Condition and Results of Operations \u203a Capital Return to Shareholders",
+        "Part I, Item 2. Management\u2019s Discussion and Analysis of Financial Condition and Results of Operations \u203a Capital Return to Shareholders"
+      ],
+      "rank_label": "6",
+      "reciprocal_rank": 0.16666666666666666
+    },
+    {
+      "case_id": "nvda-no-borrowing",
+      "ticker": "NVDA",
+      "rank": 6,
+      "pipeline_position": 6,
+      "extra_queries": true,
+      "queries": [
+        "The company funds itself entirely from operations and has stayed away from the bond market.",
+        "senior notes issued",
+        "long-term debt",
+        "cash provided by operating activities",
+        "commercial paper or debt issuance"
+      ],
+      "passages": 636,
+      "top_passage": "s2 Part I, Item 1. Financial Statements (Unaudited) \u203a Note 5 - Cash Equivalents and Marketable Securities",
+      "expected": "challenges",
+      "relevant_sections": [
+        "Part I, Item 2. Management\u2019s Discussion and Analysis of Financial Condition and Results of Operations \u203a Outstanding Indebtedness and Commercial Paper Program",
+        "Part II, Item 1A. Risk Factors"
+      ],
+      "rank_label": "6",
+      "reciprocal_rank": 0.16666666666666666
+    },
+    {
+      "case_id": "nvda-commitments-small",
+      "ticker": "NVDA",
+      "rank": 17,
+      "pipeline_position": null,
+      "extra_queries": true,
+      "queries": [
+        "Its purchase obligations and guarantees to partners are modest and carry little counterparty risk.",
+        "purchase obligations",
+        "supply and capacity purchase commitments",
+        "guarantees and indemnification obligations",
+        "prepaid supply agreements and counterparty credit risk"
+      ],
+      "passages": 636,
+      "top_passage": "s3 Item 1A. Risk Factors \u203a Risks Related to Our Global Operating Business",
+      "expected": "challenges",
+      "relevant_sections": [
+        "Part I, Item 2. Management\u2019s Discussion and Analysis of Financial Condition and Results of Operations \u203a Recent Developments, Future Objectives and Challenges",
+        "Part II, Item 1A. Risk Factors"
+      ],
+      "rank_label": "17",
+      "reciprocal_rank": 0.058823529411764705
+    },
+    {
+      "case_id": "nvda-custom-silicon-threat",
+      "ticker": "NVDA",
+      "rank": 1,
+      "pipeline_position": 1,
+      "extra_queries": true,
+      "queries": [
+        "Big cloud customers designing their own accelerators could cut demand for its GPUs.",
+        "custom silicon developed by customers",
+        "competition from in-house accelerators",
+        "customer concentration cloud service providers",
+        "reduced demand for our GPUs"
+      ],
+      "passages": 636,
+      "top_passage": "s3 Item 1A. Risk Factors \u203a Risks Related to Our Industry and Markets",
+      "expected": "supports",
+      "relevant_sections": [
+        "Item 1A. Risk Factors \u203a Risks Related to Our Industry and Markets"
+      ],
+      "rank_label": "1",
+      "reciprocal_rank": 1.0
+    },
+    {
+      "case_id": "nvda-crypto-lawsuit-over",
+      "ticker": "NVDA",
+      "rank": 15,
+      "pipeline_position": null,
+      "extra_queries": true,
+      "queries": [
+        "The old shareholder suit over crypto-mining demand is finished and no longer a legal overhang.",
+        "securities class action cryptocurrency mining",
+        "legal proceedings shareholder litigation",
+        "settlement of class action",
+        "Supreme Court certiorari securities case"
+      ],
+      "passages": 636,
+      "top_passage": "s3 Item 1A. Risk Factors \u203a Risks Related to Regulatory, Legal, Our Stock and Other Matters",
+      "expected": "challenges",
+      "relevant_sections": [
+        "Part I, Item 1. Financial Statements (Unaudited) \u203a Securities Class Action and Derivative Lawsuits",
+        "Part I, Item 1. Financial Statements (Unaudited) \u203a Securities Class Action and Derivative Lawsuits"
+      ],
+      "rank_label": "15",
+      "reciprocal_rank": 0.06666666666666667
+    },
+    {
+      "case_id": "cost-members-renew",
+      "ticker": "COST",
+      "rank": 1,
+      "pipeline_position": 1,
+      "extra_queries": true,
+      "queries": [
+        "Shoppers keep paying to re-up their club cards, and fee income is still climbing.",
+        "membership fee income",
+        "renewal rate",
+        "paid members",
+        "membership renewal rate decline"
+      ],
+      "passages": 205,
+      "top_passage": "s1 Item 7. Management's Discussion and Analysis of Financial Condition and Results of Operations (amounts in millions, except per share, share, percentages and warehouse count data) \u203a Membership Fees",
+      "expected": "supports",
+      "relevant_sections": [
+        "Item 7. Management's Discussion and Analysis of Financial Condition and Results of Operations (amounts in millions, except per share, share, percentages and warehouse count data) \u203a Membership Fees"
+      ],
+      "rank_label": "1",
+      "reciprocal_rank": 1.0
+    },
+    {
+      "case_id": "cost-markup-widened",
+      "ticker": "COST",
+      "rank": 1,
+      "pipeline_position": 1,
+      "extra_queries": true,
+      "queries": [
+        "The warehouse chain's merchandise markup widened noticeably this year.",
+        "gross margin percentage",
+        "merchandise costs",
+        "gross margin decrease",
+        "core merchandise categories margin"
+      ],
+      "passages": 205,
+      "top_passage": "s1 Item 7. Management's Discussion and Analysis of Financial Condition and Results of Operations (amounts in millions, except per share, share, percentages and warehouse count data) \u203a Gross Margin",
+      "expected": "mixed",
+      "relevant_sections": [
+        "Item 7. Management's Discussion and Analysis of Financial Condition and Results of Operations (amounts in millions, except per share, share, percentages and warehouse count data) \u203a Gross Margin"
+      ],
+      "rank_label": "1",
+      "reciprocal_rank": 1.0
+    },
+    {
+      "case_id": "cost-tariffs-unrecovered",
+      "ticker": "COST",
+      "rank": 2,
+      "pipeline_position": 2,
+      "extra_queries": true,
+      "queries": [
+        "Import duties have been a pure cost that the retailer has no way to claw back.",
+        "tariffs",
+        "import duties cost",
+        "tariff refund",
+        "pricing pressure from tariffs and cost increases"
+      ],
+      "passages": 205,
+      "top_passage": "s1 Item 1A. Risk Factors \u203a Market and Other External Risks",
+      "expected": "challenges",
+      "relevant_sections": [
+        "Item 7. Management's Discussion and Analysis of Financial Condition and Results of Operations (amounts in millions, except per share, share, percentages and warehouse count data) \u203a Tariff Impacts",
+        "Item 7. Management's Discussion and Analysis of Financial Condition and Results of Operations (amounts in millions, except per share, share, percentages and warehouse count data) \u203a Tariff Impacts"
+      ],
+      "rank_label": "2",
+      "reciprocal_rank": 0.5
+    },
+    {
+      "case_id": "cost-north-america-dependence",
+      "ticker": "COST",
+      "rank": 20,
+      "pipeline_position": null,
+      "extra_queries": true,
+      "queries": [
+        "Almost all of the club's sales and profit come from the US and Canada, leaving little geographic diversification.",
+        "operations in United States and Canada",
+        "segment information geographic",
+        "international operations",
+        "foreign currency and concentration of sales"
+      ],
+      "passages": 205,
+      "top_passage": "s1 Item 7. Management's Discussion and Analysis of Financial Condition and Results of Operations (amounts in millions, except per share, share, percentages and warehouse count data) \u203a Selling, General and Administrative Expenses",
+      "expected": "supports",
+      "relevant_sections": [
+        "Item 1A. Risk Factors \u203a Business and Operating Risks"
+      ],
+      "rank_label": "20",
+      "reciprocal_rank": 0.05
+    },
+    {
+      "case_id": "aapl-china-shrinking",
+      "ticker": "AAPL",
+      "rank": 1,
+      "pipeline_position": 1,
+      "extra_queries": true,
+      "queries": [
+        "Demand for the iPhone maker's products in Greater China is still contracting.",
+        "Greater China net sales",
+        "Greater China iPhone revenue",
+        "Greater China decrease",
+        "Greater China net sales increase"
+      ],
+      "passages": 244,
+      "top_passage": "s1 Item 7. Management\u2019s Discussion and Analysis of Financial Condition and Results of Operations \u203a Segment Operating Performance",
+      "expected": "challenges",
+      "relevant_sections": [
+        "Item 7. Management\u2019s Discussion and Analysis of Financial Condition and Results of Operations \u203a Segment Operating Performance"
+      ],
+      "rank_label": "1",
+      "reciprocal_rank": 1.0
+    },
+    {
+      "case_id": "aapl-margin-runway",
+      "ticker": "AAPL",
+      "rank": 1,
+      "pipeline_position": 1,
+      "extra_queries": true,
+      "queries": [
+        "Hardware margins should keep expanding from here thanks to a richer product mix.",
+        "products gross margin percentage",
+        "product mix",
+        "gross margin decline",
+        "foreign exchange and tariff cost pressure"
+      ],
+      "passages": 244,
+      "top_passage": "s1 Item 7. Management\u2019s Discussion and Analysis of Financial Condition and Results of Operations \u203a Gross Margin",
+      "expected": "mixed",
+      "relevant_sections": [
+        "Item 7. Management\u2019s Discussion and Analysis of Financial Condition and Results of Operations \u203a Gross Margin",
+        "Item 7. Management\u2019s Discussion and Analysis of Financial Condition and Results of Operations \u203a Gross Margin"
+      ],
+      "rank_label": "1",
+      "reciprocal_rank": 1.0
+    },
+    {
+      "case_id": "aapl-asian-assembly",
+      "ticker": "AAPL",
+      "rank": 1,
+      "pipeline_position": 1,
+      "extra_queries": true,
+      "queries": [
+        "Nearly all of its devices are put together by contract manufacturers in Asia, a concentration risk.",
+        "outsourcing partners Asia manufacturing",
+        "single-source suppliers",
+        "supply chain concentration",
+        "manufacturing in China India Vietnam risk"
+      ],
+      "passages": 244,
+      "top_passage": "s1 Item 1A. Risk Factors \u203a Business Risks",
+      "expected": "supports",
+      "relevant_sections": [
+        "Item 1A. Risk Factors \u203a Business Risks"
+      ],
+      "rank_label": "1",
+      "reciprocal_rank": 1.0
+    },
+    {
+      "case_id": "aapl-eu-app-store",
+      "ticker": "AAPL",
+      "rank": 4,
+      "pipeline_position": 4,
+      "extra_queries": true,
+      "queries": [
+        "European competition law has already forced it to loosen App Store terms and fees.",
+        "Digital Markets Act",
+        "European Commission App Store",
+        "App Store terms and fees",
+        "legal proceedings antitrust"
+      ],
+      "passages": 244,
+      "top_passage": "s1 Item 1A. Risk Factors \u203a Legal and Regulatory Compliance Risks",
+      "expected": "supports",
+      "relevant_sections": [
+        "Item 1A. Risk Factors \u203a Legal and Regulatory Compliance Risks",
+        "Item 3. Legal Proceedings"
+      ],
+      "rank_label": "4",
+      "reciprocal_rank": 0.25
+    },
+    {
+      "case_id": "msft-azure-growth",
+      "ticker": "MSFT",
+      "rank": 9,
+      "pipeline_position": null,
+      "extra_queries": true,
+      "queries": [
+        "Its public cloud platform is still growing at a very fast pace.",
+        "Azure and other cloud services revenue growth",
+        "Intelligent Cloud revenue",
+        "Azure growth rate slowdown",
+        "capacity constraints cloud growth"
+      ],
+      "passages": 526,
+      "top_passage": "s2 Item 7. MANAGEMENT\u2019S DISCUSSION AND ANALYSIS OF FINANCIAL CONDITION AND RESULTS OF OPERATIONS \u203a Reportable Segments",
+      "expected": "supports",
+      "relevant_sections": [
+        "Part I, Item 2. MANAGEMENT\u2019S DISCUSSION AND ANALYSIS OF FINANCIAL CONDITION AND RESULTS OF OPERATIONS \u203a Reportable Segments"
+      ],
+      "rank_label": "9",
+      "reciprocal_rank": 0.1111111111111111
+    },
+    {
+      "case_id": "msft-cloud-margin",
+      "ticker": "MSFT",
+      "rank": 5,
+      "pipeline_position": 5,
+      "extra_queries": true,
+      "queries": [
+        "The cloud business is becoming more profitable as it scales up.",
+        "Microsoft Cloud gross margin percentage",
+        "Intelligent Cloud operating income",
+        "gross margin decrease AI infrastructure",
+        "increased capital expenditures and depreciation"
+      ],
+      "passages": 526,
+      "top_passage": "s2 Item 7. MANAGEMENT\u2019S DISCUSSION AND ANALYSIS OF FINANCIAL CONDITION AND RESULTS OF OPERATIONS \u203a Reportable Segments",
+      "expected": "challenges",
+      "relevant_sections": [
+        "Part I, Item 2. MANAGEMENT\u2019S DISCUSSION AND ANALYSIS OF FINANCIAL CONDITION AND RESULTS OF OPERATIONS \u203a Devices and Consumer",
+        "Part I, Item 2. MANAGEMENT\u2019S DISCUSSION AND ANALYSIS OF FINANCIAL CONDITION AND RESULTS OF OPERATIONS \u203a Economic Conditions, Challenges, and Risks"
+      ],
+      "rank_label": "5",
+      "reciprocal_rank": 0.2
+    },
+    {
+      "case_id": "msft-ai-harm",
+      "ticker": "MSFT",
+      "rank": 4,
+      "pipeline_position": 4,
+      "extra_queries": true,
+      "queries": [
+        "Shipping generative AI features carries a real chance of embarrassing or legally costly failures.",
+        "risks of artificial intelligence",
+        "AI legal and reputational harm",
+        "harmful or inaccurate content liability",
+        "litigation and regulation of AI"
+      ],
+      "passages": 526,
+      "top_passage": "s2 Item 1A. RISK FACTORS \u203a Other digital safety abuses",
+      "expected": "supports",
+      "relevant_sections": [
+        "Part II, Item 1A. RISK FACTORS \u203a Other digital safety abuses",
+        "Item 1A. RISK FACTORS \u203a Other digital safety abuses"
+      ],
+      "rank_label": "4",
+      "reciprocal_rank": 0.25
+    },
+    {
+      "case_id": "msft-never-breached",
+      "ticker": "MSFT",
+      "rank": 1,
+      "pipeline_position": 1,
+      "extra_queries": true,
+      "queries": [
+        "State-backed hackers have never managed to get inside the company's own corporate systems.",
+        "nation-state cyberattack",
+        "security incident Midnight Blizzard",
+        "unauthorized access to corporate systems",
+        "cybersecurity breach risk"
+      ],
+      "passages": 526,
+      "top_passage": "s1 Part II, Item 1A. RISK FACTORS \u203a Security of our information technology",
+      "expected": "challenges",
+      "relevant_sections": [
+        "Item 1A. RISK FACTORS \u203a Security of our information technology",
+        "Item 1A. RISK FACTORS \u203a Security of our information technology",
+        "Part II, Item 1A. RISK FACTORS \u203a Security of our information technology"
+      ],
+      "rank_label": "1",
+      "reciprocal_rank": 1.0
+    },
+    {
+      "case_id": "ko-north-america-volume",
+      "ticker": "KO",
+      "rank": 10,
+      "pipeline_position": null,
+      "extra_queries": true,
+      "queries": [
+        "Consumers in North America bought noticeably more of the company's drinks in the latest quarter.",
+        "North America unit case volume",
+        "North America net operating revenues",
+        "volume decline North America",
+        "Americas concentrate volume change"
+      ],
+      "passages": 736,
+      "top_passage": "s2 Item 7. MANAGEMENT\u2019S DISCUSSION AND ANALYSIS OF FINANCIAL CONDITION AND RESULTS OF OPERATIONS \u203a Beverage Volume",
+      "expected": "challenges",
+      "relevant_sections": [
+        "Part I, Item 2. Management\u2019s Discussion and Analysis of Financial Condition and Results of Operations \u203a Unit Case Volume"
+      ],
+      "rank_label": "10",
+      "reciprocal_rank": 0.1
+    },
+    {
+      "case_id": "ko-pricing-lifts-margin",
+      "ticker": "KO",
+      "rank": 2,
+      "pipeline_position": 2,
+      "extra_queries": true,
+      "queries": [
+        "Price increases are lifting the beverage maker's profitability on each dollar of revenue.",
+        "gross profit margin",
+        "operating margin price/mix",
+        "cost of goods sold increase commodity inflation",
+        "pricing impact on operating income"
+      ],
+      "passages": 736,
+      "top_passage": "s2 Item 7. MANAGEMENT\u2019S DISCUSSION AND ANALYSIS OF FINANCIAL CONDITION AND RESULTS OF OPERATIONS \u203a Gross Profit Margin",
+      "expected": "supports",
+      "relevant_sections": [
+        "Part I, Item 2. Management\u2019s Discussion and Analysis of Financial Condition and Results of Operations \u203a Gross Profit Margin",
+        "Part I, Item 2. Management\u2019s Discussion and Analysis of Financial Condition and Results of Operations \u203a Gross Profit Margin"
+      ],
+      "rank_label": "2",
+      "reciprocal_rank": 0.5
+    },
+    {
+      "case_id": "ko-irs-dispute-settled",
+      "ticker": "KO",
+      "rank": 43,
+      "pipeline_position": null,
+      "extra_queries": true,
+      "queries": [
+        "The long fight with the US tax authority over foreign licensing income is settled and no longer a cash risk.",
+        "IRS tax litigation foreign licensing",
+        "Tax Court ruling transfer pricing",
+        "tax litigation unrecognized tax benefits cash payment",
+        "IRS notice of deficiency appeal"
+      ],
+      "passages": 736,
+      "top_passage": "s1 Part II, Item 1. Legal Proceedings",
+      "expected": "challenges",
+      "relevant_sections": [
+        "Item 1A. RISK FACTORS \u203a RISKS RELATED TO REGULATORY AND LEGAL MATTERS",
+        "Part I, Item 1. Financial Statements \u203a Tax Audits"
+      ],
+      "rank_label": "43",
+      "reciprocal_rank": 0.023255813953488372
+    }
+  ],
+  "unscored_unanswerable_cases": [
+    "nvda-workforce-unionising",
+    "cost-franchising",
+    "aapl-electric-car",
+    "msft-stock-split",
+    "ko-cannabis-stake",
+    "ko-bitcoin-treasury"
+  ]
+}

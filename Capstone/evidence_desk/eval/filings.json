@@ -1,0 +1,131 @@
+{
+  "version": 1,
+  "filings": [
+    {
+      "ticker": "AAPL",
+      "accession": "0000320193-26-000026",
+      "form": "10-K",
+      "period_end": "2026-09-26",
+      "filed_date": "2026-11-03",
+      "url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000026/aapl-20260926.htm",
+      "sha256": "105ba89f47711a7918059ba2d8d11c7f836ba3ab6b80e2c8e41ba3f149ad37ac",
+      "cik": 320193,
+      "name": "Apple Inc."
+    },
+    {
+      "ticker": "COST",
+      "accession": "0000909832-26-000093",
+      "form": "10-K",
+      "period_end": "2026-08-30",
+      "filed_date": "2026-10-07",
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983226000093/cost-20260830.htm",
+      "sha256": "dfe52a0780336d45cf79afdf17d18b2143ce805a7137af17b6bf7676adb63b19",
+      "cik": 909832,
+      "name": "COSTCO WHOLESALE CORP /NEW"
+    },
+    {
+      "ticker": "KO",
+      "accession": "0001628280-26-067844",
+      "form": "10-Q",
+      "period_end": "2026-10-02",
+      "filed_date": "2026-10-28",
+      "url": "https://www.sec.gov/Archives/edgar/data/21344/000162828026067844/ko-20261002.htm",
+      "sha256": "ce0de87fbfb06b9edef37e1d968853032441ca8f9107caf8e033458466f6f5d9",
+      "cik": 21344,
+      "name": "COCA COLA CO"
+    },
+    {
+      "ticker": "KO",
+      "accession": "0001628280-26-010047",
+      "form": "10-K",
+      "period_end": "2025-12-31",
+      "filed_date": "2026-02-20",
+      "url": "https://www.sec.gov/Archives/edgar/data/21344/000162828026010047/ko-20251231.htm",
+      "sha256": "d6830fde015272fab608d080c6759db96cfa867f6770a9eeb7b82894b3814e43",
+      "cik": 21344,
+      "name": "COCA COLA CO"
+    },
+    {
+      "ticker": "MSFT",
+      "accession": "0001193125-26-436133",
+      "form": "10-Q",
+      "period_end": "2026-09-30",
+      "filed_date": "2026-10-28",
+      "url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526436133/msft-20260930.htm",
+      "sha256": "281b01ea113db949c2a61b34133f86efd6d2a373093f9850ac0c66815ca89121",
+      "cik": 789019,
+      "name": "MICROSOFT CORP"
+    },
+    {
+      "ticker": "MSFT",
+      "accession": "0001193125-26-323660",
+      "form": "10-K",
+      "period_end": "2026-06-30",
+      "filed_date": "2026-07-29",
+      "url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/msft-20260630.htm",
+      "sha256": "5b847d59157c0970229eabe3fe2fe4344db70ad327b454abe4e1ed00268953f9",
+      "cik": 789019,
+      "name": "MICROSOFT CORP"
+    },
+    {
+      "ticker": "NVDA",
+      "accession": "0001045810-26-000075",
+      "form": "10-Q",
+      "period_end": "2026-07-26",
+      "filed_date": "2026-08-26",
+      "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm",
+      "sha256": "8374d4902f0b6fefee7f3f0828b79c8308ff69b25e00b9e4a3e2b2ab2e96e22c",
+      "cik": 1045810,
+      "name": "NVIDIA CORP"
+    },
+    {
+      "ticker": "NVDA",
+      "accession": "0001045810-26-000052",
+      "form": "10-Q",
+      "period_end": "2026-04-26",
+      "filed_date": "2026-05-20",
+      "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000052/nvda-20260426.htm",
+      "sha256": "0d553f87180562434cdcb2e7d1be6e9ec7a1465c3671decb402d7f9c10d67d9b",
+      "cik": 1045810,
+      "name": "NVIDIA CORP"
+    },
+    {
+      "ticker": "NVDA",
+      "accession": "0001045810-26-000021",
+      "form": "10-K",
+      "period_end": "2026-01-25",
+      "filed_date": "2026-02-25",
+      "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm",
+      "sha256": "1cb906f8e4c27c431667d1be19b11fe1f955703e20e338cfeffbd91cafec5149",
+      "cik": 1045810,
+      "name": "NVIDIA CORP"
+    }
+  ],
+  "facts": {
+    "AAPL": {
+      "cik": 320193,
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000320193.json",
+      "sha256": "f085735b4d08fb116ade18d24247ffabe11df8eb52eae6556b165831f15ef1ad"
+    },
+    "COST": {
+      "cik": 909832,
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000909832.json",
+      "sha256": "b675ced201b27ede2b0d26ca6fd873befe96a1afa9679339a2d0b964187dcdff"
+    },
+    "KO": {
+      "cik": 21344,
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000021344.json",
+      "sha256": "87a4173fcd3d662d18d19e0e885095aa5e3812b74c54d1ee55808ff1540a8081"
+    },
+    "MSFT": {
+      "cik": 789019,
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000789019.json",
+      "sha256": "8c1903c041f5c27e86ed15f37debb1f41882b7904bba129ef9edc76478b1e8ea"
+    },
+    "NVDA": {
+      "cik": 1045810,
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001045810.json",
+      "sha256": "5b264d77a76a773f7833f4ae8346de580e30c752781765b1f46c81e5adbf425b"
+    }
+  }
+}

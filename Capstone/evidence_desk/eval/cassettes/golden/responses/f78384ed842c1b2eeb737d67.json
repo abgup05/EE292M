@@ -1,0 +1,56 @@
+{
+ "key": "f78384ed842c1b2eeb737d67",
+ "step": "plan",
+ "via": "Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the engine's rules",
+ "model": "claude-sonnet-5-5",
+ "recorded_at": "2026-11-17T12:41:22Z",
+ "response": {
+  "claims": [
+   {
+    "claim_number": 1,
+    "queries": [
+     "Greater China net sales",
+     "Greater China iPhone revenue",
+     "Greater China decrease",
+     "Greater China net sales increase"
+    ]
+   },
+   {
+    "claim_number": 2,
+    "queries": [
+     "products gross margin percentage",
+     "product mix",
+     "gross margin decline",
+     "foreign exchange and tariff cost pressure"
+    ]
+   },
+   {
+    "claim_number": 3,
+    "queries": [
+     "outsourcing partners Asia manufacturing",
+     "single-source suppliers",
+     "supply chain concentration",
+     "manufacturing in China India Vietnam risk"
+    ]
+   },
+   {
+    "claim_number": 4,
+    "queries": [
+     "Digital Markets Act",
+     "European Commission App Store",
+     "App Store terms and fees",
+     "legal proceedings antitrust"
+    ]
+   },
+   {
+    "claim_number": 5,
+    "queries": [
+     "automobile electric vehicle",
+     "Project Titan",
+     "new products and services development",
+     "risks of entering new product categories"
+    ]
+   }
+  ]
+ }
+}

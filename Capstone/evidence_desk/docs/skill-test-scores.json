@@ -1,0 +1,296 @@
+{
+ "date": "2026-11-17",
+ "model": "claude-sonnet-5-5, fresh headless sessions (claude -p)",
+ "criteria": [
+  "a model that did not write the code",
+  "a clean checkout of the tag",
+  "forbids the author's notes",
+  "read-only",
+  "the session checklist, word for word",
+  "saved unedited under docs/reviews"
+ ],
+ "good_means": "at least 5 of 6 criteria",
+ "trigger_checks": [
+  {
+   "request": "Get the Week 7 review done on capstone-v3: a blind review against the speed-system checklist.",
+   "first_tool_call": "Skill(blind-review)"
+  },
+  {
+   "request": "I need an independent review of the capstone by a model that did not write it.",
+   "first_tool_call": "Skill(blind-review)"
+  },
+  {
+   "request": "Run a foreign-model review of tag capstone-v2 and save what the reviewer says.",
+   "first_tool_call": "Skill(blind-review)"
+  },
+  {
+   "request": "Look over the diff I have staged and tell me if there are bugs before I commit.",
+   "first_tool_call": "Skill(code-review)"
+  },
+  {
+   "request": "Review my pull request before I merge it.",
+   "first_tool_call": "Skill(code-review)"
+  },
+  {
+   "request": "Summarise what review 2 said about the tests.",
+   "first_tool_call": "Bash"
+  }
+ ],
+ "runs": [
+  {
+   "condition": "with the skill",
+   "run": 1,
+   "turns": 8,
+   "cost_usd": 0.17,
+   "criteria": {
+    "a model that did not write the code": true,
+    "a clean checkout of the tag": true,
+    "forbids the author's notes": true,
+    "read-only": true,
+    "the session checklist, word for word": true,
+    "saved unedited under docs/reviews": true
+   },
+   "met": 6,
+   "good": true,
+   "first_300_characters": "I haven't started the reviewer and haven't created or changed any file. `capstone-v3` exists, and I'm using the speed-system checklist (Week 7A) from the skill's `reference/checklists.md`.\n\n## Before you approve\n\n- **A speed-system review already exists.** `docs/reviews/review-3-speed-system.md` is "
+  },
+  {
+   "condition": "with the skill",
+   "run": 2,
+   "turns": 8,
+   "cost_usd": 0.178,
+   "criteria": {
+    "a model that did not write the code": true,
+    "a clean checkout of the tag": true,
+    "forbids the author's notes": true,
+    "read-only": true,
+    "the session checklist, word for word": true,
+    "saved unedited under docs/reviews": true
+   },
+   "met": 6,
+   "good": true,
+   "first_300_characters": "Nothing was started or changed. Everything below is a plan.\n\n## Two things to settle first\n\n1. **This review may already exist.** `Capstone/evidence_desk/docs/reviews/review-3-speed-system.md` is indexed as Week 7A, `capstone-v3` plus the drawing commit `1ecfcf1`. A second blind review of the same t"
+  },
+  {
+   "condition": "with the skill",
+   "run": 3,
+   "turns": 5,
+   "cost_usd": 0.167,
+   "criteria": {
+    "a model that did not write the code": true,
+    "a clean checkout of the tag": true,
+    "forbids the author's notes": true,
+    "read-only": true,
+    "the session checklist, word for word": true,
+    "saved unedited under docs/reviews": true
+   },
+   "met": 6,
+   "good": true,
+   "first_300_characters": "I haven't started the reviewer and haven't created or changed any file. I only read the skill's checklist file and ran `git tag`, `git log`, `git worktree list` and `ls`.\n\n## What I found first\n\n- **The tag exists.** `capstone-v3` points at `95c1f1b`. The main checkout is 7 commits past it, at `3f31"
+  },
+  {
+   "condition": "with the skill",
+   "run": 4,
+   "turns": 5,
+   "cost_usd": 0.166,
+   "criteria": {
+    "a model that did not write the code": true,
+    "a clean checkout of the tag": true,
+    "forbids the author's notes": true,
+    "read-only": true,
+    "the session checklist, word for word": true,
+    "saved unedited under docs/reviews": true
+   },
+   "met": 6,
+   "good": true,
+   "first_300_characters": "I haven't started the reviewer and haven't created or changed anything. I only read the checklist file and ran read-only `git` queries.\n\n## What I found first\n\n- **The tag exists.** `capstone-v3` is commit `98307b7`. `HEAD` is 7 commits later, and the working tree also has uncommitted edits. So the "
+  },
+  {
+   "condition": "with the skill",
+   "run": 5,
+   "turns": 5,
+   "cost_usd": 0.163,
+   "criteria": {
+    "a model that did not write the code": true,
+    "a clean checkout of the tag": true,
+    "forbids the author's notes": true,
+    "read-only": true,
+    "the session checklist, word for word": true,
+    "saved unedited under docs/reviews": true
+   },
+   "met": 6,
+   "good": true,
+   "first_300_characters": "I checked that the tag exists and read the checklist. I created no files and started no reviewer. Three things you should know before you approve:\n\n- **This review already exists.** `docs/reviews/review-3-speed-system.md` is in the repo, and its commit message (\"Record review 3: speed, the system, w"
+  },
+  {
+   "condition": "skills disabled, same directory",
+   "run": 1,
+   "turns": 7,
+   "cost_usd": 0.146,
+   "criteria": {
+    "a model that did not write the code": true,
+    "a clean checkout of the tag": true,
+    "forbids the author's notes": true,
+    "read-only": true,
+    "the session checklist, word for word": true,
+    "saved unedited under docs/reviews": true
+   },
+   "met": 6,
+   "good": true,
+   "first_300_characters": "Nothing was started or written. I only read the `blind-review` skill, its checklists and `docs/reviews/README.md`, and listed the tags and the reviews folder.\n\nTwo things to settle before this runs:\n- **A speed-system review of `capstone-v3` already exists.** `docs/reviews/review-3-speed-system.md` "
+  },
+  {
+   "condition": "skills disabled, same directory",
+   "run": 2,
+   "turns": 11,
+   "cost_usd": 0.168,
+   "criteria": {
+    "a model that did not write the code": true,
+    "a clean checkout of the tag": true,
+    "forbids the author's notes": true,
+    "read-only": true,
+    "the session checklist, word for word": true,
+    "saved unedited under docs/reviews": true
+   },
+   "met": 6,
+   "good": true,
+   "first_300_characters": "This is the brief and the plan. Nothing was started, created or changed.\n\n## Things to know first\n\n- **A review of this version already exists.** `docs/reviews/review-3-speed-system.md` is dated 17 November 2026 (today). It covers `capstone-v3` plus commit `1ecfcf1`, not the bare tag. A new run woul"
+  },
+  {
+   "condition": "skills disabled, same directory",
+   "run": 3,
+   "turns": 8,
+   "cost_usd": 0.158,
+   "criteria": {
+    "a model that did not write the code": true,
+    "a clean checkout of the tag": true,
+    "forbids the author's notes": true,
+    "read-only": true,
+    "the session checklist, word for word": true,
+    "saved unedited under docs/reviews": true
+   },
+   "met": 6,
+   "good": true,
+   "first_300_characters": "Nothing has been started or changed. Here is the preparation, plus three things I found that change how this should be run.\n\n## Findings that affect the run\n\n1. **A speed-system review already exists.** `docs/reviews/review-3-speed-system.md` is indexed as \"`capstone-v3` plus the system drawing (com"
+  },
+  {
+   "condition": "skills disabled, same directory",
+   "run": 4,
+   "turns": 7,
+   "cost_usd": 0.155,
+   "criteria": {
+    "a model that did not write the code": true,
+    "a clean checkout of the tag": true,
+    "forbids the author's notes": true,
+    "read-only": true,
+    "the session checklist, word for word": true,
+    "saved unedited under docs/reviews": true
+   },
+   "met": 6,
+   "good": true,
+   "first_300_characters": "I haven't started a reviewer or written anything. Three facts from the repo change what you may want:\n\n- **A review of this version already exists.** `docs/reviews/review-3-speed-system.md` is listed in the index, so a new run would be a second review, not the first.\n- **The tag has no system drawin"
+  },
+  {
+   "condition": "skills disabled, same directory",
+   "run": 5,
+   "turns": 7,
+   "cost_usd": 0.145,
+   "criteria": {
+    "a model that did not write the code": true,
+    "a clean checkout of the tag": true,
+    "forbids the author's notes": true,
+    "read-only": true,
+    "the session checklist, word for word": true,
+    "saved unedited under docs/reviews": true
+   },
+   "met": 6,
+   "good": true,
+   "first_300_characters": "Nothing has been started or written. Reading the `blind-review` skill showed three things that affect this run:\n\n- **Review file name:** `review-3-speed-system.md` already exists for this same tag and checklist, so the output can't use that name.\n- **Commits after the tag:** the working tree has edi"
+  },
+  {
+   "condition": "skills disabled, capstone-v1 checkout",
+   "run": 1,
+   "turns": 12,
+   "cost_usd": 0.172,
+   "criteria": {
+    "a model that did not write the code": true,
+    "a clean checkout of the tag": true,
+    "forbids the author's notes": true,
+    "read-only": true,
+    "the session checklist, word for word": false,
+    "saved unedited under docs/reviews": true
+   },
+   "met": 5,
+   "good": true,
+   "first_300_characters": "I've paused before the brief because I couldn't get the checklist text, and I can't fill that in myself. The checklist is on a course slide, probably `Slides/w06-b-web.pdf`. Reading it needs `pdftoppm`, which isn't installed, and I may not install it on the host. I also found no checklist in the rep"
+  },
+  {
+   "condition": "skills disabled, capstone-v1 checkout",
+   "run": 2,
+   "turns": 11,
+   "cost_usd": 0.155,
+   "criteria": {
+    "a model that did not write the code": true,
+    "a clean checkout of the tag": true,
+    "forbids the author's notes": true,
+    "read-only": true,
+    "the session checklist, word for word": true,
+    "saved unedited under docs/reviews": true
+   },
+   "met": 6,
+   "good": true,
+   "first_300_characters": "I haven't started the reviewer and haven't created or changed any file. I only read the skill, its checklist file, `docs/reviews/README.md`, and git metadata. The brief below follows `.claude/skills/blind-review/SKILL.md`.\n\n## Things you should know first\n\n- **A review of this topic already exists.*"
+  },
+  {
+   "condition": "skills disabled, capstone-v1 checkout",
+   "run": 3,
+   "turns": 13,
+   "cost_usd": 0.178,
+   "criteria": {
+    "a model that did not write the code": true,
+    "a clean checkout of the tag": true,
+    "forbids the author's notes": true,
+    "read-only": true,
+    "the session checklist, word for word": true,
+    "saved unedited under docs/reviews": true
+   },
+   "met": 6,
+   "good": true,
+   "first_300_characters": "Nothing was started and no file was created or changed. I only read files.\n\n**Before you approve this:** a review of this exact version already exists. `Capstone/evidence_desk/docs/reviews/review-3-speed-system.md` was saved today, 17 November 2026. It was run on commit `1ecfcf1`, which is `capstone"
+  },
+  {
+   "condition": "skills disabled, capstone-v1 checkout",
+   "run": 4,
+   "turns": 15,
+   "cost_usd": 0.215,
+   "criteria": {
+    "a model that did not write the code": true,
+    "a clean checkout of the tag": true,
+    "forbids the author's notes": true,
+    "read-only": true,
+    "the session checklist, word for word": true,
+    "saved unedited under docs/reviews": true
+   },
+   "met": 6,
+   "good": true,
+   "first_300_characters": "I haven't started the reviewer, and I haven't created or changed any file. I only read the `blind-review` skill, its checklist file, and the git tags and worktrees. Three things in the repo shape the brief:\n\n- **The tag has no system drawing.** `capstone-v3` has no drawing in `Capstone/evidence_desk"
+  },
+  {
+   "condition": "skills disabled, capstone-v1 checkout",
+   "run": 5,
+   "turns": 9,
+   "cost_usd": 0.154,
+   "criteria": {
+    "a model that did not write the code": true,
+    "a clean checkout of the tag": true,
+    "forbids the author's notes": true,
+    "read-only": true,
+    "the session checklist, word for word": true,
+    "saved unedited under docs/reviews": true
+   },
+   "met": 6,
+   "good": true,
+   "first_300_characters": "I read the `blind-review` skill and its `speed-system` checklist. Nothing was started, created or changed. Three things in the repo affect the plan:\n\n- **`review-3-speed-system.md` already exists** and is listed in `docs/reviews/README.md`. It covers `capstone-v3` plus the drawing added in commit `1"
+  }
+ ]
+}

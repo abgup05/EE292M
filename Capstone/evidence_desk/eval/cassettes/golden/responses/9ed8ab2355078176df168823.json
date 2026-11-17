@@ -1,0 +1,69 @@
+{
+  "key": "9ed8ab2355078176df168823",
+  "step": "assess",
+  "via": "Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the engine's rules",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-17T12:42:46Z",
+  "response": {
+    "findings": [
+      {
+        "statement": "The company states that its revenue is concentrated among a limited number of direct and indirect customers and that this trend may continue.",
+        "stance": "supports",
+        "confidence": "high",
+        "rationale": "This is the company's own description of its customer concentration, repeated across several filings.",
+        "quotes": [
+          {
+            "passage_id": "s3-p183",
+            "text": "Our revenue is concentrated among a limited number of direct and indirect customers and this trend may continue."
+          }
+        ],
+        "figure_ids": []
+      },
+      {
+        "statement": "For fiscal year 2026, one direct customer represented 22% of total revenue and another represented 14%.",
+        "stance": "supports",
+        "confidence": "high",
+        "rationale": "Two direct customers together account for a large share of annual revenue, matching 'a handful of large buyers' and 'a big slice'.",
+        "quotes": [
+          {
+            "passage_id": "s3-p183",
+            "text": "Direct Customers – For fiscal year 2026, sales to one direct customer represented 22% of total revenue and sales to another direct customer represented 14% of total revenue, all of which were primarily attributable to the Compute &amp; Networking segment."
+          }
+        ],
+        "figure_ids": []
+      },
+      {
+        "statement": "In the first quarter of fiscal year 2027, three direct customers represented 21%, 17%, and 16% of total revenue.",
+        "stance": "supports",
+        "confidence": "high",
+        "rationale": "The most recent quarter shown in these passages still has three direct customers at large shares of revenue.",
+        "quotes": [
+          {
+            "passage_id": "s2-p59",
+            "text": "For the first quarter of fiscal year 2027, three direct customers represented 21%, 17%, and 16% of total revenue, all of which was primarily attributable to the Compute &amp; Networking segment."
+          }
+        ],
+        "figure_ids": []
+      },
+      {
+        "statement": "Indirect customers are also concentrated, with some individually representing 10% or more of revenue.",
+        "stance": "supports",
+        "confidence": "medium",
+        "rationale": "The filing says a significant amount of revenue comes from a limited number of indirect customers, but gives no combined share.",
+        "quotes": [
+          {
+            "passage_id": "s1-p97",
+            "text": "We generate a significant amount of our revenue from a limited number of indirect customers, some individually representing 10% or more of our revenue."
+          }
+        ],
+        "figure_ids": []
+      }
+    ],
+    "rationale": "Several filings state that revenue is concentrated, and the direct-customer percentages for fiscal year 2026 and the first quarter of fiscal year 2027 show a few customers making up a large share of sales.",
+    "unknowns": [
+      "The names of the direct and indirect customers.",
+      "The combined share of indirect customers, which is not stated.",
+      "Whether concentration is rising or falling over a longer period; the passages show it moving between periods."
+    ]
+  }
+}

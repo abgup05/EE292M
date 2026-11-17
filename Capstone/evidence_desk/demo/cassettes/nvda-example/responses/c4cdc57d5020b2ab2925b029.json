@@ -1,0 +1,51 @@
+{"key": "c4cdc57d5020b2ab2925b029", "step": "assess", "via": "Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17", "model": "claude-sonnet-5-5", "recorded_at": "2026-11-17T11:54:50Z", "response": {
+  "findings": [
+    {
+      "statement": "A US license requirement for H20 exports to China led to a $4.5 billion charge as demand for H20 products diminished.",
+      "stance": "supports",
+      "confidence": "high",
+      "rationale": "The filing directly ties the export license requirement to lost H20 demand and a charge for excess inventory and purchase obligations, which is a concrete effect of export controls on China-related business.",
+      "quotes": [
+        {"passage_id": "s3-p43", "text": "As a result of these requirements, we incurred a $4.5 billion charge in the first quarter of fiscal year 2026 associated with H20 for excess inventory and purchase obligations, as the demand for H20 products diminished."}
+      ],
+      "figure_ids": []
+    },
+    {
+      "statement": "Licensed China sales have been small: about $60 million of H20 revenue, and no H200 revenue to date.",
+      "stance": "supports",
+      "confidence": "medium",
+      "rationale": "The filing reports only limited revenue under licenses and uncertainty about whether H200 imports will be allowed, which is consistent with controls restricting China revenue. The passages do not give a baseline for what China revenue would otherwise be.",
+      "quotes": [
+        {"passage_id": "s3-p120", "text": "In August 2025, the USG granted licenses that would allow us to ship certain H20 products to certain China-based customers. We generated approximately $60 million in H20 revenue under those licenses."},
+        {"passage_id": "s3-p43", "text": "In February 2026, the USG granted a license that would allow us to ship small amounts of H200 products to specific China-based customers. To date, we have not generated any revenue under the H200 licensing program, and do not yet know whether any imports will be allowed into China."}
+      ],
+      "figure_ids": []
+    },
+    {
+      "statement": "The filing warns that export controls have in the past and may in the future reduce demand in markets beyond China, such as Europe, Latin America and Southeast Asia.",
+      "stance": "context",
+      "confidence": "medium",
+      "rationale": "This is a risk-factor statement about past and possible future effects. It widens the exposure beyond China but does not quantify any revenue impact.",
+      "quotes": [
+        {"passage_id": "s1-p141", "text": "As a result, export controls have in the past and may in the future negatively impact demand for our products and services not only in China, but also in other markets, such as Europe, Latin America, and Southeast Asia."}
+      ],
+      "figure_ids": []
+    },
+    {
+      "statement": "Reported company-wide results do not show a revenue squeeze: quarterly revenue was $96.22B, up 105.9% year over year, for the quarter ended 2026-07-26.",
+      "stance": "challenges",
+      "confidence": "low",
+      "rationale": "Total revenue is growing very fast, so any restriction from China controls has not stopped overall growth. These figures are company-wide and say nothing about China revenue specifically, so this only weakly challenges the claim.",
+      "quotes": [],
+      "figure_ids": ["revenue:quarter:2026-07-26", "revenue_yoy:quarter:2026-07-26"]
+    }
+  ],
+  "rationale": "The passages show export controls had a real, quantified effect through the H20 charge and have limited licensed China sales to small amounts. They do not show the size of the restriction on revenue, and company-wide revenue is growing strongly, so the claim holds in direction but its materiality is unclear.",
+  "unknowns": [
+    "How much revenue China represented before the controls, and what it is now.",
+    "Whether H200 shipments to China will be allowed and generate revenue.",
+    "How much of the restriction affects current-quarter revenue rather than past inventory charges.",
+    "The effect of the expected government share of licensed sales and of the tariff on H200 imports on future revenue and margins.",
+    "Whether future changes to export controls will tighten or loosen restrictions."
+  ]
+}}

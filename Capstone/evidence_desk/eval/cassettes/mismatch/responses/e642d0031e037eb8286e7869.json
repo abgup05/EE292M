@@ -1,0 +1,31 @@
+{
+  "key": "e642d0031e037eb8286e7869",
+  "step": "check",
+  "via": "Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-17T17:54:00+00:00",
+  "response": {
+    "judgements": [
+      {
+        "finding_number": 1,
+        "verdict": "not_supported",
+        "reason": "The excerpts concern an IRS tax notice and tax litigation; neither mentions membership fees, fee growth, or renewal rates, so they cannot support the 11% rise or the 92.3% and 89.8% renewal figures."
+      },
+      {
+        "finding_number": 2,
+        "verdict": "not_supported",
+        "reason": "The excerpt covers North American unit case volume by beverage category and says nothing about membership income, fee increases, or their share of membership growth."
+      },
+      {
+        "finding_number": 3,
+        "verdict": "not_supported",
+        "reason": "The excerpt reports unit case volume growth by beverage category and does not mention renewal rates, their measurement window, or any lag in them."
+      },
+      {
+        "finding_number": 4,
+        "verdict": "not_supported",
+        "reason": "The excerpt reports a North American unit case volume decline by beverage category and does not mention renewal rates, international membership growth, or online memberships."
+      }
+    ]
+  }
+}

@@ -1,0 +1,562 @@
+{
+  "id": "run-207c4c4bd9de",
+  "inputs": {
+    "ticker": "NVDA",
+    "decision": "Whether to keep an overweight position in NVIDIA into the next earnings report",
+    "claims": [
+      "Data center revenue is still growing year over year.",
+      "A small number of customers account for a large share of revenue.",
+      "Export controls on sales to China are restricting revenue.",
+      "Gross margin is expanding.",
+      "The company depends on a limited number of suppliers to manufacture its products."
+    ],
+    "scope_notes": "",
+    "filings": 3,
+    "extra_urls": []
+  },
+  "status": "partial",
+  "stage": "done",
+  "stage_detail": "",
+  "started_at": "2026-11-17T11:30:53.091999Z",
+  "finished_at": "2026-11-17T11:30:55.921285Z",
+  "company": {
+    "cik": 1045810,
+    "ticker": "NVDA",
+    "name": "NVIDIA CORP"
+  },
+  "engine": "claude",
+  "claims": [
+    {
+      "id": "c1",
+      "text": "Data center revenue is still growing year over year.",
+      "queries": [
+        "Data center revenue still growing year"
+      ],
+      "verdict": "unjudged",
+      "rationale": "3 sentence(s) quoted because they share the most terms with the claim; no stance was judged.",
+      "finding_ids": [
+        "f1",
+        "f2",
+        "f3"
+      ],
+      "passages_considered": 8
+    },
+    {
+      "id": "c2",
+      "text": "A small number of customers account for a large share of revenue.",
+      "queries": [
+        "small number customers account large share revenue"
+      ],
+      "verdict": "unjudged",
+      "rationale": "3 sentence(s) quoted because they share the most terms with the claim; no stance was judged.",
+      "finding_ids": [
+        "f4",
+        "f5",
+        "f6"
+      ],
+      "passages_considered": 8
+    },
+    {
+      "id": "c3",
+      "text": "Export controls on sales to China are restricting revenue.",
+      "queries": [
+        "Export controls sales China restricting revenue"
+      ],
+      "verdict": "unjudged",
+      "rationale": "3 sentence(s) quoted because they share the most terms with the claim; no stance was judged.",
+      "finding_ids": [
+        "f7",
+        "f8",
+        "f9"
+      ],
+      "passages_considered": 8
+    },
+    {
+      "id": "c4",
+      "text": "Gross margin is expanding.",
+      "queries": [
+        "Gross margin expanding"
+      ],
+      "verdict": "unjudged",
+      "rationale": "3 sentence(s) quoted because they share the most terms with the claim; no stance was judged.",
+      "finding_ids": [
+        "f10",
+        "f11",
+        "f12"
+      ],
+      "passages_considered": 8
+    },
+    {
+      "id": "c5",
+      "text": "The company depends on a limited number of suppliers to manufacture its products.",
+      "queries": [
+        "company depends limited number suppliers manufacture products"
+      ],
+      "verdict": "unjudged",
+      "rationale": "3 sentence(s) quoted because they share the most terms with the claim; no stance was judged.",
+      "finding_ids": [
+        "f13",
+        "f14",
+        "f15"
+      ],
+      "passages_considered": 8
+    }
+  ],
+  "sources": [
+    {
+      "id": "s1",
+      "kind": "sec_filing",
+      "title": "NVIDIA CORP 10-Q, period ended 2026-07-26",
+      "publisher": "SEC EDGAR",
+      "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm",
+      "requested_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm",
+      "form": "10-Q",
+      "accession": "0001045810-26-000075",
+      "period_end": "2026-07-26",
+      "published_date": "2026-08-26",
+      "retrieved_at": "2026-11-17T11:30:53.433477Z",
+      "content_hash": "53e6daca7f0d5babc3d1dcca603e52f8364e0fc9c8c1a00da7ee2003ac05feee",
+      "extraction_status": "extracted",
+      "sections": 73,
+      "characters": 151303,
+      "error": null
+    },
+    {
+      "id": "s2",
+      "kind": "sec_filing",
+      "title": "NVIDIA CORP 10-Q, period ended 2026-04-26",
+      "publisher": "SEC EDGAR",
+      "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000052/nvda-20260426.htm",
+      "requested_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000052/nvda-20260426.htm",
+      "form": "10-Q",
+      "accession": "0001045810-26-000052",
+      "period_end": "2026-04-26",
+      "published_date": "2026-05-20",
+      "retrieved_at": "2026-11-17T11:30:53.828480Z",
+      "content_hash": "069c21f96806c852b4e2c7bf62952d2db167b5bb58a590b92be938f2eb25d285",
+      "extraction_status": "extracted",
+      "sections": 69,
+      "characters": 139520,
+      "error": null
+    },
+    {
+      "id": "s3",
+      "kind": "sec_filing",
+      "title": "NVIDIA CORP 10-K, period ended 2026-01-25",
+      "publisher": "SEC EDGAR",
+      "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm",
+      "requested_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm",
+      "form": "10-K",
+      "accession": "0001045810-26-000021",
+      "period_end": "2026-01-25",
+      "published_date": "2026-02-25",
+      "retrieved_at": "2026-11-17T11:30:54.034410Z",
+      "content_hash": "9925c5689449a66cdd577f380159c81f4b5ccaefa9b2d47c1d70b38fa54210bf",
+      "extraction_status": "extracted",
+      "sections": 150,
+      "characters": 344740,
+      "error": null
+    }
+  ],
+  "evidence": [
+    {
+      "id": "e1",
+      "source_id": "s1",
+      "finding_id": "f1",
+      "excerpt": "Data Center revenue was $89.0 billion, up 117% from a year ago and up 18% sequentially, driven by the ramp of our Blackwell Ultra infrastructure.",
+      "locator": "Part I, Item 2. Management’s Discussion and Analysis of Financial Condition and Results of Operations › Second Quarter of Fiscal Year 2027 Summary",
+      "start": 82000,
+      "context_before": "2027, we reclassified a company from ACIE to Hyperscale due to a change in their business model and recast the prior period revenue associated with this company.\nRevenue was $96.2 billion, up 106% from a year ago and up 18% sequentially.\n",
+      "context_after": " Hyperscale revenue more than doubled from a year ago and increased 13% sequentially on the strength of Blackwell Ultra. ACIE revenue increased 138% from a year ago and 25% sequentially driven by end-demand from AI natives, enterprises, and",
+      "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm#:~:text=Data%20Center%20revenue%20was%20%2489.0,of%20our%20Blackwell%20Ultra%20infrastructure."
+    },
+    {
+      "id": "e2",
+      "source_id": "s1",
+      "finding_id": "f2",
+      "excerpt": "Shipments of Data Center Hopper products to China during the second quarter of fiscal year 2027 were less than 1% of Data Center revenue.",
+      "locator": "Part I, Item 2. Management’s Discussion and Analysis of Financial Condition and Results of Operations › Second Quarter of Fiscal Year 2027 Summary",
+      "start": 82452,
+      "context_before": "13% sequentially on the strength of Blackwell Ultra. ACIE revenue increased 138% from a year ago and 25% sequentially driven by end-demand from AI natives, enterprises, and sovereign customers, as well as hyperscalers utilizing AI clouds. ",
+      "context_after": "\nEdge Computing revenue was $7.2 billion, up 27% from a year ago and up 13% sequentially. The increases were driven by strong sales of Blackwell workstations, partially offset by slower consumer PC sales that were tempered by elevated",
+      "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm#:~:text=Shipments%20of%20Data%20Center%20Hopper,1%25%20of%20Data%20Center%20revenue."
+    },
+    {
+      "id": "e3",
+      "source_id": "s2",
+      "finding_id": "f3",
+      "excerpt": "Data Center revenue was $75.2 billion, up 92% from a year ago and up 21% sequentially, driven by the ramp of our Blackwell 300 products and demand for our InfiniBand, Spectrum-X Ethernet, and NVLink solutions.",
+      "locator": "Part I, Item 2. Management's Discussion and Analysis of Financial Condition and Results of Operations › First Quarter of Fiscal Year 2027 Summary",
+      "start": 65460,
+      "context_before": "$44,062 20% 85%\n(1) In the first quarter of fiscal year 2027, we changed our presentation of revenue by market platform and the comparable periods have been recast.\nRevenue was $81.6 billion, up 85% from a year ago and up 20% sequentially.\n",
+      "context_after": " Hyperscaler revenue increased sequentially and remained at approximately 50% of Data Center revenue, while the remaining 50% came from a continued diversification of customers, including AI Clouds, industrial, enterprise, and sovereign",
+      "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000052/nvda-20260426.htm#:~:text=Data%20Center%20revenue%20was%20%2475.2,Spectrum%2DX%20Ethernet%2C%20and%20NVLink%20solutions."
+    },
+    {
+      "id": "e4",
+      "source_id": "s3",
+      "finding_id": "f4",
+      "excerpt": "We receive a significant amount of our revenue from a limited number of partners and distributors and we have a concentration of sales to customers who purchase directly or indirectly from us, and our revenue could be adversely affected if we lose or are prevented from selling to any of these customers.",
+      "locator": "Item 1A. Risk Factors › Risks Related to Our Global Operating Business",
+      "start": 115154,
+      "context_before": "data interchange and other processes with our key suppliers and customers, and training and change management needs of integration personnel. These challenges have impacted our results of operations and may continue to do so in the future.\n",
+      "context_after": "\nWe have experienced periods where we receive a significant amount of our revenue from a limited number of customers, and this trend may continue. For fiscal year 2026, sales to one direct customer represented 22% of total revenue and sales",
+      "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=We%20receive%20a%20significant%20amount,to%20any%20of%20these%20customers."
+    },
+    {
+      "id": "e5",
+      "source_id": "s3",
+      "finding_id": "f5",
+      "excerpt": "We have experienced periods where we receive a significant amount of our revenue from a limited number of customers, and this trend may continue.",
+      "locator": "Item 1A. Risk Factors › Risks Related to Our Global Operating Business",
+      "start": 115459,
+      "context_before": "of partners and distributors and we have a concentration of sales to customers who purchase directly or indirectly from us, and our revenue could be adversely affected if we lose or are prevented from selling to any of these customers.\n",
+      "context_after": " For fiscal year 2026, sales to one direct customer represented 22% of total revenue and sales to another direct customer represented 14% of total revenue, all of which were primarily attributable to the Compute & Networking segment. With",
+      "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=We%20have%20experienced%20periods%20where,and%20this%20trend%20may%20continue."
+    },
+    {
+      "id": "e6",
+      "source_id": "s3",
+      "finding_id": "f6",
+      "excerpt": "We have a small number of partners that are involved in system integration with our key customers.",
+      "locator": "Item 1A. Risk Factors › Risks Related to Our Global Operating Business",
+      "start": 116111,
+      "context_before": "are selling multiple products and systems in our portfolio through their channels. Our operating results depend on sales to our partner network, as well as the ability of these partners to sell products that incorporate our technologies. ",
+      "context_after": " As our system design becomes increasingly complex, system integrators may be unable to meet specifications of our key customers. Changes in our partners' or customers' business models or their ownership can reduce the number of partners",
+      "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=We%20have%20a%20small%20number,integration%20with%20our%20key%20customers."
+    },
+    {
+      "id": "e7",
+      "source_id": "s1",
+      "finding_id": "f7",
+      "excerpt": "The USG already imposed export controls restricting certain gaming GPUs, and if the USG expands such controls to restrict additional gaming products, it may disrupt a significant portion of our supply and distribution chain and negatively impact sales of such products to markets outside China, including the U.S. and Europe.",
+      "locator": "Part II, Item 1A. Risk Factors",
+      "start": 135446,
+      "context_before": "support third-party applications and models, including applications built on foundation models originating in China such as DeepSeek, Qwen, or Kimi, could have a material impact on our business, operating results, and financial condition.\n",
+      "context_after": " For example, the French Competition Authority (FCA) is questioning whether gaming GPUs and data center GPUs are separate product categories, an inquiry that may impact the export controls applicable to gaming products sold in France and",
+      "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm#:~:text=The%20USG%20already%20imposed%20export,including%20the%20U.S.%20and%20Europe."
+    },
+    {
+      "id": "e8",
+      "source_id": "s1",
+      "finding_id": "f8",
+      "excerpt": "Export controls increase the risk of investing in U.S. advanced semiconductor products, because by the time a new product is ready for market, it may be subject to new unilateral export controls restricting its sale, resulting in excess inventory and purchase obligations as we recently experienced with the H20.",
+      "locator": "Part II, Item 1A. Risk Factors",
+      "start": 137694,
+      "context_before": "financial results.\nAs a result, export controls have in the past and may in the future negatively impact demand for our products and services not only in China, but also in other markets, such as Europe, Latin America, and Southeast Asia. ",
+      "context_after": " At the same time, such controls may increase investment in foreign competitors, which would be less likely to be restricted by U.S. controls.\nThe increasingly complex export controls impose complex and burdensome compliance obligations on",
+      "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm#:~:text=Export%20controls%20increase%20the%20risk,recently%20experienced%20with%20the%20H20."
+    },
+    {
+      "id": "e9",
+      "source_id": "s3",
+      "finding_id": "f9",
+      "excerpt": "The USG already imposed export controls restricting certain gaming GPUs, and if the USG expands such controls to restrict additional gaming products, it may disrupt a significant portion of our supply and distribution chain and",
+      "locator": "Item 1A. Risk Factors › Risks Related to Regulatory, Legal, Our Stock and Other Matters",
+      "start": 145244,
+      "context_before": "support third-party applications and models, including applications built on foundation models originating in China such as DeepSeek, Qwen, or KIMMI, could have a material impact on our business, operating results, and financial condition.\n",
+      "context_after": "\nnegatively impact sales of such products to markets outside China, including the U.S. and Europe. In addition, as the performance of the gaming GPUs increases over time, export controls may have a greater impact on our ability to compete",
+      "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=The%20USG%20already%20imposed%20export,supply%20and%20distribution%20chain%20and"
+    },
+    {
+      "id": "e10",
+      "source_id": "s1",
+      "finding_id": "f10",
+      "excerpt": "Gross margin increased from a year ago on improved mix from Blackwell Ultra.",
+      "locator": "Part I, Item 2. Management’s Discussion and Analysis of Financial Condition and Results of Operations › Second Quarter of Fiscal Year 2027 Summary",
+      "start": 82851,
+      "context_before": "was $7.2 billion, up 27% from a year ago and up 13% sequentially. The increases were driven by strong sales of Blackwell workstations, partially offset by slower consumer PC sales that were tempered by elevated memory and systems prices.\n",
+      "context_after": " Gross margin was approximately flat sequentially as our Blackwell architecture remains the vast majority of our revenue.\nOperating expenses were up 55% from a year ago and up 10% sequentially. These increases were driven by higher compute",
+      "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm#:~:text=Gross%20margin%20increased%20from%20a,improved%20mix%20from%20Blackwell%20Ultra."
+    },
+    {
+      "id": "e11",
+      "source_id": "s1",
+      "finding_id": "f11",
+      "excerpt": "Gross margin was approximately flat sequentially as our Blackwell architecture remains the vast majority of our revenue.",
+      "locator": "Part I, Item 2. Management’s Discussion and Analysis of Financial Condition and Results of Operations › Second Quarter of Fiscal Year 2027 Summary",
+      "start": 82928,
+      "context_before": "were driven by strong sales of Blackwell workstations, partially offset by slower consumer PC sales that were tempered by elevated memory and systems prices.\nGross margin increased from a year ago on improved mix from Blackwell Ultra. ",
+      "context_after": "\nOperating expenses were up 55% from a year ago and up 10% sequentially. These increases were driven by higher compute infrastructure and compensation and benefits costs.\n\nPart I, Item 2. Management’s Discussion and Analysis of Financial",
+      "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm#:~:text=Gross%20margin%20was%20approximately%20flat,vast%20majority%20of%20our%20revenue."
+    },
+    {
+      "id": "e12",
+      "source_id": "s3",
+      "finding_id": "f12",
+      "excerpt": "The net effect on our gross margin from inventory provisions and sales of items previously written down was an unfavorable impact of 2.6% in fiscal year 2026 and 2.3% in fiscal year 2025.",
+      "locator": "Item 7. Management's Discussion and Analysis of Financial Condition and Results of Operations › Inventories",
+      "start": 195496,
+      "context_before": "failure to estimate customer demand properly, ordering in advance of historical lead-times, government regulations and the impact of changes in future demand, or increase in demand for competitive products, including competitive actions.\n",
+      "context_after": " Our inventory and capacity purchase commitments are based on forecasts of future customer demand and consider our third-party manufacturers' lead times and constraints. Our manufacturing lead times can be and have been long, and in some",
+      "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=The%20net%20effect%20on%20our,2.3%25%20in%20fiscal%20year%202025."
+    },
+    {
+      "id": "e13",
+      "source_id": "s3",
+      "finding_id": "f13",
+      "excerpt": "•limited number and geographic concentration of global suppliers, foundries, contract manufacturers, assembly and test providers and memory manufacturers;",
+      "locator": "Item 1A. Risk Factors › Risks Related to Demand, Supply, and Manufacturing",
+      "start": 83091,
+      "context_before": "geometry process technologies such as advanced process node technologies and memory designs needed to manufacture our products;\n•failure by our suppliers to comply with our policies and expectations and emerging regulatory requirements;\n",
+      "context_after": "\n•loss of a supplier and additional expense and/or production delays as a result of qualifying a new foundry or subcontractor and commencing volume production or testing in the event of a loss, addition or change of a supplier;\n•lack of",
+      "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=%E2%80%A2limited%20number%20and%20geographic%20concentration,test%20providers%20and%20memory%20manufacturers%3B"
+    },
+    {
+      "id": "e14",
+      "source_id": "s3",
+      "finding_id": "f14",
+      "excerpt": "Dependency on third-party suppliers and their technology to manufacture, assemble, test, or package our products reduces our control over product quantity and quality, manufacturing yields, and product delivery schedules and could harm our business.",
+      "locator": "Item 1A. Risk Factors › Risks Related to Demand, Supply, and Manufacturing",
+      "start": 81424,
+      "context_before": "difficult. Gray market products and reseller marketplaces compete with our new products and distribution channels. Our inability to accurately predict our demand that arises from new use cases may create volatility in our revenue.\n",
+      "context_after": "\nWe depend on foundries to manufacture our semiconductor wafers using their fabrication equipment and techniques. We do not assemble, test, or package our products, but instead contract with independent subcontractors. These subcontractors",
+      "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=Dependency%20on%20third%2Dparty%20suppliers%20and,and%20could%20harm%20our%20business."
+    },
+    {
+      "id": "e15",
+      "source_id": "s3",
+      "finding_id": "f15",
+      "excerpt": "We also have a vendor risk assessment process consisting of, depending on the nature and sensitivity of the supplier and data they process on our behalf, the distribution and review of supplier questionnaires designed to help us evaluate cybersecurity risks that we may encounter when working with third parties that have access to confidential and other sensitive company information.",
+      "locator": "Item 1C. Cybersecurity › Risk management and strategy",
+      "start": 174437,
+      "context_before": "and data privacy training and policies designed to (a) respond to new requirements in global privacy and cybersecurity laws and (b) prevent, detect, respond to, mitigate and recover from identified and significant cybersecurity threats.\n",
+      "context_after": " We take steps to review that such vendors have implemented data privacy and security controls that help mitigate the cybersecurity risks associated with these vendors, depending on the nature and sensitivity of the supplier and data they",
+      "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=We%20also%20have%20a%20vendor,and%20other%20sensitive%20company%20information."
+    }
+  ],
+  "findings": [
+    {
+      "id": "f1",
+      "claim_id": "c1",
+      "statement": "The filing states: Data Center revenue was $89.0 billion, up 117% from a year ago and up 18% sequentially, driven by the ramp of our Blackwell Ultra infrastructure.",
+      "stance": "context",
+      "evidence_ids": [
+        "e1"
+      ],
+      "confidence": "low",
+      "rationale": "Quoted by keyword overlap with the claim; no stance was judged.",
+      "verified": true,
+      "filings_cited": 1
+    },
+    {
+      "id": "f2",
+      "claim_id": "c1",
+      "statement": "The filing states: Shipments of Data Center Hopper products to China during the second quarter of fiscal year 2027 were less than 1% of Data Center revenue.",
+      "stance": "context",
+      "evidence_ids": [
+        "e2"
+      ],
+      "confidence": "low",
+      "rationale": "Quoted by keyword overlap with the claim; no stance was judged.",
+      "verified": true,
+      "filings_cited": 1
+    },
+    {
+      "id": "f3",
+      "claim_id": "c1",
+      "statement": "The filing states: Data Center revenue was $75.2 billion, up 92% from a year ago and up 21% sequentially, driven by the ramp of our Blackwell 300 products and demand for our InfiniBand, Spectrum-X Ethernet, and NVLink solutions.",
+      "stance": "context",
+      "evidence_ids": [
+        "e3"
+      ],
+      "confidence": "low",
+      "rationale": "Quoted by keyword overlap with the claim; no stance was judged.",
+      "verified": true,
+      "filings_cited": 1
+    },
+    {
+      "id": "f4",
+      "claim_id": "c2",
+      "statement": "The filing states: We receive a significant amount of our revenue from a limited number of partners and distributors and we have a concentration of sales to customers who purchase directly or indirectly from us, and our revenue could be adversely affected if we lose or are prevented from selling to any of these customers.",
+      "stance": "context",
+      "evidence_ids": [
+        "e4"
+      ],
+      "confidence": "low",
+      "rationale": "Quoted by keyword overlap with the claim; no stance was judged.",
+      "verified": true,
+      "filings_cited": 1
+    },
+    {
+      "id": "f5",
+      "claim_id": "c2",
+      "statement": "The filing states: We have experienced periods where we receive a significant amount of our revenue from a limited number of customers, and this trend may continue.",
+      "stance": "context",
+      "evidence_ids": [
+        "e5"
+      ],
+      "confidence": "low",
+      "rationale": "Quoted by keyword overlap with the claim; no stance was judged.",
+      "verified": true,
+      "filings_cited": 1
+    },
+    {
+      "id": "f6",
+      "claim_id": "c2",
+      "statement": "The filing states: We have a small number of partners that are involved in system integration with our key customers.",
+      "stance": "context",
+      "evidence_ids": [
+        "e6"
+      ],
+      "confidence": "low",
+      "rationale": "Quoted by keyword overlap with the claim; no stance was judged.",
+      "verified": true,
+      "filings_cited": 1
+    },
+    {
+      "id": "f7",
+      "claim_id": "c3",
+      "statement": "The filing states: The USG already imposed export controls restricting certain gaming GPUs, and if the USG expands such controls to restrict additional gaming products, it may disrupt a significant portion of our supply and distribution chain and negatively impact sales of such products to markets outside China, including the U.S. and Europe.",
+      "stance": "context",
+      "evidence_ids": [
+        "e7"
+      ],
+      "confidence": "low",
+      "rationale": "Quoted by keyword overlap with the claim; no stance was judged.",
+      "verified": true,
+      "filings_cited": 1
+    },
+    {
+      "id": "f8",
+      "claim_id": "c3",
+      "statement": "The filing states: Export controls increase the risk of investing in U.S. advanced semiconductor products, because by the time a new product is ready for market, it may be subject to new unilateral export controls restricting its sale, resulting in excess inventory and purchase obligations as we recently experienced with the H20.",
+      "stance": "context",
+      "evidence_ids": [
+        "e8"
+      ],
+      "confidence": "low",
+      "rationale": "Quoted by keyword overlap with the claim; no stance was judged.",
+      "verified": true,
+      "filings_cited": 1
+    },
+    {
+      "id": "f9",
+      "claim_id": "c3",
+      "statement": "The filing states: The USG already imposed export controls restricting certain gaming GPUs, and if the USG expands such controls to restrict additional gaming products, it may disrupt a significant portion of our supply and distribution chain and",
+      "stance": "context",
+      "evidence_ids": [
+        "e9"
+      ],
+      "confidence": "low",
+      "rationale": "Quoted by keyword overlap with the claim; no stance was judged.",
+      "verified": true,
+      "filings_cited": 1
+    },
+    {
+      "id": "f10",
+      "claim_id": "c4",
+      "statement": "The filing states: Gross margin increased from a year ago on improved mix from Blackwell Ultra.",
+      "stance": "context",
+      "evidence_ids": [
+        "e10"
+      ],
+      "confidence": "low",
+      "rationale": "Quoted by keyword overlap with the claim; no stance was judged.",
+      "verified": true,
+      "filings_cited": 1
+    },
+    {
+      "id": "f11",
+      "claim_id": "c4",
+      "statement": "The filing states: Gross margin was approximately flat sequentially as our Blackwell architecture remains the vast majority of our revenue.",
+      "stance": "context",
+      "evidence_ids": [
+        "e11"
+      ],
+      "confidence": "low",
+      "rationale": "Quoted by keyword overlap with the claim; no stance was judged.",
+      "verified": true,
+      "filings_cited": 1
+    },
+    {
+      "id": "f12",
+      "claim_id": "c4",
+      "statement": "The filing states: The net effect on our gross margin from inventory provisions and sales of items previously written down was an unfavorable impact of 2.6% in fiscal year 2026 and 2.3% in fiscal year 2025.",
+      "stance": "context",
+      "evidence_ids": [
+        "e12"
+      ],
+      "confidence": "low",
+      "rationale": "Quoted by keyword overlap with the claim; no stance was judged.",
+      "verified": true,
+      "filings_cited": 1
+    },
+    {
+      "id": "f13",
+      "claim_id": "c5",
+      "statement": "The filing states: •limited number and geographic concentration of global suppliers, foundries, contract manufacturers, assembly and test providers and memory manufacturers;",
+      "stance": "context",
+      "evidence_ids": [
+        "e13"
+      ],
+      "confidence": "low",
+      "rationale": "Quoted by keyword overlap with the claim; no stance was judged.",
+      "verified": true,
+      "filings_cited": 1
+    },
+    {
+      "id": "f14",
+      "claim_id": "c5",
+      "statement": "The filing states: Dependency on third-party suppliers and their technology to manufacture, assemble, test, or package our products reduces our control over product quantity and quality, manufacturing yields, and product delivery schedules and could harm our business.",
+      "stance": "context",
+      "evidence_ids": [
+        "e14"
+      ],
+      "confidence": "low",
+      "rationale": "Quoted by keyword overlap with the claim; no stance was judged.",
+      "verified": true,
+      "filings_cited": 1
+    },
+    {
+      "id": "f15",
+      "claim_id": "c5",
+      "statement": "The filing states: We also have a vendor risk assessment process consisting of, depending on the nature and sensitivity of the supplier and data they process on our behalf, the distribution and review of supplier questionnaires designed to help us evaluate cybersecurity risks that we may encounter when working with third parties that have access to confidential and other sensitive company informa…",
+      "stance": "context",
+      "evidence_ids": [
+        "e15"
+      ],
+      "confidence": "low",
+      "rationale": "Quoted by keyword overlap with the claim; no stance was judged.",
+      "verified": true,
+      "filings_cited": 1
+    }
+  ],
+  "unsupported_findings": [],
+  "coverage_limits": [
+    "5 of 5 claim(s) have relevant passages but no judged stance.",
+    "The model engine failed for 7 step(s); the deterministic engine was used for those."
+  ],
+  "errors": [
+    "The claude engine failed during plan (Model request failed: BadRequestError (HTTP 400, invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.)); the deterministic engine was used for that step.",
+    "The claude engine failed during assess (Model request failed: BadRequestError (HTTP 400, invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.)); the deterministic engine was used for that step.",
+    "The claude engine failed during assess (Model request failed: BadRequestError (HTTP 400, invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.)); the deterministic engine was used for that step.",
+    "The claude engine failed during assess (Model request failed: BadRequestError (HTTP 400, invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.)); the deterministic engine was used for that step.",
+    "The claude engine failed during assess (Model request failed: BadRequestError (HTTP 400, invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.)); the deterministic engine was used for that step.",
+    "The claude engine failed during assess (Model request failed: BadRequestError (HTTP 400, invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.)); the deterministic engine was used for that step.",
+    "The claude engine failed during summarize (Model request failed: BadRequestError (HTTP 400, invalid_request_error: Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.)); the deterministic engine was used for that step."
+  ],
+  "coverage": {
+    "sources_requested": 3,
+    "sources_read": 3,
+    "passages_indexed": 636,
+    "claims_total": 5,
+    "claims_with_evidence": 5,
+    "findings_verified": 15,
+    "findings_withheld": 0,
+    "excerpts_verified": 15,
+    "quotes_offered": 15,
+    "quotes_rejected": 0
+  },
+  "brief": {
+    "summary": "Verdicts across 5 claims — Passages found, not judged: 5. No engine judged the stance of the passages found for 5 claim(s), so read those excerpts before relying on them.",
+    "summary_origin": "template",
+    "unknowns": [],
+    "next_steps": [
+      "Open each excerpt in its filing and judge whether it supports or challenges the claim.",
+      "Configure a model key and run again to have each finding's stance judged."
+    ],
+    "coverage_status": "partial",
+    "status_note": "Part of the thesis could not be assessed with verified evidence. The reasons are listed under coverage limits."
+  }
+}

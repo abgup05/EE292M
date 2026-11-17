@@ -1,0 +1,74 @@
+{
+  "key": "d6163f2b80e97ee87878d043",
+  "step": "assess",
+  "via": "Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-17T17:38:25+00:00",
+  "response": {
+    "findings": [
+      {
+        "statement": "A US license requirement on H20 exports to China led to a $4.5 billion charge for excess inventory and purchase obligations, because demand for H20 products diminished.",
+        "stance": "supports",
+        "confidence": "high",
+        "rationale": "The filing links the export license requirement directly to a charge and to lost H20 demand, which shows the controls hurting China-related business.",
+        "quotes": [
+          {
+            "passage_id": "s3-p43",
+            "text": "As a result of these requirements, we incurred a $4.5 billion charge in the first quarter of fiscal year 2026 associated with H20 for excess inventory and purchase obligations, as the demand for H20 products diminished."
+          }
+        ],
+        "figure_ids": []
+      },
+      {
+        "statement": "Licensed China sales so far are small: about $60 million of H20 revenue, and no revenue yet from the H200 licenses, with no certainty that imports will be allowed into China.",
+        "stance": "supports",
+        "confidence": "medium",
+        "rationale": "The licenses allow only limited shipments, so the filing shows the controls still holding back China revenue. It does not state how much revenue would otherwise have been earned.",
+        "quotes": [
+          {
+            "passage_id": "s3-p43",
+            "text": "In August 2025, the USG granted licenses that would allow us to ship certain H20 products to certain China-based customers. We generated approximately $60 million in H20 revenue under those licenses."
+          },
+          {
+            "passage_id": "s3-p43",
+            "text": "To date, we have not generated any revenue under the H200 licensing program, and do not yet know whether any imports will be allowed into China."
+          }
+        ],
+        "figure_ids": []
+      },
+      {
+        "statement": "China including Hong Kong revenue was $19.68B for the fiscal year ended 2026-01-25, a change of -21.4% from a year earlier, while the quarter ended 2026-07-26 was $7.88B, +97.7% from a year earlier.",
+        "stance": "context",
+        "confidence": "medium",
+        "rationale": "The annual decline fits the claim that controls restrict revenue. The recent quarter's strong growth shows China revenue is not shut off. The filings supplied do not attribute either movement to export controls, so this is only context.",
+        "quotes": [],
+        "figure_ids": [
+          "tagged:revenue_by_geography:nvda:ChinaIncludingHongKongMember:annual:2026-01-25",
+          "tagged:revenue_by_geography:nvda:ChinaIncludingHongKongMember:change:annual:2026-01-25",
+          "tagged:revenue_by_geography:nvda:ChinaIncludingHongKongMember:quarter:2026-07-26",
+          "tagged:revenue_by_geography:nvda:ChinaIncludingHongKongMember:change:quarter:2026-07-26"
+        ]
+      },
+      {
+        "statement": "The company says export controls have hurt, and may keep hurting, demand in markets beyond China.",
+        "stance": "supports",
+        "confidence": "medium",
+        "rationale": "The company itself says the effect has been and may be broader than China. The passage gives no size for the effect on revenue.",
+        "quotes": [
+          {
+            "passage_id": "s1-p141",
+            "text": "As a result, export controls have in the past and may in the future negatively impact demand for our products and services not only in China, but also in other markets, such as Europe, Latin America, and Southeast Asia."
+          }
+        ],
+        "figure_ids": []
+      }
+    ],
+    "rationale": "The filings show export controls on China caused a charge and sharply limited licensed China sales. Reported China revenue is mixed: down for the fiscal year, up strongly in the latest quarter. The passages do not measure how much revenue the controls cost.",
+    "unknowns": [
+      "How much revenue the controls cost, since the passages give no estimate of what China sales would have been without them.",
+      "Whether the change in China revenue for the quarter ended 2026-07-26 comes from licensed H20 or H200 sales or from other products.",
+      "Whether any H200 imports will be allowed into China, and when revenue from them could begin.",
+      "How much of the growth outside China comes from demand shifted away from China."
+    ]
+  }
+}

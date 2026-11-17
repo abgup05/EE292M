@@ -1,0 +1,34 @@
+{
+  "claims": [
+    {
+      "findings": 3,
+      "id": "c1",
+      "verdict": "supported",
+      "withheld": 0
+    },
+    {
+      "findings": 4,
+      "id": "c2",
+      "verdict": "supported",
+      "withheld": 0
+    },
+    {
+      "findings": 4,
+      "id": "c3",
+      "verdict": "mixed",
+      "withheld": 0
+    },
+    {
+      "findings": 4,
+      "id": "c4",
+      "verdict": "mixed",
+      "withheld": 0
+    },
+    {
+      "findings": 3,
+      "id": "c5",
+      "verdict": "mixed",
+      "withheld": 0
+    }
+  ]
+}

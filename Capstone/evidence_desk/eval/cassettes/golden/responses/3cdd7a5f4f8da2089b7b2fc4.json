@@ -1,0 +1,50 @@
+{"key": "3cdd7a5f4f8da2089b7b2fc4", "step": "assess", "via": "Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the engine's rules", "model": "claude-sonnet-5-5", "recorded_at": "2026-11-17T13:01:00Z", "response": {
+  "findings": [
+    {
+      "statement": "Substantially all of the company's hardware products are manufactured by outsourcing partners located primarily in China mainland, India, Japan, South Korea, Taiwan and Vietnam.",
+      "stance": "supports",
+      "confidence": "high",
+      "rationale": "The financial statement note says this directly, and every listed location is in Asia.",
+      "quotes": [
+        {"passage_id": "s1-p203", "text": "Substantially all of the Company’s hardware products are manufactured by outsourcing partners that are located primarily in China mainland, India, Japan, South Korea, Taiwan and Vietnam."}
+      ],
+      "figure_ids": []
+    },
+    {
+      "statement": "Final assembly of substantially all hardware products relies on partners primarily located in Asia, and components rely on single-source partners.",
+      "stance": "supports",
+      "confidence": "high",
+      "rationale": "This matches the claim that devices are put together by contract partners in Asia, and adds that component supply is also single-sourced. The filing notes some sourcing from the U.S. for components.",
+      "quotes": [
+        {"passage_id": "s1-p44", "text": "The Company relies on single-source partners in the U.S., Asia and Europe to supply and manufacture many components, and on partners primarily located in Asia for final assembly of substantially all of the Company’s hardware products."}
+      ],
+      "figure_ids": []
+    },
+    {
+      "statement": "The company itself flags this concentration as a risk, citing geopolitical tensions and trade restrictions that could disrupt supply.",
+      "stance": "supports",
+      "confidence": "medium",
+      "rationale": "The risk factor describes supply chain concentration and its exposure to disruption, which fits the 'concentration risk' part of the claim, although it is written about global supply chains in general.",
+      "quotes": [
+        {"passage_id": "s1-p33", "text": "Global supply chains can be highly concentrated, and an escalation of geopolitical tensions, conflict or instability, particularly in regions where the Company relies on single or limited sources for critical components, such as advanced semiconductors, memory and storage, or that are significant to global commodity markets such as oil, gas, rare earths, and other raw materials, could result in significant disruptions."}
+      ],
+      "figure_ids": []
+    },
+    {
+      "statement": "The company has substantial commitments to its manufacturing partners: manufacturing purchase obligations of $89.7 billion, with $82.7 billion payable within 12 months.",
+      "stance": "context",
+      "confidence": "medium",
+      "rationale": "It shows the scale of reliance on outsourced manufacturing, but the passage does not break the obligations down by country.",
+      "quotes": [
+        {"passage_id": "s1-p126", "text": "As of September 26, 2026, the Company had manufacturing purchase obligations of $89.7 billion, with $82.7 billion payable within 12 months."}
+      ],
+      "figure_ids": []
+    }
+  ],
+  "rationale": "The filing supports the claim closely: substantially all hardware is made by outsourcing partners primarily in Asian countries, final assembly is primarily in Asia, and the company treats the concentration as a risk. The claim's word 'nearly all' fits the filing's 'substantially all'.",
+  "unknowns": [
+    "What share of production sits in each country, including how much has moved to India or Vietnam.",
+    "How concentrated the company is among individual contract manufacturers rather than countries.",
+    "Whether any assembly outside Asia exists, since the filing says 'primarily' rather than exclusively."
+  ]
+}}

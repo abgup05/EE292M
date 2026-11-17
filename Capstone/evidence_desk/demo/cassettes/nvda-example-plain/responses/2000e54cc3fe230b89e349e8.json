@@ -1,0 +1,16 @@
+{
+  "key": "2000e54cc3fe230b89e349e8",
+  "step": "summarize",
+  "via": "Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-17T17:40:00+00:00",
+  "response": {
+    "summary": "Three claims are supported. Data Center revenue is growing strongly year over year ($89.0 billion, up 117%, in the second quarter of fiscal 2027). Revenue is concentrated in a few direct customers. Export controls are restricting China revenue: a $4.5 billion H20 charge, and only about $60 million of licensed H20 revenue. Two claims have mixed evidence. Gross margin rose to 75.0% from 72.4% year over year, but it was flat sequentially and fell for fiscal 2026 as a whole. Supplier dependence is a named risk, partly offset by added redundancy. For an overweight, growth is confirmed, while customer concentration and China remain open risks and the margin trend is unclear.",
+    "next_steps": [
+      "Quantify how much of customer concentration risk rests on the top direct customers and what purchase commitments they have disclosed.",
+      "Track sequential gross margin guidance for the next quarter to test whether expansion continues beyond the recovery from the H20 charge.",
+      "Check for any H200 China license progress and its potential revenue effect.",
+      "Review the supplier redundancy disclosures to judge how much the concentration risk has actually fallen."
+    ]
+  }
+}

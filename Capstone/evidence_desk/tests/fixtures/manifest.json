@@ -1,0 +1,13 @@
+{
+  "nist_ai_rmf": {
+    "bytes": 81389,
+    "content_hash": "15fa1c00ffccb0c180c2da07ec6a4487614e334c63764c57755e5bf7373b1c18",
+    "final_url": "https://www.nist.gov/publications/artificial-intelligence-risk-management-framework-ai-rmf-10",
+    "published_date": "2023-01-26",
+    "publisher": "NIST",
+    "requested_url": "https://www.nist.gov/publications/artificial-intelligence-risk-management-framework-ai-rmf-10",
+    "retrieved_at": "2026-10-22T05:35:28.679506+00:00",
+    "title": "Artificial Intelligence Risk Management Framework (AI RMF 1.0)"
+  },
+  "recorded_at": "2026-10-22T05:39:47.092116+00:00"
+}

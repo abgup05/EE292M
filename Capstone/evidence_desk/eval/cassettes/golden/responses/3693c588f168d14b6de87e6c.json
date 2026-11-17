@@ -1,0 +1,52 @@
+{"key": "3693c588f168d14b6de87e6c", "step": "assess", "via": "Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the engine's rules", "model": "claude-sonnet-5-5", "recorded_at": "2026-11-17T13:00:30Z", "response": {
+  "findings": [
+    {
+      "statement": "In the EU the company has implemented App Store changes under the Digital Markets Act, including new business terms and alternative fee structures.",
+      "stance": "supports",
+      "confidence": "high",
+      "rationale": "The filing says the changes were implemented, and names new business terms and alternative fee structures among them. It frames this as the company seeking to comply with the DMA.",
+      "quotes": [
+        {"passage_id": "s1-p82", "text": "For example, the Company has implemented changes to iOS, iPadOS, the App Store and Safari® in the EU as it seeks to comply with the Digital Markets Act (“DMA”), including new business terms and alternative fee structures for iOS and iPadOS apps, alternative methods of distribution for iOS and iPadOS apps, alternative payment processing for apps across the Company’s operating systems, and additional tools and application programming interfaces for developers."}
+      ],
+      "figure_ids": []
+    },
+    {
+      "statement": "The European Commission fined the company €500 million and issued a cease and desist order requiring removal of restrictions on steering users to alternative distribution channels; the company has appealed.",
+      "stance": "supports",
+      "confidence": "high",
+      "rationale": "A fine and a cease and desist order are compulsion by European authorities over App Store terms. The appeal means the decision is not final.",
+      "quotes": [
+        {"passage_id": "s1-p103", "text": "On April 23, 2025, the Commission fined the Company €500 million in the Article 5(4) Investigation and issued a cease and desist order requiring the Company to remove technical and commercial restrictions that prevent developers from steering users to alternative distribution channels outside the App Store."},
+        {"passage_id": "s1-p103", "text": "The Company has appealed the Commission’s Article 5(4) decision."}
+      ],
+      "figure_ids": []
+    },
+    {
+      "statement": "The company says it believes it complies with the DMA, and a second investigation into its contractual requirements for developers remains at the preliminary-findings stage, so the extent of what it has been forced to concede is not settled.",
+      "stance": "context",
+      "confidence": "medium",
+      "rationale": "The company's position that it already complies, and the open Article 6(4) matter, qualify the word 'already forced'.",
+      "quotes": [
+        {"passage_id": "s1-p103", "text": "The Company believes that it complies with the DMA and has continued to make changes to its compliance plan in response to feedback and engagement with the Commission."}
+      ],
+      "figure_ids": []
+    },
+    {
+      "statement": "The company's DMA compliance plan has been challenged by the Commission and may be challenged further, suggesting more changes could follow.",
+      "stance": "context",
+      "confidence": "medium",
+      "rationale": "It shows the loosening is ongoing and contested rather than complete, but does not say how much fees were reduced.",
+      "quotes": [
+        {"passage_id": "s1-p83", "text": "Although the Company’s DMA compliance plan is intended to address the DMA’s obligations, it has been challenged by the Commission and may be challenged further by private litigants."}
+      ],
+      "figure_ids": []
+    }
+  ],
+  "rationale": "The filing supports the claim: the company has changed App Store terms and fee structures in the EU under the Digital Markets Act and was fined and ordered by the Commission to remove steering restrictions. Whether the changes were forced or voluntary is contested by the company, and the appeal and a second investigation are still open.",
+  "unknowns": [
+    "How far the new EU fee structures actually reduce the commission the company earns.",
+    "The outcome of the company's appeal of the Article 5(4) decision.",
+    "The outcome of the Article 6(4) Investigation and any further fines or orders.",
+    "The size of any financial effect of the EU changes on results, which these passages do not quantify."
+  ]
+}}

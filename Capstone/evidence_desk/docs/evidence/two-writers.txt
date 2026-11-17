@@ -1,0 +1,12 @@
+# make two-writers ARGS="--rounds 2000"
+# 2026-11-17T18:33:02Z, version 0.10.0 plus the changes after it, on a scratch record under results/ (not the real record). macOS, Docker Desktop.
+
+ok: no write failed on either side in 2000 rounds each
+ok: SQLite's integrity_check says 'ok'
+ok: the record is in wal mode
+ok: 2000 of 2000 directly written runs are stored
+ok: every stored record parses
+ok: the app serves a run the other wrote
+ok: one decision is stored and it is the last of the 2000 the app was sent: ('rejected', 'round 1999')
+two writers: 2000 decisions through the app and 2000 runs written directly, at the same time, in 1.89 s
+two writers: PASS

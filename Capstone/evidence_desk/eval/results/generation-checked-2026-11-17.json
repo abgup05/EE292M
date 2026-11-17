@@ -1,0 +1,2768 @@
+{
+  "kind": "generation-evaluation",
+  "generated_at": "2026-11-17T18:58:13.222621+00:00",
+  "models": "replayed from cassette golden: 79 responses recorded via Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the engine's rules, Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the rules and Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17 with claude-haiku-5-5 and claude-sonnet-5-5, 2026-11-17 to 2026-11-17",
+  "stand_in_note": "A recording answered by a stand-in (any `via` other than the model a run calls) is an upper bound for quote validity: a stand-in that copies from the prompt in front of it quotes more exactly than a model may, so the quote and citation scores may be lower live.",
+  "decision": "Whether the thesis still holds after the latest filings",
+  "inputs": {
+    "golden_file": "eval/golden.json",
+    "golden_sha256": "4ef5c8d35bf11a1e146de46988d8cec54f547e1eb783c383bdf0e23cabb59150",
+    "filings_sha256": "ce02e068cd1d831e921a7e8118851c2a895bbbc58ee4b5a383872a9ba019a1bf",
+    "queries_file": "eval/queries.json",
+    "queries_sha256": "7609070a134303ab7ffcd32f0d6214ff0f3928104369fbffce47f1b845cf54f6",
+    "queries_planned_by": "replayed from cassette golden: 6 responses recorded via Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the engine's rules with claude-sonnet-5-5, 2026-11-17 to 2026-11-17",
+    "cassette": "eval/cassettes/golden",
+    "meaning_check": "claude",
+    "limits": {
+      "PASSAGE_TARGET_CHARS": 1100,
+      "PASSAGE_MAX_CHARS": 1800,
+      "PASSAGES_PER_CLAIM": 8,
+      "MAX_PASSAGES_PER_SOURCE": 5,
+      "MAX_QUERIES_PER_CLAIM": 4,
+      "bm25_k1": 1.5,
+      "bm25_b": 0.75,
+      "max_rank": 50
+    }
+  },
+  "figures": {
+    "NVDA": "37 figures from the XBRL facts (fixture, SHA-256 5b264d77a76a...)",
+    "COST": "36 figures from the XBRL facts (cache, SHA-256 b675ced201b2...)",
+    "AAPL": "37 figures from the XBRL facts (cache, SHA-256 f085735b4d08...)",
+    "MSFT": "37 figures from the XBRL facts (cache, SHA-256 8c1903c041f5...)",
+    "KO": "38 figures from the XBRL facts (cache, SHA-256 87a4173fcd3d...)"
+  },
+  "summary": {
+    "answerable": {
+      "cases": 24,
+      "verdict_agreement": {
+        "hits": 20,
+        "total": 24,
+        "rate": 0.8333333333333334
+      },
+      "confusion_expected_by_obtained": {
+        "supports": {
+          "supported": 10,
+          "challenged": 0,
+          "mixed": 2,
+          "unjudged": 0,
+          "not_addressed": 0
+        },
+        "challenges": {
+          "supported": 0,
+          "challenged": 8,
+          "mixed": 2,
+          "unjudged": 0,
+          "not_addressed": 0
+        },
+        "mixed": {
+          "supported": 0,
+          "challenged": 0,
+          "mixed": 2,
+          "unjudged": 0,
+          "not_addressed": 0
+        }
+      },
+      "citation": {
+        "hits": 15,
+        "total": 24,
+        "rate": 0.625
+      },
+      "by_retrieval": {
+        "hit": {
+          "verdict_agreement": {
+            "hits": 14,
+            "total": 18,
+            "rate": 0.7777777777777778
+          },
+          "citation": {
+            "hits": 15,
+            "total": 18,
+            "rate": 0.8333333333333334
+          }
+        },
+        "miss": {
+          "verdict_agreement": {
+            "hits": 6,
+            "total": 6,
+            "rate": 1.0
+          },
+          "citation": {
+            "hits": 0,
+            "total": 6,
+            "rate": 0.0
+          }
+        }
+      }
+    },
+    "unanswerable": {
+      "cases": 6,
+      "refusal": {
+        "hits": 6,
+        "total": 6,
+        "rate": 1.0
+      }
+    },
+    "all": {
+      "cases": 30,
+      "findings_proposed": 79,
+      "findings_verified": 78,
+      "findings_withheld": 1,
+      "withheld_reasons": {
+        "a number in the statement is not in its quotes or cited figures": 1
+      },
+      "quotes_offered": 84,
+      "quotes_verified": 84,
+      "quotes_rejected": 0,
+      "excerpts_kept": 83,
+      "numbers_checked": 67,
+      "numbers_unmatched": 2,
+      "figures_cited": 14,
+      "unusable_answers": 0,
+      "cases_without_passages": 0
+    },
+    "meaning_check": {
+      "findings_verified": 78,
+      "findings_checked": 78,
+      "passed": 67,
+      "partly": 10,
+      "failed": 1,
+      "unchecked": 0,
+      "cases_check_failed": 0,
+      "agreement_before": {
+        "hits": 20,
+        "total": 24,
+        "rate": 0.8333333333333334
+      },
+      "agreement_after": {
+        "hits": 20,
+        "total": 24,
+        "rate": 0.8333333333333334
+      },
+      "disagreed_before": 4,
+      "now_agree": 0,
+      "still_disagree": 4,
+      "agreed_before": 20,
+      "broken": 0
+    },
+    "periods": {
+      "checked": 34,
+      "passed": 34,
+      "unverified": 0,
+      "comparative": 0,
+      "unverified_mentions": [],
+      "planted": {
+        "by_shift": [
+          {
+            "shift": -1,
+            "findings": 25,
+            "flagged": 21
+          },
+          {
+            "shift": -2,
+            "findings": 25,
+            "flagged": 24
+          },
+          {
+            "shift": -3,
+            "findings": 25,
+            "flagged": 25
+          },
+          {
+            "shift": 1,
+            "findings": 25,
+            "flagged": 23
+          }
+        ],
+        "not_flagged": [
+          {
+            "case_id": "nvda-margin-widened",
+            "finding_id": "f2",
+            "shift": -1,
+            "statement": "Gross margin for the first quarter of fiscal year 2026 was 74.9% against 60.5% a year earlier, largely because the prior year carried a $4.5 billion H20 charge.",
+            "flagged": false,
+            "details": [
+              "fiscal year 2026 is in a quote"
+            ]
+          },
+          {
+            "case_id": "nvda-cash-returned",
+            "finding_id": "f3",
+            "shift": -1,
+            "statement": "Dividends paid in the second quarter of fiscal 2026 were $6.0 billion against $244 million in the same quarter a year earlier.",
+            "flagged": false,
+            "details": [
+              "fiscal 2026 is in a quote"
+            ]
+          },
+          {
+            "case_id": "nvda-no-borrowing",
+            "finding_id": "f2",
+            "shift": -1,
+            "statement": "The company reports higher cash proceeds from debt issuance in the first half of fiscal year 2026, so it is not funding itself entirely from operations.",
+            "flagged": false,
+            "details": [
+              "fiscal year 2026 is in a quote"
+            ]
+          },
+          {
+            "case_id": "aapl-margin-runway",
+            "finding_id": "f1",
+            "shift": -1,
+            "statement": "Products gross margin percentage increased in 2025, primarily due to product mix and tariff refunds, partially offset by higher costs including memory.",
+            "flagged": false,
+            "details": [
+              "2025 is in a quote"
+            ]
+          },
+          {
+            "case_id": "nvda-crypto-lawsuit-over",
+            "finding_id": "f1",
+            "shift": -2,
+            "statement": "The case was not finished: after the Supreme Court dismissed the writ, the Ninth Circuit judgment took effect on February 20, 2023 and the case went back to the district court for further proceedings.",
+            "flagged": false,
+            "details": [
+              "February 20, 2023 is in a quote"
+            ]
+          },
+          {
+            "case_id": "nvda-china-reopened",
+            "finding_id": "f2",
+            "shift": 1,
+            "statement": "Licences granted in August 2026 for certain H20 products produced approximately $60 million in H20 revenue.",
+            "flagged": false,
+            "details": [
+              "August 2026 is the calendar year of a filing quoted (period ended 2026-01-25)"
+            ]
+          },
+          {
+            "case_id": "nvda-crypto-lawsuit-over",
+            "finding_id": "f1",
+            "shift": 1,
+            "statement": "The case was not finished: after the Supreme Court dismissed the writ, the Ninth Circuit judgment took effect on February 20, 2026 and the case went back to the district court for further proceedings.",
+            "flagged": false,
+            "details": [
+              "February 20, 2026 is the calendar year of a filing quoted (period ended 2026-07-26)"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "cases": [
+    {
+      "case_id": "nvda-data-center-drives-growth",
+      "ticker": "NVDA",
+      "kind": "answerable",
+      "expected": "supports",
+      "verdict": "supported",
+      "queries": [
+        "Data Center revenue",
+        "compute and networking revenue",
+        "revenue growth year over year",
+        "decline in Data Center revenue"
+      ],
+      "passages_offered": 8,
+      "offered_position": null,
+      "rank": 20,
+      "cited_right_passage": false,
+      "findings_verified": 4,
+      "findings_withheld": 0,
+      "withheld_reasons": [],
+      "verified_stances": [
+        "supports",
+        "supports",
+        "context",
+        "context"
+      ],
+      "quotes_offered": 4,
+      "quotes_rejected": 0,
+      "excerpts_kept": 4,
+      "numbers_checked": 3,
+      "numbers_unmatched": 0,
+      "figures_offered": 37,
+      "figures_cited": 1,
+      "engine_error": "",
+      "problems": [],
+      "check": {
+        "judged": [
+          "supported",
+          "supported",
+          "supported",
+          "supported"
+        ],
+        "verdict_after": "supported",
+        "error": ""
+      },
+      "periods_checked": 0,
+      "periods_unverified": [],
+      "periods_planted": [],
+      "retrieval_hit": false,
+      "agrees": true,
+      "refused": null,
+      "agrees_after_check": true
+    },
+    {
+      "case_id": "nvda-few-buyers-dominate",
+      "ticker": "NVDA",
+      "kind": "answerable",
+      "expected": "supports",
+      "verdict": "supported",
+      "queries": [
+        "customer concentration",
+        "direct customers percent of revenue",
+        "indirect customers cloud service providers",
+        "loss of a key customer"
+      ],
+      "passages_offered": 8,
+      "offered_position": 7,
+      "rank": 7,
+      "cited_right_passage": false,
+      "findings_verified": 4,
+      "findings_withheld": 0,
+      "withheld_reasons": [],
+      "verified_stances": [
+        "supports",
+        "supports",
+        "supports",
+        "supports"
+      ],
+      "quotes_offered": 4,
+      "quotes_rejected": 0,
+      "excerpts_kept": 4,
+      "numbers_checked": 6,
+      "numbers_unmatched": 0,
+      "figures_offered": 37,
+      "figures_cited": 0,
+      "engine_error": "",
+      "problems": [],
+      "check": {
+        "judged": [
+          "supported",
+          "supported",
+          "supported",
+          "supported"
+        ],
+        "verdict_after": "supported",
+        "error": ""
+      },
+      "periods_checked": 2,
+      "periods_unverified": [],
+      "periods_planted": [
+        {
+          "case_id": "nvda-few-buyers-dominate",
+          "finding_id": "f2",
+          "shift": -1,
+          "statement": "For fiscal year 2025, one direct customer represented 22% of total revenue and another represented 14%.",
+          "flagged": true,
+          "details": [
+            "fiscal year 2025 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        },
+        {
+          "case_id": "nvda-few-buyers-dominate",
+          "finding_id": "f2",
+          "shift": -2,
+          "statement": "For fiscal year 2024, one direct customer represented 22% of total revenue and another represented 14%.",
+          "flagged": true,
+          "details": [
+            "fiscal year 2024 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        },
+        {
+          "case_id": "nvda-few-buyers-dominate",
+          "finding_id": "f2",
+          "shift": -3,
+          "statement": "For fiscal year 2023, one direct customer represented 22% of total revenue and another represented 14%.",
+          "flagged": true,
+          "details": [
+            "fiscal year 2023 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "nvda-few-buyers-dominate",
+          "finding_id": "f2",
+          "shift": 1,
+          "statement": "For fiscal year 2027, one direct customer represented 22% of total revenue and another represented 14%.",
+          "flagged": true,
+          "details": [
+            "fiscal year 2027 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "nvda-few-buyers-dominate",
+          "finding_id": "f3",
+          "shift": -1,
+          "statement": "In the first quarter of fiscal year 2026, three direct customers represented 21%, 17%, and 16% of total revenue.",
+          "flagged": true,
+          "details": [
+            "fiscal year 2026 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        },
+        {
+          "case_id": "nvda-few-buyers-dominate",
+          "finding_id": "f3",
+          "shift": -2,
+          "statement": "In the first quarter of fiscal year 2025, three direct customers represented 21%, 17%, and 16% of total revenue.",
+          "flagged": true,
+          "details": [
+            "fiscal year 2025 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        },
+        {
+          "case_id": "nvda-few-buyers-dominate",
+          "finding_id": "f3",
+          "shift": -3,
+          "statement": "In the first quarter of fiscal year 2024, three direct customers represented 21%, 17%, and 16% of total revenue.",
+          "flagged": true,
+          "details": [
+            "fiscal year 2024 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "nvda-few-buyers-dominate",
+          "finding_id": "f3",
+          "shift": 1,
+          "statement": "In the first quarter of fiscal year 2028, three direct customers represented 21%, 17%, and 16% of total revenue.",
+          "flagged": true,
+          "details": [
+            "fiscal year 2028 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        }
+      ],
+      "retrieval_hit": true,
+      "agrees": true,
+      "refused": null,
+      "agrees_after_check": true
+    },
+    {
+      "case_id": "nvda-china-reopened",
+      "ticker": "NVDA",
+      "kind": "answerable",
+      "expected": "challenges",
+      "verdict": "challenged",
+      "queries": [
+        "China export license H20",
+        "export controls China",
+        "Data Center revenue China",
+        "export restrictions limit sales"
+      ],
+      "passages_offered": 8,
+      "offered_position": null,
+      "rank": 15,
+      "cited_right_passage": false,
+      "findings_verified": 3,
+      "findings_withheld": 0,
+      "withheld_reasons": [],
+      "verified_stances": [
+        "challenges",
+        "challenges",
+        "challenges"
+      ],
+      "quotes_offered": 3,
+      "quotes_rejected": 0,
+      "excerpts_kept": 3,
+      "numbers_checked": 1,
+      "numbers_unmatched": 0,
+      "figures_offered": 37,
+      "figures_cited": 0,
+      "engine_error": "",
+      "problems": [],
+      "check": {
+        "judged": [
+          "supported",
+          "partly",
+          "supported"
+        ],
+        "verdict_after": "challenged",
+        "error": ""
+      },
+      "periods_checked": 3,
+      "periods_unverified": [],
+      "periods_planted": [
+        {
+          "case_id": "nvda-china-reopened",
+          "finding_id": "f1",
+          "shift": -1,
+          "statement": "As of the end of the second quarter of fiscal year 2026 the company says it was effectively foreclosed from China's data center compute market, although it could ship uncontrolled products such as gaming and workstation GPUs.",
+          "flagged": true,
+          "details": [
+            "fiscal year 2026 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        },
+        {
+          "case_id": "nvda-china-reopened",
+          "finding_id": "f1",
+          "shift": -2,
+          "statement": "As of the end of the second quarter of fiscal year 2025 the company says it was effectively foreclosed from China's data center compute market, although it could ship uncontrolled products such as gaming and workstation GPUs.",
+          "flagged": true,
+          "details": [
+            "fiscal year 2025 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        },
+        {
+          "case_id": "nvda-china-reopened",
+          "finding_id": "f1",
+          "shift": -3,
+          "statement": "As of the end of the second quarter of fiscal year 2024 the company says it was effectively foreclosed from China's data center compute market, although it could ship uncontrolled products such as gaming and workstation GPUs.",
+          "flagged": true,
+          "details": [
+            "fiscal year 2024 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "nvda-china-reopened",
+          "finding_id": "f1",
+          "shift": 1,
+          "statement": "As of the end of the second quarter of fiscal year 2028 the company says it was effectively foreclosed from China's data center compute market, although it could ship uncontrolled products such as gaming and workstation GPUs.",
+          "flagged": true,
+          "details": [
+            "fiscal year 2028 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "nvda-china-reopened",
+          "finding_id": "f2",
+          "shift": -1,
+          "statement": "Licences granted in August 2024 for certain H20 products produced approximately $60 million in H20 revenue.",
+          "flagged": true,
+          "details": [
+            "August 2024 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        },
+        {
+          "case_id": "nvda-china-reopened",
+          "finding_id": "f2",
+          "shift": -2,
+          "statement": "Licences granted in August 2023 for certain H20 products produced approximately $60 million in H20 revenue.",
+          "flagged": true,
+          "details": [
+            "August 2023 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "nvda-china-reopened",
+          "finding_id": "f2",
+          "shift": -3,
+          "statement": "Licences granted in August 2022 for certain H20 products produced approximately $60 million in H20 revenue.",
+          "flagged": true,
+          "details": [
+            "August 2022 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "nvda-china-reopened",
+          "finding_id": "f2",
+          "shift": 1,
+          "statement": "Licences granted in August 2026 for certain H20 products produced approximately $60 million in H20 revenue.",
+          "flagged": false,
+          "details": [
+            "August 2026 is the calendar year of a filing quoted (period ended 2026-01-25)"
+          ]
+        },
+        {
+          "case_id": "nvda-china-reopened",
+          "finding_id": "f3",
+          "shift": -1,
+          "statement": "A February 2025 licence allows small amounts of H200 products to be shipped to specific China-based customers, but no revenue has been generated under it and it is not known whether imports will be allowed into China.",
+          "flagged": true,
+          "details": [
+            "February 2025 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        },
+        {
+          "case_id": "nvda-china-reopened",
+          "finding_id": "f3",
+          "shift": -2,
+          "statement": "A February 2024 licence allows small amounts of H200 products to be shipped to specific China-based customers, but no revenue has been generated under it and it is not known whether imports will be allowed into China.",
+          "flagged": true,
+          "details": [
+            "February 2024 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        },
+        {
+          "case_id": "nvda-china-reopened",
+          "finding_id": "f3",
+          "shift": -3,
+          "statement": "A February 2023 licence allows small amounts of H200 products to be shipped to specific China-based customers, but no revenue has been generated under it and it is not known whether imports will be allowed into China.",
+          "flagged": true,
+          "details": [
+            "February 2023 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "nvda-china-reopened",
+          "finding_id": "f3",
+          "shift": 1,
+          "statement": "A February 2027 licence allows small amounts of H200 products to be shipped to specific China-based customers, but no revenue has been generated under it and it is not known whether imports will be allowed into China.",
+          "flagged": true,
+          "details": [
+            "February 2027 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        }
+      ],
+      "retrieval_hit": false,
+      "agrees": true,
+      "refused": null,
+      "agrees_after_check": true
+    },
+    {
+      "case_id": "nvda-margin-widened",
+      "ticker": "NVDA",
+      "kind": "answerable",
+      "expected": "supports",
+      "verdict": "mixed",
+      "queries": [
+        "gross margin percentage",
+        "operating income as percent of revenue",
+        "gross margin decrease inventory provisions",
+        "net income margin"
+      ],
+      "passages_offered": 8,
+      "offered_position": 2,
+      "rank": 2,
+      "cited_right_passage": true,
+      "findings_verified": 3,
+      "findings_withheld": 0,
+      "withheld_reasons": [],
+      "verified_stances": [
+        "supports",
+        "supports",
+        "challenges"
+      ],
+      "quotes_offered": 3,
+      "quotes_rejected": 0,
+      "excerpts_kept": 3,
+      "numbers_checked": 7,
+      "numbers_unmatched": 0,
+      "figures_offered": 37,
+      "figures_cited": 4,
+      "engine_error": "",
+      "problems": [],
+      "check": {
+        "judged": [
+          "supported",
+          "supported",
+          "supported"
+        ],
+        "verdict_after": "mixed",
+        "error": ""
+      },
+      "periods_checked": 3,
+      "periods_unverified": [],
+      "periods_planted": [
+        {
+          "case_id": "nvda-margin-widened",
+          "finding_id": "f2",
+          "shift": -1,
+          "statement": "Gross margin for the first quarter of fiscal year 2026 was 74.9% against 60.5% a year earlier, largely because the prior year carried a $4.5 billion H20 charge.",
+          "flagged": false,
+          "details": [
+            "fiscal year 2026 is in a quote"
+          ]
+        },
+        {
+          "case_id": "nvda-margin-widened",
+          "finding_id": "f2",
+          "shift": -2,
+          "statement": "Gross margin for the first quarter of fiscal year 2025 was 74.9% against 60.5% a year earlier, largely because the prior year carried a $4.5 billion H20 charge.",
+          "flagged": true,
+          "details": [
+            "fiscal year 2025 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        },
+        {
+          "case_id": "nvda-margin-widened",
+          "finding_id": "f2",
+          "shift": -3,
+          "statement": "Gross margin for the first quarter of fiscal year 2024 was 74.9% against 60.5% a year earlier, largely because the prior year carried a $4.5 billion H20 charge.",
+          "flagged": true,
+          "details": [
+            "fiscal year 2024 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "nvda-margin-widened",
+          "finding_id": "f2",
+          "shift": 1,
+          "statement": "Gross margin for the first quarter of fiscal year 2028 was 74.9% against 60.5% a year earlier, largely because the prior year carried a $4.5 billion H20 charge.",
+          "flagged": true,
+          "details": [
+            "fiscal year 2028 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "nvda-margin-widened",
+          "finding_id": "f3",
+          "shift": -1,
+          "statement": "On a full-year basis the picture is the opposite: gross margin fell to 71.1% in fiscal year 2025 from 75.0% in fiscal year 2024.",
+          "flagged": true,
+          "details": [
+            "fiscal year 2025 is in a quote",
+            "fiscal year 2024 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        },
+        {
+          "case_id": "nvda-margin-widened",
+          "finding_id": "f3",
+          "shift": -2,
+          "statement": "On a full-year basis the picture is the opposite: gross margin fell to 71.1% in fiscal year 2024 from 75.0% in fiscal year 2023.",
+          "flagged": true,
+          "details": [
+            "fiscal year 2024 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be",
+            "fiscal year 2023 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        },
+        {
+          "case_id": "nvda-margin-widened",
+          "finding_id": "f3",
+          "shift": -3,
+          "statement": "On a full-year basis the picture is the opposite: gross margin fell to 71.1% in fiscal year 2023 from 75.0% in fiscal year 2022.",
+          "flagged": true,
+          "details": [
+            "fiscal year 2023 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be",
+            "fiscal year 2022 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "nvda-margin-widened",
+          "finding_id": "f3",
+          "shift": 1,
+          "statement": "On a full-year basis the picture is the opposite: gross margin fell to 71.1% in fiscal year 2027 from 75.0% in fiscal year 2026.",
+          "flagged": true,
+          "details": [
+            "fiscal year 2027 is not in the quotes, the cited figures or the period of a filing quoted",
+            "fiscal year 2026 is in a quote"
+          ]
+        }
+      ],
+      "retrieval_hit": true,
+      "agrees": false,
+      "refused": null,
+      "agrees_after_check": false
+    },
+    {
+      "case_id": "nvda-cash-returned",
+      "ticker": "NVDA",
+      "kind": "answerable",
+      "expected": "supports",
+      "verdict": "supported",
+      "queries": [
+        "share repurchase program",
+        "dividends per share quarterly",
+        "repurchases of common stock",
+        "dividend increase"
+      ],
+      "passages_offered": 8,
+      "offered_position": 6,
+      "rank": 6,
+      "cited_right_passage": false,
+      "findings_verified": 4,
+      "findings_withheld": 0,
+      "withheld_reasons": [],
+      "verified_stances": [
+        "supports",
+        "supports",
+        "supports",
+        "supports"
+      ],
+      "quotes_offered": 4,
+      "quotes_rejected": 0,
+      "excerpts_kept": 4,
+      "numbers_checked": 11,
+      "numbers_unmatched": 0,
+      "figures_offered": 37,
+      "figures_cited": 0,
+      "engine_error": "",
+      "problems": [],
+      "check": {
+        "judged": [
+          "supported",
+          "supported",
+          "supported",
+          "supported"
+        ],
+        "verdict_after": "supported",
+        "error": ""
+      },
+      "periods_checked": 3,
+      "periods_unverified": [],
+      "periods_planted": [
+        {
+          "case_id": "nvda-cash-returned",
+          "finding_id": "f1",
+          "shift": -1,
+          "statement": "The company repurchased 94 million shares for $19.7 billion in the second quarter and 203 million shares for $39.8 billion in the first half of fiscal year 2026.",
+          "flagged": true,
+          "details": [
+            "fiscal year 2026 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        },
+        {
+          "case_id": "nvda-cash-returned",
+          "finding_id": "f1",
+          "shift": -2,
+          "statement": "The company repurchased 94 million shares for $19.7 billion in the second quarter and 203 million shares for $39.8 billion in the first half of fiscal year 2025.",
+          "flagged": true,
+          "details": [
+            "fiscal year 2025 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        },
+        {
+          "case_id": "nvda-cash-returned",
+          "finding_id": "f1",
+          "shift": -3,
+          "statement": "The company repurchased 94 million shares for $19.7 billion in the second quarter and 203 million shares for $39.8 billion in the first half of fiscal year 2024.",
+          "flagged": true,
+          "details": [
+            "fiscal year 2024 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "nvda-cash-returned",
+          "finding_id": "f1",
+          "shift": 1,
+          "statement": "The company repurchased 94 million shares for $19.7 billion in the second quarter and 203 million shares for $39.8 billion in the first half of fiscal year 2028.",
+          "flagged": true,
+          "details": [
+            "fiscal year 2028 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "nvda-cash-returned",
+          "finding_id": "f3",
+          "shift": -1,
+          "statement": "Dividends paid in the second quarter of fiscal 2026 were $6.0 billion against $244 million in the same quarter a year earlier.",
+          "flagged": false,
+          "details": [
+            "fiscal 2026 is in a quote"
+          ]
+        },
+        {
+          "case_id": "nvda-cash-returned",
+          "finding_id": "f3",
+          "shift": -2,
+          "statement": "Dividends paid in the second quarter of fiscal 2025 were $6.0 billion against $244 million in the same quarter a year earlier.",
+          "flagged": true,
+          "details": [
+            "fiscal 2025 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        },
+        {
+          "case_id": "nvda-cash-returned",
+          "finding_id": "f3",
+          "shift": -3,
+          "statement": "Dividends paid in the second quarter of fiscal 2024 were $6.0 billion against $244 million in the same quarter a year earlier.",
+          "flagged": true,
+          "details": [
+            "fiscal 2024 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "nvda-cash-returned",
+          "finding_id": "f3",
+          "shift": 1,
+          "statement": "Dividends paid in the second quarter of fiscal 2028 were $6.0 billion against $244 million in the same quarter a year earlier.",
+          "flagged": true,
+          "details": [
+            "fiscal 2028 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "nvda-cash-returned",
+          "finding_id": "f4",
+          "shift": -1,
+          "statement": "The board approved an additional $80.0 billion repurchase authorization, leaving up to $99.3 billion authorized as of July 26, 2025.",
+          "flagged": true,
+          "details": [
+            "July 26, 2025 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        },
+        {
+          "case_id": "nvda-cash-returned",
+          "finding_id": "f4",
+          "shift": -2,
+          "statement": "The board approved an additional $80.0 billion repurchase authorization, leaving up to $99.3 billion authorized as of July 26, 2024.",
+          "flagged": true,
+          "details": [
+            "July 26, 2024 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "nvda-cash-returned",
+          "finding_id": "f4",
+          "shift": -3,
+          "statement": "The board approved an additional $80.0 billion repurchase authorization, leaving up to $99.3 billion authorized as of July 26, 2023.",
+          "flagged": true,
+          "details": [
+            "July 26, 2023 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "nvda-cash-returned",
+          "finding_id": "f4",
+          "shift": 1,
+          "statement": "The board approved an additional $80.0 billion repurchase authorization, leaving up to $99.3 billion authorized as of July 26, 2027.",
+          "flagged": true,
+          "details": [
+            "July 26, 2027 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        }
+      ],
+      "retrieval_hit": true,
+      "agrees": true,
+      "refused": null,
+      "agrees_after_check": true
+    },
+    {
+      "case_id": "nvda-no-borrowing",
+      "ticker": "NVDA",
+      "kind": "answerable",
+      "expected": "challenges",
+      "verdict": "challenged",
+      "queries": [
+        "senior notes issued",
+        "long-term debt",
+        "cash provided by operating activities",
+        "commercial paper or debt issuance"
+      ],
+      "passages_offered": 8,
+      "offered_position": 3,
+      "rank": 3,
+      "cited_right_passage": true,
+      "findings_verified": 4,
+      "findings_withheld": 0,
+      "withheld_reasons": [],
+      "verified_stances": [
+        "challenges",
+        "challenges",
+        "context",
+        "context"
+      ],
+      "quotes_offered": 4,
+      "quotes_rejected": 0,
+      "excerpts_kept": 4,
+      "numbers_checked": 2,
+      "numbers_unmatched": 0,
+      "figures_offered": 37,
+      "figures_cited": 0,
+      "engine_error": "",
+      "problems": [],
+      "check": {
+        "judged": [
+          "supported",
+          "partly",
+          "supported",
+          "partly"
+        ],
+        "verdict_after": "challenged",
+        "error": ""
+      },
+      "periods_checked": 3,
+      "periods_unverified": [],
+      "periods_planted": [
+        {
+          "case_id": "nvda-no-borrowing",
+          "finding_id": "f1",
+          "shift": -1,
+          "statement": "The company issued $25.0 billion of senior unsecured notes in June 2025, which contradicts the claim that it has stayed away from the bond market.",
+          "flagged": true,
+          "details": [
+            "June 2025 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        },
+        {
+          "case_id": "nvda-no-borrowing",
+          "finding_id": "f1",
+          "shift": -2,
+          "statement": "The company issued $25.0 billion of senior unsecured notes in June 2024, which contradicts the claim that it has stayed away from the bond market.",
+          "flagged": true,
+          "details": [
+            "June 2024 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "nvda-no-borrowing",
+          "finding_id": "f1",
+          "shift": -3,
+          "statement": "The company issued $25.0 billion of senior unsecured notes in June 2023, which contradicts the claim that it has stayed away from the bond market.",
+          "flagged": true,
+          "details": [
+            "June 2023 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "nvda-no-borrowing",
+          "finding_id": "f1",
+          "shift": 1,
+          "statement": "The company issued $25.0 billion of senior unsecured notes in June 2027, which contradicts the claim that it has stayed away from the bond market.",
+          "flagged": true,
+          "details": [
+            "June 2027 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "nvda-no-borrowing",
+          "finding_id": "f2",
+          "shift": -1,
+          "statement": "The company reports higher cash proceeds from debt issuance in the first half of fiscal year 2026, so it is not funding itself entirely from operations.",
+          "flagged": false,
+          "details": [
+            "fiscal year 2026 is in a quote"
+          ]
+        },
+        {
+          "case_id": "nvda-no-borrowing",
+          "finding_id": "f2",
+          "shift": -2,
+          "statement": "The company reports higher cash proceeds from debt issuance in the first half of fiscal year 2025, so it is not funding itself entirely from operations.",
+          "flagged": true,
+          "details": [
+            "fiscal year 2025 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        },
+        {
+          "case_id": "nvda-no-borrowing",
+          "finding_id": "f2",
+          "shift": -3,
+          "statement": "The company reports higher cash proceeds from debt issuance in the first half of fiscal year 2024, so it is not funding itself entirely from operations.",
+          "flagged": true,
+          "details": [
+            "fiscal year 2024 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "nvda-no-borrowing",
+          "finding_id": "f2",
+          "shift": 1,
+          "statement": "The company reports higher cash proceeds from debt issuance in the first half of fiscal year 2028, so it is not funding itself entirely from operations.",
+          "flagged": true,
+          "details": [
+            "fiscal year 2028 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "nvda-no-borrowing",
+          "finding_id": "f3",
+          "shift": -1,
+          "statement": "The company has a commercial paper program of up to $25.0 billion, with none outstanding as of April 26, 2025, so it already had short-term debt capacity in place.",
+          "flagged": true,
+          "details": [
+            "April 26, 2025 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        },
+        {
+          "case_id": "nvda-no-borrowing",
+          "finding_id": "f3",
+          "shift": -2,
+          "statement": "The company has a commercial paper program of up to $25.0 billion, with none outstanding as of April 26, 2024, so it already had short-term debt capacity in place.",
+          "flagged": true,
+          "details": [
+            "April 26, 2024 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "nvda-no-borrowing",
+          "finding_id": "f3",
+          "shift": -3,
+          "statement": "The company has a commercial paper program of up to $25.0 billion, with none outstanding as of April 26, 2023, so it already had short-term debt capacity in place.",
+          "flagged": true,
+          "details": [
+            "April 26, 2023 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "nvda-no-borrowing",
+          "finding_id": "f3",
+          "shift": 1,
+          "statement": "The company has a commercial paper program of up to $25.0 billion, with none outstanding as of April 26, 2027, so it already had short-term debt capacity in place.",
+          "flagged": true,
+          "details": [
+            "April 26, 2027 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        }
+      ],
+      "retrieval_hit": true,
+      "agrees": true,
+      "refused": null,
+      "agrees_after_check": true
+    },
+    {
+      "case_id": "nvda-commitments-small",
+      "ticker": "NVDA",
+      "kind": "answerable",
+      "expected": "challenges",
+      "verdict": "challenged",
+      "queries": [
+        "purchase obligations",
+        "supply and capacity purchase commitments",
+        "guarantees and indemnification obligations",
+        "prepaid supply agreements and counterparty credit risk"
+      ],
+      "passages_offered": 8,
+      "offered_position": null,
+      "rank": 20,
+      "cited_right_passage": false,
+      "findings_verified": 3,
+      "findings_withheld": 0,
+      "withheld_reasons": [],
+      "verified_stances": [
+        "challenges",
+        "challenges",
+        "challenges"
+      ],
+      "quotes_offered": 4,
+      "quotes_rejected": 0,
+      "excerpts_kept": 4,
+      "numbers_checked": 0,
+      "numbers_unmatched": 0,
+      "figures_offered": 37,
+      "figures_cited": 0,
+      "engine_error": "",
+      "problems": [],
+      "check": {
+        "judged": [
+          "supported",
+          "supported",
+          "partly"
+        ],
+        "verdict_after": "challenged",
+        "error": ""
+      },
+      "periods_checked": 0,
+      "periods_unverified": [],
+      "periods_planted": [],
+      "retrieval_hit": false,
+      "agrees": true,
+      "refused": null,
+      "agrees_after_check": true
+    },
+    {
+      "case_id": "nvda-custom-silicon-threat",
+      "ticker": "NVDA",
+      "kind": "answerable",
+      "expected": "supports",
+      "verdict": "supported",
+      "queries": [
+        "custom silicon developed by customers",
+        "competition from in-house accelerators",
+        "customer concentration cloud service providers",
+        "reduced demand for our GPUs"
+      ],
+      "passages_offered": 8,
+      "offered_position": null,
+      "rank": 23,
+      "cited_right_passage": false,
+      "findings_verified": 2,
+      "findings_withheld": 0,
+      "withheld_reasons": [],
+      "verified_stances": [
+        "supports",
+        "context"
+      ],
+      "quotes_offered": 3,
+      "quotes_rejected": 0,
+      "excerpts_kept": 3,
+      "numbers_checked": 1,
+      "numbers_unmatched": 0,
+      "figures_offered": 37,
+      "figures_cited": 1,
+      "engine_error": "",
+      "problems": [],
+      "check": {
+        "judged": [
+          "supported",
+          "partly"
+        ],
+        "verdict_after": "supported",
+        "error": ""
+      },
+      "periods_checked": 0,
+      "periods_unverified": [],
+      "periods_planted": [],
+      "retrieval_hit": false,
+      "agrees": true,
+      "refused": null,
+      "agrees_after_check": true
+    },
+    {
+      "case_id": "nvda-crypto-lawsuit-over",
+      "ticker": "NVDA",
+      "kind": "answerable",
+      "expected": "challenges",
+      "verdict": "challenged",
+      "queries": [
+        "securities class action cryptocurrency mining",
+        "legal proceedings shareholder litigation",
+        "settlement of class action",
+        "Supreme Court certiorari securities case"
+      ],
+      "passages_offered": 8,
+      "offered_position": 2,
+      "rank": 2,
+      "cited_right_passage": true,
+      "findings_verified": 4,
+      "findings_withheld": 0,
+      "withheld_reasons": [],
+      "verified_stances": [
+        "challenges",
+        "challenges",
+        "challenges",
+        "challenges"
+      ],
+      "quotes_offered": 4,
+      "quotes_rejected": 0,
+      "excerpts_kept": 4,
+      "numbers_checked": 0,
+      "numbers_unmatched": 0,
+      "figures_offered": 37,
+      "figures_cited": 0,
+      "engine_error": "",
+      "problems": [],
+      "check": {
+        "judged": [
+          "supported",
+          "supported",
+          "supported",
+          "supported"
+        ],
+        "verdict_after": "challenged",
+        "error": ""
+      },
+      "periods_checked": 2,
+      "periods_unverified": [],
+      "periods_planted": [
+        {
+          "case_id": "nvda-crypto-lawsuit-over",
+          "finding_id": "f1",
+          "shift": -1,
+          "statement": "The case was not finished: after the Supreme Court dismissed the writ, the Ninth Circuit judgment took effect on February 20, 2024 and the case went back to the district court for further proceedings.",
+          "flagged": true,
+          "details": [
+            "February 20, 2024 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "nvda-crypto-lawsuit-over",
+          "finding_id": "f1",
+          "shift": -2,
+          "statement": "The case was not finished: after the Supreme Court dismissed the writ, the Ninth Circuit judgment took effect on February 20, 2023 and the case went back to the district court for further proceedings.",
+          "flagged": false,
+          "details": [
+            "February 20, 2023 is in a quote"
+          ]
+        },
+        {
+          "case_id": "nvda-crypto-lawsuit-over",
+          "finding_id": "f1",
+          "shift": -3,
+          "statement": "The case was not finished: after the Supreme Court dismissed the writ, the Ninth Circuit judgment took effect on February 20, 2022 and the case went back to the district court for further proceedings.",
+          "flagged": true,
+          "details": [
+            "February 20, 2022 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "nvda-crypto-lawsuit-over",
+          "finding_id": "f1",
+          "shift": 1,
+          "statement": "The case was not finished: after the Supreme Court dismissed the writ, the Ninth Circuit judgment took effect on February 20, 2026 and the case went back to the district court for further proceedings.",
+          "flagged": false,
+          "details": [
+            "February 20, 2026 is the calendar year of a filing quoted (period ended 2026-07-26)"
+          ]
+        },
+        {
+          "case_id": "nvda-crypto-lawsuit-over",
+          "finding_id": "f2",
+          "shift": -1,
+          "statement": "The district court certified a class of investors on March 25, 2025, so the case is moving forward rather than ended.",
+          "flagged": true,
+          "details": [
+            "March 25, 2025 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        },
+        {
+          "case_id": "nvda-crypto-lawsuit-over",
+          "finding_id": "f2",
+          "shift": -2,
+          "statement": "The district court certified a class of investors on March 25, 2024, so the case is moving forward rather than ended.",
+          "flagged": true,
+          "details": [
+            "March 25, 2024 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "nvda-crypto-lawsuit-over",
+          "finding_id": "f2",
+          "shift": -3,
+          "statement": "The district court certified a class of investors on March 25, 2023, so the case is moving forward rather than ended.",
+          "flagged": true,
+          "details": [
+            "March 25, 2023 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "nvda-crypto-lawsuit-over",
+          "finding_id": "f2",
+          "shift": 1,
+          "statement": "The district court certified a class of investors on March 25, 2027, so the case is moving forward rather than ended.",
+          "flagged": true,
+          "details": [
+            "March 25, 2027 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        }
+      ],
+      "retrieval_hit": true,
+      "agrees": true,
+      "refused": null,
+      "agrees_after_check": true
+    },
+    {
+      "case_id": "nvda-workforce-unionising",
+      "ticker": "NVDA",
+      "kind": "unanswerable",
+      "expected": "none",
+      "verdict": "not_addressed",
+      "queries": [
+        "employees labor union",
+        "collective bargaining work stoppage",
+        "human capital employees",
+        "labor disputes strikes risk"
+      ],
+      "passages_offered": 8,
+      "offered_position": null,
+      "rank": null,
+      "cited_right_passage": false,
+      "findings_verified": 0,
+      "findings_withheld": 0,
+      "withheld_reasons": [],
+      "verified_stances": [],
+      "quotes_offered": 0,
+      "quotes_rejected": 0,
+      "excerpts_kept": 0,
+      "numbers_checked": 0,
+      "numbers_unmatched": 0,
+      "figures_offered": 37,
+      "figures_cited": 0,
+      "engine_error": "",
+      "problems": [],
+      "check": {
+        "judged": [],
+        "verdict_after": "not_addressed",
+        "error": ""
+      },
+      "periods_checked": 0,
+      "periods_unverified": [],
+      "periods_planted": [],
+      "retrieval_hit": false,
+      "agrees": null,
+      "refused": true,
+      "agrees_after_check": null
+    },
+    {
+      "case_id": "cost-members-renew",
+      "ticker": "COST",
+      "kind": "answerable",
+      "expected": "supports",
+      "verdict": "mixed",
+      "queries": [
+        "membership fee income",
+        "renewal rate",
+        "paid members",
+        "membership renewal rate decline"
+      ],
+      "passages_offered": 8,
+      "offered_position": 5,
+      "rank": 5,
+      "cited_right_passage": true,
+      "findings_verified": 4,
+      "findings_withheld": 0,
+      "withheld_reasons": [],
+      "verified_stances": [
+        "supports",
+        "context",
+        "context",
+        "challenges"
+      ],
+      "quotes_offered": 4,
+      "quotes_rejected": 0,
+      "excerpts_kept": 4,
+      "numbers_checked": 5,
+      "numbers_unmatched": 0,
+      "figures_offered": 36,
+      "figures_cited": 0,
+      "engine_error": "",
+      "problems": [],
+      "check": {
+        "judged": [
+          "supported",
+          "supported",
+          "supported",
+          "supported"
+        ],
+        "verdict_after": "mixed",
+        "error": ""
+      },
+      "periods_checked": 4,
+      "periods_unverified": [],
+      "periods_planted": [
+        {
+          "case_id": "cost-members-renew",
+          "finding_id": "f1",
+          "shift": -1,
+          "statement": "Membership fee revenue rose 11% in 2025, and renewal rates were 92.3% in the U.S. and Canada and 89.8% worldwide at the end of 2025, which supports both parts of the claim.",
+          "flagged": true,
+          "details": [
+            "2025 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be",
+            "2025 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        },
+        {
+          "case_id": "cost-members-renew",
+          "finding_id": "f1",
+          "shift": -2,
+          "statement": "Membership fee revenue rose 11% in 2024, and renewal rates were 92.3% in the U.S. and Canada and 89.8% worldwide at the end of 2024, which supports both parts of the claim.",
+          "flagged": true,
+          "details": [
+            "2024 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be",
+            "2024 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        },
+        {
+          "case_id": "cost-members-renew",
+          "finding_id": "f1",
+          "shift": -3,
+          "statement": "Membership fee revenue rose 11% in 2023, and renewal rates were 92.3% in the U.S. and Canada and 89.8% worldwide at the end of 2023, which supports both parts of the claim.",
+          "flagged": true,
+          "details": [
+            "2023 is not in the quotes, the cited figures or the period of a filing quoted",
+            "2023 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "cost-members-renew",
+          "finding_id": "f1",
+          "shift": 1,
+          "statement": "Membership fee revenue rose 11% in 2027, and renewal rates were 92.3% in the U.S. and Canada and 89.8% worldwide at the end of 2027, which supports both parts of the claim.",
+          "flagged": true,
+          "details": [
+            "2027 is not in the quotes, the cited figures or the period of a filing quoted",
+            "2027 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "cost-members-renew",
+          "finding_id": "f2",
+          "shift": -1,
+          "statement": "Part of the growth in membership income comes from the fee increase rather than from renewals alone: the fee increase accounted for approximately 30% and 40% of membership income growth during 2025 and 2024.",
+          "flagged": true,
+          "details": [
+            "2025 is in a quote",
+            "2024 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        },
+        {
+          "case_id": "cost-members-renew",
+          "finding_id": "f2",
+          "shift": -2,
+          "statement": "Part of the growth in membership income comes from the fee increase rather than from renewals alone: the fee increase accounted for approximately 30% and 40% of membership income growth during 2024 and 2023.",
+          "flagged": true,
+          "details": [
+            "2024 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be",
+            "2023 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "cost-members-renew",
+          "finding_id": "f2",
+          "shift": -3,
+          "statement": "Part of the growth in membership income comes from the fee increase rather than from renewals alone: the fee increase accounted for approximately 30% and 40% of membership income growth during 2023 and 2022.",
+          "flagged": true,
+          "details": [
+            "2023 is not in the quotes, the cited figures or the period of a filing quoted",
+            "2022 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "cost-members-renew",
+          "finding_id": "f2",
+          "shift": 1,
+          "statement": "Part of the growth in membership income comes from the fee increase rather than from renewals alone: the fee increase accounted for approximately 30% and 40% of membership income growth during 2027 and 2026.",
+          "flagged": true,
+          "details": [
+            "2027 is not in the quotes, the cited figures or the period of a filing quoted",
+            "2026 is in a quote"
+          ]
+        }
+      ],
+      "retrieval_hit": true,
+      "agrees": false,
+      "refused": null,
+      "agrees_after_check": false
+    },
+    {
+      "case_id": "cost-markup-widened",
+      "ticker": "COST",
+      "kind": "answerable",
+      "expected": "mixed",
+      "verdict": "mixed",
+      "queries": [
+        "gross margin percentage",
+        "merchandise costs",
+        "gross margin decrease",
+        "core merchandise categories margin"
+      ],
+      "passages_offered": 8,
+      "offered_position": 1,
+      "rank": 1,
+      "cited_right_passage": true,
+      "findings_verified": 3,
+      "findings_withheld": 0,
+      "withheld_reasons": [],
+      "verified_stances": [
+        "challenges",
+        "supports",
+        "challenges"
+      ],
+      "quotes_offered": 2,
+      "quotes_rejected": 0,
+      "excerpts_kept": 2,
+      "numbers_checked": 3,
+      "numbers_unmatched": 0,
+      "figures_offered": 36,
+      "figures_cited": 2,
+      "engine_error": "",
+      "problems": [],
+      "check": {
+        "judged": [
+          "supported",
+          "supported",
+          "supported"
+        ],
+        "verdict_after": "mixed",
+        "error": ""
+      },
+      "periods_checked": 2,
+      "periods_unverified": [],
+      "periods_planted": [
+        {
+          "case_id": "cost-markup-widened",
+          "finding_id": "f3",
+          "shift": -1,
+          "statement": "The XBRL-derived annual gross margin was 12.8% in both fiscal 2025 and fiscal 2024, so it shows no widening.",
+          "flagged": true,
+          "details": [
+            "fiscal 2025 is the fiscal year of a cited figure (period ended 2025-08-31)",
+            "fiscal 2024 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        },
+        {
+          "case_id": "cost-markup-widened",
+          "finding_id": "f3",
+          "shift": -2,
+          "statement": "The XBRL-derived annual gross margin was 12.8% in both fiscal 2024 and fiscal 2023, so it shows no widening.",
+          "flagged": true,
+          "details": [
+            "fiscal 2024 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be",
+            "fiscal 2023 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        },
+        {
+          "case_id": "cost-markup-widened",
+          "finding_id": "f3",
+          "shift": -3,
+          "statement": "The XBRL-derived annual gross margin was 12.8% in both fiscal 2023 and fiscal 2022, so it shows no widening.",
+          "flagged": true,
+          "details": [
+            "fiscal 2023 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be",
+            "fiscal 2022 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "cost-markup-widened",
+          "finding_id": "f3",
+          "shift": 1,
+          "statement": "The XBRL-derived annual gross margin was 12.8% in both fiscal 2027 and fiscal 2026, so it shows no widening.",
+          "flagged": true,
+          "details": [
+            "fiscal 2027 is not in the quotes, the cited figures or the period of a filing quoted",
+            "fiscal 2026 is the fiscal year of a cited figure (period ended 2026-08-30)"
+          ]
+        }
+      ],
+      "retrieval_hit": true,
+      "agrees": true,
+      "refused": null,
+      "agrees_after_check": true
+    },
+    {
+      "case_id": "cost-tariffs-unrecovered",
+      "ticker": "COST",
+      "kind": "answerable",
+      "expected": "challenges",
+      "verdict": "mixed",
+      "queries": [
+        "tariffs",
+        "import duties cost",
+        "tariff refund",
+        "pricing pressure from tariffs and cost increases"
+      ],
+      "passages_offered": 8,
+      "offered_position": 1,
+      "rank": 1,
+      "cited_right_passage": true,
+      "findings_verified": 4,
+      "findings_withheld": 0,
+      "withheld_reasons": [],
+      "verified_stances": [
+        "challenges",
+        "challenges",
+        "supports",
+        "context"
+      ],
+      "quotes_offered": 6,
+      "quotes_rejected": 0,
+      "excerpts_kept": 6,
+      "numbers_checked": 4,
+      "numbers_unmatched": 0,
+      "figures_offered": 36,
+      "figures_cited": 0,
+      "engine_error": "",
+      "problems": [],
+      "check": {
+        "judged": [
+          "supported",
+          "supported",
+          "partly",
+          "supported"
+        ],
+        "verdict_after": "mixed",
+        "error": ""
+      },
+      "periods_checked": 0,
+      "periods_unverified": [],
+      "periods_planted": [],
+      "retrieval_hit": true,
+      "agrees": false,
+      "refused": null,
+      "agrees_after_check": false
+    },
+    {
+      "case_id": "cost-north-america-dependence",
+      "ticker": "COST",
+      "kind": "answerable",
+      "expected": "supports",
+      "verdict": "supported",
+      "queries": [
+        "operations in United States and Canada",
+        "segment information geographic",
+        "international operations",
+        "foreign currency and concentration of sales"
+      ],
+      "passages_offered": 8,
+      "offered_position": null,
+      "rank": null,
+      "cited_right_passage": false,
+      "findings_verified": 2,
+      "findings_withheld": 0,
+      "withheld_reasons": [],
+      "verified_stances": [
+        "supports",
+        "context"
+      ],
+      "quotes_offered": 2,
+      "quotes_rejected": 0,
+      "excerpts_kept": 2,
+      "numbers_checked": 3,
+      "numbers_unmatched": 0,
+      "figures_offered": 36,
+      "figures_cited": 1,
+      "engine_error": "",
+      "problems": [],
+      "check": {
+        "judged": [
+          "supported",
+          "supported"
+        ],
+        "verdict_after": "supported",
+        "error": ""
+      },
+      "periods_checked": 2,
+      "periods_unverified": [],
+      "periods_planted": [
+        {
+          "case_id": "cost-north-america-dependence",
+          "finding_id": "f1",
+          "shift": -1,
+          "statement": "The auditor's critical audit matter reports $219,823 million of revenue in the United States and $40,561 million in Canada for the year ended August 30, 2025, against total fiscal 2025 revenue of $303.15B. The two countries are by far the largest revenue contributors, which supports the sales half of the claim.",
+          "flagged": true,
+          "details": [
+            "August 30, 2025 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be",
+            "fiscal 2025 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        },
+        {
+          "case_id": "cost-north-america-dependence",
+          "finding_id": "f1",
+          "shift": -2,
+          "statement": "The auditor's critical audit matter reports $219,823 million of revenue in the United States and $40,561 million in Canada for the year ended August 30, 2024, against total fiscal 2024 revenue of $303.15B. The two countries are by far the largest revenue contributors, which supports the sales half of the claim.",
+          "flagged": true,
+          "details": [
+            "August 30, 2024 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be",
+            "fiscal 2024 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        },
+        {
+          "case_id": "cost-north-america-dependence",
+          "finding_id": "f1",
+          "shift": -3,
+          "statement": "The auditor's critical audit matter reports $219,823 million of revenue in the United States and $40,561 million in Canada for the year ended August 30, 2023, against total fiscal 2023 revenue of $303.15B. The two countries are by far the largest revenue contributors, which supports the sales half of the claim.",
+          "flagged": true,
+          "details": [
+            "August 30, 2023 is not in the quotes, the cited figures or the period of a filing quoted",
+            "fiscal 2023 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "cost-north-america-dependence",
+          "finding_id": "f1",
+          "shift": 1,
+          "statement": "The auditor's critical audit matter reports $219,823 million of revenue in the United States and $40,561 million in Canada for the year ended August 30, 2027, against total fiscal 2027 revenue of $303.15B. The two countries are by far the largest revenue contributors, which supports the sales half of the claim.",
+          "flagged": true,
+          "details": [
+            "August 30, 2027 is not in the quotes, the cited figures or the period of a filing quoted",
+            "fiscal 2027 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        }
+      ],
+      "retrieval_hit": false,
+      "agrees": true,
+      "refused": null,
+      "agrees_after_check": true
+    },
+    {
+      "case_id": "cost-franchising",
+      "ticker": "COST",
+      "kind": "unanswerable",
+      "expected": "none",
+      "verdict": "not_addressed",
+      "queries": [
+        "franchise warehouses",
+        "warehouse openings",
+        "third-party operated locations",
+        "ownership of warehouses and leases"
+      ],
+      "passages_offered": 8,
+      "offered_position": null,
+      "rank": null,
+      "cited_right_passage": false,
+      "findings_verified": 0,
+      "findings_withheld": 0,
+      "withheld_reasons": [],
+      "verified_stances": [],
+      "quotes_offered": 0,
+      "quotes_rejected": 0,
+      "excerpts_kept": 0,
+      "numbers_checked": 0,
+      "numbers_unmatched": 0,
+      "figures_offered": 36,
+      "figures_cited": 0,
+      "engine_error": "",
+      "problems": [],
+      "check": {
+        "judged": [],
+        "verdict_after": "not_addressed",
+        "error": ""
+      },
+      "periods_checked": 0,
+      "periods_unverified": [],
+      "periods_planted": [],
+      "retrieval_hit": false,
+      "agrees": null,
+      "refused": true,
+      "agrees_after_check": null
+    },
+    {
+      "case_id": "aapl-china-shrinking",
+      "ticker": "AAPL",
+      "kind": "answerable",
+      "expected": "challenges",
+      "verdict": "challenged",
+      "queries": [
+        "Greater China net sales",
+        "Greater China iPhone revenue",
+        "Greater China decrease",
+        "Greater China net sales increase"
+      ],
+      "passages_offered": 8,
+      "offered_position": 1,
+      "rank": 1,
+      "cited_right_passage": true,
+      "findings_verified": 2,
+      "findings_withheld": 0,
+      "withheld_reasons": [],
+      "verified_stances": [
+        "challenges",
+        "context"
+      ],
+      "quotes_offered": 2,
+      "quotes_rejected": 0,
+      "excerpts_kept": 2,
+      "numbers_checked": 0,
+      "numbers_unmatched": 0,
+      "figures_offered": 37,
+      "figures_cited": 0,
+      "engine_error": "",
+      "problems": [],
+      "check": {
+        "judged": [
+          "supported",
+          "supported"
+        ],
+        "verdict_after": "challenged",
+        "error": ""
+      },
+      "periods_checked": 3,
+      "periods_unverified": [],
+      "periods_planted": [
+        {
+          "case_id": "aapl-china-shrinking",
+          "finding_id": "f1",
+          "shift": -1,
+          "statement": "Greater China net sales increased during 2025 compared to 2024, primarily due to higher net sales of iPhone and Mac.",
+          "flagged": true,
+          "details": [
+            "2025 is in a quote",
+            "2024 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        },
+        {
+          "case_id": "aapl-china-shrinking",
+          "finding_id": "f1",
+          "shift": -2,
+          "statement": "Greater China net sales increased during 2024 compared to 2023, primarily due to higher net sales of iPhone and Mac.",
+          "flagged": true,
+          "details": [
+            "2024 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be",
+            "2023 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "aapl-china-shrinking",
+          "finding_id": "f1",
+          "shift": -3,
+          "statement": "Greater China net sales increased during 2023 compared to 2022, primarily due to higher net sales of iPhone and Mac.",
+          "flagged": true,
+          "details": [
+            "2023 is not in the quotes, the cited figures or the period of a filing quoted",
+            "2022 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "aapl-china-shrinking",
+          "finding_id": "f1",
+          "shift": 1,
+          "statement": "Greater China net sales increased during 2027 compared to 2026, primarily due to higher net sales of iPhone and Mac.",
+          "flagged": true,
+          "details": [
+            "2027 is not in the quotes, the cited figures or the period of a filing quoted",
+            "2026 is in a quote"
+          ]
+        },
+        {
+          "case_id": "aapl-china-shrinking",
+          "finding_id": "f2",
+          "shift": -1,
+          "statement": "The strength in the renminbi against the U.S. dollar had a favorable year-over-year effect on Greater China net sales in 2025.",
+          "flagged": true,
+          "details": [
+            "2025 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        },
+        {
+          "case_id": "aapl-china-shrinking",
+          "finding_id": "f2",
+          "shift": -2,
+          "statement": "The strength in the renminbi against the U.S. dollar had a favorable year-over-year effect on Greater China net sales in 2024.",
+          "flagged": true,
+          "details": [
+            "2024 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        },
+        {
+          "case_id": "aapl-china-shrinking",
+          "finding_id": "f2",
+          "shift": -3,
+          "statement": "The strength in the renminbi against the U.S. dollar had a favorable year-over-year effect on Greater China net sales in 2023.",
+          "flagged": true,
+          "details": [
+            "2023 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "aapl-china-shrinking",
+          "finding_id": "f2",
+          "shift": 1,
+          "statement": "The strength in the renminbi against the U.S. dollar had a favorable year-over-year effect on Greater China net sales in 2027.",
+          "flagged": true,
+          "details": [
+            "2027 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        }
+      ],
+      "retrieval_hit": true,
+      "agrees": true,
+      "refused": null,
+      "agrees_after_check": true
+    },
+    {
+      "case_id": "aapl-margin-runway",
+      "ticker": "AAPL",
+      "kind": "answerable",
+      "expected": "mixed",
+      "verdict": "mixed",
+      "queries": [
+        "products gross margin percentage",
+        "product mix",
+        "gross margin decline",
+        "foreign exchange and tariff cost pressure"
+      ],
+      "passages_offered": 8,
+      "offered_position": 1,
+      "rank": 1,
+      "cited_right_passage": true,
+      "findings_verified": 3,
+      "findings_withheld": 0,
+      "withheld_reasons": [],
+      "verified_stances": [
+        "supports",
+        "challenges",
+        "context"
+      ],
+      "quotes_offered": 3,
+      "quotes_rejected": 0,
+      "excerpts_kept": 3,
+      "numbers_checked": 0,
+      "numbers_unmatched": 0,
+      "figures_offered": 37,
+      "figures_cited": 0,
+      "engine_error": "",
+      "problems": [],
+      "check": {
+        "judged": [
+          "supported",
+          "supported",
+          "supported"
+        ],
+        "verdict_after": "mixed",
+        "error": ""
+      },
+      "periods_checked": 1,
+      "periods_unverified": [],
+      "periods_planted": [
+        {
+          "case_id": "aapl-margin-runway",
+          "finding_id": "f1",
+          "shift": -1,
+          "statement": "Products gross margin percentage increased in 2025, primarily due to product mix and tariff refunds, partially offset by higher costs including memory.",
+          "flagged": false,
+          "details": [
+            "2025 is in a quote"
+          ]
+        },
+        {
+          "case_id": "aapl-margin-runway",
+          "finding_id": "f1",
+          "shift": -2,
+          "statement": "Products gross margin percentage increased in 2024, primarily due to product mix and tariff refunds, partially offset by higher costs including memory.",
+          "flagged": true,
+          "details": [
+            "2024 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        },
+        {
+          "case_id": "aapl-margin-runway",
+          "finding_id": "f1",
+          "shift": -3,
+          "statement": "Products gross margin percentage increased in 2023, primarily due to product mix and tariff refunds, partially offset by higher costs including memory.",
+          "flagged": true,
+          "details": [
+            "2023 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "aapl-margin-runway",
+          "finding_id": "f1",
+          "shift": 1,
+          "statement": "Products gross margin percentage increased in 2027, primarily due to product mix and tariff refunds, partially offset by higher costs including memory.",
+          "flagged": true,
+          "details": [
+            "2027 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        }
+      ],
+      "retrieval_hit": true,
+      "agrees": true,
+      "refused": null,
+      "agrees_after_check": true
+    },
+    {
+      "case_id": "aapl-asian-assembly",
+      "ticker": "AAPL",
+      "kind": "answerable",
+      "expected": "supports",
+      "verdict": "supported",
+      "queries": [
+        "outsourcing partners Asia manufacturing",
+        "single-source suppliers",
+        "supply chain concentration",
+        "manufacturing in China India Vietnam risk"
+      ],
+      "passages_offered": 8,
+      "offered_position": 1,
+      "rank": 1,
+      "cited_right_passage": true,
+      "findings_verified": 4,
+      "findings_withheld": 0,
+      "withheld_reasons": [],
+      "verified_stances": [
+        "supports",
+        "supports",
+        "supports",
+        "context"
+      ],
+      "quotes_offered": 4,
+      "quotes_rejected": 0,
+      "excerpts_kept": 4,
+      "numbers_checked": 2,
+      "numbers_unmatched": 0,
+      "figures_offered": 37,
+      "figures_cited": 0,
+      "engine_error": "",
+      "problems": [],
+      "check": {
+        "judged": [
+          "supported",
+          "supported",
+          "partly",
+          "supported"
+        ],
+        "verdict_after": "supported",
+        "error": ""
+      },
+      "periods_checked": 0,
+      "periods_unverified": [],
+      "periods_planted": [],
+      "retrieval_hit": true,
+      "agrees": true,
+      "refused": null,
+      "agrees_after_check": true
+    },
+    {
+      "case_id": "aapl-eu-app-store",
+      "ticker": "AAPL",
+      "kind": "answerable",
+      "expected": "supports",
+      "verdict": "supported",
+      "queries": [
+        "Digital Markets Act",
+        "European Commission App Store",
+        "App Store terms and fees",
+        "legal proceedings antitrust"
+      ],
+      "passages_offered": 8,
+      "offered_position": 1,
+      "rank": 1,
+      "cited_right_passage": true,
+      "findings_verified": 4,
+      "findings_withheld": 0,
+      "withheld_reasons": [],
+      "verified_stances": [
+        "supports",
+        "supports",
+        "context",
+        "context"
+      ],
+      "quotes_offered": 5,
+      "quotes_rejected": 0,
+      "excerpts_kept": 5,
+      "numbers_checked": 1,
+      "numbers_unmatched": 0,
+      "figures_offered": 37,
+      "figures_cited": 0,
+      "engine_error": "",
+      "problems": [],
+      "check": {
+        "judged": [
+          "supported",
+          "supported",
+          "partly",
+          "supported"
+        ],
+        "verdict_after": "supported",
+        "error": ""
+      },
+      "periods_checked": 0,
+      "periods_unverified": [],
+      "periods_planted": [],
+      "retrieval_hit": true,
+      "agrees": true,
+      "refused": null,
+      "agrees_after_check": true
+    },
+    {
+      "case_id": "aapl-electric-car",
+      "ticker": "AAPL",
+      "kind": "unanswerable",
+      "expected": "none",
+      "verdict": "not_addressed",
+      "queries": [
+        "automobile electric vehicle",
+        "Project Titan",
+        "new products and services development",
+        "risks of entering new product categories"
+      ],
+      "passages_offered": 8,
+      "offered_position": null,
+      "rank": null,
+      "cited_right_passage": false,
+      "findings_verified": 0,
+      "findings_withheld": 0,
+      "withheld_reasons": [],
+      "verified_stances": [],
+      "quotes_offered": 0,
+      "quotes_rejected": 0,
+      "excerpts_kept": 0,
+      "numbers_checked": 0,
+      "numbers_unmatched": 0,
+      "figures_offered": 37,
+      "figures_cited": 0,
+      "engine_error": "",
+      "problems": [],
+      "check": {
+        "judged": [],
+        "verdict_after": "not_addressed",
+        "error": ""
+      },
+      "periods_checked": 0,
+      "periods_unverified": [],
+      "periods_planted": [],
+      "retrieval_hit": false,
+      "agrees": null,
+      "refused": true,
+      "agrees_after_check": null
+    },
+    {
+      "case_id": "msft-azure-growth",
+      "ticker": "MSFT",
+      "kind": "answerable",
+      "expected": "supports",
+      "verdict": "supported",
+      "queries": [
+        "Azure and other cloud services revenue growth",
+        "Intelligent Cloud revenue",
+        "Azure growth rate slowdown",
+        "capacity constraints cloud growth"
+      ],
+      "passages_offered": 8,
+      "offered_position": 7,
+      "rank": 7,
+      "cited_right_passage": true,
+      "findings_verified": 2,
+      "findings_withheld": 1,
+      "withheld_reasons": [
+        "a number in the statement is not in its quotes or cited figures"
+      ],
+      "verified_stances": [
+        "supports",
+        "supports"
+      ],
+      "quotes_offered": 3,
+      "quotes_rejected": 0,
+      "excerpts_kept": 2,
+      "numbers_checked": 5,
+      "numbers_unmatched": 2,
+      "figures_offered": 37,
+      "figures_cited": 0,
+      "engine_error": "",
+      "problems": [],
+      "check": {
+        "judged": [
+          "supported",
+          "supported"
+        ],
+        "verdict_after": "supported",
+        "error": ""
+      },
+      "periods_checked": 0,
+      "periods_unverified": [],
+      "periods_planted": [],
+      "retrieval_hit": true,
+      "agrees": true,
+      "refused": null,
+      "agrees_after_check": true
+    },
+    {
+      "case_id": "msft-cloud-margin",
+      "ticker": "MSFT",
+      "kind": "answerable",
+      "expected": "challenges",
+      "verdict": "mixed",
+      "queries": [
+        "Microsoft Cloud gross margin percentage",
+        "Intelligent Cloud operating income",
+        "gross margin decrease AI infrastructure",
+        "increased capital expenditures and depreciation"
+      ],
+      "passages_offered": 8,
+      "offered_position": 7,
+      "rank": 8,
+      "cited_right_passage": true,
+      "findings_verified": 4,
+      "findings_withheld": 0,
+      "withheld_reasons": [],
+      "verified_stances": [
+        "challenges",
+        "challenges",
+        "supports",
+        "challenges"
+      ],
+      "quotes_offered": 4,
+      "quotes_rejected": 0,
+      "excerpts_kept": 4,
+      "numbers_checked": 2,
+      "numbers_unmatched": 0,
+      "figures_offered": 37,
+      "figures_cited": 0,
+      "engine_error": "",
+      "problems": [],
+      "check": {
+        "judged": [
+          "supported",
+          "supported",
+          "supported",
+          "partly"
+        ],
+        "verdict_after": "mixed",
+        "error": ""
+      },
+      "periods_checked": 0,
+      "periods_unverified": [],
+      "periods_planted": [],
+      "retrieval_hit": true,
+      "agrees": false,
+      "refused": null,
+      "agrees_after_check": false
+    },
+    {
+      "case_id": "msft-ai-harm",
+      "ticker": "MSFT",
+      "kind": "answerable",
+      "expected": "supports",
+      "verdict": "supported",
+      "queries": [
+        "risks of artificial intelligence",
+        "AI legal and reputational harm",
+        "harmful or inaccurate content liability",
+        "litigation and regulation of AI"
+      ],
+      "passages_offered": 8,
+      "offered_position": 1,
+      "rank": 1,
+      "cited_right_passage": false,
+      "findings_verified": 4,
+      "findings_withheld": 0,
+      "withheld_reasons": [],
+      "verified_stances": [
+        "supports",
+        "supports",
+        "supports",
+        "supports"
+      ],
+      "quotes_offered": 4,
+      "quotes_rejected": 0,
+      "excerpts_kept": 4,
+      "numbers_checked": 0,
+      "numbers_unmatched": 0,
+      "figures_offered": 37,
+      "figures_cited": 0,
+      "engine_error": "",
+      "problems": [],
+      "check": {
+        "judged": [
+          "supported",
+          "supported",
+          "supported",
+          "supported"
+        ],
+        "verdict_after": "supported",
+        "error": ""
+      },
+      "periods_checked": 0,
+      "periods_unverified": [],
+      "periods_planted": [],
+      "retrieval_hit": true,
+      "agrees": true,
+      "refused": null,
+      "agrees_after_check": true
+    },
+    {
+      "case_id": "msft-never-breached",
+      "ticker": "MSFT",
+      "kind": "answerable",
+      "expected": "challenges",
+      "verdict": "challenged",
+      "queries": [
+        "nation-state cyberattack",
+        "security incident Midnight Blizzard",
+        "unauthorized access to corporate systems",
+        "cybersecurity breach risk"
+      ],
+      "passages_offered": 8,
+      "offered_position": 2,
+      "rank": 2,
+      "cited_right_passage": true,
+      "findings_verified": 2,
+      "findings_withheld": 0,
+      "withheld_reasons": [],
+      "verified_stances": [
+        "challenges",
+        "challenges"
+      ],
+      "quotes_offered": 2,
+      "quotes_rejected": 0,
+      "excerpts_kept": 2,
+      "numbers_checked": 0,
+      "numbers_unmatched": 0,
+      "figures_offered": 37,
+      "figures_cited": 0,
+      "engine_error": "",
+      "problems": [],
+      "check": {
+        "judged": [
+          "not_supported",
+          "supported"
+        ],
+        "verdict_after": "challenged",
+        "error": ""
+      },
+      "periods_checked": 0,
+      "periods_unverified": [],
+      "periods_planted": [],
+      "retrieval_hit": true,
+      "agrees": true,
+      "refused": null,
+      "agrees_after_check": true
+    },
+    {
+      "case_id": "msft-stock-split",
+      "ticker": "MSFT",
+      "kind": "unanswerable",
+      "expected": "none",
+      "verdict": "not_addressed",
+      "queries": [
+        "stock split",
+        "share repurchase program",
+        "dividends declared",
+        "board of directors authorization"
+      ],
+      "passages_offered": 8,
+      "offered_position": null,
+      "rank": null,
+      "cited_right_passage": false,
+      "findings_verified": 0,
+      "findings_withheld": 0,
+      "withheld_reasons": [],
+      "verified_stances": [],
+      "quotes_offered": 0,
+      "quotes_rejected": 0,
+      "excerpts_kept": 0,
+      "numbers_checked": 0,
+      "numbers_unmatched": 0,
+      "figures_offered": 37,
+      "figures_cited": 0,
+      "engine_error": "",
+      "problems": [],
+      "check": {
+        "judged": [],
+        "verdict_after": "not_addressed",
+        "error": ""
+      },
+      "periods_checked": 0,
+      "periods_unverified": [],
+      "periods_planted": [],
+      "retrieval_hit": false,
+      "agrees": null,
+      "refused": true,
+      "agrees_after_check": null
+    },
+    {
+      "case_id": "ko-north-america-volume",
+      "ticker": "KO",
+      "kind": "answerable",
+      "expected": "challenges",
+      "verdict": "challenged",
+      "queries": [
+        "North America unit case volume",
+        "North America net operating revenues",
+        "volume decline North America",
+        "Americas concentrate volume change"
+      ],
+      "passages_offered": 8,
+      "offered_position": 6,
+      "rank": 6,
+      "cited_right_passage": true,
+      "findings_verified": 3,
+      "findings_withheld": 0,
+      "withheld_reasons": [],
+      "verified_stances": [
+        "challenges",
+        "context",
+        "context"
+      ],
+      "quotes_offered": 3,
+      "quotes_rejected": 0,
+      "excerpts_kept": 3,
+      "numbers_checked": 3,
+      "numbers_unmatched": 0,
+      "figures_offered": 38,
+      "figures_cited": 0,
+      "engine_error": "",
+      "problems": [],
+      "check": {
+        "judged": [
+          "supported",
+          "partly",
+          "supported"
+        ],
+        "verdict_after": "challenged",
+        "error": ""
+      },
+      "periods_checked": 0,
+      "periods_unverified": [],
+      "periods_planted": [],
+      "retrieval_hit": true,
+      "agrees": true,
+      "refused": null,
+      "agrees_after_check": true
+    },
+    {
+      "case_id": "ko-pricing-lifts-margin",
+      "ticker": "KO",
+      "kind": "answerable",
+      "expected": "supports",
+      "verdict": "supported",
+      "queries": [
+        "gross profit margin",
+        "operating margin price/mix",
+        "cost of goods sold increase commodity inflation",
+        "pricing impact on operating income"
+      ],
+      "passages_offered": 8,
+      "offered_position": 1,
+      "rank": 1,
+      "cited_right_passage": true,
+      "findings_verified": 3,
+      "findings_withheld": 0,
+      "withheld_reasons": [],
+      "verified_stances": [
+        "supports",
+        "supports",
+        "challenges"
+      ],
+      "quotes_offered": 3,
+      "quotes_rejected": 0,
+      "excerpts_kept": 3,
+      "numbers_checked": 7,
+      "numbers_unmatched": 0,
+      "figures_offered": 38,
+      "figures_cited": 5,
+      "engine_error": "",
+      "problems": [],
+      "check": {
+        "judged": [
+          "supported",
+          "supported",
+          "supported"
+        ],
+        "verdict_after": "supported",
+        "error": ""
+      },
+      "periods_checked": 2,
+      "periods_unverified": [],
+      "periods_planted": [
+        {
+          "case_id": "ko-pricing-lifts-margin",
+          "finding_id": "f2",
+          "shift": -1,
+          "statement": "The full-year picture is similar: gross profit margin increased to 61.6% in 2024 from 61.1% in 2023, mainly from favorable pricing and the refranchising of some bottling operations, partly offset by currency and higher commodity costs.",
+          "flagged": true,
+          "details": [
+            "2024 is in a quote",
+            "2023 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        },
+        {
+          "case_id": "ko-pricing-lifts-margin",
+          "finding_id": "f2",
+          "shift": -2,
+          "statement": "The full-year picture is similar: gross profit margin increased to 61.6% in 2023 from 61.1% in 2022, mainly from favorable pricing and the refranchising of some bottling operations, partly offset by currency and higher commodity costs.",
+          "flagged": true,
+          "details": [
+            "2023 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be",
+            "2022 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "ko-pricing-lifts-margin",
+          "finding_id": "f2",
+          "shift": -3,
+          "statement": "The full-year picture is similar: gross profit margin increased to 61.6% in 2022 from 61.1% in 2021, mainly from favorable pricing and the refranchising of some bottling operations, partly offset by currency and higher commodity costs.",
+          "flagged": true,
+          "details": [
+            "2022 is not in the quotes, the cited figures or the period of a filing quoted",
+            "2021 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "ko-pricing-lifts-margin",
+          "finding_id": "f2",
+          "shift": 1,
+          "statement": "The full-year picture is similar: gross profit margin increased to 61.6% in 2026 from 61.1% in 2025, mainly from favorable pricing and the refranchising of some bottling operations, partly offset by currency and higher commodity costs.",
+          "flagged": true,
+          "details": [
+            "2026 is not in the quotes, the cited figures or the period of a filing quoted",
+            "2025 is in a quote"
+          ]
+        }
+      ],
+      "retrieval_hit": true,
+      "agrees": true,
+      "refused": null,
+      "agrees_after_check": true
+    },
+    {
+      "case_id": "ko-irs-dispute-settled",
+      "ticker": "KO",
+      "kind": "answerable",
+      "expected": "challenges",
+      "verdict": "challenged",
+      "queries": [
+        "IRS tax litigation foreign licensing",
+        "Tax Court ruling transfer pricing",
+        "tax litigation unrecognized tax benefits cash payment",
+        "IRS notice of deficiency appeal"
+      ],
+      "passages_offered": 8,
+      "offered_position": null,
+      "rank": null,
+      "cited_right_passage": false,
+      "findings_verified": 3,
+      "findings_withheld": 0,
+      "withheld_reasons": [],
+      "verified_stances": [
+        "challenges",
+        "challenges",
+        "challenges"
+      ],
+      "quotes_offered": 4,
+      "quotes_rejected": 0,
+      "excerpts_kept": 4,
+      "numbers_checked": 1,
+      "numbers_unmatched": 0,
+      "figures_offered": 38,
+      "figures_cited": 0,
+      "engine_error": "",
+      "problems": [],
+      "check": {
+        "judged": [
+          "supported",
+          "supported",
+          "supported"
+        ],
+        "verdict_after": "challenged",
+        "error": ""
+      },
+      "periods_checked": 4,
+      "periods_unverified": [],
+      "periods_planted": [
+        {
+          "case_id": "ko-irs-dispute-settled",
+          "finding_id": "f1",
+          "shift": -1,
+          "statement": "The company reports that it is still in litigation with the IRS over tax years 2006 through 2008, so the dispute is not settled.",
+          "flagged": true,
+          "details": [
+            "2006 is not in the quotes, the cited figures or the period of a filing quoted",
+            "2008 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "ko-irs-dispute-settled",
+          "finding_id": "f1",
+          "shift": -2,
+          "statement": "The company reports that it is still in litigation with the IRS over tax years 2005 through 2007, so the dispute is not settled.",
+          "flagged": true,
+          "details": [
+            "2005 is not in the quotes, the cited figures or the period of a filing quoted",
+            "2007 is in a quote"
+          ]
+        },
+        {
+          "case_id": "ko-irs-dispute-settled",
+          "finding_id": "f1",
+          "shift": -3,
+          "statement": "The company reports that it is still in litigation with the IRS over tax years 2004 through 2006, so the dispute is not settled.",
+          "flagged": true,
+          "details": [
+            "2004 is not in the quotes, the cited figures or the period of a filing quoted",
+            "2006 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "ko-irs-dispute-settled",
+          "finding_id": "f1",
+          "shift": 1,
+          "statement": "The company reports that it is still in litigation with the IRS over tax years 2008 through 2010, so the dispute is not settled.",
+          "flagged": true,
+          "details": [
+            "2008 is not in the quotes, the cited figures or the period of a filing quoted",
+            "2010 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "ko-irs-dispute-settled",
+          "finding_id": "f3",
+          "shift": -1,
+          "statement": "The cash exposure remains: the IRS notice sought approximately $3.3 billion of additional federal income tax for 2006 through 2008, and the company's expected tax rate excludes the effect of the litigation if it does not prevail.",
+          "flagged": true,
+          "details": [
+            "2006 is not in the quotes, the cited figures or the period of a filing quoted",
+            "2008 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "ko-irs-dispute-settled",
+          "finding_id": "f3",
+          "shift": -2,
+          "statement": "The cash exposure remains: the IRS notice sought approximately $3.3 billion of additional federal income tax for 2005 through 2007, and the company's expected tax rate excludes the effect of the litigation if it does not prevail.",
+          "flagged": true,
+          "details": [
+            "2005 is not in the quotes, the cited figures or the period of a filing quoted",
+            "2007 is in a quote"
+          ]
+        },
+        {
+          "case_id": "ko-irs-dispute-settled",
+          "finding_id": "f3",
+          "shift": -3,
+          "statement": "The cash exposure remains: the IRS notice sought approximately $3.3 billion of additional federal income tax for 2004 through 2006, and the company's expected tax rate excludes the effect of the litigation if it does not prevail.",
+          "flagged": true,
+          "details": [
+            "2004 is not in the quotes, the cited figures or the period of a filing quoted",
+            "2006 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "ko-irs-dispute-settled",
+          "finding_id": "f3",
+          "shift": 1,
+          "statement": "The cash exposure remains: the IRS notice sought approximately $3.3 billion of additional federal income tax for 2008 through 2010, and the company's expected tax rate excludes the effect of the litigation if it does not prevail.",
+          "flagged": true,
+          "details": [
+            "2008 is not in the quotes, the cited figures or the period of a filing quoted",
+            "2010 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        }
+      ],
+      "retrieval_hit": false,
+      "agrees": true,
+      "refused": null,
+      "agrees_after_check": true
+    },
+    {
+      "case_id": "ko-cannabis-stake",
+      "ticker": "KO",
+      "kind": "unanswerable",
+      "expected": "none",
+      "verdict": "not_addressed",
+      "queries": [
+        "cannabis-infused beverage",
+        "equity method investment acquisition",
+        "investments in equity securities",
+        "regulatory risk cannabis products"
+      ],
+      "passages_offered": 8,
+      "offered_position": null,
+      "rank": null,
+      "cited_right_passage": false,
+      "findings_verified": 0,
+      "findings_withheld": 0,
+      "withheld_reasons": [],
+      "verified_stances": [],
+      "quotes_offered": 0,
+      "quotes_rejected": 0,
+      "excerpts_kept": 0,
+      "numbers_checked": 0,
+      "numbers_unmatched": 0,
+      "figures_offered": 38,
+      "figures_cited": 0,
+      "engine_error": "",
+      "problems": [],
+      "check": {
+        "judged": [],
+        "verdict_after": "not_addressed",
+        "error": ""
+      },
+      "periods_checked": 0,
+      "periods_unverified": [],
+      "periods_planted": [],
+      "retrieval_hit": false,
+      "agrees": null,
+      "refused": true,
+      "agrees_after_check": null
+    },
+    {
+      "case_id": "ko-bitcoin-treasury",
+      "ticker": "KO",
+      "kind": "unanswerable",
+      "expected": "none",
+      "verdict": "not_addressed",
+      "queries": [
+        "bitcoin digital assets",
+        "cash equivalents and short-term investments",
+        "marketable securities holdings",
+        "cryptocurrency risk"
+      ],
+      "passages_offered": 8,
+      "offered_position": null,
+      "rank": null,
+      "cited_right_passage": false,
+      "findings_verified": 0,
+      "findings_withheld": 0,
+      "withheld_reasons": [],
+      "verified_stances": [],
+      "quotes_offered": 0,
+      "quotes_rejected": 0,
+      "excerpts_kept": 0,
+      "numbers_checked": 0,
+      "numbers_unmatched": 0,
+      "figures_offered": 38,
+      "figures_cited": 0,
+      "engine_error": "",
+      "problems": [],
+      "check": {
+        "judged": [],
+        "verdict_after": "not_addressed",
+        "error": ""
+      },
+      "periods_checked": 0,
+      "periods_unverified": [],
+      "periods_planted": [],
+      "retrieval_hit": false,
+      "agrees": null,
+      "refused": true,
+      "agrees_after_check": null
+    }
+  ]
+}

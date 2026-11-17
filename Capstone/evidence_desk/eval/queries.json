@@ -1,0 +1,263 @@
+{
+  "provenance": {
+    "kind": "planned-queries",
+    "planned_at": "2026-11-17T12:41:30+00:00",
+    "cassette": "eval/cassettes/golden",
+    "cassette_description": "replayed from cassette golden: 6 responses recorded via Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the engine's rules with claude-sonnet-5-5, 2026-11-17 to 2026-11-17",
+    "decision": "Whether the thesis still holds after the latest filings",
+    "max_claims_per_request": 6,
+    "golden_file": "eval/golden.json",
+    "golden_sha256": "4ef5c8d35bf11a1e146de46988d8cec54f547e1eb783c383bdf0e23cabb59150",
+    "filings_sha256": "ce02e068cd1d831e921a7e8118851c2a895bbbc58ee4b5a383872a9ba019a1bf",
+    "requests": [
+      {
+        "ticker": "NVDA",
+        "case_ids": [
+          "nvda-data-center-drives-growth",
+          "nvda-few-buyers-dominate",
+          "nvda-china-reopened",
+          "nvda-margin-widened",
+          "nvda-cash-returned",
+          "nvda-no-borrowing"
+        ],
+        "key": "f684e6ddc41692ca0059c8fd"
+      },
+      {
+        "ticker": "NVDA",
+        "case_ids": [
+          "nvda-commitments-small",
+          "nvda-custom-silicon-threat",
+          "nvda-crypto-lawsuit-over",
+          "nvda-workforce-unionising"
+        ],
+        "key": "8e0f0797b699d118c61a4c1f"
+      },
+      {
+        "ticker": "COST",
+        "case_ids": [
+          "cost-members-renew",
+          "cost-markup-widened",
+          "cost-tariffs-unrecovered",
+          "cost-north-america-dependence",
+          "cost-franchising"
+        ],
+        "key": "ceb408cb241e0650efb6bd57"
+      },
+      {
+        "ticker": "AAPL",
+        "case_ids": [
+          "aapl-china-shrinking",
+          "aapl-margin-runway",
+          "aapl-asian-assembly",
+          "aapl-eu-app-store",
+          "aapl-electric-car"
+        ],
+        "key": "f78384ed842c1b2eeb737d67"
+      },
+      {
+        "ticker": "MSFT",
+        "case_ids": [
+          "msft-azure-growth",
+          "msft-cloud-margin",
+          "msft-ai-harm",
+          "msft-never-breached",
+          "msft-stock-split"
+        ],
+        "key": "cf02c81956e7c43f3b175011"
+      },
+      {
+        "ticker": "KO",
+        "case_ids": [
+          "ko-north-america-volume",
+          "ko-pricing-lifts-margin",
+          "ko-irs-dispute-settled",
+          "ko-cannabis-stake",
+          "ko-bitcoin-treasury"
+        ],
+        "key": "9370be302040c429621157c5"
+      }
+    ]
+  },
+  "queries": {
+    "nvda-data-center-drives-growth": [
+      "Data Center revenue",
+      "compute and networking revenue",
+      "revenue growth year over year",
+      "decline in Data Center revenue"
+    ],
+    "nvda-few-buyers-dominate": [
+      "customer concentration",
+      "direct customers percent of revenue",
+      "indirect customers cloud service providers",
+      "loss of a key customer"
+    ],
+    "nvda-china-reopened": [
+      "China export license H20",
+      "export controls China",
+      "Data Center revenue China",
+      "export restrictions limit sales"
+    ],
+    "nvda-margin-widened": [
+      "gross margin percentage",
+      "operating income as percent of revenue",
+      "gross margin decrease inventory provisions",
+      "net income margin"
+    ],
+    "nvda-cash-returned": [
+      "share repurchase program",
+      "dividends per share quarterly",
+      "repurchases of common stock",
+      "dividend increase"
+    ],
+    "nvda-no-borrowing": [
+      "senior notes issued",
+      "long-term debt",
+      "cash provided by operating activities",
+      "commercial paper or debt issuance"
+    ],
+    "nvda-commitments-small": [
+      "purchase obligations",
+      "supply and capacity purchase commitments",
+      "guarantees and indemnification obligations",
+      "prepaid supply agreements and counterparty credit risk"
+    ],
+    "nvda-custom-silicon-threat": [
+      "custom silicon developed by customers",
+      "competition from in-house accelerators",
+      "customer concentration cloud service providers",
+      "reduced demand for our GPUs"
+    ],
+    "nvda-crypto-lawsuit-over": [
+      "securities class action cryptocurrency mining",
+      "legal proceedings shareholder litigation",
+      "settlement of class action",
+      "Supreme Court certiorari securities case"
+    ],
+    "nvda-workforce-unionising": [
+      "employees labor union",
+      "collective bargaining work stoppage",
+      "human capital employees",
+      "labor disputes strikes risk"
+    ],
+    "cost-members-renew": [
+      "membership fee income",
+      "renewal rate",
+      "paid members",
+      "membership renewal rate decline"
+    ],
+    "cost-markup-widened": [
+      "gross margin percentage",
+      "merchandise costs",
+      "gross margin decrease",
+      "core merchandise categories margin"
+    ],
+    "cost-tariffs-unrecovered": [
+      "tariffs",
+      "import duties cost",
+      "tariff refund",
+      "pricing pressure from tariffs and cost increases"
+    ],
+    "cost-north-america-dependence": [
+      "operations in United States and Canada",
+      "segment information geographic",
+      "international operations",
+      "foreign currency and concentration of sales"
+    ],
+    "cost-franchising": [
+      "franchise warehouses",
+      "warehouse openings",
+      "third-party operated locations",
+      "ownership of warehouses and leases"
+    ],
+    "aapl-china-shrinking": [
+      "Greater China net sales",
+      "Greater China iPhone revenue",
+      "Greater China decrease",
+      "Greater China net sales increase"
+    ],
+    "aapl-margin-runway": [
+      "products gross margin percentage",
+      "product mix",
+      "gross margin decline",
+      "foreign exchange and tariff cost pressure"
+    ],
+    "aapl-asian-assembly": [
+      "outsourcing partners Asia manufacturing",
+      "single-source suppliers",
+      "supply chain concentration",
+      "manufacturing in China India Vietnam risk"
+    ],
+    "aapl-eu-app-store": [
+      "Digital Markets Act",
+      "European Commission App Store",
+      "App Store terms and fees",
+      "legal proceedings antitrust"
+    ],
+    "aapl-electric-car": [
+      "automobile electric vehicle",
+      "Project Titan",
+      "new products and services development",
+      "risks of entering new product categories"
+    ],
+    "msft-azure-growth": [
+      "Azure and other cloud services revenue growth",
+      "Intelligent Cloud revenue",
+      "Azure growth rate slowdown",
+      "capacity constraints cloud growth"
+    ],
+    "msft-cloud-margin": [
+      "Microsoft Cloud gross margin percentage",
+      "Intelligent Cloud operating income",
+      "gross margin decrease AI infrastructure",
+      "increased capital expenditures and depreciation"
+    ],
+    "msft-ai-harm": [
+      "risks of artificial intelligence",
+      "AI legal and reputational harm",
+      "harmful or inaccurate content liability",
+      "litigation and regulation of AI"
+    ],
+    "msft-never-breached": [
+      "nation-state cyberattack",
+      "security incident Midnight Blizzard",
+      "unauthorized access to corporate systems",
+      "cybersecurity breach risk"
+    ],
+    "msft-stock-split": [
+      "stock split",
+      "share repurchase program",
+      "dividends declared",
+      "board of directors authorization"
+    ],
+    "ko-north-america-volume": [
+      "North America unit case volume",
+      "North America net operating revenues",
+      "volume decline North America",
+      "Americas concentrate volume change"
+    ],
+    "ko-pricing-lifts-margin": [
+      "gross profit margin",
+      "operating margin price/mix",
+      "cost of goods sold increase commodity inflation",
+      "pricing impact on operating income"
+    ],
+    "ko-irs-dispute-settled": [
+      "IRS tax litigation foreign licensing",
+      "Tax Court ruling transfer pricing",
+      "tax litigation unrecognized tax benefits cash payment",
+      "IRS notice of deficiency appeal"
+    ],
+    "ko-cannabis-stake": [
+      "cannabis-infused beverage",
+      "equity method investment acquisition",
+      "investments in equity securities",
+      "regulatory risk cannabis products"
+    ],
+    "ko-bitcoin-treasury": [
+      "bitcoin digital assets",
+      "cash equivalents and short-term investments",
+      "marketable securities holdings",
+      "cryptocurrency risk"
+    ]
+  }
+}

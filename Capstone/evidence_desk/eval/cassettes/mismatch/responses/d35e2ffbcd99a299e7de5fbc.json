@@ -1,0 +1,31 @@
+{
+  "key": "d35e2ffbcd99a299e7de5fbc",
+  "step": "check",
+  "via": "Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-17T17:54:00+00:00",
+  "response": {
+    "judgements": [
+      {
+        "finding_number": 1,
+        "verdict": "not_supported",
+        "reason": "The excerpt covers U.S. and Canada revenue by category in the auditor's report and says nothing about EU App Store changes, the DMA, or fee structures."
+      },
+      {
+        "finding_number": 2,
+        "verdict": "not_supported",
+        "reason": "The excerpt lists the countries where the company operates warehouses; it contains no EU fine, cease and desist order, or appeal."
+      },
+      {
+        "finding_number": 3,
+        "verdict": "not_supported",
+        "reason": "The excerpts describe tariff refunds and their accounting; neither mentions the DMA, compliance, or the preliminary-findings investigation the statement relies on."
+      },
+      {
+        "finding_number": 4,
+        "verdict": "not_supported",
+        "reason": "The excerpt describes strategies for absorbing cost increases; it does not mention a DMA compliance plan, a Commission challenge, or further changes."
+      }
+    ]
+  }
+}

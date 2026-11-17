@@ -162,7 +162,7 @@ Read these with three cautions. The cases and their expected stances were drafte
 ## Verification
 
 ```sh
-make verify         # build, lint, 1,067 offline tests, smoke test, browser-level test
+make verify         # build, lint, 1,004 offline tests, smoke test, browser-level test
 make test           # offline tests only (T=tests/test_gate.py for one file)
 make golden-check   # the tripwire: one recorded run, compared stage by stage
 make replay         # the recorded model-backed run, offline

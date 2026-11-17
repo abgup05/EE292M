@@ -160,6 +160,14 @@ names and not told they were planted). A swapped quote is the easy kind of misma
 another topic. A quote on the right topic that does not carry the statement is the hard kind,
 and nothing here measures it.
 
+## How long the gate takes
+
+Measured on this laptop on 17 November 2026 at version 8, with the Docker image's layers already
+built (review 5, finding 12): the offline tests take 21 s (pytest reports 21.14 s for 1,182
+tests), and `make verify-fresh`, the whole gate on a fresh clone (clone, lint, the tests, the
+smoke test, three page renders and 99 page assertions), took 33 s by the wall clock. One run of
+each; a first build of the image takes minutes and was not timed.
+
 ## What no test here can see
 
 - Whether a highlighted quote actually supports or challenges the claim. The gate proves the

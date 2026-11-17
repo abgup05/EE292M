@@ -11,8 +11,10 @@ a saved thesis (its "comparison" key).
 
 from __future__ import annotations
 
+import copy
 import json
 import re
+import unicodedata
 from functools import cache
 from pathlib import Path
 from typing import Any
@@ -312,7 +314,7 @@ def test_legend_is_present(name: str) -> None:
         assert glyph in words, f"legend lacks {glyph}"
     assert "limits this record" in words
     assert "not checked for meaning" in words
-    assert "input was rejected" in words
+    assert "refused your input" in words
 
 
 @both
@@ -673,6 +675,10 @@ def test_header_names_the_checker(name: str) -> None:
     soup = page(name)
     line = soup.select_one("#run-head .run-checker")
     assert line is not None, "the run header does not say who checked meaning"
+    # A replayed checker's note shows a short first line (a <summary>); the whole note follows it.
+    line = copy.copy(line)
+    for short in line.select(".prov-first"):
+        short.decompose()
     words = " ".join(text(line).split())
     if meaning_checked(run):
         assert words == f"Meaning checked by: {run.get('checker_detail') or run['checker']}"
@@ -868,3 +874,120 @@ def test_synthetic_sample_records_what_the_rule_counted() -> None:
     assert any(s["kind"] == "public_html" for s in read), "the provenance note names a page that was read"
     note = run["brief"]["provenance_note"]
     assert "page you added" in note and note != sample["meta"]["provenance_note"]
+
+
+# ---------------------------------------------------------------- review 5: the first screen and the marks
+
+TAKEAWAY_PHRASES = (
+    "Every verdict opens to the exact filing passages or reported figures it rests on",
+    "quotes are checked word for word",
+    "a model's reading, checked by a second model and then by you",
+)
+SAMPLE_HREFS = {"sample-link": "?sample", "changes-link": "?sample=changes"}
+
+
+def static_page() -> BeautifulSoup:
+    """index.html as served, before any script runs: the first screen's markup."""
+    return BeautifulSoup((WEB / "index.html").read_text(encoding="utf-8"), "html.parser")
+
+
+def test_first_screen_states_the_takeaway_beside_both_samples() -> None:
+    """Interface finding 1. Only the markup is checked here: how prominent it looks is
+    checked by looking at docs/screenshots/first-screen.png, which no dump covers."""
+    soup = static_page()
+    takeaway = soup.select_one("header.masthead #takeaway")
+    assert takeaway is not None, "the masthead states no takeaway"
+    said = " ".join(text(takeaway).split())
+    for phrase in TAKEAWAY_PHRASES:
+        assert phrase in said, f"the takeaway lacks {phrase!r}"
+    row = takeaway.parent
+    for link_id, href in SAMPLE_HREFS.items():
+        link = soup.select_one(f"#{link_id}")
+        assert link is not None and link["href"] == href, link_id
+        assert row in link.parents, f"#{link_id} is not beside the takeaway"
+        assert link.find_parent(id="empty-state") is None, f"#{link_id} is still in the empty state"
+
+
+@both
+def test_rendered_page_keeps_the_takeaway(name: str) -> None:
+    takeaway = page(name).select_one("header.masthead #takeaway")
+    assert takeaway is not None and not takeaway.has_attr("hidden")
+    assert TAKEAWAY_PHRASES[0] in " ".join(text(takeaway).split())
+
+
+def test_sample_masthead_says_first_that_the_answers_are_recorded() -> None:
+    """Finding 1, sample mode: a short first line says the answers are recorded and who
+    answered; the rest of the note is behind a disclosure and still in the DOM."""
+    run, meta = record("run")["run"], record("run")["meta"]
+    detail = run["engine_detail"]
+    assert detail.startswith("replayed from cassette "), "the recorded sample must be replayed"
+    line = page("run").select_one("#engine-line")
+    fold = line.select_one("details.engine-more")
+    assert fold is not None and line.contents[0] is fold, "the engine line is not folded"
+    first = " ".join(text(fold.select_one("summary")).split())
+    assert first.startswith("Recorded answers: replayed from cassette ")
+    assert detail.split("; ")[0] in first, "the first line drops who answered"
+    full = " ".join(text(fold.select_one(".prov-full")).split())
+    assert len(first) < len(full) // 2, "the first line is not much shorter than the note"
+    assert f"Configured meaning check: {meta['checker']['detail']}." in full
+
+
+@both
+def test_refused_names_the_input_mark_and_rejected_only_a_decision(name: str) -> None:
+    """Finding 2: "Rejected" is the reader's decision only; refused input is "Refused"."""
+    soup = page(name)
+    mark = soup.select_one("#legend .mark-reject")
+    assert mark is not None and "Refused" in text(mark) and "Rejected" not in text(mark)
+    decision_places = ("decision-mark", "review-tally")
+    for node in soup.find_all(string=re.compile(r"\brejected\b", re.I)):
+        if node.parent.name in ("script", "style"):
+            continue
+        inside = [p for p in node.parents if set(classes(p)) & set(decision_places)]
+        entry = node.find_parent("div")
+        inside += [entry] if entry is not None and entry.find_parent(id="legend") and entry.select_one(".decision-mark") else []
+        assert inside, f"'rejected' outside a decision: {node.strip()[:80]!r}"
+
+
+@both
+def test_legend_names_the_three_dashed_cases(name: str) -> None:
+    """Finding 3: a dashed border means "not final", in exactly three cases."""
+    legend = page(name).select_one("#legend")
+    entry = legend.select_one('[data-legend="dashed"]')
+    assert entry is not None, "the legend has no entry for the dashed border"
+    said = " ".join(text(entry).split())
+    for phrase in ("Not final", "three", "no engine judged", "Undecided", "run still in progress"):
+        assert phrase in said, f"the dashed entry lacks {phrase!r}"
+    assert "dashed" in rule_body(".legend-dashed")
+    assert "not judged or provisional" not in text(legend)
+    # The three, in the stylesheet: an unjudged verdict, a decision to make, a running run.
+    assert "dashed" in rule_body(".v-unjudged")
+    assert "dashed" in rule_body(".decision-mark.d-undecided")
+    assert "dashed" in rule_body(".banner.st-running")
+
+
+def looks_like_a_decision(glyph: str) -> bool:
+    """A square or a box, filled or not, reads as the reader's ▣ ☒ ☐."""
+    named = unicodedata.name(glyph, "")
+    return glyph in DECISION_GLYPHS.values() or any(w in named for w in ("SQUARE", "BALLOT"))
+
+
+@both
+def test_complete_status_cannot_be_read_as_a_decision(name: str) -> None:
+    """Finding 5: no status glyph is a dark square, and a dark filled tag is only a decision."""
+    soup = page(name)
+    entry = soup.select_one('#legend [data-legend="status"]')
+    assert entry is not None, "the legend does not show the status marks"
+    complete = text(entry.select_one(".st-complete .glyph")).strip()
+    assert not looks_like_a_decision(complete), f"complete is {complete!r}"
+    shown = [(word, word.select_one(".glyph")) for word in soup.select(".status-word")]
+    banner = soup.select_one("#status-banner")
+    shown.append((banner, banner.select_one(".banner-head > .glyph")))
+    for holder, node in shown:
+        glyph = text(node).strip()
+        assert not looks_like_a_decision(glyph), f"a status shows {glyph!r}"
+        if "st-complete" in classes(holder):
+            assert glyph == complete, f"complete shows {glyph!r}, the legend {complete!r}"
+    assert any("st-complete" in classes(holder) for holder, _ in shown) or name == "synthetic"
+    assert "dark filled tag is always your own decision" in " ".join(text(soup.select_one("#legend")).split())
+    for selector in (".status-word", ".g-status"):
+        assert "background" not in rule_body(selector), f"{selector} is drawn as a filled tag"

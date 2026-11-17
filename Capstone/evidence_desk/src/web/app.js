@@ -22,10 +22,13 @@
 //             part (◐): still a model's reading, so the same violet, but a double
 //             rule and no fill, never the engine's badge. A finding the second model
 //             rejects is withheld, which is a limit (▲).
-//   ! red     your input was rejected
+//   ! red     the server refused your input ("Refused"; "Rejected" is only ever your decision)
+//   ƒ olive   computed by a fixed rule, not checked by a person (dotted border)
+//   status    ◇ complete, ⋯ running, ▲ partial or failed: never a filled tag
+//   dashed    not final: a claim not judged, a decision still to make, a run in progress
 //   verdicts  ✓ supported, ✕ challenged, ± mixed, ? unjudged, ∅ not addressed
 //   stances   reuse ✓ and ✕; context is •
-//   decisions ▣ accepted, ☒ rejected (dark, inverted tag: the reader's own);
+//   decisions ▣ accepted, ☒ rejected (dark filled tag: only ever the reader's own);
 //             ☐ undecided is dashed, because the verdict after review is provisional
 //   changes   between two filings (`/api/companies/{ticker}/changes`), cyan, square tags:
 //             # numbers only, ~ reworded, + added, − removed; inside a reworded
@@ -78,7 +81,8 @@ const MEANING_WORDS = {
 const MODEL_BADGE = "Model-written, not checked for meaning";
 /** On a finding a second model has read: its meaning was checked, but only by a model. */
 const MODEL_BADGE_READ = "Model-written, not checked by a person";
-const STATUS_GLYPH = { running: "⋯", complete: "■", partial: "▲", failed: "▲" };
+/** A run's status. Complete is an open diamond: a filled dark square would read as the reader's decision. */
+const STATUS_GLYPH = { running: "⋯", complete: "◇", partial: "▲", failed: "▲" };
 const LIMITING_STATUS = new Set(["partial", "failed"]);
 
 /** The engine name the deterministic engine reports; anything else non-empty is a model. */
@@ -165,7 +169,14 @@ const state = {
   thesisId: null, // the saved thesis on screen
   theses: new Map(), // saved theses by id, from GET /api/theses
   thesesSeq: 0,
+  sampleName: "", // which sample file is on screen, in sample mode
+  // The RunChanges of the finished run on screen: {runId, status: "loading" | "ready" | "failed", record, error}.
+  claimChanges: null,
+  claimChangesOpen: new Set(), // claim ids whose "Changed in the filings" block the reader opened
 };
+
+/** Samples that have a recorded RunChanges beside them; any other sample shows no such block and asks for none. */
+const SAMPLE_RUN_CHANGES = { run: "sample-run-changes.json" };
 
 const $ = (id) => document.getElementById(id);
 
@@ -235,6 +246,7 @@ const els = {
   figuresSection: $("figures-section"),
   figures: $("figures"),
   claimList: $("claim-list"),
+  runFilingChanges: $("run-filing-changes"),
   withheldSection: $("withheld-section"),
   withheld: $("withheld"),
   unknownsSection: $("unknowns-section"),
@@ -412,7 +424,64 @@ function runMeaningChecked(run) {
   return checker !== "" && checker !== "none";
 }
 
-/** ! red: your input was rejected. */
+/**
+ * ƒ olive, dotted: computed by a fixed rule and not checked by a person. `label` is the
+ * mark's words; the legend defines it once.
+ */
+function ruleMark(label = "Fixed rule, not checked by a person") {
+  return h(
+    "span",
+    { class: "rule-mark" },
+    h("span", { class: "glyph g-rule", "aria-hidden": "true", text: "ƒ" }),
+    h("span", { class: "rule-label", text: label }),
+  );
+}
+
+/**
+ * A long provenance note from the record, shortened for the eye and kept whole in the DOM.
+ * The backend writes a replayed engine's note as "replayed from cassette …: N responses
+ * recorded via <who answered> …; … with <models>, <dates>": the first clause (recorded, and
+ * by whom) and the models stay in view; the full note is one click away. A note without a
+ * second clause is shown as it is.
+ */
+function provenanceDetail(detail) {
+  const full = str(detail);
+  const first = provenanceFirst(full);
+  if (!first) return full;
+  return h("details", { class: "prov-more" }, h("summary", { class: "prov-first", text: first }), h("span", { class: "prov-full", text: full }));
+}
+
+/** The short form of a replayed engine's note (see provenanceDetail), or "" when it is not one or is already short. */
+function provenanceFirst(detail) {
+  const full = str(detail);
+  const cut = full.indexOf("; ");
+  if (!full.startsWith("replayed from cassette ") || cut < 0) return "";
+  let first = full.slice(0, cut);
+  const withAt = full.lastIndexOf(" with ");
+  if (withAt > cut) first += ` … with ${full.slice(withAt + " with ".length)}`;
+  return first;
+}
+
+/**
+ * Sample mode, answers replayed from a cassette: the masthead's first line says so and who
+ * answered, from the run's own note; the configured engine and checker, in full, are one
+ * click away and stay in the DOM.
+ */
+function foldEngineLine(detail) {
+  const first = provenanceFirst(detail);
+  if (!first) return;
+  const rest = [...els.engineLine.childNodes];
+  els.engineLine.replaceChildren(
+    h(
+      "details",
+      { class: "prov-more engine-more" },
+      h("summary", { class: "prov-first" }, h("span", { class: "engine-name", text: "Recorded answers: " }), first),
+      h("span", { class: "prov-full" }, ...rest),
+    ),
+  );
+}
+
+/** ! red: the server refused your input. */
 function rejectGlyph() {
   return h("span", { class: "glyph g-reject", "aria-hidden": "true", text: "!" });
 }
@@ -478,7 +547,7 @@ function decisionMark(value) {
 
 function statusMark(status) {
   const glyph = STATUS_GLYPH[status] ?? "·";
-  return h("span", { class: LIMITING_STATUS.has(status) ? "glyph g-limit" : "glyph", "aria-hidden": "true", text: glyph });
+  return h("span", { class: LIMITING_STATUS.has(status) ? "glyph g-limit" : "glyph g-status", "aria-hidden": "true", text: glyph });
 }
 
 function fillList(listEl, items, emptyText, limit = false) {
@@ -545,7 +614,8 @@ async function loadMeta() {
   }
 }
 
-function applyMeta(meta) {
+/** `sample`: the engine line will be folded by foldEngineLine, so the checker's note is left whole here. */
+function applyMeta(meta, { sample = false } = {}) {
   if (!meta || typeof meta !== "object" || !meta.limits) throw new ApiError("the wording and limits are missing", 0);
   state.meta = meta;
   const limits = meta.limits;
@@ -553,16 +623,17 @@ function applyMeta(meta) {
   // `checker` is absent from servers older than the meaning check: then nothing is said about it.
   const checker = meta.checker && typeof meta.checker === "object" ? meta.checker : null;
   const checkerName = str(checker?.name);
-  let checkerText = "";
+  // A replayed checker's long note keeps its first clause (recorded, and by whom) in view.
+  let checkerText = [];
   if (checker) {
     checkerText = checkerName && checkerName !== "none"
-      ? ` Configured meaning check: ${str(checker.detail) || checkerName}.`
-      : " No second model is configured to check meaning.";
+      ? [" Configured meaning check: ", sample ? str(checker.detail) || checkerName : provenanceDetail(str(checker.detail) || checkerName), "."]
+      : [" No second model is configured to check meaning."];
   }
   els.engineLine.replaceChildren(
     h("span", { class: "engine-name", text: `Configured engine: ${engine || "not stated"}` }),
     ENGINE_GLOSS[engine] ? ` (${ENGINE_GLOSS[engine]}). Each result names the engine that actually did the work.` : "",
-    checkerText,
+    ...checkerText,
   );
   if (Number.isInteger(limits.MAX_DECISION_CHARS)) els.decision.maxLength = limits.MAX_DECISION_CHARS;
   if (Number.isInteger(limits.MAX_SCOPE_CHARS)) els.scope.maxLength = limits.MAX_SCOPE_CHARS;
@@ -1000,6 +1071,12 @@ function renderChanges(record, sampleNote) {
       { class: "block", "aria-labelledby": "chg-totals-title" },
       h("h3", { class: "block-title", id: "chg-totals-title", text: "All Items" }),
       h(
+        "p",
+        { class: "rule-note", "data-rule": "totals" },
+        ruleMark(),
+        " These classes come from a fixed rule, a word-overlap threshold with numbers set aside, that no person has checked against these filings.",
+      ),
+      h(
         "ul",
         { class: "chg-totals" },
         h("li", null, total("unchanged"), " unchanged"),
@@ -1017,6 +1094,7 @@ function renderChanges(record, sampleNote) {
       "section",
       { class: "block", "aria-labelledby": "chg-items-title" },
       h("h3", { class: "block-title", id: "chg-items-title", text: "By Item" }),
+      h("p", { class: "rule-note", "data-rule": "items" }, ruleMark(), " The same rule sorts each Item's counts and lists."),
       h("p", { class: "hint", text: "Open an Item to read its sub-headings found in one filing only, and the paragraphs added, removed, reworded or changed only in their numbers." }),
       h(
         "div",
@@ -1137,11 +1215,15 @@ function changeList(kind, title, entries, count, truncated, draw) {
   );
 }
 
-/** An added or removed paragraph: its text, where it sits, and a link into its filing ("later" or "earlier"). */
-function paragraphEntry(paragraph, side) {
+/**
+ * An added or removed paragraph: its text, where it sits, and a link into its filing ("later"
+ * or "earlier"). `head` (optional) goes first: the run view puts the mark and shared words there.
+ */
+function paragraphEntry(paragraph, side, head = null) {
   return h(
     "li",
     null,
+    head,
     h("p", { class: "chg-text", text: str(paragraph.text) }),
     h(
       "p",
@@ -1158,7 +1240,7 @@ function paragraphEntry(paragraph, side) {
  * A reworded or numbers-only pair: the later paragraph drawn from `segments`, in reading
  * order, then (for a reworded pair) the record's similarity, and links into both filings.
  */
-function pairEntry(pair, withSimilarity) {
+function pairEntry(pair, withSimilarity, head = null) {
   const quote = h("blockquote", { class: "chg-reworded" });
   list(pair.segments).forEach((segment, position) => {
     if (position > 0) quote.append(" ");
@@ -1170,6 +1252,7 @@ function pairEntry(pair, withSimilarity) {
   return h(
     "li",
     null,
+    head,
     quote,
     h(
       "p",
@@ -1623,7 +1706,7 @@ function renderReviewLine(run) {
     parts.push(
       state.sample
         ? h("p", { class: "muted small", text: "The reviewed brief is not available for the sample record." })
-        : h("p", null, h("a", { class: "download", href: `/api/runs/${encodeURIComponent(run.id)}/export.md?reviewed=true`, download: `evidence-desk-${run.id}-reviewed.md`, text: "Download reviewed brief" })),
+        : h("p", null, h("a", { class: "download", href: briefHref(run.id, true), download: `evidence-desk-${run.id}-reviewed.md`, text: "Download reviewed brief" })),
     );
   }
   els.reviewLine.replaceChildren(...parts);
@@ -1858,6 +1941,7 @@ function showAlert(container, message, actionText, action) {
 
 /** `?sample` loads /sample-run.json; `?sample=<name>` loads /sample-<name>.json. */
 async function loadSample(name) {
+  state.sampleName = name;
   els.sampleTag.hidden = false;
   els.formNote.textContent = "Sample mode: this page shows a stored record and does not start runs. Open the page without ?sample to test a thesis.";
   els.formNote.hidden = false;
@@ -1884,7 +1968,8 @@ async function loadSample(name) {
       return;
     }
     if (!payload.meta || !payload.run) throw new ApiError("the file has no meta or run", 0);
-    applyMeta(payload.meta);
+    applyMeta(payload.meta, { sample: true });
+    foldEngineLine(payload.run.engine_detail);
     if (str(payload.note)) els.formNote.textContent = `Sample mode: ${payload.note} This page does not start runs; open it without ?sample to test a thesis.`;
     state.runId = payload.run.id;
     // Sample mode only: the reader's decisions and the comparison are stored in the file.
@@ -1931,6 +2016,7 @@ function renderRun(run) {
   renderSummary(run);
   renderRunFigures(run);
   renderClaims(run, ctx);
+  renderClaimChanges(run);
   renderReviewSlots(run, null);
   renderWithheld(run, ctx);
   renderBriefLists(run);
@@ -2002,7 +2088,7 @@ function renderBanner(run) {
         cov(c, "quotes_offered"),
         ` ${unit(c.quotes_offered, "quote", "quotes")} offered found word for word, `,
         cov(c, "quotes_rejected"),
-        " rejected",
+        " did not pass the check",
         foundField === "quotes_found" ? ["; ", cov(c, "excerpts_verified"), " kept as evidence of verified findings"] : "",
       ),
     );
@@ -2092,10 +2178,10 @@ function renderHead(run) {
     { class: "run-engine" },
     h("span", { class: "label", text: "Engine that did the work: " }),
     h("span", { class: "engine-used", text: engine || "not recorded" }),
-    str(run.engine_detail) ? h("span", { class: "engine-detail", text: ` — ${run.engine_detail}` }) : "",
+    str(run.engine_detail) ? h("span", { class: "engine-detail" }, " — ", provenanceDetail(run.engine_detail)) : "",
   );
   const checkerLine = runMeaningChecked(run)
-    ? h("p", { class: "run-engine run-checker" }, h("span", { class: "label", text: "Meaning checked by: " }), h("span", { class: "checker-used", text: str(run.checker_detail) || str(run.checker) }))
+    ? h("p", { class: "run-engine run-checker" }, h("span", { class: "label", text: "Meaning checked by: " }), h("span", { class: "checker-used" }, provenanceDetail(str(run.checker_detail) || str(run.checker))))
     : h("p", { class: "run-engine run-checker" }, h("span", { class: "label", text: "Meaning not checked" }));
   const details = h(
     "p",
@@ -2110,9 +2196,20 @@ function renderHead(run) {
   } else if (run.status === "running") {
     download = h("span", { class: "muted small", text: "The Markdown brief can be downloaded when the run finishes." });
   } else {
-    download = h("a", { class: "download", href: `/api/runs/${encodeURIComponent(run.id)}/export.md`, download: `evidence-desk-${run.id}.md`, text: "Download Markdown brief" });
+    download = h("a", { class: "download", href: briefHref(run.id, false), download: `evidence-desk-${run.id}.md`, text: "Download Markdown brief" });
   }
   els.runHead.replaceChildren(h("div", { class: "run-head-main" }, title, decision, engineLine, checkerLine, details, thesisLine(run)), h("div", { class: "run-head-actions" }, download));
+}
+
+/**
+ * The Markdown brief of a run, with the changed paragraphs listed for each claim
+ * (`changes=true`); `reviewed` adds the reader's decisions.
+ */
+function briefHref(runId, reviewed) {
+  const query = new URLSearchParams();
+  if (reviewed) query.set("reviewed", "true");
+  query.set("changes", "true");
+  return `/api/runs/${encodeURIComponent(runId)}/export.md?${query}`;
 }
 
 /** "Part of the saved thesis ..." with a way back, for a run started from a saved thesis. */
@@ -2258,6 +2355,8 @@ function renderClaims(run, ctx) {
       else if (finding.verified === false) body.append(h("p", { class: "muted", text: `Finding ${findingId} was withheld; it is listed under "Withheld findings" below.` }));
       else body.append(renderFinding(finding, ctx));
     });
+    // Filled by drawClaimChanges once the finished run's changed paragraphs have loaded.
+    body.append(h("div", { class: "cc-slot", "data-cc-slot": claim.id }));
     const details = h(
       "details",
       { class: "claim", id, open: open.has(id) },
@@ -2266,6 +2365,186 @@ function renderClaims(run, ctx) {
     );
     els.claimList.append(details);
   });
+}
+
+// ---------------------------------------------------------------- changed paragraphs, by claim
+
+/** Why these paragraphs are listed, said wherever they are. */
+const CC_WHY = "These paragraphs are listed because they share words with the claim: no model chose or judged them, they are not findings, and none counts toward the verdict.";
+
+/**
+ * For a finished run, which paragraphs changed in the filings it read (each against the filing
+ * of its form before it) and share words with each claim: GET /api/runs/{id}/changes, once per
+ * run, or the sample's recorded file. Nothing is shown, or asked for, while the run is running
+ * or for a sample without such a file.
+ */
+function renderClaimChanges(run) {
+  const wanted = run.status !== "running" && (!state.sample || Object.hasOwn(SAMPLE_RUN_CHANGES, state.sampleName));
+  if (!wanted) {
+    els.runFilingChanges.hidden = true;
+    els.runFilingChanges.replaceChildren();
+    return;
+  }
+  if (state.claimChanges?.runId === run.id) drawClaimChanges();
+  else loadClaimChanges(run.id);
+}
+
+async function loadClaimChanges(runId) {
+  state.claimChanges = { runId, status: "loading", record: null, error: "" };
+  drawClaimChanges();
+  let next;
+  try {
+    const url = state.sample ? SAMPLE_RUN_CHANGES[state.sampleName] : `/api/runs/${encodeURIComponent(runId)}/changes`;
+    const payload = await api(url, { cache: "no-store" });
+    const record = state.sample ? payload.changes : payload;
+    if (!record || typeof record !== "object" || !Array.isArray(record.claims)) throw new ApiError("the record lists no claims", 0);
+    if (str(record.run_id) !== runId) throw new ApiError("the record is for another run", 0);
+    next = { runId, status: "ready", record, error: "" };
+  } catch (error) {
+    next = { runId, status: "failed", record: null, error: error.message };
+  }
+  if (state.claimChanges?.runId !== runId) return; // another run is on screen now
+  state.claimChanges = next;
+  drawClaimChanges();
+}
+
+/** Fill the block above the claims and each claim's slot from `state.claimChanges`. */
+function drawClaimChanges() {
+  const loaded = state.claimChanges;
+  if (!loaded || state.run?.id !== loaded.runId) return;
+  const top = els.runFilingChanges;
+  const slots = [...els.claimList.querySelectorAll("[data-cc-slot]")];
+  top.hidden = false;
+  if (loaded.status !== "ready") {
+    top.replaceChildren(
+      loaded.status === "loading"
+        ? h("p", { class: "muted", text: "Looking up which paragraphs changed in the filings since the ones before…" })
+        : h(
+            "p",
+            { class: "cc-error", "data-cc-error": "" },
+            limitGlyph(),
+            ` The changed paragraphs could not be loaded: ${loaded.error}. The rest of the run is shown. `,
+            h("button", { type: "button", class: "secondary small", onclick: () => loadClaimChanges(loaded.runId), text: "Try again" }),
+          ),
+    );
+    slots.forEach((slot) => slot.replaceChildren());
+    return;
+  }
+  const record = loaded.record;
+  top.replaceChildren(comparedBlock(record));
+  const byClaim = new Map(list(record.claims).map((entry) => [entry.claim_id, entry]));
+  slots.forEach((slot) => slot.replaceChildren(claimChangesBlock(slot.dataset.ccSlot, byClaim.get(slot.dataset.ccSlot))));
+}
+
+/** Which filings were compared (form, both period ends, each a link) and the record's notes. */
+function comparedBlock(record) {
+  const compared = list(record.compared);
+  const notes = h("ul", { class: "mark-list cc-notes" });
+  fillList(notes, list(record.notes), "", true);
+  return h(
+    "div",
+    { "data-cc-compared": "" },
+    h("p", { class: "cc-title" }, h("strong", { text: "Changed in the filings since the one before" }), " ", ruleMark()),
+    compared.length
+      ? h(
+          "ul",
+          { class: "cc-pairs" },
+          compared.map((pair) =>
+            h("li", { "data-form": str(pair.form) }, h("strong", { text: `${str(pair.form) || "Form not recorded"}: ` }), filingLink(pair.later), ", against ", filingLink(pair.earlier)),
+          ),
+        )
+      : h("p", { class: "muted", text: "No pair of filings was compared." }),
+    list(record.notes).length ? notes : "",
+    h("p", { class: "cc-why", text: `Under each claim, after its findings. ${CC_WHY}` }),
+  );
+}
+
+/** One claim's changed paragraphs: collapsed, its counts as the record states them, then each entry, best first. */
+function claimChangesBlock(claimId, entry) {
+  if (!entry) {
+    return h("p", { class: "cc-none", "data-claim-changes": claimId }, ruleMark(), " No list of changed paragraphs was recorded for this claim.");
+  }
+  const changes = list(entry.changes);
+  const field = (name, value) => h("span", { "data-cc-field": name, text: num(value) });
+  if (changes.length === 0) {
+    return h(
+      "p",
+      { class: "cc-none", "data-claim-changes": claimId },
+      ruleMark(),
+      " Changed in the filings since the one before: no paragraph shares at least two words with this claim, among ",
+      field("considered", entry.considered),
+      ` changed ${unit(entry.considered, "paragraph", "paragraphs")} searched.`,
+    );
+  }
+  return h(
+    "details",
+    {
+      class: "claim-changes",
+      "data-claim-changes": claimId,
+      open: state.claimChangesOpen.has(claimId),
+      ontoggle: (event) => {
+        if (event.currentTarget.open) state.claimChangesOpen.add(claimId);
+        else state.claimChangesOpen.delete(claimId);
+      },
+    },
+    h(
+      "summary",
+      null,
+      h("span", { class: "cc-summary-text" }, `Changed in the filings since the one before: ${plural(changes.length, "paragraph", "paragraphs")} that share words with this claim`),
+      " ",
+      ruleMark(),
+    ),
+    h(
+      "div",
+      { class: "cc-body" },
+      h(
+        "p",
+        { class: "cc-counts" },
+        field("listed", changes.length),
+        " listed of ",
+        field("distinct_matched", entry.distinct_matched),
+        ` distinct ${unit(entry.distinct_matched, "change", "changes")} that share at least two words with this claim, among `,
+        field("considered", entry.considered),
+        ` changed ${unit(entry.considered, "paragraph", "paragraphs")}.`,
+      ),
+      h("p", { class: "cc-why", text: CC_WHY }),
+      h("ol", { class: "chg-paras cc-list" }, changes.map(changeEntry)),
+    ),
+  );
+}
+
+/** One listed change: its mark, form and Item (and the other Items it repeats under), the shared words, the text and links. */
+function changeEntry(change) {
+  const kind = Object.hasOwn(CHANGE_MARK, change?.kind) ? change.kind : "";
+  const also = list(change?.also_under).map(String);
+  const terms = list(change?.matched_terms).map(String);
+  const head = h(
+    "div",
+    { class: "cc-head" },
+    h(
+      "p",
+      { class: "cc-where" },
+      kind ? changeMark(kind) : h("span", { class: "muted", text: "Kind not recorded" }),
+      " ",
+      h("span", { class: "cc-form", text: str(change?.form) || "form not recorded" }),
+      " · ",
+      h("span", { class: "cc-item", text: str(change?.item) || "Item not recorded" }),
+      also.length ? h("span", { class: "cc-also", "data-also-under": also.join("\n") }, ` · also under ${also.join("; ")}`) : "",
+    ),
+    h(
+      "p",
+      { class: "cc-terms" },
+      h("span", { class: "label", text: "Shared words, as the matcher stems them: " }),
+      terms.flatMap((term, position) => [position ? ", " : "", h("span", { class: "cc-term", text: term })]),
+    ),
+  );
+  let entry;
+  if ((kind === "added" || kind === "removed") && change.paragraph) entry = paragraphEntry(change.paragraph, kind === "added" ? "later" : "earlier", head);
+  else if ((kind === "reworded" || kind === "numbers_only") && change.pair) entry = pairEntry(change.pair, kind === "reworded", head);
+  else entry = h("li", null, head, h("p", { class: "muted", text: "The changed text is missing from the record." }));
+  entry.classList.add("cc-entry");
+  entry.dataset.changeKind = kind || "unknown";
+  return entry;
 }
 
 /** One finding: stance, statement, the engine's reason, its checks, cited figures and quotes. */

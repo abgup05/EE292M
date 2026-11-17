@@ -19,10 +19,14 @@
  *   --ink, inverted (a dark tag in light mode, a light one in dark mode):
  *                ▣ accepted, ☒ rejected: your own decision on a finding, never
  *                the engine's; ☐ undecided is the same tag, dashed and hollow
+ *   --rule       ƒ olive, dotted border: computed by a fixed rule, not checked by a person
+ *   status       ◇ complete (open, never filled), ⋯ running, ▲ partial or failed
+ *   ! --reject   "Refused": the server refused your input ("Rejected" is only your decision)
  *   --change     cyan, square-cornered tags: what changed between two filings,
  *                # numbers only, ~ reworded, + added, − removed; inside a reworded
  *                paragraph added words are underlined, removed words struck through
- * A dashed border means only "not judged or provisional".
+ * A dashed border means "not final", and only that: a claim not judged, a decision still
+ * to make, a run in progress. A dark filled tag is only ever the reader's own decision.
  */
 
 :root {
@@ -50,6 +54,8 @@
   --mark-ink: #1b1f27;
   --change: #0a6872;
   --change-bg: #def2f4;
+  --rule: #5a6312;
+  --rule-bg: #f2f4df;
   --chart-ink: #2b313c;
   --chart-bar: #6b7484;
 
@@ -92,6 +98,8 @@
     --mark-ink: #fff8d6;
     --change: #6fd6e2;
     --change-bg: #0f2a2e;
+    --rule: #cfd982;
+    --rule-bg: #262a10;
     --chart-ink: #d5d9e0;
     --chart-bar: #8d96a6;
   }
@@ -227,9 +235,29 @@ code { font-family: var(--font-mono); font-size: 0.92em; }
 .brand { display: flex; align-items: baseline; gap: 0.6rem; }
 .brand h1 { margin: 0; font-size: var(--step-2); letter-spacing: -0.01em; }
 .lede { margin: 0; font-size: var(--step-1); flex: 1 1 32rem; }
-.lede-more { display: block; font-size: var(--step-0); color: var(--ink-2); }
+/* The one thing to take away, with the two recorded samples beside it, as visible as the form. */
+.takeaway-row { flex: 1 1 40rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1.25rem; }
+.takeaway { max-width: 70ch; line-height: 1.4; }
+.sample-nav { margin: 0; display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.sample-button {
+  display: inline-block;
+  padding: 0.4rem 0.8rem;
+  border: 1.5px solid var(--accent);
+  border-radius: var(--radius);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.sample-button:hover { text-decoration: underline; }
 .engine-line { margin: 0; font-size: var(--step--1); color: var(--ink-2); flex-basis: 100%; }
 .engine-name { font-weight: 600; }
+/* A long provenance note: its first clause in view, the whole note one click away. */
+.prov-more { display: inline; }
+.prov-more > summary { display: inline; cursor: pointer; }
+.prov-more > summary::after { content: " (full note)"; color: var(--accent); }
+.prov-more[open] > summary::after { content: " (hide the full note)"; }
+.prov-more[open] > .prov-full { display: block; margin-top: 0.15rem; }
+.prov-full { color: var(--ink-2); }
 
 /* ------------------------------------------------------------ layout */
 
@@ -582,6 +610,26 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
   font-family: "DejaVu Sans", "Noto Sans Symbols 2", "Segoe UI Symbol", "Apple Symbols", var(--font-ui);
 }
 .decision-mark.d-undecided { color: var(--ink-2); background: transparent; border: 1.5px dashed var(--line-strong); }
+
+/* ƒ: computed by a fixed rule, not checked by a person. Its own olive and a dotted border, which no other mark uses. */
+.rule-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  padding: 0 0.4rem;
+  font-size: var(--step--1);
+  font-weight: 650;
+  color: var(--rule);
+  background: var(--rule-bg);
+  border: 1.5px dotted var(--rule);
+  border-radius: var(--radius);
+  white-space: nowrap;
+}
+.g-rule { color: var(--rule); font-family: var(--font-quote); font-style: italic; font-weight: 700; }
+.rule-note { margin: 0 0 0.45rem; font-size: var(--step--1); color: var(--ink-2); }
+/* A run's status glyph: never filled, never a tag. */
+.g-status { color: var(--ink-2); font-weight: 700; }
+.legend-dashed { display: inline-block; padding: 0 0.45rem; border: 1.5px dashed var(--line-strong); border-radius: var(--radius); color: var(--ink-2); font-size: var(--step--1); }
 
 .review-line { margin: 0 0 0.55rem; font-size: var(--step--1); }
 .review-line p { margin: 0 0 0.2rem; }
@@ -989,3 +1037,52 @@ del.seg-del { text-decoration-line: line-through; text-decoration-color: var(--i
   .legend-list { grid-template-columns: minmax(0, 1fr); }
   .chart-grid { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ------------------------------------------------------------ changed paragraphs, by claim
+ * Listed by a fixed rule (ƒ, olive, dotted) from shared words: never a finding, so no
+ * stance, verdict, decision or meaning mark is drawn here; the change marks are the
+ * comparison view's own. The outline is dotted olive, like the rule mark it carries. */
+
+.cc-compared {
+  margin: 0 0 0.8rem;
+  padding: 0.55rem 0.8rem;
+  border: 1.5px dotted var(--rule);
+  border-radius: var(--radius);
+  font-size: var(--step--1);
+}
+.cc-compared p, .cc-compared ul { margin: 0 0 0.3rem; }
+.cc-compared > div > :last-child { margin-bottom: 0; }
+.cc-title { font-size: var(--step-0); }
+.cc-pairs { padding-left: 1.2rem; }
+.cc-why { color: var(--ink-2); max-width: 90ch; }
+.cc-error { margin: 0; }
+.cc-error button { margin-left: 0.3rem; }
+
+.cc-slot:empty { display: none; }
+.cc-slot { margin-top: 0.9rem; }
+.cc-none { margin: 0; font-size: var(--step--1); color: var(--ink-2); }
+.claim-changes { border: 1.5px dotted var(--rule); border-radius: var(--radius); }
+.claim-changes > summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.6rem;
+  padding: 0.45rem 0.7rem;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 600;
+}
+.claim-changes > summary::-webkit-details-marker { display: none; }
+.claim-changes > summary::before { content: "▸"; color: var(--ink-2); width: 0.8em; transition: transform 0.15s; }
+.claim-changes[open] > summary::before { transform: rotate(90deg); }
+.claim-changes[open] > summary { border-bottom: 1px dotted var(--rule); }
+.cc-body { padding: 0.55rem 0.8rem 0.7rem; }
+.cc-counts { margin: 0 0 0.25rem; }
+.cc-body > .cc-why { margin: 0 0 0.6rem; font-size: var(--step--1); }
+.cc-head p { margin: 0 0 0.2rem; }
+.cc-where { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.35rem; font-size: var(--step--1); }
+.cc-form { font-weight: 600; }
+.cc-also { color: var(--ink-2); }
+.cc-terms { font-size: var(--step--1); color: var(--ink-2); }
+.cc-term { font-family: var(--font-mono); font-size: 0.92em; color: var(--ink); }
+.cc-list > li + li { margin-top: 0.9rem; }

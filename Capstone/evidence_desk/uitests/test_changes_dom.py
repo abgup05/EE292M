@@ -302,6 +302,33 @@ def test_legend_has_the_change_marks() -> None:
         assert text(node) in CHANGE_GLYPHS.values(), f"an unknown change glyph {text(node)!r}"
 
 
+RULE_GLYPH = "ƒ"
+RULE_MEANING = "Computed by a fixed rule; not checked by a person"
+
+
+def test_rule_mark_is_defined_once_and_sits_on_the_classification() -> None:
+    """Review 5, interface finding 4: what only a fixed rule decided carries its own mark."""
+    soup = page()
+    defined = [mark.find_parent("div") for mark in soup.select("#changes-legend .rule-mark")]
+    assert len(defined) == 1, "the comparison's legend must define the fixed-rule mark exactly once"
+    assert text(defined[0].select_one(".g-rule")) == RULE_GLYPH
+    assert RULE_MEANING in words(defined[0])
+    assert RULE_GLYPH not in OTHER_GLYPHS | set(CHANGE_GLYPHS.values()), "the rule mark reuses another glyph"
+    # On the classification: the All Items totals and the per-Item counts and lists.
+    for where in ("totals", "items"):
+        note = soup.select_one(f'#changes-body .rule-note[data-rule="{where}"]')
+        assert note is not None, f"the {where} carry no fixed-rule mark"
+        assert text(note.select_one(".rule-mark .g-rule")) == RULE_GLYPH
+    totals_title = soup.select_one("#chg-totals-title")
+    assert totals_title.find_next("p", class_="rule-note")["data-rule"] == "totals"
+    items_title = soup.select_one("#chg-items-title")
+    assert items_title.find_next("p", class_="rule-note")["data-rule"] == "items"
+    body = rule_body(".rule-mark")
+    assert "--rule" in body and "dotted" in body
+    for colour in ("--support", "--challenge", "--limit", "--model", "--reject", "--accent", "--neutral", "--change", "--ink"):
+        assert re.search(rf"var\({colour}\)", body) is None, f".rule-mark uses {colour}"
+
+
 def test_no_placeholder_text() -> None:
     soup = page()
     for node in soup.find_all(string=True):

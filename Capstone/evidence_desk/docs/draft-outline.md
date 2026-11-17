@@ -32,11 +32,11 @@ Ticker, decision, claims in; verdicts first; each finding opens to its passage; 
 | Retrieval finds the passage that matters | 18 of 24 in the top eight with the planner's queries; 9 of 24 without | **To redo** once I have read the golden cases |
 | The verdict agrees with a careful reading | 20 of 24; no reversal; 6 of 6 unanswerable claims refused | **To redo**, same reason; and re-recording alone moved it by three cases |
 | A second model catches misreadings | It withheld 1 of 77 findings and changed no verdict | Not shown. Same model family as the engine |
-| It tells you what changed between filings | Run on NVIDIA's annual and quarterly reports | One company; no check of the classification by a person |
+| It tells you what changed between filings | The planted-paragraph test; run on eight companies' annual reports and NVIDIA's quarterly reports | Its threshold was set on NVIDIA; no person has read a comparison; JPMorgan's Item labels mean little |
 
 ## 5. What failed, and what it taught
 
-The schedule. An idea with no reader. A model that could not be called. A parser tested on one company. Two rules about figures that real data broke. A speed claim that did not hold. A referee who found three faults in tested code. A skill that changed nothing because the documentation already did its job.
+The schedule. An idea with no reader. A model that could not be called. A parser tested on one company. Two rules about figures that real data broke. A speed claim that did not hold. A referee who found three faults in tested code. A skill that changed nothing because the documentation already did its job. A filing comparison finished on one company, which could not compare a bank at all until the other seven were run.
 
 ## 6. Limits, stated plainly
 
@@ -47,5 +47,6 @@ The model path has not run through the API since October. The golden set is a mo
 1. Read the thirty golden cases; correct them; re-run `make eval`.
 2. Get API credit or a key that works; record the cassettes again through the API; re-measure the quote rate without a stand-in.
 3. Use the tool on a thesis of my own and write down where it was wrong.
-4. Ask a colleague to review it, and review theirs.
-5. Read the three files the claims rest on: `core/gate.py`, `core/numcheck.py`, `core/policy.py`.
+4. Read five reworded pairs and five added paragraphs of a filing comparison for a company other than NVIDIA.
+5. Ask a colleague to review it, and review theirs.
+6. Read the three files the claims rest on: `core/gate.py`, `core/numcheck.py`, `core/policy.py`.

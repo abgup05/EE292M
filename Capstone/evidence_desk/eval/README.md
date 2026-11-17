@@ -75,5 +75,8 @@ Generation (`results/generation-*`), every rate with its denominator:
 - Agreement is with a model-drafted key, unread by the author. Citation is strict: a right
   answer may rest on other evidence than the excerpt named.
 - One recording per prompt: no variance across samples, and no test of the live API call.
+- `cassettes/golden/responses/` holds 40 assess answers for 30 cases. Ten were recorded before the
+  per-filing cap was fixed; the requests they answered are no longer made, so they are never
+  replayed. They are kept as recorded, not edited or removed.
 - Facts change when a company files: on a fresh clone without `cache/`, refetched facts may no
   longer match their pin, and `generate` stops rather than score with different figures.

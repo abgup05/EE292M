@@ -1,7 +1,7 @@
 {
   "note": "A recorded run of the NVIDIA example thesis on three recorded filings. The model answers are replayed from the cassette demo/cassettes/nvda-example; see its README for how they were produced.",
   "meta": {
-    "version": "0.3.0",
+    "version": "0.5.0",
     "figures_note": "Reported figures are computed by the backend from the XBRL facts the company filed with the SEC; each shows the facts it used and its arithmetic.",
     "limits": {
       "CONTEXT_CHARS": 240,
@@ -10,15 +10,19 @@
       "FIGURE_YEARS": 2,
       "MAX_CLAIMS": 6,
       "MAX_CLAIM_CHARS": 400,
+      "MAX_CONCURRENT_ASSESSMENTS": 3,
       "MAX_DECISION_CHARS": 500,
       "MAX_EXCERPT_CHARS": 600,
       "MAX_EXTRA_URLS": 5,
       "MAX_FIGURES_OFFERED": 40,
       "MAX_FILINGS": 5,
       "MAX_FINDINGS_PER_CLAIM": 4,
+      "MAX_NOTE_CHARS": 500,
       "MAX_PASSAGES_PER_SOURCE": 5,
       "MAX_QUERIES_PER_CLAIM": 4,
       "MAX_SCOPE_CHARS": 2000,
+      "MAX_SUPPORT_REASON_CHARS": 300,
+      "MAX_THESIS_NAME_CHARS": 80,
       "METRICS_CACHE_SECONDS": 900,
       "MIN_CLAIMS": 1,
       "MIN_CLAIM_CHARS": 15,
@@ -51,7 +55,24 @@
       "not_addressed": "No verified excerpt in the passages retrieved bears on the claim."
     },
     "provenance_note": "Evidence comes from the company's own filings with the SEC. It shows what the company reported, not whether an outside party agrees.",
+    "decision_labels": {
+      "accepted": "Accepted",
+      "rejected": "Rejected",
+      "undecided": "Undecided"
+    },
+    "review_note": "The verdict after your review follows by the same rule from the findings you accepted, and undecided findings do not count toward it.",
     "engine": "claude",
+    "checker": {
+      "name": "claude",
+      "detail": "replayed from cassette nvda-example: 12 responses recorded via Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the rules and Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17 with claude-haiku-5-5 and claude-sonnet-5-5, 2026-11-17 to 2026-11-17"
+    },
+    "support_labels": {
+      "passed": "supported",
+      "partly": "partly supported",
+      "failed": "not supported",
+      "unchecked": "not checked"
+    },
+    "no_checker_note": "No second model checked the findings' meaning.",
     "example": {
       "ticker": "NVDA",
       "decision": "Whether to keep an overweight position in NVIDIA into the next earnings report",
@@ -68,7 +89,7 @@
     }
   },
   "run": {
-    "id": "run-cff7f77616b6",
+    "id": "run-1527564cf069",
     "inputs": {
       "ticker": "NVDA",
       "decision": "Whether to keep an overweight position in NVIDIA into the next earnings report",
@@ -83,18 +104,21 @@
       "filings": 3,
       "extra_urls": []
     },
+    "thesis_id": null,
     "status": "complete",
     "stage": "done",
     "stage_detail": "",
-    "started_at": "2026-11-17T11:57:36.216865Z",
-    "finished_at": "2026-11-17T11:57:36.665891Z",
+    "started_at": "2026-11-17T13:22:37.294945Z",
+    "finished_at": "2026-11-17T13:22:37.707500Z",
     "company": {
       "cik": 1045810,
       "ticker": "NVDA",
       "name": "NVIDIA CORP"
     },
     "engine": "claude",
-    "engine_detail": "replayed from cassette nvda-example: 7 responses recorded via Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17 with claude-sonnet-5-5, 2026-11-17 to 2026-11-17",
+    "engine_detail": "replayed from cassette nvda-example: 12 responses recorded via Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the rules and Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17 with claude-haiku-5-5 and claude-sonnet-5-5, 2026-11-17 to 2026-11-17",
+    "checker": "claude",
+    "checker_detail": "replayed from cassette nvda-example: 12 responses recorded via Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the rules and Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17 with claude-haiku-5-5 and claude-sonnet-5-5, 2026-11-17 to 2026-11-17",
     "claims": [
       {
         "id": "c1",
@@ -212,7 +236,8 @@
         "extraction_status": "extracted",
         "sections": 73,
         "characters": 151303,
-        "error": null
+        "error": null,
+        "item_coverage": 0.9647619576227677
       },
       {
         "id": "s2",
@@ -230,7 +255,8 @@
         "extraction_status": "extracted",
         "sections": 69,
         "characters": 139520,
-        "error": null
+        "error": null,
+        "item_coverage": 0.9621078006704584
       },
       {
         "id": "s3",
@@ -248,7 +274,8 @@
         "extraction_status": "extracted",
         "sections": 150,
         "characters": 344740,
-        "error": null
+        "error": null,
+        "item_coverage": 0.9692899718544143
       },
       {
         "id": "s4",
@@ -261,12 +288,13 @@
         "accession": null,
         "period_end": null,
         "published_date": null,
-        "retrieved_at": "2026-11-17T11:57:36.577566Z",
+        "retrieved_at": "2026-11-17T13:22:37.618020Z",
         "content_hash": "f6870031195cd1dc226506fcf891f4096679d400ac6139b9909a117dc9648f9b",
         "extraction_status": "extracted",
         "sections": 0,
         "characters": 0,
-        "error": null
+        "error": null,
+        "item_coverage": null
       }
     ],
     "evidence": [
@@ -279,7 +307,8 @@
         "start": 82000,
         "context_before": "2027, we reclassified a company from ACIE to Hyperscale due to a change in their business model and recast the prior period revenue associated with this company.\nRevenue was $96.2 billion, up 106% from a year ago and up 18% sequentially.\n",
         "context_after": " Hyperscale revenue more than doubled from a year ago and increased 13% sequentially on the strength of Blackwell Ultra. ACIE revenue increased 138% from a year ago and 25% sequentially driven by end-demand from AI natives, enterprises, and",
-        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm#:~:text=Data%20Center%20revenue%20was%20%2489.0,of%20our%20Blackwell%20Ultra%20infrastructure."
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm#:~:text=Data%20Center%20revenue%20was%20%2489.0,of%20our%20Blackwell%20Ultra%20infrastructure.",
+        "link_kind": "passage"
       },
       {
         "id": "e2",
@@ -290,7 +319,8 @@
         "start": 65460,
         "context_before": "$44,062 20% 85%\n(1) In the first quarter of fiscal year 2027, we changed our presentation of revenue by market platform and the comparable periods have been recast.\nRevenue was $81.6 billion, up 85% from a year ago and up 20% sequentially.\n",
         "context_after": " Hyperscaler revenue increased sequentially and remained at approximately 50% of Data Center revenue, while the remaining 50% came from a continued diversification of customers, including AI Clouds, industrial, enterprise, and sovereign",
-        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000052/nvda-20260426.htm#:~:text=Data%20Center%20revenue%20was%20%2475.2,Spectrum%2DX%20Ethernet%2C%20and%20NVLink%20solutions."
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000052/nvda-20260426.htm#:~:text=Data%20Center%20revenue%20was%20%2475.2,Spectrum%2DX%20Ethernet%2C%20and%20NVLink%20solutions.",
+        "link_kind": "passage"
       },
       {
         "id": "e3",
@@ -301,7 +331,8 @@
         "start": 77155,
         "context_before": "and diverse set of AI opportunities. We have introduced a new product and architecture cadence of our Data Center solutions where we seek to complete new computing solutions each year and provide a greater variety of Data Center offerings. ",
         "context_after": " Qualification time for new products, customers anticipating product transitions, and channel partners reducing channel inventory of prior architectures ahead of new product introductions can reduce, or create volatility in, our revenue.",
-        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=The%20increased%20frequency%20of%20these,create%20volatility%20in%20our%20revenue."
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=The%20increased%20frequency%20of%20these,create%20volatility%20in%20our%20revenue.",
+        "link_kind": "passage"
       },
       {
         "id": "e4",
@@ -312,7 +343,8 @@
         "start": 115605,
         "context_before": "be adversely affected if we lose or are prevented from selling to any of these customers.\nWe have experienced periods where we receive a significant amount of our revenue from a limited number of customers, and this trend may continue. ",
         "context_after": " With several of these partners, we are selling multiple products and systems in our portfolio through their channels. Our operating results depend on sales to our partner network, as well as the ability of these partners to sell products",
-        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=For%20fiscal%20year%202026%2C%20sales,the%20Compute%20%26%20Networking%20segment."
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=For%20fiscal%20year%202026%2C%20sales,the%20Compute%20%26%20Networking%20segment.",
+        "link_kind": "passage"
       },
       {
         "id": "e5",
@@ -323,7 +355,8 @@
         "start": 70728,
         "context_before": "indirect customers include CSPs, AI Clouds, AI model makers, enterprises, and public sector entities. Our revenue is concentrated among a limited number of direct and indirect customers and this trend may continue.\nDirect Customers – ",
         "context_after": "\nFor the first quarter of fiscal year 2026, sales to two direct customers represented 16% and 14% of total revenue, which were attributable to the Compute & Networking segment.\nIndirect Customers – Indirect customer revenue is an estimation",
-        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000052/nvda-20260426.htm#:~:text=For%20the%20first%20quarter%20of,the%20Compute%20%26%20Networking%20segment."
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000052/nvda-20260426.htm",
+        "link_kind": "document"
       },
       {
         "id": "e6",
@@ -334,7 +367,8 @@
         "start": 87500,
         "context_before": "indirect customers include CSPs, AI clouds, AI model makers, enterprises, and public sector entities. Our revenue is concentrated among a limited number of direct and indirect customers and this trend may continue.\nDirect Customers – ",
         "context_after": "\nFor the second quarter of fiscal year 2026, two direct customers represented 23% and 16% of total revenue, all of which was primarily attributable to the Compute & Networking segment. For the first half of fiscal year 2026, two direct",
-        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm#:~:text=For%20the%20second%20quarter%20of,the%20Compute%20%26%20Networking%20segment."
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm",
+        "link_kind": "document"
       },
       {
         "id": "e7",
@@ -345,7 +379,8 @@
         "start": 205081,
         "context_before": "integrators to complete their build. We refer to indirect customers as those who purchase products through our direct customers; indirect customers include CSPs, Neocloud builders, AI model makers, enterprises, and public sector entities. ",
         "context_after": "\nDirect Customers – For fiscal year 2026, sales to one direct customer represented 22% of total revenue and sales to another direct customer represented 14% of total revenue, all of which were primarily attributable to the Compute &",
-        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=Our%20revenue%20is%20concentrated%20among,and%20this%20trend%20may%20continue."
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=Our%20revenue%20is%20concentrated%20among,and%20this%20trend%20may%20continue.",
+        "link_kind": "passage"
       },
       {
         "id": "e8",
@@ -356,7 +391,8 @@
         "start": 44995,
         "context_before": "and Macau) and D:5 countries, or to companies headquartered or with an ultimate parent therein, of our H20 integrated circuits and any other circuits achieving the H20’s memory bandwidth, interconnect bandwidth, or combination thereof. ",
         "context_after": "\nIn August 2025, the USG granted licenses that would allow us to ship certain H20 products to certain China-based customers. We generated approximately $60 million in H20 revenue under those licenses. USG officials expressed an expectation",
-        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=As%20a%20result%20of%20these,demand%20for%20H20%20products%20diminished."
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=As%20a%20result%20of%20these,demand%20for%20H20%20products%20diminished.",
+        "link_kind": "passage"
       },
       {
         "id": "e9",
@@ -367,7 +403,8 @@
         "start": 138097,
         "context_before": "thereof. As a result of these requirements, we incurred a $4.5 billion charge in the first quarter of fiscal year 2026 associated with H20 for excess inventory and purchase obligations, as the demand for H20 products diminished.\n",
         "context_after": " USG officials expressed an expectation that the USG will receive 15% or more of the revenue generated from licensed sales of our products, but the USG did not publish a regulation codifying such requirement.\nIn February 2026, the USG",
-        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=In%20August%202025%2C%20the%20USG,H20%20revenue%20under%20those%20licenses."
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=In%20August%202025%2C%20the%20USG,H20%20revenue%20under%20those%20licenses.",
+        "link_kind": "passage"
       },
       {
         "id": "e10",
@@ -378,7 +415,8 @@
         "start": 45623,
         "context_before": "revenue under those licenses. USG officials expressed an expectation that the USG will receive 15% or more of the revenue generated from licensed sales of our products, but the USG did not publish a regulation codifying such requirement.\n",
         "context_after": " The license requires that the H200s go through an inspection process in the United States prior to any shipment to the customer. As a result, any H200 shipped under the new licensing program will be subject to a 25% tariff upon importation",
-        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=In%20February%202026%2C%20the%20USG,will%20be%20allowed%20into%20China."
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=In%20February%202026%2C%20the%20USG,will%20be%20allowed%20into%20China.",
+        "link_kind": "passage"
       },
       {
         "id": "e11",
@@ -389,7 +427,8 @@
         "start": 137474,
         "context_before": "have already encouraged and may in the future encourage overseas governments to request that our customers purchase from our competitors rather than NVIDIA or other U.S. firms, harming our business, market position, and financial results.\n",
         "context_after": " Export controls increase the risk of investing in U.S. advanced semiconductor products, because by the time a new product is ready for market, it may be subject to new unilateral export controls restricting its sale, resulting in excess",
-        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm#:~:text=As%20a%20result%2C%20export%20controls,Latin%20America%2C%20and%20Southeast%20Asia."
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm#:~:text=As%20a%20result%2C%20export%20controls,Latin%20America%2C%20and%20Southeast%20Asia.",
+        "link_kind": "passage"
       },
       {
         "id": "e12",
@@ -400,7 +439,8 @@
         "start": 90246,
         "context_before": "component costs, tariffs, and shipping costs. Cost of revenue also includes acquisition-related intangible amortization expense, IP-related costs, and stock-based compensation related to personnel associated with manufacturing operations.\n",
         "context_after": " Gross margin for the first half of fiscal year 2026 was also impacted by a $4.5 billion charge associated with H20 excess inventory and purchase obligations.\nProvisions for inventory and excess inventory purchase obligations totaled $985",
-        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm#:~:text=Gross%20margin%20increased%20to%2075.0%25,improved%20mix%20from%20Blackwell%20Ultra."
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm#:~:text=Gross%20margin%20increased%20to%2075.0%25,improved%20mix%20from%20Blackwell%20Ultra.",
+        "link_kind": "passage"
       },
       {
         "id": "e13",
@@ -411,7 +451,8 @@
         "start": 82851,
         "context_before": "was $7.2 billion, up 27% from a year ago and up 13% sequentially. The increases were driven by strong sales of Blackwell workstations, partially offset by slower consumer PC sales that were tempered by elevated memory and systems prices.\n",
         "context_after": "\nOperating expenses were up 55% from a year ago and up 10% sequentially. These increases were driven by higher compute infrastructure and compensation and benefits costs.\n\nPart I, Item 2. Management’s Discussion and Analysis of Financial",
-        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm#:~:text=Gross%20margin%20increased%20from%20a,vast%20majority%20of%20our%20revenue."
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm#:~:text=Gross%20margin%20increased%20from%20a,vast%20majority%20of%20our%20revenue.",
+        "link_kind": "passage"
       },
       {
         "id": "e14",
@@ -422,7 +463,8 @@
         "start": 73021,
         "context_before": "component costs, tariffs, and shipping costs. Cost of revenue also includes acquisition-related intangible amortization expense, IP-related costs, and stock-based compensation related to personnel associated with manufacturing operations.\n",
         "context_after": "\nProvisions for inventory and excess inventory purchase obligations totaled $1.1 billion and $5.3 billion for the first quarter of fiscal years 2027 and 2026, respectively. The first quarter of fiscal year 2026 includes $4.5 billion",
-        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000052/nvda-20260426.htm#:~:text=Gross%20margin%20increased%20to%2074.9%25,excess%20inventory%20and%20purchase%20obligations."
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000052/nvda-20260426.htm#:~:text=Gross%20margin%20increased%20to%2074.9%25,excess%20inventory%20and%20purchase%20obligations.",
+        "link_kind": "passage"
       },
       {
         "id": "e15",
@@ -433,7 +475,8 @@
         "start": 207723,
         "context_before": "also includes acquisition-related intangible amortization expense, costs for license and development and service arrangements, IP-related costs, and stock-based compensation related to personnel associated with manufacturing operations.\n",
         "context_after": "\nProvisions for inventory and excess inventory purchase obligations totaled $7.2 billion and $3.7 billion for fiscal years 2026 and 2025, respectively, including $4.5 billion associated with H20 excess inventory and purchase obligations for",
-        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=Gross%20margins%20decreased%20to%2071.1%25,quarter%20of%20fiscal%20year%202026."
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=Gross%20margins%20decreased%20to%2071.1%25,quarter%20of%20fiscal%20year%202026.",
+        "link_kind": "passage"
       },
       {
         "id": "e16",
@@ -444,7 +487,8 @@
         "start": 83091,
         "context_before": "geometry process technologies such as advanced process node technologies and memory designs needed to manufacture our products;\n•failure by our suppliers to comply with our policies and expectations and emerging regulatory requirements;\n",
         "context_after": "\n•loss of a supplier and additional expense and/or production delays as a result of qualifying a new foundry or subcontractor and commencing volume production or testing in the event of a loss, addition or change of a supplier;\n•lack of",
-        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=%E2%80%A2limited%20number%20and%20geographic%20concentration,test%20providers%20and%20memory%20manufacturers%3B"
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=%E2%80%A2limited%20number%20and%20geographic%20concentration,test%20providers%20and%20memory%20manufacturers%3B",
+        "link_kind": "passage"
       },
       {
         "id": "e17",
@@ -455,7 +499,8 @@
         "start": 81674,
         "context_before": "on third-party suppliers and their technology to manufacture, assemble, test, or package our products reduces our control over product quantity and quality, manufacturing yields, and product delivery schedules and could harm our business.\n",
         "context_after": " These subcontractors assist with procuring components used in our systems, boards, and products. We face risks which have adversely affected or could adversely affect our ability to meet customer demand and scale our supply chain,",
-        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=We%20depend%20on%20foundries%20to,instead%20contract%20with%20independent%20subcontractors."
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=We%20depend%20on%20foundries%20to,instead%20contract%20with%20independent%20subcontractors.",
+        "link_kind": "passage"
       },
       {
         "id": "e18",
@@ -466,7 +511,8 @@
         "start": 37239,
         "context_before": "of growth, we may place non-cancellable inventory orders for certain product components in advance of our historical lead times, pay premiums, or provide deposits to secure future supply and capacity and may need to continue to do so.\n",
         "context_after": " While currently our supply chain is mainly concentrated in Asia, we are expanding into the U.S. and Latin America. We utilize foundries, such as Taiwan Semiconductor Manufacturing Company Limited, or TSMC, and Samsung Electronics Co.,",
-        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=We%20have%20expanded%20our%20supplier,aligned%20with%20growing%20customer%20demand."
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=We%20have%20expanded%20our%20supplier,aligned%20with%20growing%20customer%20demand.",
+        "link_kind": "passage"
       }
     ],
     "findings": [
@@ -490,10 +536,12 @@
             "$89.0 billion matched $89.0 billion in a quote",
             "117% matched 117% in a quote"
           ],
-          "support": "unchecked",
-          "support_detail": ""
+          "support": "passed",
+          "support_detail": "The excerpt reports Data Center revenue of $89.0 billion, up 117% from a year ago, matching the statement and supporting continued growth."
         },
-        "withheld_reason": ""
+        "withheld_reason": "",
+        "counted_as": "supports",
+        "count_note": ""
       },
       {
         "id": "f2",
@@ -515,10 +563,12 @@
             "$75.2 billion matched $75.2 billion in a quote",
             "92% matched 92% in a quote"
           ],
-          "support": "unchecked",
-          "support_detail": ""
+          "support": "passed",
+          "support_detail": "The excerpt reports Data Center revenue of $75.2 billion, up 92% from a year ago, matching the statement and supporting continued growth."
         },
-        "withheld_reason": ""
+        "withheld_reason": "",
+        "counted_as": "supports",
+        "count_note": ""
       },
       {
         "id": "f3",
@@ -537,10 +587,12 @@
           "quotes": "passed",
           "numbers": "none",
           "numbers_detail": [],
-          "support": "unchecked",
-          "support_detail": ""
+          "support": "passed",
+          "support_detail": "The excerpt warns that faster product transitions may create revenue volatility, which bears on growth but does not contradict the year-over-year figures, so the context stance fits."
         },
-        "withheld_reason": ""
+        "withheld_reason": "",
+        "counted_as": "context",
+        "count_note": ""
       },
       {
         "id": "f4",
@@ -562,10 +614,12 @@
             "22% matched 22% in a quote",
             "14% matched 14% in a quote"
           ],
-          "support": "unchecked",
-          "support_detail": ""
+          "support": "passed",
+          "support_detail": "The excerpt gives 22% and 14% of fiscal 2026 revenue from two direct customers, matching the statement and showing concentration."
         },
-        "withheld_reason": ""
+        "withheld_reason": "",
+        "counted_as": "supports",
+        "count_note": ""
       },
       {
         "id": "f5",
@@ -588,10 +642,12 @@
             "17% matched 17% in a quote",
             "16% matched 16% in a quote"
           ],
-          "support": "unchecked",
-          "support_detail": ""
+          "support": "passed",
+          "support_detail": "The MD&A excerpt gives 21%, 17% and 16% of first-quarter fiscal 2027 revenue from three direct customers, matching the statement."
         },
-        "withheld_reason": ""
+        "withheld_reason": "",
+        "counted_as": "supports",
+        "count_note": ""
       },
       {
         "id": "f6",
@@ -615,10 +671,12 @@
             "13% matched 13% in a quote",
             "16% matched 16% in a quote"
           ],
-          "support": "unchecked",
-          "support_detail": ""
+          "support": "passed",
+          "support_detail": "The excerpt gives one customer at 16% in the second quarter and three at 16%, 15% and 13% for the first half, matching the statement exactly."
         },
-        "withheld_reason": ""
+        "withheld_reason": "",
+        "counted_as": "supports",
+        "count_note": ""
       },
       {
         "id": "f7",
@@ -637,10 +695,12 @@
           "quotes": "passed",
           "numbers": "none",
           "numbers_detail": [],
-          "support": "unchecked",
-          "support_detail": ""
+          "support": "passed",
+          "support_detail": "The excerpt states that revenue is concentrated among a limited number of direct and indirect customers and may continue, matching the statement."
         },
-        "withheld_reason": ""
+        "withheld_reason": "",
+        "counted_as": "supports",
+        "count_note": ""
       },
       {
         "id": "f8",
@@ -661,10 +721,12 @@
           "numbers_detail": [
             "$4.5 billion matched $4.5 billion in a quote"
           ],
-          "support": "unchecked",
-          "support_detail": ""
+          "support": "passed",
+          "support_detail": "The excerpt reports a $4.5 billion H20 charge for excess inventory and purchase obligations as demand diminished, matching the statement and the supports stance."
         },
-        "withheld_reason": ""
+        "withheld_reason": "",
+        "counted_as": "supports",
+        "count_note": ""
       },
       {
         "id": "f9",
@@ -686,10 +748,12 @@
           "numbers_detail": [
             "$60 million matched $60 million in a quote"
           ],
-          "support": "unchecked",
-          "support_detail": ""
+          "support": "passed",
+          "support_detail": "The excerpts give about $60 million of H20 revenue under licenses and no H200 revenue to date, matching the statement; small licensed sales bear on restricted revenue as stated."
         },
-        "withheld_reason": ""
+        "withheld_reason": "",
+        "counted_as": "supports",
+        "count_note": ""
       },
       {
         "id": "f10",
@@ -708,10 +772,12 @@
           "quotes": "passed",
           "numbers": "none",
           "numbers_detail": [],
-          "support": "unchecked",
-          "support_detail": ""
+          "support": "passed",
+          "support_detail": "The excerpt says export controls have in the past and may in future reduce demand in Europe, Latin America and Southeast Asia, matching the statement; it is relevant but not direct on China revenue, so context fits."
         },
-        "withheld_reason": ""
+        "withheld_reason": "",
+        "counted_as": "context",
+        "count_note": ""
       },
       {
         "id": "f11",
@@ -734,10 +800,12 @@
             "$96.22B matched $96.22B (Revenue, quarter ended 2026-07-26) in a cited figure",
             "105.9% matched +105.9% (Revenue growth, year over year, quarter ended 2026-07-26) in a cited figure"
           ],
-          "support": "unchecked",
-          "support_detail": ""
+          "support": "passed",
+          "support_detail": "Quarterly revenue of $96.22B, up 105.9% year over year, matches the statement and shows no company-wide revenue squeeze, so the challenges stance is right."
         },
-        "withheld_reason": ""
+        "withheld_reason": "",
+        "counted_as": "challenges",
+        "count_note": ""
       },
       {
         "id": "f12",
@@ -758,10 +826,12 @@
           "quotes": "passed",
           "numbers": "none",
           "numbers_detail": [],
-          "support": "unchecked",
-          "support_detail": ""
+          "support": "passed",
+          "support_detail": "The excerpt gives gross margin of 75.0% versus 72.4% for the second quarter and 75.0% versus 66.6% for the first half, attributed to Blackwell Ultra mix, matching the statement."
         },
-        "withheld_reason": ""
+        "withheld_reason": "",
+        "counted_as": "supports",
+        "count_note": ""
       },
       {
         "id": "f13",
@@ -788,10 +858,12 @@
             "74.9% matched 74.9% (Gross margin, quarter ended 2026-04-26) in a cited figure",
             "75.0% matched 75.0% (Gross margin, quarter ended 2026-07-26) in a cited figure"
           ],
-          "support": "unchecked",
-          "support_detail": ""
+          "support": "passed",
+          "support_detail": "The excerpt calls gross margin approximately flat sequentially and the quarterly figures 75.0%, 74.9% and 75.0% match the statement, so it rightly challenges ongoing expansion."
         },
-        "withheld_reason": ""
+        "withheld_reason": "",
+        "counted_as": "challenges",
+        "count_note": ""
       },
       {
         "id": "f14",
@@ -816,10 +888,12 @@
             "60.5% matched 60.5% in a quote",
             "$4.5 billion matched $4.5 billion in a quote"
           ],
-          "support": "unchecked",
-          "support_detail": ""
+          "support": "partly",
+          "support_detail": "The excerpt says the rise to 74.9% from 60.5% is primarily due to the prior-year H20 charge; 'primarily' supports most of the increase being non-underlying, but 'not underlying expansion' is stronger."
         },
-        "withheld_reason": ""
+        "withheld_reason": "",
+        "counted_as": "context",
+        "count_note": ""
       },
       {
         "id": "f15",
@@ -844,10 +918,12 @@
             "71.1% matched 71.1% in a quote",
             "75.0% matched 75.0% in a quote"
           ],
-          "support": "unchecked",
-          "support_detail": ""
+          "support": "passed",
+          "support_detail": "The excerpt gives full-year gross margin falling to 71.1% in fiscal 2026 from 75.0% in fiscal 2025, matching the statement and challenging the expansion claim."
         },
-        "withheld_reason": ""
+        "withheld_reason": "",
+        "counted_as": "challenges",
+        "count_note": ""
       },
       {
         "id": "f16",
@@ -866,10 +942,12 @@
           "quotes": "passed",
           "numbers": "none",
           "numbers_detail": [],
-          "support": "unchecked",
-          "support_detail": ""
+          "support": "passed",
+          "support_detail": "The excerpt lists the limited number and geographic concentration of suppliers, foundries, contract manufacturers and memory makers as a risk, matching the statement and the supports stance."
         },
-        "withheld_reason": ""
+        "withheld_reason": "",
+        "counted_as": "supports",
+        "count_note": ""
       },
       {
         "id": "f17",
@@ -888,10 +966,12 @@
           "quotes": "passed",
           "numbers": "none",
           "numbers_detail": [],
-          "support": "unchecked",
-          "support_detail": ""
+          "support": "passed",
+          "support_detail": "The excerpt says the company depends on foundries for wafers and contracts independent subcontractors for assembly, test and packaging, matching the statement and showing outsourced dependence."
         },
-        "withheld_reason": ""
+        "withheld_reason": "",
+        "counted_as": "supports",
+        "count_note": ""
       },
       {
         "id": "f18",
@@ -910,16 +990,19 @@
           "quotes": "passed",
           "numbers": "none",
           "numbers_detail": [],
-          "support": "unchecked",
-          "support_detail": ""
+          "support": "passed",
+          "support_detail": "The excerpt says the company expanded supplier relationships to build redundancy and resilience, matching the statement; it is a fair counterpoint, so the challenges stance fits."
         },
-        "withheld_reason": ""
+        "withheld_reason": "",
+        "counted_as": "challenges",
+        "count_note": ""
       }
     ],
     "unsupported_findings": [],
     "coverage_limits": [],
     "errors": [],
     "coverage": {
+      "filings_asked": 3,
       "sources_requested": 3,
       "sources_read": 3,
       "passages_indexed": 636,
@@ -928,15 +1011,21 @@
       "findings_proposed": 18,
       "findings_verified": 18,
       "findings_withheld": 0,
+      "findings_without_quote": 1,
       "engine_fallbacks": 0,
       "excerpts_verified": 18,
       "quotes_offered": 18,
+      "quotes_found": 18,
       "quotes_rejected": 0,
       "metrics_computed": 156,
       "figures_offered": 37,
       "figures_cited": 9,
       "numbers_checked": 25,
-      "numbers_unmatched": 0
+      "numbers_unmatched": 0,
+      "reasons_withheld": 0,
+      "findings_checked": 18,
+      "findings_partly": 1,
+      "findings_failed_meaning": 0
     },
     "metrics": [
       {
@@ -4854,7 +4943,7 @@
             "note": ""
           }
         ],
-        "note": "Derived: six months year to date 74,421,000,000 (0001045810-26-000075) − three months 50,344,000,000 (0001045810-26-000052) Derived: six months year to date 4,434,000,000 (0001045810-26-000075) − three months 1,757,000,000 (0001045810-26-000052)"
+        "note": "Free cash flow here is operating cash flow less purchases of property and equipment (PaymentsToAcquirePropertyPlantAndEquipment), a house definition that can differ from the company's own. Derived: six months year to date 74,421,000,000 (0001045810-26-000075) − three months 50,344,000,000 (0001045810-26-000052) Derived: six months year to date 4,434,000,000 (0001045810-26-000075) − three months 1,757,000,000 (0001045810-26-000052)"
       },
       {
         "id": "free_cash_flow:quarter:2026-04-26",
@@ -4895,7 +4984,7 @@
             "note": ""
           }
         ],
-        "note": ""
+        "note": "Free cash flow here is operating cash flow less purchases of property and equipment (PaymentsToAcquirePropertyPlantAndEquipment), a house definition that can differ from the company's own."
       },
       {
         "id": "free_cash_flow:quarter:2026-01-25",
@@ -4988,7 +5077,7 @@
             "note": ""
           }
         ],
-        "note": "Derived: fiscal year 102,718,000,000 (0001045810-26-000021) − nine months year to date 66,530,000,000 (0001045810-25-000230) Derived: fiscal year 6,042,000,000 (0001045810-26-000021) − nine months year to date 4,758,000,000 (0001045810-25-000230)"
+        "note": "Free cash flow here is operating cash flow less purchases of property and equipment (PaymentsToAcquirePropertyPlantAndEquipment), a house definition that can differ from the company's own. Derived: fiscal year 102,718,000,000 (0001045810-26-000021) − nine months year to date 66,530,000,000 (0001045810-25-000230) Derived: fiscal year 6,042,000,000 (0001045810-26-000021) − nine months year to date 4,758,000,000 (0001045810-25-000230)"
       },
       {
         "id": "free_cash_flow:quarter:2025-10-26",
@@ -5081,7 +5170,7 @@
             "note": ""
           }
         ],
-        "note": "Derived: nine months year to date 66,530,000,000 (0001045810-25-000230) − six months year to date 42,779,000,000 (0001045810-26-000075) Derived: nine months year to date 4,758,000,000 (0001045810-25-000230) − six months year to date 3,122,000,000 (0001045810-26-000075)"
+        "note": "Free cash flow here is operating cash flow less purchases of property and equipment (PaymentsToAcquirePropertyPlantAndEquipment), a house definition that can differ from the company's own. Derived: nine months year to date 66,530,000,000 (0001045810-25-000230) − six months year to date 42,779,000,000 (0001045810-26-000075) Derived: nine months year to date 4,758,000,000 (0001045810-25-000230) − six months year to date 3,122,000,000 (0001045810-26-000075)"
       },
       {
         "id": "free_cash_flow:quarter:2025-07-27",
@@ -5174,7 +5263,7 @@
             "note": ""
           }
         ],
-        "note": "Derived: six months year to date 42,779,000,000 (0001045810-26-000075) − three months 27,414,000,000 (0001045810-26-000052) Derived: six months year to date 3,122,000,000 (0001045810-26-000075) − three months 1,227,000,000 (0001045810-26-000052)"
+        "note": "Free cash flow here is operating cash flow less purchases of property and equipment (PaymentsToAcquirePropertyPlantAndEquipment), a house definition that can differ from the company's own. Derived: six months year to date 42,779,000,000 (0001045810-26-000075) − three months 27,414,000,000 (0001045810-26-000052) Derived: six months year to date 3,122,000,000 (0001045810-26-000075) − three months 1,227,000,000 (0001045810-26-000052)"
       },
       {
         "id": "free_cash_flow:quarter:2025-04-27",
@@ -5215,7 +5304,7 @@
             "note": ""
           }
         ],
-        "note": ""
+        "note": "Free cash flow here is operating cash flow less purchases of property and equipment (PaymentsToAcquirePropertyPlantAndEquipment), a house definition that can differ from the company's own."
       },
       {
         "id": "free_cash_flow:quarter:2025-01-26",
@@ -5308,7 +5397,7 @@
             "note": ""
           }
         ],
-        "note": "Derived: fiscal year 64,089,000,000 (0001045810-26-000021) − nine months year to date 47,460,000,000 (0001045810-25-000230) Derived: fiscal year 3,236,000,000 (0001045810-26-000021) − nine months year to date 2,159,000,000 (0001045810-25-000230)"
+        "note": "Free cash flow here is operating cash flow less purchases of property and equipment (PaymentsToAcquirePropertyPlantAndEquipment), a house definition that can differ from the company's own. Derived: fiscal year 64,089,000,000 (0001045810-26-000021) − nine months year to date 47,460,000,000 (0001045810-25-000230) Derived: fiscal year 3,236,000,000 (0001045810-26-000021) − nine months year to date 2,159,000,000 (0001045810-25-000230)"
       },
       {
         "id": "free_cash_flow:quarter:2024-10-27",
@@ -5401,7 +5490,7 @@
             "note": ""
           }
         ],
-        "note": "Derived: nine months year to date 47,460,000,000 (0001045810-25-000230) − six months year to date 29,833,000,000 (0001045810-25-000209) Derived: nine months year to date 2,159,000,000 (0001045810-25-000230) − six months year to date 1,346,000,000 (0001045810-25-000209)"
+        "note": "Free cash flow here is operating cash flow less purchases of property and equipment (PaymentsToAcquirePropertyPlantAndEquipment), a house definition that can differ from the company's own. Derived: nine months year to date 47,460,000,000 (0001045810-25-000230) − six months year to date 29,833,000,000 (0001045810-25-000209) Derived: nine months year to date 2,159,000,000 (0001045810-25-000230) − six months year to date 1,346,000,000 (0001045810-25-000209)"
       },
       {
         "id": "fcf_margin:quarter:2026-07-26",
@@ -5507,7 +5596,7 @@
             "note": ""
           }
         ],
-        "note": "Derived: six months year to date 74,421,000,000 (0001045810-26-000075) − three months 50,344,000,000 (0001045810-26-000052) Derived: six months year to date 4,434,000,000 (0001045810-26-000075) − three months 1,757,000,000 (0001045810-26-000052)"
+        "note": "Free cash flow here is operating cash flow less purchases of property and equipment (PaymentsToAcquirePropertyPlantAndEquipment), a house definition that can differ from the company's own. The margin divides it by revenue. Derived: six months year to date 74,421,000,000 (0001045810-26-000075) − three months 50,344,000,000 (0001045810-26-000052) Derived: six months year to date 4,434,000,000 (0001045810-26-000075) − three months 1,757,000,000 (0001045810-26-000052)"
       },
       {
         "id": "fcf_margin:quarter:2026-04-26",
@@ -5561,7 +5650,7 @@
             "note": ""
           }
         ],
-        "note": ""
+        "note": "Free cash flow here is operating cash flow less purchases of property and equipment (PaymentsToAcquirePropertyPlantAndEquipment), a house definition that can differ from the company's own. The margin divides it by revenue."
       },
       {
         "id": "fcf_margin:quarter:2026-01-25",
@@ -5693,7 +5782,7 @@
             "note": ""
           }
         ],
-        "note": "Derived: fiscal year 102,718,000,000 (0001045810-26-000021) − nine months year to date 66,530,000,000 (0001045810-25-000230) Derived: fiscal year 6,042,000,000 (0001045810-26-000021) − nine months year to date 4,758,000,000 (0001045810-25-000230) Derived: fiscal year 215,938,000,000 (0001045810-26-000021) − nine months year to date 147,811,000,000 (0001045810-25-000230)"
+        "note": "Free cash flow here is operating cash flow less purchases of property and equipment (PaymentsToAcquirePropertyPlantAndEquipment), a house definition that can differ from the company's own. The margin divides it by revenue. Derived: fiscal year 102,718,000,000 (0001045810-26-000021) − nine months year to date 66,530,000,000 (0001045810-25-000230) Derived: fiscal year 6,042,000,000 (0001045810-26-000021) − nine months year to date 4,758,000,000 (0001045810-25-000230) Derived: fiscal year 215,938,000,000 (0001045810-26-000021) − nine months year to date 147,811,000,000 (0001045810-25-000230)"
       },
       {
         "id": "fcf_margin:quarter:2025-10-26",
@@ -5799,7 +5888,7 @@
             "note": ""
           }
         ],
-        "note": "Derived: nine months year to date 66,530,000,000 (0001045810-25-000230) − six months year to date 42,779,000,000 (0001045810-26-000075) Derived: nine months year to date 4,758,000,000 (0001045810-25-000230) − six months year to date 3,122,000,000 (0001045810-26-000075)"
+        "note": "Free cash flow here is operating cash flow less purchases of property and equipment (PaymentsToAcquirePropertyPlantAndEquipment), a house definition that can differ from the company's own. The margin divides it by revenue. Derived: nine months year to date 66,530,000,000 (0001045810-25-000230) − six months year to date 42,779,000,000 (0001045810-26-000075) Derived: nine months year to date 4,758,000,000 (0001045810-25-000230) − six months year to date 3,122,000,000 (0001045810-26-000075)"
       },
       {
         "id": "fcf_margin:quarter:2025-07-27",
@@ -5905,7 +5994,7 @@
             "note": ""
           }
         ],
-        "note": "Derived: six months year to date 42,779,000,000 (0001045810-26-000075) − three months 27,414,000,000 (0001045810-26-000052) Derived: six months year to date 3,122,000,000 (0001045810-26-000075) − three months 1,227,000,000 (0001045810-26-000052)"
+        "note": "Free cash flow here is operating cash flow less purchases of property and equipment (PaymentsToAcquirePropertyPlantAndEquipment), a house definition that can differ from the company's own. The margin divides it by revenue. Derived: six months year to date 42,779,000,000 (0001045810-26-000075) − three months 27,414,000,000 (0001045810-26-000052) Derived: six months year to date 3,122,000,000 (0001045810-26-000075) − three months 1,227,000,000 (0001045810-26-000052)"
       },
       {
         "id": "fcf_margin:quarter:2025-04-27",
@@ -5959,7 +6048,7 @@
             "note": ""
           }
         ],
-        "note": ""
+        "note": "Free cash flow here is operating cash flow less purchases of property and equipment (PaymentsToAcquirePropertyPlantAndEquipment), a house definition that can differ from the company's own. The margin divides it by revenue."
       },
       {
         "id": "fcf_margin:quarter:2025-01-26",
@@ -6091,7 +6180,7 @@
             "note": ""
           }
         ],
-        "note": "Derived: fiscal year 64,089,000,000 (0001045810-26-000021) − nine months year to date 47,460,000,000 (0001045810-25-000230) Derived: fiscal year 3,236,000,000 (0001045810-26-000021) − nine months year to date 2,159,000,000 (0001045810-25-000230) Derived: fiscal year 130,497,000,000 (0001045810-26-000021) − nine months year to date 91,166,000,000 (0001045810-25-000230)"
+        "note": "Free cash flow here is operating cash flow less purchases of property and equipment (PaymentsToAcquirePropertyPlantAndEquipment), a house definition that can differ from the company's own. The margin divides it by revenue. Derived: fiscal year 64,089,000,000 (0001045810-26-000021) − nine months year to date 47,460,000,000 (0001045810-25-000230) Derived: fiscal year 3,236,000,000 (0001045810-26-000021) − nine months year to date 2,159,000,000 (0001045810-25-000230) Derived: fiscal year 130,497,000,000 (0001045810-26-000021) − nine months year to date 91,166,000,000 (0001045810-25-000230)"
       },
       {
         "id": "fcf_margin:quarter:2024-10-27",
@@ -6197,7 +6286,7 @@
             "note": ""
           }
         ],
-        "note": "Derived: nine months year to date 47,460,000,000 (0001045810-25-000230) − six months year to date 29,833,000,000 (0001045810-25-000209) Derived: nine months year to date 2,159,000,000 (0001045810-25-000230) − six months year to date 1,346,000,000 (0001045810-25-000209)"
+        "note": "Free cash flow here is operating cash flow less purchases of property and equipment (PaymentsToAcquirePropertyPlantAndEquipment), a house definition that can differ from the company's own. The margin divides it by revenue. Derived: nine months year to date 47,460,000,000 (0001045810-25-000230) − six months year to date 29,833,000,000 (0001045810-25-000209) Derived: nine months year to date 2,159,000,000 (0001045810-25-000230) − six months year to date 1,346,000,000 (0001045810-25-000209)"
       },
       {
         "id": "revenue:annual:2026-01-25",
@@ -7506,7 +7595,7 @@
             "note": ""
           }
         ],
-        "note": ""
+        "note": "Free cash flow here is operating cash flow less purchases of property and equipment (PaymentsToAcquirePropertyPlantAndEquipment), a house definition that can differ from the company's own."
       },
       {
         "id": "free_cash_flow:annual:2025-01-26",
@@ -7547,7 +7636,7 @@
             "note": ""
           }
         ],
-        "note": ""
+        "note": "Free cash flow here is operating cash flow less purchases of property and equipment (PaymentsToAcquirePropertyPlantAndEquipment), a house definition that can differ from the company's own."
       },
       {
         "id": "free_cash_flow:annual:2024-01-28",
@@ -7588,7 +7677,7 @@
             "note": ""
           }
         ],
-        "note": ""
+        "note": "Free cash flow here is operating cash flow less purchases of property and equipment (PaymentsToAcquirePropertyPlantAndEquipment), a house definition that can differ from the company's own."
       },
       {
         "id": "free_cash_flow:annual:2023-01-29",
@@ -7629,7 +7718,7 @@
             "note": ""
           }
         ],
-        "note": ""
+        "note": "Free cash flow here is operating cash flow less purchases of property and equipment (PaymentsToAcquirePropertyPlantAndEquipment), a house definition that can differ from the company's own."
       },
       {
         "id": "fcf_margin:annual:2026-01-25",
@@ -7683,7 +7772,7 @@
             "note": ""
           }
         ],
-        "note": ""
+        "note": "Free cash flow here is operating cash flow less purchases of property and equipment (PaymentsToAcquirePropertyPlantAndEquipment), a house definition that can differ from the company's own. The margin divides it by revenue."
       },
       {
         "id": "fcf_margin:annual:2025-01-26",
@@ -7737,7 +7826,7 @@
             "note": ""
           }
         ],
-        "note": ""
+        "note": "Free cash flow here is operating cash flow less purchases of property and equipment (PaymentsToAcquirePropertyPlantAndEquipment), a house definition that can differ from the company's own. The margin divides it by revenue."
       },
       {
         "id": "fcf_margin:annual:2024-01-28",
@@ -7791,7 +7880,7 @@
             "note": ""
           }
         ],
-        "note": ""
+        "note": "Free cash flow here is operating cash flow less purchases of property and equipment (PaymentsToAcquirePropertyPlantAndEquipment), a house definition that can differ from the company's own. The margin divides it by revenue."
       },
       {
         "id": "fcf_margin:annual:2023-01-29",
@@ -7845,7 +7934,7 @@
             "note": ""
           }
         ],
-        "note": ""
+        "note": "Free cash flow here is operating cash flow less purchases of property and equipment (PaymentsToAcquirePropertyPlantAndEquipment), a house definition that can differ from the company's own. The margin divides it by revenue."
       },
       {
         "id": "cash:instant:2026-07-26",
@@ -9380,7 +9469,8 @@
         "Examine what drives gross margin beyond the H20 charge and Blackwell Ultra mix."
       ],
       "coverage_status": "complete",
-      "status_note": "Every claim has verified evidence from the sources requested, and nothing was withheld."
+      "status_note": "Every claim has verified evidence from the sources requested, and nothing was withheld.",
+      "provenance_note": "Evidence comes from the company's own filings with the SEC. It shows what the company reported, not whether an outside party agrees."
     }
   }
 }

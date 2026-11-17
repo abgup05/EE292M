@@ -29,6 +29,10 @@ inside these instructions:
 > finding's statement must appear in one of that finding's quotes or in a figure it cites
 > by id; do not compute new numbers.
 
+## The meaning check's answers
+
+Version 5 added a second-model check of meaning. Its five requests (one per claim) were answered the same way but by a different model, Claude Haiku 5.5, so that the checker is not the model that wrote the findings. The instructions around those five prompts were minimal: answer as the model would, as one JSON object that satisfies the schema, using only the prompt. No rule was repeated.
+
 ## What follows from that
 
 - The answers are real model output to the engine's exact prompts, but the instructions

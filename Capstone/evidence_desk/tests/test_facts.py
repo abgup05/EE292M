@@ -372,6 +372,88 @@ def test_quarters_are_derived_from_year_to_date_values_with_the_same_start() -> 
     assert q4.refs[0].derived and "70" in q4.refs[0].note and "45" in q4.refs[0].note
 
 
+def costco_revenue() -> dict[str, Any]:
+    """Costco's revenue facts for fiscal 2025 and 2026, as EDGAR's company facts gave them.
+
+    Copied on 17 November 2026 (CIK 909832). Its year is three 12-week quarters and one of
+    16 weeks, so its year-to-date periods are 24 and 36 weeks: 167 and 251 days from start
+    to end, outside the six- and nine-month lengths this module first allowed.
+    """
+    rows = [
+        # value in USD millions, start, end, form, accession, filed
+        (62151, "2024-09-02", "2024-11-24", "10-Q", "0000909832-24-000079", "2024-12-19"),
+        (125874, "2024-09-02", "2025-02-16", "10-Q", "0000909832-25-000015", "2025-03-13"),
+        (63723, "2024-11-25", "2025-02-16", "10-Q", "0000909832-25-000015", "2025-03-13"),
+        (189079, "2024-09-02", "2025-05-11", "10-Q", "0000909832-25-000033", "2025-06-05"),
+        (63205, "2025-02-17", "2025-05-11", "10-Q", "0000909832-25-000033", "2025-06-05"),
+        (275235, "2024-09-02", "2025-08-31", "10-K", "0000909832-25-000101", "2025-10-08"),
+        (67307, "2025-09-01", "2025-11-23", "10-Q", "0000909832-25-000169", "2025-12-17"),
+        (136904, "2025-09-01", "2026-02-15", "10-Q", "0000909832-26-000029", "2026-03-11"),
+        (69597, "2025-11-24", "2026-02-15", "10-Q", "0000909832-26-000029", "2026-03-11"),
+        (207431, "2025-09-01", "2026-05-10", "10-Q", "0000909832-26-000051", "2026-06-03"),
+        (70527, "2026-02-16", "2026-05-10", "10-Q", "0000909832-26-000051", "2026-06-03"),
+        (303154, "2025-09-01", "2026-08-30", "10-K", "0000909832-26-000093", "2026-10-07"),
+    ]
+    return companyfacts(
+        {
+            "RevenueFromContractWithCustomerExcludingAssessedTax": [
+                fact(millions * 1e6, end, start, form=form, accn=accession, filed=filed)
+                for millions, start, end, form, accession, filed in rows
+            ]
+        },
+        cik=909832,
+        name="COSTCO WHOLESALE CORP /NEW",
+    )
+
+
+def test_a_52_week_retailer_gets_its_sixteen_week_fourth_quarter() -> None:
+    """The third referee, finding 8: Costco's fourth quarter was never derived.
+
+    The fiscal year less the 36 weeks to date is the 16-week fourth quarter; the four
+    quarters then add up to the year.
+    """
+    quarters = FactBook(costco_revenue()).quarters("revenue")
+    year = {end: q for end, q in quarters.items() if end > date(2025, 8, 31)}
+    assert {end.isoformat(): q.value for end, q in year.items()} == {
+        "2025-11-23": 67307e6,
+        "2026-02-15": 69597e6,
+        "2026-05-10": 70527e6,
+        "2026-08-30": 95723e6,
+    }
+    fourth = year[date(2026, 8, 30)]
+    assert fourth.derived and fourth.start == date(2026, 5, 11)
+    assert [ref.accession for ref in fourth.refs[1:]] == [
+        "0000909832-26-000093",
+        "0000909832-26-000051",
+    ]
+    assert sum(q.value for q in year.values()) == 303154e6
+    # The year before, so that the newest quarter has a quarter to be compared with.
+    assert quarters[date(2025, 8, 31)].value == 275235e6 - 189079e6
+    # What the note calls each input is what it is: 36 weeks is not "nine months".
+    assert "36 weeks" in fourth.refs[0].note and "nine months" not in fourth.refs[0].note
+
+
+@pytest.mark.parametrize(
+    ("start", "end", "length"),
+    [
+        ("2025-09-01", "2025-11-23", "quarter"),  # 12 weeks
+        ("2026-05-11", "2026-08-30", "quarter"),  # 16 weeks
+        ("2025-09-01", "2026-02-15", "half_year"),  # 24 weeks
+        ("2025-09-01", "2026-05-10", "nine_months"),  # 36 weeks
+        ("2025-02-02", "2025-05-24", "quarter"),  # 16 weeks, a first quarter
+        ("2025-02-02", "2025-08-16", "half_year"),  # 28 weeks
+        ("2025-02-02", "2025-11-08", "nine_months"),  # 40 weeks
+        ("2024-01-01", "2024-05-01", None),  # 121 days is still not a reporting period
+        ("2024-01-01", "2024-05-31", None),
+        ("2024-01-01", "2024-08-20", None),
+    ],
+)
+def test_the_period_lengths_of_companies_that_report_in_weeks(
+    start: str, end: str, length: str | None
+) -> None:
+    assert period_length(date.fromisoformat(start), date.fromisoformat(end)) == length
+
+
 def test_a_three_month_fact_is_preferred_over_a_derived_quarter() -> None:
     payload = _year_to_date_company()
     payload["facts"]["us-gaap"]["NetCashProvidedByUsedInOperatingActivities"]["units"][

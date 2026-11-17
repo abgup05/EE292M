@@ -10,7 +10,10 @@ written out, plus one chart series per quarterly and annual metric. The rules:
   missing value is never replaced by zero.
 - Year-over-year comparisons match the period ending within 10 days of one
   year earlier (52/53-week years move the end date by up to a week). The
-  previous quarter is the one ending 80 to 100 days earlier.
+  previous quarter is the one that ends where this one starts (80 to 120 days
+  earlier: a quarter is 12 to 17 weeks). Two quarters whose lengths differ by
+  more than 10 days are not compared: a company that reports three quarters of
+  12 weeks and one of 16 would otherwise show the calendar as growth.
 - ``value`` is unrounded (USD in dollars, a percent as 55.6 for 55.6%);
   ``display`` is rounded for reading. Display negatives use a leading
   hyphen-minus ("-$1.20B", "-2.8%"); formulas use the minus sign "−" and
@@ -35,7 +38,8 @@ from app.core.metric_models import (
 )
 
 YEAR_MATCH_DAYS = 10
-QUARTER_GAP_DAYS = (80, 100)
+QUARTER_GAP_DAYS = (80, 120)
+QUARTER_LENGTH_MATCH_DAYS = 10
 NOT_AVAILABLE = "n/a"
 MINUS = "−"
 IN_MILLIONS = "; USD millions"
@@ -279,11 +283,45 @@ def year_earlier(values: dict[date, PeriodValue], end: date) -> PeriodValue | No
     return values[min(near, key=lambda d: (abs((d - target).days), -d.toordinal()))]
 
 
+def days_long(value: PeriodValue) -> int | None:
+    """The length of a period in days, counting both ends; None for an instant."""
+    return None if value.start is None else (value.end - value.start).days + 1
+
+
 def quarter_earlier(values: dict[date, PeriodValue], end: date) -> PeriodValue | None:
-    """The quarter ending 80 to 100 days before ``end`` (closest to 91 days)."""
+    """The quarter before the one ending ``end``: the one ending where that one starts.
+
+    It ends 80 to 120 days before ``end`` (:data:`QUARTER_GAP_DAYS`); among several,
+    the one closest to this quarter's own length before it (91 days when unknown).
+    """
     low, high = QUARTER_GAP_DAYS
     near = [d for d in values if low <= (end - d).days <= high]
-    return values[min(near, key=lambda d: abs((end - d).days - 91))] if near else None
+    if not near:
+        return None
+    this = values.get(end)
+    wanted = (days_long(this) if this is not None else None) or 91
+    return values[min(near, key=lambda d: abs((end - d).days - wanted))]
+
+
+def sequential_growth(
+    current: PeriodValue | None, previous: PeriodValue | None, missing: str
+) -> Outcome:
+    """Growth on the previous quarter, or why not: the two must be about the same length."""
+    if current is not None and previous is not None:
+        this_long, that_long = days_long(current), days_long(previous)
+        if (
+            this_long is not None
+            and that_long is not None
+            and abs(this_long - that_long) > QUARTER_LENGTH_MATCH_DAYS
+        ):
+            return unavailable(
+                f"Not compared with the previous quarter: this quarter is {round(this_long / 7)} "
+                f"weeks long and the one before it (ended {previous.end}) is "
+                f"{round(that_long / 7)} weeks long.",
+                current,
+                previous,
+            )
+    return growth(current, previous, "previous quarter", missing)
 
 
 # Building metrics
@@ -349,8 +387,8 @@ def flow_outcomes(
         revenue_missing,
     )
     if kind == "quarter":
-        out["revenue_qoq"] = growth(
-            revenue, quarter_earlier(values["revenue"], end), "previous quarter", revenue_missing
+        out["revenue_qoq"] = sequential_growth(
+            revenue, quarter_earlier(values["revenue"], end), revenue_missing
         )
     for key, group in (
         ("gross_margin", "gross_profit"),

@@ -8,8 +8,12 @@ data:
   describe the filing the fact appeared in, not the fact's period, and are
   never read.
 - A period's kind follows from its length in days, because fiscal years are 52
-  or 53 weeks: a quarter is 80-100 days, a half year 170-195, nine months
-  260-290 and a year 350-380 (:func:`period_length`).
+  or 53 weeks and some companies report in weeks, not months: a quarter is 12 to
+  17 weeks (80-120 days), the first half 24 to 28 weeks (160-200), the first
+  three quarters 36 to 40 weeks (245-290) and a year 350-380
+  (:func:`period_length`). Costco's year is three quarters of 12 weeks and one
+  of 16; with the calendar lengths alone its 24- and 36-week periods were
+  dropped and its fourth quarter was never derived.
 - The same period is reported again in later filings. For one concept and
   period the value from the latest ``filed`` date is kept; if any other filing
   gave a different value, the kept value is flagged ``restated``.
@@ -130,11 +134,13 @@ ALL_CONCEPTS: frozenset[str] = frozenset(
 # Keys whose per-share values cannot be differenced (share counts differ by period).
 NOT_DIFFERENCEABLE: frozenset[str] = frozenset({"eps_diluted"})
 
-# Period lengths in days, inclusive bounds; cumulative order within a fiscal year.
+# Period lengths in days from start to end, inclusive bounds; cumulative order within a
+# fiscal year. The names are the usual ones; the bounds also take the periods of companies
+# that report in weeks (a 12-, 16- or 17-week quarter; 24 or 28 weeks; 36 or 40 weeks).
 LENGTHS: tuple[tuple[str, int, int], ...] = (
-    ("quarter", 80, 100),
-    ("half_year", 170, 195),
-    ("nine_months", 260, 290),
+    ("quarter", 80, 120),
+    ("half_year", 160, 200),
+    ("nine_months", 245, 290),
     ("annual", 350, 380),
 )
 CUMULATIVE = tuple(name for name, _, _ in LENGTHS)
@@ -143,6 +149,13 @@ LENGTH_WORDS = {
     "half_year": "six months year to date",
     "nine_months": "nine months year to date",
     "annual": "fiscal year",
+}
+# The lengths those words are true of. A period of its kind outside them is described in
+# weeks (:func:`length_words`): Costco's 36 weeks to date are not "nine months".
+CALENDAR_LENGTHS: dict[str, tuple[int, int]] = {
+    "quarter": (80, 100),
+    "half_year": (170, 195),
+    "nine_months": (260, 290),
 }
 
 
@@ -153,6 +166,26 @@ def period_length(start: date, end: date) -> str | None:
         if low <= days <= high:
             return name
     return None
+
+
+def length_words(start: date, end: date) -> str:
+    """What a note calls the period from ``start`` to ``end``: by months, or in weeks.
+
+    "three months", "six months year to date", "nine months year to date" or
+    "fiscal year" when the period has that calendar length; otherwise its length
+    in weeks ("16 weeks", "36 weeks year to date"); "period" when it is of no kind.
+    """
+    kind = period_length(start, end)
+    if kind is None:
+        return "period"
+    if kind == "annual":
+        return LENGTH_WORDS[kind]
+    low, high = CALENDAR_LENGTHS[kind]
+    days = (end - start).days
+    if low <= days <= high:
+        return LENGTH_WORDS[kind]
+    weeks = round((days + 1) / 7)
+    return f"{weeks} weeks" if kind == "quarter" else f"{weeks} weeks year to date"
 
 
 def number_text(value: float) -> str:
@@ -376,11 +409,10 @@ def difference_quarter(key: str, total: PeriodValue, earlier: PeriodValue) -> Pe
     start = earlier.end + DAY
     if period_length(start, total.end) != "quarter":
         return None
-    total_length = period_length(total.start, total.end) or "period"
-    earlier_length = period_length(earlier.start, earlier.end) or "period"
+    assert earlier.start is not None
     note = (
-        f"Derived: {LENGTH_WORDS[total_length]} {number_text(total.value)} "
-        f"({total.refs[0].accession}) − {LENGTH_WORDS[earlier_length]} "
+        f"Derived: {length_words(total.start, total.end)} {number_text(total.value)} "
+        f"({total.refs[0].accession}) − {length_words(earlier.start, earlier.end)} "
         f"{number_text(earlier.value)} ({earlier.refs[0].accession})"
     )
     if total.concept != earlier.concept:

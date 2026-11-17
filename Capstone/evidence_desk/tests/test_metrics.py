@@ -25,6 +25,7 @@ from tests.test_facts import (
     Q1_END,
     Q2_START,
     companyfacts,
+    costco_revenue,
     fact,
     load_fixture,
     shuffled,
@@ -424,3 +425,36 @@ def test_a_later_filing_with_a_different_value_wins_and_is_flagged_restated() ->
     assert revenue.value == 47_000 * MILLION
     assert revenue.inputs[0].accession == "RESTATED" and revenue.inputs[0].restated
     assert "restated" in revenue.note.lower()
+
+
+# Quarters of unequal length (the third referee, finding 8) -------------------------------------
+
+
+def test_quarters_of_unequal_length_are_not_compared_with_each_other() -> None:
+    """Costco's fourth quarter is 16 weeks and its others 12.
+
+    A quarter is compared with the same quarter a year earlier, which has its length. It
+    is not compared with the quarter before it when that one is four weeks longer or
+    shorter: "revenue up 36% on the previous quarter" would be the calendar, not the business.
+    """
+    report = build_report(FactBook(costco_revenue()))
+    fourth_yoy = metric(report, "revenue_yoy", "quarter", "2026-08-30")
+    assert fourth_yoy.value == pytest.approx((95723 - 86156) / 86156 * 100)
+    fourth_qoq = metric(report, "revenue_qoq", "quarter", "2026-08-30")
+    assert fourth_qoq.value is None and fourth_qoq.display == "n/a"
+    assert "16 weeks" in fourth_qoq.note and "12 weeks" in fourth_qoq.note
+    third_qoq = metric(report, "revenue_qoq", "quarter", "2026-05-10")
+    assert third_qoq.value == pytest.approx((70527 - 69597) / 69597 * 100)
+
+
+def test_a_twelve_week_quarter_is_not_compared_with_the_sixteen_weeks_before_it() -> None:
+    """The first quarter of the next year, against the 16-week quarter that ends 84 days before."""
+    body = costco_revenue()
+    facts = body["facts"]["us-gaap"]["RevenueFromContractWithCustomerExcludingAssessedTax"]
+    # An invented first quarter of fiscal 2027, to have a 12-week quarter after a 16-week one.
+    facts["units"]["USD"].append(
+        fact(70000e6, "2026-11-22", "2026-08-31", form="10-Q", accn="INVENTED", filed="2026-12-16")
+    )
+    first_qoq = metric(build_report(FactBook(body)), "revenue_qoq", "quarter", "2026-11-22")
+    assert first_qoq.value is None
+    assert "12 weeks" in first_qoq.note and "16 weeks" in first_qoq.note

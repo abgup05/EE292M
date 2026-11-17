@@ -1,10 +1,15 @@
-// Evidence Desk frontend (version 3).
+// Evidence Desk frontend (version 4).
 //
 // Collects a thesis, starts a run, polls it, and draws the record the API
-// returns. It computes nothing a reader would call a result: verdicts, counts,
-// coverage, reported figures and their display strings, excerpt context and all
-// status and verdict wording come from the API (`GET /api/runs/{id}`,
-// `GET /api/companies/{ticker}/metrics` and `GET /api/meta`). Chart geometry
+// returns; records the reader's decision on each verified finding; saves a
+// thesis and shows what moved between its runs. It computes nothing a reader
+// would call a result: verdicts (the engine's and the one after review),
+// counts, coverage, comparisons, reported figures and their display strings,
+// excerpt context and all status, verdict and decision wording come from the
+// API (`GET /api/runs/{id}`, `/api/runs/{id}/review`, `/api/theses/...`,
+// `GET /api/companies/{ticker}/metrics` and `GET /api/meta`). A decision is
+// shown as the server's Review returns it, never as a local guess. Optional
+// routes that answer 404 hide their feature without an error. Chart geometry
 // maps given values to pixels; every number a reader sees is a record field.
 // Client-side validation is immediate feedback only, using the limits from
 // `/api/meta`; the server decides. Every string from the API is inserted as
@@ -16,6 +21,8 @@
 //   ! red     your input was rejected
 //   verdicts  ✓ supported, ✕ challenged, ± mixed, ? unjudged, ∅ not addressed
 //   stances   reuse ✓ and ✕; context is •
+//   decisions ▣ accepted, ☒ rejected (dark, inverted tag: the reader's own);
+//             ☐ undecided is dashed, because the verdict after review is provisional
 
 "use strict";
 
@@ -46,6 +53,13 @@ const STANCE_MARK = {
   challenges: ["✕", "Challenges"],
   context: ["•", "Context"],
 };
+/**
+ * The reader's decision on a finding: its own glyphs, never a verdict or stance mark.
+ * ▣ rather than ☑, which headless Chromium draws as a colour emoji.
+ */
+const DECISION_MARK = { accepted: "▣", rejected: "☒", undecided: "☐" };
+/** Used only when /api/meta has no decision_labels. */
+const DECISION_FALLBACK = { accepted: "Accepted", rejected: "Rejected", undecided: "Undecided" };
 const STATUS_GLYPH = { running: "⋯", complete: "■", partial: "▲", failed: "▲" };
 const LIMITING_STATUS = new Set(["partial", "failed"]);
 
@@ -73,6 +87,7 @@ const FIELD_NAMES = {
   scope_notes: "Scope notes",
   filings: "Number of filings",
   extra_urls: "Extra public pages",
+  thesis_name: "Thesis name",
 };
 
 /** Charts drawn from `series`, in order; each picks the quarterly series, else the annual one. */
@@ -103,6 +118,12 @@ const state = {
   controller: null,
   bannerKey: "",
   chartSeq: 0,
+  run: null, // the run on screen
+  review: null, // the Review the server last returned for that run
+  comparison: null, // the RunComparison whose later run is on screen
+  thesisId: null, // the saved thesis on screen
+  theses: new Map(), // saved theses by id, from GET /api/theses
+  thesesSeq: 0,
 };
 
 const $ = (id) => document.getElementById(id);
@@ -128,7 +149,14 @@ const els = {
   submit: $("submit"),
   figuresOnly: $("figures-only"),
   example: $("load-example"),
+  saveThesis: $("save-thesis"),
+  savePanel: $("save-panel"),
+  thesisName: $("thesis_name"),
+  saveConfirm: $("save-confirm"),
+  saveCancel: $("save-cancel"),
   formNote: $("form-note"),
+  thesesBlock: $("theses-block"),
+  theses: $("theses"),
   recent: $("recent"),
   resultPanel: $("result-panel"),
   empty: $("empty-state"),
@@ -137,12 +165,22 @@ const els = {
   figuresView: $("figures-view"),
   figuresHead: $("figures-head"),
   figuresStandalone: $("figures-standalone"),
+  thesisView: $("thesis-view"),
+  thesisHead: $("thesis-head"),
+  runAgain: $("run-again"),
+  runAgainMessage: $("run-again-message"),
+  thesisRuns: $("thesis-runs"),
+  thesisChangesSection: $("thesis-changes-section"),
+  thesisChanges: $("thesis-changes"),
   runView: $("run-view"),
   banner: $("status-banner"),
   stagesWrap: $("stages-wrap"),
   stages: $("stages"),
   runHead: $("run-head"),
+  reviewLine: $("review-line"),
   scorecard: $("scorecard"),
+  changesSection: $("changes-section"),
+  changes: $("changes"),
   summarySection: $("summary-section"),
   summaryBox: $("summary-box"),
   summaryOrigin: $("summary-origin"),
@@ -349,6 +387,21 @@ function stancePill(stance) {
   );
 }
 
+function decisionLabel(value) {
+  return str(state.meta?.decision_labels?.[value]) || DECISION_FALLBACK[value] || String(value);
+}
+
+/** The reader's decision, as the server recorded it: "accepted", "rejected" or "undecided". */
+function decisionMark(value) {
+  const key = token(value, DECISION_MARK);
+  return h(
+    "span",
+    { class: `decision-mark d-${key}`, "data-decision": key },
+    h("span", { class: "glyph", "aria-hidden": "true", text: DECISION_MARK[key] ?? DECISION_MARK.undecided }),
+    h("span", { class: "decision-label", text: decisionLabel(value) }),
+  );
+}
+
 function statusMark(status) {
   const glyph = STATUS_GLYPH[status] ?? "·";
   return h("span", { class: LIMITING_STATUS.has(status) ? "glyph g-limit" : "glyph", "aria-hidden": "true", text: glyph });
@@ -435,6 +488,10 @@ function applyMeta(meta) {
   els.scopeHint.textContent = `Definitions and exclusions the engine should respect. Up to ${plural(limits.MAX_SCOPE_CHARS, "character", "characters")}.`;
   els.filingsHint.textContent = `1 to ${limits.MAX_FILINGS}; default ${limits.DEFAULT_FILINGS}. The latest annual report (10-K), then the quarterly reports (10-Q) filed after it, newest first.`;
   els.urlsHint.textContent = `A press release or investor-relations page, one http(s) address per line, up to ${limits.MAX_EXTRA_URLS}.`;
+  if (Number.isInteger(limits.MAX_THESIS_NAME_CHARS)) {
+    els.thesisName.maxLength = limits.MAX_THESIS_NAME_CHARS;
+    $("thesis-name-hint").textContent = `Up to ${plural(limits.MAX_THESIS_NAME_CHARS, "character", "characters")}. Saved with the ticker, decision and claims above, so you can run it again when a new filing arrives.`;
+  }
   updateCounts();
   setFormEnabled(!state.sample);
   els.example.disabled = state.sample || !meta.example;
@@ -444,6 +501,7 @@ function setFormEnabled(enabled) {
   els.submit.disabled = !enabled;
   els.figuresOnly.disabled = !enabled;
   els.example.disabled = !enabled;
+  els.saveThesis.disabled = !enabled;
 }
 
 // ---------------------------------------------------------------- form
@@ -515,10 +573,13 @@ function validate(body, limits) {
   return problems;
 }
 
-/** The form field a server or client error path belongs to: "claims.2" -> "claims", "path.ticker" -> "ticker". */
+/**
+ * The form field a server or client error path belongs to: "claims.2" -> "claims",
+ * "path.ticker" -> "ticker", "request.claims.0" (saving a thesis) -> "claims".
+ */
 function rootField(field) {
   return String(field ?? "")
-    .replace(/^(path|query)\./, "")
+    .replace(/^(path|query|request)\./, "")
     .split(/[.[]/)[0];
 }
 
@@ -660,6 +721,8 @@ async function onFiguresOnly() {
   stopWatching();
   const seq = ++state.viewSeq;
   state.runId = null;
+  state.run = null;
+  state.thesisId = null;
   markRecent();
   history.replaceState(null, "", `${location.pathname}${location.search}`);
   hideRunView();
@@ -692,6 +755,7 @@ function renderFiguresOnly(report) {
   els.loadError.hidden = true;
   els.empty.hidden = true;
   els.runView.hidden = true;
+  els.thesisView.hidden = true;
   els.figuresView.hidden = false;
   document.body.classList.add("has-run");
   els.figuresHead.replaceChildren(
@@ -759,6 +823,542 @@ function markRecent() {
     if (button.dataset.run === state.runId) button.setAttribute("aria-current", "true");
     else button.removeAttribute("aria-current");
   }
+  for (const button of els.theses.querySelectorAll(".recent-item")) {
+    if (button.dataset.thesis === state.thesisId) button.setAttribute("aria-current", "true");
+    else button.removeAttribute("aria-current");
+  }
+}
+
+// ---------------------------------------------------------------- saved theses
+
+/** Load the saved theses. A 404 means the server has no theses route: the feature stays hidden. */
+async function refreshTheses() {
+  if (state.sample) return;
+  const seq = ++state.thesesSeq;
+  try {
+    const payload = await api("/api/theses");
+    if (seq !== state.thesesSeq) return;
+    const theses = list(payload.theses);
+    state.theses = new Map(theses.map((t) => [t.id, t]));
+    els.thesesBlock.hidden = false;
+    els.saveThesis.hidden = false;
+    renderTheses(theses);
+    if (state.run?.thesis_id && !els.runView.hidden) renderHead(state.run);
+  } catch (error) {
+    if (seq !== state.thesesSeq) return;
+    if (error.status === 404) {
+      els.thesesBlock.hidden = true;
+      els.saveThesis.hidden = true;
+      els.savePanel.hidden = true;
+      return;
+    }
+    els.thesesBlock.hidden = false;
+    els.theses.replaceChildren(h("li", { class: "muted", text: `Saved theses could not be loaded: ${error.message}.` }));
+  }
+}
+
+function renderTheses(theses) {
+  els.theses.replaceChildren();
+  if (theses.length === 0) {
+    els.theses.append(h("li", { class: "muted", text: 'None yet. Fill in the form and choose "Save this thesis".' }));
+    return;
+  }
+  for (const thesis of theses) {
+    const last = thesis.last_status
+      ? [" · last run ", h("span", { class: `status-word st-${token(thesis.last_status, STATUS_GLYPH)}` }, statusMark(thesis.last_status), ` ${capitalize(thesis.last_status)}`)]
+      : " · not run yet";
+    const button = h(
+      "button",
+      {
+        type: "button",
+        class: "recent-item",
+        "data-thesis": thesis.id,
+        "aria-current": thesis.id === state.thesisId ? "true" : null,
+        onclick: () => openThesis(thesis.id),
+      },
+      h("span", { class: "recent-name" }, h("strong", { text: str(thesis.name) }), str(thesis.ticker) ? ` · ${thesis.ticker}` : ""),
+      h("span", { class: "recent-meta" }, `${plural(thesis.claims, "claim", "claims")} · ${plural(thesis.runs, "run", "runs")}`, last),
+    );
+    els.theses.append(h("li", null, button));
+  }
+}
+
+function toggleSavePanel(open) {
+  els.savePanel.hidden = !open;
+  els.saveThesis.setAttribute("aria-expanded", String(open));
+  if (open) els.thesisName.focus();
+  else setFieldError("thesis_name", []);
+}
+
+/** Save the form's request under a name. The server validates both; its 422 is shown by field. */
+async function onSaveThesis() {
+  if (state.sample || !state.meta) return;
+  const request = readForm();
+  const limits = state.meta.limits;
+  const problems = validate(request, limits);
+  const name = els.thesisName.value.split(/\s+/).filter(Boolean).join(" ");
+  if (!name) problems.push({ field: "thesis_name", message: "Give the thesis a name." });
+  else if (Number.isInteger(limits.MAX_THESIS_NAME_CHARS) && name.length > limits.MAX_THESIS_NAME_CHARS) {
+    problems.push({ field: "thesis_name", message: `At most ${limits.MAX_THESIS_NAME_CHARS} characters; it has ${name.length}.` });
+  }
+  if (problems.length) {
+    showProblems(problems, "Check these fields before the thesis can be saved:");
+    return;
+  }
+  clearFieldErrors();
+  els.saveConfirm.disabled = true;
+  try {
+    const thesis = await api("/api/theses", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name, request }),
+    });
+    if (typeof thesis.id !== "string" || !thesis.id) throw new ApiError("the server did not return a thesis id", 0);
+    toggleSavePanel(false);
+    els.thesisName.value = "";
+    els.formNote.textContent = `Saved as "${str(thesis.name) || name}". Run it from the thesis page.`;
+    els.formNote.hidden = false;
+    refreshTheses();
+    openThesis(thesis.id);
+  } catch (error) {
+    if (error.status === 422 && error.details.length) {
+      const details = error.details.map((d) => ({ ...d, field: rootField(d.field) === "name" ? "thesis_name" : d.field }));
+      showProblems(details, "The server refused to save the thesis:");
+    } else if (error.status === 404) {
+      toggleSavePanel(false);
+      els.saveThesis.hidden = true;
+    } else {
+      showFormMessage(`The thesis could not be saved: ${error.message}.`);
+    }
+  } finally {
+    els.saveConfirm.disabled = false;
+  }
+}
+
+/** Show one saved thesis: its request, its runs, and what moved between its last two runs. */
+async function openThesis(thesisId) {
+  stopWatching();
+  const seq = ++state.viewSeq;
+  state.runId = null;
+  state.run = null;
+  state.thesisId = thesisId;
+  markRecent();
+  history.replaceState(null, "", `#thesis=${encodeURIComponent(thesisId)}`);
+  hideRunView();
+  els.loading.textContent = "Loading the saved thesis…";
+  els.loading.hidden = false;
+  try {
+    const payload = await api(`/api/theses/${encodeURIComponent(thesisId)}`);
+    if (seq !== state.viewSeq) return;
+    if (payload.thesis?.id !== thesisId) throw new ApiError("the server returned a different thesis than the one requested", 0);
+    renderThesis(payload.thesis, list(payload.runs));
+    loadThesisChanges(thesisId, seq);
+    focusResults();
+  } catch (error) {
+    if (seq !== state.viewSeq) return;
+    const reason = error.status === 404 ? "no saved thesis with that id exists" : error.message;
+    showLoadError(`The saved thesis could not be loaded: ${reason}.`, () => openThesis(thesisId));
+  }
+}
+
+function renderThesis(thesis, runs) {
+  els.loading.hidden = true;
+  els.loadError.hidden = true;
+  els.empty.hidden = true;
+  els.runView.hidden = true;
+  els.figuresView.hidden = true;
+  els.thesisView.hidden = false;
+  document.body.classList.add("has-run");
+  const request = thesis.request ?? {};
+  const claims = list(request.claims);
+  els.thesisHead.replaceChildren(
+    h(
+      "div",
+      { class: "run-head-main" },
+      h("p", { class: "company" }, h("span", { class: "label", text: "Saved thesis: " }), h("strong", { text: str(thesis.name) })),
+      h("p", { class: "decision" }, h("span", { class: "label", text: "Decision: " }), str(request.decision)),
+      h("p", { class: "run-meta", text: `${str(request.ticker)} · ${plural(claims.length, "claim", "claims")} · ${plural(request.filings, "filing", "filings")} per run · saved ${utc(thesis.created_at)}` }),
+      h("ol", { class: "thesis-claims" }, claims.map((claim) => h("li", { text: String(claim) }))),
+    ),
+  );
+  els.runAgain.textContent = runs.length ? "Run again on the latest filings" : "Run it on the latest filings";
+  els.runAgain.disabled = false;
+  els.runAgainMessage.hidden = true;
+  els.thesisRuns.replaceChildren();
+  if (runs.length === 0) els.thesisRuns.append(h("li", { class: "muted", text: "No run yet." }));
+  for (const run of runs) {
+    const status = token(run.status, STATUS_GLYPH);
+    els.thesisRuns.append(
+      h(
+        "li",
+        null,
+        h(
+          "button",
+          { type: "button", class: "recent-item", "data-run": run.id, onclick: () => watchRun(run.id) },
+          h("span", { class: "recent-name", text: `Run ${run.id}` }),
+          h(
+            "span",
+            { class: "recent-meta" },
+            h("span", { class: `status-word st-${status}` }, statusMark(run.status), ` ${capitalize(run.status)}`),
+            ` · started ${utc(run.started_at)}`,
+            run.finished_at ? ` · finished ${utc(run.finished_at)}` : "",
+          ),
+        ),
+      ),
+    );
+  }
+  els.thesisChangesSection.hidden = false;
+  els.thesisChanges.replaceChildren(h("p", { class: "muted", text: "Loading what moved…" }));
+}
+
+/**
+ * What moved between the thesis's last two finished runs. A 409 (fewer than two)
+ * is guidance, not an error; a 404 (no such route) hides the section.
+ */
+async function loadThesisChanges(thesisId, seq) {
+  try {
+    const comparison = await api(`/api/theses/${encodeURIComponent(thesisId)}/changes`);
+    if (seq !== state.viewSeq) return;
+    renderComparison(els.thesisChanges, comparison, null);
+  } catch (error) {
+    if (seq !== state.viewSeq) return;
+    if (error.status === 404) els.thesisChangesSection.hidden = true;
+    else if (error.status === 409) els.thesisChanges.replaceChildren(h("p", { class: "guidance", text: error.message }));
+    else els.thesisChanges.replaceChildren(h("p", { class: "muted", text: `What moved could not be loaded: ${error.message}.` }));
+  }
+}
+
+async function onRunAgain() {
+  const thesisId = state.thesisId;
+  if (state.sample || !thesisId) return;
+  els.runAgain.disabled = true;
+  els.runAgainMessage.hidden = true;
+  try {
+    const started = await api(`/api/theses/${encodeURIComponent(thesisId)}/runs`, { method: "POST" });
+    if (typeof started.id !== "string" || !started.id) throw new ApiError("the server did not return a run id", 0);
+    watchRun(started.id);
+    refreshRecent();
+    refreshTheses();
+  } catch (error) {
+    if (state.thesisId !== thesisId) return;
+    els.runAgainMessage.textContent = `The run could not be started: ${error.message}.`;
+    els.runAgainMessage.hidden = false;
+    els.runAgain.disabled = false;
+  }
+}
+
+// ---------------------------------------------------------------- what moved
+
+/** A run id: a link to that run when it can be opened here, else plain text. */
+function runRef(runId, currentRunId) {
+  if (state.sample || !runId || runId === currentRunId) {
+    return h("span", null, h("code", { text: runId || "—" }), runId && runId === currentRunId ? " (this run)" : "");
+  }
+  return h("a", { href: `#run=${encodeURIComponent(runId)}`, onclick: (event) => { event.preventDefault(); watchRun(runId); }, text: runId });
+}
+
+/** One side of a comparison row: the verdict, and the verdict after review when there is one. */
+function comparisonVerdict(verdict, reviewed, side, missingText) {
+  const cell = h("td", { class: `cmp-${side}`, "data-verdict": verdict ?? "none" });
+  cell.append(verdict ? verdictPill(verdict) : h("span", { class: "muted", text: missingText }));
+  if (reviewed) {
+    cell.append(h("span", { class: "cmp-reviewed", "data-reviewed-verdict": reviewed }, h("span", { class: "slot-label", text: "After your review" }), verdictPill(reviewed)));
+  }
+  return cell;
+}
+
+/** Draw a RunComparison exactly as the server computed it. */
+function renderComparison(container, comparison, currentRunId) {
+  const claims = list(comparison.claims);
+  container.replaceChildren();
+  if (str(comparison.note)) container.append(h("p", { class: "changes-note", text: comparison.note }));
+  container.append(
+    h(
+      "p",
+      { class: "changes-runs" },
+      h("span", { class: "count-value", "data-cmp": "verdicts_moved", text: num(comparison.verdicts_moved) }),
+      " of ",
+      h("span", { class: "count-value", "data-cmp": "claims_total", text: num(comparison.claims_total) }),
+      ` ${unit(comparison.claims_total, "verdict", "verdicts")} moved. Earlier run `,
+      runRef(comparison.earlier_run_id, currentRunId),
+      comparison.earlier_finished_at ? `, finished ${utc(comparison.earlier_finished_at)}` : "",
+      "; later run ",
+      runRef(comparison.later_run_id, currentRunId),
+      comparison.later_finished_at ? `, finished ${utc(comparison.later_finished_at)}` : "",
+      ".",
+    ),
+  );
+  const rows = claims.map((change, index) => {
+    // A claim with no earlier verdict was not in the earlier run: "moved" or "unchanged" would not apply.
+    const newClaim = change.before === null || change.before === undefined;
+    const word = newClaim ? "new in the later run" : change.moved ? "moved" : "unchanged";
+    return h(
+      "tr",
+      { "data-change": index, class: change.moved ? "is-moved" : null },
+      h("th", { scope: "row", class: "cmp-claim", text: str(change.claim) }),
+      comparisonVerdict(change.before, change.reviewed_before, "before", "not in the earlier run"),
+      comparisonVerdict(change.after, change.reviewed_after, "after", "not in the later run"),
+      h("td", { class: "cmp-move" }, h("span", { class: `move-word ${newClaim ? "is-new" : change.moved ? "is-moved" : "is-same"}`, text: word })),
+      h(
+        "td",
+        { class: "cmp-excerpts" },
+        h("span", { class: "cmp-count" }, h("span", { "data-cmp-field": "excerpts_added", text: num(change.excerpts_added) }), ` ${unit(change.excerpts_added, "excerpt", "excerpts")} added`),
+        h("span", { class: "cmp-count" }, h("span", { "data-cmp-field": "excerpts_dropped", text: num(change.excerpts_dropped) }), ` ${unit(change.excerpts_dropped, "excerpt", "excerpts")} dropped`),
+      ),
+    );
+  });
+  container.append(
+    h(
+      "div",
+      { class: "table-wrap", tabindex: "0", role: "region", "aria-label": "Verdicts by claim, earlier run and later run" },
+      h(
+        "table",
+        { class: "changes" },
+        h("thead", null, h("tr", null, ["Claim", "Earlier run", "Later run", "Change", "Excerpts"].map((t) => h("th", { scope: "col", text: t })))),
+        h("tbody", null, rows.length ? rows : h("tr", null, h("td", { colspan: "5", class: "muted", text: "The comparison lists no claims." }))),
+      ),
+    ),
+  );
+  const filings = (title, titles, cls) =>
+    h(
+      "div",
+      { class: `changes-filings ${cls}` },
+      h("p", { class: "label", text: title }),
+      list(titles).length ? h("ul", { class: "plain-list" }, list(titles).map((t) => h("li", { text: String(t) }))) : h("p", { class: "muted", text: "None." }),
+    );
+  container.append(h("div", { class: "changes-filings-wrap" }, filings("New filings in the later run", comparison.sources_added, "added"), filings("Filings the later run no longer read", comparison.sources_dropped, "dropped")));
+}
+
+/** In the run view: what moved, when the comparison's later run is this run. */
+function renderRunChanges(run) {
+  const comparison = state.comparison;
+  const show = Boolean(comparison) && comparison.later_run_id === run.id;
+  els.changesSection.hidden = !show;
+  if (show) renderComparison(els.changes, comparison, run.id);
+  else els.changes.replaceChildren();
+}
+
+/** For a finished run that belongs to a thesis, fetch what moved; any failure hides the section quietly. */
+async function loadRunChanges(run, seq) {
+  if (!run.thesis_id || run.status === "running") return;
+  try {
+    const comparison = await api(`/api/theses/${encodeURIComponent(run.thesis_id)}/changes`);
+    if (seq !== state.viewSeq) return;
+    state.comparison = comparison;
+    renderRunChanges(run);
+  } catch {
+    // 404 (no route), 409 (fewer than two finished runs) or unreachable: the thesis page says why.
+  }
+}
+
+// ---------------------------------------------------------------- review
+
+/** The Review on file for this run, or null. */
+function currentReview(run) {
+  return state.review && run && state.review.run_id === run.id ? state.review : null;
+}
+
+/** Fetch the reader's decisions for a finished run. A 404 hides review quietly. */
+async function loadReview(runId, seq) {
+  try {
+    const review = await api(`/api/runs/${encodeURIComponent(runId)}/review`);
+    if (seq !== state.viewSeq) return;
+    if (review.run_id !== runId) throw new ApiError("the server returned the review of a different run", 0);
+    applyReview(review, null);
+  } catch (error) {
+    if (seq !== state.viewSeq || error.status === 404) return;
+    els.reviewLine.replaceChildren(h("p", { class: "muted", text: `Your review could not be loaded: ${error.message}.` }));
+    els.reviewLine.hidden = false;
+  }
+}
+
+/** Show a Review from the server everywhere it appears. `force` names a finding whose note is reset to the server's. */
+function applyReview(review, force) {
+  state.review = review;
+  const run = state.run;
+  if (!run || !review || review.run_id !== run.id) return;
+  renderReviewLine(run);
+  renderScorecard(run);
+  renderReviewSlots(run, force);
+}
+
+function renderReviewLine(run) {
+  const review = currentReview(run);
+  els.reviewLine.hidden = !review;
+  if (!review) {
+    els.reviewLine.replaceChildren();
+    return;
+  }
+  const count = h(
+    "p",
+    { class: "review-count" },
+    "You have decided ",
+    h("span", { class: "count-value", "data-review-field": "decided", text: num(review.decided) }),
+    " of ",
+    h("span", { class: "count-value", "data-review-field": "findings_total", text: num(review.findings_total) }),
+    ` ${unit(review.findings_total, "finding", "findings")}.`,
+    state.sample ? h("span", { class: "page-tag inline-tag", text: "sample: decisions are not saved" }) : "",
+  );
+  const parts = [count];
+  if (str(state.meta?.review_note)) parts.push(h("p", { class: "review-note", text: state.meta.review_note }));
+  if (review.complete) {
+    parts.push(
+      state.sample
+        ? h("p", { class: "muted small", text: "The reviewed brief is not available for the sample record." })
+        : h("p", null, h("a", { class: "download", href: `/api/runs/${encodeURIComponent(run.id)}/export.md?reviewed=true`, download: `evidence-desk-${run.id}-reviewed.md`, text: "Download reviewed brief" })),
+    );
+  }
+  els.reviewLine.replaceChildren(...parts);
+}
+
+/** The "After your review" cell of a scorecard row, from the Review's claim entry. */
+function reviewedSlot(entry) {
+  const verdict = entry?.reviewed_verdict ?? null;
+  const slot = h("span", { class: "verdict-slot slot-reviewed", "data-reviewed-verdict": verdict ?? "none" }, h("span", { class: "slot-label", text: "After your review" }));
+  if (!verdict) {
+    slot.append(h("span", { class: "pill review-pending", text: "not reviewed yet" }));
+    return slot;
+  }
+  slot.append(
+    verdictPill(verdict),
+    h(
+      "span",
+      { class: "review-tally" },
+      h("span", { "data-review-field": "accepted", text: num(entry.accepted) }),
+      " accepted · ",
+      h("span", { "data-review-field": "rejected", text: num(entry.rejected) }),
+      " rejected",
+    ),
+  );
+  if (Number.isFinite(entry.undecided) && entry.undecided > 0) {
+    slot.append(h("span", { class: "undecided" }, h("span", { "data-review-field": "undecided", text: num(entry.undecided) }), " undecided"));
+  }
+  return slot;
+}
+
+/** Fill the review controls under each verified finding from the Review. */
+function renderReviewSlots(run, force) {
+  const review = currentReview(run);
+  const decisions = new Map(list(review?.decisions).map((d) => [d.finding_id, d]));
+  for (const slot of els.claimList.querySelectorAll("[data-review-finding]")) {
+    if (!review) {
+      slot.replaceChildren();
+      slot.hidden = true;
+      continue;
+    }
+    if (!slot.firstChild) buildReviewSlot(slot);
+    slot.hidden = false;
+    const id = slot.dataset.reviewFinding;
+    updateReviewSlot(slot, decisions.get(id) ?? null, force === id);
+  }
+}
+
+function buildReviewSlot(slot) {
+  const findingId = slot.dataset.reviewFinding;
+  const maxNote = state.meta?.limits?.MAX_NOTE_CHARS;
+  const button = (value, text) =>
+    h("button", {
+      type: "button",
+      class: "secondary small decide",
+      "data-value": value,
+      "aria-pressed": "false",
+      text,
+      onclick: () => {
+        const current = slot.dataset.value || null;
+        sendDecision(slot, current === value ? null : value);
+      },
+    });
+  const note = h("input", {
+    type: "text",
+    class: "decision-note",
+    maxlength: Number.isInteger(maxNote) ? maxNote : null,
+    placeholder: "Optional note, saved with your decision",
+    "aria-label": `Your note on finding ${findingId}`,
+    onkeydown: (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        if (slot.dataset.value) sendDecision(slot, slot.dataset.value);
+      }
+    },
+  });
+  slot.append(
+    h("p", { class: "decision-status" }, h("span", { class: "label", text: "Your decision: " }), h("span", { class: "decision-now" })),
+    h(
+      "div",
+      { class: "decision-controls" },
+      button("accepted", "Accept"),
+      button("rejected", "Reject"),
+      note,
+      h("button", { type: "button", class: "secondary small save-note", text: "Save note", onclick: () => slot.dataset.value && sendDecision(slot, slot.dataset.value) }),
+      state.sample ? h("span", { class: "page-tag", text: "sample: decisions are not saved" }) : "",
+    ),
+    h("p", { class: "review-message", role: "status", hidden: true }),
+  );
+}
+
+/** Show the server's decision on one finding. The note is replaced only if untouched, or when forced. */
+function updateReviewSlot(slot, decision, force) {
+  const value = decision?.value === "accepted" || decision?.value === "rejected" ? decision.value : "";
+  slot.dataset.value = value;
+  slot.querySelector(".decision-now").replaceChildren(
+    decisionMark(value || "undecided"),
+    decision?.decided_at ? h("span", { class: "muted", text: ` · ${utc(decision.decided_at)}` }) : "",
+  );
+  for (const btn of slot.querySelectorAll(".decide")) {
+    const pressed = btn.dataset.value === value;
+    btn.setAttribute("aria-pressed", String(pressed));
+    btn.title = pressed ? "Press again to clear your decision" : "";
+  }
+  const note = slot.querySelector(".decision-note");
+  const saved = str(decision?.note);
+  const dirty = note.value !== note.defaultValue;
+  note.defaultValue = saved;
+  if (force || !dirty) note.value = saved;
+  setSlotBusy(slot, slot.dataset.busy === "1");
+}
+
+function setSlotBusy(slot, busy) {
+  slot.dataset.busy = busy ? "1" : "";
+  const locked = busy || state.sample;
+  for (const btn of slot.querySelectorAll(".decide")) btn.disabled = locked;
+  slot.querySelector(".decision-note").disabled = locked;
+  slot.querySelector(".save-note").disabled = locked || !slot.dataset.value;
+}
+
+/** PUT one decision; show the Review the server returns, or its message and its last state. */
+async function sendDecision(slot, value) {
+  const run = state.run;
+  if (state.sample || !run || slot.dataset.busy === "1") return;
+  const findingId = slot.dataset.reviewFinding;
+  const note = slot.querySelector(".decision-note").value.trim();
+  const message = slot.querySelector(".review-message");
+  const seq = state.viewSeq;
+  message.hidden = true;
+  message.className = "review-message";
+  setSlotBusy(slot, true);
+  try {
+    const review = await api(`/api/runs/${encodeURIComponent(run.id)}/findings/${encodeURIComponent(findingId)}/decision`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ value, note }),
+    });
+    if (seq !== state.viewSeq) return;
+    if (review.run_id !== run.id) throw new ApiError("the server returned the review of a different run", 0);
+    setSlotBusy(slot, false);
+    applyReview(review, findingId);
+  } catch (error) {
+    if (seq !== state.viewSeq) return;
+    setSlotBusy(slot, false);
+    applyReview(state.review, findingId); // back to what the server last said
+    if (error.status === 422) {
+      const lines = error.details.length ? error.details.map((d) => String(d.message)).join(" ") : error.message;
+      message.replaceChildren(rejectGlyph(), ` Not saved: ${lines}`);
+      message.className = "review-message reject";
+    } else {
+      message.textContent = `Not saved: ${error.message}.`;
+    }
+    message.hidden = false;
+  }
 }
 
 // ---------------------------------------------------------------- run loading
@@ -777,6 +1377,10 @@ function watchRun(runId) {
   const controller = new AbortController();
   state.controller = controller;
   state.runId = runId;
+  state.thesisId = null;
+  state.run = null;
+  state.review = null;
+  state.comparison = null;
   state.bannerKey = "";
   history.replaceState(null, "", `#run=${encodeURIComponent(runId)}`);
   markRecent();
@@ -790,8 +1394,16 @@ function watchRun(runId) {
       if (seq !== state.viewSeq) return;
       if (run.id !== runId) throw new ApiError("the server returned a different run than the one requested", 0);
       renderRun(run);
-      if (run.status === "running") state.timer = setTimeout(tick, POLL_MS);
-      else refreshRecent();
+      if (run.status === "running") {
+        state.timer = setTimeout(tick, POLL_MS);
+      } else {
+        refreshRecent();
+        loadReview(run.id, seq);
+        if (run.thesis_id) {
+          refreshTheses();
+          loadRunChanges(run, seq);
+        }
+      }
     } catch (error) {
       if (seq !== state.viewSeq || error.name === "AbortError") return;
       const reason = error.status === 404 ? "no run with that id exists" : error.message;
@@ -804,6 +1416,7 @@ function watchRun(runId) {
 function hideRunView() {
   els.runView.hidden = true;
   els.figuresView.hidden = true;
+  els.thesisView.hidden = true;
   els.loadError.hidden = true;
   els.empty.hidden = true;
   document.body.classList.remove("has-run");
@@ -830,6 +1443,9 @@ async function loadSample(name) {
   els.formNote.textContent = "Sample mode: this page shows a stored record and does not start runs. Open the page without ?sample to test a thesis.";
   els.formNote.hidden = false;
   els.recent.replaceChildren(h("li", { class: "muted", text: "Recent runs are not loaded in sample mode." }));
+  els.thesesBlock.hidden = false;
+  els.theses.replaceChildren(h("li", { class: "muted", text: "Saved theses are not loaded in sample mode." }));
+  els.saveThesis.hidden = false;
   const link = $("sample-link");
   link.textContent = "Leave the sample";
   link.href = location.pathname;
@@ -845,6 +1461,11 @@ async function loadSample(name) {
     applyMeta(payload.meta);
     if (str(payload.note)) els.formNote.textContent = `Sample mode: ${payload.note} This page does not start runs; open it without ?sample to test a thesis.`;
     state.runId = payload.run.id;
+    // Sample mode only: the reader's decisions and the comparison are stored in the file.
+    const review = payload.review;
+    state.review = review && typeof review === "object" && review.run_id === payload.run.id ? review : null;
+    const comparison = payload.comparison;
+    state.comparison = comparison && typeof comparison === "object" ? comparison : null;
     renderRun(payload.run);
   } catch (error) {
     showLoadError(`The sample record could not be loaded: ${error.message}.`, null);
@@ -868,16 +1489,21 @@ function renderRun(run) {
   els.loadError.hidden = true;
   els.empty.hidden = true;
   els.figuresView.hidden = true;
+  els.thesisView.hidden = true;
   els.runView.hidden = false;
   document.body.classList.add("has-run");
+  state.run = run;
 
   renderBanner(run);
   renderStages(run);
   renderHead(run);
+  renderReviewLine(run);
   renderScorecard(run);
+  renderRunChanges(run);
   renderSummary(run);
   renderRunFigures(run);
   renderClaims(run, ctx);
+  renderReviewSlots(run, null);
   renderWithheld(run, ctx);
   renderBriefLists(run);
   renderSources(run);
@@ -1007,7 +1633,22 @@ function renderHead(run) {
   } else {
     download = h("a", { class: "download", href: `/api/runs/${encodeURIComponent(run.id)}/export.md`, download: `evidence-desk-${run.id}.md`, text: "Download Markdown brief" });
   }
-  els.runHead.replaceChildren(h("div", { class: "run-head-main" }, title, decision, engineLine, details), h("div", { class: "run-head-actions" }, download));
+  els.runHead.replaceChildren(h("div", { class: "run-head-main" }, title, decision, engineLine, details, thesisLine(run)), h("div", { class: "run-head-actions" }, download));
+}
+
+/** "Part of the saved thesis ..." with a way back, for a run started from a saved thesis. */
+function thesisLine(run) {
+  const thesisId = str(run.thesis_id);
+  if (!thesisId) return "";
+  const thesis = state.theses.get(thesisId);
+  const name = thesis ? h("strong", { text: `"${str(thesis.name)}"` }) : h("code", { text: thesisId });
+  let back;
+  if (state.sample) {
+    back = state.comparison?.later_run_id === run.id ? h("a", { href: "#changes-section", onclick: jumpTo("changes-section"), text: "See what moved since its earlier run" }) : "";
+  } else {
+    back = h("a", { href: `#thesis=${encodeURIComponent(thesisId)}`, onclick: (event) => { event.preventDefault(); openThesis(thesisId); }, text: "Open the thesis" });
+  }
+  return h("p", { class: "run-thesis" }, "Part of the saved thesis ", name, ". ", back);
 }
 
 /** Who assessed a claim, in words. */
@@ -1026,14 +1667,24 @@ function renderScorecard(run) {
     els.scorecard.append(h("li", { class: "muted", text: run.status === "running" ? "Claims appear once the run has planned them." : "This run recorded no claims." }));
     return;
   }
+  const review = currentReview(run);
+  const reviewed = new Map(list(review?.claims).map((entry) => [entry.claim_id, entry]));
   claims.forEach((claim, index) => {
+    const verdicts = review
+      ? h(
+          "span",
+          { class: "score-verdicts" },
+          h("span", { class: "verdict-slot slot-engine" }, h("span", { class: "slot-label", text: "Engine" }), verdictPill(claim.verdict)),
+          reviewedSlot(reviewed.get(claim.id)),
+        )
+      : verdictPill(claim.verdict);
     const passages = Number.isFinite(c.passages_indexed)
       ? [h("span", { "data-claim-field": "passages_considered", text: num(claim.passages_considered ?? 0) }), " of ", cov(c, "passages_indexed"), " passages considered"]
       : [h("span", { "data-claim-field": "passages_considered", text: num(claim.passages_considered ?? 0) }), " passages considered"];
     const row = h(
       "a",
-      { class: "score-row", href: `#claim-${index}`, onclick: openClaim(index) },
-      verdictPill(claim.verdict),
+      { class: review ? "score-row has-review" : "score-row", href: `#claim-${index}`, onclick: openClaim(index) },
+      verdicts,
       h(
         "span",
         { class: "score-claim" },
@@ -1156,6 +1807,9 @@ function renderFinding(finding, ctx, withheld = false) {
       continue;
     }
     article.append(renderEvidence(item, ctx.sources.get(item.source_id)));
+  }
+  if (!withheld && finding.verified !== false) {
+    article.append(h("div", { class: "review-slot", "data-review-finding": finding.id, hidden: true }));
   }
   return article;
 }
@@ -1678,20 +2332,38 @@ function chartTable(title, seriesList) {
 
 // ---------------------------------------------------------------- start
 
-function runIdFromHash() {
-  const match = /^#run=(.+)$/.exec(location.hash);
+/** The run or saved thesis named in the hash: {kind: "run" | "thesis", id}, or null. */
+function hashTarget() {
+  const match = /^#(run|thesis)=(.+)$/.exec(location.hash);
   if (!match) return null;
   try {
-    return decodeURIComponent(match[1]);
+    return { kind: match[1], id: decodeURIComponent(match[2]) };
   } catch {
     return null;
   }
+}
+
+function openHashTarget() {
+  const target = hashTarget();
+  if (!target) return;
+  if (target.kind === "run" && target.id !== state.runId) watchRun(target.id);
+  if (target.kind === "thesis" && target.id !== state.thesisId) openThesis(target.id);
 }
 
 function init() {
   els.form.addEventListener("submit", onSubmit);
   els.figuresOnly.addEventListener("click", onFiguresOnly);
   els.example.addEventListener("click", loadExample);
+  els.saveThesis.addEventListener("click", () => toggleSavePanel(els.savePanel.hidden));
+  els.saveConfirm.addEventListener("click", onSaveThesis);
+  els.saveCancel.addEventListener("click", () => toggleSavePanel(false));
+  els.thesisName.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      onSaveThesis();
+    }
+  });
+  els.runAgain.addEventListener("click", onRunAgain);
   els.claims.addEventListener("input", updateCounts);
   els.decision.addEventListener("input", updateCounts);
   for (const field of Object.keys(FIELD_NAMES)) {
@@ -1704,14 +2376,11 @@ function init() {
     loadSample(params.get("sample") || "run");
     return;
   }
-  window.addEventListener("hashchange", () => {
-    const id = runIdFromHash();
-    if (id && id !== state.runId) watchRun(id);
-  });
+  window.addEventListener("hashchange", openHashTarget);
   loadMeta();
   refreshRecent();
-  const id = runIdFromHash();
-  if (id) watchRun(id);
+  refreshTheses();
+  openHashTarget();
 }
 
 init();

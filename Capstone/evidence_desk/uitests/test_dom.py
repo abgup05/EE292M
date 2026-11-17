@@ -4,7 +4,9 @@
 writes the resulting DOM to results/dom-synthetic.html and results/dom-sample.html;
 these tests read those files and the sample records in src/web. They check what a
 reader sees: verdict marks, counts and their denominators, highlighted quotes,
-reported figures, model-written badges, links and the legend.
+reported figures, model-written badges, links and the legend, and in the synthetic
+sample the reader's review (its "review" key) and what moved between two runs of
+a saved thesis (its "comparison" key).
 """
 
 from __future__ import annotations
@@ -35,13 +37,16 @@ VERDICT_GLYPHS = {
     "unjudged": "?",
     "not_addressed": "∅",
 }
+STANCE_GLYPHS = {"supports": "✓", "challenges": "✕", "context": "•"}
+# The reader's own decision: glyphs no verdict or stance uses.
+DECISION_GLYPHS = {"accepted": "▣", "rejected": "☒", "undecided": "☐"}
 PLACEHOLDERS = ("undefined", "NaN", "[object Object]", "null")
 MODEL_ONLY_ENGINE = "extractive"
 
 
 @cache
 def record(name: str) -> dict[str, Any]:
-    """The sample file the page loaded: {"note", "meta", "run"}."""
+    """The sample file the page loaded: {"note", "meta", "run"}, and optionally "review", "comparison"."""
     return json.loads((WEB / PAGES[name][0]).read_text(encoding="utf-8"))
 
 
@@ -336,10 +341,27 @@ def test_findings_show_their_checks_and_withheld_reasons(name: str) -> None:
 
 
 def test_samples_validate_against_the_run_model() -> None:
-    from app.core.models import Run, Verdict
+    from app.core.models import Review, Run, RunComparison, Verdict
 
     for name in PAGES:
         Run.model_validate(record(name)["run"])
+    synthetic = record("synthetic")
+    review = Review.model_validate(synthetic["review"])
+    comparison = RunComparison.model_validate(synthetic["comparison"])
+    assert review.run_id == synthetic["run"]["id"] == comparison.later_run_id
+    assert synthetic["run"]["thesis_id"] == comparison.thesis_id
+    assert {d.value.value for d in review.decisions} == {"accepted", "rejected"}
+    assert any(c.undecided for c in review.claims), "the sample needs an undecided finding"
+    assert any(c.reviewed_verdict and c.reviewed_verdict != c.engine_verdict for c in review.claims)
+    assert any(c.reviewed_verdict is None for c in review.claims)
+    assert any(d.note for d in review.decisions) and any(not d.note for d in review.decisions)
+    changes = comparison.claims
+    assert sum(c.moved for c in changes) == comparison.verdicts_moved >= 2
+    assert any(not c.moved and c.before is not None for c in changes)
+    assert any(c.before is None for c in changes), "a claim present in the later run only"
+    assert comparison.sources_added and comparison.note
+    meta = synthetic["meta"]
+    assert set(meta["decision_labels"]) == set(DECISION_GLYPHS) and meta["review_note"]
     run = record("synthetic")["run"]
     claims = run["claims"]
     findings = run["findings"]
@@ -362,3 +384,173 @@ def test_samples_validate_against_the_run_model() -> None:
     assert any(p["value"] is None for s in run["series"] for p in s["points"])
     assert run["coverage"]["engine_fallbacks"] > 0
     assert len(run["errors"]) > 3
+
+
+# ---------------------------------------------------------------- review and what moved
+
+
+def review_of(name: str) -> dict[str, Any]:
+    return record(name)["review"]
+
+
+def test_scorecard_shows_the_verdict_after_review() -> None:
+    meta, review = record("synthetic")["meta"], review_of("synthetic")
+    by_claim = {entry["claim_id"]: entry for entry in review["claims"]}
+    rows = page("synthetic").select("#scorecard > li[data-claim-id]")
+    assert [row["data-claim-id"] for row in rows] == list(by_claim)
+    for row in rows:
+        entry = by_claim[row["data-claim-id"]]
+        engine, reviewed = row.select_one(".slot-engine"), row.select_one(".slot-reviewed")
+        assert engine is not None and text(engine.select_one(".slot-label")) == "Engine"
+        assert reviewed is not None, f"{entry['claim_id']}: no reviewed verdict"
+        assert text(reviewed.select_one(".slot-label")) == "After your review"
+        verdict = entry["reviewed_verdict"]
+        undecided = reviewed.select_one('[data-review-field="undecided"]')
+        if verdict is None:
+            assert reviewed.select_one(".pill.verdict") is None
+            pending = reviewed.select_one(".pill.review-pending")
+            assert pending is not None and text(pending) == "not reviewed yet", entry["claim_id"]
+            continue
+        pill = reviewed.select_one(".pill.verdict")
+        assert pill is not None, f"{entry['claim_id']}: no reviewed pill"
+        assert text(pill.select_one(".pill-label")) == meta["verdict_labels"][verdict]
+        assert text(pill.select_one(".glyph")) == VERDICT_GLYPHS[verdict], entry["claim_id"]
+        assert [c for c in classes(pill) if c.startswith("v-")] == [f"v-{verdict}"]
+        for field in ("accepted", "rejected"):
+            shown = reviewed.select_one(f'[data-review-field="{field}"]')
+            assert shown is not None and text(shown) == f"{entry[field]:,}", f"{entry['claim_id']}: {field}"
+        if entry["undecided"]:
+            assert undecided is not None and text(undecided) == f"{entry['undecided']:,}"
+            assert "undecided" in classes(undecided.parent), "n undecided must be in the provisional style"
+        else:
+            assert undecided is None, f"{entry['claim_id']}: shows undecided findings it does not have"
+    assert "dashed" in rule_body(".undecided") and "dashed" in rule_body(".pill.review-pending")
+
+
+def test_review_line_shows_decided_of_total() -> None:
+    meta, review = record("synthetic")["meta"], review_of("synthetic")
+    line = page("synthetic").select_one("#review-line")
+    assert line is not None and not line.has_attr("hidden")
+    decided = line.select_one('[data-review-field="decided"]')
+    total = line.select_one('[data-review-field="findings_total"]')
+    assert decided is not None and text(decided) == f"{review['decided']:,}"
+    assert total is not None and text(total) == f"{review['findings_total']:,}"
+    words = " ".join(text(line).split())
+    assert f"You have decided {review['decided']:,} of {review['findings_total']:,} findings" in words
+    assert meta["review_note"] in words
+    assert "sample: decisions are not saved" in words
+    # The sample review is incomplete, and the sample never links to a brief.
+    assert not review["complete"] and line.select_one('a[href*="reviewed=true"]') is None
+
+
+def test_each_finding_shows_the_decision_from_the_review() -> None:
+    synthetic = record("synthetic")
+    meta, run = synthetic["meta"], synthetic["run"]
+    decisions = {d["finding_id"]: d for d in review_of("synthetic")["decisions"]}
+    soup = page("synthetic")
+    listed = {fid for claim in run["claims"] for fid in claim["finding_ids"]}
+    verified = [f for f in run["findings"] if f.get("verified", True) and f["id"] in listed]
+    assert verified
+    for finding in verified:
+        fid = finding["id"]
+        article = soup.select_one(f'#claim-list article[data-finding-id="{fid}"]')
+        slot = article.select_one(".review-slot") if article else None
+        assert slot is not None and not slot.has_attr("hidden"), f"{finding['id']}: no review controls"
+        decision = decisions.get(finding["id"])
+        value = decision["value"] if decision else "undecided"
+        mark = slot.select_one(".decision-mark")
+        assert mark is not None and mark["data-decision"] == value, finding["id"]
+        assert text(mark.select_one(".decision-label")) == meta["decision_labels"][value], finding["id"]
+        assert text(mark.select_one(".glyph")) == DECISION_GLYPHS[value], finding["id"]
+        note = slot.select_one("input.decision-note")
+        assert note is not None and note.get("value", "") == (decision["note"] if decision else ""), finding["id"]
+        for button in slot.select("button.decide"):
+            assert button["aria-pressed"] == ("true" if button["data-value"] == value else "false")
+        for control in slot.select("button, input"):
+            assert control.has_attr("disabled"), f"{finding['id']}: a control is live in sample mode"
+        assert "sample: decisions are not saved" in text(slot)
+    for article in soup.select("#withheld article"):
+        assert article.select_one(".review-slot") is None, "a withheld finding has review controls"
+
+
+def test_decision_marks_are_their_own() -> None:
+    soup = page("synthetic")
+    decision = set(DECISION_GLYPHS.values())
+    assert not decision & (set(VERDICT_GLYPHS.values()) | set(STANCE_GLYPHS.values()))
+    marks = soup.select(".decision-mark")
+    assert {mark["data-decision"] for mark in outside_legend(marks)} == set(DECISION_GLYPHS)
+    for mark in marks:
+        assert not {"pill", "verdict", "stance"} & set(classes(mark)), classes(mark)
+        assert text(mark.select_one(".glyph")) in decision
+    for pill in soup.select(".pill"):
+        glyph = pill.select_one(".glyph")
+        assert glyph is None or text(glyph) not in decision, "a verdict or stance shows a decision glyph"
+    for node in soup.find_all(string=True):
+        if any(glyph in node for glyph in decision):
+            assert node.find_parent(class_="decision-mark") is not None, f"decision glyph outside a mark: {node.parent}"
+    body = rule_body(".decision-mark")
+    assert "--ink" in body
+    for colour in ("--support", "--challenge", "--reject", "--limit", "--model", "--accent"):
+        assert colour not in body, f".decision-mark uses {colour}"
+    assert "dashed" in rule_body(".decision-mark.d-undecided")
+
+
+def test_what_moved_shows_each_claim() -> None:
+    synthetic = record("synthetic")
+    meta, run, comparison = synthetic["meta"], synthetic["run"], synthetic["comparison"]
+    soup = page("synthetic")
+    section = soup.select_one("#changes-section")
+    assert section is not None and not section.has_attr("hidden")
+    words = " ".join(text(section).split())
+    assert comparison["note"] in words
+    assert words.index(comparison["note"]) < words.index("Earlier run"), "the note comes first"
+    for field in ("verdicts_moved", "claims_total"):
+        assert text(section.select_one(f'[data-cmp="{field}"]')) == f"{comparison[field]:,}"
+    rows = section.select("tbody tr[data-change]")
+    assert len(rows) == len(comparison["claims"])
+    for change, row in zip(comparison["claims"], rows, strict=True):
+        assert text(row.select_one(".cmp-claim")) == change["claim"]
+        for side in ("before", "after"):
+            cell = row.select_one(f".cmp-{side}")
+            verdict = change[side]
+            main = [p for p in cell.select(".pill.verdict") if p.find_parent(class_="cmp-reviewed") is None]
+            if verdict is None:
+                assert not main and "not in the earlier run" in text(cell)
+            else:
+                assert len(main) == 1, f"{change['claim']}: {side}"
+                assert text(main[0].select_one(".pill-label")) == meta["verdict_labels"][verdict]
+                assert text(main[0].select_one(".glyph")) == VERDICT_GLYPHS[verdict]
+            reviewed = change[f"reviewed_{side}"]
+            shown = cell.select_one(".cmp-reviewed")
+            assert (shown["data-reviewed-verdict"] if shown else None) == reviewed
+        expected = "new in the later run" if change["before"] is None else "moved" if change["moved"] else "unchanged"
+        assert text(row.select_one(".move-word")) == expected, change["claim"]
+        for field in ("excerpts_added", "excerpts_dropped"):
+            assert text(row.select_one(f'[data-cmp-field="{field}"]')) == f"{change[field]:,}"
+        assert "added" in text(row.select_one(".cmp-excerpts")) and "dropped" in text(row.select_one(".cmp-excerpts"))
+    added = text(section.select_one(".changes-filings.added"))
+    dropped = text(section.select_one(".changes-filings.dropped"))
+    for title in comparison["sources_added"]:
+        assert title in added
+    for title in comparison["sources_dropped"]:
+        assert title in dropped
+    belongs = soup.select_one("#run-head .run-thesis")
+    assert belongs is not None and run["thesis_id"] in text(belongs)
+    assert belongs.select_one('a[href="#changes-section"]') is not None
+
+
+def test_real_sample_hides_review_it_does_not_have() -> None:
+    assert "review" not in record("run") and "comparison" not in record("run")
+    soup = page("run")
+    assert soup.select_one("#review-line").has_attr("hidden")
+    assert soup.select_one("#changes-section").has_attr("hidden")
+    assert not soup.select("#scorecard .has-review, #scorecard .slot-reviewed")
+    assert all(slot.has_attr("hidden") and not slot.contents for slot in soup.select(".review-slot"))
+
+
+@both
+def test_legend_includes_the_decision_marks(name: str) -> None:
+    legend = page(name).select_one("#legend")
+    shown = {text(mark.select_one(".glyph")) for mark in legend.select(".decision-mark")}
+    assert shown == set(DECISION_GLYPHS.values())
+    assert "Your decision" in text(legend)

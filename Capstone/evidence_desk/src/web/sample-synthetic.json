@@ -11,9 +11,11 @@
       "MAX_EXTRA_URLS": 5,
       "MAX_FILINGS": 5,
       "MAX_FINDINGS_PER_CLAIM": 4,
+      "MAX_NOTE_CHARS": 500,
       "MAX_PASSAGES_PER_SOURCE": 5,
       "MAX_QUERIES_PER_CLAIM": 4,
       "MAX_SCOPE_CHARS": 2000,
+      "MAX_THESIS_NAME_CHARS": 80,
       "MIN_CLAIMS": 1,
       "MIN_CLAIM_CHARS": 15,
       "MIN_DECISION_CHARS": 10,
@@ -58,7 +60,13 @@
       "scope_notes": "",
       "filings": 2,
       "extra_urls": []
-    }
+    },
+    "decision_labels": {
+      "accepted": "Accepted",
+      "rejected": "Rejected",
+      "undecided": "Undecided"
+    },
+    "review_note": "The verdict after your review follows by the same rule from the findings you accepted, and undecided findings do not count toward it."
   },
   "run": {
     "id": "run-example0001",
@@ -78,6 +86,7 @@
         "https://example.com/investors/update-2026-07"
       ]
     },
+    "thesis_id": "thesis-example0001",
     "status": "partial",
     "stage": "done",
     "stage_detail": "",
@@ -925,5 +934,158 @@
       "coverage_status": "partial",
       "status_note": "Part of the thesis could not be assessed with verified evidence. The reasons are listed under coverage limits."
     }
+  },
+  "review": {
+    "run_id": "run-example0001",
+    "decisions": [
+      {
+        "run_id": "run-example0001",
+        "finding_id": "f1",
+        "value": "accepted",
+        "note": "Matches the revenue table in the 10-Q.",
+        "decided_at": "2026-11-17T10:02:00Z"
+      },
+      {
+        "run_id": "run-example0001",
+        "finding_id": "f2",
+        "value": "accepted",
+        "note": "",
+        "decided_at": "2026-11-17T10:03:00Z"
+      },
+      {
+        "run_id": "run-example0001",
+        "finding_id": "f3",
+        "value": "accepted",
+        "note": "The margin fell in both periods shown.",
+        "decided_at": "2026-11-17T10:05:00Z"
+      },
+      {
+        "run_id": "run-example0001",
+        "finding_id": "f5",
+        "value": "rejected",
+        "note": "The 31% is fiscal 2025; the latest quarter says no customer is above 10%.",
+        "decided_at": "2026-11-17T10:08:00Z"
+      },
+      {
+        "run_id": "run-example0001",
+        "finding_id": "f6",
+        "value": "accepted",
+        "note": "",
+        "decided_at": "2026-11-17T10:09:00Z"
+      }
+    ],
+    "claims": [
+      {
+        "claim_id": "c1",
+        "engine_verdict": "supported",
+        "reviewed_verdict": "supported",
+        "accepted": 2,
+        "rejected": 0,
+        "undecided": 0
+      },
+      {
+        "claim_id": "c2",
+        "engine_verdict": "challenged",
+        "reviewed_verdict": "challenged",
+        "accepted": 1,
+        "rejected": 0,
+        "undecided": 1
+      },
+      {
+        "claim_id": "c3",
+        "engine_verdict": "mixed",
+        "reviewed_verdict": "challenged",
+        "accepted": 1,
+        "rejected": 1,
+        "undecided": 0
+      },
+      {
+        "claim_id": "c4",
+        "engine_verdict": "unjudged",
+        "reviewed_verdict": null,
+        "accepted": 0,
+        "rejected": 0,
+        "undecided": 1
+      },
+      {
+        "claim_id": "c5",
+        "engine_verdict": "not_addressed",
+        "reviewed_verdict": null,
+        "accepted": 0,
+        "rejected": 0,
+        "undecided": 0
+      }
+    ],
+    "findings_total": 7,
+    "decided": 5,
+    "complete": false
+  },
+  "comparison": {
+    "thesis_id": "thesis-example0001",
+    "earlier_run_id": "run-example0000",
+    "later_run_id": "run-example0001",
+    "earlier_finished_at": "2026-08-12T14:31:05Z",
+    "later_finished_at": "2026-11-17T09:01:12Z",
+    "sources_added": [
+      "EXAMPLE CORP 10-Q, period ended 2026-06-28"
+    ],
+    "sources_dropped": [
+      "EXAMPLE CORP 10-Q, period ended 2026-03-29"
+    ],
+    "claims": [
+      {
+        "claim": "Revenue is growing year over year.",
+        "before": "supported",
+        "after": "supported",
+        "moved": false,
+        "reviewed_before": "supported",
+        "reviewed_after": "supported",
+        "excerpts_added": 1,
+        "excerpts_dropped": 1
+      },
+      {
+        "claim": "Gross margin is expanding.",
+        "before": "mixed",
+        "after": "challenged",
+        "moved": true,
+        "reviewed_before": "mixed",
+        "reviewed_after": "challenged",
+        "excerpts_added": 2,
+        "excerpts_dropped": 1
+      },
+      {
+        "claim": "A few large customers account for a large share of revenue.",
+        "before": "supported",
+        "after": "mixed",
+        "moved": true,
+        "reviewed_before": "supported",
+        "reviewed_after": "challenged",
+        "excerpts_added": 1,
+        "excerpts_dropped": 0
+      },
+      {
+        "claim": "The company depends on a single contract manufacturer.",
+        "before": "unjudged",
+        "after": "unjudged",
+        "moved": false,
+        "reviewed_before": null,
+        "reviewed_after": null,
+        "excerpts_added": 0,
+        "excerpts_dropped": 0
+      },
+      {
+        "claim": "Export controls are restricting sales to China.",
+        "before": null,
+        "after": "not_addressed",
+        "moved": false,
+        "reviewed_before": null,
+        "reviewed_after": null,
+        "excerpts_added": 0,
+        "excerpts_dropped": 0
+      }
+    ],
+    "verdicts_moved": 2,
+    "claims_total": 5,
+    "note": "The later run read the 10-Q for the quarter ended 2026-06-28, which the earlier run did not have. Two verdicts moved; the claim on export controls was not in the earlier run."
   }
 }

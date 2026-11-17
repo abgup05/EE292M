@@ -78,10 +78,28 @@
           <button type="submit" id="submit" class="primary">Test the thesis</button>
           <button type="button" id="figures-only" class="secondary">Reported figures only</button>
           <button type="button" id="load-example" class="secondary">Load example</button>
+          <button type="button" id="save-thesis" class="secondary" aria-expanded="false" aria-controls="save-panel" hidden>Save this thesis</button>
         </div>
         <p class="hint actions-hint">"Reported figures only" needs just the ticker: it shows the company's reported numbers without starting a run.</p>
+        <div id="save-panel" class="save-panel" hidden>
+          <div class="field">
+            <label for="thesis_name">Name for this thesis</label>
+            <p id="thesis-name-hint" class="hint">Saved with the ticker, decision and claims above, so you can run it again when a new filing arrives.</p>
+            <input id="thesis_name" name="thesis_name" type="text" autocomplete="off" aria-describedby="thesis-name-hint err-thesis_name">
+            <p id="err-thesis_name" class="field-error" hidden></p>
+          </div>
+          <div class="actions">
+            <button type="button" id="save-confirm" class="primary">Save</button>
+            <button type="button" id="save-cancel" class="secondary">Cancel</button>
+          </div>
+        </div>
         <p id="form-note" class="hint form-note" hidden></p>
       </form>
+
+      <div id="theses-block" hidden>
+        <h2 class="panel-title recent-title">Saved theses</h2>
+        <ul id="theses" class="recent"></ul>
+      </div>
 
       <h2 class="panel-title recent-title">Recent runs</h2>
       <ul id="recent" class="recent"></ul>
@@ -115,6 +133,22 @@
         </section>
       </div>
 
+      <div id="thesis-view" hidden>
+        <div id="thesis-head" class="run-head"></div>
+        <section class="block" aria-labelledby="thesis-runs-title">
+          <h3 id="thesis-runs-title" class="block-title">Runs of this thesis</h3>
+          <div class="thesis-actions">
+            <button type="button" id="run-again" class="primary">Run again on the latest filings</button>
+            <p id="run-again-message" class="hint" role="status" hidden></p>
+          </div>
+          <ul id="thesis-runs" class="recent thesis-runs"></ul>
+        </section>
+        <section id="thesis-changes-section" class="block" aria-labelledby="thesis-changes-title">
+          <h3 id="thesis-changes-title" class="block-title">What moved</h3>
+          <div id="thesis-changes"></div>
+        </section>
+      </div>
+
       <div id="run-view" hidden>
         <div id="status-banner" class="banner" role="status" aria-live="polite"></div>
         <div id="stages-wrap" hidden>
@@ -125,6 +159,7 @@
 
         <section class="block" aria-labelledby="scorecard-title">
           <h3 id="scorecard-title" class="block-title">Verdicts by claim</h3>
+          <div id="review-line" class="review-line" hidden></div>
           <ol id="scorecard" class="scorecard"></ol>
           <p class="distinction">Each verdict follows by a fixed rule from the findings that passed their checks. <strong>Checked:</strong> every quote was found word for word in the stored filing, and numbers were matched to quotes and reported figures. <strong>Not checked:</strong> whether a quote supports or challenges the claim is the engine's reading of it. Read the quotes before you rely on a verdict.</p>
 
@@ -143,8 +178,16 @@
               <div><dt><span class="page-tag">Sample record</span></dt><dd>A grey tag is a label about the page itself.</dd></div>
               <div><dt><mark class="legend-mark">highlighted</mark></dt><dd>A quote found word for word in the filing, shown in its surrounding text.</dd></div>
               <div><dt><span class="legend-link">blue text</span></dt><dd>Something you can click.</dd></div>
+              <div><dt><span class="decision-mark d-accepted"><span class="glyph" aria-hidden="true">▣</span><span>Accepted</span></span></dt><dd>Your decision: you accepted this finding, so it counts toward the verdict after your review. A dark tag is always yours, never the engine's.</dd></div>
+              <div><dt><span class="decision-mark d-rejected"><span class="glyph" aria-hidden="true">☒</span><span>Rejected</span></span></dt><dd>Your decision: you rejected this finding, so the verdict after your review leaves it out.</dd></div>
+              <div><dt><span class="decision-mark d-undecided"><span class="glyph" aria-hidden="true">☐</span><span>Undecided</span></span></dt><dd>Your decision is still to make; dashed, because the verdict after your review is provisional until you decide.</dd></div>
             </dl>
           </details>
+        </section>
+
+        <section id="changes-section" class="block" aria-labelledby="changes-title" tabindex="-1" hidden>
+          <h3 id="changes-title" class="block-title">What moved since the earlier run</h3>
+          <div id="changes"></div>
         </section>
 
         <section id="summary-section" class="block" aria-labelledby="summary-title" hidden>

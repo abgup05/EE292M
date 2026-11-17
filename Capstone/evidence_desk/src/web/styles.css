@@ -13,6 +13,9 @@
  *   --reject     ! red: your input was rejected
  *   --accent     blue: something you can click
  *   --mark-bg    the quote found word for word, inside its context
+ *   --ink, inverted (a dark tag in light mode, a light one in dark mode):
+ *                ▣ accepted, ☒ rejected: your own decision on a finding, never
+ *                the engine's; ☐ undecided is the same tag, dashed and hollow
  * A dashed border means only "not judged or provisional".
  */
 
@@ -454,7 +457,8 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
   background: linear-gradient(90deg, var(--support-bg) 0 50%, var(--challenge-bg) 50% 100%);
 }
 .v-mixed .glyph { color: var(--challenge); }
-.v-unjudged, .v-pending { color: var(--neutral); background: transparent; border-style: dashed; }
+.v-unjudged, .v-pending, .pill.review-pending { color: var(--neutral); background: transparent; border-style: dashed; }
+.pill.review-pending { border-radius: 3px; font-weight: 600; }
 .v-not_addressed, .v-unknown { color: var(--neutral); background: transparent; border-style: solid; }
 .stance.s-context, .stance.s-unknown { color: var(--neutral); background: var(--neutral-bg); }
 
@@ -480,9 +484,38 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
 .claim-id { font-family: var(--font-mono); font-size: var(--step--1); color: var(--ink-2); }
 .assessed { display: block; font-size: var(--step--1); color: var(--ink-2); }
 
+/* With a review: the engine's verdict and the one after your review side by side,
+   then the claim; the counts go under the claim. */
+.score-row.has-review { grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto 1fr; align-items: start; }
+.score-row.has-review .score-counts { grid-column: 2; white-space: normal; }
+.score-verdicts { display: grid; grid-template-columns: 13.5rem 13.5rem; gap: 0.2rem 0.6rem; }
+.score-row.has-review .score-verdicts { grid-row: span 2; }
+.score-row.has-review .score-counts { align-self: start; }
+.verdict-slot { display: flex; flex-direction: column; align-items: flex-start; gap: 0.15rem; min-width: 0; }
+.slot-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.review-tally { font-size: var(--step--1); color: var(--ink-2); }
+.undecided {
+  display: inline-block;
+  font-size: var(--step--1);
+  color: var(--neutral);
+  border: 1.5px dashed var(--line-strong);
+  border-radius: 3px;
+  padding: 0 0.4rem;
+}
+
 @media (max-width: 720px) {
-  .score-row { grid-template-columns: minmax(0, 1fr); }
+  .score-row, .score-row.has-review { grid-template-columns: minmax(0, 1fr); }
+  .score-row.has-review .score-counts { grid-column: 1; }
+  .score-row.has-review .score-verdicts { grid-row: auto; }
   .score-counts { white-space: normal; }
+  .score-verdicts { grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); }
 }
 
 .distinction {
@@ -490,6 +523,82 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
   font-size: var(--step--1);
   max-width: 90ch;
 }
+
+/* ------------------------------------------------------------ review */
+
+/* Your decision: an inverted tag, unlike any verdict or stance mark. */
+.decision-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  padding: 0.05rem 0.5rem;
+  font-size: var(--step--1);
+  font-weight: 650;
+  line-height: 1.45;
+  white-space: nowrap;
+  color: var(--surface);
+  background: var(--ink);
+  border: 1.5px solid var(--ink);
+  border-radius: 3px;
+}
+.decision-mark .glyph {
+  font-weight: 400;
+  font-size: 1.05em;
+  font-family: "DejaVu Sans", "Noto Sans Symbols 2", "Segoe UI Symbol", "Apple Symbols", var(--font-ui);
+}
+.decision-mark.d-undecided { color: var(--ink-2); background: transparent; border: 1.5px dashed var(--line-strong); }
+
+.review-line { margin: 0 0 0.55rem; font-size: var(--step--1); }
+.review-line p { margin: 0 0 0.2rem; }
+.review-count { font-size: var(--step-0); }
+.review-note { color: var(--ink-2); max-width: 90ch; }
+.inline-tag { margin-left: 0.6rem; }
+
+.review-slot {
+  margin-top: 0.6rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--line);
+  font-size: var(--step--1);
+}
+.decision-status { margin: 0 0 0.35rem; }
+.decision-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
+.decision-controls .decision-note { flex: 1 1 14rem; width: auto; min-width: 0; padding: 0.25rem 0.5rem; font-size: var(--step--1); }
+.decision-controls .decision-note:disabled { color: var(--ink); background: var(--surface-2); opacity: 1; }
+button.decide[aria-pressed="true"] { background: var(--accent); color: var(--surface); }
+.review-message { margin: 0.35rem 0 0; }
+.review-message.reject { color: var(--reject); font-weight: 600; }
+
+/* ------------------------------------------------------------ saved theses */
+
+.save-panel {
+  margin-top: 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.7rem;
+}
+.save-panel .field { margin-bottom: 0.6rem; }
+.thesis-claims { margin: 0.4rem 0 0; padding-left: 1.3rem; }
+.thesis-actions { margin-bottom: 0.5rem; }
+.thesis-actions .hint { margin-top: 0.35rem; }
+.run-thesis { font-size: var(--step--1); margin-top: 0.15rem !important; }
+.guidance { margin: 0; color: var(--ink); }
+
+/* ------------------------------------------------------------ what moved */
+
+.changes-note { margin: 0 0 0.35rem; max-width: 90ch; }
+.changes-runs { margin: 0 0 0.5rem; font-size: var(--step--1); color: var(--ink-2); }
+.changes { width: 100%; min-width: 680px; border-collapse: collapse; font-size: var(--step--1); }
+.changes th, .changes td { text-align: left; vertical-align: top; padding: 0.4rem 0.55rem; border-bottom: 1px solid var(--line); }
+.changes thead th { background: var(--surface-2); color: var(--ink-2); font-weight: 600; white-space: nowrap; }
+.changes tbody tr:last-child > * { border-bottom: 0; }
+.changes .cmp-claim { font-weight: 600; min-width: 10rem; }
+.cmp-reviewed { display: flex; flex-direction: column; align-items: flex-start; gap: 0.1rem; margin-top: 0.35rem; }
+.move-word.is-moved { font-weight: 800; color: var(--ink); }
+.move-word.is-same, .move-word.is-new { color: var(--ink-2); }
+.cmp-count { display: block; }
+.changes-filings-wrap { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 0.4rem 1.2rem; margin-top: 0.6rem; font-size: var(--step--1); }
+.changes-filings .label { margin: 0 0 0.15rem; }
+.changes-filings p.muted { margin: 0; }
 
 /* ------------------------------------------------------------ legend */
 

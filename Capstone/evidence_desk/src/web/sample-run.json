@@ -1,7 +1,7 @@
 {
   "note": "A recorded run of the NVIDIA example thesis on three recorded filings. The model answers are replayed from the cassette demo/cassettes/nvda-example; see its README for how they were produced.",
   "meta": {
-    "version": "0.10.0",
+    "version": "0.11.0",
     "figures_note": "Reported figures are computed by the backend from the XBRL facts the company filed with the SEC; each shows the facts it used and its arithmetic.",
     "limits": {
       "CONTEXT_CHARS": 240,
@@ -91,7 +91,7 @@
     }
   },
   "run": {
-    "id": "run-c5c86b7b18c8",
+    "id": "run-7facb0c200ed",
     "inputs": {
       "ticker": "NVDA",
       "decision": "Whether to keep an overweight position in NVIDIA into the next earnings report",
@@ -111,8 +111,8 @@
     "status": "complete",
     "stage": "done",
     "stage_detail": "",
-    "started_at": "2026-11-17T18:17:01.095828Z",
-    "finished_at": "2026-11-17T18:17:01.507682Z",
+    "started_at": "2026-11-17T19:09:08.926928Z",
+    "finished_at": "2026-11-17T19:09:09.362270Z",
     "company": {
       "cik": 1045810,
       "ticker": "NVDA",
@@ -291,7 +291,7 @@
         "accession": null,
         "period_end": null,
         "published_date": null,
-        "retrieved_at": "2026-11-17T18:17:01.419273Z",
+        "retrieved_at": "2026-11-17T19:09:09.270328Z",
         "content_hash": "f6870031195cd1dc226506fcf891f4096679d400ac6139b9909a117dc9648f9b",
         "extraction_status": "extracted",
         "sections": 0,
@@ -540,7 +540,12 @@
             "117% matched 117% in a quote"
           ],
           "support": "passed",
-          "support_detail": "The excerpt reports Data Center revenue of $89.0 billion, up 117% from a year ago, matching the statement and supporting continued growth."
+          "support_detail": "The excerpt reports Data Center revenue of $89.0 billion, up 117% from a year ago, matching the statement and supporting continued growth.",
+          "periods": "passed",
+          "periods_detail": [
+            "fiscal year 2027 is the fiscal year of a filing quoted (period ended 2026-07-26)"
+          ],
+          "periods_unverified": []
         },
         "withheld_reason": "",
         "counted_as": "supports",
@@ -567,7 +572,12 @@
             "92% matched 92% in a quote"
           ],
           "support": "passed",
-          "support_detail": "The excerpt reports Data Center revenue of $75.2 billion, up 92% from a year ago, matching the statement and supporting continued growth."
+          "support_detail": "The excerpt reports Data Center revenue of $75.2 billion, up 92% from a year ago, matching the statement and supporting continued growth.",
+          "periods": "passed",
+          "periods_detail": [
+            "fiscal year 2027 is the fiscal year of a filing quoted (period ended 2026-04-26)"
+          ],
+          "periods_unverified": []
         },
         "withheld_reason": "",
         "counted_as": "supports",
@@ -591,7 +601,10 @@
           "numbers": "none",
           "numbers_detail": [],
           "support": "passed",
-          "support_detail": "The excerpt warns that faster product transitions may create revenue volatility, which bears on growth but does not contradict the year-over-year figures, so the context stance fits."
+          "support_detail": "The excerpt warns that faster product transitions may create revenue volatility, which bears on growth but does not contradict the year-over-year figures, so the context stance fits.",
+          "periods": "none",
+          "periods_detail": [],
+          "periods_unverified": []
         },
         "withheld_reason": "",
         "counted_as": "context",
@@ -618,7 +631,12 @@
             "14% matched 14% in a quote"
           ],
           "support": "passed",
-          "support_detail": "The excerpt gives 22% and 14% of fiscal 2026 revenue from two direct customers, matching the statement and showing concentration."
+          "support_detail": "The excerpt gives 22% and 14% of fiscal 2026 revenue from two direct customers, matching the statement and showing concentration.",
+          "periods": "passed",
+          "periods_detail": [
+            "fiscal year 2026 is in a quote"
+          ],
+          "periods_unverified": []
         },
         "withheld_reason": "",
         "counted_as": "supports",
@@ -646,7 +664,12 @@
             "16% matched 16% in a quote"
           ],
           "support": "passed",
-          "support_detail": "The MD&A excerpt gives 21%, 17% and 16% of first-quarter fiscal 2027 revenue from three direct customers, matching the statement."
+          "support_detail": "The MD&A excerpt gives 21%, 17% and 16% of first-quarter fiscal 2027 revenue from three direct customers, matching the statement.",
+          "periods": "passed",
+          "periods_detail": [
+            "fiscal year 2027 is in a quote"
+          ],
+          "periods_unverified": []
         },
         "withheld_reason": "",
         "counted_as": "supports",
@@ -675,7 +698,12 @@
             "16% matched 16% in a quote"
           ],
           "support": "passed",
-          "support_detail": "The excerpt gives one customer at 16% in the second quarter and three at 16%, 15% and 13% for the first half, matching the statement exactly."
+          "support_detail": "The excerpt gives one customer at 16% in the second quarter and three at 16%, 15% and 13% for the first half, matching the statement exactly.",
+          "periods": "passed",
+          "periods_detail": [
+            "fiscal year 2027 is in a quote"
+          ],
+          "periods_unverified": []
         },
         "withheld_reason": "",
         "counted_as": "supports",
@@ -699,7 +727,10 @@
           "numbers": "none",
           "numbers_detail": [],
           "support": "passed",
-          "support_detail": "The excerpt states that revenue is concentrated among a limited number of direct and indirect customers and may continue, matching the statement."
+          "support_detail": "The excerpt states that revenue is concentrated among a limited number of direct and indirect customers and may continue, matching the statement.",
+          "periods": "none",
+          "periods_detail": [],
+          "periods_unverified": []
         },
         "withheld_reason": "",
         "counted_as": "supports",
@@ -725,7 +756,10 @@
             "$4.5 billion matched $4.5 billion in a quote"
           ],
           "support": "passed",
-          "support_detail": "The excerpt reports a $4.5 billion H20 charge for excess inventory and purchase obligations as demand diminished, matching the statement and the supports stance."
+          "support_detail": "The excerpt reports a $4.5 billion H20 charge for excess inventory and purchase obligations as demand diminished, matching the statement and the supports stance.",
+          "periods": "none",
+          "periods_detail": [],
+          "periods_unverified": []
         },
         "withheld_reason": "",
         "counted_as": "supports",
@@ -752,7 +786,10 @@
             "$60 million matched $60 million in a quote"
           ],
           "support": "passed",
-          "support_detail": "The excerpts give about $60 million of H20 revenue under licenses and no H200 revenue to date, matching the statement; small licensed sales bear on restricted revenue as stated."
+          "support_detail": "The excerpts give about $60 million of H20 revenue under licenses and no H200 revenue to date, matching the statement; small licensed sales bear on restricted revenue as stated.",
+          "periods": "none",
+          "periods_detail": [],
+          "periods_unverified": []
         },
         "withheld_reason": "",
         "counted_as": "supports",
@@ -776,7 +813,10 @@
           "numbers": "none",
           "numbers_detail": [],
           "support": "passed",
-          "support_detail": "The excerpt says export controls have in the past and may in future reduce demand in Europe, Latin America and Southeast Asia, matching the statement; it is relevant but not direct on China revenue, so context fits."
+          "support_detail": "The excerpt says export controls have in the past and may in future reduce demand in Europe, Latin America and Southeast Asia, matching the statement; it is relevant but not direct on China revenue, so context fits.",
+          "periods": "none",
+          "periods_detail": [],
+          "periods_unverified": []
         },
         "withheld_reason": "",
         "counted_as": "context",
@@ -804,7 +844,12 @@
             "105.9% matched +105.9% (Revenue growth, year over year, quarter ended 2026-07-26) in a cited figure"
           ],
           "support": "passed",
-          "support_detail": "Quarterly revenue of $96.22B, up 105.9% year over year, matches the statement and shows no company-wide revenue squeeze, so the challenges stance is right."
+          "support_detail": "Quarterly revenue of $96.22B, up 105.9% year over year, matches the statement and shows no company-wide revenue squeeze, so the challenges stance is right.",
+          "periods": "passed",
+          "periods_detail": [
+            "2026-07-26 is the calendar year of a cited figure (period ended 2026-07-26)"
+          ],
+          "periods_unverified": []
         },
         "withheld_reason": "",
         "counted_as": "challenges",
@@ -830,7 +875,12 @@
           "numbers": "none",
           "numbers_detail": [],
           "support": "passed",
-          "support_detail": "The excerpt gives gross margin of 75.0% versus 72.4% for the second quarter and 75.0% versus 66.6% for the first half, attributed to Blackwell Ultra mix, matching the statement."
+          "support_detail": "The excerpt gives gross margin of 75.0% versus 72.4% for the second quarter and 75.0% versus 66.6% for the first half, attributed to Blackwell Ultra mix, matching the statement.",
+          "periods": "passed",
+          "periods_detail": [
+            "fiscal 2027 is in a quote"
+          ],
+          "periods_unverified": []
         },
         "withheld_reason": "",
         "counted_as": "supports",
@@ -862,7 +912,10 @@
             "75.0% matched 75.0% (Gross margin, quarter ended 2026-07-26) in a cited figure"
           ],
           "support": "passed",
-          "support_detail": "The excerpt calls gross margin approximately flat sequentially and the quarterly figures 75.0%, 74.9% and 75.0% match the statement, so it rightly challenges ongoing expansion."
+          "support_detail": "The excerpt calls gross margin approximately flat sequentially and the quarterly figures 75.0%, 74.9% and 75.0% match the statement, so it rightly challenges ongoing expansion.",
+          "periods": "none",
+          "periods_detail": [],
+          "periods_unverified": []
         },
         "withheld_reason": "",
         "counted_as": "challenges",
@@ -892,7 +945,12 @@
             "$4.5 billion matched $4.5 billion in a quote"
           ],
           "support": "partly",
-          "support_detail": "The excerpt says the rise to 74.9% from 60.5% is primarily due to the prior-year H20 charge; 'primarily' supports most of the increase being non-underlying, but 'not underlying expansion' is stronger."
+          "support_detail": "The excerpt says the rise to 74.9% from 60.5% is primarily due to the prior-year H20 charge; 'primarily' supports most of the increase being non-underlying, but 'not underlying expansion' is stronger.",
+          "periods": "passed",
+          "periods_detail": [
+            "fiscal 2027 is in a quote"
+          ],
+          "periods_unverified": []
         },
         "withheld_reason": "",
         "counted_as": "context",
@@ -922,7 +980,13 @@
             "75.0% matched 75.0% in a quote"
           ],
           "support": "passed",
-          "support_detail": "The excerpt gives full-year gross margin falling to 71.1% in fiscal 2026 from 75.0% in fiscal 2025, matching the statement and challenging the expansion claim."
+          "support_detail": "The excerpt gives full-year gross margin falling to 71.1% in fiscal 2026 from 75.0% in fiscal 2025, matching the statement and challenging the expansion claim.",
+          "periods": "passed",
+          "periods_detail": [
+            "fiscal 2026 is in a quote",
+            "fiscal 2025 is in a quote"
+          ],
+          "periods_unverified": []
         },
         "withheld_reason": "",
         "counted_as": "challenges",
@@ -946,7 +1010,10 @@
           "numbers": "none",
           "numbers_detail": [],
           "support": "passed",
-          "support_detail": "The excerpt lists the limited number and geographic concentration of suppliers, foundries, contract manufacturers and memory makers as a risk, matching the statement and the supports stance."
+          "support_detail": "The excerpt lists the limited number and geographic concentration of suppliers, foundries, contract manufacturers and memory makers as a risk, matching the statement and the supports stance.",
+          "periods": "none",
+          "periods_detail": [],
+          "periods_unverified": []
         },
         "withheld_reason": "",
         "counted_as": "supports",
@@ -970,7 +1037,10 @@
           "numbers": "none",
           "numbers_detail": [],
           "support": "passed",
-          "support_detail": "The excerpt says the company depends on foundries for wafers and contracts independent subcontractors for assembly, test and packaging, matching the statement and showing outsourced dependence."
+          "support_detail": "The excerpt says the company depends on foundries for wafers and contracts independent subcontractors for assembly, test and packaging, matching the statement and showing outsourced dependence.",
+          "periods": "none",
+          "periods_detail": [],
+          "periods_unverified": []
         },
         "withheld_reason": "",
         "counted_as": "supports",
@@ -994,7 +1064,10 @@
           "numbers": "none",
           "numbers_detail": [],
           "support": "passed",
-          "support_detail": "The excerpt says the company expanded supplier relationships to build redundancy and resilience, matching the statement; it is a fair counterpoint, so the challenges stance fits."
+          "support_detail": "The excerpt says the company expanded supplier relationships to build redundancy and resilience, matching the statement; it is a fair counterpoint, so the challenges stance fits.",
+          "periods": "none",
+          "periods_detail": [],
+          "periods_unverified": []
         },
         "withheld_reason": "",
         "counted_as": "challenges",
@@ -1029,7 +1102,10 @@
       "reasons_withheld": 0,
       "findings_checked": 18,
       "findings_partly": 1,
-      "findings_failed_meaning": 0
+      "findings_failed_meaning": 0,
+      "periods_checked": 10,
+      "periods_unverified": 0,
+      "periods_comparative": 0
     },
     "metrics": [
       {

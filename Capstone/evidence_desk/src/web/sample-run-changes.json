@@ -1,7 +1,7 @@
 {
  "note": "Recorded on 2026-11-17 for the sample run beside it: each filing that run read, compared with the filing of the same form before it (fetched from SEC EDGAR), and every changed paragraph ranked against each claim by keyword overlap. No model is involved.",
  "changes": {
-  "run_id": "run-c5c86b7b18c8",
+  "run_id": "run-7facb0c200ed",
   "compared": [
    {
     "form": "10-K",

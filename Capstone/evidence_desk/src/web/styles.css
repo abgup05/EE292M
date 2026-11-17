@@ -8,12 +8,14 @@
  *   --neutral    grey: ? unjudged (dashed), ∅ not addressed (solid), • context,
  *                and tags about the page itself (sample record)
  *   --limit      ▲ amber: something limits this record (partial or failed run,
- *                coverage limit, error, source not read, failed check, withheld)
+ *                coverage limit, error, source not read, failed check, withheld;
+ *                and a year a finding names that its evidence does not carry, which
+ *                is reported only and withholds nothing)
  *   --model      ✎ violet: written by a model and not checked for meaning (solid rule,
  *                filled badge); ◎ agrees, ◐ agrees only in part: a second model's
  *                reading of a finding's evidence, the same violet but a double rule
  *                and no fill, so it never reads as the engine's own text
- *   --reject     ! red: your input was rejected
+ *   --reject     ! red: the server refused your input
  *   --accent     blue: something you can click
  *   --mark-bg    the quote found word for word, inside its context
  *   --ink, inverted (a dark tag in light mode, a light one in dark mode):
@@ -1141,3 +1143,13 @@ p.bd-adds-yes, dt .bd-adds-yes { font-weight: 650; color: var(--ink); }
 
 /* Beside the stance of a verified finding that cites figures and quotes nothing: words, no mark. */
 .figures-only-tag { font-size: var(--step--1); color: var(--ink-2); font-style: italic; }
+
+/* ------------------------------------------------------------ period check (milestone 11)
+ * A year a finding names that its evidence does not carry: a caution on its own line under
+ * the checks, in ink with the amber ▲, never the bold line of a failed check, and the finding
+ * keeps its stance and its place among the verified ones. */
+.check-list > li.period-caution { display: block; margin: 0.25rem 0 0; padding: 0.2rem 0 0.2rem 0.55rem; border-left: 2px solid var(--limit); }
+.check-list > li.period-caution::before { content: none; }
+.period-caution-title { font-weight: 500; }
+.period-unplaced { margin: 0.1rem 0 0; padding-left: 1.4rem; }
+.period-unplaced > li { display: list-item; }

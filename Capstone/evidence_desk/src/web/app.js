@@ -2335,6 +2335,22 @@ function renderBanner(run) {
     if (Number.isFinite(c.numbers_checked)) {
       facts.push(h("li", null, cov(c, "numbers_checked"), ` ${unit(c.numbers_checked, "number", "numbers")} in findings checked, `, cov(c, "numbers_unmatched"), " unmatched"));
     }
+    if (Number.isFinite(c.periods_checked)) {
+      // The period check reports; it withholds nothing. Its three counts, as the record gives them.
+      facts.push(
+        h(
+          "li",
+          { "data-periods-line": "" },
+          cov(c, "periods_checked"),
+          ` ${unit(c.periods_checked, "year", "years")} named in verified findings checked against their evidence, `,
+          cov(c, "periods_unverified"),
+          " not found",
+          Number.isFinite(c.periods_unverified) && c.periods_unverified > 0 && Number.isFinite(c.periods_comparative)
+            ? [" (", cov(c, "periods_comparative"), ` of them ${unit(c.periods_comparative, "a comparison year", "comparison years")})`]
+            : "",
+        ),
+      );
+    }
     if (positive("reasons_withheld")) {
       facts.push(h("li", null, cov(c, "reasons_withheld"), ` ${unit(c.reasons_withheld, "reason", "reasons")} withheld by the number check`));
     }
@@ -2918,6 +2934,37 @@ function renderChecks(checks) {
   }
   if (numbersItem) items.push(numbersItem);
 
+  // The period check, as the record states it. It reports and withholds nothing, so a year it
+  // could not place is a caution under the checks, never a failed check. A record without the
+  // field (older than the check) says nothing about it.
+  // Listed after the meaning check, so that a caution on its own line ends the list.
+  let periodItem = null;
+  const periods = str(checks.periods);
+  const periodLines = list(checks.periods_detail).map(String);
+  const periodDetail = periodLines.length
+    ? h("details", { class: "check-detail" }, h("summary", { text: "Period check details" }), h("ul", { "data-periods-detail": "" }, periodLines.map((line) => h("li", { text: line }))))
+    : "";
+  if (periods === "passed") {
+    periodItem = h("li", { "data-periods": periods }, "Years named: all in its evidence", periodDetail);
+  } else if (periods === "none") {
+    periodItem = h("li", { "data-periods": periods, text: "No year checked" });
+  } else if (periods === "unverified") {
+    const unplaced = list(checks.periods_unverified);
+    periodItem = h(
+      "li",
+      { class: "period-caution", "data-periods": periods },
+      h("span", { class: "mark-limit" }, limitGlyph(), " ", h("span", { class: "period-caution-title", text: "Period not found in its evidence:" })),
+      h(
+        "ul",
+        { class: "period-unplaced" },
+        unplaced.map((entry) => h("li", { "data-period-mention": str(entry?.mention), "data-comparative": entry?.comparative === true ? "true" : "false", text: str(entry?.detail) || str(entry?.mention) })),
+      ),
+      periodDetail,
+    );
+  } else if (periods) {
+    periodItem = h("li", { "data-periods": periods, text: `Period check: ${periods}` });
+  }
+
   // The meaning check, as the record states it. A record from before the check reads as not checked.
   const support = str(checks.support) || "unchecked";
   const reason = str(checks.support_detail);
@@ -2936,6 +2983,7 @@ function renderChecks(checks) {
     supportItem = h("li", { "data-support": support, text: `Meaning check: ${support}` });
   }
   items.push(supportItem);
+  if (periodItem) items.push(periodItem);
 
   // Agreeing only in part is a result the reader must weigh, so its reason is shown in the open.
   const partly = support === "partly" ? checkerReason(reason || "no reason was recorded.", "data-support-detail") : "";

@@ -2,7 +2,9 @@
 
 The contract is ``Capstone/PROMPT.md`` sections 3 (request) and 4 (method),
 plus the limits later versions added (Item coverage, excerpt context, reported
-figures, concurrent assessments; the review note and the saved thesis name).
+figures, concurrent assessments; the review note and the saved thesis name; the tagged
+figures of version 10). PROMPT.md states the request and method limits only; the later ones
+are stated here and in the docstrings of ``app.core.limits``.
 The code reads each limit from the module, so
 a test written against the module cannot notice a changed value; this one is
 written against the contract. Changing a limit therefore means changing this
@@ -54,6 +56,8 @@ CONTRACT: dict[str, int | float] = {
     "MAX_THESIS_NAME_CHARS": 80,
     # Added in version 5: the meaning check's one-sentence reason per finding
     "MAX_SUPPORT_REASON_CHARS": 300,
+    # Added in version 10: figures from a filing's own tags offered to the engine (opt-in)
+    "MAX_TAGGED_FIGURES_OFFERED": 40,
 }
 
 

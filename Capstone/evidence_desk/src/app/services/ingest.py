@@ -67,9 +67,11 @@ class Ingested:
     every source asked for (the filings requested when the index could not be
     read); ``duplicates`` counts sources whose content had already been read,
     so ``requested - duplicates`` is the number of distinct sources asked for.
+    ``filing_refs`` maps the source ID of each filing read to its reference.
     """
 
     documents: dict[str, Document] = field(default_factory=dict)
+    filing_refs: dict[str, FilingRef] = field(default_factory=dict)
     requested: int = 0
     duplicates: int = 0
     time_limit_hit: bool = False
@@ -198,6 +200,8 @@ def ingest(
         if document is not None:
             hashes[document.content_hash] = source_id
             result.documents[source_id] = document
+            if isinstance(item, FilingRef):
+                result.filing_refs[source_id] = item
             cache.put_text(document.content_hash, document.text)
         store.save_run(run)
     if result.filings_from_cache:

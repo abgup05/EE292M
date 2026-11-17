@@ -1,7 +1,9 @@
 """The command line: the second entry point onto the same thesis-run use case as the API.
 
 ``python -m app.cli run --ticker NVDA --decision "..." --claim "..." [--claim ...]``
-tests a thesis; ``python -m app.cli example`` tests the NVIDIA example. Both run
+tests a thesis; ``python -m app.cli example`` tests the NVIDIA example; with
+``--tagged-figures`` either also offers the engine the figures tagged in the
+filings (``ThesisRequest.tagged_figures``). Both run
 synchronously through :func:`app.services.thesis_run.execute_run`, print each
 claim's verdict with the policy's wording, and write ``<out>/<run-id>.json``
 (the run record) and ``<out>/<run-id>.md`` (the exported brief).
@@ -83,6 +85,14 @@ def _parser() -> argparse.ArgumentParser:
     shared.add_argument(
         "--out", type=Path, default=DEFAULT_OUT, help="directory for the record and the brief"
     )
+    shared.add_argument(
+        "--tagged-figures",
+        action="store_true",
+        help=(
+            "also offer the engine the segment, product, geography and customer figures tagged "
+            "in the newest annual and quarterly report read (changes the engine's prompts)"
+        ),
+    )
     run = commands.add_parser("run", parents=[shared], help="test a thesis")
     run.add_argument("--ticker", required=True)
     run.add_argument("--decision", required=True)
@@ -144,6 +154,8 @@ def _cassette_of(analyst: Analyst) -> CassetteTransport | None:
 
 def _thesis(args: argparse.Namespace) -> ThesisRequest:
     if args.command == "example":
+        if args.tagged_figures:
+            return EXAMPLE_THESIS.model_copy(update={"tagged_figures": True})
         return EXAMPLE_THESIS
     return ThesisRequest(
         ticker=args.ticker,
@@ -151,6 +163,7 @@ def _thesis(args: argparse.Namespace) -> ThesisRequest:
         claims=args.claims,
         filings=args.filings,
         scope_notes=args.scope_notes,
+        tagged_figures=args.tagged_figures,
     )
 
 

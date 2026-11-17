@@ -215,7 +215,8 @@
       "quotes_rejected": 0,
       "reasons_withheld": 0,
       "sources_read": 3,
-      "sources_requested": 3
+      "sources_requested": 3,
+      "tagged_figures_offered": 0
     },
     "status": "partial"
   },
@@ -492,6 +493,7 @@
     "MAX_QUERIES_PER_CLAIM": 4,
     "MAX_SCOPE_CHARS": 2000,
     "MAX_SUPPORT_REASON_CHARS": 300,
+    "MAX_TAGGED_FIGURES_OFFERED": 40,
     "MAX_THESIS_NAME_CHARS": 80,
     "METRICS_CACHE_SECONDS": 900,
     "MIN_CLAIMS": 1,
@@ -718,7 +720,7 @@
     ],
     "passages_indexed": 636
   },
-  "sha256": "bd294c7594348d6188b505d47c4960ae76fc7f73cc98eb8bd3c0bbb9ae35de03",
+  "sha256": "fd08a7ee57ca82cc3451388c3f0175fecc0025543c83589f1503537dc6c7df41",
   "sources": [
     {
       "characters": 151303,

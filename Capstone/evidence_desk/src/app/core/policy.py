@@ -88,6 +88,12 @@ FACTS_UNAVAILABLE = (
     "The reported figures (XBRL company facts) could not be read ({error}); "
     "findings rest on the filing text alone."
 )
+# Figures tagged in a filing's own inline XBRL, offered only when the run asks for them. A filing
+# whose tags cannot be read leaves the run to the rest, and the run is partial with this reason.
+TAGGED_UNAVAILABLE = (
+    "The tagged figures of the {form} for the period ended {period_end} could not be read "
+    "({error}); its segment, product, geography and customer figures were not offered."
+)
 SUMMARY_REPLACED = (
     "The model's summary was replaced by the template summary: {numbers} in it "
     "is not in any verified finding or reported figure."
@@ -233,6 +239,7 @@ def run_status(
     facts_error: str | None = None,
     unchecked_findings: int = 0,
     verified_findings: int = 0,
+    tagged_errors: Sequence[str] = (),
 ) -> tuple[RunStatus, list[str]]:
     """Complete only when nothing limits the brief; otherwise partial, with each reason.
 
@@ -241,7 +248,9 @@ def run_status(
     ``filings_read`` filings have most of their text outside numbered Items;
     ``facts_error`` says why the reported figures could not be read;
     ``unchecked_findings`` of the ``verified_findings`` were left unchecked because
-    the meaning check failed. Complete says that every stage ran on everything it was
+    the meaning check failed; ``tagged_errors`` are the :data:`TAGGED_UNAVAILABLE`
+    sentences of the filings whose tagged figures a run asked for and could not read.
+    Complete says that every stage ran on everything it was
     given. It says nothing about how much evidence stands behind a verdict: that is
     shown per claim, as the findings and filings it rests on.
     """
@@ -263,6 +272,7 @@ def run_status(
         )
     if facts_error is not None:
         reasons.append(FACTS_UNAVAILABLE.format(error=facts_error))
+    reasons.extend(tagged_errors)
     if withheld_findings:
         # A finding is withheld for no surviving quote or figure, or for a number in its
         # statement that its quotes and figures do not contain; the reason is on the finding.

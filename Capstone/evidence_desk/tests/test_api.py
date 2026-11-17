@@ -125,6 +125,33 @@ def test_each_invalid_request_is_refused_naming_its_field(
     assert filings.fetched == []
 
 
+def test_the_tagged_figures_option_is_accepted_and_recorded(client: TestClient) -> None:
+    response = client.post("/api/runs", json=VALID | {"tagged_figures": True})
+    assert response.status_code == 202, response.text
+    record = wait_for(client, response.json()["id"])
+    assert record["inputs"]["tagged_figures"] is True
+    assert "tagged_figures_offered" in record["coverage"]
+
+
+@pytest.mark.parametrize(
+    ("change", "field"),
+    [
+        ({"tagged_figures": "yes"}, "tagged_figures"),
+        ({"tagged_figures": 1}, "tagged_figures"),
+        ({"tagged_figure": True}, "tagged_figure"),
+        ({"question": "Is it growing?"}, "question"),
+    ],
+)
+def test_a_malformed_option_or_an_unknown_field_is_refused_naming_it(
+    client: TestClient, filings: FakeFilings, change: dict[str, Any], field: str
+) -> None:
+    response = client.post("/api/runs", json=VALID | change)
+    assert response.status_code == 422, response.text
+    assert fields(response) == [field]
+    assert client.get("/api/runs").json() == {"runs": []}
+    assert filings.fetched == []
+
+
 def test_messages_say_what_is_wrong(client: TestClient) -> None:
     [detail] = client.post("/api/runs", json=VALID | {"ticker": "nv da$"}).json()["details"]
     assert detail["message"].startswith("ticker must be 1 to 6 letters or digits")

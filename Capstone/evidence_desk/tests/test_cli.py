@@ -82,6 +82,30 @@ def test_run_takes_the_thesis_from_its_arguments(tmp_path: Path) -> None:
     assert json.loads((out / f"{run.id}.json").read_text())["id"] == run.id
 
 
+@pytest.mark.parametrize("command", ["example", "run"])
+def test_tagged_figures_is_an_option_of_both_commands(tmp_path: Path, command: str) -> None:
+    out = tmp_path / "results"
+    argv = [command]
+    if command == "run":
+        argv += ["--ticker", "NVDA", "--decision", DECISION, "--claim", CLAIM, "--filings", "1"]
+    argv += ["--tagged-figures", "--engine", "extractive", "--out", str(out)]
+    code, _ = run_cli(argv, tmp_path, FakeFilings.synthetic(filing_html(SENTENCE)))
+    assert code == 0
+    run = written(out)
+    assert run.inputs.tagged_figures is True
+    if command == "example":
+        assert run.inputs == EXAMPLE_THESIS.model_copy(update={"tagged_figures": True})
+    # The synthetic filing carries no inline XBRL: the run says so and is partial.
+    assert any("tagged figures" in limit for limit in run.coverage_limits)
+
+
+def test_without_the_option_the_example_is_the_example(tmp_path: Path) -> None:
+    out = tmp_path / "results"
+    argv = ["example", "--engine", "extractive", "--out", str(out)]
+    run_cli(argv, tmp_path, FakeFilings.synthetic(filing_html(SENTENCE)))
+    assert written(out).inputs == EXAMPLE_THESIS
+
+
 def test_coverage_sentence_counts_what_the_backend_counted(tmp_path: Path) -> None:
     out = tmp_path / "results"
     argv = ["run", "--ticker", "NVDA", "--decision", DECISION, "--claim", CLAIM]

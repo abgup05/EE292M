@@ -41,6 +41,12 @@ FIGURE_QUARTERS = 3
 FIGURE_YEARS = 2
 MAX_FIGURES_OFFERED = 40
 METRICS_CACHE_SECONDS = 900
+# Figures from a filing's own tags (segments, products, geographies, customers), offered after
+# the figures above when a run asks for them (ThesisRequest.tagged_figures). When the newest
+# annual and quarterly report hold more, members are taken largest first in every breakdown at
+# once, a value always with its change (app.core.tagged_figures.select_tagged). 40 keeps the
+# three largest members of each NVIDIA breakdown in both filings (52 are built).
+MAX_TAGGED_FIGURES_OFFERED = 40
 
 # Review and saved theses
 MAX_NOTE_CHARS = 500

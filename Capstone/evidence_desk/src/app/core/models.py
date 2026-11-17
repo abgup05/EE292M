@@ -11,7 +11,7 @@ import re
 from datetime import datetime
 from enum import StrEnum
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.core import limits
 from app.core.metric_models import Metric, Series
@@ -64,7 +64,13 @@ TICKER_PATTERN = re.compile(r"^[A-Z][A-Z0-9]{0,5}(?:[.-][A-Z]{1,2})?$")
 
 
 class ThesisRequest(BaseModel):
-    """Inputs for one run: a company, the decision, and the claims to test."""
+    """Inputs for one run: a company, the decision, and the claims to test.
+
+    A field the request does not have is refused, not ignored: a misspelt option
+    would otherwise start a run without it and say nothing.
+    """
+
+    model_config = ConfigDict(extra="forbid")
 
     ticker: str
     decision: str = Field(
@@ -74,6 +80,16 @@ class ThesisRequest(BaseModel):
     scope_notes: str = Field(default="", max_length=limits.MAX_SCOPE_CHARS)
     filings: int = Field(default=limits.DEFAULT_FILINGS, ge=1, le=limits.MAX_FILINGS, strict=True)
     extra_urls: list[str] = Field(default_factory=list, max_length=limits.MAX_EXTRA_URLS)
+    tagged_figures: bool = Field(
+        default=False,
+        strict=True,
+        description=(
+            "Also offer the engine the segment, product, geography and customer figures tagged "
+            "in the newest annual and quarterly report read. Off by default: the figures change "
+            "the engine's assessment prompt, and recorded model answers are keyed by the exact "
+            "prompt, so a run without the option must ask exactly what it asked before."
+        ),
+    )
 
     @field_validator("ticker", "decision", "scope_notes", mode="before")
     @classmethod
@@ -381,6 +397,10 @@ class Coverage(BaseModel):
     # were not found in the finding's quotes or cited figures.
     metrics_computed: int = 0
     figures_offered: int = 0
+    # Figures from the filings' own tags shown to the engine after those above, when the run
+    # asked for them (ThesisRequest.tagged_figures); the engine saw the sum of the two.
+    # figures_cited counts citations of either kind.
+    tagged_figures_offered: int = 0
     figures_cited: int = 0
     numbers_checked: int = 0
     numbers_unmatched: int = 0

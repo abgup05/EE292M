@@ -58,6 +58,7 @@ from app.retrieval.chunk import chunk_document
 from app.retrieval.search import PassageIndex
 from app.services.ingest import ingest
 from app.services.numbers import load_numbers, select_figures
+from app.services.tagged_figures import load_tagged_figures
 from app.sources.http import fetch_page as default_fetch_page
 from app.store import FilingCache, Store
 
@@ -282,9 +283,19 @@ def execute_run(
         run.series = list(numbers.report.series)
     run.metrics_notes = list(numbers.notes)
     figures = select_figures(numbers.report)
-    offered_figures = {figure.id: figure for figure in figures}
     run.coverage.metrics_computed = sum(1 for m in run.metrics if m.value is not None)
     run.coverage.figures_offered = len(figures)
+    tagged_errors: list[str] = []
+    if run.inputs.tagged_figures:
+        # Opt-in: the figures join the prompt after the company-facts figures and the record
+        # with the other metrics, so a finding's metric_ids resolve on the page and in the brief.
+        tagged = load_tagged_figures(company, filings, ingested.filing_refs.values())
+        run.metrics += tagged.figures
+        run.metrics_notes += tagged.notes
+        figures = [*figures, *tagged.figures]
+        tagged_errors = tagged.errors
+        run.coverage.tagged_figures_offered = len(tagged.figures)
+    offered_figures = {figure.id: figure for figure in figures}
 
     _stage(run, store, "planning")
     queries = engine.plan(run.inputs, company)
@@ -493,6 +504,7 @@ def execute_run(
         facts_error=numbers.error,
         unchecked_findings=unchecked.findings,
         verified_findings=run.coverage.findings_verified,
+        tagged_errors=tagged_errors,
     )
     run.coverage_limits.extend(reasons)
     for claim in run.claims:

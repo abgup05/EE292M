@@ -44,17 +44,22 @@ def recorded_filings() -> FakeFilings:
     return FakeFilings(refs=refs, documents=documents, companies=recorded_companies())
 
 
-def replay(cassette: Path, data_dir: Path) -> tuple[Run, list[str]]:
+def replay(
+    cassette: Path, data_dir: Path, *, tagged_figures: bool = False
+) -> tuple[Run, list[str]]:
     """Execute the example thesis; return the run and the keys of unanswered requests.
 
-    The record goes to ``data_dir/replay.sqlite`` and the source text to
+    With ``tagged_figures`` the run also offers the figures tagged in the filings,
+    which changes every assessment prompt, so it needs a cassette of its own. The
+    record goes to ``data_dir/replay.sqlite`` and the source text to
     ``data_dir/cache.sqlite``.
     """
     transport = CassetteTransport(cassette)
     analyst = ClaudeAnalyst(transport=transport)
     store = Store(data_dir / "replay.sqlite")
+    thesis = EXAMPLE_THESIS.model_copy(deep=True, update={"tagged_figures": tagged_figures})
     run = execute_run(
-        new_run(EXAMPLE_THESIS.model_copy(deep=True)),
+        new_run(thesis),
         store,
         filings=recorded_filings(),
         analyst=analyst,
@@ -100,9 +105,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out", type=Path, help="directory for <name>.json and <name>.md")
     parser.add_argument("--name", default="recorded-run")
     parser.add_argument("--sample", type=Path, help="also write the page's sample file here")
+    parser.add_argument(
+        "--tagged-figures",
+        action="store_true",
+        help="also offer the figures tagged in the filings (a cassette recorded with the option)",
+    )
     args = parser.parse_args(argv)
     with tempfile.TemporaryDirectory() as scratch:
-        run, pending = replay(args.cassette, Path(scratch))
+        run, pending = replay(args.cassette, Path(scratch), tagged_figures=args.tagged_figures)
         sample = (
             sample_record(run, args.cassette, Path(scratch))
             if args.sample and not pending

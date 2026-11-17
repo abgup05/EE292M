@@ -132,7 +132,7 @@ Every number has the command that produced it and its denominator in [`docs/resu
 | Changes that bear on each claim | 802 changed paragraphs behind the example; the five best by keyword overlap listed per claim. Nobody has judged the lists | [`docs/claim-changes.md`](docs/claim-changes.md) |
 | Tagged breakdowns (`make breakdowns`) | On sixteen filings of eight companies every breakdown adds up to the filing's tagged total. NVIDIA's are checked against the filing's own text | [`docs/breakdowns.md`](docs/breakdowns.md) |
 | Tagged figures offered to the engine (`make replay` on two recordings made the same day) | Five verified findings cite one, and citations of figures go from 8 to 20. Not shown: that the option changes a verdict. Asking the same prompts again moved a verdict too | [`docs/tagged-figures.md`](docs/tagged-figures.md) |
-| The gate from a fresh clone (`make verify-fresh`) | 1,499 offline tests, the smoke test, 156 assertions on the rendered page, in 38 s | [`docs/evidence/verify-fresh.txt`](docs/evidence/verify-fresh.txt), [`docs/testing.md`](docs/testing.md) |
+| The gate from a fresh clone (`make verify-fresh`) | 1,580 offline tests, the smoke test, 156 assertions on the rendered page, in 38 s | [`docs/evidence/verify-fresh.txt`](docs/evidence/verify-fresh.txt), [`docs/testing.md`](docs/testing.md) |
 | The running app, end to end, on live filings (`make live-walk`) | Passes: a judged run, decisions, the reviewed brief, a saved thesis run twice, the comparisons, the breakdowns, and a run that asks for the tagged figures and is offered 40 | [`docs/evidence/live-walk.txt`](docs/evidence/live-walk.txt) |
 | The period check (`make eval`) | All 34 years named by the golden set's findings are in their evidence: no false alarm. With a wrong year planted in each of the 25 findings that name one, it flags 21 moved one year back, 24 two back, 25 three back and 23 one forward. With one year of several moved and the others left right, it flags 13 of 18 planted statements | [`docs/period-check.md`](docs/period-check.md) |
 | The record (`make restore-check`, `make two-writers`) | The newest backup restores to the live record, compared column by column: 40 runs, 20 decisions, 10 theses, all readable. The app and a one-off container wrote one scratch record at the same time, 2,000 writes each, with no failed write | [`docs/evidence/`](docs/evidence/) |
@@ -143,7 +143,7 @@ Read all of it with three cautions. **The model answers are recordings made by s
 ## Verification
 
 ```sh
-make verify         # build, lint, 1,499 offline tests, smoke test, browser-level test
+make verify         # build, lint, 1,580 offline tests, smoke test, browser-level test
 make test           # offline tests only (T=tests/test_gate.py for one file)
 make golden-check   # the tripwire: one recorded run, compared stage by stage
 make replay         # the recorded model-backed run, offline

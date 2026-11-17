@@ -249,8 +249,9 @@ smoke test, three page renders and 99 page assertions), took 33 s by the wall cl
 each; a first build of the image takes minutes and was not timed. At version 10 the same two
 measurements, once each: 23 s (pytest reports 23.06 s for 1,361 tests) and 34 s for the whole
 gate on a fresh clone, now with seven page renders and 142 page assertions. At version 11: 26 s
-(pytest reports 26.19 s for 1,499 tests) and 38 s for the whole gate, with 156 page assertions
-(`docs/evidence/verify-fresh.txt`).
+(pytest reports 26.19 s for 1,499 tests) and 38 s for the whole gate, with 156 page assertions.
+At version 11.1: 26 s again (26.03 s for 1,580 tests) and 38 s for the whole gate, with the same
+156 page assertions (`docs/evidence/verify-fresh.txt`).
 
 ## What no test here can see
 

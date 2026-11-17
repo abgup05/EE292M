@@ -1,0 +1,614 @@
+{
+  "coverage": {
+    "counts": {
+      "claims_total": 5,
+      "claims_with_evidence": 5,
+      "engine_fallbacks": 0,
+      "excerpts_verified": 15,
+      "figures_cited": 0,
+      "figures_offered": 37,
+      "findings_proposed": 15,
+      "findings_verified": 15,
+      "findings_withheld": 0,
+      "metrics_computed": 156,
+      "numbers_checked": 10,
+      "numbers_unmatched": 0,
+      "passages_indexed": 636,
+      "quotes_offered": 15,
+      "quotes_rejected": 0,
+      "sources_read": 3,
+      "sources_requested": 3
+    },
+    "status": "partial"
+  },
+  "evidence": [
+    {
+      "excerpt_sha256": "3c70a47c41614da827c593db675aa59ab49dfa863dd4093f5d71b175848ca4b7",
+      "finding_id": "f1",
+      "id": "e1",
+      "length": 145,
+      "locator": "Part I, Item 2. Management’s Discussion and Analysis of Financial Condition and Results of Operations › Second Quarter of Fiscal Year 2027 Summary",
+      "source_id": "s1",
+      "start": 82000
+    },
+    {
+      "excerpt_sha256": "a26698f3a5839c6a6ccac8dfc7af49825ef86dfd8ac1ec1a9083682ee4ac58fd",
+      "finding_id": "f2",
+      "id": "e2",
+      "length": 137,
+      "locator": "Part I, Item 2. Management’s Discussion and Analysis of Financial Condition and Results of Operations › Second Quarter of Fiscal Year 2027 Summary",
+      "source_id": "s1",
+      "start": 82452
+    },
+    {
+      "excerpt_sha256": "38be69e48b59771fa857cff244571dbd63b435f24fa4d7fd4223859a3e353a72",
+      "finding_id": "f3",
+      "id": "e3",
+      "length": 209,
+      "locator": "Part I, Item 2. Management's Discussion and Analysis of Financial Condition and Results of Operations › First Quarter of Fiscal Year 2027 Summary",
+      "source_id": "s2",
+      "start": 65460
+    },
+    {
+      "excerpt_sha256": "bced445fe7f031a2d448a5195f5d323ed30fd2e57fa306849574daf7e495f112",
+      "finding_id": "f4",
+      "id": "e4",
+      "length": 304,
+      "locator": "Item 1A. Risk Factors › Risks Related to Our Global Operating Business",
+      "source_id": "s3",
+      "start": 115154
+    },
+    {
+      "excerpt_sha256": "e316294b9ff5ce1d0cd294be68a020ccabb8396831cac18603b7160c1ea92735",
+      "finding_id": "f5",
+      "id": "e5",
+      "length": 145,
+      "locator": "Item 1A. Risk Factors › Risks Related to Our Global Operating Business",
+      "source_id": "s3",
+      "start": 115459
+    },
+    {
+      "excerpt_sha256": "ecf3356ec78c50ddb80343baaa6b758476a1f70e4f27f07dcac4660c3300899c",
+      "finding_id": "f6",
+      "id": "e6",
+      "length": 98,
+      "locator": "Item 1A. Risk Factors › Risks Related to Our Global Operating Business",
+      "source_id": "s3",
+      "start": 116111
+    },
+    {
+      "excerpt_sha256": "2e878d8d76bd9316470656a34f8867f0e241370e36ee7a0d7c8258db9261d1b1",
+      "finding_id": "f7",
+      "id": "e7",
+      "length": 325,
+      "locator": "Part II, Item 1A. Risk Factors",
+      "source_id": "s1",
+      "start": 135446
+    },
+    {
+      "excerpt_sha256": "f6cb258e78ae4cd6d478df2f474388dc8d93531a63271b81fac7ea71e2bffd08",
+      "finding_id": "f8",
+      "id": "e8",
+      "length": 312,
+      "locator": "Part II, Item 1A. Risk Factors",
+      "source_id": "s1",
+      "start": 137694
+    },
+    {
+      "excerpt_sha256": "a5d73eec54dad0000a1695ae89973821097a5632bcd5c3f9e819267086a70027",
+      "finding_id": "f9",
+      "id": "e9",
+      "length": 227,
+      "locator": "Item 1A. Risk Factors › Risks Related to Regulatory, Legal, Our Stock and Other Matters",
+      "source_id": "s3",
+      "start": 145244
+    },
+    {
+      "excerpt_sha256": "39a836cf75ae76dd802336bb55303978934a3546e1964327f7709fac78eca535",
+      "finding_id": "f10",
+      "id": "e10",
+      "length": 76,
+      "locator": "Part I, Item 2. Management’s Discussion and Analysis of Financial Condition and Results of Operations › Second Quarter of Fiscal Year 2027 Summary",
+      "source_id": "s1",
+      "start": 82851
+    },
+    {
+      "excerpt_sha256": "ac925a2ef625e3109ed95b0d9513a409db405a172d26c6d88bb4ee58e3c6c9ca",
+      "finding_id": "f11",
+      "id": "e11",
+      "length": 120,
+      "locator": "Part I, Item 2. Management’s Discussion and Analysis of Financial Condition and Results of Operations › Second Quarter of Fiscal Year 2027 Summary",
+      "source_id": "s1",
+      "start": 82928
+    },
+    {
+      "excerpt_sha256": "f30d0e42bce8d4ff37ab627c8f12afa1f2ea416880b2ff978ea7a8effa9e97be",
+      "finding_id": "f12",
+      "id": "e12",
+      "length": 187,
+      "locator": "Item 7. Management's Discussion and Analysis of Financial Condition and Results of Operations › Inventories",
+      "source_id": "s3",
+      "start": 195496
+    },
+    {
+      "excerpt_sha256": "63644480928ad60bbc7953772cf23dd0803add4f1538f9aef866926c078caee8",
+      "finding_id": "f13",
+      "id": "e13",
+      "length": 154,
+      "locator": "Item 1A. Risk Factors › Risks Related to Demand, Supply, and Manufacturing",
+      "source_id": "s3",
+      "start": 83091
+    },
+    {
+      "excerpt_sha256": "64f2bc297d6dd166d6b8c7e8b9899390ed6bd24ffb8588ef02a9d484bcda6827",
+      "finding_id": "f14",
+      "id": "e14",
+      "length": 249,
+      "locator": "Item 1A. Risk Factors › Risks Related to Demand, Supply, and Manufacturing",
+      "source_id": "s3",
+      "start": 81424
+    },
+    {
+      "excerpt_sha256": "aebdcfb8f37db6b486d505898747d48f34661e08613dba92bcac45e148413f70",
+      "finding_id": "f15",
+      "id": "e15",
+      "length": 385,
+      "locator": "Item 1C. Cybersecurity › Risk management and strategy",
+      "source_id": "s3",
+      "start": 174437
+    }
+  ],
+  "figures": [
+    {
+      "display": "$96.22B",
+      "id": "revenue:quarter:2026-07-26",
+      "value": 96221000000.0
+    },
+    {
+      "display": "+105.9%",
+      "id": "revenue_yoy:quarter:2026-07-26",
+      "value": 105.851
+    },
+    {
+      "display": "+17.9%",
+      "id": "revenue_qoq:quarter:2026-07-26",
+      "value": 17.8962
+    },
+    {
+      "display": "75.0%",
+      "id": "gross_margin:quarter:2026-07-26",
+      "value": 74.9753
+    },
+    {
+      "display": "66.2%",
+      "id": "operating_margin:quarter:2026-07-26",
+      "value": 66.2371
+    },
+    {
+      "display": "62.0%",
+      "id": "net_margin:quarter:2026-07-26",
+      "value": 62.0322
+    },
+    {
+      "display": "$2.46",
+      "id": "eps_diluted:quarter:2026-07-26",
+      "value": 2.46
+    },
+    {
+      "display": "7.3%",
+      "id": "rnd_ratio:quarter:2026-07-26",
+      "value": 7.33104
+    },
+    {
+      "display": "$24.08B",
+      "id": "operating_cash_flow:quarter:2026-07-26",
+      "value": 24077000000.0
+    },
+    {
+      "display": "$2.68B",
+      "id": "capex:quarter:2026-07-26",
+      "value": 2677000000.0
+    },
+    {
+      "display": "$21.40B",
+      "id": "free_cash_flow:quarter:2026-07-26",
+      "value": 21400000000.0
+    },
+    {
+      "display": "22.2%",
+      "id": "fcf_margin:quarter:2026-07-26",
+      "value": 22.2405
+    },
+    {
+      "display": "$215.94B",
+      "id": "revenue:annual:2026-01-25",
+      "value": 215938000000.0
+    },
+    {
+      "display": "+65.5%",
+      "id": "revenue_yoy:annual:2026-01-25",
+      "value": 65.4735
+    },
+    {
+      "display": "71.1%",
+      "id": "gross_margin:annual:2026-01-25",
+      "value": 71.0681
+    },
+    {
+      "display": "60.4%",
+      "id": "operating_margin:annual:2026-01-25",
+      "value": 60.3817
+    },
+    {
+      "display": "55.6%",
+      "id": "net_margin:annual:2026-01-25",
+      "value": 55.6025
+    },
+    {
+      "display": "$4.90",
+      "id": "eps_diluted:annual:2026-01-25",
+      "value": 4.9
+    },
+    {
+      "display": "8.6%",
+      "id": "rnd_ratio:annual:2026-01-25",
+      "value": 8.56588
+    },
+    {
+      "display": "$102.72B",
+      "id": "operating_cash_flow:annual:2026-01-25",
+      "value": 102718000000.0
+    },
+    {
+      "display": "$6.04B",
+      "id": "capex:annual:2026-01-25",
+      "value": 6042000000.0
+    },
+    {
+      "display": "$96.68B",
+      "id": "free_cash_flow:annual:2026-01-25",
+      "value": 96676000000.0
+    },
+    {
+      "display": "44.8%",
+      "id": "fcf_margin:annual:2026-01-25",
+      "value": 44.7703
+    }
+  ],
+  "limits": {
+    "CONTEXT_CHARS": 240,
+    "DEFAULT_FILINGS": 3,
+    "FIGURE_QUARTERS": 3,
+    "FIGURE_YEARS": 2,
+    "MAX_CLAIMS": 6,
+    "MAX_CLAIM_CHARS": 400,
+    "MAX_CONCURRENT_ASSESSMENTS": 3,
+    "MAX_DECISION_CHARS": 500,
+    "MAX_EXCERPT_CHARS": 600,
+    "MAX_EXTRA_URLS": 5,
+    "MAX_FIGURES_OFFERED": 40,
+    "MAX_FILINGS": 5,
+    "MAX_FINDINGS_PER_CLAIM": 4,
+    "MAX_PASSAGES_PER_SOURCE": 5,
+    "MAX_QUERIES_PER_CLAIM": 4,
+    "MAX_SCOPE_CHARS": 2000,
+    "METRICS_CACHE_SECONDS": 900,
+    "MIN_CLAIMS": 1,
+    "MIN_CLAIM_CHARS": 15,
+    "MIN_DECISION_CHARS": 10,
+    "MIN_EXCERPT_CHARS": 20,
+    "MIN_ITEM_COVERAGE": 0.5,
+    "PASSAGES_PER_CLAIM": 8,
+    "PASSAGE_MAX_CHARS": 1800,
+    "PASSAGE_TARGET_CHARS": 1100,
+    "RUN_TIME_LIMIT_SECONDS": 300.0
+  },
+  "prompts": {
+    "ASSESS_SCHEMA": "d9d101ce0a81912cbc94d8ab8c9cb55b63d25568430c536abe7d2ddecb0550bb",
+    "ASSESS_SYSTEM": "9cf2910a2189897b8a03534c823af31d3afdb323db5b81ae6f0fc45d27be8546",
+    "ASSESS_SYSTEM_WITH_FIGURES": "2478a9cff3167f861dc3747d9e97e5f38ba55fc9f2b8cc4a7a8b51f50491feca",
+    "PLAN_SCHEMA": "1ba9214f45f05a3674eb63862b376573763dee9d130533aaa289bc2f21b3bc39",
+    "PLAN_SYSTEM": "9bd99a183e1b6e90ba77a451b8b470e10dc7f57ffc65f4cbcf2308cfe485d7a7",
+    "SUMMARY_SCHEMA": "0d127b2a3ce5615f075612fd2c5df5ade0434595d896aea324fdba93cf5eade5",
+    "SUMMARY_SYSTEM": "5202a0e1103badfab3efc15d0b39076886c68110a7975ca26452e96c3db46acc"
+  },
+  "retrieval": {
+    "claims": [
+      {
+        "id": "c1",
+        "offered": [
+          {
+            "id": "s3-p73",
+            "locator": "Item 1A. Risk Factors › Risks Related to Demand, Supply, and Manufacturing"
+          },
+          {
+            "id": "s2-p111",
+            "locator": "Part II, Item 1A. Risk Factors"
+          },
+          {
+            "id": "s1-p89",
+            "locator": "Part I, Item 2. Management’s Discussion and Analysis of Financial Condition and Results of Operations › Second Quarter of Fiscal Year 2027 Summary"
+          },
+          {
+            "id": "s3-p19",
+            "locator": "Item 1. Business › Data Center"
+          },
+          {
+            "id": "s2-p72",
+            "locator": "Part I, Item 2. Management's Discussion and Analysis of Financial Condition and Results of Operations › First Quarter of Fiscal Year 2027 Summary"
+          },
+          {
+            "id": "s1-p80",
+            "locator": "Part I, Item 2. Management’s Discussion and Analysis of Financial Condition and Results of Operations › Recent Developments, Future Objectives and Challenges"
+          },
+          {
+            "id": "s3-p164",
+            "locator": "Item 7. Management's Discussion and Analysis of Financial Condition and Results of Operations › Recent Developments, Future Objectives and Challenges"
+          },
+          {
+            "id": "s1-p78",
+            "locator": "Part I, Item 2. Management’s Discussion and Analysis of Financial Condition and Results of Operations › Recent Developments, Future Objectives and Challenges"
+          }
+        ],
+        "queries": [
+          "Data center revenue still growing year"
+        ]
+      },
+      {
+        "id": "c2",
+        "offered": [
+          {
+            "id": "s3-p103",
+            "locator": "Item 1A. Risk Factors › Risks Related to Our Global Operating Business"
+          },
+          {
+            "id": "s2-p80",
+            "locator": "Part I, Item 2. Management's Discussion and Analysis of Financial Condition and Results of Operations › Concentration of Revenue"
+          },
+          {
+            "id": "s3-p104",
+            "locator": "Item 1A. Risk Factors › Risks Related to Our Global Operating Business"
+          },
+          {
+            "id": "s3-p184",
+            "locator": "Item 7. Management's Discussion and Analysis of Financial Condition and Results of Operations › Concentration of Revenue"
+          },
+          {
+            "id": "s1-p97",
+            "locator": "Part I, Item 2. Management’s Discussion and Analysis of Financial Condition and Results of Operations › Concentration of Revenue"
+          },
+          {
+            "id": "s1-p85",
+            "locator": "Part I, Item 2. Management’s Discussion and Analysis of Financial Condition and Results of Operations › Recent Developments, Future Objectives and Challenges"
+          },
+          {
+            "id": "s3-p323",
+            "locator": "Item 15. Exhibits and Financial Statement Schedules › Note 16 - Segment Information"
+          },
+          {
+            "id": "s1-p134",
+            "locator": "Part II, Item 1A. Risk Factors"
+          }
+        ],
+        "queries": [
+          "small number customers account large share revenue"
+        ]
+      },
+      {
+        "id": "c3",
+        "offered": [
+          {
+            "id": "s3-p125",
+            "locator": "Item 1A. Risk Factors › Risks Related to Regulatory, Legal, Our Stock and Other Matters"
+          },
+          {
+            "id": "s1-p141",
+            "locator": "Part II, Item 1A. Risk Factors"
+          },
+          {
+            "id": "s2-p132",
+            "locator": "Part II, Item 1A. Risk Factors"
+          },
+          {
+            "id": "s3-p127",
+            "locator": "Item 1A. Risk Factors › Risks Related to Regulatory, Legal, Our Stock and Other Matters"
+          },
+          {
+            "id": "s1-p139",
+            "locator": "Part II, Item 1A. Risk Factors"
+          },
+          {
+            "id": "s2-p130",
+            "locator": "Part II, Item 1A. Risk Factors"
+          },
+          {
+            "id": "s3-p117",
+            "locator": "Item 1A. Risk Factors › Risks Related to Regulatory, Legal, Our Stock and Other Matters"
+          },
+          {
+            "id": "s1-p130",
+            "locator": "Part II, Item 1A. Risk Factors"
+          }
+        ],
+        "queries": [
+          "Export controls sales China restricting revenue"
+        ]
+      },
+      {
+        "id": "c4",
+        "offered": [
+          {
+            "id": "s1-p90",
+            "locator": "Part I, Item 2. Management’s Discussion and Analysis of Financial Condition and Results of Operations › Second Quarter of Fiscal Year 2027 Summary"
+          },
+          {
+            "id": "s3-p173",
+            "locator": "Item 7. Management's Discussion and Analysis of Financial Condition and Results of Operations › Inventories"
+          },
+          {
+            "id": "s2-p73",
+            "locator": "Part I, Item 2. Management's Discussion and Analysis of Financial Condition and Results of Operations › First Quarter of Fiscal Year 2027 Summary"
+          },
+          {
+            "id": "s1-p98",
+            "locator": "Part I, Item 2. Management’s Discussion and Analysis of Financial Condition and Results of Operations › Gross Profit and Gross Margin"
+          },
+          {
+            "id": "s3-p169",
+            "locator": "Item 7. Management's Discussion and Analysis of Financial Condition and Results of Operations › Fiscal Year 2026 Summary"
+          },
+          {
+            "id": "s2-p81",
+            "locator": "Part I, Item 2. Management's Discussion and Analysis of Financial Condition and Results of Operations › Gross Profit and Gross Margin"
+          },
+          {
+            "id": "s3-p83",
+            "locator": "Item 1A. Risk Factors › Risks Related to Our Global Operating Business"
+          },
+          {
+            "id": "s3-p185",
+            "locator": "Item 7. Management's Discussion and Analysis of Financial Condition and Results of Operations › Gross Profit and Gross Margin"
+          }
+        ],
+        "queries": [
+          "Gross margin expanding"
+        ]
+      },
+      {
+        "id": "c5",
+        "offered": [
+          {
+            "id": "s3-p78",
+            "locator": "Item 1A. Risk Factors › Risks Related to Demand, Supply, and Manufacturing"
+          },
+          {
+            "id": "s3-p77",
+            "locator": "Item 1A. Risk Factors › Risks Related to Demand, Supply, and Manufacturing"
+          },
+          {
+            "id": "s2-p110",
+            "locator": "Part II, Item 1A. Risk Factors"
+          },
+          {
+            "id": "s3-p72",
+            "locator": "Item 1A. Risk Factors › Risks Related to Demand, Supply, and Manufacturing"
+          },
+          {
+            "id": "s3-p150",
+            "locator": "Item 1C. Cybersecurity › Risk management and strategy"
+          },
+          {
+            "id": "s3-p90",
+            "locator": "Item 1A. Risk Factors › Risks Related to Our Global Operating Business"
+          },
+          {
+            "id": "s1-p123",
+            "locator": "Part II, Item 1A. Risk Factors"
+          },
+          {
+            "id": "s2-p115",
+            "locator": "Part II, Item 1A. Risk Factors"
+          }
+        ],
+        "queries": [
+          "company depends limited number suppliers manufacture products"
+        ]
+      }
+    ],
+    "passages_indexed": 636
+  },
+  "sha256": "ea760582815225341bc82607605eb3f9a48d8b50672c54b6774f4f0f66c59778",
+  "sources": [
+    {
+      "characters": 151303,
+      "content_hash": "53e6daca7f0d5babc3d1dcca603e52f8364e0fc9c8c1a00da7ee2003ac05feee",
+      "extraction_status": "extracted",
+      "form": "10-Q",
+      "id": "s1",
+      "item_coverage": 0.964762,
+      "kind": "sec_filing",
+      "period_end": "2026-07-26",
+      "sections": 73
+    },
+    {
+      "characters": 139520,
+      "content_hash": "069c21f96806c852b4e2c7bf62952d2db167b5bb58a590b92be938f2eb25d285",
+      "extraction_status": "extracted",
+      "form": "10-Q",
+      "id": "s2",
+      "item_coverage": 0.962108,
+      "kind": "sec_filing",
+      "period_end": "2026-04-26",
+      "sections": 69
+    },
+    {
+      "characters": 344740,
+      "content_hash": "9925c5689449a66cdd577f380159c81f4b5ccaefa9b2d47c1d70b38fa54210bf",
+      "extraction_status": "extracted",
+      "form": "10-K",
+      "id": "s3",
+      "item_coverage": 0.96929,
+      "kind": "sec_filing",
+      "period_end": "2026-01-25",
+      "sections": 150
+    },
+    {
+      "characters": 0,
+      "content_hash": "f6870031195cd1dc226506fcf891f4096679d400ac6139b9909a117dc9648f9b",
+      "extraction_status": "extracted",
+      "form": null,
+      "id": "s4",
+      "item_coverage": null,
+      "kind": "sec_xbrl",
+      "period_end": null,
+      "sections": 0
+    }
+  ],
+  "verdicts": [
+    {
+      "finding_ids": [
+        "f1",
+        "f2",
+        "f3"
+      ],
+      "id": "c1",
+      "verdict": "unjudged"
+    },
+    {
+      "finding_ids": [
+        "f4",
+        "f5",
+        "f6"
+      ],
+      "id": "c2",
+      "verdict": "unjudged"
+    },
+    {
+      "finding_ids": [
+        "f7",
+        "f8",
+        "f9"
+      ],
+      "id": "c3",
+      "verdict": "unjudged"
+    },
+    {
+      "finding_ids": [
+        "f10",
+        "f11",
+        "f12"
+      ],
+      "id": "c4",
+      "verdict": "unjudged"
+    },
+    {
+      "finding_ids": [
+        "f13",
+        "f14",
+        "f15"
+      ],
+      "id": "c5",
+      "verdict": "unjudged"
+    }
+  ]
+}

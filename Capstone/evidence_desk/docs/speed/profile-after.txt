@@ -1,0 +1,44 @@
+build_golden() under cProfile, 2026-11-17 12:04:17 UTC
+wall time 1.192 s (profiled; slower than unprofiled); record sha256 fd8760cb7271f1d7531afa6fd33c96b7fe0fb6fd24818de2ae937faec6a13e5f
+Unprofiled, best of three, by stage:
+  parse 3 filings         267.7 ms
+  chunk                     2.8 ms
+  index (BM25)             21.4 ms
+  retrieve 5 claims         2.2 ms
+  figures (XBRL)           16.5 ms
+  whole run               384.6 ms
+  other                    74.0 ms
+
+         5136546 function calls (5103780 primitive calls) in 1.187 seconds
+
+   Ordered by: cumulative time
+   List reduced from 680 to 25 due to restriction <25>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    1.192    1.192 golden_run.py:258(build_golden)
+        1    0.001    0.001    1.190    1.190 golden_run.py:135(run_example)
+        1    0.000    0.000    1.178    1.178 thesis_run.py:114(execute_run)
+        1    0.000    0.000    0.967    0.967 ingest.py:106(ingest)
+        3    0.000    0.000    0.940    0.313 ingest.py:171(_read_filing)
+        3    0.000    0.000    0.940    0.313 golden_run.py:126(recording)
+        3    0.000    0.000    0.940    0.313 filing.py:513(parse_filing)
+        3    0.000    0.000    0.788    0.263 __init__.py:211(__init__)
+        3    0.000    0.000    0.788    0.263 __init__.py:658(_feed)
+        3    0.000    0.000    0.788    0.263 _htmlparser.py:488(feed)
+        3    0.000    0.000    0.788    0.263 parser.py:165(feed)
+        6    0.071    0.012    0.788    0.131 parser.py:242(goahead)
+    39936    0.105    0.000    0.477    0.000 parser.py:456(parse_starttag)
+    39936    0.025    0.000    0.233    0.000 _htmlparser.py:148(handle_starttag)
+    39936    0.049    0.000    0.197    0.000 __init__.py:995(handle_starttag)
+    26856    0.033    0.000    0.141    0.000 parser.py:516(parse_endtag)
+   7176/3    0.011    0.000    0.137    0.046 filing.py:218(walk)
+    13080    0.004    0.000    0.115    0.000 _htmlparser.py:128(handle_startendtag)
+    39939    0.027    0.000    0.109    0.000 element.py:1884(__init__)
+    39936    0.008    0.000    0.106    0.000 _htmlparser.py:210(handle_endtag)
+      982    0.018    0.000    0.103    0.000 text.py:69(tokenize)
+        1    0.000    0.000    0.101    0.101 search.py:20(__init__)
+        1    0.001    0.001    0.101    0.101 bm25.py:26(__init__)
+    39936    0.013    0.000    0.098    0.000 __init__.py:1061(handle_endtag)
+     2111    0.013    0.000    0.087    0.000 filing.py:243(_row)
+
+

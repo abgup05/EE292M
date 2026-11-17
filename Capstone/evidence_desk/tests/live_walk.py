@@ -191,6 +191,26 @@ def main() -> int:
         risk is not None and risk["present_in"] == "both" and risk["unchanged"] > 0,
         "the risk factors were found in both reports",
     )
+
+    status, tagged = call("GET", "/api/companies/NVDA/breakdowns?form=10-K")
+    expect(status == 200, "the latest annual report's tagged breakdowns are read (live EDGAR)")
+    found = {item["id"]: item for item in tagged["breakdowns"]}
+    print(
+        f"   {tagged['facts_read']} tagged facts read, {tagged['facts_unparsed']} unread; "
+        f"breakdowns: {', '.join(found) or 'none'}"
+    )
+    expect(
+        tagged["facts_read"] > 100 and tagged["facts_unparsed"] < tagged["facts_read"] / 100,
+        "the filing's tagged numbers were read, with under one in a hundred left out",
+    )
+    segments = found.get("revenue_by_segment")
+    expect(
+        segments is not None and segments["adds_up"] is True,
+        "revenue by segment is found and its members add up to the tagged total",
+    )
+    for row in (found.get("revenue_by_product") or {"rows": []})["rows"][:3]:
+        newest = row["values"][0]
+        print(f"   {row['label']}: {newest['shown']} for the period ended {newest['period_end']}")
     print("live walk: PASS")
     return 0
 

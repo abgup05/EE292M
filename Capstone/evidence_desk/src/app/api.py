@@ -27,6 +27,7 @@ from pydantic import BaseModel
 
 from app import __version__, wiring
 from app.core import limits, policy
+from app.core.breakdown_models import BreakdownReport
 from app.core.change_models import FilingChanges
 from app.core.claim_change_models import RunChanges
 from app.core.metric_models import MetricsReport
@@ -54,6 +55,8 @@ from app.core.ports import (
 from app.core.review import build_review
 from app.engines.checker import NoChecker
 from app.services import theses, thesis_run
+from app.services.breakdowns import FORMS as BREAKDOWN_FORMS
+from app.services.breakdowns import filing_breakdowns
 from app.services.claim_changes import run_changes
 from app.services.examples import EXAMPLE_THESIS
 from app.services.export import render_markdown
@@ -229,6 +232,7 @@ class TimedCache[K, V]:
 MetricsCache = TimedCache[int, MetricsReport]
 ChangesCache = TimedCache[tuple[int, str], FilingChanges]
 RunChangesCache = TimedCache[str, RunChanges]
+BreakdownsCache = TimedCache[tuple[int, str], BreakdownReport]
 
 
 def create_app(
@@ -260,6 +264,7 @@ def create_app(
     metrics_cache = MetricsCache(monotonic)
     changes_cache = ChangesCache(monotonic)
     run_changes_cache = RunChangesCache(monotonic)
+    breakdowns_cache = BreakdownsCache(monotonic)
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
@@ -531,6 +536,27 @@ def create_app(
             return cached
         result = filing_changes(company, form, filings=filings, cache=cache)
         changes_cache.put((company.cik, form), result)
+        return result
+
+    @app.get("/api/companies/{ticker}/breakdowns")
+    def company_breakdowns(ticker: str, form: str = "10-K") -> BreakdownReport:
+        """Revenue by segment, product and geography, and customer concentration, as tagged.
+
+        Read from the inline XBRL of the company's latest ``form`` filing ("10-K" or
+        "10-Q"): the figures the company-facts API does not carry. Each value is the
+        filing's own tagged number, placed by its period's dates; the changes and the
+        check that members add up to the tagged total are computed here. 422 for
+        another form or a malformed or unknown ticker; 503 when EDGAR cannot list or
+        deliver the filing. A result is cached per company and form for 15 minutes.
+        """
+        if form not in BREAKDOWN_FORMS:
+            raise RequestRefused([Problem(field="form", message="form must be 10-K or 10-Q")])
+        company = resolve(ticker)
+        cached = breakdowns_cache.get((company.cik, form))
+        if cached is not None:
+            return cached
+        result = filing_breakdowns(company, form, filings=filings)
+        breakdowns_cache.put((company.cik, form), result)
         return result
 
     @app.get("/api/meta")

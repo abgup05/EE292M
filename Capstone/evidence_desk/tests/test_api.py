@@ -277,7 +277,7 @@ def test_meta_gives_every_view_its_limits_and_wording(client: TestClient) -> Non
     assert meta["figures_note"] == FIGURES_NOTE
     assert meta["decision_labels"] == DECISION_LABELS
     assert meta["review_note"] == REVIEW_NOTE
-    assert meta["version"] == "0.8.0"
+    assert meta["version"] == "0.9.0"
     assert meta["engine"] == "extractive"
     assert meta["checker"] == {"name": "none", "detail": ""}
     assert meta["support_labels"] == SUPPORT_LABELS
@@ -339,7 +339,7 @@ def test_health(client: TestClient) -> None:
         "engine": "extractive",
         "model": None,
     }
-    assert __version__ == "0.8.0"
+    assert __version__ == "0.9.0"
 
 
 # Static files
@@ -919,3 +919,66 @@ def test_a_source_that_cannot_list_a_form_gives_a_note_and_not_an_error(
         body = test_client.get(f"/api/runs/{run.id}/changes").json()
     assert body["compared"] == [] and len(body["notes"]) >= 1
     assert [claim["changes"] for claim in body["claims"]] == [[], []]
+
+
+# Segments, geographies and customers from a filing's tagged facts
+
+
+@pytest.fixture
+def breakdowns_client(tmp_path: Path) -> Iterator[TestClient]:
+    """A client whose filings are the recorded NVIDIA annual and quarterly reports."""
+    from tests.test_breakdowns import nvidia
+
+    app = create_app(
+        store=Store(tmp_path / "runs.sqlite"),
+        filings=nvidia(),
+        analyst=ExtractiveAnalyst(),
+        fetch_page=FakePages({}),
+    )
+    with TestClient(app) as test_client:
+        yield test_client
+
+
+def test_breakdowns_of_the_latest_annual_report(breakdowns_client: TestClient) -> None:
+    response = breakdowns_client.get("/api/companies/NVDA/breakdowns?form=10-K")
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["filing"]["form"] == "10-K" and body["company"]["ticker"] == "NVDA"
+    assert body["filing"]["url"].startswith("https://www.sec.gov/")
+    found = {item["id"] for item in body["breakdowns"]}
+    assert {"revenue_by_segment", "revenue_by_product", "revenue_by_geography"} <= found
+    assert body["facts_read"] > 500 and body["facts_unparsed"] == 0
+
+
+def test_breakdowns_default_to_the_annual_report_and_take_the_quarterly(
+    breakdowns_client: TestClient,
+) -> None:
+    default = breakdowns_client.get("/api/companies/NVDA/breakdowns")
+    assert default.json()["filing"]["form"] == "10-K"
+    quarterly = breakdowns_client.get("/api/companies/NVDA/breakdowns?form=10-Q")
+    assert quarterly.status_code == 200 and quarterly.json()["filing"]["form"] == "10-Q"
+
+
+def test_breakdowns_refuse_another_form_and_an_unknown_ticker(
+    breakdowns_client: TestClient,
+) -> None:
+    refused = breakdowns_client.get("/api/companies/NVDA/breakdowns?form=8-K")
+    assert refused.status_code == 422 and fields(refused) == ["form"]
+    unknown = breakdowns_client.get("/api/companies/ZZZZ/breakdowns")
+    assert unknown.status_code == 422 and fields(unknown) == ["ticker"]
+
+
+def test_breakdowns_when_edgar_cannot_list_the_filing_are_a_503(tmp_path: Path) -> None:
+    from tests.test_breakdowns import nvidia
+
+    source = nvidia()
+    source.index_error = SourceError("the filing index of NVIDIA CORP is unavailable")
+    app = create_app(
+        store=Store(tmp_path / "runs.sqlite"),
+        filings=source,
+        analyst=ExtractiveAnalyst(),
+        fetch_page=FakePages({}),
+    )
+    with TestClient(app) as test_client:
+        response = test_client.get("/api/companies/NVDA/breakdowns")
+    assert response.status_code == 503 and "unavailable" in response.json()["error"]

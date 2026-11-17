@@ -1,4 +1,4 @@
-.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench eval eval-validate backup restore-check up-recorded live-walk changes sample-run-changes
+.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench eval eval-validate backup restore-check up-recorded live-walk changes breakdowns sample-run-changes
 
 export COMPOSE_PROJECT_NAME := ee292m-evidence-desk
 export LOCAL_UID := $(shell id -u)
@@ -22,6 +22,7 @@ help:
 	@echo 'Speed: profile (cProfile of the offline example run, top 25 by cumulative time, to results/profile-<UTC>.txt); bench RUNS=5 (median wall time of the offline run, in seconds)'
 	@echo "Evaluation: eval ARGS='run --variant claim' (score retrieval on the golden set; ARGS='fetch' fills eval/cache from EDGAR), eval-validate (check every golden case against its filing)"
 	@echo "Filing changes: changes ARGS='NVDA --form 10-K' (what was added, removed and reworded between a company's two latest annual or quarterly reports)"
+	@echo 'Tagged facts: breakdowns ARGS="NVDA --form 10-K" (segments, geographies and customers from a filing'\''s inline XBRL)'
 	@echo 'Fixtures: fixtures-facts (record XBRL company facts of NVDA, AAPL, MSFT under tests/fixtures/edgar; REFRESH=1 to overwrite)'
 	@echo 'Fixtures: fixtures (record SEC EDGAR responses for NVIDIA under tests/fixtures/edgar; REFRESH=1 to overwrite)'
 	@echo 'Diagnostics: probe TICKERS="AAPL MSFT" (live: parse each company'"'"'s latest 10-K and 10-Q, report Item coverage; writes results/probe-<UTC>.md)'
@@ -76,7 +77,8 @@ uitest:
 	$(COMPOSE) exec -T app python uitests/wait_ready.py && \
 	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=synthetic" > results/dom-synthetic.html 2> results/dom-synthetic.log && \
 	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample" > results/dom-sample.html 2> results/dom-sample.log && \
-	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=changes" > results/dom-changes.html 2> results/dom-changes.log
+	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=changes" > results/dom-changes.html 2> results/dom-changes.log && \
+	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=breakdowns" > results/dom-breakdowns.html 2> results/dom-breakdowns.log
 	$(RUN) pytest -q -p no:cacheprovider uitests
 
 run:
@@ -88,7 +90,7 @@ demo: build
 
 # Headless Chromium exits 0 when its GPU process dies on a very tall capture and writes no file,
 # so no capture is taller than 3600 px and the target fails unless every file was written anew.
-SHOTS := first-screen sample-run sample-run-phone sample-synthetic sample-changes sample-changes-phone
+SHOTS := first-screen sample-run sample-run-phone sample-run-claim sample-synthetic sample-changes sample-changes-phone sample-breakdowns
 screenshots:
 	@mkdir -p docs/screenshots results
 	@touch results/.screenshots-started
@@ -100,7 +102,9 @@ screenshots:
 	$(COMPOSE) run --rm shots --window-size=390,1400 --screenshot=/work/docs/screenshots/sample-run-phone.png "http://app:8000/?sample" && \
 	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-synthetic.png "http://app:8000/?sample=synthetic" && \
 	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-changes.png "http://app:8000/?sample=changes" && \
-	$(COMPOSE) run --rm shots --window-size=390,2600 --screenshot=/work/docs/screenshots/sample-changes-phone.png "http://app:8000/?sample=changes"
+	$(COMPOSE) run --rm shots --window-size=390,2600 --screenshot=/work/docs/screenshots/sample-changes-phone.png "http://app:8000/?sample=changes" && \
+	$(COMPOSE) run --rm shots --window-size=1280,1800 --screenshot=/work/docs/screenshots/sample-run-claim.png "http://app:8000/?sample#claim-c4-changes" && \
+	$(COMPOSE) run --rm shots --window-size=1280,2400 --screenshot=/work/docs/screenshots/sample-breakdowns.png "http://app:8000/?sample=breakdowns"
 	@for name in $(SHOTS); do \
 		test docs/screenshots/$$name.png -nt results/.screenshots-started \
 		|| { echo "screenshots: docs/screenshots/$$name.png was not written"; exit 1; }; \
@@ -135,6 +139,9 @@ fixtures-facts:
 
 changes:
 	$(RUN) python -m app.changes $(ARGS)
+
+breakdowns:
+	$(RUN) python -m app.breakdowns $(ARGS)
 
 sample-run-changes:
 	$(RUN) python -m tests.sample_run_changes $(ARGS)

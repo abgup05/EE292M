@@ -22,9 +22,9 @@ from app.core.filing_diff import (
     totals,
     word_changes,
 )
-from app.core.links import passage_link
+from app.core.links import link_kind, passage_link
 from app.sources.filing import parse_filing
-from tests.fakes import FY_2026, RECORDED, recorded_html
+from tests.fakes import FY_2026, Q2_2027, RECORDED, recorded_html
 
 EARLIER_URL = "https://www.sec.gov/Archives/edgar/data/1/000000000125000001/old.htm"
 LATER_URL = "https://www.sec.gov/Archives/edgar/data/1/000000000126000001/new.htm"
@@ -79,6 +79,7 @@ def only(items: list[ItemChanges], name: str = RISK) -> ItemChanges:
 def nothing_changed(item: ItemChanges) -> bool:
     return (
         item.numbers_only
+        == item.minor_numbers_only
         == item.reworded
         == item.added
         == item.removed
@@ -122,7 +123,9 @@ def test_the_recorded_annual_report_compared_with_itself_has_nothing_changed() -
     assert len(items) > 10
     assert all(item.present_in == "both" and nothing_changed(item) for item in items)
     lines = sum(1 for section in real.sections for line in section.text.split("\n") if line)
-    assert totals(items).unchanged == lines
+    total = totals(items)
+    assert total.unchanged + total.minor_unchanged == lines
+    assert total.unchanged > 500 and total.minor_unchanged > 500  # both kinds are there
 
 
 def _rich_pair() -> tuple[Document, Document]:
@@ -187,7 +190,8 @@ def test_a_paragraph_whose_numbers_alone_changed_is_numbers_only() -> None:
     earlier = document((RISK, ["Revenue was $46.7 billion, up 56%", long_before]))
     later = document((RISK, ["Revenue was $96.2 billion, up 106%", long_after]))
     item = only(diff(earlier, later))
-    assert item.numbers_only == 2
+    # The long line is a paragraph; the short one is counted with the short lines.
+    assert (item.numbers_only, item.minor_numbers_only) == (1, 1)
     assert (item.reworded, item.added, item.removed, item.minor_added, item.minor_removed) == (
         0,
         0,
@@ -236,6 +240,126 @@ def test_paragraphs_sharing_half_their_words_are_reworded_and_fewer_are_not() ->
     less = "alpha bravo charlie delta echo foxtrot golf hotel xray yankee zulu oscar papa"
     assert [score for _, _, score in pair_reworded([base], [half])] == [9 / 17]
     assert pair_reworded([base], [less]) == []
+
+
+# What each count counts (the second referee's first finding) -------------------------------
+
+PARAGRAPH_COUNTS = ("unchanged", "numbers_only", "reworded")
+MINOR_COUNTS = ("minor_unchanged", "minor_numbers_only")
+
+
+def lines_by_item(filing: Document) -> dict[str, int]:
+    """Non-blank lines of ``filing`` under each Item key, counted without the comparison."""
+    counts: dict[str, int] = {}
+    for section in filing.sections:
+        key = item_key(section.heading.split(" › ")[0].strip())
+        lines = sum(1 for line in section.text.split("\n") if line.strip())
+        counts[key] = counts.get(key, 0) + lines
+    return counts
+
+
+def assert_every_line_is_counted_once(earlier: Document, later: Document) -> None:
+    before, after = lines_by_item(earlier), lines_by_item(later)
+    for item in diff(earlier, later):
+        matched = sum(getattr(item, name) for name in (*PARAGRAPH_COUNTS, *MINOR_COUNTS))
+        key = item_key(item.item)
+        assert matched + item.added + item.minor_added == after.get(key, 0), item.item
+        assert matched + item.removed + item.minor_removed == before.get(key, 0), item.item
+
+
+def test_every_line_of_each_filing_is_counted_exactly_once() -> None:
+    assert_every_line_is_counted_once(*_rich_pair())
+
+
+def real(ref) -> Document:
+    html = recorded_html(RECORDED[ref.url])
+    return parse_filing(html, url=ref.url, title=ref.form, published_date=None)
+
+
+def test_every_line_of_two_real_filings_is_counted_exactly_once() -> None:
+    assert_every_line_is_counted_once(real(FY_2026), real(Q2_2027))
+
+
+def test_the_five_counts_are_of_paragraphs_and_short_lines_and_rows_are_counted_apart() -> None:
+    row_before, row_after = "Gross margin 75.0% 72.7% 56.9%", "Gross margin 76.1% 75.0% 72.7%"
+    earlier = document((RISK, [P[0], "The same short line", row_before, "Old short heading"]))
+    later = document((RISK, [P[0], "The same short line", row_after, "New short heading"]))
+    item = only(diff(earlier, later))
+    assert (item.unchanged, item.numbers_only, item.reworded, item.added, item.removed) == (
+        1,
+        0,
+        0,
+        0,
+        0,
+    )
+    assert (item.minor_unchanged, item.minor_numbers_only) == (1, 1)
+    assert (item.minor_added, item.minor_removed) == (1, 1)
+
+
+def test_a_paragraph_whose_numbers_alone_changed_is_listed_with_the_numbers_marked() -> None:
+    before = (
+        "Data Center revenue was $115.2 billion, up 142% from a year ago, driven by demand for "
+        "our accelerated computing platforms."
+    )
+    after = before.replace("$115.2", "$193.7").replace("142%", "68%")
+    item = only(diff(document((RISK, [before])), document((RISK, [after]))))
+    assert (item.numbers_only, item.reworded, item.added, item.removed) == (1, 0, 0, 0)
+    (pair,) = item.numbers_only_paragraphs
+    assert (pair.before.text, pair.after.text) == (before, after)
+    assert pair.before.link.startswith(EARLIER_URL) and pair.after.link.startswith(LATER_URL)
+    changed = [(s.kind, s.text) for s in pair.segments if s.kind != "same"]
+    assert changed == [
+        ("removed", "$115.2"),
+        ("added", "$193.7"),
+        ("removed", "142%"),
+        ("added", "68%"),
+    ]
+    assert not item.truncated.numbers_only
+
+
+def test_the_numbers_only_list_is_capped_like_the_others() -> None:
+    stems = [f"{chr(97 + n // 26)}{chr(97 + n % 26)}" for n in range(MAX_LISTED + 2)]
+    before = [
+        f"Segment {stem}zeta revenue was $10 million and grew 5% in the period under review."
+        for stem in stems
+    ]
+    after = [line.replace("$10", "$12").replace("5%", "7%") for line in before]
+    item = only(diff(document((RISK, before)), document((RISK, after))))
+    assert item.numbers_only == MAX_LISTED + 2
+    assert len(item.numbers_only_paragraphs) == MAX_LISTED and item.truncated.numbers_only
+
+
+def test_a_changed_sub_heading_is_reported_though_its_paragraphs_are_unchanged() -> None:
+    earlier = document(
+        (f"{RISK} › Risks Related to Supply", [P[0]]),
+        (f"{RISK} › Fiscal Year 2025 Summary", [P[1]]),
+        (f"{RISK} › Risks Related to Regulation", [P[3]]),
+    )
+    later = document(
+        (f"{RISK} › Risks Related to Our Supply Chain", [P[0]]),
+        (f"{RISK} › Fiscal Year 2026 Summary", [P[1]]),
+        (f"{RISK} › RISKS RELATED TO REGULATION", [P[3]]),
+    )
+    item = only(diff(earlier, later))
+    assert item.unchanged == 3 and item.added == item.removed == 0
+    assert item.subheadings_added == ["Risks Related to Our Supply Chain"]
+    assert item.subheadings_removed == ["Risks Related to Supply"]
+
+
+def test_every_listed_paragraph_of_two_real_filings_is_an_exact_span_and_says_its_link() -> None:
+    earlier, later = real(FY_2026), real(Q2_2027)
+    listed: list[tuple[Document, object]] = []
+    for item in diff(earlier, later, max_listed=None):
+        listed += [(later, p) for p in item.added_paragraphs]
+        listed += [(earlier, p) for p in item.removed_paragraphs]
+        for pair in (*item.reworded_paragraphs, *item.numbers_only_paragraphs):
+            listed += [(earlier, pair.before), (later, pair.after)]
+    assert len(listed) > 200
+    for source, paragraph in listed:
+        end = paragraph.start + len(paragraph.text)
+        assert source.text[paragraph.start : end] == paragraph.text
+        assert paragraph.link_kind == link_kind(paragraph.text)
+        assert (":~:text=" in paragraph.link) == (paragraph.link_kind != "document")
 
 
 # Reviewing the threshold: the pairs a person should read ----------------------------------

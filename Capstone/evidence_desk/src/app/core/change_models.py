@@ -22,14 +22,16 @@ class Paragraph(BaseModel):
     """One paragraph (one line of a section) of a filing.
 
     ``text`` is an exact span of the filing's stored text: ``stored[start:start + len(text)]``.
-    ``locator`` is the heading of the section it sits under; ``link`` opens the
-    filing at it (a text-fragment link).
+    ``locator`` is the heading of the section it sits under. ``link`` opens the filing,
+    and ``link_kind`` says where (:func:`app.core.links.link_kind`): at the "passage",
+    at its "first-line", or only the "document" when the text cannot be located.
     """
 
     text: str
     locator: str
     start: int = Field(ge=0)
     link: str
+    link_kind: str = ""
 
 
 class WordChange(BaseModel):
@@ -40,9 +42,10 @@ class WordChange(BaseModel):
 
 
 class RewordedParagraph(BaseModel):
-    """An earlier paragraph and the later paragraph that rewords it.
+    """An earlier paragraph and the later paragraph that rewords it, or differs in numbers only.
 
-    ``similarity`` is the Jaccard similarity of their word-token sets (0 to 1).
+    ``similarity`` is the Jaccard similarity of their word-token sets (0 to 1); common
+    words and figures are left out of it, so 1 does not mean the two are identical.
     ``segments`` walk the later paragraph against the earlier one: joining the
     ``same`` and ``removed`` texts gives the earlier words, ``same`` and ``added``
     the later ones.
@@ -60,15 +63,19 @@ class TruncatedLists(BaseModel):
     added: bool = False
     removed: bool = False
     reworded: bool = False
+    numbers_only: bool = False
 
 
 class ChangeCounts(BaseModel):
-    """How the paragraphs of one Item, or of a whole filing pair, compare.
+    """How the lines of one Item, or of a whole filing pair, compare.
 
-    ``unchanged`` and ``numbers_only`` count every line. ``reworded``, ``added``
-    and ``removed`` count paragraphs (lines of at least the minimum length that
-    are not table rows); short lines and table rows that are in only one filing
-    are counted in ``minor_added`` and ``minor_removed`` and never listed.
+    The first five count paragraphs: lines of at least the minimum length that are not
+    table rows. The four ``minor_`` counts are the same classes for short lines and table
+    rows, which are never listed and never paired as reworded. A line matched with one
+    in the other filing (unchanged, numbers only, reworded) is counted once, by its line
+    in the later filing. So for each filing every line is in exactly one count: the later
+    filing's lines are the matched ones plus ``added`` and ``minor_added``, the earlier
+    filing's the matched ones plus ``removed`` and ``minor_removed``.
     """
 
     unchanged: int = 0
@@ -76,6 +83,8 @@ class ChangeCounts(BaseModel):
     reworded: int = 0
     added: int = 0
     removed: int = 0
+    minor_unchanged: int = 0
+    minor_numbers_only: int = 0
     minor_added: int = 0
     minor_removed: int = 0
 
@@ -86,6 +95,11 @@ class ItemChanges(ChangeCounts):
     ``item`` is the Item's heading without any sub-heading, as the later filing
     writes it (the earlier filing's when the Item is only there). The lists hold
     at most :data:`app.core.filing_diff.MAX_LISTED` paragraphs each, in document order.
+    ``numbers_only_paragraphs`` are pairs whose words are the same and whose figures
+    differ, with the figures that changed as their ``segments``. ``subheadings_added``
+    and ``subheadings_removed`` are the sub-headings found under the Item in only one
+    filing, compared without case, punctuation and figures; the parser keeps a
+    sub-heading apart from the text, so no paragraph count can show one changing.
     """
 
     item: str
@@ -93,6 +107,9 @@ class ItemChanges(ChangeCounts):
     added_paragraphs: list[Paragraph] = Field(default_factory=list)
     removed_paragraphs: list[Paragraph] = Field(default_factory=list)
     reworded_paragraphs: list[RewordedParagraph] = Field(default_factory=list)
+    numbers_only_paragraphs: list[RewordedParagraph] = Field(default_factory=list)
+    subheadings_added: list[str] = Field(default_factory=list)
+    subheadings_removed: list[str] = Field(default_factory=list)
     truncated: TruncatedLists = Field(default_factory=TruncatedLists)
 
 

@@ -57,7 +57,7 @@ from app.core.change_models import (
     WordChange,
 )
 from app.core.documents import Document
-from app.core.links import passage_link
+from app.core.links import link_kind, passage_link
 from app.core.text import tokenize
 
 # Lines shorter than this are headings, bullets or page furniture: counted, never listed.
@@ -277,6 +277,8 @@ class _Group:
 
     name: str
     lines: list[_Line] = field(default_factory=list)
+    # Sub-headings under the Item, keyed without case, punctuation and figures, in order.
+    subheadings: dict[str, str] = field(default_factory=dict)
 
 
 def _section_starts(document: Document) -> list[int]:
@@ -300,8 +302,11 @@ def _groups(document: Document) -> dict[str, _Group]:
     """The document's lines grouped by Item key, Items in document order."""
     groups: dict[str, _Group] = {}
     for section, start in zip(document.sections, _section_starts(document), strict=True):
-        name = section.heading.split(SUBHEADING_SEPARATOR)[0].strip()
+        name, _, below = section.heading.partition(SUBHEADING_SEPARATOR)
+        name, below = name.strip(), below.strip()
         group = groups.setdefault(item_key(name), _Group(name=name))
+        if below:
+            group.subheadings.setdefault(_without_numbers(_normal(below)), below)
         offset = 0
         for text in section.text.split("\n"):
             if text.strip():
@@ -322,26 +327,45 @@ def _groups(document: Document) -> dict[str, _Group]:
 
 def _match_by(
     attribute: str, earlier: list[_Line], later: list[_Line]
-) -> tuple[int, list[_Line], list[_Line]]:
-    """Pair lines with equal keys, in order: (pairs made, earlier left, later left)."""
+) -> tuple[list[tuple[_Line, _Line]], list[_Line], list[_Line]]:
+    """Pair lines with equal keys, in order: (the pairs, earlier left, later left)."""
     waiting: dict[str, deque[int]] = defaultdict(deque)
     for index, line in enumerate(earlier):
         waiting[getattr(line, attribute)].append(index)
     taken: set[int] = set()
+    pairs: list[tuple[_Line, _Line]] = []
     later_left: list[_Line] = []
     for line in later:
         queue = waiting.get(getattr(line, attribute))
         if queue:
-            taken.add(queue.popleft())
+            index = queue.popleft()
+            taken.add(index)
+            pairs.append((earlier[index], line))
         else:
             later_left.append(line)
     earlier_left = [line for index, line in enumerate(earlier) if index not in taken]
-    return len(taken), earlier_left, later_left
+    return pairs, earlier_left, later_left
 
 
 def _paragraph(line: _Line, url: str) -> Paragraph:
     return Paragraph(
-        text=line.text, locator=line.locator, start=line.start, link=passage_link(url, line.text)
+        text=line.text,
+        locator=line.locator,
+        start=line.start,
+        link=passage_link(url, line.text),
+        link_kind=link_kind(line.text),
+    )
+
+
+def _changed(
+    old: _Line, new: _Line, score: float, earlier_url: str, later_url: str
+) -> RewordedParagraph:
+    """One earlier line and the later line matched with it, with the words that differ."""
+    return RewordedParagraph(
+        before=_paragraph(old, earlier_url),
+        after=_paragraph(new, later_url),
+        similarity=round(score, 3),
+        segments=word_changes(old.text, new.text),
     )
 
 
@@ -356,9 +380,13 @@ def _compare_group(
     exhaustive: bool,
     threshold: float,
     max_listed: int | None,
+    earlier_headings: dict[str, str],
+    later_headings: dict[str, str],
 ) -> ItemChanges:
-    unchanged, earlier, later = _match_by("exact", earlier, later)
-    numbers_only, earlier, later = _match_by("numbers", earlier, later)
+    same, earlier, later = _match_by("exact", earlier, later)
+    figures, earlier, later = _match_by("numbers", earlier, later)
+    # A matched pair is a paragraph or a short line or table row by its later line.
+    moved = [(old, new) for old, new in figures if new.listable]
     old = [line for line in earlier if line.listable]
     new = [line for line in later if line.listable]
     pairs = pair_reworded(
@@ -372,32 +400,48 @@ def _compare_group(
     paired_new = {j for _, j, _ in pairs}
     added = [line for j, line in enumerate(new) if j not in paired_new]
     removed = [line for i, line in enumerate(old) if i not in paired_old]
-    reworded = [
-        RewordedParagraph(
-            before=_paragraph(old[i], earlier_url),
-            after=_paragraph(new[j], later_url),
-            similarity=round(score, 3),
-            segments=word_changes(old[i].text, new[j].text),
-        )
-        for i, j, score in pairs[cut]
-    ]
+
+    def cut_short(count: int) -> bool:
+        return max_listed is not None and count > max_listed
+
     return ItemChanges(
         item=name,
         present_in=present_in,
-        unchanged=unchanged,
-        numbers_only=numbers_only,
+        unchanged=sum(line.listable for _, line in same),
+        numbers_only=len(moved),
         reworded=len(pairs),
         added=len(added),
         removed=len(removed),
+        minor_unchanged=sum(not line.listable for _, line in same),
+        minor_numbers_only=len(figures) - len(moved),
         minor_added=sum(not line.listable for line in later),
         minor_removed=sum(not line.listable for line in earlier),
         added_paragraphs=[_paragraph(line, later_url) for line in added[cut]],
         removed_paragraphs=[_paragraph(line, earlier_url) for line in removed[cut]],
-        reworded_paragraphs=reworded,
+        reworded_paragraphs=[
+            _changed(old[i], new[j], score, earlier_url, later_url) for i, j, score in pairs[cut]
+        ],
+        numbers_only_paragraphs=[
+            _changed(
+                before,
+                after,
+                jaccard(similarity_tokens(before.text), similarity_tokens(after.text)),
+                earlier_url,
+                later_url,
+            )
+            for before, after in moved[cut]
+        ],
+        subheadings_added=[
+            text for key, text in later_headings.items() if key not in earlier_headings
+        ],
+        subheadings_removed=[
+            text for key, text in earlier_headings.items() if key not in later_headings
+        ],
         truncated=TruncatedLists(
-            added=max_listed is not None and len(added) > max_listed,
-            removed=max_listed is not None and len(removed) > max_listed,
-            reworded=max_listed is not None and len(pairs) > max_listed,
+            added=cut_short(len(added)),
+            removed=cut_short(len(removed)),
+            reworded=cut_short(len(pairs)),
+            numbers_only=cut_short(len(moved)),
         ),
     )
 
@@ -456,6 +500,8 @@ def diff_documents(
                 exhaustive=exhaustive,
                 threshold=threshold,
                 max_listed=max_listed,
+                earlier_headings=before.subheadings if before else {},
+                later_headings=after.subheadings if after else {},
             )
         )
     return items

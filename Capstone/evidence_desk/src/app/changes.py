@@ -52,14 +52,18 @@ COUNT_COLUMNS = (
     "Reworded",
     "Added",
     "Removed",
-    "Short lines and table rows added / removed",
+    "Short lines and table rows: unchanged / numbers only / added / removed",
 )
 HOW_TO_READ = (
-    "A paragraph is one line of the text extracted from a filing, compared within its Item. "
-    "*Unchanged*: the same text, perhaps moved within the Item. *Numbers only*: the same once "
-    "numbers, dates and amounts are masked. *Reworded*: at least {threshold:.0%} of the two "
-    "paragraphs' distinct words in common. Lines shorter than {min_chars} characters and table "
-    "rows are counted, never listed. The comparison does not know why anything changed."
+    "The comparison is of the lines of text extracted from each filing, within an Item. The "
+    "five counts are of paragraphs: lines of at least {min_chars} characters that are not table "
+    "rows. *Unchanged*: the same text, perhaps moved within the Item. *Numbers only*: the same "
+    "once numbers, dates and amounts are masked. *Reworded*: at least {threshold:.0%} of the "
+    "two paragraphs' distinct words in common. *Added*, *Removed*: no counterpart in the other "
+    "filing. Shorter lines and table rows are counted apart, in the last column, and never "
+    'listed; a row whose figures moved is "numbers only" there. Every line of each filing is '
+    "in exactly one count. Sub-headings are not lines: those found in only one filing are named "
+    "under the Item. The comparison does not know why anything changed."
 )
 
 
@@ -93,6 +97,7 @@ def _counts(item_name: str, presence: str, counts: ChangeCounts) -> list[str]:
         item_name,
         presence,
         *(str(number) for number in numbers),
+        f"{counts.minor_unchanged} / {counts.minor_numbers_only} / "
         f"{counts.minor_added} / {counts.minor_removed}",
     ]
 
@@ -140,10 +145,21 @@ def _reworded(pair: RewordedParagraph) -> list[str]:
     ]
 
 
+def _has_detail(item: ItemChanges) -> bool:
+    """Whether the Item has anything to list under the table."""
+    counts = item.added or item.removed or item.reworded or item.numbers_only
+    headings = item.subheadings_added or item.subheadings_removed
+    return bool(counts or headings or item.present_in != "both")
+
+
 def _item_detail(item: ItemChanges) -> list[str]:
     lines = [f"## {escape(item.item)}", ""]
     if item.present_in != "both":
         lines += [f"Only in the {item.present_in} filing.", ""]
+    for side, names in (("later", item.subheadings_added), ("earlier", item.subheadings_removed)):
+        if names:
+            listed = "; ".join(escape(name) for name in names)
+            lines += [f"Sub-headings only in the {side} filing: {listed}", ""]
     if item.added:
         lines += [_heading("Added", item.added, len(item.added_paragraphs)), ""]
         for paragraph in item.added_paragraphs:
@@ -156,6 +172,12 @@ def _item_detail(item: ItemChanges) -> list[str]:
         lines += [_heading("Reworded", item.reworded, len(item.reworded_paragraphs)), ""]
         lines += ["Removed words are ~~struck through~~; added words are **bold**.", ""]
         for pair in item.reworded_paragraphs:
+            lines += _reworded(pair)
+    if item.numbers_only:
+        shown = len(item.numbers_only_paragraphs)
+        lines += [_heading("Numbers only", item.numbers_only, shown), ""]
+        lines += ["The words are the same; the figures that moved are marked the same way.", ""]
+        for pair in item.numbers_only_paragraphs:
             lines += _reworded(pair)
     return lines
 
@@ -176,7 +198,7 @@ def render_markdown(changes: FilingChanges) -> str:
     how = HOW_TO_READ.format(threshold=REWORD_THRESHOLD, min_chars=MIN_PARAGRAPH_CHARS)
     lines += [how, "", "## Paragraphs by Item", "", *_counts_table(changes), ""]
     for item in changes.items:
-        if item.added or item.removed or item.reworded or item.present_in != "both":
+        if _has_detail(item):
             lines += _item_detail(item)
     return "\n".join(lines).rstrip("\n") + "\n"
 

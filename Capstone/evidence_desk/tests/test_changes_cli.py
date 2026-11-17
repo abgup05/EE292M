@@ -70,8 +70,9 @@ def test_the_markdown_names_both_filings_counts_each_item_and_quotes_the_changes
     assert markdown.startswith("# What changed: NVIDIA CORP, 10-K\n")
     assert "| Accession | 0009999999-26-000001 | 0009999999-26-000002 |" in markdown
     assert "| Period end | 2026-01-01 | 2026-02-01 |" in markdown
-    assert "| Item 1A. Risk Factors | both | 1 | 0 | 0 | 1 | 1 | 0 / 0 |" in markdown
-    assert "| Total | | 2 | 0 | 0 | 1 | 1 | 0 / 0 |" in markdown
+    assert "| Item 1A. Risk Factors | both | 1 | 0 | 0 | 1 | 1 | 0 / 0 / 0 / 0 |" in markdown
+    assert "| Total | | 2 | 0 | 0 | 1 | 1 | 0 / 0 / 0 / 0 |" in markdown
+    assert "table rows: unchanged / numbers only / added / removed |" in markdown
     assert f"  > {PLANTED}" in markdown
     assert f"  > {DROPPED}" in markdown
     assert "### Added (1)" in markdown and "### Removed (1)" in markdown
@@ -120,6 +121,40 @@ def _reworded_record() -> FilingChanges:
         totals=ChangeCounts(reworded=1, removed=2),
         notes=["A note for the reader."],
     )
+
+
+def test_numbers_only_paragraphs_and_changed_sub_headings_are_listed() -> None:
+    record = _reworded_record()
+    pair = (
+        record.items[0]
+        .reworded_paragraphs[0]
+        .model_copy(
+            update={
+                "similarity": 1.0,
+                "segments": [
+                    WordChange(text="Revenue was", kind="same"),
+                    WordChange(text="$115.2", kind="removed"),
+                    WordChange(text="$193.7", kind="added"),
+                    WordChange(text="billion.", kind="same"),
+                ],
+            }
+        )
+    )
+    record.items[0] = record.items[0].model_copy(
+        update={
+            "numbers_only": 3,
+            "numbers_only_paragraphs": [pair],
+            "subheadings_added": ["Risks Related to Our * AI Offerings"],
+            "subheadings_removed": ["Risks Related to Supply"],
+        }
+    )
+    markdown = changes.render_markdown(record)
+    assert "### Numbers only (3; the first 1 shown)" in markdown
+    assert "Before: Revenue was ~~$115.2~~ billion." in markdown
+    assert "After: Revenue was **$193.7** billion." in markdown
+    later_only = "Sub-headings only in the later filing: Risks Related to Our \\* AI Offerings"
+    assert later_only in markdown
+    assert "Sub-headings only in the earlier filing: Risks Related to Supply" in markdown
 
 
 def test_a_reworded_paragraph_marks_removed_words_struck_and_added_words_bold() -> None:

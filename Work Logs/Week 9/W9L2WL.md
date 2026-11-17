@@ -107,7 +107,7 @@ After the first pass I asked the session to keep going: another round of buildin
 - **No real period error has been seen.** The planted ones are mechanical: the same shift applied to every year. What a model's own slips look like is not known.
 - **The first version of the check read its own sentences back** to find which years had failed, in the brief and in the replay. Changed in review: the record carries them as data.
 - **A benchmark taken while other work ran did not agree with itself**: 32 ms saved on the parse and 52 ms on the whole run. Taken again on an idle machine, twice, the two agree at 30 and 34 ms. The disagreement was the only sign that the first was disturbed.
-- **A false alarm of the session's own.** A test seemed to show one filing fetched again on every run, as if the cache were broken. The fake source used in that test leaves that filing out on purpose. Twenty minutes went to finding that the fault was in the test.
+- **A false alarm of the session's own.** A test seemed to show one filing fetched again on every run, as if the cache were broken. The fake source used in that test leaves that filing out on purpose, and says so in a comment. Several scratch runs went to finding that the fault was in the test.
 - **The build agent ran `python3` on the host twice**, against the rule that everything runs through make. Read-only, nothing installed; it said so in its report.
 - **The record is still on one disk.** The review's suggestion, a copy of the decisions on a branch of their own, was not carried out: where the record goes is mine to decide.
 

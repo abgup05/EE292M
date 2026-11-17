@@ -165,7 +165,8 @@ def _figure_only(statement: str, metric_id: str) -> FindingDraft:
 def _four_findings(claim: object, passages: list[Passage]) -> ClaimDraft:
     """(c) one honest figure-only finding, two wrong ones; (d) one with a quote and a figure."""
     first = passages[0]
-    quote = first.text.split("\n")[0][:300]
+    # Cut at a word: a quote that ends inside a word or a number is not a span the gate accepts.
+    quote = first.text.split("\n")[0][:301].rsplit(" ", 1)[0]
     return ClaimDraft(
         findings=[
             _figure_only("Data Center revenue grew 68% in fiscal 2026.", DATA_CENTER_CHANGE),

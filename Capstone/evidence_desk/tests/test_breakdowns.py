@@ -390,6 +390,75 @@ def test_rounding_within_the_tagged_decimals_still_adds_up() -> None:
     assert breakdown(report_of(html), "revenue_by_product").adds_up is True
 
 
+def test_two_tagged_totals_for_one_period_are_noted_not_silently_resolved() -> None:
+    """The third referee, finding 6: the first total found was taken with no word of another."""
+    contexts = (
+        FY
+        + context("a", start="2025-01-27", end="2026-01-25", dims={PRODUCT: "x:AlphaMember"})
+        + context("b", start="2025-01-27", end="2026-01-25", dims={PRODUCT: "x:BetaMember"})
+    )
+    html = document(
+        contexts,
+        fact("us-gaap:Revenues", "c-1", "100"),
+        fact("us-gaap:Revenues", "c-1", "90"),
+        fact("us-gaap:Revenues", "a", "60"),
+        fact("us-gaap:Revenues", "b", "40"),
+    )
+    products = breakdown(report_of(html), "revenue_by_product")
+    conflict = next(note for note in products.notes if "more than one value" in note)
+    assert "The total for 2026-01-25" in conflict and "100" in conflict and "90" in conflict
+
+
+def test_the_same_total_tagged_twice_is_not_a_conflict() -> None:
+    contexts = (
+        FY
+        + context("a", start="2025-01-27", end="2026-01-25", dims={PRODUCT: "x:AlphaMember"})
+        + context("b", start="2025-01-27", end="2026-01-25", dims={PRODUCT: "x:BetaMember"})
+    )
+    html = document(
+        contexts,
+        fact("us-gaap:Revenues", "c-1", "100"),
+        fact("us-gaap:Revenues", "c-1", "100"),
+        fact("us-gaap:Revenues", "a", "60"),
+        fact("us-gaap:Revenues", "b", "40"),
+    )
+    products = breakdown(report_of(html), "revenue_by_product")
+    assert products.adds_up is True
+    assert not any("more than one value" in note for note in products.notes)
+
+
+def test_annual_values_in_the_rarer_unit_do_not_stop_the_report() -> None:
+    """The third referee, finding 6: an assertion stood where a filing could reach it.
+
+    An annual report whose members are tagged for the year in one unit and, more often,
+    for a quarter in another: the commoner unit was chosen first, no annual value was
+    left, and the reader stopped on an ``assert``. The period is chosen first now, then
+    the unit among the values of that period.
+    """
+    year = {"start": "2025-01-27", "end": "2026-01-25"}
+    quarter = {"start": "2025-10-27", "end": "2026-01-25"}
+    contexts = (
+        FY
+        + context("a", **year, dims={PRODUCT: "x:AlphaMember"})
+        + context("b", **year, dims={PRODUCT: "x:BetaMember"})
+        + context("aq", **quarter, dims={PRODUCT: "x:AlphaMember"})
+        + context("bq", **quarter, dims={PRODUCT: "x:BetaMember"})
+        + context("aq2", start="2025-07-28", end="2025-10-26", dims={PRODUCT: "x:AlphaMember"})
+    )
+    html = document(
+        contexts,
+        fact("us-gaap:Revenues", "c-1", "100"),
+        fact("us-gaap:Revenues", "a", "60"),
+        fact("us-gaap:Revenues", "b", "40"),
+        fact("us-gaap:Revenues", "aq", "15", unit="number"),
+        fact("us-gaap:Revenues", "bq", "10", unit="number"),
+        fact("us-gaap:Revenues", "aq2", "14", unit="number"),
+    )
+    products = breakdown(report_of(html), "revenue_by_product")
+    assert row_values(products, "x:AlphaMember") == {"2026-01-25": 60e6}
+    assert products.adds_up is True
+
+
 # (e) Contexts with two dimensions are not one-dimension breakdowns
 
 

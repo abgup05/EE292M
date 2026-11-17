@@ -764,11 +764,19 @@ def build_breakdown(spec: BreakdownSpec, index: _Index, *, annual: bool) -> Brea
     if chosen is None:
         return None
     concept, cells, notes = chosen
-    unit, cells = _only_unit(cells, notes)
+    # The period first, then the unit among the values of that period: choosing the commoner
+    # unit first could leave no value of a period this report shows.
     kinds = Counter(_kind(c[0].context) or "" for row in cells.values() for c in row.values())
     kind, kind_notes = _choose_kind(kinds, annual, spec)
-    assert kind is not None  # _choose_concept kept only concepts with a usable kind
+    if kind is None:  # not expected: _choose_concept keeps only concepts with a usable kind
+        return None
     notes += kind_notes
+    of_kind: dict[RowKey, dict[Period, list[_Cell]]] = {}
+    for key, periods in cells.items():
+        shown = {p: found for p, found in periods.items() if _kind(found[0].context) == kind}
+        if shown:
+            of_kind[key] = shown
+    unit, cells = _only_unit(of_kind, notes)
 
     conflicts: list[str] = []
     rows: dict[RowKey, dict[Period, _Cell]] = {}
@@ -780,7 +788,7 @@ def build_breakdown(spec: BreakdownSpec, index: _Index, *, annual: bool) -> Brea
         }
         if row:
             rows[key] = row
-    totals: dict[Period, _Cell] = {}
+    tagged_totals: dict[Period, list[_Cell]] = defaultdict(list)
     reconciling: dict[Period, dict[str, _Cell]] = defaultdict(dict)
     for fact, context, fact_unit in index.by_concept.get(concept, []):
         if fact_unit != unit or _kind(context) != kind or context.typed_axes:
@@ -788,11 +796,15 @@ def build_breakdown(spec: BreakdownSpec, index: _Index, *, annual: bool) -> Brea
         cell = _Cell(fact, context, fact_unit, 0)
         dims = context.dimensions
         if not dims:
-            totals.setdefault(_period(context), cell)
+            tagged_totals[_period(context)].append(cell)
         elif len(dims) == 1 and spec.reconciling_axis in dims:
             member = dims[spec.reconciling_axis]
             if member not in spec.allowed.get(spec.reconciling_axis, frozenset()):
                 reconciling[_period(context)].setdefault(member, cell)
+    totals = {
+        period: _pick(found, conflicts, f"The total for {period[1]}")
+        for period, found in tagged_totals.items()
+    }
 
     columns = sorted(
         {period for row in rows.values() for period in row},

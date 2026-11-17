@@ -171,6 +171,9 @@ and nothing here measures it.
 | A tagged number read without its `scale` | 25 of the 67 tests of `tests/test_ixbrl.py` and `tests/test_breakdowns.py`, among them the answer key against the filing's text | run by the session that built it; restored |
 | A value placed by the filing's fiscal year and not by its context's dates; a quarter mixed with year to date | `tests/test_breakdowns.py::test_an_annual_report_gives_three_fiscal_years_newest_first`, `::test_a_quarterly_report_gives_quarters_and_never_year_to_date` | written first |
 | No route for the breakdowns | the four tests on it in `tests/test_api.py` | route renamed: 4 failed |
+| A reader that searches to the end of the filing for every tag that is never closed | `tests/test_ixbrl.py::test_unclosed_context_tags_do_not_make_the_scan_quadratic` | written against the first version: "8x the openings took 63.5x as long" |
+| A page that puts a figure under the wrong period when a row lacks one | `uitests/test_breakdowns_dom.py::test_a_value_missing_in_the_middle_leaves_that_column_empty_and_moves_nothing`, on a synthetic sample with one value taken out | cells placed by position: this test failed and the 123 others passed |
+| A deep link to a claim that opens nothing | `uitests/test_run_changes_dom.py::test_the_deep_link_opens_that_claims_block_and_no_other` | checked against the dump without the hash, where no block is open |
 | A page that draws a breakdown cell it computed, or a changed paragraph with a stance mark | `uitests/test_breakdowns_dom.py`, `uitests/test_run_changes_dom.py` | each new assertion under its own deliberate break, by the session that built the page |
 
 What these cannot see: whether a changed paragraph listed under a claim bears on it, and whether a breakdown's label is the company's. Both are stated on the page.

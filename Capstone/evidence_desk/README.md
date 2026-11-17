@@ -198,11 +198,11 @@ One direct customer is tagged at 22% of revenue and another at 14%. The tests ch
 ## Verification
 
 ```sh
-make verify         # build, lint, 1,182 offline tests, smoke test, browser-level test
+make verify         # build, lint, 1,265 offline tests, smoke test, browser-level test
 make test           # offline tests only (T=tests/test_gate.py for one file)
 make golden-check   # the tripwire: one recorded run, compared stage by stage
 make replay         # the recorded model-backed run, offline
-make uitest         # headless Chromium renders three records; 99 assertions on the DOM
+make uitest         # headless Chromium renders five records; 124 assertions on the DOM
 make live-walk      # the running app end to end over HTTP: needs EDGAR, no key
 make eval ARGS="run --variant claim"   # score retrieval on the golden set
 make backup         # copy the record to backups/; make restore-check proves it restores

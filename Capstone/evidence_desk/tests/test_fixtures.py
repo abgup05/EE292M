@@ -1,9 +1,9 @@
-"""Retrieval and metadata checks against the recorded real seed page(s).
+"""Extraction checks against the recorded real public page.
 
-``make fixtures`` records the HTML and a manifest with the UTC retrieval time.
-These tests run offline and fail if extraction of the real page regresses.
-The GAO seed page returned HTTP 403 to this fetcher when fixtures were
-recorded, so only the NIST page is covered; see the README.
+The NIST page and its manifest were recorded by the earlier fixture recorder;
+they are kept so the public-page extractor (used for a run's optional extra
+URLs) is still tested offline against a real page. The SEC EDGAR fixtures under
+``tests/fixtures/edgar/`` are covered by ``test_filing.py``.
 """
 
 import json
@@ -11,9 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from app.models import ResearchRequest
 from app.sources.web import extract_document
-from app.synthesize import ExtractiveSynthesizer
 
 FIXTURES = Path(__file__).parent / "fixtures"
 MANIFEST = FIXTURES / "manifest.json"
@@ -29,7 +27,7 @@ def fixture_names() -> list[str]:
 @pytest.fixture(scope="module")
 def manifest() -> dict:
     if not MANIFEST.exists():
-        pytest.skip("no recorded fixtures; run `make fixtures`")
+        pytest.skip("no recorded public-page fixtures")
     return json.loads(MANIFEST.read_text())
 
 
@@ -64,19 +62,9 @@ def test_nist_rmf_metadata_matches_the_public_record(manifest: dict) -> None:
     assert "Privacy Policy" not in doc.text
 
 
-def test_extractive_findings_from_real_page_are_exact_substrings(manifest: dict) -> None:
+def test_real_page_sections_are_exact_substrings(manifest: dict) -> None:
     entry = manifest.get("nist_ai_rmf")
     if entry is None:
         pytest.skip("NIST fixture not recorded")
     doc = extract_document(entry["final_url"], (FIXTURES / "nist_ai_rmf.html").read_text())
-    request = ResearchRequest(
-        question=(
-            "What opportunities and risks should an organization examine before using "
-            "generative AI in internal workflows?"
-        ),
-        decision="Whether to investigate a limited internal pilot",
-    )
-    synthesizer = ExtractiveSynthesizer()
-    draft = synthesizer.synthesize(request, synthesizer.plan(request), {"src-1": doc})
-    assert draft.findings
-    assert all(item.excerpt in doc.text for item in draft.evidence)
+    assert all(section.text in doc.text for section in doc.sections)

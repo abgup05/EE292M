@@ -1,5 +1,7 @@
 # Evidence Desk — capstone plan
 
+**In three sentences.** Evidence Desk turns one research question and the decision it informs into a brief whose every factual finding links to an exact excerpt from a page the tool actually retrieved. Citations are verified on the server before anything reaches the browser or the Markdown export, and a brief with thin evidence is marked partial rather than presented as complete. The user is a researcher or project lead who needs to see what supports a conclusion, what conflicts with it, and what is still unknown before acting.
+
 Evidence Desk is a proposed research workbench for turning an open-ended project question into a decision brief whose findings can be checked against source passages. It is meant for a researcher or project lead making a real choice: whether to proceed, revise a plan, or investigate further. The deliverable is a detailed answer with traceable citations, conflicting evidence, and visible gaps.
 
 These files contain the plan and the [coding-agent prompt](PROMPT.md). The first working slice is implemented in [`evidence_desk/`](evidence_desk/README.md); `starting_point` does not exist in this repository, so it was built on the Week 2 app's stack and conventions instead.

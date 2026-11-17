@@ -83,7 +83,7 @@ Version 9. The gate from a fresh clone: 1,265 offline tests, the smoke test, 124
 
 A proposed order, mine to change. The outline is `Capstone/evidence_desk/docs/draft-outline.md`.
 
-1. Read the thirty golden cases and correct them; re-run `make eval`. Every evaluation number depends on this.
+1. Read the thirty golden cases and correct them; re-run `make eval`. Every evaluation number depends on this. `Capstone/evidence_desk/eval/golden-reading.md` lays them out with links into the filings, starting with the four where the tool and the expected stance disagree.
 2. Rotate the API key that was pasted into a conversation; get credit; record the cassettes again through the API.
 3. Use the tool on a thesis of my own and write down where it was wrong.
 4. Read five reworded pairs and five added paragraphs for a company other than NVIDIA, and say whether the classes hold.

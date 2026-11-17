@@ -24,6 +24,7 @@ truth. The cases are an answer key; never edit one to improve a score.
 
     make eval ARGS="fetch"            # cache every pinned filing and company's facts (once)
     make eval-validate                # check every case; exit 1 on any failure
+    make golden-sheet                 # write eval/golden-reading.md: every case laid out for a person to read
     make eval ARGS="run --variant claim"                                  # retrieval, claim only
     make eval ARGS="plan --cassette eval/cassettes/golden --out eval/queries.json"
     make eval ARGS="run --variant claim+queries --queries eval/queries.json"  # retrieval
@@ -51,6 +52,15 @@ Expect 6 plan requests, then one assess request per case offered a passage (30).
 beside the plain record: verdict agreement before and after the check, the cases it brought into
 agreement, those it left disagreeing and those it broke, each with its denominator. Without
 `--check` the output is unchanged.
+
+## Reading the cases
+
+`eval/golden-reading.md` (from `make golden-sheet`) lays out all thirty cases for the reading
+that has not happened yet: the claim, the expected stance and the drafter's reason, each excerpt
+with a link that opens the filing at it, what the tool did with the case, and a box to tick. It
+names first the cases where the tool and the expected stance part ways, since one of the two is
+wrong there. A test keeps the sheet current with `golden.json`; correct the golden file, then
+generate the sheet again.
 
 ## Reading the numbers
 

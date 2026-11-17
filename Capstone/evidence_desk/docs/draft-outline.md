@@ -47,7 +47,7 @@ The model path has not run through the API since October. The golden set is a mo
 
 ## 7. What I have to do before 30 November
 
-1. Read the thirty golden cases; correct them; re-run `make eval`.
+1. Read the thirty golden cases (`eval/golden-reading.md` lays them out, the four disputed ones first); correct them; re-run `make eval`.
 2. Get API credit or a key that works; record the cassettes again through the API; re-measure the quote rate without a stand-in.
 3. Use the tool on a thesis of my own and write down where it was wrong.
 4. Read five reworded pairs and five added paragraphs of a filing comparison for a company other than NVIDIA.

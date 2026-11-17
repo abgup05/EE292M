@@ -28,9 +28,17 @@ CHANGE_GLYPHS = {"numbers_only": "#", "reworded": "~", "added": "+", "removed": 
 CHANGE_LABELS = {"numbers_only": "Numbers only", "reworded": "Reworded", "added": "Added", "removed": "Removed"}
 # Every mark the run pages already use: the change family must take none of them.
 OTHER_GLYPHS = {"✓", "✕", "±", "?", "∅", "•", "▲", "✎", "◎", "◐", "!", "▣", "☒", "☐"}
+# The five paragraph counts, then the four for short lines and table rows: every line of each
+# filing is in exactly one of them.
 COUNTS = ("unchanged", "numbers_only", "reworded", "added", "removed")
-MINOR = ("minor_added", "minor_removed")
-LISTS = {"added": "added_paragraphs", "removed": "removed_paragraphs", "reworded": "reworded_paragraphs"}
+MINOR = ("minor_unchanged", "minor_numbers_only", "minor_added", "minor_removed")
+LISTS = {
+    "added": "added_paragraphs",
+    "removed": "removed_paragraphs",
+    "reworded": "reworded_paragraphs",
+    "numbers_only": "numbers_only_paragraphs",
+}
+SUBHEADINGS = {"later": ("subheadings_added", "added"), "earlier": ("subheadings_removed", "removed")}
 PLACEHOLDERS = ("undefined", "NaN", "[object Object]", "null")
 
 
@@ -102,6 +110,9 @@ def test_the_message_comes_first_and_names_both_filings() -> None:
     body = text(soup.select_one("#changes-body"))
     assert body.index(text(lead)) < body.index("All Items"), "the totals come after the message"
     assert "does not know why anything changed" in words(soup.select_one("#changes-body .changes-unknown"))
+    explained = words(soup.select_one("#changes-body .changes-explain"))
+    for phrase in ("The five counts are of paragraphs", "counted apart", "never listed", "exactly one count", "A sub-heading is not a line"):
+        assert phrase in explained, f"the explanation does not say {phrase!r}"
     head = soup.select_one("#changes-head")
     assert head.select_one(".page-tag") is not None and "Sample record" in text(head.select_one(".page-tag"))
     assert sample()["note"] in words(head)
@@ -158,17 +169,103 @@ def test_a_reworded_paragraph_marks_added_and_removed_words() -> None:
         pytest.fail("the record has no reworded paragraph with both added and removed words")
     pair = pairs[position]
     entries = row.select('.chg-list[data-list="reworded"] ol.chg-paras > li')
-    quote = entries[position].select_one("blockquote.chg-reworded")
-    assert quote is not None
+    assert_segments(entries[position], pair)
+    similarity = entries[position].select_one("[data-similarity]")
+    assert similarity is not None and float(text(similarity)) == pair["similarity"]
+    assert "underline" in rule_body("ins.seg-add") and "line-through" in rule_body("del.seg-del")
+
+
+def assert_segments(entry: Tag, pair: dict[str, Any]) -> None:
+    """The entry draws the pair's segments in reading order, added words in <ins>, removed in <del>."""
+    quote = entry.select_one("blockquote.chg-reworded")
+    assert quote is not None, "the pair is not drawn from its segments"
     added = [visible_text(node) for node in quote.select("ins.seg-add")]
     removed = [visible_text(node) for node in quote.select("del.seg-del")]
     assert added == [s["text"] for s in pair["segments"] if s["kind"] == "added"]
     assert removed == [s["text"] for s in pair["segments"] if s["kind"] == "removed"]
     assert not quote.select("ins.seg-del, del.seg-add"), "an added word marked as removed, or the reverse"
     assert visible_text(quote) == " ".join(s["text"] for s in pair["segments"]), "segments out of reading order"
-    similarity = entries[position].select_one("[data-similarity]")
-    assert similarity is not None and float(text(similarity)) == pair["similarity"]
-    assert "underline" in rule_body("ins.seg-add") and "line-through" in rule_body("del.seg-del")
+
+
+def test_a_numbers_only_pair_marks_the_figures_that_moved() -> None:
+    for item, row in zip(record()["items"], rows(), strict=True):
+        pairs = item["numbers_only_paragraphs"]
+        position = next((i for i, p in enumerate(pairs) if {"added", "removed"} <= {s["kind"] for s in p["segments"]}), None)
+        if position is not None:
+            break
+    else:
+        pytest.fail("the record has no numbers-only pair with both added and removed figures")
+    section = row.select_one('.chg-list[data-list="numbers_only"]')
+    assert section is not None, f"{item['item']}: no numbers-only list"
+    title = section.select_one(".chg-list-title")
+    assert text(title.select_one(".chg-mark.c-numbers_only .g-chg")) == CHANGE_GLYPHS["numbers_only"]
+    assert "Numbers only: the same words, the figures that moved" in words(title)
+    entry = section.select("ol.chg-paras > li")[position]
+    assert_segments(entry, pairs[position])
+    assert entry.select_one("[data-similarity]") is None, "a numbers-only pair shows a similarity"
+    hrefs = [a["href"] for a in entry.select("a.ext")]
+    assert hrefs == [pairs[position]["after"]["link"], pairs[position]["before"]["link"]], "both links, later then earlier"
+
+
+@pytest.mark.parametrize("side", list(SUBHEADINGS))
+def test_subheadings_in_one_filing_only_are_named_under_their_item(side: str) -> None:
+    key, kind = SUBHEADINGS[side]
+    for item, row in zip(record()["items"], rows(), strict=True):
+        section = row.select_one(f'[data-subheadings="{side}"]')
+        if not item[key]:
+            assert section is None, f"{item['item']}: an empty {side} sub-heading list is shown"
+            continue
+        assert section is not None, f"{item['item']}: the {side} sub-headings are not named"
+        assert text(section.select_one(".chg-mark .g-chg")) == CHANGE_GLYPHS[kind], f"{item['item']}: not the {kind} mark"
+        assert [text(li) for li in section.select("li")] == item[key], item["item"]
+        lists = row.select(".chg-lists > section")
+        assert lists.index(section) < len(lists) - sum(bool(item[k]) for k in LISTS.values()), "sub-headings come first"
+
+
+def test_item_1_business_names_its_seven_removed_subheadings() -> None:
+    row, item = row_and_item("Item 1. ")
+    names = item["subheadings_removed"]
+    assert len(names) == 7, "the sample's Item 1 has seven sub-headings only in the earlier filing"
+    section = row.select_one('[data-subheadings="earlier"]')
+    assert section is not None and [text(li) for li in section.select("li")] == names
+
+
+def link_entries() -> list[tuple[dict[str, Any], str, Tag]]:
+    """Every paragraph link in the view with the record's paragraph it opens: (paragraph, side, <a>)."""
+    found = []
+    for item, row in zip(record()["items"], rows(), strict=True):
+        for kind, side in (("added", "later"), ("removed", "earlier")):
+            entries = row.select(f'.chg-list[data-list="{kind}"] ol.chg-paras > li')
+            for paragraph, entry in zip(item[LISTS[kind]], entries, strict=True):
+                found.append((paragraph, side, entry.select_one("a.ext")))
+        for kind in ("reworded", "numbers_only"):
+            entries = row.select(f'.chg-list[data-list="{kind}"] ol.chg-paras > li')
+            for pair, entry in zip(item[LISTS[kind]], entries, strict=True):
+                later_link, earlier_link = entry.select("a.ext")
+                found += [(pair["after"], "later", later_link), (pair["before"], "earlier", earlier_link)]
+    return found
+
+
+def test_link_words_say_what_each_link_opens() -> None:
+    seen = set()
+    for paragraph, side, link in link_entries():
+        assert link is not None and link["href"] == paragraph["link"]
+        said = str(link.contents[0])
+        kind = paragraph.get("link_kind") or ""
+        seen.add(kind)
+        assert f"the {side} filing" in said, f"{said!r} does not name the {side} filing"
+        if kind == "document":
+            assert "at this paragraph" not in said and "cannot be located" in said, said
+        elif kind == "first-line":
+            assert "at its first line" in said, said
+        else:
+            assert "at this paragraph" in said, said
+    assert {"document", "passage"} <= seen, "the sample needs both a document link and a passage link"
+
+
+def test_item_1a_starts_open() -> None:
+    opened = [row["data-item"] for row in rows() if row.has_attr("open")]
+    assert len(opened) == 1 and opened[0].startswith("Item 1A"), opened
 
 
 def test_truncated_lists_say_how_many_they_show() -> None:

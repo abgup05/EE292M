@@ -968,7 +968,7 @@ function renderChanges(record, sampleNote) {
     h(
       "p",
       { class: "changes-explain" },
-      "Each paragraph is matched with the other filing's paragraphs in the same Item. Unchanged: the same text, perhaps moved within its Item. ",
+      "Each paragraph is matched with the other filing's paragraphs in the same Item; a paragraph here is a longer line of text that is not a table row. The five counts are of paragraphs. Unchanged: the same text, perhaps moved within its Item. ",
       changeMark("numbers_only"),
       ": the same once numbers, dates and amounts are set aside. ",
       changeMark("reworded"),
@@ -976,7 +976,7 @@ function renderChanges(record, sampleNote) {
       changeMark("added"),
       " and ",
       changeMark("removed"),
-      ": a paragraph with no counterpart in the other filing. Short lines and table rows found in only one filing are counted, not listed.",
+      ": a paragraph with no counterpart in the other filing. Shorter lines and table rows are counted apart, in the same classes, and never listed. Every line of each filing is in exactly one count. A sub-heading is not a line: the sub-headings found in only one filing are named under their Item.",
     ),
     h(
       "p",
@@ -1004,20 +1004,20 @@ function renderChanges(record, sampleNote) {
         { class: "chg-totals" },
         h("li", null, total("unchanged"), " unchanged"),
         ["numbers_only", "reworded", "added", "removed"].map((kind) => h("li", null, total(kind), " ", changeMark(kind))),
-        h("li", { class: "chg-minor" }, "Short lines and table rows: ", total("minor_added"), " added, ", total("minor_removed"), " removed"),
+        h("li", { class: "chg-minor" }, minorLine((field) => total(field))),
       ),
     ),
   );
   const items = record.items;
-  // The first Item that lists any paragraph starts open, so a reader sees one example of each list.
-  const listed = (item) => list(item.added_paragraphs).length + list(item.removed_paragraphs).length + list(item.reworded_paragraphs).length > 0;
-  const firstOpen = items.findIndex(listed);
+  // Item 1A starts open (the Item people read first); without it, the first Item that lists anything.
+  const riskFactors = items.findIndex((item) => str(item.item).startsWith("Item 1A"));
+  const firstOpen = riskFactors >= 0 ? riskFactors : items.findIndex(hasListed);
   parts.push(
     h(
       "section",
       { class: "block", "aria-labelledby": "chg-items-title" },
       h("h3", { class: "block-title", id: "chg-items-title", text: "By Item" }),
-      h("p", { class: "hint", text: "Open an Item to read what was added, removed and reworded in it." }),
+      h("p", { class: "hint", text: "Open an Item to read its sub-headings found in one filing only, and the paragraphs added, removed, reworded or changed only in their numbers." }),
       h(
         "div",
         { class: "chg-grid chg-header", "aria-hidden": "true" },
@@ -1031,7 +1031,7 @@ function renderChanges(record, sampleNote) {
   els.changesBody.replaceChildren(...parts);
 }
 
-/** One Item: its five counts as a row, opening to its three lists. */
+/** One Item: its five paragraph counts and four short-line counts as a row, opening to its lists. */
 function renderChangeItem(item, index, open = false) {
   const presence = { later: "Only in the later filing", earlier: "Only in the earlier filing" }[item.present_in] ?? "";
   const word = (field) => (field === "unchanged" ? "unchanged" : CHANGE_MARK[field][1].toLowerCase());
@@ -1051,35 +1051,74 @@ function renderChangeItem(item, index, open = false) {
       { class: "chg-name" },
       h("span", { class: "chg-item-title", text: str(item.item) }),
       presence ? h("span", { class: "chg-presence", "data-present-in": item.present_in, text: presence }) : "",
-      h(
-        "span",
-        { class: "chg-minor" },
-        "Short lines and table rows: ",
-        h("span", { "data-chg-field": "minor_added", text: num(item.minor_added) }),
-        " added, ",
-        h("span", { "data-chg-field": "minor_removed", text: num(item.minor_removed) }),
-        " removed",
-      ),
+      h("span", { class: "chg-minor" }, minorLine((field) => h("span", { "data-chg-field": field, text: num(item[field]) }))),
     ),
     CHANGE_COUNTS.map(cell),
   );
   return h("details", { class: "chg-item", "data-item-index": index, "data-item": str(item.item), open }, summary, renderChangeLists(item));
 }
 
-/** An Item's added, removed and reworded paragraphs, each list with its truncation as the record states it. */
+/** "Short lines and table rows: A unchanged, B numbers only, C added, D removed"; `count` draws each number. */
+function minorLine(count) {
+  return [
+    "Short lines and table rows: ",
+    count("minor_unchanged"),
+    " unchanged, ",
+    count("minor_numbers_only"),
+    " numbers only, ",
+    count("minor_added"),
+    " added, ",
+    count("minor_removed"),
+    " removed",
+  ];
+}
+
+/** Whether an Item lists anything: a paragraph, a pair, or a sub-heading in only one filing. */
+function hasListed(item) {
+  return ["added_paragraphs", "removed_paragraphs", "reworded_paragraphs", "numbers_only_paragraphs", "subheadings_added", "subheadings_removed"].some(
+    (key) => list(item[key]).length > 0,
+  );
+}
+
+/**
+ * The words on a link into one of the two filings, by the record's `link_kind`: at the
+ * paragraph, at its first line, or the filing only. A record without `link_kind` keeps
+ * "at this paragraph". The run view says the same of a quote (`LINK_WORDS`).
+ */
+function changeLinkWords(paragraph, side) {
+  const kind = str(paragraph?.link_kind);
+  if (kind === "first-line") return `Open in the ${side} filing, at its first line`;
+  if (kind === "document") return `Open the ${side} filing (the link opens the filing only: this text cannot be located in it)`;
+  return `Open in the ${side} filing, at this paragraph`;
+}
+
+/** An Item's sub-headings found in one filing only, then its four lists, each with its truncation as the record states it. */
 function renderChangeLists(item) {
   const body = h("div", { class: "chg-lists" });
+  if (!hasListed(item)) {
+    body.append(h("p", { class: "muted", text: "No paragraph or sub-heading was added, removed, reworded or changed in its numbers in this Item." }));
+    return body;
+  }
+  const subheadings = (kind, side, title, names) =>
+    h(
+      "section",
+      { class: "chg-list chg-subs", "data-subheadings": side },
+      h("h4", { class: "chg-list-title" }, changeMark(kind), ` ${title}`),
+      h("ul", { class: "chg-sub-list" }, names.map((name) => h("li", { text: String(name) }))),
+    );
+  const subsAdded = list(item.subheadings_added);
+  const subsRemoved = list(item.subheadings_removed);
+  if (subsAdded.length) body.append(subheadings("added", "later", "Sub-headings only in the later filing", subsAdded));
+  if (subsRemoved.length) body.append(subheadings("removed", "earlier", "Sub-headings only in the earlier filing", subsRemoved));
   const added = list(item.added_paragraphs);
   const removed = list(item.removed_paragraphs);
   const reworded = list(item.reworded_paragraphs);
-  if (!added.length && !removed.length && !reworded.length) {
-    body.append(h("p", { class: "muted", text: "No paragraph was added, removed or reworded in this Item." }));
-    return body;
-  }
+  const numbersOnly = list(item.numbers_only_paragraphs);
   const cut = item.truncated ?? {};
-  if (added.length) body.append(changeList("added", "Added in the later filing", added, item.added, cut.added, (p) => paragraphEntry(p, "Open in the later filing, at this paragraph")));
-  if (removed.length) body.append(changeList("removed", "Removed from the earlier filing", removed, item.removed, cut.removed, (p) => paragraphEntry(p, "Open in the earlier filing, at this paragraph")));
-  if (reworded.length) body.append(changeList("reworded", "Reworded: the later paragraph, with the words it added and dropped", reworded, item.reworded, cut.reworded, rewordedEntry));
+  if (added.length) body.append(changeList("added", "Added in the later filing", added, item.added, cut.added, (p) => paragraphEntry(p, "later")));
+  if (removed.length) body.append(changeList("removed", "Removed from the earlier filing", removed, item.removed, cut.removed, (p) => paragraphEntry(p, "earlier")));
+  if (reworded.length) body.append(changeList("reworded", "Reworded: the later paragraph, with the words it added and dropped", reworded, item.reworded, cut.reworded, (pair) => pairEntry(pair, true)));
+  if (numbersOnly.length) body.append(changeList("numbers_only", "Numbers only: the same words, the figures that moved", numbersOnly, item.numbers_only, cut.numbers_only, (pair) => pairEntry(pair, false)));
   return body;
 }
 
@@ -1098,18 +1137,28 @@ function changeList(kind, title, entries, count, truncated, draw) {
   );
 }
 
-/** An added or removed paragraph: its text, where it sits, and a link into its filing. */
-function paragraphEntry(paragraph, linkText) {
+/** An added or removed paragraph: its text, where it sits, and a link into its filing ("later" or "earlier"). */
+function paragraphEntry(paragraph, side) {
   return h(
     "li",
     null,
     h("p", { class: "chg-text", text: str(paragraph.text) }),
-    h("p", { class: "chg-where" }, h("span", { class: "label", text: "Located under: " }), str(paragraph.locator) || "location not recorded", " · ", externalLink(paragraph.link, linkText)),
+    h(
+      "p",
+      { class: "chg-where" },
+      h("span", { class: "label", text: "Located under: " }),
+      str(paragraph.locator) || "location not recorded",
+      " · ",
+      externalLink(paragraph.link, changeLinkWords(paragraph, side)),
+    ),
   );
 }
 
-/** A reworded pair: the later paragraph drawn from `segments`, in reading order, then the record's similarity. */
-function rewordedEntry(pair) {
+/**
+ * A reworded or numbers-only pair: the later paragraph drawn from `segments`, in reading
+ * order, then (for a reworded pair) the record's similarity, and links into both filings.
+ */
+function pairEntry(pair, withSimilarity) {
   const quote = h("blockquote", { class: "chg-reworded" });
   list(pair.segments).forEach((segment, position) => {
     if (position > 0) quote.append(" ");
@@ -1125,15 +1174,19 @@ function rewordedEntry(pair) {
     h(
       "p",
       { class: "chg-where" },
-      h("span", { class: "label", text: "Word overlap with the earlier paragraph (Jaccard similarity, 0 to 1): " }),
-      h("span", { "data-similarity": "", text: Number.isFinite(pair.similarity) ? String(pair.similarity) : "not recorded" }),
-      " · ",
+      withSimilarity
+        ? [
+            h("span", { class: "label", text: "Word overlap with the earlier paragraph (Jaccard similarity of the word sets, common words and figures left out, so 1 does not mean identical; 0 to 1): " }),
+            h("span", { "data-similarity": "", text: Number.isFinite(pair.similarity) ? String(pair.similarity) : "not recorded" }),
+            " · ",
+          ]
+        : "",
       h("span", { class: "label", text: "Located under: " }),
       str(pair.after?.locator) || "location not recorded",
       " · ",
-      externalLink(pair.after?.link, "Open in the later filing"),
+      externalLink(pair.after?.link, changeLinkWords(pair.after, "later")),
       " · ",
-      externalLink(pair.before?.link, "Open the earlier paragraph"),
+      externalLink(pair.before?.link, changeLinkWords(pair.before, "earlier")),
     ),
   );
 }

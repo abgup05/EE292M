@@ -913,6 +913,8 @@ del.seg-del { text-decoration-line: line-through; text-decoration-color: var(--i
 
 .chg-totals { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.35rem 1.2rem; align-items: baseline; }
 .chg-totals li { white-space: nowrap; }
+/* The short-lines line is a sentence of four counts: it takes its own row and may wrap. */
+.chg-totals li.chg-minor { flex-basis: 100%; white-space: normal; }
 .chg-minor { font-size: var(--step--1); color: var(--ink-2); }
 
 .chg-grid {
@@ -944,6 +946,8 @@ del.seg-del { text-decoration-line: line-through; text-decoration-color: var(--i
 .chg-text, .chg-reworded { margin: 0; font-family: var(--font-quote); line-height: 1.55; }
 .chg-where { margin: 0.15rem 0 0; font-size: var(--step--1); color: var(--ink-2); }
 .chg-where .ext { font-weight: 600; }
+.chg-sub-list { margin: 0; padding-left: 1.4rem; }
+.chg-sub-list > li + li { margin-top: 0.15rem; }
 
 @media (max-width: 720px) {
   .chg-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }

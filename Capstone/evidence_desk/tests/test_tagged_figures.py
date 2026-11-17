@@ -34,7 +34,7 @@ from app.services.export import render_markdown
 from app.services.numbers import select_figures
 from app.services.thesis_run import execute_run, new_run
 from app.sources.ixbrl import read_tagged_facts
-from app.store import Store
+from app.store import FilingCache, Store
 from tests import replay_run
 from tests.fakes import (
     FY_2026,
@@ -75,7 +75,13 @@ def request(*claims: str, tagged: bool = True, filings: int = 2) -> ThesisReques
     )
 
 
-def run_with(store: Store, thesis: ThesisRequest, filings: FakeFilings, analyst: object) -> Run:
+def run_with(
+    store: Store,
+    thesis: ThesisRequest,
+    filings: FakeFilings,
+    analyst: object,
+    cache: FilingCache | None = None,
+) -> Run:
     return execute_run(
         new_run(thesis),
         store,
@@ -83,6 +89,7 @@ def run_with(store: Store, thesis: ThesisRequest, filings: FakeFilings, analyst:
         analyst=analyst,  # type: ignore[arg-type]
         fetch_page=FakePages({}),
         clock=ManualClock(),
+        cache=cache,
     )
 
 
@@ -331,7 +338,12 @@ def test_the_brief_lists_a_cited_tagged_figure_with_its_label_and_formula(two_ru
 
 
 class _SecondFetchFails(FakeFilings):
-    """EDGAR serves each filing once: the run reads it, the tagged-facts read then fails."""
+    """EDGAR serves each filing once; asked for it a second time, it fails.
+
+    A run reads a filing's tags from the HTML it has just fetched, so the second fetch
+    happens only when the text came from the cache and the tags were never read: a
+    run without the option, then one with it.
+    """
 
     error: Exception = SourceError("EDGAR answered HTTP 503")
 
@@ -379,11 +391,23 @@ def test_tagged_facts_that_cannot_be_read_leave_the_run_partial_and_say_so(
 ) -> None:
     filings = _failing(error)
     analyst = ScriptedAnalyst(_supports)
-    run = run_with(Store(tmp_path / "r.sqlite"), request(GROWTH, filings=1), filings, analyst)
+    cache = FilingCache()
+    # A run without the option leaves the filing's text in the cache and its tags unread, so
+    # the run that asks for them has to fetch the filing again: the fetch that fails here.
+    off = request(GROWTH, tagged=False, filings=1)
+    run_with(Store(tmp_path / "w.sqlite"), off, filings, analyst, cache=cache)
+    run = run_with(
+        Store(tmp_path / "r.sqlite"), request(GROWTH, filings=1), filings, analyst, cache=cache
+    )
     assert run.status == RunStatus.partial and run.claims[0].verdict == Verdict.supported
     assert run.coverage.tagged_figures_offered == 0 and tagged(run.metrics) == []
-    assert run.coverage_limits == [
-        policy.TAGGED_UNAVAILABLE.format(form="10-Q", period_end="2026-01-01", error=reason)
+    unavailable = policy.TAGGED_UNAVAILABLE.format(
+        form="10-Q", period_end="2026-01-01", error=reason
+    )
+    assert unavailable in run.coverage_limits
+    # The only other line says the text came from the cache; it is not a reason to be partial.
+    assert [line for line in run.coverage_limits if line != unavailable] == [
+        line for line in run.coverage_limits if "read from the local cache" in line
     ]
     assert "hunter2" not in run.model_dump_json()
     # Without the option the same filings give a complete run.

@@ -105,10 +105,38 @@ def test_a_second_run_with_the_same_cache_fetches_no_filing_at_all(tmp_path: Pat
     first = run_once("first")
     fetched_by_first = len(filings.fetched)
     assert first.coverage.tagged_figures_offered == 40
-    assert fetched_by_first == 4, "two filings for their text, and again for their tags"
+    assert fetched_by_first == 2, "each filing once: its tags are read from the same HTML"
     second = run_once("second")
     again = [url.rsplit("/", 1)[-1] for url in filings.fetched[fetched_by_first:]]
     assert again == [], f"the second run fetched {again}"
     tagged_first = [m for m in first.metrics if m.id.startswith("tagged:")]
     tagged_second = [m for m in second.metrics if m.id.startswith("tagged:")]
     assert tagged_second == tagged_first and len(tagged_second) == 40
+
+
+def test_a_first_run_fetches_each_filing_once(tmp_path: Path) -> None:
+    """On an empty cache the tags are read from the HTML the run has just fetched for its text.
+
+    Until this test a first run fetched the newest annual and quarterly report twice:
+    once to parse, and once more for their tags (8 requests to EDGAR where 6 would do).
+    """
+    filings = FakeFilings.nvidia(*REFS)
+    thesis = EXAMPLE_THESIS.model_copy(deep=True, update={"tagged_figures": True, "filings": 2})
+    run = execute_run(
+        new_run(thesis),
+        Store(tmp_path / "record.sqlite"),
+        filings=filings,
+        analyst=ExtractiveAnalyst(),
+        cache=FilingCache(tmp_path / "cache.sqlite"),
+    )
+    assert run.coverage.tagged_figures_offered == 40
+    assert sorted(filings.fetched) == sorted(ref.url for ref in REFS), filings.fetched
+
+
+def test_html_handed_over_is_used_and_a_filing_without_it_is_fetched() -> None:
+    filings = FakeFilings.nvidia(*REFS)
+    html = {Q2_2027.accession: filings.fetch(Q2_2027).html}
+    filings.fetched.clear()
+    result = load_tagged_figures(NVIDIA, filings, REFS, html_by_accession=html)
+    assert len(result.figures) == 40 and result.errors == []
+    assert filings.fetched == [FY_2026.url], "only the filing whose HTML was not handed over"

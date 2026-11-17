@@ -68,10 +68,14 @@ class Ingested:
     read); ``duplicates`` counts sources whose content had already been read,
     so ``requested - duplicates`` is the number of distinct sources asked for.
     ``filing_refs`` maps the source ID of each filing read to its reference.
+    ``filing_html`` holds, by accession, the HTML of each filing fetched in this run,
+    kept only when the run asked for tagged figures: the tags are in the HTML and not
+    in the parsed text, and fetching a filing twice in one run is waste.
     """
 
     documents: dict[str, Document] = field(default_factory=dict)
     filing_refs: dict[str, FilingRef] = field(default_factory=dict)
+    filing_html: dict[str, str] = field(default_factory=dict)
     requested: int = 0
     duplicates: int = 0
     time_limit_hit: bool = False
@@ -177,7 +181,10 @@ def ingest(
         store.save_run(run)
         same_page = False
         if isinstance(item, FilingRef):
-            source, document, cached = _read_filing(source_id, item, company, filings, cache)
+            keep = result.filing_html if run.inputs.tagged_figures else None
+            source, document, cached = _read_filing(
+                source_id, item, company, filings, cache, keep_html=keep
+            )
             result.filings_from_cache += cached
         else:
             source, document, same_page = _read_page(source_id, item, fetch_page, canonical_seen)
@@ -271,12 +278,19 @@ def _from_cache(cache: FilingCache, ref: FilingRef, title: str) -> tuple[Documen
 
 
 def _read_filing(
-    source_id: str, ref: FilingRef, company: Company, filings: FilingSource, cache: FilingCache
+    source_id: str,
+    ref: FilingRef,
+    company: Company,
+    filings: FilingSource,
+    cache: FilingCache,
+    *,
+    keep_html: dict[str, str] | None = None,
 ) -> tuple[Source, Document | None, bool]:
     """Read one filing from the cache, else fetch and parse it.
 
     Returns (source record, document or None when it was not read, whether it
-    came from the cache).
+    came from the cache). When the filing is fetched and ``keep_html`` is given,
+    its HTML is put there under its accession.
     """
     title = filing_title(company, ref)
     cached = _from_cache(cache, ref, title)
@@ -288,6 +302,8 @@ def _read_filing(
     except SourceError as exc:
         failed = _failed(source_id, SourceKind.sec_filing, ref.url, title, str(exc), ref)
         return failed, None, False
+    if keep_html is not None:
+        keep_html[ref.accession] = fetched.html
     try:
         document = parse_filing(
             fetched.html, url=ref.url, title=title, published_date=ref.filed_date

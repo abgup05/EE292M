@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Final
@@ -102,22 +102,35 @@ def _kept(cache: FilingCache | None, ref: FilingRef) -> BreakdownReport | None:
         return None
 
 
+def _html(filings: FilingSource, ref: FilingRef, at_hand: Mapping[str, str]) -> str | Exception:
+    """The filing's HTML: what the run already fetched, else fetched now; or the failure."""
+    if ref.accession in at_hand:
+        return at_hand[ref.accession]
+    try:
+        return filings.fetch(ref).html
+    except Exception as exc:  # noqa: BLE001 - any failure of the port leaves the run to the rest
+        return exc
+
+
 def _read(
-    company: Company, filings: FilingSource, ref: FilingRef, cache: FilingCache | None
+    company: Company,
+    filings: FilingSource,
+    ref: FilingRef,
+    cache: FilingCache | None,
+    at_hand: Mapping[str, str],
 ) -> BreakdownReport | str:
     """The breakdowns tagged in ``ref``, or why they could not be read."""
     kept = _kept(cache, ref)
     if kept is not None:
         return kept
+    html = _html(filings, ref, at_hand)
+    if isinstance(html, SourceError):
+        return str(html)[:MAX_ERROR_CHARS]  # our own message: it names the URL and the status
+    if isinstance(html, Exception):
+        log.warning("Fetching %s for its tags failed: %s", ref.url, type(html).__name__)
+        return f"the filing could not be fetched ({type(html).__name__})"
     try:
-        fetched = filings.fetch(ref)
-    except SourceError as exc:
-        return str(exc)[:MAX_ERROR_CHARS]  # our own message: it names the URL and the status
-    except Exception as exc:  # noqa: BLE001 - any failure of the port leaves the run to the rest
-        log.warning("Fetching %s for its tags failed: %s", ref.url, type(exc).__name__)
-        return f"the filing could not be fetched ({type(exc).__name__})"
-    try:
-        facts = read_tagged_facts(fetched.html)
+        facts = read_tagged_facts(html)
         if facts.reason is not None:
             return facts.reason.rstrip(".")
         report = build_report(facts, company=company, filing=filing_info(ref))
@@ -135,6 +148,7 @@ def load_tagged_figures(
     refs: Iterable[FilingRef],
     *,
     cache: FilingCache | None = None,
+    html_by_accession: Mapping[str, str] | None = None,
 ) -> TaggedFigures:
     """Read the tags of the newest annual and quarterly report among ``refs`` (those the run read).
 
@@ -143,6 +157,8 @@ def load_tagged_figures(
     offered, and a :data:`~app.core.policy.TAGGED_UNAVAILABLE` sentence for each
     filing whose tags could not be read. Never raises for EDGAR or for a filing's content.
     With a ``cache``, a filing whose tags this reader has read before is not fetched again.
+    ``html_by_accession`` is the HTML the run has already fetched in this run, by accession:
+    a filing found there is not fetched a second time.
     """
     result = TaggedFigures()
     chosen = newest_reports(refs)
@@ -152,7 +168,7 @@ def load_tagged_figures(
             result.notes.append(NOT_READ.format(kind=kind))
     reports: list[BreakdownReport] = []
     for ref in chosen:
-        read = _read(company, filings, ref, cache)
+        read = _read(company, filings, ref, cache, html_by_accession or {})
         if isinstance(read, str):
             result.errors.append(
                 policy.TAGGED_UNAVAILABLE.format(

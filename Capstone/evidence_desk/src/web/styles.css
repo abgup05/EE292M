@@ -9,7 +9,10 @@
  *                and tags about the page itself (sample record)
  *   --limit      ▲ amber: something limits this record (partial or failed run,
  *                coverage limit, error, source not read, failed check, withheld)
- *   --model      ✎ violet: written by a model and not checked for meaning
+ *   --model      ✎ violet: written by a model and not checked for meaning (solid rule,
+ *                filled badge); ◎ agrees, ◐ agrees only in part: a second model's
+ *                reading of a finding's evidence, the same violet but a double rule
+ *                and no fill, so it never reads as the engine's own text
  *   --reject     ! red: your input was rejected
  *   --accent     blue: something you can click
  *   --mark-bg    the quote found word for word, inside its context
@@ -131,6 +134,7 @@ code { font-family: var(--font-mono); font-size: 0.92em; }
 .glyph { font-weight: 800; }
 .g-limit { color: var(--limit); }
 .g-model { color: var(--model); }
+.g-meaning { color: var(--model); }
 .g-reject { color: var(--reject); }
 
 .mark-limit { color: var(--ink); }
@@ -156,6 +160,30 @@ code { font-family: var(--font-mono); font-size: 0.92em; }
   padding-left: 0.6rem;
 }
 .mw .badge-model { margin-top: 0.2rem; }
+
+/* A second model's reading: violet like a model's text, but a double rule and no fill. */
+.meaning-mark {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3em;
+  padding: 0 0.4rem;
+  color: var(--ink);
+  border: 3px double var(--model);
+  border-radius: 3px;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+.meaning-mark .glyph {
+  font-weight: 400;
+  font-family: "DejaVu Sans", "Noto Sans Symbols 2", "Segoe UI Symbol", "Apple Symbols", var(--font-ui);
+}
+.checker-reason {
+  margin: 0.3rem 0 0;
+  padding-left: 0.6rem;
+  border-left: 3px double var(--model);
+  max-width: 90ch;
+}
+.checker-reason .label { color: var(--model); }
 
 /* A label about the page itself. */
 .page-tag {
@@ -747,6 +775,17 @@ svg.chart { display: block; width: 100%; height: auto; font-family: var(--font-u
 .finding-head > .mw { flex: 1 1 16rem; min-width: 0; }
 .finding-statement { margin: 0; font-size: var(--step-0); font-weight: 650; }
 .finding-meta { margin: 0.25rem 0 0; font-size: var(--step--1); color: var(--ink-2); }
+/* The stance the verdict rule used, when it is not the engine's: the stance's own mark, no new one. */
+.counted-as {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.4rem;
+  margin: 0.35rem 0 0;
+  font-size: var(--step--1);
+  color: var(--ink-2);
+}
+.counted-as .label { margin: 0; }
 .finding > p.mw { margin: 0.35rem 0 0; font-size: var(--step--1); }
 .finding > p.mw .badge-model { margin-left: 0.4rem; }
 .finding > .mark-limit { margin: 0.35rem 0 0; font-size: var(--step--1); }
@@ -758,6 +797,7 @@ svg.chart { display: block; width: 100%; height: auto; font-family: var(--font-u
 .check-detail { display: inline-block; margin-left: 0.4rem; }
 .check-detail > summary { cursor: pointer; color: var(--accent); }
 .check-detail ul { margin: 0.2rem 0 0; padding-left: 1.1rem; }
+.check-detail > .checker-reason { white-space: normal; }
 .cited .fig-value { text-align: left; }
 
 .evidence {
@@ -808,6 +848,9 @@ svg.chart { display: block; width: 100%; height: auto; font-family: var(--font-u
 .withheld-item + .withheld-item { border-top: 1px solid var(--line); margin-top: 0.6rem; padding-top: 0.6rem; }
 .withheld-for { margin: 0; font-size: var(--step--1); }
 .finding.is-withheld { margin-top: 0.3rem; background: var(--surface); }
+.withheld-group + .withheld-group { margin-top: 0.9rem; padding-top: 0.6rem; border-top: 1px solid var(--limit); }
+.withheld-subtitle { margin: 0 0 0.15rem; font-size: var(--step-0); }
+.withheld-group > .hint { margin: 0 0 0.4rem; }
 .finding.is-withheld .finding-statement { text-decoration: line-through; text-decoration-color: var(--line-strong); }
 
 /* ------------------------------------------------------------ sources */

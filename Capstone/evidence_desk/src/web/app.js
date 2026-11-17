@@ -1,4 +1,4 @@
-// Evidence Desk frontend (version 4).
+// Evidence Desk frontend (version 5).
 //
 // Collects a thesis, starts a run, polls it, and draws the record the API
 // returns; records the reader's decision on each verified finding; saves a
@@ -17,7 +17,11 @@
 //
 // One meaning per mark (see the legend in index.html):
 //   ▲ amber   something limits this record
-//   ✎ violet  written by a model and not checked for meaning
+//   ✎ violet  written by a model and not checked for meaning (solid rule, filled badge)
+//   ◎ ◐ violet a second model read the evidence and agrees (◎) or agrees only in
+//             part (◐): still a model's reading, so the same violet, but a double
+//             rule and no fill, never the engine's badge. A finding the second model
+//             rejects is withheld, which is a limit (▲).
 //   ! red     your input was rejected
 //   verdicts  ✓ supported, ✕ challenged, ± mixed, ? unjudged, ∅ not addressed
 //   stances   reuse ✓ and ✕; context is •
@@ -60,6 +64,17 @@ const STANCE_MARK = {
 const DECISION_MARK = { accepted: "▣", rejected: "☒", undecided: "☐" };
 /** Used only when /api/meta has no decision_labels. */
 const DECISION_FALLBACK = { accepted: "Accepted", rejected: "Rejected", undecided: "Undecided" };
+/** The second model's reading of a finding's evidence (`checks.support`), in words; ◎ and ◐ are its marks. */
+const MEANING_MARK = { passed: "◎", partly: "◐" };
+const MEANING_WORDS = {
+  passed: "Meaning: a second model agrees",
+  partly: "Meaning: a second model agrees only in part",
+  failed: "Meaning: a second model disagrees",
+  unchecked: "Meaning: not checked",
+};
+const MODEL_BADGE = "Model-written, not checked for meaning";
+/** On a finding a second model has read: its meaning was checked, but only by a model. */
+const MODEL_BADGE_READ = "Model-written, not checked by a person";
 const STATUS_GLYPH = { running: "⋯", complete: "■", partial: "▲", failed: "▲" };
 const LIMITING_STATUS = new Set(["partial", "failed"]);
 
@@ -79,6 +94,15 @@ const ENGINE_GLOSS = {
   extractive: "no model: it quotes the best-matching sentences and judges no stance",
 };
 const ITEM_GLOSS = "Where the passage sits in the filing. An Item is a numbered section, such as Item 1A, Risk Factors.";
+/**
+ * What an evidence link opens, by the record's `link_kind`, for a filing and for a page.
+ * A record without `link_kind` keeps the plain words ("Open in filing", "Open the page").
+ */
+const LINK_WORDS = {
+  passage: ["Open in filing, at this passage", "Open the page, at this passage"],
+  "first-line": ["Open in filing, at the first line of this passage", "Open the page, at the first line of this passage"],
+  document: ["Open the filing (this link does not locate the passage)", "Open the page (this link does not locate the passage)"],
+};
 const ACCESSION_GLOSS = "Accession number (the SEC's identifier for this filing)";
 const FIELD_NAMES = {
   ticker: "Ticker",
@@ -179,6 +203,7 @@ const els = {
   runHead: $("run-head"),
   reviewLine: $("review-line"),
   scorecard: $("scorecard"),
+  distinction: $("distinction"),
   changesSection: $("changes-section"),
   changes: $("changes"),
   summarySection: $("summary-section"),
@@ -329,14 +354,40 @@ function limitLine(tag, ...content) {
   return h(tag, { class: "mark-limit" }, limitGlyph(), " ", ...content);
 }
 
-/** ✎ violet: written by a model and not checked for meaning. */
-function modelBadge() {
+/** ✎ violet: written by a model and not checked for meaning (by a person, when a second model read it). */
+function modelBadge(words = MODEL_BADGE) {
   return h(
     "span",
     { class: "badge-model" },
     h("span", { class: "glyph g-model", "aria-hidden": "true", text: "✎" }),
-    " Model-written, not checked for meaning",
+    ` ${words}`,
   );
+}
+
+/** ◎ / ◐ violet, double rule: a second model agrees, or agrees only in part. */
+function meaningMark(support) {
+  return h(
+    "span",
+    { class: `meaning-mark m-${support}` },
+    h("span", { class: "glyph g-meaning", "aria-hidden": "true", text: MEANING_MARK[support] }),
+    h("span", { class: "meaning-words", text: MEANING_WORDS[support] }),
+  );
+}
+
+/** The second model's own sentence, under its double violet rule. `attr` tags it for the browser test. */
+function checkerReason(reason, attr) {
+  return h("p", { class: "checker-reason" }, h("span", { class: "label", text: "Second model's reason: " }), h("span", { [attr]: "", text: reason }));
+}
+
+/** Whether a second model read a finding's evidence: its support check has an outcome. */
+function meaningRead(finding) {
+  return ["passed", "partly", "failed"].includes(str(finding?.checks?.support));
+}
+
+/** Whether the run's record names a second model that checked meaning. */
+function runMeaningChecked(run) {
+  const checker = str(run?.checker);
+  return checker !== "" && checker !== "none";
 }
 
 /** ! red: your input was rejected. */
@@ -346,10 +397,11 @@ function rejectGlyph() {
 
 /**
  * A field that may have been written by a model. `id` names it for the browser
- * test; when `model` is true it carries the violet badge and border.
+ * test; when `model` is true it carries the violet badge and border. `badge`
+ * overrides the badge's words.
  */
-function writtenField(tag, id, model, ...content) {
-  return h(tag, { class: model ? "mw is-model" : "mw", "data-mw": id }, ...content, model ? modelBadge() : "");
+function writtenField(tag, id, model, content, badge = MODEL_BADGE) {
+  return h(tag, { class: model ? "mw is-model" : "mw", "data-mw": id }, content, model ? modelBadge(badge) : "");
 }
 
 /** A claim was assessed by a model when its engine is named and is not the extractive one. */
@@ -476,9 +528,19 @@ function applyMeta(meta) {
   state.meta = meta;
   const limits = meta.limits;
   const engine = str(meta.engine);
+  // `checker` is absent from servers older than the meaning check: then nothing is said about it.
+  const checker = meta.checker && typeof meta.checker === "object" ? meta.checker : null;
+  const checkerName = str(checker?.name);
+  let checkerText = "";
+  if (checker) {
+    checkerText = checkerName && checkerName !== "none"
+      ? ` Configured meaning check: ${str(checker.detail) || checkerName}.`
+      : " No second model is configured to check meaning.";
+  }
   els.engineLine.replaceChildren(
     h("span", { class: "engine-name", text: `Configured engine: ${engine || "not stated"}` }),
     ENGINE_GLOSS[engine] ? ` (${ENGINE_GLOSS[engine]}). Each result names the engine that actually did the work.` : "",
+    checkerText,
   );
   if (Number.isInteger(limits.MAX_DECISION_CHARS)) els.decision.maxLength = limits.MAX_DECISION_CHARS;
   if (Number.isInteger(limits.MAX_SCOPE_CHARS)) els.scope.maxLength = limits.MAX_SCOPE_CHARS;
@@ -1499,6 +1561,7 @@ function renderRun(run) {
   renderHead(run);
   renderReviewLine(run);
   renderScorecard(run);
+  renderDistinction(run);
   renderRunChanges(run);
   renderSummary(run);
   renderRunFigures(run);
@@ -1510,7 +1573,8 @@ function renderRun(run) {
   const finished = run.status !== "running";
   fillList(els.limits, run.coverage_limits, finished ? "None recorded." : "Listed when the run finishes.", true);
   renderErrors(run, finished);
-  els.provenance.textContent = state.meta?.provenance_note ?? "";
+  // The run's own note (it names any page the user added); a record without one uses /api/meta's.
+  els.provenance.textContent = str(run.brief?.provenance_note) || str(state.meta?.provenance_note);
 }
 
 /** Status, its note from /api/meta, and the coverage counts exactly as the API gives them. */
@@ -1535,8 +1599,23 @@ function renderBanner(run) {
     const stage = STAGES.find(([id]) => id === run.stage);
     parts.push(h("p", { class: "banner-line", text: `Now: ${stage ? stage[1] : run.stage}${run.stage_detail ? ` — ${run.stage_detail}` : ""}` }));
   } else {
+    // Counts kept since a review found the banner claimed more than the record backed. A record
+    // from before them lacks them (or, read back through the API, holds 0): it renders as before.
+    // `quotes_found` counts every quote located word for word; a record holding 0 for it while
+    // it kept excerpts predates the field, so the excerpts count stands in, as it used to.
+    const asked = Number.isFinite(c.filings_asked) && c.filings_asked > 0 && c.filings_asked !== c.sources_requested;
+    const foundField = Number.isFinite(c.quotes_found) && (c.quotes_found > 0 || !(c.excerpts_verified > 0)) ? "quotes_found" : "excerpts_verified";
+    const positive = (field) => Number.isFinite(c[field]) && c[field] > 0;
     const facts = [
-      h("li", null, cov(c, "sources_read"), " of ", cov(c, "sources_requested"), ` ${unit(c.sources_requested, "source", "sources")} read`),
+      h(
+        "li",
+        null,
+        cov(c, "sources_read"),
+        " of ",
+        cov(c, "sources_requested"),
+        ` ${unit(c.sources_requested, "source", "sources")} read`,
+        asked ? [" (", cov(c, "filings_asked"), ` ${unit(c.filings_asked, "filing", "filings")} asked for)`] : "",
+      ),
       h("li", null, cov(c, "passages_indexed"), ` ${unit(c.passages_indexed, "passage", "passages")} indexed`),
       h("li", null, cov(c, "claims_with_evidence"), " of ", cov(c, "claims_total"), ` ${unit(c.claims_total, "claim", "claims")} with verified excerpts or figures`),
     ];
@@ -1546,12 +1625,44 @@ function renderBanner(run) {
         ? h("li", null, cov(c, "findings_verified"), " of ", cov(c, "findings_proposed"), ` proposed ${unit(c.findings_proposed, "finding", "findings")} verified, `, cov(c, "findings_withheld"), " withheld")
         : h("li", null, cov(c, "findings_verified"), ` ${unit(c.findings_verified, "finding", "findings")} verified, `, cov(c, "findings_withheld"), " withheld"),
     );
-    facts.push(h("li", null, cov(c, "excerpts_verified"), " of ", cov(c, "quotes_offered"), ` ${unit(c.quotes_offered, "quote", "quotes")} offered found word for word, `, cov(c, "quotes_rejected"), " rejected"));
+    if (positive("findings_without_quote")) {
+      facts.push(h("li", null, cov(c, "findings_without_quote"), ` verified ${unit(c.findings_without_quote, "finding rests", "findings rest")} on reported figures only, with no quote`));
+    }
+    facts.push(
+      h(
+        "li",
+        null,
+        cov(c, foundField),
+        " of ",
+        cov(c, "quotes_offered"),
+        ` ${unit(c.quotes_offered, "quote", "quotes")} offered found word for word, `,
+        cov(c, "quotes_rejected"),
+        " rejected",
+        foundField === "quotes_found" ? ["; ", cov(c, "excerpts_verified"), " kept as evidence of verified findings"] : "",
+      ),
+    );
     if (Number.isFinite(c.metrics_computed)) {
       facts.push(h("li", null, cov(c, "metrics_computed"), ` reported ${unit(c.metrics_computed, "figure", "figures")} computed`));
     }
     if (Number.isFinite(c.numbers_checked)) {
       facts.push(h("li", null, cov(c, "numbers_checked"), ` ${unit(c.numbers_checked, "number", "numbers")} in findings checked, `, cov(c, "numbers_unmatched"), " unmatched"));
+    }
+    if (positive("reasons_withheld")) {
+      facts.push(h("li", null, cov(c, "reasons_withheld"), ` ${unit(c.reasons_withheld, "reason", "reasons")} withheld by the number check`));
+    }
+    if (Number.isFinite(c.findings_checked) && c.findings_checked > 0) {
+      facts.push(
+        h(
+          "li",
+          null,
+          cov(c, "findings_checked"),
+          ` ${unit(c.findings_checked, "finding", "findings")} checked for meaning, `,
+          cov(c, "findings_partly"),
+          " agreed only in part, ",
+          cov(c, "findings_failed_meaning"),
+          " withheld",
+        ),
+      );
     }
     parts.push(h("ul", { class: "coverage-facts", "aria-label": "Coverage" }, facts));
     if (Number.isFinite(c.engine_fallbacks) && c.engine_fallbacks > 0) {
@@ -1618,6 +1729,9 @@ function renderHead(run) {
     h("span", { class: "engine-used", text: engine || "not recorded" }),
     str(run.engine_detail) ? h("span", { class: "engine-detail", text: ` — ${run.engine_detail}` }) : "",
   );
+  const checkerLine = runMeaningChecked(run)
+    ? h("p", { class: "run-engine run-checker" }, h("span", { class: "label", text: "Meaning checked by: " }), h("span", { class: "checker-used", text: str(run.checker_detail) || str(run.checker) }))
+    : h("p", { class: "run-engine run-checker" }, h("span", { class: "label", text: "Meaning not checked" }));
   const details = h(
     "p",
     { class: "run-meta" },
@@ -1633,7 +1747,7 @@ function renderHead(run) {
   } else {
     download = h("a", { class: "download", href: `/api/runs/${encodeURIComponent(run.id)}/export.md`, download: `evidence-desk-${run.id}.md`, text: "Download Markdown brief" });
   }
-  els.runHead.replaceChildren(h("div", { class: "run-head-main" }, title, decision, engineLine, details, thesisLine(run)), h("div", { class: "run-head-actions" }, download));
+  els.runHead.replaceChildren(h("div", { class: "run-head-main" }, title, decision, engineLine, checkerLine, details, thesisLine(run)), h("div", { class: "run-head-actions" }, download));
 }
 
 /** "Part of the saved thesis ..." with a way back, for a run started from a saved thesis. */
@@ -1699,6 +1813,24 @@ function renderScorecard(run) {
   });
 }
 
+/** The note under the verdicts as index.html writes it: the wording for a run no second model read. */
+const DISTINCTION_DEFAULT = els.distinction.cloneNode(true);
+
+/** The note under the verdicts: what was checked, and by whom, for this run. */
+function renderDistinction(run) {
+  if (!runMeaningChecked(run)) {
+    els.distinction.replaceChildren(...DISTINCTION_DEFAULT.cloneNode(true).childNodes);
+    return;
+  }
+  els.distinction.replaceChildren(
+    "Each verdict follows by a fixed rule from the findings that passed their checks. ",
+    h("strong", { text: "Checked:" }),
+    " every quote was found word for word in the stored filing, and numbers were matched to quotes and reported figures. ",
+    h("strong", { text: "Read by a second model, not checked by a person:" }),
+    " whether a quote supports or challenges the claim is the engine's reading of it; then a second model, which was not shown the first one's reasoning, read each finding's evidence and judged whether it supports the statement and its stance. That is still a model's reading, which your accept or reject is there to test. Read the quotes before you rely on a verdict.",
+  );
+}
+
 function openClaim(index) {
   return (event) => {
     event.preventDefault();
@@ -1741,8 +1873,10 @@ function renderClaims(run, ctx) {
           "div",
           `claim:${claim.id}:commentary`,
           model,
-          h("p", { class: "label", text: `Engine's commentary (${str(claim.assessed_by) || str(run.engine) || "engine"}), not a verified excerpt` }),
-          h("p", { text: claim.rationale }),
+          [
+            h("p", { class: "label", text: `Engine's commentary (${str(claim.assessed_by) || str(run.engine) || "engine"}), not a verified excerpt` }),
+            h("p", { text: claim.rationale }),
+          ],
         ),
       );
     }
@@ -1773,6 +1907,7 @@ function renderClaims(run, ctx) {
 function renderFinding(finding, ctx, withheld = false) {
   const stance = token(finding.stance, STANCE_MARK);
   const model = modelAssessed(ctx.claims.get(finding.claim_id));
+  const badge = meaningRead(finding) ? MODEL_BADGE_READ : MODEL_BADGE;
   const article = h(
     "article",
     { class: `finding s-${stance}${withheld ? " is-withheld" : ""}`, "data-finding-id": finding.id },
@@ -1780,7 +1915,7 @@ function renderFinding(finding, ctx, withheld = false) {
       "header",
       { class: "finding-head" },
       stancePill(finding.stance),
-      writtenField("div", `finding:${finding.id}:statement`, model, h("h4", { class: "finding-statement", text: finding.statement })),
+      writtenField("div", `finding:${finding.id}:statement`, model, h("h4", { class: "finding-statement", text: finding.statement }), badge),
     ),
     h(
       "p",
@@ -1790,11 +1925,16 @@ function renderFinding(finding, ctx, withheld = false) {
       ` · ${plural(finding.filings_cited, "filing", "filings")} cited`,
     ),
   );
+  const counted = countedAsLine(finding);
+  if (counted) article.append(counted);
   if (withheld) {
-    article.append(limitLine("p", h("strong", { text: "Withheld: " }), str(finding.withheld_reason) || "no quote was found in the filing text."));
+    // A finding the second model rejected keeps that model's own words, tagged for the browser test.
+    const reason = str(finding.withheld_reason) || "no quote was found in the filing text.";
+    const byMeaning = str(finding.checks?.support) === "failed";
+    article.append(limitLine("p", h("strong", { text: "Withheld: " }), byMeaning ? h("span", { "data-withheld-reason": "", text: reason }) : reason));
   }
   if (finding.rationale) {
-    article.append(writtenField("p", `finding:${finding.id}:reason`, model, h("span", { class: "label", text: "Engine's reason: " }), finding.rationale));
+    article.append(writtenField("p", `finding:${finding.id}:reason`, model, [h("span", { class: "label", text: "Engine's reason: " }), finding.rationale], badge));
   }
   const checks = renderChecks(finding.checks);
   if (checks) article.append(checks);
@@ -1812,6 +1952,23 @@ function renderFinding(finding, ctx, withheld = false) {
     article.append(h("div", { class: "review-slot", "data-review-finding": finding.id, hidden: true }));
   }
   return article;
+}
+
+/**
+ * When the verdict rule counted a finding as another stance than the engine's (`counted_as`,
+ * set by the backend), that stance's mark and the record's reason. Nothing for a finding
+ * counted as its own stance, a withheld one, or a record from before `counted_as` was kept.
+ */
+function countedAsLine(finding) {
+  const counted = str(finding.counted_as);
+  if (!counted || counted === str(finding.stance)) return null;
+  return h(
+    "p",
+    { class: "counted-as", "data-counted-as": counted },
+    h("span", { class: "label", text: "Counted toward the verdict as: " }),
+    stancePill(counted),
+    str(finding.count_note) ? h("span", { class: "count-note", "data-count-note": "", text: finding.count_note }) : "",
+  );
 }
 
 /** The checks a finding went through, as the record states them. A check that did not run says so. */
@@ -1838,17 +1995,28 @@ function renderChecks(checks) {
   }
   if (numbersItem) items.push(numbersItem);
 
-  const support = str(checks.support);
-  let supportItem = null;
-  if (support === "unchecked") supportItem = h("li", { text: "Meaning: not checked by a second model" });
-  else if (support === "passed") supportItem = h("li", { text: "Meaning: checked by a second model" });
-  else if (support === "failed") supportItem = limitLine("li", "Meaning: failed the second-model check");
-  else if (support) supportItem = h("li", { text: `Meaning check: ${support}` });
-  if (supportItem && str(checks.support_detail)) supportItem.append(h("span", { class: "muted", text: ` — ${checks.support_detail}` }));
-  if (supportItem) items.push(supportItem);
+  // The meaning check, as the record states it. A record from before the check reads as not checked.
+  const support = str(checks.support) || "unchecked";
+  const reason = str(checks.support_detail);
+  let supportItem;
+  if (support === "passed" || support === "partly") {
+    supportItem = h("li", { "data-support": support }, meaningMark(support));
+    if (support === "passed" && reason) {
+      supportItem.append(h("details", { class: "check-detail" }, h("summary", { text: "Its reason" }), checkerReason(reason, "data-support-detail")));
+    }
+  } else if (support === "failed") {
+    supportItem = limitLine("li", h("span", { class: "meaning-words", text: MEANING_WORDS.failed }));
+    supportItem.dataset.support = support;
+  } else if (support === "unchecked") {
+    supportItem = h("li", { "data-support": support }, h("span", { class: "meaning-words", text: MEANING_WORDS.unchecked }));
+  } else {
+    supportItem = h("li", { "data-support": support, text: `Meaning check: ${support}` });
+  }
+  items.push(supportItem);
 
-  if (items.length === 0) return null;
-  return h("div", { class: "checks" }, h("span", { class: "label", text: "Checks: " }), h("ul", { class: "check-list" }, items));
+  // Agreeing only in part is a result the reader must weigh, so its reason is shown in the open.
+  const partly = support === "partly" ? checkerReason(reason || "no reason was recorded.", "data-support-detail") : "";
+  return h("div", { class: "checks" }, h("span", { class: "label", text: "Checks: " }), h("ul", { class: "check-list" }, items), partly);
 }
 
 /** The reported figures a finding cites, resolved against `run.metrics`. */
@@ -1890,9 +2058,17 @@ function renderEvidence(item, source) {
     { class: "evidence-caption" },
     h("span", { class: "locator", title: ITEM_GLOSS }, h("span", { class: "label", text: "Located under: " }), item.locator || "location not recorded"),
     h("span", { class: "source-line" }, sourceLine(source, item.source_id)),
-    externalLink(item.link || source?.url, source?.kind === "public_html" ? "Open the page" : "Open in filing"),
+    externalLink(item.link || source?.url, evidenceLinkWords(item, source)),
   );
-  return h("figure", { class: "evidence" }, h("span", { class: "evidence-id", text: `${item.id} · quote found word for word, highlighted` }), quote, caption);
+  return h("figure", { class: "evidence", "data-evidence-id": item.id },h("span", { class: "evidence-id", text: `${item.id} · quote found word for word, highlighted` }), quote, caption);
+}
+
+/** The words on an evidence link: what the record's `link_kind` says the link opens. */
+function evidenceLinkWords(item, source) {
+  const page = source?.kind === "public_html";
+  const words = Object.hasOwn(LINK_WORDS, str(item.link_kind)) ? LINK_WORDS[item.link_kind] : null;
+  if (!words) return page ? "Open the page" : "Open in filing";
+  return words[page ? 1 : 0];
 }
 
 function sourceLine(source, sourceId) {
@@ -1910,19 +2086,39 @@ function sourceLine(source, sourceId) {
   ];
 }
 
+/**
+ * Withheld findings. Those the second model rejected (`checks.support` "failed") get
+ * their own group; with none of them, the list is drawn as it was before the check.
+ */
 function renderWithheld(run, ctx) {
   const withheld = list(run.unsupported_findings);
   els.withheldSection.hidden = withheld.length === 0;
+  const item = (finding) => {
+    const claim = ctx.claims.get(finding.claim_id);
+    return h(
+      "li",
+      { class: "withheld-item" },
+      h("p", { class: "withheld-for muted", text: `Proposed for ${finding.claim_id}${claim ? `: ${claim.text}` : ""}` }),
+      renderFinding(finding, ctx, true),
+    );
+  };
+  const byMeaning = withheld.filter((finding) => str(finding.checks?.support) === "failed");
+  const byChecks = withheld.filter((finding) => str(finding.checks?.support) !== "failed");
+  if (byMeaning.length === 0) {
+    els.withheld.replaceChildren(h("ul", { class: "withheld-list" }, byChecks.map(item)));
+    return;
+  }
+  const group = (key, title, hint, findings) =>
+    h(
+      "div",
+      { class: "withheld-group", "data-withheld-group": key },
+      h("h4", { class: "withheld-subtitle", text: title }),
+      h("p", { class: "hint", text: hint }),
+      h("ul", { class: "withheld-list" }, findings.map(item)),
+    );
   els.withheld.replaceChildren(
-    ...withheld.map((finding) => {
-      const claim = ctx.claims.get(finding.claim_id);
-      return h(
-        "li",
-        { class: "withheld-item" },
-        h("p", { class: "withheld-for muted", text: `Proposed for ${finding.claim_id}${claim ? `: ${claim.text}` : ""}` }),
-        renderFinding(finding, ctx, true),
-      );
-    }),
+    byChecks.length ? group("checks", "Withheld for a quote or a number", "A quote was not found in the filing, a number did not match, or nothing could be checked.", byChecks) : "",
+    group("meaning", "Withheld by the meaning check", "A second model read the quoted evidence and judged that it does not support the statement. That too is a model's reading: read the quote before you dismiss the finding.", byMeaning),
   );
 }
 

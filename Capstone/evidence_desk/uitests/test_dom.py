@@ -40,6 +40,15 @@ VERDICT_GLYPHS = {
 STANCE_GLYPHS = {"supports": "✓", "challenges": "✕", "context": "•"}
 # The reader's own decision: glyphs no verdict or stance uses.
 DECISION_GLYPHS = {"accepted": "▣", "rejected": "☒", "undecided": "☐"}
+# A second model's reading of a finding's evidence: violet like ✎, but its own glyphs.
+MEANING_GLYPHS = {"passed": "◎", "partly": "◐"}
+MEANING_WORDS = {
+    "passed": "Meaning: a second model agrees",
+    "partly": "Meaning: a second model agrees only in part",
+    "failed": "Meaning: a second model disagrees",
+    "unchecked": "Meaning: not checked",
+}
+MEANING_COUNTS = ("findings_checked", "findings_partly", "findings_failed_meaning")
 PLACEHOLDERS = ("undefined", "NaN", "[object Object]", "null")
 MODEL_ONLY_ENGINE = "extractive"
 
@@ -84,6 +93,15 @@ def shown_findings(run: dict[str, Any]) -> list[dict[str, Any]]:
     listed = {fid for claim in run.get("claims", []) for fid in claim.get("finding_ids", [])}
     verified = [f for f in run.get("findings", []) if f.get("verified", True) and f["id"] in listed]
     return verified + list(run.get("unsupported_findings", []))
+
+
+def support_of(finding: dict[str, Any]) -> str:
+    """The meaning check's outcome; an older record without one reads as not checked."""
+    return (finding.get("checks") or {}).get("support") or "unchecked"
+
+
+def meaning_checked(run: dict[str, Any]) -> bool:
+    return (run.get("checker") or "none") != "none"
 
 
 both = pytest.mark.parametrize("name", list(PAGES))
@@ -250,7 +268,8 @@ def test_model_badges_sit_exactly_on_model_written_fields(name: str) -> None:
 
 def test_real_sample_links_open_sec_filings() -> None:
     run = record("run")["run"]
-    links = [a for a in page("run").select("a.ext") if text(a).startswith("Open in filing")]
+    # Every evidence link, whatever its words say it opens (see test_each_evidence_link_says_what_it_opens).
+    links = page("run").select("figure.evidence a.ext")
     assert len(links) == len(run["evidence"])
     for link in links:
         assert link["href"].startswith("https://www.sec.gov/"), link["href"]
@@ -284,7 +303,7 @@ def test_legend_is_present(name: str) -> None:
 @both
 def test_limit_and_model_glyphs_keep_one_meaning(name: str) -> None:
     for node in page(name).find_all(string=True):
-        for glyph, owner in (("▲", "g-limit"), ("✎", "g-model")):
+        for glyph, owner in (("▲", "g-limit"), ("✎", "g-model"), ("◎", "g-meaning"), ("◐", "g-meaning")):
             if glyph in node:
                 assert owner in classes(node.parent), f"{glyph} outside .{owner}: {node.parent}"
 
@@ -317,9 +336,10 @@ CHECK_WORDS = {
     ("numbers", "passed"): "Numbers: all matched",
     ("numbers", "none"): "No number to check",
     ("numbers", "failed"): "A number did not match",
-    ("support", "unchecked"): "Meaning: not checked by a second model",
-    ("support", "passed"): "Meaning: checked by a second model",
-    ("support", "failed"): "Meaning: failed the second-model check",
+    ("support", "unchecked"): "Meaning: not checked",
+    ("support", "passed"): "Meaning: a second model agrees",
+    ("support", "partly"): "Meaning: a second model agrees only in part",
+    ("support", "failed"): "Meaning: a second model disagrees",
 }
 
 
@@ -384,6 +404,19 @@ def test_samples_validate_against_the_run_model() -> None:
     assert any(p["value"] is None for s in run["series"] for p in s["points"])
     assert run["coverage"]["engine_fallbacks"] > 0
     assert len(run["errors"]) > 3
+    # The meaning check: every outcome appears, each judged one carries its reason, and the
+    # three coverage counts agree with the findings.
+    supports = [support_of(f) for f in findings + withheld]
+    assert set(supports) == {"passed", "partly", "failed", "unchecked"}
+    assert supports.count("partly") == 1 and supports.count("failed") == 1
+    assert all(f["checks"]["support_detail"] for f in findings + withheld if support_of(f) != "unchecked")
+    assert all(support_of(f) != "failed" for f in findings), "a finding that failed the meaning check is withheld"
+    assert all(f["withheld_reason"].startswith("a second model judged") for f in withheld if support_of(f) == "failed")
+    assert run["checker"] not in ("", "none") and run["checker_detail"] and meta["checker"]["name"]
+    coverage = run["coverage"]
+    assert coverage["findings_checked"] == sum(s != "unchecked" for s in supports)
+    assert coverage["findings_partly"] == supports.count("partly")
+    assert coverage["findings_failed_meaning"] == supports.count("failed")
 
 
 # ---------------------------------------------------------------- review and what moved
@@ -554,3 +587,269 @@ def test_legend_includes_the_decision_marks(name: str) -> None:
     shown = {text(mark.select_one(".glyph")) for mark in legend.select(".decision-mark")}
     assert shown == set(DECISION_GLYPHS.values())
     assert "Your decision" in text(legend)
+
+
+# ---------------------------------------------------------------- the meaning check
+
+
+def disclosures(node: Tag) -> list[Tag]:
+    """The <details> around a node inside its finding (a claim's own disclosure is not one)."""
+    return [d for d in node.find_parents("details") if "claim" not in classes(d)]
+
+
+@both
+def test_each_finding_shows_its_meaning_check(name: str) -> None:
+    run = record(name)["run"]
+    soup = page(name)
+    for finding in shown_findings(run):
+        if not finding.get("checks"):
+            continue
+        fid, support = finding["id"], support_of(finding)
+        article = soup.select_one(f'article[data-finding-id="{fid}"]')
+        item = article.select_one(".checks li[data-support]")
+        assert item is not None, f"{fid}: no meaning line"
+        assert item["data-support"] == support, f"{fid}: shows {item['data-support']}, the record says {support}"
+        assert text(item.select_one(".meaning-words")) == MEANING_WORDS[support], fid
+        glyph = item.select_one(".g-meaning")
+        if support in MEANING_GLYPHS:
+            assert glyph is not None and text(glyph) == MEANING_GLYPHS[support], f"{fid}: {support} mark"
+        else:
+            assert glyph is None, f"{fid}: a {support} finding carries the meaning mark"
+        detail = finding["checks"].get("support_detail") or ""
+        shown = article.select_one("[data-support-detail]")
+        if support == "passed" and detail:
+            assert shown is not None and text(shown).endswith(detail), f"{fid}: reason missing"
+            closed = disclosures(shown)
+            assert closed and not closed[0].has_attr("open"), f"{fid}: a passed reason sits in a closed disclosure"
+        elif support == "partly":
+            assert shown is not None and text(shown).endswith(detail), f"{fid}: the partly reason is not shown"
+            assert not disclosures(shown), f"{fid}: the partly reason is hidden in a disclosure"
+        else:
+            assert shown is None, f"{fid}: a {support} finding shows a meaning reason"
+
+
+@both
+def test_meaning_withheld_findings_have_their_own_heading(name: str) -> None:
+    withheld = record(name)["run"].get("unsupported_findings", [])
+    by_meaning = {f["id"]: f for f in withheld if support_of(f) == "failed"}
+    by_checks = {f["id"] for f in withheld} - set(by_meaning)
+    soup = page(name)
+    group = soup.select_one('#withheld [data-withheld-group="meaning"]')
+    if not by_meaning:
+        assert group is None and soup.select_one("#withheld .withheld-subtitle") is None
+        return
+    assert group is not None, "no group for findings withheld by the meaning check"
+    assert text(group.select_one(".withheld-subtitle")).strip() == "Withheld by the meaning check"
+    assert {a["data-finding-id"] for a in group.select("article[data-finding-id]")} == set(by_meaning)
+    for fid, finding in by_meaning.items():
+        reason = group.select_one(f'article[data-finding-id="{fid}"] [data-withheld-reason]')
+        assert reason is not None and text(reason) == finding["withheld_reason"], f"{fid}: the checker's reason"
+    if by_checks:
+        other = soup.select_one('#withheld [data-withheld-group="checks"]')
+        assert other is not None
+        assert text(other.select_one(".withheld-subtitle")).strip() == "Withheld for a quote or a number"
+        assert {a["data-finding-id"] for a in other.select("article[data-finding-id]")} == by_checks
+
+
+@both
+def test_header_names_the_checker(name: str) -> None:
+    sample = record(name)
+    run, meta = sample["run"], sample["meta"]
+    soup = page(name)
+    line = soup.select_one("#run-head .run-checker")
+    assert line is not None, "the run header does not say who checked meaning"
+    words = " ".join(text(line).split())
+    if meaning_checked(run):
+        assert words == f"Meaning checked by: {run.get('checker_detail') or run['checker']}"
+    else:
+        assert words == "Meaning not checked"
+    configured = meta.get("checker")
+    if configured:
+        assert (configured.get("detail") or configured["name"]) in text(soup.select_one("#engine-line"))
+
+
+@both
+def test_banner_counts_the_meaning_check(name: str) -> None:
+    coverage = record(name)["run"]["coverage"]
+    banner = page(name).select_one("#status-banner")
+    nodes = {field: banner.select_one(f'[data-coverage="{field}"]') for field in MEANING_COUNTS}
+    if not coverage.get("findings_checked"):
+        assert not any(nodes.values()), "the banner counts a meaning check the record lacks"
+        return
+    for field, node in nodes.items():
+        assert node is not None and text(node) == f"{coverage[field]:,}", field
+    checked, partly, failed = (coverage[field] for field in MEANING_COUNTS)
+    words = " ".join(text(nodes["findings_checked"].parent).split())
+    noun = "finding" if checked == 1 else "findings"
+    assert words == f"{checked:,} {noun} checked for meaning, {partly:,} agreed only in part, {failed:,} withheld"
+
+
+@both
+def test_note_under_the_verdicts_follows_the_record(name: str) -> None:
+    run = record(name)["run"]
+    words = " ".join(text(page(name).select_one("#distinction")).split())
+    if meaning_checked(run):
+        assert "a second model, which was not shown the first one's reasoning, read each finding's evidence" in words
+        assert "still a model's reading" in words and "accept or reject" in words
+    else:
+        assert "is the engine's reading of it" in words and "second model" not in words
+
+
+@both
+def test_legend_includes_the_meaning_marks(name: str) -> None:
+    legend = page(name).select_one("#legend")
+    shown = {text(glyph) for glyph in legend.select(".meaning-mark .g-meaning")}
+    assert shown == set(MEANING_GLYPHS.values())
+    assert "second model" in text(legend)
+    for selector in (".meaning-mark", ".checker-reason"):
+        body = rule_body(selector)
+        assert "--model" in body and "double" in body, f"{selector} is not in the violet family's double rule"
+        assert "--limit" not in body, f"{selector} borrows the limit colour"
+    assert "--model" in rule_body(".g-meaning")
+
+
+# ---------------------------------------------------------------- what the record backs: counted stance,
+# what a link opens, where the evidence came from, and the counts behind the banner
+
+# Pinned here, not read from app.js: the words beside an evidence link say what it opens.
+LINK_WORDS = {
+    "passage": "Open in filing, at this passage",
+    "first-line": "Open in filing, at the first line of this passage",
+    "document": "Open the filing (this link does not locate the passage)",
+}
+PAGE_LINK_WORDS = {
+    "passage": "Open the page, at this passage",
+    "first-line": "Open the page, at the first line of this passage",
+    "document": "Open the page (this link does not locate the passage)",
+}
+BANNER_EXTRAS = {
+    "findings_without_quote": ("rests on reported figures only", "rest on reported figures only"),
+    "reasons_withheld": ("reason withheld by the number check", "reasons withheld by the number check"),
+}
+
+
+def demoted(finding: dict[str, Any]) -> bool:
+    """The verdict rule counted this finding as a stance other than the engine's."""
+    counted = finding.get("counted_as")
+    return counted is not None and counted != finding["stance"]
+
+
+def banner(name: str) -> Tag:
+    node = page(name).select_one("#status-banner")
+    assert node is not None, "no status banner"
+    return node
+
+
+@both
+def test_counted_as_line_sits_exactly_on_demoted_findings(name: str) -> None:
+    run = record(name)["run"]
+    soup = page(name)
+    for finding in shown_findings(run):
+        fid = finding["id"]
+        article = soup.select_one(f'article[data-finding-id="{fid}"]')
+        assert article is not None, f"{fid} is not rendered"
+        lines = article.select(".counted-as")
+        if not demoted(finding):
+            assert not lines, f"{fid}: a counted-as line on a finding the rule counted as its own stance"
+            continue
+        assert len(lines) == 1, f"{fid}: {len(lines)} counted-as lines"
+        line, counted = lines[0], finding["counted_as"]
+        assert " ".join(text(line).split()).startswith("Counted toward the verdict as:"), fid
+        pill = line.select_one(".pill.stance")
+        assert pill is not None and f"s-{counted}" in classes(pill), f"{fid}: not the {counted} mark"
+        assert text(pill.select_one(".glyph")) == STANCE_GLYPHS[counted], fid
+        note = line.select_one("[data-count-note]")
+        assert note is not None and text(note) == finding["count_note"], f"{fid}: the note is not the record's"
+
+
+@both
+def test_each_evidence_link_says_what_it_opens(name: str) -> None:
+    run = record(name)["run"]
+    sources = {source["id"]: source for source in run["sources"]}
+    soup = page(name)
+    for item in run["evidence"]:
+        figure = soup.select_one(f'figure.evidence[data-evidence-id="{item["id"]}"]')
+        assert figure is not None, f"{item['id']} is not rendered"
+        link = figure.select_one("a.ext")
+        assert link is not None, f"{item['id']}: no link"
+        on_page = sources.get(item["source_id"], {}).get("kind") == "public_html"
+        kind = item.get("link_kind") or ""
+        if kind:
+            expected = (PAGE_LINK_WORDS if on_page else LINK_WORDS)[kind]
+        else:
+            expected = "Open the page" if on_page else "Open in filing"
+        assert str(link.contents[0]) == expected, f"{item['id']} ({kind or 'no kind'}): {link.contents[0]!r}"
+
+
+@both
+def test_foot_note_is_the_runs_own_provenance(name: str) -> None:
+    sample = record(name)
+    own = (sample["run"].get("brief") or {}).get("provenance_note")
+    expected = own or sample["meta"].get("provenance_note", "")
+    assert text(page(name).select_one("#provenance")) == expected
+
+
+@both
+def test_banner_found_count_is_quotes_found(name: str) -> None:
+    coverage = record(name)["run"]["coverage"]
+    lines = [li for li in banner(name).select(".coverage-facts > li") if "found word for word" in text(li)]
+    assert len(lines) == 1, "no single 'found word for word' line"
+    first = lines[0].select_one("[data-coverage]")
+    field = "quotes_found" if "quotes_found" in coverage else "excerpts_verified"
+    assert first is not None and first["data-coverage"] == field, f"the found count is not {field}"
+    assert text(first) == f"{coverage[field]:,}"
+
+
+@both
+def test_banner_says_how_many_filings_were_asked_for(name: str) -> None:
+    coverage = record(name)["run"]["coverage"]
+    node = banner(name).select_one('[data-coverage="filings_asked"]')
+    asked = coverage.get("filings_asked")
+    if not asked or asked == coverage["sources_requested"]:
+        assert node is None, "the banner adds filings asked for where they equal the sources requested"
+        return
+    assert node is not None and text(node) == f"{asked:,}"
+    line = node.find_parent("li")
+    assert line.select_one('[data-coverage="sources_requested"]') is not None, "not beside the sources count"
+    noun = "filing" if asked == 1 else "filings"
+    assert " ".join(text(line).split()).endswith(f"({asked:,} {noun} asked for)")
+
+
+@both
+@pytest.mark.parametrize("field", list(BANNER_EXTRAS))
+def test_banner_counts_figure_only_findings_and_withheld_reasons(name: str, field: str) -> None:
+    count = record(name)["run"]["coverage"].get(field) or 0
+    node = banner(name).select_one(f'[data-coverage="{field}"]')
+    if count <= 0:
+        assert node is None, f"the banner shows {field}, which is zero or absent"
+        return
+    assert node is not None and text(node) == f"{count:,}", field
+    one, many = BANNER_EXTRAS[field]
+    assert (one if count == 1 else many) in " ".join(text(node.parent).split()), field
+
+
+def test_synthetic_sample_records_what_the_rule_counted() -> None:
+    sample = record("synthetic")
+    run = sample["run"]
+    findings, withheld, coverage = run["findings"], run["unsupported_findings"], run["coverage"]
+    for finding in findings:
+        own = finding["evidence_ids"] or support_of(finding) == "passed"
+        expected = finding["stance"] if own else "context"
+        assert finding["counted_as"] == expected, finding["id"]
+        assert bool(finding["count_note"]) == (expected != finding["stance"]), finding["id"]
+    assert sum(demoted(f) for f in findings) == 1, "the sample needs one demoted finding"
+    assert all(f["counted_as"] is None for f in withheld)
+    assert {e["link_kind"] for e in run["evidence"]} == set(LINK_WORDS)
+    assert coverage["quotes_found"] + coverage["quotes_rejected"] == coverage["quotes_offered"]
+    assert coverage["excerpts_verified"] == sum(len(f["evidence_ids"]) for f in findings)
+    assert coverage["findings_without_quote"] == sum(not f["evidence_ids"] for f in findings) >= 1
+    reasons = [f for f in findings if f["rationale"].startswith("[Reason withheld:")]
+    assert coverage["reasons_withheld"] == len(reasons) == 1
+    assert any(line.startswith("in the reason:") for line in reasons[0]["checks"]["numbers_detail"])
+    read = [s for s in run["sources"] if s["extraction_status"] == "extracted"]
+    filings_read = sum(s["kind"] == "sec_filing" for s in read)
+    assert coverage["filings_asked"] == run["inputs"]["filings"]
+    assert coverage["filings_asked"] not in (filings_read, coverage["sources_requested"])
+    assert any(s["kind"] == "public_html" for s in read), "the provenance note names a page that was read"
+    note = run["brief"]["provenance_note"]
+    assert "page you added" in note and note != sample["meta"]["provenance_note"]

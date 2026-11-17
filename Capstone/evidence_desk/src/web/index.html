@@ -161,7 +161,7 @@
           <h3 id="scorecard-title" class="block-title">Verdicts by claim</h3>
           <div id="review-line" class="review-line" hidden></div>
           <ol id="scorecard" class="scorecard"></ol>
-          <p class="distinction">Each verdict follows by a fixed rule from the findings that passed their checks. <strong>Checked:</strong> every quote was found word for word in the stored filing, and numbers were matched to quotes and reported figures. <strong>Not checked:</strong> whether a quote supports or challenges the claim is the engine's reading of it. Read the quotes before you rely on a verdict.</p>
+          <p id="distinction" class="distinction">Each verdict follows by a fixed rule from the findings that passed their checks. <strong>Checked:</strong> every quote was found word for word in the stored filing, and numbers were matched to quotes and reported figures. <strong>Not checked:</strong> whether a quote supports or challenges the claim is the engine's reading of it. Read the quotes before you rely on a verdict.</p>
 
           <details id="legend" class="legend" open>
             <summary>How to read this page</summary>
@@ -173,7 +173,9 @@
               <div><dt><span class="pill verdict v-not_addressed"><span class="glyph" aria-hidden="true">∅</span><span>Not addressed</span></span></dt><dd>No verified quote or figure bears on the claim.</dd></div>
               <div><dt><span class="pill stance s-context"><span class="glyph" aria-hidden="true">•</span><span>Context</span></span></dt><dd>A finding that informs the claim without taking a side.</dd></div>
               <div><dt><span class="mark-limit"><span class="glyph g-limit" aria-hidden="true">▲</span> Limit</span></dt><dd>Something limits this record: a partial or failed run, a coverage limit, an error, a source not read, a failed check.</dd></div>
-              <div><dt><span class="badge-model legend-badge"><span class="glyph g-model" aria-hidden="true">✎</span> Model-written</span></dt><dd>Written by a language model and not checked for meaning.</dd></div>
+              <div><dt><span class="badge-model legend-badge"><span class="glyph g-model" aria-hidden="true">✎</span> Model-written</span></dt><dd>Written by a language model and not checked for meaning by a person. A second model's reading has its own marks, next.</dd></div>
+              <div><dt><span class="meaning-mark m-passed"><span class="glyph g-meaning" aria-hidden="true">◎</span><span class="meaning-words">Agrees</span></span></dt><dd>A second model, not shown the first one's reasoning, read the finding's evidence and agrees that it supports the statement and its stance. Still a model's reading, not a person's: its reason is one click away.</dd></div>
+              <div><dt><span class="meaning-mark m-partly"><span class="glyph g-meaning" aria-hidden="true">◐</span><span class="meaning-words">In part</span></span></dt><dd>The second model agrees only in part; its reason is shown under a double violet rule. A result of the check, not a limit of the record: read the quote and decide.</dd></div>
               <div><dt><span class="mark-reject"><span class="glyph g-reject" aria-hidden="true">!</span> Rejected</span></dt><dd>Your input was rejected; the message says how to fix it.</dd></div>
               <div><dt><span class="page-tag">Sample record</span></dt><dd>A grey tag is a label about the page itself.</dd></div>
               <div><dt><mark class="legend-mark">highlighted</mark></dt><dd>A quote found word for word in the filing, shown in its surrounding text.</dd></div>
@@ -212,7 +214,7 @@
         <section id="withheld-section" class="block withheld" aria-labelledby="withheld-title" hidden>
           <h3 id="withheld-title" class="block-title"><span class="glyph g-limit" aria-hidden="true">▲</span> Withheld findings</h3>
           <p class="hint">The engine proposed these findings, but each failed a check. They count toward no verdict.</p>
-          <ul id="withheld" class="withheld-list"></ul>
+          <div id="withheld"></div>
         </section>
 
         <section id="unknowns-section" class="block" aria-labelledby="unknowns-title" hidden>

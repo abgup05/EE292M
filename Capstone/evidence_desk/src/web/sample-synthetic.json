@@ -47,6 +47,10 @@
     },
     "provenance_note": "Evidence comes from the company's own filings with the SEC. It shows what the company reported, not whether an outside party agrees.",
     "engine": "claude",
+    "checker": {
+      "name": "claude",
+      "detail": "claude-haiku-4-5, a second model shown each finding's statement, stance and quoted evidence, not the first model's reasoning"
+    },
     "example": {
       "ticker": "EXMP",
       "decision": "Whether to add to a position in Example Corp before its next quarterly report",
@@ -81,9 +85,10 @@
         "Export controls are restricting sales to China."
       ],
       "scope_notes": "",
-      "filings": 2,
+      "filings": 3,
       "extra_urls": [
-        "https://example.com/investors/update-2026-07"
+        "https://example.com/investors/update-2026-07",
+        "https://example.com/investors/fact-sheet-2026"
       ]
     },
     "thesis_id": "thesis-example0001",
@@ -99,6 +104,8 @@
     },
     "engine": "claude",
     "engine_detail": "language model claude-sonnet-4-5, with the deterministic engine as fallback for any step the model fails",
+    "checker": "claude",
+    "checker_detail": "claude-haiku-4-5, a second model shown each finding's statement, stance and quoted evidence, not the first model's reasoning (illustrative: this record is invented)",
     "claims": [
       {
         "id": "c1",
@@ -170,7 +177,7 @@
           "export licensing requirements"
         ],
         "verdict": "not_addressed",
-        "rationale": "No retrieved passage ties export controls to lower sales. Two proposed findings were withheld: one misstated its number, and one cited nothing.",
+        "rationale": "No retrieved passage ties export controls to lower sales. Three proposed findings were withheld: one misstated its number, one cited nothing, and a second model judged that the third one's quote does not say what it claims.",
         "finding_ids": [],
         "passages_considered": 6,
         "assessed_by": "claude"
@@ -248,6 +255,24 @@
         "sections": 0,
         "characters": 0,
         "error": "HTTP 404 Not Found"
+      },
+      {
+        "id": "s5",
+        "kind": "public_html",
+        "title": "Example Corp fact sheet",
+        "publisher": "example.com",
+        "url": "https://example.com/investors/fact-sheet-2026",
+        "requested_url": "https://example.com/investors/fact-sheet-2026",
+        "form": null,
+        "accession": null,
+        "period_end": null,
+        "published_date": "2026-08-04",
+        "retrieved_at": "2026-11-17T09:00:09Z",
+        "content_hash": "5e0c3a91d2b84f7a6c19e0d3b2a4f8c7e6d5b4a3928170f6e5d4c3b2a1908f7e",
+        "extraction_status": "extracted",
+        "sections": 0,
+        "characters": 6120,
+        "error": null
       }
     ],
     "evidence": [
@@ -260,7 +285,8 @@
         "start": 40210,
         "context_before": "The following summary should be read with the condensed financial statements.\n",
         "context_after": " Growth came mainly from the Systems segment, where unit shipments rose in every region.",
-        "link": "https://example.com/edgar/exmp-20260628-10q.htm#:~:text=Revenue%20for%20the%20second%20quarter"
+        "link": "https://example.com/edgar/exmp-20260628-10q.htm#:~:text=Revenue%20for%20the%20second%20quarter",
+        "link_kind": "passage"
       },
       {
         "id": "e2",
@@ -271,29 +297,32 @@
         "start": 118344,
         "context_before": "Fiscal 2025 was a 52-week year.\n",
         "context_after": " The increase reflected higher Systems volume, partly offset by lower Services pricing.",
-        "link": "https://example.com/edgar/exmp-20251228-10k.htm#:~:text=Revenue%20for%20fiscal%202025"
+        "link": "https://example.com/edgar/exmp-20251228-10k.htm#:~:text=Revenue%20for%20fiscal%202025",
+        "link_kind": "passage"
       },
       {
         "id": "e3",
         "source_id": "s1",
         "finding_id": "f3",
-        "excerpt": "Gross margin was 61.0% for the quarter, compared with 63.4% in the second quarter of fiscal 2025, reflecting higher component costs.",
+        "excerpt": "Gross margin 61.0% 63.4%",
         "locator": "Part I, Item 2. Management's Discussion and Analysis › Gross Margin",
         "start": 42876,
-        "context_before": "Cost of revenue rose faster than revenue.\n",
-        "context_after": " Freight costs were approximately flat.",
-        "link": "https://example.com/edgar/exmp-20260628-10q.htm#:~:text=Gross%20margin%20was%2061.0%25"
+        "context_before": "Cost of revenue rose faster than revenue.\nThree months ended June 28, 2026 June 29, 2025\n",
+        "context_after": "\nThe decrease reflected higher component costs. Freight costs were approximately flat.",
+        "link": "https://example.com/edgar/exmp-20260628-10q.htm",
+        "link_kind": "document"
       },
       {
         "id": "e4",
         "source_id": "s2",
         "finding_id": "f4",
-        "excerpt": "We expect component costs to remain elevated through the first half of fiscal 2026.",
+        "excerpt": "We expect component costs to remain elevated through the first half of fiscal 2026.\nWe may not be able to pass these costs on to customers.",
         "locator": "Item 1A. Risk Factors › Risks Related to Supply",
         "start": 61502,
         "context_before": "Prices for memory and power components rose during the year. ",
-        "context_after": " We may not be able to pass these costs on to customers.",
-        "link": "https://example.com/edgar/exmp-20251228-10k.htm#:~:text=We%20expect%20component%20costs"
+        "context_after": " We have entered into longer-term purchase commitments for some components.",
+        "link": "https://example.com/edgar/exmp-20251228-10k.htm#:~:text=We%20expect%20component%20costs",
+        "link_kind": "first-line"
       },
       {
         "id": "e5",
@@ -304,7 +333,8 @@
         "start": 58233,
         "context_before": "A significant portion of our revenue comes from a small number of customers. ",
         "context_after": " The loss of either customer could reduce our revenue materially.",
-        "link": "https://example.com/edgar/exmp-20251228-10k.htm#:~:text=Our%20two%20largest%20customers"
+        "link": "https://example.com/edgar/exmp-20251228-10k.htm#:~:text=Our%20two%20largest%20customers",
+        "link_kind": "passage"
       },
       {
         "id": "e6",
@@ -315,7 +345,8 @@
         "start": 31090,
         "context_before": "Revenue by geography is presented below.\n",
         "context_after": "\nRevenue from the United States was 46% of the total.",
-        "link": "https://example.com/edgar/exmp-20260628-10q.htm#:~:text=No%20single%20customer"
+        "link": "https://example.com/edgar/exmp-20260628-10q.htm#:~:text=No%20single%20customer",
+        "link_kind": "passage"
       },
       {
         "id": "e7",
@@ -326,7 +357,8 @@
         "start": 60118,
         "context_before": "Our supply chain is concentrated. ",
         "context_after": " A disruption at its facilities could delay shipments for several months.",
-        "link": "https://example.com/edgar/exmp-20251228-10k.htm#:~:text=We%20rely%20on%20a%20single"
+        "link": "https://example.com/edgar/exmp-20251228-10k.htm#:~:text=We%20rely%20on%20a%20single",
+        "link_kind": "passage"
       },
       {
         "id": "e8",
@@ -337,7 +369,20 @@
         "start": 41388,
         "context_before": "Revenue from Europe increased 9%.\n",
         "context_after": " We do not expect demand for legacy products to recover.",
-        "link": "https://example.com/edgar/exmp-20260628-10q.htm#:~:text=Sales%20to%20customers%20in%20China"
+        "link": "https://example.com/edgar/exmp-20260628-10q.htm#:~:text=Sales%20to%20customers%20in%20China",
+        "link_kind": "passage"
+      },
+      {
+        "id": "e9",
+        "source_id": "s2",
+        "finding_id": "f10",
+        "excerpt": "New or changed export control rules could restrict our ability to sell certain products to customers in China.",
+        "locator": "Item 1A. Risk Factors › Risks Related to Trade and Export Regulation",
+        "start": 64210,
+        "context_before": "We sell our products to customers in many countries. ",
+        "context_after": " We cannot predict whether or when such rules will be adopted.",
+        "link": "https://example.com/edgar/exmp-20251228-10k.htm#:~:text=New%20or%20changed%20export%20control",
+        "link_kind": "passage"
       }
     ],
     "findings": [
@@ -366,9 +411,11 @@
             "14.5% matches the quote e2 and the reported figure revenue_yoy:annual:2025-12-28 (+14.5%)."
           ],
           "support": "passed",
-          "support_detail": "A second model read both excerpts as stating higher revenue than a year earlier."
+          "support_detail": "Both excerpts state revenue above the year-earlier period, at the 18.6% and 14.5% the statement gives, so they support it and its stance."
         },
-        "withheld_reason": ""
+        "withheld_reason": "",
+        "counted_as": "supports",
+        "count_note": ""
       },
       {
         "id": "f2",
@@ -391,7 +438,9 @@
           "support": "unchecked",
           "support_detail": ""
         },
-        "withheld_reason": ""
+        "withheld_reason": "",
+        "counted_as": "context",
+        "count_note": "backed by reported figures only and not confirmed by the meaning check: counted as context"
       },
       {
         "id": "f3",
@@ -413,9 +462,11 @@
           "numbers": "passed",
           "numbers_detail": [],
           "support": "passed",
-          "support_detail": ""
+          "support_detail": "The excerpt states gross margin of 61.0% against 63.4% a year earlier, a fall that challenges the claim of expanding margin."
         },
-        "withheld_reason": ""
+        "withheld_reason": "",
+        "counted_as": "challenges",
+        "count_note": ""
       },
       {
         "id": "f4",
@@ -434,10 +485,12 @@
           "quotes": "passed",
           "numbers": "none",
           "numbers_detail": [],
-          "support": "unchecked",
-          "support_detail": ""
+          "support": "partly",
+          "support_detail": "The excerpt expects elevated component costs through the first half of fiscal 2026 only, not into the whole of the next fiscal year as the statement says."
         },
-        "withheld_reason": ""
+        "withheld_reason": "",
+        "counted_as": "context",
+        "count_note": ""
       },
       {
         "id": "f5",
@@ -448,18 +501,22 @@
           "e5"
         ],
         "confidence": "high",
-        "rationale": "Nearly a third of annual revenue from two customers is a concentration.",
+        "rationale": "[Reason withheld: it cited a number (33%) that is in neither the finding's quotes nor its cited figures.]",
         "verified": true,
         "filings_cited": 1,
         "metric_ids": [],
         "checks": {
           "quotes": "passed",
           "numbers": "passed",
-          "numbers_detail": [],
+          "numbers_detail": [
+            "in the reason: 33% was not found in the quotes or the cited figures"
+          ],
           "support": "passed",
-          "support_detail": ""
+          "support_detail": "The excerpt states that the two largest customers made up 31% of fiscal 2025 revenue, which supports a concentration of revenue."
         },
-        "withheld_reason": ""
+        "withheld_reason": "",
+        "counted_as": "supports",
+        "count_note": ""
       },
       {
         "id": "f6",
@@ -478,10 +535,12 @@
           "quotes": "passed",
           "numbers": "passed",
           "numbers_detail": [],
-          "support": "unchecked",
-          "support_detail": ""
+          "support": "passed",
+          "support_detail": "The excerpt states that no customer exceeded 10% of revenue in the quarter, which cuts against the claim of concentration."
         },
-        "withheld_reason": ""
+        "withheld_reason": "",
+        "counted_as": "challenges",
+        "count_note": ""
       },
       {
         "id": "f7",
@@ -500,10 +559,12 @@
           "quotes": "passed",
           "numbers": "none",
           "numbers_detail": [],
-          "support": "unchecked",
-          "support_detail": ""
+          "support": "passed",
+          "support_detail": "The statement repeats the excerpt word for word and takes no side, as its context stance says."
         },
-        "withheld_reason": ""
+        "withheld_reason": "",
+        "counted_as": "context",
+        "count_note": ""
       }
     ],
     "unsupported_findings": [
@@ -529,7 +590,9 @@
           "support": "unchecked",
           "support_detail": ""
         },
-        "withheld_reason": "A number in the statement (40%) matched neither its quote nor a cited reported figure."
+        "withheld_reason": "A number in the statement (40%) matched neither its quote nor a cited reported figure.",
+        "counted_as": null,
+        "count_note": ""
       },
       {
         "id": "f9",
@@ -549,12 +612,39 @@
           "support": "unchecked",
           "support_detail": ""
         },
-        "withheld_reason": "The finding cites no quote and no reported figure, so nothing in it could be checked."
+        "withheld_reason": "The finding cites no quote and no reported figure, so nothing in it could be checked.",
+        "counted_as": null,
+        "count_note": ""
+      },
+      {
+        "id": "f10",
+        "claim_id": "c5",
+        "statement": "Export controls restricted the company's sales to customers in China during fiscal 2025.",
+        "stance": "supports",
+        "evidence_ids": [
+          "e9"
+        ],
+        "confidence": "medium",
+        "rationale": "The annual report discusses export control rules and sales to customers in China.",
+        "verified": false,
+        "filings_cited": 1,
+        "metric_ids": [],
+        "checks": {
+          "quotes": "passed",
+          "numbers": "none",
+          "numbers_detail": [],
+          "support": "failed",
+          "support_detail": "The excerpt describes a risk that export rules could restrict sales in future; it does not say that any restriction took place, so it does not support the statement."
+        },
+        "withheld_reason": "a second model judged that its evidence does not support the statement: The excerpt describes a risk that export rules could restrict sales in future; it does not say that any restriction took place, so it does not support the statement.",
+        "counted_as": null,
+        "count_note": ""
       }
     ],
     "coverage_limits": [
+      "3 filing(s) were requested; EDGAR lists 2 (the latest annual report and the quarterly reports filed after it).",
       "1 of 4 source(s) could not be read.",
-      "2 finding(s) failed a check and were withheld.",
+      "3 finding(s) failed a check and were withheld.",
       "1 of 5 claim(s) have no verified evidence in the passages retrieved.",
       "1 of 5 claim(s) have relevant passages but no judged stance.",
       "The model engine failed for 2 step(s); the deterministic engine was used for those."
@@ -567,21 +657,28 @@
       "Reported figures: no value for capital expenditure (PaymentsToAcquirePropertyPlantAndEquipment) for the quarter ended 2026-06-28."
     ],
     "coverage": {
+      "filings_asked": 3,
       "sources_requested": 4,
       "sources_read": 3,
       "passages_indexed": 412,
       "claims_total": 5,
       "claims_with_evidence": 4,
-      "findings_proposed": 9,
+      "findings_proposed": 10,
       "findings_verified": 7,
-      "findings_withheld": 2,
+      "findings_withheld": 3,
+      "findings_without_quote": 1,
       "engine_fallbacks": 2,
-      "excerpts_verified": 8,
-      "quotes_offered": 9,
+      "excerpts_verified": 7,
+      "quotes_offered": 10,
+      "quotes_found": 9,
       "quotes_rejected": 1,
       "metrics_computed": 15,
       "numbers_checked": 6,
-      "numbers_unmatched": 1
+      "numbers_unmatched": 1,
+      "reasons_withheld": 1,
+      "findings_checked": 7,
+      "findings_partly": 1,
+      "findings_failed_meaning": 1
     },
     "metrics": [
       {
@@ -932,7 +1029,8 @@
         "Look for export-control disclosures in the next 10-Q."
       ],
       "coverage_status": "partial",
-      "status_note": "Part of the thesis could not be assessed with verified evidence. The reasons are listed under coverage limits."
+      "status_note": "Part of the thesis could not be assessed with verified evidence. The reasons are listed under coverage limits.",
+      "provenance_note": "Evidence comes from the company's SEC filings and from 1 page you added; each excerpt names its source. A page you added is not a filing."
     }
   },
   "review": {

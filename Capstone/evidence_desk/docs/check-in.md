@@ -6,17 +6,17 @@
 
 ## 1. What works, shown
 
-Each line is a command and its output at tag `capstone-v4`.
+Each line is a command and its output at tag `capstone-v4`. The counts of tests are what pytest collects (many tests are parametrised). Outputs that are not committed are marked; the rest can be read in the repository.
 
 | What | Command | Output |
 | --- | --- | --- |
 | The gate from a fresh clone | `make verify-fresh` | `805 passed`; `smoke: ok`; `33 passed` (the page) |
 | A complete, judged run on three real filings, offline | `make replay` | `status: complete`; 2 claims supported, 3 mixed; `findings verified 18, withheld 0; excerpts verified 18, quotes rejected 0` |
 | Reported figures against published values | `make test T=tests/test_metrics.py` | 14 fiscal-year figures for Apple, Microsoft and NVIDIA match the annual reports exactly |
-| Filings of eight companies split into their Items | `make probe TICKERS="NVDA AAPL MSFT KO JPM TSLA COST AMZN"` | 13 of 14 filings segmented (95.8% to 99.4% of text under an Item); JPMorgan's 10-Q not (1.6%) |
-| Retrieval, measured | `make eval ARGS="run --variant claim"` | recall@8 29.2% (7 of 24); recall@20 54.2% (13 of 24) |
-| The running app, end to end, on live filings | `make live-walk` | `complete; 3 of 3 filings from live EDGAR; 18 of 18 findings verified; 0 engine fallback(s)` ... `No verdict moved and no filing is new.` ... `live walk: PASS` |
-| A reviewer's decisions survive a restore | `make backup && make restore-check` | `PASS: record-20261117T123824Z.sqlite restores to the live record: 5 runs, 2 decisions, 1 theses` |
+| Filings of eight companies split into their Items | `make probe TICKERS="NVDA AAPL MSFT KO JPM TSLA COST AMZN"` | 13 of 14 filings segmented (95.8% to 99.4% of text under an Item); JPMorgan's 10-Q not (1.6%). Committed as `docs/speed/probe-v4.md` |
+| Retrieval, measured | `make eval ARGS="run --variant claim"` | recall@8 29.2% (7 of 24); recall@20 54.2% (13 of 24). Committed under `eval/results/`. Not offline from a fresh clone: the filings of four companies are fetched from EDGAR into `eval/cache` first (`make eval ARGS="fetch"`). This measurement belongs to milestone 5 and was started early |
+| The running app, end to end, on live filings | `make live-walk` | `complete; 3 of 3 filings from live EDGAR; 18 of 18 findings verified; 0 engine fallback(s)` ... `No verdict moved and no filing is new.` ... `live walk: PASS`. Output not committed. **This line expires**: the recorded answers match only until NVIDIA's next filing, after which the walk fails by design and the cassette has to be recorded again |
+| A reviewer's decisions survive a restore | `make backup && make restore-check` | `PASS: ... restores to the live record` on the record the live walk had just written. Output not committed (`backups/` is ignored). Same disk, same machine; a restore into a running app is not tested |
 
 ![A recorded run](screenshots/sample-run.png)
 
@@ -30,6 +30,9 @@ Each line is a command and its output at tag `capstone-v4`.
 - **Two rules the brief stated about the figures were wrong on real data.** "Exactly equal" (a rounding difference of USD 1 million) and "the latest filing wins" (restated annual revenue at Microsoft broke the fourth-quarter derivation).
 - **A speed claim did not hold up.** Version 3 reported an 8% gain; review 3 showed the numbers did not reconcile and that the profile was of the offline run, which is not where a real run's time goes. Re-measured over 20 alternating pairs, the change saves a median of 28.8 ms per offline run (faster in 18 of 20), which is 7 to 9% offline and under 1% of a live run. The saving that matters is the filing cache: a second live run took 0.38 s against 1.01 s.
 - **Retrieval is poor on paraphrased claims.** 7 of 24. The passage is usually in the filings read and not in the eight passages shown to the engine. This is the largest open problem in the project.
+- **The golden set is a model's reading.** Its thirty cases and their expected stances were drafted by a model from the filing text and checked mechanically. Until I have read them, the retrieval numbers measure agreement with that model, not with an answer key.
+- **A key was pasted into a conversation.** One of the two API keys in `.env` went into an agent session in plain text. It has to be rotated; I have not done that yet.
+- **Something on this laptop listens on all interfaces.** Writing down the open ports found a container on `*:8088` that is not this project's. I do not yet know what it is.
 
 ## 3. What I am cutting, and what the draft still claims
 
@@ -43,6 +46,7 @@ The cuts below were proposed by the session from what the measurements showed. E
 - Vector embeddings for retrieval. The next version tries model-written queries and reranking first, because they need no new dependency and the golden set can say whether they are enough.
 - Any hosted deployment. The app stays on `127.0.0.1`.
 - At risk: milestone 6, what changed between two filings. If it is cut, the draft claims only the comparison between two runs of a saved thesis.
+- Milestone 5 is partly done at this tag: retrieval is measured for one variant. Its other two exit checks, a second-model check of meaning and the refusal of unanswerable claims, are not met yet and are not cut.
 
 **The draft still claims:**
 

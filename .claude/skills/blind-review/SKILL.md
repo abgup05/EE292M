@@ -12,8 +12,10 @@ reviewer from agreeing by construction. Do them in order.
 1. **Fix the version.** `$ARGUMENTS` may name a tag; with none, use the newest
    `capstone-v*` tag. If the tag does not exist, stop and say so. If the working tree has
    commits or edits after the tag, say that the review covers the tag, not them.
-2. **Make a clean checkout** of that tag with
-   `git worktree add .claude/worktrees/review-<tag> <tag>`. The reviewer reads that path
+2. **Export that tag without the author's notes**, so the reviewer cannot read them even
+   by accident:
+   `mkdir -p .claude/worktrees/review-<tag> && git archive <tag> ':(exclude)Work Logs' ':(exclude)Homework' . | tar -x -C .claude/worktrees/review-<tag>`,
+   then `touch .claude/worktrees/review-<tag>.started`. The reviewer reads that directory
    and nothing else, so work can continue in the main checkout while it reads.
 3. **Pick the checklist.** `reference/checklists.md` holds the four session checklists,
    quoted from the course slides. If the request does not say which, ask once.
@@ -24,8 +26,8 @@ reviewer from agreeing by construction. Do them in order.
    - forbidden paths: `Work Logs/`, `Homework/`, `Slides/`, `external/`,
      `Capstone/evidence_desk/docs/reviews/`, and anything outside the checkout;
    - the output: numbered findings, worst first, each with a file and line it opened and
-     one suggested change; no praise; a word limit; and a closing list of what it could
-     not judge from the repository alone.
+     one suggested change; no praise; a word limit; a closing list of what it could
+     not judge from the repository alone; and, last, every file it opened.
    Never put your own opinion of the code, the plan, or what you expect it to find into
    the brief. Never show it an earlier review.
 5. **Save its text unedited** as
@@ -35,12 +37,14 @@ reviewer from agreeing by construction. Do them in order.
 6. **Hand the findings to the user for triage.** Each one is built in or answered in one
    line of `Capstone/README.md` with the reason. Decisions go in the session's hand-in
    under `Homework/`, not in the review file.
-7. **Remove the checkout** with `git worktree remove .claude/worktrees/review-<tag>`.
+7. **Remove the export**: `rm -r .claude/worktrees/review-<tag> .claude/worktrees/review-<tag>.started`.
 
 ## Checks before you report
 
-- `git -C .claude/worktrees/review-<tag> status --short` printed nothing after the review.
-  If the reviewer changed a file, discard the review and say so.
+- `find .claude/worktrees/review-<tag> -newer .claude/worktrees/review-<tag>.started -type f`
+  printed nothing. If the reviewer changed a file, discard the review and say so.
+- Every path in the reviewer's list of opened files is inside the export and none is under
+  `docs/reviews/`. If one is not, say so in the saved header: the review was not blind.
 - Every finding cites a file that exists at that tag.
 - The saved file contains the reviewer's words only below the header.
 
@@ -55,3 +59,9 @@ reviewer from agreeing by construction. Do them in order.
 
 It does not replace a colleague who knows the field. A model reviewer checks the work
 against its own README; it cannot say whether the tool is useful to a real analyst.
+
+It is not an independent party either. The reviewer is another Claude model: a different
+model from the one that wrote the code, in a fresh context, but of the same family, so
+some of its blind spots are the builder's. And the blindness is by construction only as
+far as the export goes: the reviewer's tools can still read other paths on the machine,
+which is why it is asked to list what it opened.

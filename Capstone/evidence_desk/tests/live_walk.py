@@ -6,7 +6,10 @@ key. It exercises what the offline tests reach only through fakes: a run on live
 filings, decisions on its findings, the reviewed brief, a saved thesis, a second
 run of it from the filing cache, and the comparison of the two.
 
-It prints one line per step and exits non-zero at the first step that fails.
+It prints one line per step and exits non-zero at the first step that fails. One of
+the steps is that the engine did not fall back: a pass means a judged run. The recorded
+answers match only while the company's reported facts are as they were when the cassette
+was recorded, so this walk expires at the company's next filing.
 """
 
 from __future__ import annotations
@@ -84,12 +87,11 @@ def main() -> int:
         print(f"   {claim['id']} {claim['verdict']}: {claim['text']}")
     expect(run["status"] in ("complete", "partial"), "the run finishes with a brief")
     expect(coverage["sources_read"] == coverage["sources_requested"], "every filing was read")
-    judged = coverage["engine_fallbacks"] == 0
-    print(
-        "   the recorded answers matched the live filings"
-        if judged
-        else "   NOTE: the live prompts no longer match the cassette, so the deterministic "
-        "engine answered; the review steps below still run"
+    expect(
+        coverage["engine_fallbacks"] == 0,
+        "the recorded answers match the live filings, so the run is judged (if this fails, the "
+        "company has filed again and the recording has expired: record the cassette again, "
+        "docs/cassettes.md)",
     )
 
     findings = run["findings"]

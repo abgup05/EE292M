@@ -17,3 +17,4 @@ What this does not replace: a colleague who knows the field and can say whether 
 | [review-1-structure.md](review-1-structure.md) | Week 5A | `capstone-v1` | Messaging, organization, patterns and interfaces |
 | [review-2-message-interface-tests.md](review-2-message-interface-tests.md) | Week 6A | `capstone-v2` | The message, the interface, the tests, time and limits |
 | [review-3-speed-system.md](review-3-speed-system.md) | Week 7A | `capstone-v3` plus the system drawing (commit `1ecfcf1`) | Speed, the system, what cannot be rebuilt, one boundary |
+| [review-4-check-in-safety.md](review-4-check-in-safety.md) | Week 8A | `capstone-v4` plus the safety-nets note (commit `413efe9`) | The check-in, the agent notes, the skill, safety nets |

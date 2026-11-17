@@ -4,7 +4,7 @@
 
 **In three sentences.** You give Evidence Desk a ticker, the decision you are facing and the claims your thesis rests on. It reads the company's latest annual and quarterly reports from SEC EDGAR, and for each claim returns a verdict (supported, challenged, mixed or not addressed) with the exact passages behind it, each verified on the server against the stored filing text before anything reaches the page or the export. When the evidence is thin the brief says **partial** and gives the reasons; it never fills a gap with a confident sentence.
 
-The working application is in [`evidence_desk/`](evidence_desk/README.md). The prompt for the current milestone is [`PROMPT.md`](PROMPT.md).
+The working application is in [`evidence_desk/`](evidence_desk/README.md). [`PROMPT.md`](PROMPT.md) is the prompt that milestone 2 was built from. Later milestones were not given a rewritten prompt: each was briefed from the row of the table below, the findings of the review before it, and a contract of record types written first. Those briefs were given to agent sessions and are not kept in this repository, which is a gap.
 
 ## What changed since the first plan
 
@@ -22,14 +22,14 @@ Evidence Desk makes the passage the unit of the result. A verdict is computed by
 
 Each milestone is one prompt and ends in a tagged version that can be opened on its own (`git checkout <tag>`, then `make up` in `Capstone/evidence_desk`).
 
-| # | Tag | Reviewable result | Exit check |
-| --- | --- | --- | --- |
-| 1 | `capstone-v1` | A generic research brief: one real page becomes a stored source, an exact excerpt and a verified finding | Altering the excerpt withholds the finding |
-| 2 | `capstone-v2` | Filings and claims: a thesis run over a real 10-K and 10-Qs, verdicts first, each excerpt in context with a link into the filing | A recorded 10-Q splits into its Items; a quote with one word changed is withheld |
-| 3 | `capstone-v3` | Reported numbers with an answer key: a metrics panel computed from XBRL facts; a numeric check on findings; tests at four levels and a tripwire; one measured speed change | Published values for three companies reproduce; a statement whose number is in neither its quote nor a reported fact is withheld |
-| 4 | `capstone-v4` | Reviewer decisions and saved theses: accept or reject each finding; re-run a saved thesis and see which verdicts moved; backup with a tested restore | A restore from backup returns every decision; a re-run names the claims whose verdict changed |
-| 5 | `capstone-v5` | Measured retrieval: a golden set with the passage that must come back; retrieval and generation scored apart; a second model checks that each excerpt supports its statement | Recall on the golden set is reported per retrieval variant; an unanswerable claim is refused |
-| 6 | `capstone-v6` | What changed between two filings: added, removed and reworded risk factors and moved numbers | A planted paragraph change is reported as added and removed |
+| # | Tag | Reviewable result | Exit check | Status |
+| --- | --- | --- | --- | --- |
+| 1 | `capstone-v1` | A generic research brief: one real page becomes a stored source, an exact excerpt and a verified finding | Altering the excerpt withholds the finding | Done |
+| 2 | `capstone-v2` | Filings and claims: a thesis run over a real 10-K and 10-Qs, verdicts first, each excerpt in context with a link into the filing | A recorded 10-Q splits into its Items; a quote with one word changed is withheld | Done |
+| 3 | `capstone-v3` | Reported numbers with an answer key: a metrics panel computed from XBRL facts; a numeric check on findings; tests at four levels and a tripwire; one measured speed change | Published values for three companies reproduce; a statement whose number is in neither its quote nor a reported fact is withheld | Done |
+| 4 | `capstone-v4` | Reviewer decisions and saved theses: accept or reject each finding; re-run a saved thesis and see which verdicts moved; backup with a tested restore | A restore from backup returns every decision; a re-run names the claims whose verdict changed | Done |
+| 5 | `capstone-v5` | Measured retrieval: a golden set with the passage that must come back; retrieval and generation scored apart; a second model checks that each excerpt supports its statement | Recall on the golden set is reported per retrieval variant; an unanswerable claim is refused | Partly: retrieval is measured for two variants and generation is scored; the second-model check is being built |
+| 6 | `capstone-v6` | What changed between two filings: added, removed and reworded risk factors and moved numbers | A planted paragraph change is reported as added and removed | Not started |
 
 The draft write-up is due on 30 November and the final in finals week.
 
@@ -64,3 +64,8 @@ Findings that were built in are listed in the hand-in for the session that revie
 - **Review 1, F5** (add an extractor registry keyed by content type, with the fetcher carrying bytes): answered with one adapter per source kind behind a shared `Document` shape, not a content-type registry. The next format this project needs is a filing, which is HTML with a different structure, not a PDF, and PDFs remain out of scope.
 - **Review 1, F10** (give each subquestion a `kind` field for the extractive engine to branch on): not built. The deterministic engine no longer guesses a stance at all; a claim it handles gets the verdict "passages found, not judged".
 - **Review 2, F10** (the API and command-line tests run against a fake EDGAR, so they test the fake as much as the code): kept as they are. The fake serves recorded real filings through the real parser, and the path over the live network is `make demo`, which stays outside `make verify` because the gate has to pass from a fresh clone without a network.
+- **Review 4, F1** (also deny direct `docker`, `curl` and `gh` calls in the settings file): not added. The same file governs my own sessions, and I use those commands. The note now says the deny list is partial and what a real boundary would be.
+- **Review 4, F2** (deny reading `Work Logs/` and `Homework/` in the settings file): not added, for the same reason. The review checkout is instead an export of the tag that does not contain those folders, and the reviewer lists every file it opened.
+- **Review 4, F9** (delete the course's standing rules from `AGENTS.md`): kept. They are the course's file and they hold; only my own section was cut back.
+- **Review 4, F11** (make the re-baseline of the tripwire a skill): not built. The test of the first skill showed that a second copy of a documented procedure changes nothing. If a baseline is ever committed without its diff being read, the procedure in `docs/testing.md` becomes a skill and that section becomes a pointer to it.
+- **Review 4, F12** (use a reviewer from another vendor once): not possible in this session, which has only Claude models. The skill and the notes now say the reviewer is another model of the same family, not an independent party.

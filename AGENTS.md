@@ -78,7 +78,7 @@ only when it earns its place, and say why.
 ### Tooling
 
 - Docker Desktop's credential helper is not on an agent's `PATH`. Prefix every make call: `PATH="/Applications/Docker.app/Contents/Resources/bin:$PATH" make <target>`.
-- `make verify-fresh` is the gate for a tag. It clones the committed branch, so untracked work in the tree can neither pass nor fail it.
+- `make verify-fresh` is the gate for a tag. It clones the committed branch, so untracked work in the tree can neither pass nor fail it. Every capstone target runs from the repository root or from `Capstone/evidence_desk`.
 - `make up`, `smoke`, `uitest`, `screenshots` and `demo` all start the app on port 8766. When several agents work at once, exactly one of them may run these.
 - An agent worktree created by the harness branches from `main`, which has no capstone app. Make one from the ref you mean: `git worktree add .claude/worktrees/<name> <tag-or-branch>`.
 
@@ -100,10 +100,9 @@ only when it earns its place, and say why.
 
 ### Never
 
-- Never put a personal name or e-mail in the default SEC User-Agent. It is read from `SEC_USER_AGENT`.
 - Never report a model-backed result without saying where the answers came from: the API or a cassette.
 
 ### Skills and agents in this repository
 
-- A review of a version for a course session: use `/blind-review`, never an ad hoc reviewer prompt.
+- A review of a version for a course session: use `/blind-review`, never an ad hoc reviewer prompt. The reviewer is another Claude model, not an independent party.
 - Asked to attack the project's own claims: use the `referee` agent.

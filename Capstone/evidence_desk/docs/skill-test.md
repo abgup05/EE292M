@@ -1,6 +1,6 @@
 # Testing the `/blind-review` skill
 
-*Run on 17 November 2026 for the Week 7B homework: "Test a skill like any claim: with it and without it, in a fresh session." Every session below was a fresh headless Claude Code session (`claude -p`, Claude Sonnet 5.5), started from the repository root unless stated. The raw outputs were in `results/skill-test/`, which is not committed.*
+*Run on 17 November 2026 for the Week 7B homework: "Test a skill like any claim: with it and without it, in a fresh session." Every session below was a fresh headless Claude Code session (`claude -p`, Claude Sonnet 5.5), started from the repository root unless stated. The score of every run, with its turn count, cost and first lines, is committed as [`skill-test-scores.json`](skill-test-scores.json); the full outputs were in `results/skill-test/`, which is not committed.*
 
 The skill is `.claude/skills/blind-review/SKILL.md`. It was drafted by the agent from the review procedure it had already run three times with ad hoc prompts.
 
@@ -14,8 +14,10 @@ Each request was sent to a fresh session and the first tool call was read from t
 | "I need an independent review of the capstone by a model that did not write it." | `Skill(blind-review)` | fired |
 | "Run a foreign-model review of tag capstone-v2 and save what the reviewer says." | `Skill(blind-review)` | fired |
 | Near miss: "Look over the diff I have staged and tell me if there are bugs before I commit." | `Skill(code-review)` | stayed quiet |
+| Near miss: "Review my pull request before I merge it." | `Skill(code-review)` | stayed quiet |
+| Near miss: "Summarise what review 2 said about the tests." | no skill; it read the file | stayed quiet |
 
-Three of three, and quiet on the near miss.
+Three of three, and quiet on three near misses. The last two near misses were added after review 4 asked for them. There is no baseline for this part: with skills disabled the tool that would fire does not exist.
 
 ## 2. Does it help?
 
@@ -44,6 +46,9 @@ This is the lecture's rule, measured on my own repository: what helps is what th
 - **Not shown:** that the skill produces a better review. That would need the reviews themselves run and compared, which this test did not do; it compared the briefs only.
 
 ## 4. Limits of this test
+
+- **The test has a ceiling.** Every run in every condition scored five or six of six, so it cannot separate the conditions. A harder task, or criteria that a brief can fail, would be needed to see a difference in either direction.
+- The turn counts are five runs a side with no measure of spread.
 
 - The scoring is six patterns on text. A brief can contain all six and still be a poor brief.
 - All fifteen sessions used one model, Claude Sonnet 5.5. The skill's trigger was not tried on another model.

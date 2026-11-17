@@ -78,7 +78,9 @@ uitest:
 	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=synthetic" > results/dom-synthetic.html 2> results/dom-synthetic.log && \
 	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample" > results/dom-sample.html 2> results/dom-sample.log && \
 	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=changes" > results/dom-changes.html 2> results/dom-changes.log && \
-	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=breakdowns" > results/dom-breakdowns.html 2> results/dom-breakdowns.log
+	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=breakdowns" > results/dom-breakdowns.html 2> results/dom-breakdowns.log && \
+	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample#claim-c4-changes" > results/dom-sample-claim.html 2> results/dom-sample-claim.log && \
+	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=breakdowns-gap" > results/dom-breakdowns-gap.html 2> results/dom-breakdowns-gap.log
 	$(RUN) pytest -q -p no:cacheprovider uitests
 
 run:
@@ -90,7 +92,9 @@ demo: build
 
 # Headless Chromium exits 0 when its GPU process dies on a very tall capture and writes no file,
 # so no capture is taller than 3600 px and the target fails unless every file was written anew.
-SHOTS := first-screen sample-run sample-run-phone sample-run-claim sample-synthetic sample-changes sample-changes-phone sample-breakdowns
+# It also paints nothing after a scroll, so a deep link into a claim cannot be captured: the page
+# test reads its DOM instead (uitests/test_run_changes_dom.py).
+SHOTS := first-screen sample-run sample-run-phone sample-synthetic sample-changes sample-changes-phone sample-breakdowns
 screenshots:
 	@mkdir -p docs/screenshots results
 	@touch results/.screenshots-started
@@ -103,7 +107,6 @@ screenshots:
 	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-synthetic.png "http://app:8000/?sample=synthetic" && \
 	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-changes.png "http://app:8000/?sample=changes" && \
 	$(COMPOSE) run --rm shots --window-size=390,2600 --screenshot=/work/docs/screenshots/sample-changes-phone.png "http://app:8000/?sample=changes" && \
-	$(COMPOSE) run --rm shots --window-size=1280,1800 --screenshot=/work/docs/screenshots/sample-run-claim.png "http://app:8000/?sample#claim-c4-changes" && \
 	$(COMPOSE) run --rm shots --window-size=1280,2400 --screenshot=/work/docs/screenshots/sample-breakdowns.png "http://app:8000/?sample=breakdowns"
 	@for name in $(SHOTS); do \
 		test docs/screenshots/$$name.png -nt results/.screenshots-started \

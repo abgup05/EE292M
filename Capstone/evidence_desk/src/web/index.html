@@ -21,6 +21,7 @@
         <p id="sample-nav" class="sample-nav">
           <a id="sample-link" class="sample-button" href="?sample">See a recorded run</a>
           <a id="changes-link" class="sample-button" href="?sample=changes">See a recorded filing comparison</a>
+          <a id="breakdowns-link" class="sample-button" href="?sample=breakdowns">See recorded segments and customers</a>
         </p>
       </div>
       <p id="engine-line" class="engine-line"></p>
@@ -90,11 +91,20 @@
               <option value="10-Q">quarterly reports (10-Q)</option>
             </select>
           </span>
+          <span class="changes-action">
+            <button type="button" id="breakdowns" class="secondary">Segments and customers (tagged facts)</button>
+            <label class="visually-hidden" for="breakdowns_form">Filing to read</label>
+            <select id="breakdowns_form" name="breakdowns_form" aria-describedby="err-breakdowns_form">
+              <option value="10-K">latest annual report (10-K)</option>
+              <option value="10-Q">latest quarterly report (10-Q)</option>
+            </select>
+          </span>
           <button type="button" id="load-example" class="secondary">Load example</button>
           <button type="button" id="save-thesis" class="secondary" aria-expanded="false" aria-controls="save-panel" hidden>Save this thesis</button>
         </div>
         <p id="err-changes_form" class="field-error" hidden></p>
-        <p class="hint actions-hint">"Reported figures only" and "What changed in the filings" need just the ticker: the first shows the company's reported numbers, the second compares its two latest annual or quarterly reports, paragraph by paragraph. Neither starts a run.</p>
+        <p id="err-breakdowns_form" class="field-error" hidden></p>
+        <p class="hint actions-hint">"Reported figures only", "What changed in the filings" and "Segments and customers" need just the ticker: the first shows the company's reported numbers, the second compares its two latest annual or quarterly reports, paragraph by paragraph, and the third shows the numbers its latest report tags by segment, product, geography and customer. None starts a run.</p>
         <div id="save-panel" class="save-panel" hidden>
           <div class="field">
             <label for="thesis_name">Name for this thesis</label>
@@ -161,6 +171,24 @@
             <div data-legend="rule"><dt><span class="rule-mark"><span class="glyph g-rule" aria-hidden="true">ƒ</span><span class="rule-label">Fixed rule</span></span></dt><dd>Computed by a fixed rule; not checked by a person. Here the classes above come from a word-overlap threshold that no person has checked against these filings: read the paragraphs before you rely on a count.</dd></div>
             <div><dt><span class="mark-limit"><span class="glyph g-limit" aria-hidden="true">▲</span> Limit</span></dt><dd>Something limits this comparison.</dd></div>
             <div><dt><span class="legend-link">blue text</span></dt><dd>Something you can click: a link opens the filing it names.</dd></div>
+          </dl>
+        </details>
+      </div>
+
+      <div id="breakdowns-view" hidden>
+        <div id="breakdowns-head" class="run-head"></div>
+        <div id="breakdowns-body"></div>
+        <details id="breakdowns-legend" class="legend" open>
+          <summary>How to read these tables</summary>
+          <dl class="legend-list">
+            <div><dt>What this is</dt><dd>The numbers one filing tags in its inline XBRL, split by a dimension (segment, product, geography, customer): read from the tags, not from the printed tables. Every cell and change is the record's own text; this page computes none of them.</dd></div>
+            <div data-legend="rule"><dt><span class="rule-mark"><span class="glyph g-rule" aria-hidden="true">ƒ</span><span class="rule-label">Fixed rule</span></span></dt><dd>Computed by a fixed rule; not checked by a person. Here: which tags make a table, the row labels (derived from tag names, not the company's own), the changes and whether the rows add up.</dd></div>
+            <div data-legend="adds-up"><dt><span class="bd-adds bd-adds-yes"><span class="glyph g-adds" aria-hidden="true">=</span> Adds up</span></dt><dd>The rows add up to the total the filing tags, in every period checked, within the rounding the tags declare. The table's notes say how (some rows can be parts of others).</dd></div>
+            <div><dt><span class="bd-adds bd-adds-no"><span class="glyph g-limit" aria-hidden="true">▲</span> Does not add up</span></dt><dd>In at least one period the rows do not add up to the tagged total: a limit of the record. Read the filing's table before you use the rows.</dd></div>
+            <div><dt><span class="bd-adds bd-adds-unchecked">Not checked</span></dt><dd>Nothing could be checked: the filing tags no total for these rows (shares of revenue by customer, say), or no period had both.</dd></div>
+            <div><dt>empty cell</dt><dd>The filing tags no value for that row in that period. It is not a zero.</dd></div>
+            <div><dt><span class="legend-link">+68.2%</span></dt><dd>The change from the comparable earlier period, as the record states it. Open it to read the arithmetic, or why there is none.</dd></div>
+            <div><dt><span class="mark-limit"><span class="glyph g-limit" aria-hidden="true">▲</span> Limit</span></dt><dd>Something limits this record.</dd></div>
           </dl>
         </details>
       </div>

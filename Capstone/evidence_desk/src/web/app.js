@@ -120,6 +120,7 @@ const FIELD_NAMES = {
   extra_urls: "Extra public pages",
   thesis_name: "Thesis name",
   changes_form: "Filings to compare",
+  breakdowns_form: "Filing to read",
 };
 
 /**
@@ -202,6 +203,8 @@ const els = {
   figuresOnly: $("figures-only"),
   filingChanges: $("filing-changes"),
   changesForm: $("changes_form"),
+  breakdowns: $("breakdowns"),
+  breakdownsForm: $("breakdowns_form"),
   example: $("load-example"),
   saveThesis: $("save-thesis"),
   savePanel: $("save-panel"),
@@ -222,6 +225,9 @@ const els = {
   changesView: $("changes-view"),
   changesHead: $("changes-head"),
   changesBody: $("changes-body"),
+  breakdownsView: $("breakdowns-view"),
+  breakdownsHead: $("breakdowns-head"),
+  breakdownsBody: $("breakdowns-body"),
   thesisView: $("thesis-view"),
   thesisHead: $("thesis-head"),
   runAgain: $("run-again"),
@@ -657,6 +663,8 @@ function setFormEnabled(enabled) {
   els.figuresOnly.disabled = !enabled;
   els.filingChanges.disabled = !enabled;
   els.changesForm.disabled = !enabled;
+  els.breakdowns.disabled = !enabled;
+  els.breakdownsForm.disabled = !enabled;
   els.example.disabled = !enabled;
   els.saveThesis.disabled = !enabled;
 }
@@ -914,6 +922,7 @@ function renderFiguresOnly(report) {
   els.runView.hidden = true;
   els.thesisView.hidden = true;
   els.changesView.hidden = true;
+  els.breakdownsView.hidden = true;
   els.figuresView.hidden = false;
   document.body.classList.add("has-run");
   els.figuresHead.replaceChildren(
@@ -1009,6 +1018,7 @@ function renderChanges(record, sampleNote) {
   els.runView.hidden = true;
   els.figuresView.hidden = true;
   els.thesisView.hidden = true;
+  els.breakdownsView.hidden = true;
   els.changesView.hidden = false;
   document.body.classList.add("has-run");
 
@@ -1274,6 +1284,202 @@ function pairEntry(pair, withSimilarity, head = null) {
   );
 }
 
+// ---------------------------------------------------------------- tagged breakdowns
+
+/** "Segments and customers (tagged facts)": GET /api/companies/{ticker}/breakdowns?form=. Starts no run. */
+async function onBreakdowns() {
+  if (state.sample || !state.meta) return;
+  const ticker = els.ticker.value.trim();
+  const form = els.breakdownsForm.value;
+  if (!ticker) {
+    showProblems([{ field: "ticker", message: "Enter a ticker, such as NVDA." }], "Check this field before reading the tagged facts:");
+    return;
+  }
+  clearFieldErrors();
+  stopWatching();
+  const seq = ++state.viewSeq;
+  state.runId = null;
+  state.run = null;
+  state.thesisId = null;
+  markRecent();
+  history.replaceState(null, "", `${location.pathname}${location.search}`);
+  hideRunView();
+  els.loading.textContent = `Reading the tagged facts in the latest ${form} of ${ticker.toUpperCase()}…`;
+  els.loading.hidden = false;
+  els.breakdowns.disabled = true;
+  try {
+    const report = await api(`/api/companies/${encodeURIComponent(ticker.toUpperCase())}/breakdowns?form=${encodeURIComponent(form)}`);
+    if (seq !== state.viewSeq) return;
+    renderBreakdowns(report, "");
+    focusResults();
+  } catch (error) {
+    if (seq !== state.viewSeq) return;
+    els.loading.hidden = true;
+    if (error.status === 422 && error.details.length) {
+      // The server names the form choice "form"; on this page it is the "breakdowns_form" select.
+      const details = error.details.map((d) => ({ ...d, field: rootField(d.field) === "form" ? "breakdowns_form" : d.field }));
+      showProblems(details, "The server refused the request:");
+    } else {
+      // 503: EDGAR could not list or deliver the filing; the server says which.
+      showLoadError(`The tagged facts could not be read: ${error.message}.`, onBreakdowns);
+    }
+  } finally {
+    els.breakdowns.disabled = state.sample;
+  }
+}
+
+/** The key that places a value in its column: the period's start and end dates, as the record gives them. */
+function periodKey(item) {
+  return `${str(item?.period_start)}|${str(item?.period_end)}`;
+}
+
+/** Draw a BreakdownReport as the server wrote it: message first, notes, the facts read, then one table per breakdown. */
+function renderBreakdowns(report, sampleNote) {
+  if (!report || typeof report !== "object" || !Array.isArray(report.breakdowns) || !report.filing) {
+    showLoadError("The tagged facts could not be shown: the record names no filing or breakdowns.", null);
+    return;
+  }
+  els.loading.hidden = true;
+  els.loadError.hidden = true;
+  els.empty.hidden = true;
+  els.runView.hidden = true;
+  els.figuresView.hidden = true;
+  els.thesisView.hidden = true;
+  els.changesView.hidden = true;
+  els.breakdownsView.hidden = false;
+  document.body.classList.add("has-run");
+
+  const company = report.company ?? {};
+  const filing = report.filing;
+  els.breakdownsHead.replaceChildren(
+    h(
+      "div",
+      { class: "run-head-main" },
+      h(
+        "p",
+        { class: "company" },
+        state.sample ? h("span", { class: "page-tag inline", text: "Sample record" }) : "",
+        h("strong", { text: str(company.ticker) || "Company" }),
+        str(company.name) ? ` · ${company.name}` : "",
+        Number.isFinite(company.cik) ? h("span", { class: "muted small" }, " · ", h("abbr", { title: "The SEC's numeric identifier for this company", text: "CIK" }), ` ${company.cik}`) : "",
+      ),
+      h("p", { class: "run-meta", text: "Segments, products, geographies and customers, as one filing tags them. No run was started and no claim was tested." }),
+      sampleNote ? h("p", { class: "run-meta", text: `Sample: ${sampleNote}` }) : "",
+    ),
+  );
+
+  const parts = [
+    h(
+      "p",
+      { class: "changes-lead bd-lead" },
+      "These are the numbers that ",
+      filingLink(filing),
+      " tags for the periods shown, split by segment, product, geography or customer.",
+    ),
+    h(
+      "p",
+      { class: "changes-explain bd-not" },
+      ruleMark(),
+      " What this is not: the row labels are derived from tag names and are not the company's own, and nothing here was checked against the filing's printed tables by a person.",
+    ),
+  ];
+  const notes = list(report.notes);
+  if (notes.length) {
+    const notesList = h("ul", { class: "mark-list", id: "breakdowns-notes" });
+    fillList(notesList, notes, "", true);
+    parts.push(notesList);
+  }
+  parts.push(
+    h(
+      "p",
+      { class: "bd-facts" },
+      h("span", { "data-bd-field": "facts_read", text: num(report.facts_read) }),
+      ` tagged ${unit(report.facts_read, "fact", "facts")} read, `,
+      h("span", { "data-bd-field": "facts_unparsed", text: num(report.facts_unparsed) }),
+      " could not be read.",
+    ),
+  );
+  const breakdowns = list(report.breakdowns);
+  if (breakdowns.length === 0) parts.push(h("p", { class: "muted", text: "This filing tags no breakdown this tool reads." }));
+  breakdowns.forEach((breakdown) => parts.push(breakdownBlock(breakdown)));
+  els.breakdownsBody.replaceChildren(...parts);
+}
+
+/** One breakdown: its title, concept and axis in small print, the table with the unit once, whether it adds up, its notes. */
+function breakdownBlock(breakdown) {
+  const id = str(breakdown.id);
+  const periods = list(breakdown.periods);
+  const total = list(breakdown.total);
+  const row = (header, values, attrs) => {
+    const byPeriod = new Map(list(values).map((value) => [periodKey(value), value]));
+    return h("tr", attrs, header, periods.map((period) => breakdownCell(byPeriod.get(periodKey(period)), period)));
+  };
+  const table = h(
+    "table",
+    { class: "bd-table", "aria-label": str(breakdown.title) },
+    h(
+      "thead",
+      null,
+      h(
+        "tr",
+        null,
+        h("th", { scope: "col", class: "bd-unit", text: str(breakdown.unit_label) || "Unit not recorded" }),
+        periods.map((period) => h("th", { scope: "col", class: "bd-period", "data-period": periodKey(period), text: str(period.label) || str(period.period_end) })),
+      ),
+    ),
+    h("tbody", null, list(breakdown.rows).map((r) => row(h("th", { scope: "row", class: "bd-label", text: str(r.label) || str(r.member) }), r.values, { "data-member": str(r.member) }))),
+    total.length ? h("tfoot", null, row(h("th", { scope: "row", class: "bd-label", text: "Total, as tagged" }), total, { class: "bd-total" })) : "",
+  );
+  return h(
+    "section",
+    { class: "block bd-block", "data-breakdown-id": id, "aria-labelledby": `bd-title-${id}` },
+    h("h3", { class: "block-title bd-title", id: `bd-title-${id}`, text: str(breakdown.title) }),
+    h(
+      "p",
+      { class: "bd-meta" },
+      "Tag ",
+      h("code", { text: str(breakdown.concept) }),
+      " along ",
+      h("code", { text: str(breakdown.axis) }),
+      str(breakdown.period_kind) ? ` · ${breakdown.period_kind}` : "",
+    ),
+    h("div", { class: "bd-scroll" }, table),
+    addsUpLine(breakdown.adds_up),
+    list(breakdown.notes).length ? h("ul", { class: "bd-notes" }, breakdown.notes.map((note) => h("li", { text: String(note) }))) : "",
+  );
+}
+
+/** One cell: the record's `display`, and its `change_display` opening onto `change_formula`; empty when nothing is tagged. */
+function breakdownCell(value, period) {
+  const key = periodKey(period);
+  if (!value) return h("td", { class: "bd-cell bd-empty", "data-period": key }, h("span", { class: "visually-hidden", text: "No value tagged" }));
+  const formula = str(value.change_formula);
+  const change = str(value.change_display);
+  let changePart = "";
+  if (formula) {
+    changePart = h(
+      "details",
+      { class: "bd-change" },
+      h("summary", null, change ? h("span", { class: "bd-change-display", text: change }) : h("span", { class: "bd-no-change" }, h("span", { "aria-hidden": "true", text: "—" }), h("span", { class: "visually-hidden", text: "no change stated; open to read why" }))),
+      h("span", { class: "bd-formula", text: formula }),
+    );
+  } else if (change) {
+    changePart = h("span", { class: "bd-change-display", text: change });
+  }
+  return h("td", { class: "bd-cell", "data-period": key }, h("span", { class: "bd-display", text: str(value.display) }), changePart);
+}
+
+/** Whether the rows add up to the tagged total: yes, no (a limit) or not checked, each drawn differently. */
+function addsUpLine(addsUp) {
+  if (addsUp === true) {
+    return h("p", { class: "bd-adds bd-adds-yes", "data-adds-up": "yes" }, h("span", { class: "glyph g-adds", "aria-hidden": "true", text: "=" }), " Adds up: the rows add up to the tagged total in every period checked.");
+  }
+  if (addsUp === false) {
+    return h("p", { class: "bd-adds bd-adds-no", "data-adds-up": "no" }, limitGlyph(), " Does not add up: in at least one period the rows do not add up to the tagged total. Read the filing's own table.");
+  }
+  return h("p", { class: "bd-adds bd-adds-unchecked", "data-adds-up": "unchecked" }, "Not checked: nothing here could be checked against a tagged total; the notes below say why.");
+}
+
 // ---------------------------------------------------------------- recent runs
 
 async function refreshRecent() {
@@ -1468,6 +1674,7 @@ function renderThesis(thesis, runs) {
   els.runView.hidden = true;
   els.figuresView.hidden = true;
   els.changesView.hidden = true;
+  els.breakdownsView.hidden = true;
   els.thesisView.hidden = false;
   document.body.classList.add("has-run");
   const request = thesis.request ?? {};
@@ -1918,6 +2125,7 @@ function hideRunView() {
   els.runView.hidden = true;
   els.figuresView.hidden = true;
   els.changesView.hidden = true;
+  els.breakdownsView.hidden = true;
   els.thesisView.hidden = true;
   els.loadError.hidden = true;
   els.empty.hidden = true;
@@ -1954,6 +2162,7 @@ async function loadSample(name) {
   link.href = location.pathname;
   $("synthetic-link").hidden = true;
   $("changes-link").hidden = true;
+  $("breakdowns-link").hidden = true;
   hideRunView();
   if (!SAMPLE_NAME.test(name)) {
     showLoadError("That sample name is not valid: use lower-case letters, digits and hyphens.", null);
@@ -1965,6 +2174,12 @@ async function loadSample(name) {
     if (payload.changes && !payload.run) {
       if (str(payload.note)) els.formNote.textContent = `Sample mode: ${payload.note} This page does not look anything up; open it without ?sample to compare a company's filings.`;
       renderChanges(payload.changes, str(payload.note));
+      return;
+    }
+    // A recorded reading of one filing's tagged facts ({note, report}): no run, no /api/meta.
+    if (payload.report && !payload.run) {
+      if (str(payload.note)) els.formNote.textContent = `Sample mode: ${payload.note} This page does not look anything up; open it without ?sample to read a company's tagged facts.`;
+      renderBreakdowns(payload.report, str(payload.note));
       return;
     }
     if (!payload.meta || !payload.run) throw new ApiError("the file has no meta or run", 0);
@@ -2001,6 +2216,7 @@ function renderRun(run) {
   els.empty.hidden = true;
   els.figuresView.hidden = true;
   els.changesView.hidden = true;
+  els.breakdownsView.hidden = true;
   els.thesisView.hidden = true;
   els.runView.hidden = false;
   document.body.classList.add("has-run");
@@ -2434,6 +2650,40 @@ function drawClaimChanges() {
   top.replaceChildren(comparedBlock(record));
   const byClaim = new Map(list(record.claims).map((entry) => [entry.claim_id, entry]));
   slots.forEach((slot) => slot.replaceChildren(claimChangesBlock(slot.dataset.ccSlot, byClaim.get(slot.dataset.ccSlot))));
+  // The browser's own jump to #claim-<id>-changes happened before these nodes existed: do it now, once per load.
+  if (!loaded.jumped) {
+    loaded.jumped = true;
+    openClaimChangesFromHash();
+  }
+}
+
+/** The id of a claim's "Changed in the filings" block: the target of a link such as #claim-c4-changes. */
+function claimChangesId(claimId) {
+  return `claim-${claimId}-changes`;
+}
+
+/**
+ * Open the claim and the block that `location.hash` names (#claim-<claim id>-changes) and
+ * scroll it into view. A hash that names no block on screen does nothing.
+ */
+function openClaimChangesFromHash() {
+  if (!/^#claim-.+-changes$/.test(location.hash)) return;
+  let id;
+  try {
+    id = decodeURIComponent(location.hash.slice(1));
+  } catch {
+    return;
+  }
+  const target = document.getElementById(id);
+  if (!target || !els.claimList.contains(target)) return;
+  const claim = target.closest("details.claim");
+  if (claim) claim.open = true;
+  if (target.tagName === "DETAILS") {
+    target.open = true;
+    state.claimChangesOpen.add(target.dataset.claimChanges);
+  }
+  // After the next frame: the claim and block just opened, and their layout must settle first.
+  requestAnimationFrame(() => target.scrollIntoView({ block: "start" }));
 }
 
 /** Which filings were compared (form, both period ends, each a link) and the record's notes. */
@@ -2462,14 +2712,14 @@ function comparedBlock(record) {
 /** One claim's changed paragraphs: collapsed, its counts as the record states them, then each entry, best first. */
 function claimChangesBlock(claimId, entry) {
   if (!entry) {
-    return h("p", { class: "cc-none", "data-claim-changes": claimId }, ruleMark(), " No list of changed paragraphs was recorded for this claim.");
+    return h("p", { class: "cc-none", id: claimChangesId(claimId), "data-claim-changes": claimId }, ruleMark(), " No list of changed paragraphs was recorded for this claim.");
   }
   const changes = list(entry.changes);
   const field = (name, value) => h("span", { "data-cc-field": name, text: num(value) });
   if (changes.length === 0) {
     return h(
       "p",
-      { class: "cc-none", "data-claim-changes": claimId },
+      { class: "cc-none", id: claimChangesId(claimId), "data-claim-changes": claimId },
       ruleMark(),
       " Changed in the filings since the one before: no paragraph shares at least two words with this claim, among ",
       field("considered", entry.considered),
@@ -2480,6 +2730,7 @@ function claimChangesBlock(claimId, entry) {
     "details",
     {
       class: "claim-changes",
+      id: claimChangesId(claimId),
       "data-claim-changes": claimId,
       open: state.claimChangesOpen.has(claimId),
       ontoggle: (event) => {
@@ -3194,6 +3445,7 @@ function init() {
   els.form.addEventListener("submit", onSubmit);
   els.figuresOnly.addEventListener("click", onFiguresOnly);
   els.filingChanges.addEventListener("click", onFilingChanges);
+  els.breakdowns.addEventListener("click", onBreakdowns);
   els.example.addEventListener("click", loadExample);
   els.saveThesis.addEventListener("click", () => toggleSavePanel(els.savePanel.hidden));
   els.saveConfirm.addEventListener("click", onSaveThesis);
@@ -3210,6 +3462,7 @@ function init() {
   for (const field of Object.keys(FIELD_NAMES)) {
     $(field).addEventListener("input", () => setFieldError(field, []));
   }
+  window.addEventListener("hashchange", openClaimChangesFromHash);
   const params = new URLSearchParams(location.search);
   state.sample = params.has("sample");
   if (state.sample) {

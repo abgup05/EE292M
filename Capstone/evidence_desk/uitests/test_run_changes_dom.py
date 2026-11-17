@@ -179,3 +179,30 @@ def test_both_download_links_ask_for_the_changes() -> None:
     assert 'if (reviewed) query.set("reviewed", "true")' in code
     downloads = re.findall(r'class: "download", href: (\S+ \S+?\)),', source)
     assert sorted(downloads) == ["briefHref(run.id, false)", "briefHref(run.id, true)"]
+
+
+# The deep link: /?sample#claim-c4-changes opens that claim's block (and scrolls to it, which a
+# DOM dump cannot show and the headless browser cannot capture: it paints nothing after a scroll).
+
+
+@cache
+def linked() -> BeautifulSoup:
+    dump = RESULTS / "dom-sample-claim.html"
+    require_fresh(dump, CHANGES)
+    return BeautifulSoup(dump.read_text(encoding="utf-8"), "html.parser")
+
+
+def test_the_deep_link_opens_that_claims_block_and_no_other() -> None:
+    opened = {
+        node["data-claim-changes"]: node.has_attr("open") or node.select_one("details[open]") is not None
+        for node in linked().select("#claim-list [data-claim-changes]")
+    }
+    assert set(opened) == {found["claim_id"] for found in changes()["claims"]}
+    assert opened["c4"], "the block named in the hash is not open"
+    assert not any(is_open for claim_id, is_open in opened.items() if claim_id != "c4")
+
+
+def test_without_the_hash_no_block_is_open() -> None:
+    for node in soup().select("#claim-list [data-claim-changes]"):
+        assert not node.has_attr("open") and node.select_one("details[open]") is None
+

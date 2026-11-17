@@ -575,6 +575,33 @@ def test_an_earlier_filing_that_cannot_be_fetched_costs_only_its_own_comparison(
     assert _listed(_by_claim(result)["china"]) == {("reworded", "10-Q", LICENSE_AFTER)}
 
 
+def test_a_comparison_that_breaks_costs_only_its_own_list(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The third referee, finding 4: "never raises" was promised for EDGAR failures only.
+
+    The comparison raises ValueError when a section is not a span of its document. That
+    must be a note on that form, with the other form still compared, not an error for
+    the whole request.
+    """
+    from app.services import claim_changes as service
+
+    real = service.compare_pair
+
+    def breaking(pair, **kwargs):  # type: ignore[no-untyped-def]
+        if pair.later_ref.form == "10-K":
+            raise ValueError("Section 'Item 1A' is not a substring of its document")
+        return real(pair, **kwargs)
+
+    monkeypatch.setattr(service, "compare_pair", breaking)
+    cache = FilingCache()
+    filings = filings_of_a_year()
+    result = run_changes(finished_run(filings, cache), filings=filings, cache=cache)
+    assert [c.form for c in result.compared] == ["10-Q"]
+    assert len(result.notes) == 1
+    assert "10-K" in result.notes[0] and "ValueError" in result.notes[0]
+    assert "Item 1A" not in result.notes[0]  # the type is enough; internals stay in the log
+    assert _listed(_by_claim(result)["china"]) == {("reworded", "10-Q", LICENSE_AFTER)}
+
+
 def test_an_unfinished_run_gets_empty_lists_and_a_note() -> None:
     cache = FilingCache()
     filings = filings_of_a_year()

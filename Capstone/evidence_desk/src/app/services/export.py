@@ -353,10 +353,13 @@ CHANGE_KINDS = {
     "reworded": "Reworded",
     "numbers_only": "Numbers only",
 }
+READING_LIST_HEADING = "Changed since the filing before each one this run read"
 READING_LIST_NOTE = (
     "A reading list, not findings. Each paragraph below changed between a filing this run read "
-    "and the filing of the same form before it, and is listed because it shares words with the "
-    "claim. No model chose or judged these, and none counts toward a verdict."
+    "and the filing of the same form before it. The run did not read that earlier filing: it "
+    "was fetched for this comparison. A paragraph is listed because it shares at least two "
+    "words with the claim or with the search queries the run wrote for it. No model chose or "
+    "judged these, and none counts toward a verdict."
 )
 
 
@@ -396,7 +399,7 @@ def _relevant_change(number: int, change: RelevantChange) -> list[str]:
 
 def _reading_list(run: Run, changes: RunChanges) -> list[str]:
     """The changed paragraphs listed under each claim (``docs/claim-changes.md``)."""
-    lines = ["## Changed in the filings this run read", "", READING_LIST_NOTE, ""]
+    lines = [f"## {READING_LIST_HEADING}", "", READING_LIST_NOTE, ""]
     if changes.compared:
         lines += ["Compared:", "", *_compared(changes), ""]
     if changes.notes:
@@ -408,13 +411,15 @@ def _reading_list(run: Run, changes: RunChanges) -> list[str]:
         if found is None or not found.changes:
             searched = found.considered if found is not None else 0
             lines += [
-                f"No changed paragraph shares two words with this claim ({searched} searched).",
+                "No changed paragraph shares two words with this claim or its search queries "
+                f"({searched} searched).",
                 "",
             ]
             continue
         lines += [
             f"{len(found.changes)} listed of {found.distinct_matched} that share at least two "
-            f"words with the claim, among {found.considered} changed paragraphs.",
+            f"words with the claim or its search queries, among {found.considered} changed "
+            "paragraphs.",
             "",
         ]
         for number, change in enumerate(found.changes, start=1):

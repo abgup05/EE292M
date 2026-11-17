@@ -32,6 +32,7 @@ from app.core.policy import (
 from app.core.ports import ClaimDraft, FindingDraft, Quote, SourceError
 from app.engines.extractive import ExtractiveAnalyst
 from app.services.examples import EXAMPLE_THESIS
+from app.services.export import READING_LIST_HEADING
 from app.services.thesis_run import new_run
 from app.store import Store
 from tests.fakes import (
@@ -884,10 +885,10 @@ def test_the_changes_of_a_finished_run_are_computed_once(run_changes_client) -> 
 def test_the_brief_carries_the_reading_list_only_when_asked(run_changes_client) -> None:
     client, run_id, _ = run_changes_client
     plain = client.get(f"/api/runs/{run_id}/export.md")
-    assert plain.status_code == 200 and "Changed in the filings this run read" not in plain.text
+    assert plain.status_code == 200 and READING_LIST_HEADING not in plain.text
     listed = client.get(f"/api/runs/{run_id}/export.md?changes=true")
     assert listed.status_code == 200 and listed.headers["content-type"].startswith("text/markdown")
-    assert "## Changed in the filings this run read" in listed.text
+    assert f"## {READING_LIST_HEADING}" in listed.text
     assert "A reading list, not findings" in listed.text and "### china:" in listed.text
 
 

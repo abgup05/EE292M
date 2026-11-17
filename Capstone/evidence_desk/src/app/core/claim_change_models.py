@@ -24,7 +24,7 @@ PAIR_KINDS: tuple[ChangeKind, ...] = ("reworded", "numbers_only")
 
 
 class RelevantChange(BaseModel):
-    """One changed paragraph that shares words with a claim.
+    """One changed paragraph that shares words with a claim or with its search queries.
 
     ``paragraph`` is set for an added paragraph (of the later filing) or a removed one
     (of the earlier filing); ``pair`` for a reworded or numbers-only pair, whose later

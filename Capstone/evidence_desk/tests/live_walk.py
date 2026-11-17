@@ -115,7 +115,8 @@ def main() -> int:
     for claim in linked["claims"]:
         print(
             f"   {claim['claim_id']}: {len(claim['changes'])} changed paragraph(s) listed, "
-            f"{claim['matched']} of {claim['considered']} share two words with the claim"
+            f"{claim['matched']} of {claim['considered']} share two words with the claim or "
+            "its queries"
         )
     expect(
         not linked["compared"] or any(claim["changes"] for claim in linked["claims"]),

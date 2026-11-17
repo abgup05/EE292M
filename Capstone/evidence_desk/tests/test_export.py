@@ -49,7 +49,7 @@ from app.core.policy import (
     VERDICT_NOTES,
 )
 from app.core.review import build_review
-from app.services.export import render_markdown
+from app.services.export import READING_LIST_HEADING, render_markdown
 
 URL = "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm"
 CLAIMS = [
@@ -688,13 +688,16 @@ def _run_changes() -> RunChanges:
 
 
 def test_the_brief_has_no_reading_list_unless_the_changes_are_given() -> None:
-    assert "Changed in the filings this run read" not in render_markdown(_complete_run())
+    assert READING_LIST_HEADING not in render_markdown(_complete_run())
 
 
 def test_the_reading_list_sits_after_the_claims_and_says_what_it_is() -> None:
     markdown = render_markdown(_complete_run(), changes=_run_changes())
-    section = _between(markdown, "## Changed in the filings this run read", "## Unknowns")
-    assert markdown.index("## Claims") < markdown.index("## Changed in the filings this run read")
+    assert READING_LIST_HEADING == "Changed since the filing before each one this run read"
+    section = _between(markdown, f"## {READING_LIST_HEADING}", "## Unknowns")
+    assert markdown.index("## Claims") < markdown.index(f"## {READING_LIST_HEADING}")
+    assert "The run did not read that earlier filing" in section
+    assert "the claim or with the search queries the run wrote for it" in section
     assert "A reading list, not findings" in section
     assert "No model chose or judged" in section and "counts toward a verdict" in section
     assert (
@@ -707,7 +710,10 @@ def test_the_reading_list_sits_after_the_claims_and_says_what_it_is() -> None:
 def test_each_claim_lists_its_changed_paragraphs_with_kind_place_words_and_links() -> None:
     markdown = render_markdown(_complete_run(), changes=_run_changes())
     first = _between(markdown, f"### c1: {CLAIMS[0]}", "### c2:")
-    assert "2 listed of 3 that share at least two words with the claim, among 6 changed" in first
+    assert (
+        "2 listed of 3 that share at least two words with the claim or its search queries, "
+        "among 6 changed paragraphs."
+    ) in first
     assert (
         "1. **Added** in the 10-K, Item 1A. Risk Factors. Shares: china, export, licens. "
         "Also under Item 7. Management's Discussion."
@@ -722,4 +728,6 @@ def test_each_claim_lists_its_changed_paragraphs_with_kind_place_words_and_links
 def test_a_claim_with_no_changed_paragraph_says_so() -> None:
     markdown = render_markdown(_complete_run(), changes=_run_changes())
     second = _between(markdown, f"### c2: {CLAIMS[1]}", "### c3:")
-    assert "No changed paragraph shares two words with this claim (6 searched)." in second
+    assert (
+        "No changed paragraph shares two words with this claim or its search queries (6 searched)."
+    ) in second

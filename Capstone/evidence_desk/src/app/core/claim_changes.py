@@ -2,8 +2,9 @@
 
 Pure: claims and filing comparisons in, one :class:`ClaimChanges` per claim out; no
 network, no files, no clock, and no model. This is deterministic keyword retrieval:
-a paragraph is listed for a claim because it shares words with it, which says
-nothing about whether it supports or challenges the claim.
+a paragraph is listed for a claim because it shares words with the claim or with
+the search queries the run wrote for it, which says nothing about whether it
+supports or challenges the claim.
 
 **Corpus.** Every changed paragraph of every comparison, in a fixed order:
 comparisons as given, Items in filing order, then added, removed, reworded and

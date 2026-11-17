@@ -18,6 +18,7 @@ note and the other form is still compared.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from typing import cast
 
@@ -37,6 +38,8 @@ from app.core.ports import FilingSource, SourceError
 from app.services.filing_changes import FORMS, FormFilingSource, compare_pair, read_pair
 from app.services.thesis_run import safe_message
 from app.store import FilingCache
+
+log = logging.getLogger(__name__)
 
 # How many of a form's latest filings are listed to find the run's filing and the one before
 # it: three years of 10-Qs, or twelve of 10-Ks. A run whose filing is older is given a note.
@@ -150,7 +153,12 @@ def _compare_form(
     except SourceError as exc:
         reason = safe_message(exc)
         return _Outcome(notes=[FAILED_NOTE.format(form=form, title=title, reason=reason)])
-    changes = compare_pair(pair, max_listed=None)
+    try:
+        changes = compare_pair(pair, max_listed=None)
+    except Exception as exc:  # noqa: BLE001 - a filing is untrusted text; one bad pair is one note
+        log.exception("Comparing %s with the filing before it failed", later.url)
+        reason = f"the two filings could not be compared ({type(exc).__name__})"
+        return _Outcome(notes=[FAILED_NOTE.format(form=form, title=title, reason=reason)])
     notes = [COMPARISON_NOTE.format(form=form, note=note) for note in changes.notes]
     if pair.later.content_hash != source.content_hash:
         notes.append(REREAD_NOTE.format(title=title))
@@ -169,7 +177,8 @@ def run_changes(
     (``filings_of_form``, as :class:`app.sources.edgar.EdgarClient` can); a source that
     cannot gives a note per form. With no ``cache``, one in memory serves this call
     only. Never raises for a comparison that cannot be made: an unfinished run, a run
-    that read no filing, a missing earlier filing or an EDGAR failure each give a note,
+    that read no filing, a missing earlier filing, an EDGAR failure or a pair of
+    filings the comparison itself fails on each give a note,
     and every claim of the run still has its (then empty) record.
     """
     if run.status == RunStatus.running:

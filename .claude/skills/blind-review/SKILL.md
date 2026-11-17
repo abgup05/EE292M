@@ -15,6 +15,9 @@ reviewer from agreeing by construction. Do them in order.
 2. **Export that tag without the author's notes**, so the reviewer cannot read them even
    by accident:
    `mkdir -p .claude/worktrees/review-<tag> && git archive <tag> ':(exclude)Work Logs' ':(exclude)Homework' . | tar -x -C .claude/worktrees/review-<tag>`,
+   then remove the earlier reviews and their triage from the export, so that "never show it
+   an earlier review" holds by construction and not only by instruction:
+   `rm -r .claude/worktrees/review-<tag>/Capstone/evidence_desk/docs/reviews .claude/worktrees/review-<tag>/Capstone/evidence_desk/docs/referee*-triage.md`,
    then `touch .claude/worktrees/review-<tag>.started`. The reviewer reads that directory
    and nothing else, so work can continue in the main checkout while it reads.
 3. **Pick the checklist.** `reference/checklists.md` holds the four session checklists,

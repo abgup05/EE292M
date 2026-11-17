@@ -14,6 +14,10 @@ data:
   (:func:`period_length`). Costco's year is three quarters of 12 weeks and one
   of 16; with the calendar lengths alone its 24- and 36-week periods were
   dropped and its fourth quarter was never derived.
+- A fiscal year is a year-long period that an annual report reported
+  (:data:`ANNUAL_FORMS`). Length alone is not enough: Amazon's 10-Qs tag its cash
+  flows for the twelve months ended each quarter, and those periods are as long
+  as a year. Such a period is kept as a duration and is never a fiscal year.
 - The same period is reported again in later filings. For one concept and
   period the value from the latest ``filed`` date is kept; if any other filing
   gave a different value, the kept value is flagged ``restated``.
@@ -84,6 +88,8 @@ GROUPS: dict[str, ConceptGroup] = {
                 "Revenues",
                 "SalesRevenueNet",
                 "RevenueFromContractWithCustomerIncludingAssessedTax",
+                # A bank's total net revenue; last, so a company with one of the above keeps it.
+                "RevenuesNetOfInterestExpense",
             ),
             "USD",
         ),
@@ -150,6 +156,9 @@ LENGTH_WORDS = {
     "nine_months": "nine months year to date",
     "annual": "fiscal year",
 }
+# Forms whose year-long periods are fiscal years: an annual report, its amendments and
+# transition reports, and a foreign filer's (matched as prefixes of the fact's form).
+ANNUAL_FORMS: tuple[str, ...] = ("10-K", "20-F", "40-F")
 # The lengths those words are true of. A period of its kind outside them is described in
 # weeks (:func:`length_words`): Costco's 36 weeks to date are not "nine months".
 CALENDAR_LENGTHS: dict[str, tuple[int, int]] = {
@@ -627,9 +636,20 @@ class FactBook:
             )
         return dict(sorted(result.items()))
 
+    def _in_annual_report(self, key: str, value: PeriodValue) -> bool:
+        """True when some report of the period of ``value`` came from an annual report."""
+        reports = self._reports[key].get((value.start, value.end), [])
+        return any(fact.form.upper().startswith(ANNUAL_FORMS) for fact in reports)
+
     def annuals(self, key: str) -> dict[date, PeriodValue]:
-        """Fiscal-year values keyed by end date; gross profit falls back as for quarters."""
-        result = _by_end(self._of_length(key, "annual"))
+        """Fiscal-year values keyed by end date; gross profit falls back as for quarters.
+
+        A year-long period counts only when an annual report reported it
+        (:data:`ANNUAL_FORMS`): twelve months to a quarter end, tagged in a 10-Q,
+        is not a fiscal year.
+        """
+        year_long = self._of_length(key, "annual")
+        result = _by_end([value for value in year_long if self._in_annual_report(key, value)])
         if key == "gross_profit":
             return self._with_gross_fallback(
                 result, self.annuals("revenue"), self.annuals("cost_of_revenue")

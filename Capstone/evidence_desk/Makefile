@@ -157,6 +157,9 @@ sample-run-changes:
 probe:
 	$(RUN) python -m app.probe $(if $(filter 1,$(OUTLINE)),--outline,) $(or $(TICKERS),NVDA)
 
+figures:
+	$(RUN) python -m app.figures $(if $(filter 1,$(MISSING)),--missing,) $(or $(TICKERS),NVDA)
+
 lock:
 	$(COMPOSE) build lock
 	$(COMPOSE) run --rm --no-deps lock lock

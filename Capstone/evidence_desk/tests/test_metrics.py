@@ -29,6 +29,7 @@ from tests.test_facts import (
     fact,
     load_fixture,
     shuffled,
+    trailing_twelve_months,
 )
 
 PRIOR_START, PRIOR_END = "2023-01-30", "2024-01-28"
@@ -458,3 +459,22 @@ def test_a_twelve_week_quarter_is_not_compared_with_the_sixteen_weeks_before_it(
     first_qoq = metric(build_report(FactBook(body)), "revenue_qoq", "quarter", "2026-11-22")
     assert first_qoq.value is None
     assert "12 weeks" in first_qoq.note and "16 weeks" in first_qoq.note
+
+
+# Twelve months that are not a fiscal year (seen on Amazon with `make figures`) -----------------
+
+
+def test_the_reports_fiscal_years_are_fiscal_years() -> None:
+    """The newest "fiscal years" used to be the twelve months to each quarter end.
+
+    They held a cash flow and nothing else, and they pushed the real fiscal years out of
+    the two a run offers, so the engine was never shown the company's annual revenue.
+    """
+    report = build_report(FactBook(trailing_twelve_months()))
+    years = sorted({m.period_end for m in report.metrics if m.period == "annual"})
+    assert years == ["2024-12-31", "2025-12-31"]
+    assert metric(report, "revenue", "annual", "2025-12-31").value == 700e9
+    assert metric(report, "revenue_yoy", "annual", "2025-12-31").value == pytest.approx(
+        (700 - 600) / 600 * 100
+    )
+    assert metric(report, "operating_cash_flow", "annual", "2025-12-31").value == 120e9

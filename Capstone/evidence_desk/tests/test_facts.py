@@ -259,8 +259,10 @@ def test_period_length_is_decided_by_days(start: str, end: str, length: str | No
 
 
 def test_fiscal_year_and_period_fields_are_ignored_for_placement() -> None:
-    # A comparative: fiscal 2023 as it appears in the fiscal-2025 10-K's Q3 10-Q.
-    misleading = fact(70.0, "2024-01-28", "2023-01-30", fy=2010, fp="Q3", form="10-Q")
+    # A fiscal year whose fy and fp say something else: only its dates place it. (Its form
+    # is an annual report's: since 17 November 2026 that is what makes a year-long period a
+    # fiscal year, see test_twelve_months_to_a_quarter_end_is_not_a_fiscal_year.)
+    misleading = fact(70.0, "2024-01-28", "2023-01-30", fy=2010, fp="Q3", form="10-K")
     book = FactBook(companyfacts({"Revenues": [misleading]}))
     assert list(book.annuals("revenue")) == [date(2024, 1, 28)]
     assert book.quarters("revenue") == {}
@@ -452,6 +454,79 @@ def test_the_period_lengths_of_companies_that_report_in_weeks(
     start: str, end: str, length: str | None
 ) -> None:
     assert period_length(date.fromisoformat(start), date.fromisoformat(end)) == length
+
+
+def trailing_twelve_months() -> dict[str, Any]:
+    """A company shaped like Amazon: cash flows also tagged for the twelve months to each quarter.
+
+    The amounts are invented. What is real is the shape, seen with ``make figures`` on
+    17 November 2026: Amazon's 10-Qs tag operating cash flow for the twelve months ended
+    each quarter, and those periods are as long as a fiscal year.
+    """
+    k, q = "10-K", "10-Q"
+    return companyfacts(
+        {
+            "RevenueFromContractWithCustomerExcludingAssessedTax": [
+                fact(600e9, "2024-12-31", "2024-01-01", form=k, accn="K24", filed="2025-02-07"),
+                fact(700e9, "2025-12-31", "2025-01-01", form=k, accn="K25", filed="2026-02-06"),
+                fact(180e9, "2026-03-31", "2026-01-01", form=q, accn="Q1", filed="2026-05-01"),
+                fact(200e9, "2026-06-30", "2026-04-01", form=q, accn="Q2", filed="2026-08-01"),
+            ],
+            "NetCashProvidedByUsedInOperatingActivities": [
+                fact(100e9, "2024-12-31", "2024-01-01", form=k, accn="K24", filed="2025-02-07"),
+                fact(120e9, "2025-12-31", "2025-01-01", form=k, accn="K25", filed="2026-02-06"),
+                fact(20e9, "2026-03-31", "2026-01-01", form=q, accn="Q1", filed="2026-05-01"),
+                fact(125e9, "2026-03-31", "2025-04-01", form=q, accn="Q1", filed="2026-05-01"),
+                fact(50e9, "2026-06-30", "2026-01-01", form=q, accn="Q2", filed="2026-08-01"),
+                fact(135e9, "2026-06-30", "2025-07-01", form=q, accn="Q2", filed="2026-08-01"),
+            ],
+        },
+        name="Trailing Corp",
+    )
+
+
+def test_twelve_months_to_a_quarter_end_is_not_a_fiscal_year() -> None:
+    """A fiscal year is a year-long period that an annual report reported.
+
+    With length alone, the two newest "fiscal years" of this company ended on 30 June
+    and 31 March 2026 and held a cash flow and nothing else.
+    """
+    book = FactBook(trailing_twelve_months())
+    cash = book.annuals("operating_cash_flow")
+    assert [end.isoformat() for end in sorted(cash)] == ["2024-12-31", "2025-12-31"]
+    assert cash[date(2025, 12, 31)].value == 120e9
+    assert sorted(book.annuals("revenue")) == [date(2024, 12, 31), date(2025, 12, 31)]
+    # The quarter is still the half year less the first quarter, not touched by the long periods.
+    assert book.quarters("operating_cash_flow")[date(2026, 6, 30)].value == 30e9
+
+
+def test_a_bank_reports_its_revenue_net_of_interest_expense() -> None:
+    """JPMorgan tags no Revenues: its total net revenue is RevenuesNetOfInterestExpense.
+
+    Seen with ``make figures`` on 17 November 2026: every revenue figure of JPMorgan was
+    missing. The concept is the last of the revenue group, so a company that reports one
+    of the others is not affected. The amounts here are invented.
+    """
+    body = companyfacts(
+        {
+            "RevenuesNetOfInterestExpense": [
+                fact(45e9, "2026-03-31", "2026-01-01", form="10-Q", accn="Q1"),
+                fact(180e9, "2025-12-31", "2025-01-01", form="10-K", accn="K25"),
+            ]
+        }
+    )
+    book = FactBook(body)
+    assert book.quarters("revenue")[date(2026, 3, 31)].concept == "RevenuesNetOfInterestExpense"
+    assert book.annuals("revenue")[date(2025, 12, 31)].value == 180e9
+    both = companyfacts(
+        {
+            "Revenues": [fact(50e9, "2026-03-31", "2026-01-01", form="10-Q", accn="Q1")],
+            "RevenuesNetOfInterestExpense": [
+                fact(45e9, "2026-03-31", "2026-01-01", form="10-Q", accn="Q1")
+            ],
+        }
+    )
+    assert FactBook(both).quarters("revenue")[date(2026, 3, 31)].value == 50e9
 
 
 def test_a_three_month_fact_is_preferred_over_a_derived_quarter() -> None:

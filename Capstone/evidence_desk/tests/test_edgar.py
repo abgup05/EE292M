@@ -237,6 +237,185 @@ def test_no_annual_report_is_a_source_error() -> None:
         client.periodic_filings(NVDA, 3)
 
 
+def test_filings_of_form_are_the_newest_of_exactly_that_form_newest_first() -> None:
+    client = index_client(ROWS)
+    assert forms_and_dates(client.filings_of_form(NVDA, "10-K", 2)) == [
+        ("10-K", "2026-02-25"),
+        ("10-K", "2025-02-26"),
+    ]
+    assert forms_and_dates(index_client(ROWS).filings_of_form(NVDA, "10-Q", 2)) == [
+        ("10-Q", "2026-11-01"),
+        ("10-Q", "2026-08-26"),  # the 10-Q/A filed between them is skipped
+    ]
+    assert len(index_client(ROWS).filings_of_form(NVDA, "10-Q", 10)) == 5
+
+
+def test_filings_of_form_are_read_from_an_index_given_out_of_order() -> None:
+    rows = [("10-K", "2024-02-21"), ("10-K", "2026-02-25"), ("10-K/A", "2026-04-01")]
+    rows += [("10-K", "2025-02-26")]
+    refs = index_client(rows).filings_of_form(NVDA, "10-K", 2)
+    assert forms_and_dates(refs) == [("10-K", "2026-02-25"), ("10-K", "2025-02-26")]
+    assert refs[0].url.endswith("/000104581026000001/doc1.htm")
+
+
+@pytest.mark.parametrize(
+    "rows",
+    [
+        [("10-K", "2026-02-25"), ("10-K/A", "2026-04-01"), ("10-Q", "2026-08-26")],
+        [("10-Q", "2026-08-26"), ("8-K", "2026-03-01")],
+    ],
+)
+def test_fewer_than_two_filings_of_the_form_is_a_source_error(rows: list) -> None:
+    with pytest.raises(SourceError, match=r"NVIDIA CORP has \d 10-K filing"):
+        index_client(rows).filings_of_form(NVDA, "10-K", 2)
+
+
+# Older pages of the index. A company that files a great deal (a bank issuing notes
+# every day) has about a year of filings in ``filings.recent``; the rest is in further
+# files named under ``filings.files``, each with the same columns at its top level.
+
+MAIN_INDEX = "CIK0001045810.json"
+BUSY = [("424B2", "2026-11-10"), ("10-Q", "2026-11-01"), ("10-K", "2026-02-25")]
+
+
+def page_name(number: int) -> str:
+    return f"CIK0001045810-submissions-{number:03d}.json"
+
+
+def page_entry(number: int, filing_from: str, filing_to: str) -> dict:
+    return {
+        "name": page_name(number),
+        "filingCount": 2000,
+        "filingFrom": filing_from,
+        "filingTo": filing_to,
+    }
+
+
+def older_page(number: int, rows: list[tuple[str, str]]) -> dict:
+    """One older index file holding ``rows``, with accession numbers of its own."""
+    page = submissions(rows)["filings"]["recent"]
+    page["accessionNumber"] = [f"0001045810-25-{number:03d}{n:03d}" for n in range(len(rows))]
+    page["primaryDocument"] = [f"page{number}-{n}.htm" for n in range(len(rows))]
+    return page
+
+
+def paged_client(
+    recent: list[tuple[str, str]], files: list[dict], pages: dict[int, dict], seen: list[str]
+) -> EdgarClient:
+    """A client whose index names ``files``; ``seen`` collects the file names requested."""
+    payload = submissions(recent)
+    payload["filings"]["files"] = files
+    bodies = {MAIN_INDEX: payload} | {page_name(number): page for number, page in pages.items()}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        prefix = "https://data.sec.gov/submissions/"
+        assert str(request.url).startswith(prefix), request.url
+        name = str(request.url).removeprefix(prefix)
+        seen.append(name)
+        return json_response(bodies[name])
+
+    return make_client(handler)
+
+
+def test_an_earlier_filing_of_the_form_is_found_in_an_older_page_of_the_index() -> None:
+    seen: list[str] = []
+    files = [
+        page_entry(1, "2025-06-01", "2025-11-30"),
+        page_entry(2, "2024-12-01", "2025-05-31"),
+    ]
+    pages = {
+        1: older_page(1, [("424B2", "2025-11-30"), ("10-Q", "2025-08-05")]),
+        2: older_page(2, [("424B2", "2025-05-31"), ("10-K", "2025-02-26")]),
+    }
+    refs = paged_client(BUSY, files, pages, seen).filings_of_form(NVDA, "10-K", 2)
+    assert forms_and_dates(refs) == [("10-K", "2026-02-25"), ("10-K", "2025-02-26")]
+    assert refs[1].url.endswith("/000104581025002001/page2-1.htm")
+    assert seen == [MAIN_INDEX, page_name(1), page_name(2)]
+
+
+def test_older_pages_are_not_read_when_the_recent_index_already_has_two() -> None:
+    seen: list[str] = []
+    files = [page_entry(1, "2024-01-01", "2025-01-31")]
+    client = paged_client(ROWS, files, {}, seen)
+    assert len(client.filings_of_form(NVDA, "10-K", 2)) == 2
+    assert seen == [MAIN_INDEX]
+
+
+def test_older_pages_are_read_newest_first_and_only_until_the_pair_is_complete() -> None:
+    seen: list[str] = []
+    files = [  # listed oldest first on purpose: the dates decide the order, not the list
+        page_entry(3, "2023-01-01", "2023-12-31"),
+        page_entry(2, "2024-01-01", "2024-12-31"),
+        page_entry(1, "2025-01-01", "2025-11-30"),
+    ]
+    pages = {
+        1: older_page(1, [("10-K", "2025-02-26")]),
+        2: older_page(2, [("10-K", "2024-02-21")]),
+        3: older_page(3, [("10-K", "2023-02-24")]),
+    }
+    refs = paged_client(BUSY, files, pages, seen).filings_of_form(NVDA, "10-K", 2)
+    assert forms_and_dates(refs) == [("10-K", "2026-02-25"), ("10-K", "2025-02-26")]
+    assert seen == [MAIN_INDEX, page_name(1)]
+
+
+def test_at_most_a_fixed_number_of_older_pages_are_read_and_the_error_says_how_many() -> None:
+    seen: list[str] = []
+    count = edgar.MAX_OLDER_INDEX_PAGES + 2
+    numbers = range(1, count + 1)  # page n holds the filings of the year 2025 - n
+    files = [page_entry(n, f"{2025 - n}-01-01", f"{2025 - n}-12-31") for n in numbers]
+    pages = {n: older_page(n, [("424B2", f"{2025 - n}-06-30")]) for n in numbers}
+    client = paged_client(BUSY, files, pages, seen)
+    message = (
+        rf"NVIDIA CORP has 1 10-K filing\(s\) in EDGAR's recent index and the "
+        rf"{edgar.MAX_OLDER_INDEX_PAGES} newest of its {count} older index pages"
+    )
+    with pytest.raises(SourceError, match=message):
+        client.filings_of_form(NVDA, "10-K", 2)
+    assert seen == [MAIN_INDEX, *(page_name(n) for n in range(1, edgar.MAX_OLDER_INDEX_PAGES + 1))]
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "CIK0000320193-submissions-001.json",  # another company's index
+        "../../Archives/edgar/data/1045810/x.json",
+        "https://example.com/CIK0001045810-submissions-001.json",
+        "CIK0001045810-submissions-001.json?x=1",
+        "",
+        7,
+    ],
+)
+def test_an_older_page_with_an_unexpected_name_is_refused_and_never_requested(
+    name: object,
+) -> None:
+    seen: list[str] = []
+    files = [{"name": name, "filingCount": 1, "filingFrom": "2025-01-01", "filingTo": "2025-12-31"}]
+    with pytest.raises(SourceError, match="malformed"):
+        paged_client(BUSY, files, {}, seen).filings_of_form(NVDA, "10-K", 2)
+    assert seen == [MAIN_INDEX]
+
+
+def test_a_malformed_older_page_is_a_source_error() -> None:
+    page = older_page(1, [("10-K", "2025-02-26"), ("424B2", "2025-03-01")])
+    page["form"].pop()
+    files = [page_entry(1, "2025-01-01", "2025-11-30")]
+    with pytest.raises(SourceError, match="malformed"):
+        paged_client(BUSY, files, {1: page}, []).filings_of_form(NVDA, "10-K", 2)
+
+
+def test_an_index_without_a_list_of_older_pages_is_read_as_having_none() -> None:
+    payload = submissions(BUSY)
+    del payload["filings"]["files"]
+    client = make_client(lambda request: json_response(payload))
+    with pytest.raises(SourceError, match=r"has 1 10-K filing\(s\) in EDGAR's recent index;"):
+        client.filings_of_form(NVDA, "10-K", 2)
+
+
+def test_filings_of_form_needs_a_limit_of_at_least_two() -> None:
+    with pytest.raises(ValueError, match="at least 2"):
+        index_client(ROWS).filings_of_form(NVDA, "10-K", 1)
+
+
 def test_index_with_ragged_arrays_is_a_source_error() -> None:
     payload = submissions(ROWS)
     payload["filings"]["recent"]["form"].pop()

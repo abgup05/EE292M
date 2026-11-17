@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import threading
 import time
 from collections.abc import Callable
@@ -31,6 +32,9 @@ from app.sources.xbrl import fetch_company_facts
 ALLOWED_HOSTS = frozenset({"www.sec.gov", "data.sec.gov"})
 TICKERS_URL = "https://www.sec.gov/files/company_tickers.json"
 SUBMISSIONS_URL = "https://data.sec.gov/submissions/CIK{cik:010d}.json"
+# An older page of a company's filing index; the name comes from the index and is checked.
+SUBMISSIONS_PAGE_URL = "https://data.sec.gov/submissions/{name}"
+OLDER_PAGE_NAME = "CIK{cik:010d}-submissions-"
 ARCHIVE_URL = "https://www.sec.gov/Archives/edgar/data/{cik}/{folder}/{document}"
 
 DEFAULT_USER_AGENT = "EvidenceDesk/0.2 (research tool for reading SEC filings)"
@@ -46,6 +50,8 @@ TICKER_CACHE_SECONDS = 24 * 60 * 60
 ANNUAL_FORM = "10-K"
 QUARTERLY_FORM = "10-Q"
 INDEX_COLUMNS = ("form", "filingDate", "reportDate", "accessionNumber", "primaryDocument")
+# Older index pages read, newest first, to find the filing before the latest of a form.
+MAX_OLDER_INDEX_PAGES = 12
 
 
 def normalize_ticker(ticker: str) -> str:
@@ -148,6 +154,42 @@ class EdgarClient:
         ]
         chosen = [*quarterlies[: limit - 1], annual]
         return [self._ref(company.cik, row) for row in chosen]
+
+    def filings_of_form(self, company: Company, form: str, limit: int) -> list[FilingRef]:
+        """The newest ``limit`` filings of exactly ``form`` (amendments skipped), newest first.
+
+        Made for comparing a filing with the one before it, so ``limit`` must be at
+        least 2 (else ValueError). EDGAR's recent index holds about a year of a busy
+        filer's filings; when it has fewer than two of the form, the older pages of the
+        index are read, newest first, until there are two or
+        :data:`MAX_OLDER_INDEX_PAGES` have been read. Fewer than two after that is a
+        :class:`SourceError` that says how far the search went.
+        """
+        if limit < 2:
+            raise ValueError("limit must be at least 2")
+        what = f"the filing index of {company.name}"
+        payload = self._index_payload(company)
+        recent = self._rows(payload["filings"]["recent"], what)
+        rows = [row for row in recent if row["form"] == form]
+        where = "EDGAR's recent index"
+        if len(rows) < 2:
+            older = self._older_pages(payload, company, what)
+            read = 0
+            for name in older[:MAX_OLDER_INDEX_PAGES]:
+                page = self._get_json(SUBMISSIONS_PAGE_URL.format(name=name), what)
+                rows += [row for row in self._rows(page, what) if row["form"] == form]
+                read += 1
+                if len(rows) >= 2:
+                    break
+            if read:
+                where += f" and the {read} newest of its {len(older)} older index pages"
+        if len(rows) < 2:
+            raise SourceError(
+                f"{company.name} has {len(rows)} {form} filing(s) in {where}; "
+                "two are needed to compare"
+            )
+        rows.sort(key=lambda row: row["filingDate"], reverse=True)
+        return [self._ref(company.cik, row) for row in rows[:limit]]
 
     def fetch(self, ref: FilingRef) -> FetchedFiling:
         """Retrieve a filing's primary document, decoded as UTF-8."""
@@ -284,11 +326,24 @@ class EdgarClient:
     def _index_rows(self, company: Company) -> list[dict[str, str]]:
         """``filings.recent`` turned from parallel columns into rows, newest filing first."""
         what = f"the filing index of {company.name}"
-        malformed = SourceError(f"EDGAR returned malformed data for {what}")
+        return self._rows(self._index_payload(company)["filings"]["recent"], what)
+
+    def _index_payload(self, company: Company) -> dict[str, Any]:
+        """The company's filing index as EDGAR sends it, with ``filings.recent`` present."""
+        what = f"the filing index of {company.name}"
         payload = self._get_json(SUBMISSIONS_URL.format(cik=company.cik), what)
         try:
-            recent = payload["filings"]["recent"]
-            columns = [recent[name] for name in INDEX_COLUMNS]
+            payload["filings"]["recent"]
+        except (KeyError, TypeError) as exc:
+            raise SourceError(f"EDGAR returned malformed data for {what}") from exc
+        return payload
+
+    @staticmethod
+    def _rows(table: Any, what: str) -> list[dict[str, str]]:
+        """One index table (``filings.recent`` or an older page) as rows, newest first."""
+        malformed = SourceError(f"EDGAR returned malformed data for {what}")
+        try:
+            columns = [table[name] for name in INDEX_COLUMNS]
         except (KeyError, TypeError) as exc:
             raise malformed from exc
         if not all(isinstance(column, list) for column in columns):
@@ -304,6 +359,27 @@ class EdgarClient:
             raise malformed
         rows.sort(key=lambda row: row["filingDate"], reverse=True)
         return rows
+
+    @staticmethod
+    def _older_pages(payload: dict[str, Any], company: Company, what: str) -> list[str]:
+        """The names of the index's older pages, the page with the newest filings first.
+
+        A name is used to build a URL, so each must be exactly this company's
+        ``CIK##########-submissions-###.json``; anything else is malformed data.
+        """
+        malformed = SourceError(f"EDGAR returned malformed data for {what}")
+        files = payload["filings"].get("files", [])
+        if not isinstance(files, list):
+            raise malformed
+        expected = re.compile(re.escape(OLDER_PAGE_NAME.format(cik=company.cik)) + r"\d{3}\.json")
+        pages: list[tuple[str, str]] = []
+        for entry in files:
+            name = entry.get("name") if isinstance(entry, dict) else None
+            newest = entry.get("filingTo") if isinstance(entry, dict) else None
+            if not (isinstance(name, str) and expected.fullmatch(name) and isinstance(newest, str)):
+                raise malformed
+            pages.append((newest, name))
+        return [name for _, name in sorted(pages, reverse=True)]
 
     @staticmethod
     def _ref(cik: int, row: dict[str, str]) -> FilingRef:

@@ -79,6 +79,21 @@ Generation (`results/generation-*`), every rate with its denominator:
 - *Counts* (all 30): quotes offered, verified, rejected; numbers checked and unmatched;
   findings proposed, verified and withheld, with the reasons. A withheld finding never counts.
 
+## The period check, and planted wrong years (in `results/generation-*`)
+
+Every generation report has a block "Periods named in findings": each year or fiscal label a
+verified finding's statement names, checked against the finding's quotes, its cited figures and
+the period of each filing quoted (`core/periods.py`, `docs/period-check.md`). It reports and
+withholds nothing. On the golden set: 34 years named, 34 found, none unverified.
+
+The same block then plants an error, with no model involved. For each verified finding that names
+a year, every year in its statement is moved by the same amount (one, two and three years back,
+one forward) and the evidence is left as it is; a finding is flagged when the check then finds a
+year the evidence does not carry. Of 25 such findings: 21 flagged one year back, 24 two back, 25
+three back, 23 one forward. Every planted error that passed is listed with the reason each of its
+years passed: five because the quote itself prints the planted year, two because a date falls in
+the calendar year of a filing's period end.
+
 ## Planted mismatches (`results/mismatch-*`)
 
 The `--check` run shows what the meaning check said about findings as the engine wrote them: it

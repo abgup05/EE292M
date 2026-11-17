@@ -1,0 +1,27 @@
+Header cut, interleaved: 20 pairs (cut, no cut, cut, no cut, ...), one process, 2026-11-17 19:04:13 UTC
+  parse 3 filings: cut 304.8 ms, no cut 332.4 ms (medians)
+    saved per pair: median +31.0 ms, IQR +19.3 to +61.5 ms, range -16.6 to +71.0 ms; cut faster in 16 of 20
+  whole run:       cut 439.6 ms, no cut 468.7 ms (medians)
+    saved per pair: median +35.4 ms, IQR +26.2 to +60.4 ms, range +18.0 to +69.9 ms; cut faster in 20 of 20
+  record sha256: a95ce509390cc42a29e02ace2d2255d8c3ddce47a9c6a904a11adb3971304007
+  pairs (ms): parse cut/no cut, whole cut/no cut
+     268.3  324.9    404.6  458.6
+     314.0  332.3    447.1  469.1
+     267.0  333.6    405.9  465.3
+     306.7  333.9    445.3  470.7
+     306.5  296.2    438.0  478.8
+     261.8  324.2    395.1  458.2
+     307.6  331.8    440.2  466.9
+     266.1  337.1    403.9  473.8
+     303.9  336.5    439.2  465.6
+     310.6  294.0    444.4  470.2
+     264.3  325.6    396.3  463.6
+     312.9  332.5    449.0  468.9
+     270.8  335.3    408.1  468.2
+     305.1  336.3    442.2  474.5
+     306.2  295.1    442.5  473.3
+     267.4  328.1    399.7  461.0
+     314.7  335.9    450.5  468.4
+     264.9  334.5    399.2  462.3
+     304.6  335.5    439.9  473.2
+     308.3  295.0    443.4  480.9

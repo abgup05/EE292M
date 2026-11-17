@@ -1,6 +1,6 @@
 # Architecture
 
-Evidence Desk (version 0.10.0) tests an equity analyst's thesis claims against the company's own SEC filings and shows,
+Evidence Desk (version 0.11.0) tests an equity analyst's thesis claims against the company's own SEC filings and shows,
 per claim, the verbatim passages and figures that support or challenge it. A reviewer can accept or reject each
 finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the brief; `docs/reviews/` the review.
 
@@ -27,6 +27,7 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/core/tagged_figures.py  turns a filing's tagged breakdowns into figures a finding can cite (ids starting "tagged:") and chooses the ones offered; pure
     src/app/core/metrics.py     computes the metrics report from facts; metric_models.py is its pure data
     src/app/core/numcheck.py    the numeric check: each number a statement writes is in what it cites
+    src/app/core/periods.py     the period check: each year or fiscal label a statement names is in its evidence (reported, never withheld); a company's fiscal calendar from its newest annual report; a planted wrong year, for measuring the check
     src/app/core/meaning.py     the meaning check's pure half: what the checker is shown, and applying its judgements
     src/app/sources/edgar.py    SEC EDGAR adapter: ticker, filing selection, rate-limited fetch
     src/app/sources/filing.py   splits a 10-K/10-Q into Part and Item sections
@@ -125,6 +126,10 @@ Two SQLite files under the data directory (`EVIDENCE_DESK_DATA_DIR`; `data/`, gi
    "not_supported" withholds it with the checker's reason and drops its evidence. A checker failure leaves that
    claim's findings unchecked, adds one error line and a coverage limit, and never fails the run; neither "partly"
    nor a failed check makes a run partial. A checker on the engine's own model is recorded as a coverage limit.
+   Then `core/periods.check_periods` reads the years each verified finding's statement names and looks for each
+   in the finding's excerpts, its cited figures and the period of each filing quoted, with the company's fiscal
+   calendar (read with the facts, `NumbersResult.calendar`). The result is recorded on the finding and counted in
+   `Run.coverage`. It withholds nothing and changes no verdict or status (`docs/period-check.md`).
 9. **Decide.** `policy.claim_verdict` sets each verdict from verified findings only; a finding that rests on
    reported figures alone counts as its stance only when the meaning check passed it, and as context otherwise
    (`Finding.counted_as`, `count_note`). `policy.run_status` sets complete, partial (with each reason and its
@@ -202,6 +207,7 @@ finding, 409 while running, 422 withheld finding); `GET .../export.md?reviewed=t
 - **A change to how two filings are compared** (the threshold for "reworded", what counts as a table row): `core/filing_diff.py`, whose constants sit at its top, with `tests/test_filing_diff.py`. The comparison is separate from a thesis run: `GET /api/companies/{ticker}/changes` and `make changes` both call `services/filing_changes.filing_changes`. Read the pairs a new threshold adds before keeping it (`docs/filing-changes.md`).
 - **A change to which changed paragraphs are listed under a claim** (how many words must be shared, how many are listed, how repeats are folded): `core/claim_changes.py`, whose two constants sit at its top, with `tests/test_claim_changes.py`. It is computed on demand by `GET /api/runs/{id}/changes` from the filings the run read and is not part of the run record, so the tripwire does not move. After a change, run `make sample-run-changes` and read what each claim now lists (`docs/claim-changes.md`).
 - **A change to how reported periods are placed** (the length of a quarter, what is a fiscal year, another revenue concept): `core/facts.py` and `core/metrics.py`. Run `make figures` on the eight probe companies before and after and read which lines moved (`docs/evidence/figures-eight-companies.md`); a change that moves a company's figures invalidates the recorded answers of its golden cases.
+- **A change to what counts as a year, or to what evidence carries one**: `core/periods.py`, with `tests/test_periods.py`. What is a year and what is a quantity is decided once, in `core/numcheck.py`, and the period check reads it from there. Measure before and after with the checked evaluation, which also plants wrong years (`eval/README.md`); a rule that starts withholding findings is a change to `core/policy.py` and to every recorded verdict.
 - **A change to which tagged figures a run offers** (the cap, the order, another breakdown): `core/tagged_figures.py` and `MAX_TAGGED_FIGURES_OFFERED` in `core/limits.py`, with `tests/test_tagged_figures.py`. It changes the prompts of every run that asks for them, so `demo/cassettes/nvda-example-tagged` must be recorded again.
 - **A change to the breakdowns** (another axis, another revenue concept, a new shape of nested members): `core/breakdowns.py`, whose specifications and constants sit at its top, with `tests/test_breakdowns.py`; a number format the reader does not know: `sources/ixbrl.py` with `tests/test_ixbrl.py`. Start from a failing test built on a small excerpt of the real filing, then run `make breakdowns` on the eight probe companies, annual and quarterly, and check that every breakdown still adds up to its tagged total (`docs/breakdowns.md`).
 

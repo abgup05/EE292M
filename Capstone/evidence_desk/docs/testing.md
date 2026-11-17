@@ -200,6 +200,20 @@ What these cannot see: whether a changed paragraph listed under a claim bears on
 
 **Two more recordings replayed** (`tests/test_replay_tagged.py`). Each builds every prompt afresh, as `test_replay.py` does for the first, and compares the verdicts and counts with a baseline read once from the first complete replay. A baseline is not an answer key: it says what the gate, the number check and the verdict rule make of those recorded answers, so a change in any of them is seen.
 
+## The period check and what planting found (version 11)
+
+| Wrong program | Fails | Seen failing as |
+| --- | --- | --- |
+| A statement that puts a figure in a year its evidence does not carry, and nothing says so | `tests/test_periods.py`, the referee's case: "fiscal 2023" over a quote about fiscal 2025 from the fiscal 2026 report is unverified; "fiscal 2025" and "fiscal 2026" pass | 53 tests failed against stubs before the module existed |
+| A fiscal label passing on a calendar year (NVIDIA's quarter ended July 2026 called "fiscal 2026") | 4 tests of `tests/test_periods.py` | planted by the session that built it; restored |
+| A date passing as a fiscal label ("as of July 26, 2027" against the quarter ended 26 July 2026) | `::test_a_date_does_not_pass_as_a_fiscal_label` | found by planting wrong years in the golden set's findings: 4 of 25 moved one year forward passed this way; the test was written, failed, and the count rose from 19 to 23 |
+| A year after "compared to", "versus", "year-end" or "end-of-" read as a quantity | the year contexts of `tests/test_numcheck.py::test_a_year_in_a_date_like_context_is_exempt`; `tests/test_periods.py::test_the_comparison_year_after_compared_to_is_a_year` | each written first; one came from a recorded statement, one from the planted statements |
+| A check that withholds, or moves a verdict or a status | `tests/test_thesis_run.py`: a finding with a wrong fiscal year is still verified and counted, and the run's status is what it would be without the check | written first |
+| A brief or a page that reads the check's sentences back to find the years | the record carries them (`FindingChecks.periods_unverified`); `tests/test_export.py`, `tests/test_replay_periods.py` | changed in review: the first version parsed its own sentences |
+| A run that fetches two filings again for their tags every time | `tests/test_tagged_cache.py::test_a_second_run_with_the_same_cache_fetches_no_filing_at_all` | written first: the second run fetched both |
+
+**The check is measured, not only tested.** The checked evaluation runs it on every verified finding of the golden set (34 years, none unverified) and then plants a wrong year in each of the 25 findings that name one: every year moved by the same amount, the evidence left alone. It lists every planted error that passed, with the reason (`docs/period-check.md`). That measurement found a fault in the check that no unit test had: a date allowed to pass as a fiscal label.
+
 ## The sixth review: the backup, two writers, and the header cut (after version 10)
 
 | Wrong program | Fails | Seen failing as |
@@ -219,7 +233,8 @@ tests), and `make verify-fresh`, the whole gate on a fresh clone (clone, lint, t
 smoke test, three page renders and 99 page assertions), took 33 s by the wall clock. One run of
 each; a first build of the image takes minutes and was not timed. At version 10 the same two
 measurements, once each: 23 s (pytest reports 23.06 s for 1,361 tests) and 34 s for the whole
-gate on a fresh clone, now with seven page renders and 142 page assertions
+gate on a fresh clone, now with seven page renders and 142 page assertions. At version 11: 26 s
+(pytest reports 26.19 s for 1,499 tests) and 38 s for the whole gate, with 156 page assertions
 (`docs/evidence/verify-fresh.txt`).
 
 ## What no test here can see

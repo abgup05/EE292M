@@ -36,6 +36,7 @@ Ticker, decision, claims in; verdicts first; each finding opens to its passage; 
 | It shows what is new that bears on each claim | The planted-paragraph test; on the recorded example the first paragraph under "Gross margin is expanding" is an added sentence saying it decreased | A keyword match. Nobody has judged the lists; between 126 and 276 changes share two words with each claim or its search queries and five are shown |
 | A second model rejects evidence that does not fit | 150 of 152 planted mismatches rejected, none accepted; 1 of 76 true pairs rejected | The easy kind of mismatch, answered by a stand-in. The hard kind is not measured |
 | It reads segment, geography and customer figures from the filing's tags | Checked against NVIDIA's own text; members add up to the tagged total on sixteen filings of eight companies | Labels come from tag names; no table compared with the printed one by a person |
+| A year named in a finding is carried by its evidence | No false alarm on 34 years in the golden set's findings; 93 of 100 planted wrong years flagged, 21 of 25 for the one-year slip | Reported, not enforced. It cannot see the wrong column of a table. No real period error has been seen |
 | A finding can cite those figures | Two recordings of the example made the same day, without and with the option: five verified findings cite a tagged figure, citations of figures go from 8 to 20 | That it changes a verdict is not shown: asking the same prompts again moved one too. One company, stand-in models |
 
 ## 5. What failed, and what it taught

@@ -4,11 +4,11 @@ Evidence Desk tests the claims of an investment thesis against a company's own S
 
 Two things are checked mechanically by the backend before anything reaches the page or the Markdown export: every quote is found word for word in a passage that was shown to the engine, and every number in a finding or in its reason is matched to one of its quotes or to a reported figure it cites. A third check is a model's: a second model, which is not shown the first one's reasoning, reads each finding's evidence and says whether it supports the statement. That is still a model's reading, of the same family as the first, so you accept or reject each finding yourself, and a second verdict follows, by the same rule, from the findings you accepted. A thesis can be saved and run again when a new filing arrives; the page then shows which verdicts moved.
 
-Separately from any thesis, it shows what a company added, removed and reworded between its two latest annual or quarterly reports.
+It also shows what a company added, removed and reworded between its two latest annual or quarterly reports, and, under each claim of a run, which of the paragraphs that changed in the filings it read share words with that claim: a reading list for the question the tool exists for, what is new since the last filing.
 
 "Word for word" means a span of the text this tool extracted from the filing. Table rows are flattened in that text, and a quote is located under the Item and sub-heading the parser found.
 
-This is version 7 (tag `capstone-v7`) of the capstone: version 6 with the findings of a second hostile referee built in ([`docs/referee-2-triage.md`](docs/referee-2-triage.md)). The plan and the milestones are in [`../README.md`](../README.md), the design is in [`ARCHITECTURE.md`](ARCHITECTURE.md), and the tests are described in [`docs/testing.md`](docs/testing.md).
+This is version 8 (tag `capstone-v8`) of the capstone. It joins the tool's two halves: under each claim of a run it lists what changed in the filings that run read ([`docs/claim-changes.md`](docs/claim-changes.md)). It also builds in a fifth blind review ([`docs/reviews/review-5-message-interface-tests.md`](docs/reviews/review-5-message-interface-tests.md)). The plan and the milestones are in [`../README.md`](../README.md), the design is in [`ARCHITECTURE.md`](ARCHITECTURE.md), and the tests are described in [`docs/testing.md`](docs/testing.md).
 
 ![A recorded run: verdicts first, then the summary and the reported figures](docs/screenshots/sample-run.png)
 
@@ -36,8 +36,9 @@ make down
 5. Open a claim to read its findings. Each excerpt is shown in its surrounding text with the Item of the filing it sits under and a link that opens the filing at that passage. Each finding lists its checks: the quote was found, the numbers matched, and whether its meaning was checked.
 6. **Accept** or **Reject** each finding, with a note if you like. The scorecard shows two verdicts per claim: the engine's, and the one that follows from the findings you accepted. Undecided findings do not count toward yours.
 7. **Save this thesis**, and later **Run again on the latest filings**. **What moved** compares the two newest runs: which verdicts changed, which excerpts are new, which filing is new.
-8. **Download Markdown brief** exports the verified record; once every finding is decided, **Download reviewed brief** includes your decisions.
-9. **What changed in the filings** needs only a ticker. It compares the latest annual report with the one before it (or the latest quarterly report with the previous one), Item by Item: how many paragraphs are unchanged, changed only in their numbers, reworded, added and removed, with short lines and table rows counted apart. Under each Item it names the sub-headings found in only one filing and lists the paragraphs, each linked into its own filing: the added and the removed ones, the reworded ones with the changed words marked, and those whose figures alone moved with the figures marked.
+8. **Download Markdown brief** exports the verified record, followed by the reading list of item 9, set apart; once every finding is decided, **Download reviewed brief** includes your decisions.
+9. **Changed in the filings since the one before**, under each claim, lists the paragraphs that were added, removed, reworded or changed in their figures in the filings this run read, when they share at least two words with the claim: the five best by keyword overlap, each linked into its filing. It is a reading list. No model chose or judged these, none counts toward the verdict, and the block is marked as a keyword match that nobody has checked.
+10. **What changed in the filings** needs only a ticker. It compares the latest annual report with the one before it (or the latest quarterly report with the previous one), Item by Item: how many paragraphs are unchanged, changed only in their numbers, reworded, added and removed, with short lines and table rows counted apart. Under each Item it names the sub-headings found in only one filing and lists the paragraphs, each linked into its own filing: the added and the removed ones, the reworded ones with the changed words marked, and those whose figures alone moved with the figures marked.
 
 ![What changed between NVIDIA's two latest annual reports: counts by Item, then the paragraphs, with changed words marked](docs/screenshots/sample-changes.png)
 
@@ -173,6 +174,8 @@ What the annual-report comparison shows, as the tool found it in the two filings
 
 The method's one threshold (how similar two paragraphs must be to count as reworded) was set by reading the pairs each candidate value would add, on these two comparisons only, and by a model. The comparison has been run on the annual reports of the other seven probe companies ([`docs/evidence/changes-eight-companies.md`](docs/evidence/changes-eight-companies.md), every row of every run): it ran on all eight and matched every group (the cover page and each Item) of one report to its group in the other. The pairs near the threshold were read for Apple and Coca-Cola, also by a model; no person has checked the classification on any. Running it on JPMorgan found two things: its earlier annual report was not in EDGAR's recent index at all (fixed: older index pages are now read, up to twelve), and 7,193 of the 8,098 lines of its later report sit under "Item 15", because the bank's annual report follows its last Item heading. The exit check of the plan is a test: one planted paragraph comes back as exactly one added and one removed.
 
+**Changes that bear on each claim** (`make sample-run-changes`; [`docs/claim-changes.md`](docs/claim-changes.md)). For the recorded example, on 17 November: the annual report for fiscal 2026 against the one for fiscal 2025 and the second-quarter report of fiscal 2027 against the first hold 802 changed paragraphs. Between 126 and 276 distinct changes share two words with each of the five claims; the five best are listed. Under "Gross margin is expanding" the first is a sentence the newest annual report added: "Gross margin decreased in fiscal year 2026 as our business model transitioned from offering Hopper HGX systems to Blackwell full-scale datacenter solutions." Under the claim about suppliers the first is a paragraph about vendor questionnaires under the cybersecurity Item: keyword overlap is not relevance. Nobody has judged these lists, and no number here says how often they help.
+
 **The live application, end to end** (`make live-walk`; output in `docs/evidence/`): the running app over HTTP, filings fetched live, recorded answers. The walk fails unless the run is judged. It will fail after NVIDIA's next filing, when the recording no longer matches.
 
 **Backup and restore** (`make backup`, `make restore-check`; output in `docs/evidence/`): a restore of the newest backup is compared with the live record, every run, decision and thesis. Same disk, same machine.
@@ -182,11 +185,11 @@ The method's one threshold (how similar two paragraphs must be to count as rewor
 ## Verification
 
 ```sh
-make verify         # build, lint, 1,128 offline tests, smoke test, browser-level test
+make verify         # build, lint, 1,182 offline tests, smoke test, browser-level test
 make test           # offline tests only (T=tests/test_gate.py for one file)
 make golden-check   # the tripwire: one recorded run, compared stage by stage
 make replay         # the recorded model-backed run, offline
-make uitest         # headless Chromium renders three records; 75 assertions on the DOM
+make uitest         # headless Chromium renders three records; 99 assertions on the DOM
 make live-walk      # the running app end to end over HTTP: needs EDGAR, no key
 make eval ARGS="run --variant claim"   # score retrieval on the golden set
 make backup         # copy the record to backups/; make restore-check proves it restores
@@ -203,6 +206,7 @@ make screenshots    # renders the page into docs/screenshots, for a person to lo
 - **The Anthropic API path has not been exercised live since version 1** (22 October). The engine and the checker are tested against stub clients and through recorded answers; neither exercises the SDK call.
 - **The meaning check is a second model of the same family.** It reads without the first model's reasoning, but it is not an independent party. On the golden set it withheld 1 of 77 findings and changed no verdict. Shown 152 planted mismatches (real quotes moved under a statement they do not belong to) it rejected 149 and agreed with none; that is the easy kind of mismatch, and a quote on the right topic that does not carry the statement has not been tried.
 - **Retrieval decides what the engine can see.** With the planner's queries the passage that matters is among the eight shown in 18 of 24 golden cases. In the other six a claim is judged on weaker evidence, and no later check can see what retrieval left out.
+- **The list of changes under a claim is a keyword match.** A changed paragraph is listed because it shares two words with the claim and ranks among the five best by BM25. One that bears on the claim in other words is not found, and one that merely shares vocabulary is. No person and no model has judged the lists.
 - **"Complete" is not a measure of evidence.** A run is complete when every stage ran on everything it was given: every filing read, no finding withheld, every claim judged, no fallback, no time limit, and the meaning check ran. A verdict in a complete run can still rest on one short quote from one filing; how many findings and filings stand behind each verdict is shown per claim, and no threshold on that is applied.
 - **A quote is verified as present, not as relevant.** The quote check finds the words in a passage the engine was shown; the number check matches figures. Whether the quote bears on the statement is judged only by the second model and by you.
 - **The golden set is a model's reading until a person has read it.**

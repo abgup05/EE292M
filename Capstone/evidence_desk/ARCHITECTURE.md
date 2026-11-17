@@ -1,6 +1,6 @@
 # Architecture
 
-Evidence Desk (version 0.7.0) tests an equity analyst's thesis claims against the company's own SEC filings and shows,
+Evidence Desk (version 0.8.0) tests an equity analyst's thesis claims against the company's own SEC filings and shows,
 per claim, the verbatim passages and figures that support or challenge it. A reviewer can accept or reject each
 finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the brief; `docs/reviews/` the review.
 
@@ -53,7 +53,7 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/evaluation/retrieval_eval.py  scores where the right passage ranks; the variant registry
     src/app/evaluation/cli.py   `python -m app.evaluation`: validate, run, fetch, pin, show, plan, generate
     src/app/evaluation/companies.py, planning.py, generation_eval.py   pinned figures, planned queries, answer scoring
-    src/web/                    index.html, app.js, styles.css, sample-run.json, sample-synthetic.json, sample-changes.json
+    src/web/                    index.html, app.js, styles.css, sample-run.json, sample-synthetic.json, sample-changes.json, sample-run-changes.json
     eval/                       the golden set, its pinned filings, cache/ and results/; README.md
     tests/                      offline tests, fakes.py (EDGAR, pages, engine, clock), smoke.py; replay_run.py, golden_run.py, speed_run.py
     tests/live_walk.py          the live end-to-end walk over HTTP; tests/golden/ the tripwire and replayed verdicts

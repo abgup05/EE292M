@@ -230,3 +230,28 @@ def test_the_recorded_nvidia_annual_report() -> None:
     }
     assert revenue == {215_938e6}
     assert result.contexts["c-1"].end == date(2026, 1, 25)
+
+
+# Filing text is untrusted: a malformed document must not make the scan quadratic.
+
+
+def _scan_seconds(openings: int) -> float:
+    """Best of three timings of reading a document with ``openings`` unclosed context tags."""
+    import time
+
+    filler = "<p>" + "x" * 200 + "</p>"
+    text = "".join(f'<xbrli:context id="c{n}">{filler}' for n in range(openings))
+    best = float("inf")
+    for _ in range(3):
+        started = time.perf_counter()
+        result = read_tagged_facts(text)
+        best = min(best, time.perf_counter() - started)
+        assert result.facts == []
+    return best
+
+
+def test_unclosed_context_tags_do_not_make_the_scan_quadratic() -> None:
+    # Eight times the unclosed openings costs about eight times as much when the scan is
+    # linear and sixty-four times when each opening searches to the end of the document.
+    small, large = _scan_seconds(500), _scan_seconds(4000)
+    assert large < 20 * max(small, 1e-4), f"8x the openings took {large / small:.1f}x as long"

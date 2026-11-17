@@ -24,6 +24,7 @@ its reason, never guessed. Filing text is data, never instructions.
 
 from __future__ import annotations
 
+import bisect
 import html as html_lib
 import re
 from datetime import date
@@ -37,12 +38,13 @@ NO_NUMERIC_FACTS = "The document has inline XBRL contexts but no ix:nonFraction 
 # Attribute text: anything but '>', except inside quotes, where '>' is allowed.
 _ATTRS = r"""(?:[^>"']|"[^"]*"|'[^']*')*"""
 _PREFIX = r"(?:[\w.-]+:)?"
-CONTEXT = re.compile(
-    rf"<{_PREFIX}context\b({_ATTRS})>(.*?)</{_PREFIX}context\s*>", re.IGNORECASE | re.DOTALL
-)
-UNIT = re.compile(
-    rf"<{_PREFIX}unit\b({_ATTRS})>(.*?)</{_PREFIX}unit\s*>", re.IGNORECASE | re.DOTALL
-)
+# Opening and closing tags of the two block elements, matched apart: a lazy ``.*?`` between
+# them would search to the end of the document for every opening that is never closed, which
+# is quadratic on a malformed filing (see :func:`_elements`).
+CONTEXT_OPEN = re.compile(rf"<{_PREFIX}context\b({_ATTRS})>", re.IGNORECASE)
+CONTEXT_CLOSE = re.compile(rf"</{_PREFIX}context\s*>", re.IGNORECASE)
+UNIT_OPEN = re.compile(rf"<{_PREFIX}unit\b({_ATTRS})>", re.IGNORECASE)
+UNIT_CLOSE = re.compile(rf"</{_PREFIX}unit\s*>", re.IGNORECASE)
 FACT_TAG = re.compile(rf"<(/?){_PREFIX}nonFraction\b({_ATTRS})>", re.IGNORECASE)
 ATTRIBUTE = re.compile(r"""([\w:.-]+)\s*=\s*(?:"([^"]*)"|'([^']*)')""")
 START_DATE = re.compile(rf"<{_PREFIX}startDate\s*>\s*([^<]*?)\s*<", re.IGNORECASE)
@@ -180,11 +182,40 @@ def parse_number(shown: str, fmt: str | None) -> Decimal:
         raise UnreadNumber(f"{shown!r} is not a number") from exc
 
 
+def _elements(
+    html: str, opening: re.Pattern[str], closing: re.Pattern[str]
+) -> tuple[list[tuple[str, str]], int]:
+    """Every element as (attribute text, inner text), in order, and how many were never closed.
+
+    One pass for the closing tags and one for the openings; each opening takes the first
+    closing tag after it (a binary search), as a lazy match would, and an opening that
+    lies inside the element before it is skipped. Linear in the document's length, also
+    when an opening tag has no closing tag at all.
+    """
+    closes = [(match.start(), match.end()) for match in closing.finditer(html)]
+    starts = [start for start, _ in closes]
+    found: list[tuple[str, str]] = []
+    unclosed = 0
+    resume = 0
+    for match in opening.finditer(html):
+        if match.start() < resume:
+            continue
+        index = bisect.bisect_left(starts, match.end())
+        if index == len(closes):
+            unclosed += 1
+            continue
+        close_start, resume = closes[index]
+        found.append((match.group(1), html[match.end() : close_start]))
+    return found, unclosed
+
+
 def _contexts(html: str, problems: list[str]) -> dict[str, XbrlContext]:
     contexts: dict[str, XbrlContext] = {}
-    for match in CONTEXT.finditer(html):
-        context_id = _attributes(match.group(1)).get("id", "")
-        body = match.group(2)
+    elements, unclosed = _elements(html, CONTEXT_OPEN, CONTEXT_CLOSE)
+    if unclosed:
+        problems.append(f"{unclosed} context element(s) are never closed and were not read.")
+    for attributes, body in elements:
+        context_id = _attributes(attributes).get("id", "")
         try:
             instant = INSTANT.search(body)
             if instant is not None:
@@ -215,9 +246,8 @@ def _measures(block: str) -> str:
 
 def _units(html: str) -> dict[str, str]:
     units: dict[str, str] = {}
-    for match in UNIT.finditer(html):
-        unit_id = _attributes(match.group(1)).get("id", "")
-        body = match.group(2)
+    for attributes, body in _elements(html, UNIT_OPEN, UNIT_CLOSE)[0]:
+        unit_id = _attributes(attributes).get("id", "")
         numerator, denominator = NUMERATOR.search(body), DENOMINATOR.search(body)
         if numerator is not None and denominator is not None:
             units[unit_id] = f"{_measures(numerator.group())}/{_measures(denominator.group())}"

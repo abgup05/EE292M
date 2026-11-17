@@ -74,6 +74,18 @@ def replay_checker(transport: CassetteTransport) -> ClaudeChecker:
     return ClaudeChecker(transport=transport.sibling())
 
 
+def sample_note(run: Run, cassette: Path) -> str:
+    """What the page says about a sample: the recording it replays, and what the run asked for."""
+    note = (
+        "A recorded run of the NVIDIA example thesis on three recorded filings. The model "
+        f"answers are replayed from the cassette {cassette.as_posix()}; see its "
+        "README for how they were produced."
+    )
+    if run.inputs.tagged_figures:
+        note += " This run asked to be offered the figures tagged in the filings as well."
+    return note
+
+
 def sample_record(run: Run, cassette: Path, data_dir: Path) -> dict[str, object]:
     """The page's sample file: the wording the API serves, and the replayed run."""
     from fastapi.testclient import TestClient  # imported here: it warns on import
@@ -88,11 +100,7 @@ def sample_record(run: Run, cassette: Path, data_dir: Path) -> dict[str, object]
     with TestClient(app) as client:
         meta = client.get("/api/meta").json()
     return {
-        "note": (
-            "A recorded run of the NVIDIA example thesis on three recorded filings. The model "
-            "answers are replayed from the cassette demo/cassettes/nvda-example; see its "
-            "README for how they were produced."
-        ),
+        "note": sample_note(run, cassette),
         "meta": meta,
         "run": json.loads(run.model_dump_json()),
     }

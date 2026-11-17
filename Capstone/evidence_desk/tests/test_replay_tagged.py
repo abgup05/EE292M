@@ -22,7 +22,7 @@ from app.core.models import Run
 from app.core.tagged_figures import TAGGED_PREFIX
 from app.store import FilingCache
 from tests.golden_run import replay_record
-from tests.replay_run import replay
+from tests.replay_run import replay, sample_note
 
 CASSETTES = Path(__file__).parent.parent / "demo" / "cassettes"
 PLAIN, TAGGED = "nvda-example-plain", "nvda-example-tagged"
@@ -166,3 +166,30 @@ def test_figure_only_findings_are_counted_and_this_is_known(tagged: Run) -> None
     figure_only = [f for f in tagged.findings if not f.evidence_ids]
     assert sorted(f.counted_as or "" for f in figure_only) == ["context", "supports", "supports"]
     assert all(f.checks.support == "passed" for f in figure_only)
+
+
+def test_a_sample_names_the_recording_it_was_made_from(tagged: Run) -> None:
+    """The first tagged sample told the reader its answers came from another recording."""
+    cassette = Path("demo/cassettes") / TAGGED
+    note = sample_note(tagged, cassette)
+    assert "demo/cassettes/nvda-example-tagged;" in note
+    assert "offered the figures tagged in the filings" in note
+    plain = tagged.model_copy(deep=True)
+    plain.inputs.tagged_figures = False
+    assert "tagged" not in sample_note(plain, Path("demo/cassettes/nvda-example"))
+
+
+def test_the_committed_tagged_sample_is_this_recording() -> None:
+    """The page's sample says where it came from, and holds the run this module replays."""
+    import json
+
+    sample = json.loads(
+        (Path(__file__).parent.parent / "src" / "web" / "sample-run-tagged.json").read_text()
+    )
+    assert "demo/cassettes/nvda-example-tagged;" in sample["note"]
+    run = sample["run"]
+    assert run["inputs"]["tagged_figures"] is True
+    assert run["coverage"]["tagged_figures_offered"] == 40
+    assert "nvda-example-tagged: 12 responses" in run["engine_detail"]
+    got = [(c["id"], c["verdict"], len(c["finding_ids"])) for c in run["claims"]]
+    assert got == [(cid, verdict, findings) for cid, verdict, findings, _ in EXPECTED[TAGGED]]

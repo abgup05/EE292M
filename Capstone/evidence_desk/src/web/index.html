@@ -20,6 +20,7 @@
         <p id="takeaway" class="lede takeaway">Every verdict opens to the exact filing passages or reported figures it rests on: quotes are checked word for word, and whether a quote supports a claim is a model's reading, checked by a second model and then by you.</p>
         <p id="sample-nav" class="sample-nav">
           <a id="sample-link" class="sample-button" href="?sample">See a recorded run</a>
+          <a id="tagged-link" class="sample-button" href="?sample=run-tagged">See the same run with tagged figures offered</a>
           <a id="changes-link" class="sample-button" href="?sample=changes">See a recorded filing comparison</a>
           <a id="breakdowns-link" class="sample-button" href="?sample=breakdowns">See recorded segments and customers</a>
         </p>
@@ -75,6 +76,12 @@
             <p id="urls-hint" class="hint">A press release or investor-relations page, one http(s) address per line.</p>
             <textarea id="extra_urls" name="extra_urls" rows="2" spellcheck="false" aria-describedby="urls-hint err-extra_urls"></textarea>
             <p id="err-extra_urls" class="field-error" hidden></p>
+          </div>
+          <div class="field field-check">
+            <input id="tagged_figures" name="tagged_figures" type="checkbox" aria-describedby="tagged-hint err-tagged_figures">
+            <label for="tagged_figures">Also offer the figures tagged in the filings (segments, products, geographies, customers)</label>
+            <p id="tagged-hint" class="hint">Off by default because it changes what the model is shown: a run with it and a run without it did not answer the same prompt.</p>
+            <p id="err-tagged_figures" class="field-error" hidden></p>
           </div>
         </details>
 
@@ -238,7 +245,7 @@
               <div><dt><span class="meaning-mark m-partly"><span class="glyph g-meaning" aria-hidden="true">◐</span><span class="meaning-words">In part</span></span></dt><dd>The second model agrees only in part; its reason is shown under a double violet rule. A result of the check, not a limit of the record: read the quote and decide.</dd></div>
               <div><dt><span class="mark-reject"><span class="glyph g-reject" aria-hidden="true">!</span> Refused</span></dt><dd>The server refused your input; the message says how to fix it.</dd></div>
               <div data-legend="dashed"><dt><span class="legend-dashed">dashed border</span></dt><dd>Not final. A dashed border marks one of three things: a claim no engine judged (Not judged); a decision you have still to make (Undecided, not reviewed yet); a run still in progress, with its claims not yet decided.</dd></div>
-              <div data-legend="claim-changes"><dt><span class="rule-mark"><span class="glyph g-rule" aria-hidden="true">ƒ</span><span class="rule-label">Fixed rule</span></span> <span class="chg-mark c-added"><span class="glyph g-chg" aria-hidden="true">+</span><span class="chg-label">Added</span></span> <span class="chg-mark c-removed"><span class="glyph g-chg" aria-hidden="true">−</span><span class="chg-label">Removed</span></span> <span class="chg-mark c-reworded"><span class="glyph g-chg" aria-hidden="true">~</span><span class="chg-label">Reworded</span></span> <span class="chg-mark c-numbers_only"><span class="glyph g-chg" aria-hidden="true">#</span><span class="chg-label">Numbers only</span></span></dt><dd>Under each claim of a finished run: paragraphs that changed since the filing of the same form before, and that share words with the claim. Listed by a fixed rule (ƒ: computed by a fixed rule; not checked by a person); no model chose or judged them, they are not findings, and none counts toward the verdict. In a reworded pair, <del class="seg seg-del">struck through</del> was dropped and <ins class="seg seg-add">underlined</ins> was added.</dd></div>
+              <div data-legend="claim-changes"><dt><span class="rule-mark"><span class="glyph g-rule" aria-hidden="true">ƒ</span><span class="rule-label">Fixed rule</span></span> <span class="chg-mark c-added"><span class="glyph g-chg" aria-hidden="true">+</span><span class="chg-label">Added</span></span> <span class="chg-mark c-removed"><span class="glyph g-chg" aria-hidden="true">−</span><span class="chg-label">Removed</span></span> <span class="chg-mark c-reworded"><span class="glyph g-chg" aria-hidden="true">~</span><span class="chg-label">Reworded</span></span> <span class="chg-mark c-numbers_only"><span class="glyph g-chg" aria-hidden="true">#</span><span class="chg-label">Numbers only</span></span></dt><dd>Under each claim of a finished run: paragraphs that changed since the filing before each one the run read (the earlier filing was fetched for this comparison; the run did not read it), and that share words with the claim or the search queries the run wrote for it. Listed by a fixed rule (ƒ: computed by a fixed rule; not checked by a person); no model chose or judged them, they are not findings, and none counts toward the verdict. In a reworded pair, <del class="seg seg-del">struck through</del> was dropped and <ins class="seg seg-add">underlined</ins> was added.</dd></div>
               <div data-legend="status"><dt><span class="status-word st-complete"><span class="glyph" aria-hidden="true">◇</span> Complete</span></dt><dd>The run's status, at the top of a result: an open diamond when complete, three dots while running, the limit mark when partial or failed. A status is never a filled tag.</dd></div>
               <div><dt><span class="page-tag">Sample record</span></dt><dd>A grey tag is a label about the page itself.</dd></div>
               <div><dt><mark class="legend-mark">highlighted</mark></dt><dd>A quote found word for word in the filing, shown in its surrounding text.</dd></div>

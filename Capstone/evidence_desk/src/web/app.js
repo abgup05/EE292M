@@ -121,6 +121,7 @@ const FIELD_NAMES = {
   thesis_name: "Thesis name",
   changes_form: "Filings to compare",
   breakdowns_form: "Filing to read",
+  tagged_figures: "Tagged figures",
 };
 
 /**
@@ -192,6 +193,7 @@ const els = {
   scope: $("scope_notes"),
   filings: $("filings"),
   urls: $("extra_urls"),
+  tagged: $("tagged_figures"),
   advanced: $("advanced"),
   decisionCount: $("decision-count"),
   claimsCount: $("claims-count"),
@@ -688,6 +690,8 @@ function readForm() {
     scope_notes: els.scope.value.trim(),
     filings: filingsText === "" ? state.meta?.limits?.DEFAULT_FILINGS : Number(filingsText),
     extra_urls: lines(els.urls),
+    // A strict boolean: the server refuses anything else.
+    tagged_figures: els.tagged.checked === true,
   };
 }
 
@@ -866,7 +870,8 @@ function loadExample() {
   els.scope.value = example.scope_notes ?? "";
   els.filings.value = String(example.filings ?? state.meta.limits.DEFAULT_FILINGS);
   els.urls.value = list(example.extra_urls).join("\n");
-  els.advanced.open = Boolean(example.scope_notes || list(example.extra_urls).length);
+  els.tagged.checked = example.tagged_figures === true;
+  els.advanced.open = Boolean(example.scope_notes || list(example.extra_urls).length || els.tagged.checked);
   clearFieldErrors();
   updateCounts();
   els.ticker.focus();
@@ -1363,7 +1368,7 @@ function renderBreakdowns(report, sampleNote) {
         str(company.name) ? ` · ${company.name}` : "",
         Number.isFinite(company.cik) ? h("span", { class: "muted small" }, " · ", h("abbr", { title: "The SEC's numeric identifier for this company", text: "CIK" }), ` ${company.cik}`) : "",
       ),
-      h("p", { class: "run-meta", text: "Segments, products, geographies and customers, as one filing tags them. No run was started and no claim was tested." }),
+      h("p", { class: "run-meta", text: "The company's latest filing of the form chosen, read when asked for the segments, products, geographies and customers it tags. Not tied to any run: no run was started and no claim was tested." }),
       sampleNote ? h("p", { class: "run-meta", text: `Sample: ${sampleNote}` }) : "",
     ),
   );
@@ -2163,6 +2168,7 @@ async function loadSample(name) {
   $("synthetic-link").hidden = true;
   $("changes-link").hidden = true;
   $("breakdowns-link").hidden = true;
+  $("tagged-link").hidden = true;
   hideRunView();
   if (!SAMPLE_NAME.test(name)) {
     showLoadError("That sample name is not valid: use lower-case letters, digits and hyphens.", null);
@@ -2310,6 +2316,21 @@ function renderBanner(run) {
     );
     if (Number.isFinite(c.metrics_computed)) {
       facts.push(h("li", null, cov(c, "metrics_computed"), ` reported ${unit(c.metrics_computed, "figure", "figures")} computed`));
+    }
+    if (Number.isFinite(c.figures_offered)) {
+      // Two counts, never added up here: the record keeps them apart.
+      const tagged = Number.isFinite(c.tagged_figures_offered) && (c.tagged_figures_offered > 0 || run.inputs?.tagged_figures === true);
+      facts.push(
+        h(
+          "li",
+          { "data-figures-offered": "" },
+          cov(c, "figures_offered"),
+          ` reported ${unit(c.figures_offered, "figure", "figures")}`,
+          tagged ? [" and ", cov(c, "tagged_figures_offered"), ` tagged ${unit(c.tagged_figures_offered, "figure", "figures")}`] : "",
+          " offered to the engine",
+          Number.isFinite(c.figures_cited) ? ["; ", cov(c, "figures_cited"), ` ${unit(c.figures_cited, "citation", "citations")} of them in verified findings`] : "",
+        ),
+      );
     }
     if (Number.isFinite(c.numbers_checked)) {
       facts.push(h("li", null, cov(c, "numbers_checked"), ` ${unit(c.numbers_checked, "number", "numbers")} in findings checked, `, cov(c, "numbers_unmatched"), " unmatched"));
@@ -2585,8 +2606,11 @@ function renderClaims(run, ctx) {
 
 // ---------------------------------------------------------------- changed paragraphs, by claim
 
+/** What was compared: each filing the run read with the one before it, which the run itself never read. */
+const CC_EARLIER = "Each filing this run read is compared with the filing of its form filed before it. The earlier filing was fetched for this comparison; the run did not read it.";
+
 /** Why these paragraphs are listed, said wherever they are. */
-const CC_WHY = "These paragraphs are listed because they share words with the claim: no model chose or judged them, they are not findings, and none counts toward the verdict.";
+const CC_WHY = "These paragraphs are listed because they share words with the claim or the search queries the run wrote for it: no model chose or judged them, they are not findings, and none counts toward the verdict.";
 
 /**
  * For a finished run, which paragraphs changed in the filings it read (each against the filing
@@ -2694,7 +2718,8 @@ function comparedBlock(record) {
   return h(
     "div",
     { "data-cc-compared": "" },
-    h("p", { class: "cc-title" }, h("strong", { text: "Changed in the filings since the one before" }), " ", ruleMark()),
+    h("p", { class: "cc-title" }, h("strong", { text: "Changed since the filing before each one this run read" }), " ", ruleMark()),
+    h("p", { class: "cc-earlier", text: CC_EARLIER }),
     compared.length
       ? h(
           "ul",
@@ -2721,7 +2746,7 @@ function claimChangesBlock(claimId, entry) {
       "p",
       { class: "cc-none", id: claimChangesId(claimId), "data-claim-changes": claimId },
       ruleMark(),
-      " Changed in the filings since the one before: no paragraph shares at least two words with this claim, among ",
+      " Changed since the filing before each one this run read: no paragraph shares at least two words with this claim or the search queries the run wrote for it, among ",
       field("considered", entry.considered),
       ` changed ${unit(entry.considered, "paragraph", "paragraphs")} searched.`,
     );
@@ -2741,7 +2766,7 @@ function claimChangesBlock(claimId, entry) {
     h(
       "summary",
       null,
-      h("span", { class: "cc-summary-text" }, `Changed in the filings since the one before: ${plural(changes.length, "paragraph", "paragraphs")} that share words with this claim`),
+      h("span", { class: "cc-summary-text" }, `Changed since the filing before each one this run read: ${plural(changes.length, "paragraph", "paragraphs")} that share words with this claim or the search queries the run wrote for it`),
       " ",
       ruleMark(),
     ),
@@ -2754,11 +2779,11 @@ function claimChangesBlock(claimId, entry) {
         field("listed", changes.length),
         " listed of ",
         field("distinct_matched", entry.distinct_matched),
-        ` distinct ${unit(entry.distinct_matched, "change", "changes")} that share at least two words with this claim, among `,
+        ` distinct ${unit(entry.distinct_matched, "change", "changes")} that share at least two words with this claim or the search queries the run wrote for it, among `,
         field("considered", entry.considered),
         ` changed ${unit(entry.considered, "paragraph", "paragraphs")}.`,
       ),
-      h("p", { class: "cc-why", text: CC_WHY }),
+      h("p", { class: "cc-why", text: `${CC_EARLIER} ${CC_WHY}` }),
       h("ol", { class: "chg-paras cc-list" }, changes.map(changeEntry)),
     ),
   );
@@ -2810,6 +2835,9 @@ function renderFinding(finding, ctx, withheld = false) {
       "header",
       { class: "finding-head" },
       stancePill(finding.stance),
+      !withheld && finding.verified !== false && list(finding.evidence_ids).length === 0 && list(finding.metric_ids).length > 0
+        ? h("span", { class: "figures-only-tag", "data-figures-only": "" }, "rests on reported figures only: no excerpt")
+        : "",
       writtenField("div", `finding:${finding.id}:statement`, model, h("h4", { class: "finding-statement", text: finding.statement }), badge),
     ),
     h(
@@ -2915,6 +2943,18 @@ function renderChecks(checks) {
 }
 
 /** The reported figures a finding cites, resolved against `run.metrics`. */
+/** Open a figure's row in the panel and bring it into view, without touching the URL's hash (it holds the run). */
+function openFigure(metricId) {
+  return (event) => {
+    event.preventDefault();
+    const row = document.getElementById(figureDomId(metricId));
+    if (!row) return;
+    row.open = true;
+    row.scrollIntoView({ block: "center", behavior: "smooth" });
+    row.querySelector("summary")?.focus({ preventScroll: true });
+  };
+}
+
 function renderCitedFigures(ids, metrics) {
   const cited = list(ids);
   if (cited.length === 0) return null;
@@ -2928,11 +2968,13 @@ function renderCitedFigures(ids, metrics) {
       cited.map((id) => {
         const metric = metrics.get(id);
         if (!metric) return h("li", { class: "muted", text: `Figure ${id} is listed but missing from the record.` });
+        const row = document.getElementById(figureDomId(id));
         return h(
           "li",
           { "data-cited-metric": id },
           `${metric.label} · ${metric.period_label} · `,
           h("span", { class: "fig-value", text: metric.display }),
+          row ? [" · ", h("a", { class: "fig-open", href: `#${encodeURIComponent(figureDomId(id))}`, "data-opens-figure": id, onclick: openFigure(id), text: "open it in the figures panel" })] : "",
         );
       }),
     ),
@@ -3114,10 +3156,11 @@ function renderFigures(container, data) {
       ["annual", "Newest fiscal year in the record"],
     ];
     const grid = h("div", { class: "fig-grid" });
+    const facts = metrics.filter((m) => !isTagged(m));
     for (const [kind, heading] of columns) {
-      const end = latestEnd(metrics, kind);
+      const end = latestEnd(facts, kind);
       if (!end) continue;
-      const rows = metrics.filter((m) => (m.period === kind || m.period === "instant") && m.period_end === end);
+      const rows = facts.filter((m) => (m.period === kind || m.period === "instant") && m.period_end === end);
       const periodLabel = rows.find((m) => m.period === kind)?.period_label ?? end;
       grid.append(
         h(
@@ -3129,6 +3172,8 @@ function renderFigures(container, data) {
       );
     }
     container.append(grid, h("p", { class: "hint", text: "Open a figure to see its arithmetic and the reported values it used." }));
+    const tagged = metrics.filter(isTagged);
+    if (tagged.length) container.append(taggedGroup(tagged));
   }
   if (notes.length) {
     const notesList = h("ul", { class: "mark-list" });
@@ -3137,6 +3182,36 @@ function renderFigures(container, data) {
   }
   const charts = renderCharts(list(data.series));
   if (charts) container.append(charts);
+}
+
+/** A figure read from a filing's own inline XBRL tags: the backend gives it an id starting "tagged:". */
+function isTagged(metric) {
+  return str(metric?.id).startsWith("tagged:");
+}
+
+/** The DOM id of a figure's row. Metric ids hold colons and "+": fine in an id, encoded in a link. */
+function figureDomId(metricId) {
+  return `fig-${metricId}`;
+}
+
+/** The tagged figures offered to the engine, in the record's order, after the company-facts figures. */
+function taggedGroup(tagged) {
+  return h(
+    "section",
+    { class: "fig-tagged", "aria-labelledby": "fig-tagged-title", "data-figure-group": "tagged" },
+    h("h4", { class: "fig-head", id: "fig-tagged-title" }, "Figures tagged in the filings ", ruleMark()),
+    h(
+      "p",
+      { class: "fig-tagged-source" },
+      "Read from the filings' own inline XBRL tags, in the newest annual and the newest quarterly report the run read, and offered to the engine because the run asked for them.",
+    ),
+    h(
+      "p",
+      { class: "fig-tagged-caution", "data-tagged-caution": "" },
+      "The row labels are made from tag names, not taken from the company's own tables, and no person has compared them with the printed tables.",
+    ),
+    h("ul", { class: "fig-list" }, tagged.map(figureRow)),
+  );
 }
 
 function figureRow(metric) {
@@ -3171,7 +3246,7 @@ function figureRow(metric) {
     null,
     h(
       "details",
-      { class: "fig-row", "data-metric-id": metric.id },
+      { class: "fig-row", id: figureDomId(metric.id), "data-metric-id": metric.id },
       h(
         "summary",
         null,

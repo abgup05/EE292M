@@ -1120,3 +1120,24 @@ p.bd-adds-yes, dt .bd-adds-yes { font-weight: 650; color: var(--ink); }
 .bd-adds-unchecked { color: var(--ink-2); font-style: italic; }
 .bd-notes { margin: 0.25rem 0 0; padding-left: 1.2rem; font-size: var(--step--1); color: var(--ink-2); max-width: 95ch; }
 .bd-notes li + li { margin-top: 0.15rem; }
+
+/* ------------------------------------------------------------ tagged figures (milestone 10) */
+
+/* The run option: a checkbox beside its label, its help under both. */
+.field-check { display: grid; grid-template-columns: auto 1fr; gap: 0.15rem 0.5rem; align-items: start; }
+.field-check input[type="checkbox"] { width: auto; margin: 0.2rem 0 0; padding: 0; }
+.field-check label { font-weight: 600; }
+.field-check .hint, .field-check .field-error { grid-column: 2; margin: 0; }
+
+/* The tagged figures: their own group after the company-facts columns, marked as made by a fixed rule. */
+.fig-tagged { margin-top: 1rem; padding-top: 0.6rem; border-top: 1.5px dotted var(--rule); }
+.fig-tagged .fig-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem 0.6rem; }
+.fig-tagged-source, .fig-tagged-caution { margin: 0 0 0.3rem; font-size: var(--step--1); max-width: 95ch; }
+.fig-tagged-source { color: var(--ink-2); }
+.fig-tagged-caution { font-weight: 600; }
+.fig-tagged .fig-list { margin-top: 0.4rem; }
+.cited .fig-open { font-size: var(--step--1); }
+.cc-earlier { margin: 0 0 0.3rem; color: var(--ink-2); }
+
+/* Beside the stance of a verified finding that cites figures and quotes nothing: words, no mark. */
+.figures-only-tag { font-size: var(--step--1); color: var(--ink-2); font-style: italic; }

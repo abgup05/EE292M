@@ -1,4 +1,4 @@
-"""Browser-level checks of the run view's "Changed in the filings since the one before" blocks.
+"""Browser-level checks of the run view's "Changed since the filing before each one this run read" blocks.
 
 `make uitest` renders /?sample, which loads src/web/sample-run.json and, beside it,
 src/web/sample-run-changes.json (a RunChanges record), and dumps the DOM to
@@ -79,7 +79,7 @@ def test_counts_line_equals_the_records_three_numbers(index: int) -> None:
     shown = {span["data-cc-field"]: text(span) for span in counts.select("[data-cc-field]")}
     expected = {"listed": len(claim["changes"]), "distinct_matched": claim["distinct_matched"], "considered": claim["considered"]}
     assert shown == {field: f"{value:,}" for field, value in expected.items()}
-    assert "share at least two words with this claim" in words(counts)
+    assert "share at least two words with this claim or the search queries the run wrote for it" in words(counts)
 
 
 def entries(claim_id: str) -> list[Tag]:

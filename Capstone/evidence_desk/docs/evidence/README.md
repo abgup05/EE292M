@@ -7,7 +7,7 @@ Outputs that the README, the check-in and the hand-ins cite, kept here because t
 | `verify-fresh.txt` | `make verify-fresh` | The gate, run on a fresh clone of the committed branch: lint, the offline tests, the smoke test, the page test |
 | `live-walk.txt` | `make live-walk` | The running app over HTTP on filings fetched live, with recorded model answers: a judged run, decisions, the reviewed brief, a saved thesis run twice, the comparison |
 | `backup-restore.txt` | `make backup && make restore-check` | A backup of the record restores to the same runs, decisions and theses. Same disk, same machine |
-| `changes-eight-companies.md` | `make changes ARGS="<TICKER> --form 10-K"`, eight times | The filing comparison on eight companies' annual reports: the filings compared, the totals, Item 1A. And the message JPMorgan's run ended with before older index pages were read |
+| `changes-eight-companies.md` | `make changes ARGS="<TICKER> --form 10-K"`, eight times | The filing comparison on eight companies' annual reports: the filings compared, each run's notes and every row of its table. And the message JPMorgan's run ended with before older index pages were read |
 | `probe-before-header-cut.md` | `make probe TICKERS="NVDA AAPL MSFT KO JPM TSLA COST AMZN" OUTLINE=1` | The structure of 14 filings as parsed before the parser's one speed change; `../speed/probe-v4.md` is the same probe after it |
 
 These are single runs on one laptop. A file here shows that a command produced that output once; it does not show that it will again.

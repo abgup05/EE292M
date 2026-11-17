@@ -8,7 +8,7 @@ Separately from any thesis, it shows what a company added, removed and reworded 
 
 "Word for word" means a span of the text this tool extracted from the filing. Table rows are flattened in that text, and a quote is located under the Item and sub-heading the parser found.
 
-This is version 6 (tag `capstone-v6`) of the capstone. The plan and the milestones are in [`../README.md`](../README.md), the design is in [`ARCHITECTURE.md`](ARCHITECTURE.md), and the tests are described in [`docs/testing.md`](docs/testing.md).
+This is version 7 (tag `capstone-v7`) of the capstone: version 6 with the findings of a second hostile referee built in ([`docs/referee-2-triage.md`](docs/referee-2-triage.md)). The plan and the milestones are in [`../README.md`](../README.md), the design is in [`ARCHITECTURE.md`](ARCHITECTURE.md), and the tests are described in [`docs/testing.md`](docs/testing.md).
 
 ![A recorded run: verdicts first, then the summary and the reported figures](docs/screenshots/sample-run.png)
 
@@ -23,7 +23,7 @@ make down
 ```
 
 - **Without any key** the app works on real filings: the deterministic engine quotes the sentences that best match each claim and judges no stance, so claims read "passages found, not judged". **Reported figures only** needs just a ticker.
-- **With `ANTHROPIC_API_KEY`** Claude plans the retrieval queries, drafts findings with a stance and writes the summary. The same checks apply to everything it returns.
+- **With `ANTHROPIC_API_KEY`** Claude plans the retrieval queries, drafts findings with a stance and writes the summary. The same checks apply to everything it returns. This path has not run through the API since version 1 (22 October): both keys tried on 17 November were refused for lack of credit, so every model-backed result below comes from recorded answers.
 - **Without the network or a key** you can still see a judged run: open <http://127.0.0.1:8766/?sample>, or run `make replay`. <http://127.0.0.1:8766/?sample=changes> shows a recorded comparison of NVIDIA's two latest annual reports. Both use three recorded NVIDIA filings and model answers replayed from a cassette ([`docs/cassettes.md`](docs/cassettes.md)).
 - **With the network and no key**, `make up-recorded` starts the app with those recorded answers: **Load example**, then **Test the thesis**, gives the judged run on filings fetched live, and you can review it and save it. This works while NVIDIA's reported facts are as they were on 17 November 2026; after its next filing the prompts will no longer match the recording, and the run will fall back to the keyless engine and say so.
 
@@ -37,7 +37,7 @@ make down
 6. **Accept** or **Reject** each finding, with a note if you like. The scorecard shows two verdicts per claim: the engine's, and the one that follows from the findings you accepted. Undecided findings do not count toward yours.
 7. **Save this thesis**, and later **Run again on the latest filings**. **What moved** compares the two newest runs: which verdicts changed, which excerpts are new, which filing is new.
 8. **Download Markdown brief** exports the verified record; once every finding is decided, **Download reviewed brief** includes your decisions.
-9. **What changed in the filings** needs only a ticker. It compares the latest annual report with the one before it (or the latest quarterly report with the previous one), Item by Item: how many paragraphs are unchanged, changed only in their numbers, reworded, added and removed, and then the paragraphs themselves, each linked into its filing, the reworded ones with the changed words marked.
+9. **What changed in the filings** needs only a ticker. It compares the latest annual report with the one before it (or the latest quarterly report with the previous one), Item by Item: how many paragraphs are unchanged, changed only in their numbers, reworded, added and removed, with short lines and table rows counted apart. Under each Item it names the sub-headings found in only one filing and lists the paragraphs, each linked into its own filing: the added and the removed ones, the reworded ones with the changed words marked, and those whose figures alone moved with the figures marked.
 
 ![What changed between NVIDIA's two latest annual reports: counts by Item, then the paragraphs, with changed words marked](docs/screenshots/sample-changes.png)
 
@@ -160,28 +160,32 @@ Read these with three cautions. The cases and their expected stances were drafte
 
 **What changed between two filings** (`make changes`; [`docs/filing-changes.md`](docs/filing-changes.md)), measured on NVIDIA on 17 November from filings fetched live:
 
-| Paragraphs | Unchanged | Numbers only | Reworded | Added | Removed |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Annual report for fiscal 2026 against fiscal 2025 | 606 | 417 | 218 | 133 | 132 |
-| of which Item 1A, Risk Factors | 139 | 1 | 51 | 34 | 22 |
-| Quarterly report for the second quarter of fiscal 2027 against the first | 314 | 182 | 108 | 71 | 66 |
+| Paragraphs | Unchanged | Numbers only | Reworded | Added | Removed | Short lines and table rows: unchanged / numbers only / added / removed |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Annual report for fiscal 2026 against fiscal 2025 | 251 | 60 | 218 | 133 | 132 | 355 / 357 / 150 / 202 |
+| of which Item 1A, Risk Factors | 124 | 1 | 51 | 34 | 22 | 15 / 0 / 2 / 1 |
+| Quarterly report for the second quarter of fiscal 2027 against the first | 99 | 14 | 108 | 71 | 66 | 215 / 168 / 239 / 187 |
 
-Among the risk factors added in the annual report is one about an investment and partnership agreement with OpenAI that was not yet final; among those removed, a group of paragraphs about an export rule that has since been rescinded. The method's one threshold (how similar two paragraphs must be to count as reworded) was set by reading the pairs each candidate value would add, on these two comparisons only. The comparison has since been run on the annual reports of the other seven probe companies ([`docs/evidence/changes-eight-companies.md`](docs/evidence/changes-eight-companies.md)): it ran on all eight and matched every Item of one report to its Item in the other, but nobody has read those seven results, and no person has checked the classification on any. Running it on JPMorgan found two things: its earlier annual report was not in EDGAR's recent index at all (fixed: older index pages are now read, up to twelve), and 6,460 of its 7,253 paragraphs sit under "Item 15", because the bank's annual report follows its last Item heading. The exit check of the plan is a test: one planted paragraph comes back as exactly one added and one removed.
+The five counts are of paragraphs: lines of at least 60 characters that are not table rows. Shorter lines and table rows are counted apart and never listed. Every line of each filing is in exactly one count, which a test checks on two real filings. (Until version 7 the first two columns counted every line, table rows included, under the heading "paragraphs": the annual report's "606 unchanged, 417 numbers only" were 251 and 60 paragraphs.)
+
+What the annual-report comparison shows, as the tool found it in the two filings: among the risk factors added is one about an investment and partnership agreement with OpenAI that was not yet final; among those removed, paragraphs about an export rule which, the later report says, the government announced in May 2025 it would rescind. A risk factor whose words did not change now says the company generated 31% of its revenue from sales outside the United States, where the year before it said 53%. Seven sub-headings under Item 1 are in the earlier report only, among them "Climate Change" and "Diversity, Inclusion and Belonging at NVIDIA"; the notes gained one headed "Note 2 - Groq".
+
+The method's one threshold (how similar two paragraphs must be to count as reworded) was set by reading the pairs each candidate value would add, on these two comparisons only, and by a model. The comparison has been run on the annual reports of the other seven probe companies ([`docs/evidence/changes-eight-companies.md`](docs/evidence/changes-eight-companies.md), every row of every run): it ran on all eight and matched every group (the cover page and each Item) of one report to its group in the other. The pairs near the threshold were read for Apple and Coca-Cola, also by a model; no person has checked the classification on any. Running it on JPMorgan found two things: its earlier annual report was not in EDGAR's recent index at all (fixed: older index pages are now read, up to twelve), and 7,193 of the 8,098 lines of its later report sit under "Item 15", because the bank's annual report follows its last Item heading. The exit check of the plan is a test: one planted paragraph comes back as exactly one added and one removed.
 
 **The live application, end to end** (`make live-walk`; output in `docs/evidence/`): the running app over HTTP, filings fetched live, recorded answers. The walk fails unless the run is judged. It will fail after NVIDIA's next filing, when the recording no longer matches.
 
 **Backup and restore** (`make backup`, `make restore-check`; output in `docs/evidence/`): a restore of the newest backup is compared with the live record, every run, decision and thesis. Same disk, same machine.
 
-**Speed** ([`docs/speed.md`](docs/speed.md)). The offline profile is not where a real run's time goes: a real run waits on EDGAR and, with a key, on the model, which has never been timed. What was measured: a first live keyless run took 1.01 s and a second, with all three filings read from the cache, 0.38 s (one pair of runs). Offline, cutting the inline-XBRL header before parsing saves a median of 28.8 ms per run over 20 alternating pairs, about 7 to 9% of the offline run and well under 1% of a live one. Concurrent assessment of claims is a tested mechanism; its gain with a real model is unmeasured.
+**Speed** ([`docs/speed.md`](docs/speed.md)). The offline profile is not where a real run's time goes: a real run waits on EDGAR and, with a key, on the model, which has never been timed. What was measured: a first live keyless run took 1.01 s and a second, with all three filings read from the cache, 0.38 s (one pair of runs). Offline, cutting the inline-XBRL header before parsing saves a median of 28.8 ms per run over 20 alternating pairs, (interquartile range 21.5 to 56.9 ms; single pairs ranged from −8.6 to 93.0 ms; a second bench of 12 pairs gave 37.9 ms), about 7 to 9% of the offline run and about 3% of a live run without a key (28.8 ms of 1.01 s). Concurrent assessment of claims is a tested mechanism; its gain with a real model is unmeasured.
 
 ## Verification
 
 ```sh
-make verify         # build, lint, 1,094 offline tests, smoke test, browser-level test
+make verify         # build, lint, 1,128 offline tests, smoke test, browser-level test
 make test           # offline tests only (T=tests/test_gate.py for one file)
 make golden-check   # the tripwire: one recorded run, compared stage by stage
 make replay         # the recorded model-backed run, offline
-make uitest         # headless Chromium renders three records; 69 assertions on the DOM
+make uitest         # headless Chromium renders three records; 75 assertions on the DOM
 make live-walk      # the running app end to end over HTTP: needs EDGAR, no key
 make eval ARGS="run --variant claim"   # score retrieval on the golden set
 make backup         # copy the record to backups/; make restore-check proves it restores
@@ -198,12 +202,14 @@ make screenshots    # renders the page into docs/screenshots, for a person to lo
 - **The Anthropic API path has not been exercised live since version 1** (22 October). The engine and the checker are tested against stub clients and through recorded answers; neither exercises the SDK call.
 - **The meaning check is a second model of the same family.** It reads without the first model's reasoning, but it is not an independent party. On the golden set it withheld 1 of 77 findings and changed no verdict.
 - **Retrieval decides what the engine can see.** With the planner's queries the passage that matters is among the eight shown in 18 of 24 golden cases. In the other six a claim is judged on weaker evidence, and no later check can see what retrieval left out.
+- **"Complete" is not a measure of evidence.** A run is complete when every stage ran on everything it was given: every filing read, no finding withheld, every claim judged, no fallback, no time limit, and the meaning check ran. A verdict in a complete run can still rest on one short quote from one filing; how many findings and filings stand behind each verdict is shown per claim, and no threshold on that is applied.
+- **A quote is verified as present, not as relevant.** The quote check finds the words in a passage the engine was shown; the number check matches figures. Whether the quote bears on the statement is judged only by the second model and by you.
 - **The golden set is a model's reading until a person has read it.**
 - **Tables are flattened.** A table row is one line of numbers with its column headers lost, so the number check can match a figure from the wrong period, and a link cannot locate it.
-- **The number check has blind spots.** It ignores numbers written as words and bare integers up to 12. A cited figure only has to contain a matching number of the right unit; whether it is the right figure is left to the meaning check and to you.
+- **The number check has blind spots.** It does not check direction: "fell 56%" passes against a quote that says "up 56%", because filings write most declines as a positive number with a word. It ignores numbers written as words and bare integers up to 12. A cited figure only has to contain a matching number of the right unit; whether it is the right figure is left to the meaning check and to you.
 - **Pages a user adds are fetched with the address checked at lookup, not pinned at connection.** A hostile DNS server could change its answer in between. This is a local, single-user tool; pinning is later work.
 - **The record has no copy off this laptop.** `make backup` writes to the same disk.
 - **Filings without Item headings over their body** (JPMorgan's 10-Q) are kept and quotable, located by sub-heading only, and a run on one is partial.
 - **The page was checked by eye from screenshots** and by a DOM test, not by a user. Dark mode was not checked.
-- **The filing comparison's one threshold has been read only by a model.** It was set on NVIDIA's reports. For Apple and Coca-Cola the pairs near it were read by the session that built it (`make changes ARGS="AAPL --form 10-K --review 0.44"` prints them): in risk factors it holds; in Coca-Cola's discussion of results, about three in ten pairs just above it join two different paragraphs built on one template. The other five companies' results are unread. A paragraph rewritten into several reads as one removed and several added. Tables are not compared. Where a filing's body does not sit under its Item headings (JPMorgan), the Item named beside a change is not meaningful.
+- **The filing comparison's one threshold has been read only by a model.** It was set on NVIDIA's reports. For Apple and Coca-Cola the pairs near it were read by the session that built it (`make changes ARGS="AAPL --form 10-K --review 0.44"` prints them): in risk factors it holds; in Coca-Cola's discussion of results, about three in ten pairs just above it join two different paragraphs built on one template. The other five companies' results are unread. A paragraph rewritten into several reads as one removed and several added. Table rows are counted and never shown, so a figure that moved inside a table is invisible. "An exact span" is a statement about the record: a reworded pair is drawn word by word, with its spacing normalised. What counts as a sub-heading depends on the filing's typography. Where a filing's body does not sit under its Item headings (JPMorgan), the Item named beside a change is not meaningful.
 - Only 10-K and 10-Q filers. No PDFs, 8-K exhibits, foreign filers or transcripts. Runs execute in a worker thread inside the API process; there is no queue and no resume after a restart.

@@ -4,10 +4,17 @@
 one before it and writes `results/changes-<ticker>-<form>-<UTC>.md` and `.json` (the `FilingChanges` record of
 `core/change_models.py`). Code: `core/filing_diff.py` (pure), `services/filing_changes.py`, `changes.py`.
 
-**What it does.** It compares the parser's text, Item by Item, line by line; each listed paragraph is an exact span
-of the stored text, with its locator and a link. **Not:** it does not know why anything changed or read tables (a
-row whose figures moved is numbers-only, unshown). It inherits the parser's lines: a paragraph split in two reads as
+**What it does.** It compares the parser's text, Item by Item, line by line. Every line of each filing lands in
+exactly one count. Each listed paragraph is an exact span of the stored text, with its locator and a link that
+says what it opens. A paragraph whose figures alone moved is listed with those figures marked. Sub-headings found
+in only one filing are named. **Not:** it does not know why anything changed, and it does not read tables: a table
+row whose figures moved is counted and not shown. It inherits the parser's lines: a paragraph split in two reads as
 one reworded and one added; one cut by a page break in only one filing leaves a piece reworded or removed.
+
+The counts were corrected after the second referee's reading ([`reviews/referee-2-version-6.md`](reviews/referee-2-version-6.md),
+finding 1). Until then "unchanged" and "numbers only" counted every line, table rows included, beside three columns
+that counted paragraphs only, under one heading that said "paragraphs". NVIDIA's "606 unchanged, 417 numbers only"
+were 251 and 60 paragraphs; the rest were short lines and table rows.
 
 ## Method
 
@@ -15,11 +22,18 @@ one reworded and one added; one cut by a page break in only one filing leaves a 
    title ignored. Cover page, unnumbered text and full document are their own groups.
 2. *Unchanged*: identical after whitespace, case and typographic quotes are normalised, wherever it sits in the
    Item (a moved paragraph is unchanged). *Numbers only*: identical once every number, date and amount is masked.
-3. Lines under 60 characters and table rows stop here, counted as "short lines and table rows". A table row is
-   under half letters, or unpunctuated and either ending in a figure or at least 80% capitalised words.
+3. A *paragraph* is a line of at least 60 characters that is not a table row (a table row is under half letters,
+   or unpunctuated and either ending in a figure or at least 80% capitalised words). Shorter lines and table rows
+   are matched in step 2 like any line and have four counts of their own; they are never listed and never paired
+   in step 4. A matched pair is a paragraph or not by its line in the later filing.
 4. *Reworded*: Jaccard similarity of the paragraphs' token sets (`core.text.tokenize`, digit-only tokens left out)
    of at least **0.5**, most similar pairs first; the rest are added or removed. Changed words come from
-   `difflib.SequenceMatcher` over the two paragraphs only.
+   `difflib.SequenceMatcher` over the two paragraphs only, for reworded and for numbers-only pairs alike.
+5. So the later filing's lines are the matched ones plus added, the earlier filing's the matched ones plus removed,
+   paragraphs and short lines each in their own counts. A test checks this sum on two real filings.
+6. *Sub-headings* are not lines: the parser keeps a short bold line without a full stop apart from the text. Those
+   under an Item in only one filing are named, compared without case, punctuation and figures. A sub-heading that
+   only changes its year is not reported; a paragraph that moves under another sub-heading is still unchanged.
 
 **The threshold.** At 0.6, many "added" Item 1A paragraphs had a twin among the "removed": the same paragraph
 grown by a sentence ("Challenges in estimating demand…", J = 0.58) or with new figures counted as changed words
@@ -33,41 +47,50 @@ a false pairing hides a new paragraph inside "reworded", while a missed one stil
 
 ## NVIDIA, measured 17 November 2026 (live EDGAR)
 
-| Paragraphs | Unchanged | Numbers only | Reworded | Added | Removed | Short lines, table rows +/− |
+| Paragraphs | Unchanged | Numbers only | Reworded | Added | Removed | Short lines and table rows: unchanged / numbers only / added / removed |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| 10-K FY2026 against FY2025 | 606 | 417 | 218 | 133 | 132 | 150 / 202 |
-| of which Item 1A, Risk Factors | 139 | 1 | 51 | 34 | 22 | 2 / 1 |
-| 10-Q Q2 FY2027 against Q1 | 314 | 182 | 108 | 71 | 66 | 239 / 187 |
-| of which Part II, Item 1A | 22 | 0 | 11 | 17 | 32 | 0 / 6 |
+| 10-K FY2026 against FY2025 | 251 | 60 | 218 | 133 | 132 | 355 / 357 / 150 / 202 |
+| of which Item 1A, Risk Factors | 124 | 1 | 51 | 34 | 22 | 15 / 0 / 2 / 1 |
+| 10-Q Q2 FY2027 against Q1 | 99 | 14 | 108 | 71 | 66 | 215 / 168 / 239 / 187 |
+| of which Part II, Item 1A | 22 | 0 | 11 | 17 | 32 | 0 / 0 / 0 / 6 |
 
 At 0.6 with figures counted, the 10-K gave 191 reworded, 166 added, 166 removed. Examples from its Item 1A:
 
 - **Added:** "We are finalizing an investment and partnership agreement with OpenAI. There is no assurance that we
   will enter into an investment and partnership agreement with OpenAI or that a transaction will be completed."
 - **Removed:** "The AI Diffusion IFR would encourage our customers to invest in alternatives that are not affected
-  by USG regulations, including foreign competition." (Seven paragraphs on the rule became two; it was rescinded.)
+  by USG regulations, including foreign competition." (The later report's own added paragraph: "In May 2025, the USG announced that it would rescind the AI Diffusion
+  IFR and implement a replacement rule.")
 - **Reworded** (0.88): "•Long manufacturing lead times and uncertain supply and ~~component~~ **capacity**
   availability, combined with a failure to estimate customer demand accurately has led and could lead to […]"
+- **Numbers only:** "[…] and we generated ~~53%~~ **31%** of our revenue in fiscal year ~~2025~~ **2026** from sales
+  outside the United States." In Item 7: "Revenue for fiscal year ~~2025~~ **2026** was ~~$130.5~~ **$215.9**
+  billion, up ~~114%~~ **65%** from a year ago."
+- **Sub-headings only in the earlier report, under Item 1:** Sustainability and Governance; Climate Change;
+  Recruitment; Development and Retention; Compensation, Benefits, and Well-Being; Diversity, Inclusion and
+  Belonging at NVIDIA; Flexible Working Environment. **Only in the later one, under Item 15:** Note 2 - Groq; Note 8 -
+  Non-marketable Equity Securities; Foreign Currency Derivatives; Facility Lease Guarantees; Note 11 - Debt;
+  Commitments. No paragraph count showed either list before sub-headings were compared.
 
 ## Eight companies' annual reports, 17 November 2026 (live EDGAR)
 
-`make changes ARGS="<TICKER> --form 10-K"` for each; the "Total" row of each output, kept in
-[`evidence/changes-eight-companies.md`](evidence/changes-eight-companies.md). Paragraphs of the later report:
+`make changes ARGS="<TICKER> --form 10-K"` for each; every row of each output is kept in
+[`evidence/changes-eight-companies.md`](evidence/changes-eight-companies.md). The "Total" rows:
 
-| Company | Fiscal years ended | Items in both | Unchanged | Numbers only | Reworded | Added | Removed |
-| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| NVIDIA | 2025-01-26, 2026-01-25 | 23 of 23 | 606 | 417 | 218 | 133 | 132 |
-| Apple | 2025-09-27, 2026-09-26 | 24 of 24 | 410 | 465 | 111 | 46 | 25 |
-| Microsoft | 2025-06-30, 2026-06-30 | 23 of 23 | 855 | 556 | 151 | 75 | 74 |
-| Coca-Cola | 2024-12-31, 2025-12-31 | 23 of 23 | 1,036 | 689 | 269 | 88 | 104 |
-| JPMorgan Chase | 2024-12-31, 2025-12-31 | 19 of 19 | 3,133 | 2,815 | 848 | 457 | 521 |
-| Tesla | 2024-12-31, 2025-12-31 | 23 of 23 | 580 | 448 | 227 | 127 | 93 |
-| Costco | 2025-08-31, 2026-08-30 | 23 of 23 | 440 | 383 | 132 | 27 | 36 |
-| Amazon | 2024-12-31, 2025-12-31 | 23 of 23 | 584 | 438 | 139 | 48 | 38 |
+| Company | Fiscal years ended | Groups in both | Unchanged | Numbers only | Reworded | Added | Removed | Short lines and table rows: unchanged / numbers only / added / removed |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| NVIDIA | 2025-01-26, 2026-01-25 | 23 of 23 | 251 | 60 | 218 | 133 | 132 | 355 / 357 / 150 / 202 |
+| Apple | 2025-09-27, 2026-09-26 | 24 of 24 | 154 | 68 | 111 | 46 | 25 | 256 / 397 / 126 / 78 |
+| Microsoft | 2025-06-30, 2026-06-30 | 23 of 23 | 327 | 65 | 151 | 75 | 74 | 528 / 491 / 149 / 97 |
+| Coca-Cola | 2024-12-31, 2025-12-31 | 23 of 23 | 495 | 123 | 269 | 88 | 104 | 541 / 566 / 265 / 271 |
+| JPMorgan Chase | 2024-12-31, 2025-12-31 | 19 of 19 | 1,471 | 381 | 848 | 457 | 521 | 1,662 / 2,434 / 845 / 847 |
+| Tesla | 2024-12-31, 2025-12-31 | 23 of 23 | 218 | 54 | 227 | 127 | 93 | 362 / 394 / 174 / 259 |
+| Costco | 2025-08-31, 2026-08-30 | 23 of 23 | 173 | 55 | 132 | 27 | 36 | 267 / 328 / 94 / 71 |
+| Amazon | 2024-12-31, 2025-12-31 | 23 of 23 | 278 | 69 | 139 | 48 | 38 | 306 / 369 / 132 / 120 |
 
-What this shows is narrow: the comparison runs on all eight, every Item of one report finds its Item in the other,
-and no run needed a note about coverage. It does not show that the classes are right: only NVIDIA's pairs near the
-threshold were read, and by a model.
+A group is the cover page or one Item, so "23 of 23" is 22 Items and the cover page. What this shows is narrow:
+the comparison runs on all eight, every group of one report finds its group in the other, and no run made a note
+about coverage (the evidence file has each run's notes). It does not show that the classes are right.
 
 **Two things the other seven found.**
 
@@ -75,10 +98,11 @@ threshold were read, and by a model.
   the run ended "has 1 10-K filing(s) in EDGAR's recent index". `filings_of_form` now reads the index's older
   pages, newest first, until it has two filings of the form, at most `MAX_OLDER_INDEX_PAGES` (12) pages; a page
   name is used only if it is exactly that company's `CIK##########-submissions-###.json`. Ten tests, written first.
-- *JPMorgan's Item labels mean little.* 6,460 of the 7,253 paragraphs of its later report sit under "Item 15.
+- *JPMorgan's Item labels mean little.* 7,193 of the 8,098 lines of its later report (89%) sit under "Item 15.
   Exhibits, Financial Statement Schedules": the bank's annual report follows its last Item heading, and the parser
-  files the whole of it there. The paragraphs compared are the right ones; the Item named beside them is not where
-  a reader would look for them. Item coverage (99.4%) cannot see this: it measures text under *an* Item.
+  files the whole of it there. The lines compared are the right ones; the Item named beside them is not where
+  a reader would look for them. Item coverage (99.4%) cannot see this: it measures text under *an* Item. (This
+  sentence first said "6,460 of 7,253 paragraphs", a sum over columns that did not count the same thing.)
 
 ## The threshold on two more companies (read by a model, not by a person)
 
@@ -135,5 +159,13 @@ documents, and doubling 900 paragraphs does not triple the time (ratio of best-o
 - The method's constants (`MIN_PARAGRAPH_CHARS` 60, `REWORD_THRESHOLD` 0.5, `MAX_LISTED` 40,
   `TABLE_MAX_LETTER_SHARE` 0.5, `TITLE_ROW_CAPITAL_SHARE` 0.8) sit at the top of `core/filing_diff.py` and not in
   `core/limits.py`: that module is the contract of a thesis run, which no part of this comparison touches.
+- A line of 59 characters in one filing and 61 in the other is a short line there and a paragraph here: if it also
+  changed its words it reads as one short line removed and one paragraph added.
+- *Numbers only* masks every figure, so "Item 1A" against "Item 7A" and "over 10%" against "over 50%" are the same
+  class. For a paragraph the pair is listed with the figures marked; for a table row nothing is shown.
+- What the parser takes for a sub-heading depends on bold type and a missing full stop, so the same kind of line
+  is a sub-heading in one company's filing and a paragraph in another's.
+- "An exact span" is a statement about the record. The page and the Markdown show an added or removed paragraph
+  as the record holds it, and draw a reworded or numbers-only pair word by word, so the spacing there is normalised.
 - No person has read the classification. `tests/test_sample_changes.py` checks that the recorded NVIDIA comparison
   agrees with itself (counts, lists, links, the changed words), not that a paragraph called reworded is one.

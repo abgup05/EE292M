@@ -43,7 +43,7 @@ def test_the_summary_reports_status_claims_coverage_and_sources(tmp_path: Path) 
 
     assert run.id in text and "PARTIAL" in text
     assert "12.3" in line_with("Wall time")
-    assert "extractive" in line_with("Engine") and "0.6.0" in line_with("Engine")
+    assert "extractive" in line_with("Engine") and "0.7.0" in line_with("Engine")
     for claim in run.claims:
         withheld = sum(1 for f in run.unsupported_findings if f.claim_id == claim.id)
         row = line_with(claim.text)

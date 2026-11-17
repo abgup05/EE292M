@@ -32,11 +32,11 @@ Ticker, decision, claims in; verdicts first; each finding opens to its passage; 
 | Retrieval finds the passage that matters | 18 of 24 in the top eight with the planner's queries; 9 of 24 without | **To redo** once I have read the golden cases |
 | The verdict agrees with a careful reading | 20 of 24; no reversal; 6 of 6 unanswerable claims refused | **To redo**, same reason; and re-recording alone moved it by three cases |
 | A second model catches misreadings | It withheld 1 of 77 findings and changed no verdict | Not shown. Same model family as the engine |
-| It tells you what changed between filings | The planted-paragraph test; run on eight companies' annual reports and NVIDIA's quarterly reports | Its threshold was set on NVIDIA; no person has read a comparison; JPMorgan's Item labels mean little |
+| It tells you what changed between filings | The planted-paragraph test; every line of two real filings counted exactly once; run on eight companies' annual reports; pairs near the threshold read by a model for three | No person has read a comparison; in template-built sections about 3 in 10 borderline pairs are wrong; table rows are counted, never shown |
 
 ## 5. What failed, and what it taught
 
-The schedule. An idea with no reader. A model that could not be called. A parser tested on one company. Two rules about figures that real data broke. A speed claim that did not hold. A referee who found three faults in tested code. A skill that changed nothing because the documentation already did its job. A filing comparison finished on one company, which could not compare a bank at all until the other seven were run.
+The schedule. An idea with no reader. A model that could not be called. A parser tested on one company. Two rules about figures that real data broke. A speed claim that did not hold. A referee who found three faults in tested code. A skill that changed nothing because the documentation already did its job. A filing comparison finished on one company, which could not compare a bank at all until the other seven were run. A headline table whose columns counted different things, found by a second referee and by none of 1,094 tests.
 
 ## 6. Limits, stated plainly
 

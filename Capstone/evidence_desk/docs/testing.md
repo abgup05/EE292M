@@ -83,6 +83,20 @@ bound 20x) instead of a wall-clock bound, and failed at 33.6x on a planted quadr
 
 What these cannot see: whether a paragraph called "reworded" is the same paragraph to a reader. Nothing checks the classification against a person's reading.
 
+And no test here reads a heading. All of the above passed while two of the five columns headed "paragraphs" counted every line, table rows included. The second referee found that by reading one function beside one table.
+
+## The second referee's findings (version 7)
+
+| Wrong program (referee 2) | Fails | Seen failing as |
+| --- | --- | --- |
+| "Unchanged" and "numbers only" count every line while the other three columns count paragraphs (1) | `tests/test_filing_diff.py::test_every_line_of_two_real_filings_is_counted_exactly_once`, `::test_the_five_counts_are_of_paragraphs_and_short_lines_and_rows_are_counted_apart` | written first: 7 failed, 47 passed, these among them |
+| A sub-heading renamed over an unchanged body shows nothing (2) | `::test_a_changed_sub_heading_is_reported_though_its_paragraphs_are_unchanged` | the same run |
+| A paragraph whose figures alone moved is counted and never shown (3) | `::test_a_paragraph_whose_numbers_alone_changed_is_listed_with_the_numbers_marked` | the same run |
+| A listed paragraph that is not an exact span of a real filing, in any of the four lists (4) | `::test_every_listed_paragraph_of_two_real_filings_is_an_exact_span_and_says_its_link` | the same run (the record had no link kind and no numbers-only list) |
+| A run whose meaning check failed says "complete" (6) | `tests/test_thesis_run.py::test_a_checker_that_fails_leaves_findings_unchecked_and_the_run_partial`, `tests/test_policy.py::test_each_reason_alone_makes_the_run_partial` | the older test asserted "complete"; changed first: 2 failed, 86 passed |
+| "Operating expenses grew 3%" passes against "(3)%" (7) | `tests/test_numcheck.py::test_a_word_for_an_outflow_does_not_let_a_percentage_match_a_decline` | written first: `assert 'passed' == 'failed'` for each of the three statements |
+| A recorded comparison with a bare link called a passage link, a numbers-only pair that differs in a word, or a sub-heading on both sides | `tests/test_sample_changes.py::test_each_kind_of_damage_to_the_record_is_reported` (eleven kinds of damage now) | the test damages a copy and expects each to be reported |
+
 ## The replay test
 
 `tests/test_replay.py` replays a copy of `demo/cassettes/nvda-example`: the Claude engine's own

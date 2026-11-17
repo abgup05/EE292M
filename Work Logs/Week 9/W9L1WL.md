@@ -37,4 +37,4 @@ Version 5 handed in. The draft is due on 30 November.
 
 **Takeaway**
 
-Everything a model could do in a day is done. The list above is what was left, and all of it is reading, checking and talking to people.
+The list above is what a model session cannot do for me. All of it is reading, checking and talking to people.

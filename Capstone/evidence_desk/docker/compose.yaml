@@ -33,3 +33,12 @@ services:
     volumes:
       - ..:/work:ro
     command: ["node", "--check", "src/web/app.js"]
+  shots:
+    # Headless Chromium for `make screenshots`: a person looks at what no test can see.
+    image: zenika/alpine-chrome:124
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    environment:
+      HOME: /tmp
+    volumes:
+      - ..:/work
+    entrypoint: ["chromium-browser", "--headless", "--no-sandbox", "--disable-gpu", "--hide-scrollbars", "--virtual-time-budget=8000"]

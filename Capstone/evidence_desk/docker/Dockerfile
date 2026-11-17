@@ -15,4 +15,4 @@ ENV PATH="/opt/app/.venv/bin:${PATH}" \
     PYTHONDONTWRITEBYTECODE=1 \
     HOME=/tmp
 WORKDIR /work
-CMD ["uvicorn", "app.api:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.api:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]

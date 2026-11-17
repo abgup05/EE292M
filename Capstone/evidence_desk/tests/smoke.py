@@ -1,7 +1,9 @@
-"""Check the live container over real HTTP without touching the public internet.
+"""Check the live container over real HTTP without touching the internet.
 
-Covers startup, static assets, boundary validation, the 404 path, a run that
-fails honestly when it has nothing to fetch, and its Markdown export.
+Covers startup, health, the wording and limits in /api/meta, the static page
+and its assets (including the sample record), refusals with field details,
+and the 404 path. It never starts a run: every POST is refused before the
+ticker is looked up on EDGAR.
 """
 
 import json
@@ -10,11 +12,8 @@ import urllib.error
 import urllib.request
 
 ROOT = "http://127.0.0.1:8000"
-QUESTION = (
-    "What opportunities and risks should an organization examine before using "
-    "generative AI in internal workflows?"
-)
-DECISION = "Whether to investigate a limited internal pilot"
+DECISION = "Whether to keep an overweight position in NVIDIA into the next earnings report"
+CLAIM = "Data center revenue is still growing year over year."
 
 
 def request(path: str, body: dict | None = None) -> tuple[int, bytes, str]:
@@ -29,60 +28,63 @@ def request(path: str, body: dict | None = None) -> tuple[int, bytes, str]:
 
 
 def wait_for_startup() -> None:
-    for attempt in range(40):
+    for attempt in range(80):
         try:
-            urllib.request.urlopen(ROOT + "/", timeout=5)
+            urllib.request.urlopen(ROOT + "/api/health", timeout=5)
             return
-        except urllib.error.URLError:
-            if attempt == 39:
+        except urllib.error.URLError, ConnectionError:
+            if attempt == 79:
                 raise
             time.sleep(0.25)
 
 
+def refused_fields(body: dict) -> list[str]:
+    status, payload, _ = request("/api/runs", body)
+    assert status == 422, (status, payload)
+    parsed = json.loads(payload)
+    assert parsed["error"] == "Invalid request"
+    assert all(detail["message"] for detail in parsed["details"]), parsed
+    return [detail["field"] for detail in parsed["details"]]
+
+
 wait_for_startup()
 
-status, body, _ = request("/")
-assert status == 200 and b"Evidence Desk" in body
-for asset in ("/app.js", "/styles.css"):
-    status, body, _ = request(asset)
-    assert status == 200 and body, asset
+status, body, _ = request("/api/health")
+health = json.loads(body)
+assert status == 200 and health["status"] == "ok" and health["version"] == "0.2.0", health
+assert health["engine"] in ("claude", "extractive"), health
 
-status, body, _ = request("/api/research/run-does-not-exist")
-assert status == 404
+status, body, _ = request("/api/meta")
+meta = json.loads(body)
+assert status == 200
+assert meta["limits"]["MAX_CLAIMS"] == 6 and meta["limits"]["RUN_TIME_LIMIT_SECONDS"] == 300
+assert set(meta["status_notes"]) == {"running", "complete", "partial", "failed"}
+assert set(meta["verdict_labels"]) == set(meta["verdict_notes"])
+assert meta["example"]["ticker"] == "NVDA" and len(meta["example"]["claims"]) == 5
+assert meta["engine"] == health["engine"]
 
-status, body, _ = request(
-    "/api/research",
-    {"question": QUESTION, "decision": DECISION, "seed_urls": ["http://127.0.0.1/secret"]},
-)
-assert status == 422, (status, body)
-payload = json.loads(body)
-assert payload["error"] and any(d["field"].startswith("seed_urls") for d in payload["details"])
+status, body, content_type = request("/")
+assert status == 200 and content_type.startswith("text/html") and b"Evidence Desk" in body
+for asset, media_type in (
+    ("/app.js", "text/javascript"),
+    ("/styles.css", "text/css"),
+    ("/sample-run.json", "application/json"),
+):
+    status, body, content_type = request(asset)
+    assert status == 200 and body and content_type.startswith(media_type), asset
+sample = json.loads(request("/sample-run.json")[1])
+assert {"note", "meta", "run"} <= set(sample)
 
-status, body, _ = request(
-    "/api/research", {"question": QUESTION, "decision": DECISION, "source_budget": 99}
-)
-assert status == 422 and any(d["field"] == "source_budget" for d in json.loads(body)["details"])
+valid = {"ticker": "NVDA", "decision": DECISION, "claims": [CLAIM]}
+assert refused_fields(valid | {"ticker": "nv da$"}) == ["ticker"]
+assert refused_fields(valid | {"claims": []}) == ["claims"]
+assert refused_fields(valid | {"filings": 6}) == ["filings"]
+assert refused_fields(valid | {"extra_urls": ["http://127.0.0.1/secret"]}) == ["extra_urls.0"]
 
-# A run with nothing to fetch must fail with a useful error, never a synthetic answer.
-status, body, _ = request("/api/research", {"question": QUESTION, "decision": DECISION})
-assert status == 202, (status, body)
-run_id = json.loads(body)["id"]
-for _ in range(80):
-    status, body, _ = request(f"/api/research/{run_id}")
-    assert status == 200
-    run = json.loads(body)
-    if run["status"] != "running":
-        break
-    time.sleep(0.25)
-assert run["status"] == "failed", run["status"]
-assert run["brief"] is None and run["findings"] == []
-assert any("nothing to retrieve" in error for error in run["errors"])
-assert run["finished_at"].endswith("+00:00") or run["finished_at"].endswith("Z")
+for path in ("/api/runs/run-does-not-exist", "/api/runs/run-does-not-exist/export.md"):
+    status, body, _ = request(path)
+    assert status == 404 and json.loads(body) == {"detail": "Run not found"}, path
 
-status, body, content_type = request(f"/api/research/{run_id}/export.md")
-assert status == 200 and content_type.startswith("text/markdown")
-assert b"FAILED" in body and QUESTION.encode() in body
-
-status, body, _ = request("/api/research")
-assert run_id in [r["id"] for r in json.loads(body)["runs"]]
+status, body, _ = request("/api/runs")
+assert status == 200 and isinstance(json.loads(body)["runs"], list)
 print("smoke: ok")

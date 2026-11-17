@@ -11,7 +11,9 @@ services:
     environment:
       PYTHONPATH: /work/src
       HOME: /tmp
-      EVIDENCE_DESK_DATA_DIR: /work/data/runs
+      EVIDENCE_DESK_DATA_DIR: /work/data
+      # Set on the make command line to replay recorded model answers (make up-recorded).
+      EVIDENCE_DESK_CASSETTE: ${EVIDENCE_DESK_CASSETTE:-}
     volumes:
       - ..:/work
     ports:

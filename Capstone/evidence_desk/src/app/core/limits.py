@@ -39,6 +39,10 @@ FIGURE_YEARS = 2
 MAX_FIGURES_OFFERED = 40
 METRICS_CACHE_SECONDS = 900
 
+# Review and saved theses
+MAX_NOTE_CHARS = 500
+MAX_THESIS_NAME_CHARS = 80
+
 # Run bounds
 RUN_TIME_LIMIT_SECONDS = 300.0
 # Claims assessed at once: each assessment is one model call of several seconds.

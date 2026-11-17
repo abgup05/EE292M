@@ -48,7 +48,7 @@ from app.retrieval.search import PassageIndex
 from app.services.ingest import ingest
 from app.services.numbers import load_numbers, select_figures
 from app.sources.http import fetch_page as default_fetch_page
-from app.store import Store
+from app.store import FilingCache, Store
 
 log = logging.getLogger(__name__)
 MAX_UNKNOWNS = 12
@@ -58,11 +58,15 @@ NO_EVIDENCE_UNKNOWN = "No verified evidence was found for: {claim}"
 NO_PASSAGE_RATIONALE = "No passage in the sources read shares terms with the claim."
 
 
-def new_run(request: ThesisRequest) -> Run:
-    """Create a running record with a fresh ID and UTC start time."""
+def new_run(request: ThesisRequest, thesis_id: str | None = None) -> Run:
+    """Create a running record with a fresh ID and UTC start time.
+
+    ``thesis_id`` names the saved thesis this run tests, if any.
+    """
     return Run(
         id=f"run-{uuid.uuid4().hex[:12]}",
         inputs=request,
+        thesis_id=thesis_id,
         status=RunStatus.running,
         started_at=datetime.now(UTC),
     )
@@ -131,14 +135,17 @@ def execute_run(
     fetch_page: PageFetcher = default_fetch_page,
     clock: Callable[[], float] = time.monotonic,
     concurrency: int = limits.MAX_CONCURRENT_ASSESSMENTS,
+    cache: FilingCache | None = None,
 ) -> Run:
     """Execute ``run`` to completion, persisting progress, and return the final record.
 
     Up to ``concurrency`` claims are assessed at once (1 assesses them one after
-    another); the record is the same either way.
+    another); the record is the same either way. Source text is kept in
+    ``cache``; without one, an in-memory cache that lives for this run only.
     """
     if concurrency < 1:
         raise ValueError("concurrency must be at least 1")
+    cache = cache if cache is not None else FilingCache()
     started = clock()
 
     def out_of_time() -> bool:
@@ -172,7 +179,13 @@ def execute_run(
 
     _stage(run, store, "filings")
     ingested = ingest(
-        run, company, store, filings=filings, fetch_page=fetch_page, out_of_time=out_of_time
+        run,
+        company,
+        store,
+        filings=filings,
+        fetch_page=fetch_page,
+        out_of_time=out_of_time,
+        cache=cache,
     )
     run.coverage = Coverage(
         sources_requested=ingested.distinct_requested,
@@ -222,9 +235,14 @@ def execute_run(
     ]
     index = PassageIndex(passages)
     urls = {source.id: source.url for source in run.sources}
+    # Quotes are verified against the text as stored, read back the one way stored text is read.
+    texts = cache.source_texts(run)
+    missing = sorted(set(ingested.documents) - set(texts))
+    if missing:
+        raise RuntimeError(f"the stored text of {', '.join(missing)} is missing from the cache")
     stored = {
-        source_id: StoredSource(document.text, urls[source_id])
-        for source_id, document in ingested.documents.items()
+        source_id: StoredSource(texts[source_id], urls[source_id])
+        for source_id in ingested.documents
     }
     run.coverage.passages_indexed = len(passages)
 

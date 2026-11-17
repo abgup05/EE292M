@@ -132,18 +132,29 @@ def _recording_parsed_filings() -> Iterator[dict[str, Document]]:
         yield parsed
 
 
-def run_example(data_dir: Path) -> tuple[Run, RecordingAnalyst, dict[str, Document]]:
-    """The example thesis on the recorded filings, with the extractive engine and a still clock."""
+def run_example(
+    data_dir: Path, concurrency: int = limits.MAX_CONCURRENT_ASSESSMENTS
+) -> tuple[Run, RecordingAnalyst, dict[str, Document]]:
+    """The example thesis on the recorded filings, with the extractive engine and a still clock.
+
+    The record goes to ``data_dir/golden.sqlite``; the filing text to an
+    in-memory cache, so every call parses the filings afresh.
+    """
     analyst = RecordingAnalyst()
     with _recording_parsed_filings() as parsed:
-        run = execute_run(
-            new_run(EXAMPLE_THESIS.model_copy(deep=True)),
-            Store(data_dir / "golden.sqlite"),
-            filings=recorded_filings(),
-            analyst=analyst,
-            fetch_page=FakePages({}),
-            clock=ManualClock(),
-        )
+        store = Store(data_dir / "golden.sqlite")
+        try:
+            run = execute_run(
+                new_run(EXAMPLE_THESIS.model_copy(deep=True)),
+                store,
+                filings=recorded_filings(),
+                analyst=analyst,
+                fetch_page=FakePages({}),
+                clock=ManualClock(),
+                concurrency=concurrency,
+            )
+        finally:
+            store.close()
     return run, analyst, parsed
 
 
@@ -256,10 +267,13 @@ def golden_record(run: Run, analyst: RecordingAnalyst, parsed: dict[str, Documen
     return record
 
 
-def build_golden() -> dict:
-    """Run the example offline and return its golden record (see the module docstring)."""
+def build_golden(concurrency: int = limits.MAX_CONCURRENT_ASSESSMENTS) -> dict:
+    """Run the example offline and return its golden record (see the module docstring).
+
+    ``concurrency`` changes how claims are scheduled, never the record.
+    """
     with tempfile.TemporaryDirectory() as scratch:
-        run, analyst, parsed = run_example(Path(scratch))
+        run, analyst, parsed = run_example(Path(scratch), concurrency)
     return golden_record(run, analyst, parsed)
 
 

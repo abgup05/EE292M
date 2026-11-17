@@ -32,7 +32,7 @@ from app.services.ingest import filing_title
 from app.services.numbers import select_figures
 from app.services.thesis_run import execute_run, fail_run, new_run
 from app.sources.filing import parse_filing
-from app.store import Store
+from app.store import FilingCache, Store
 from tests.fakes import (
     FY_2026,
     NVIDIA,
@@ -72,7 +72,12 @@ def request(*claims: str, filings: int = 3) -> ThesisRequest:
 
 @pytest.fixture
 def store(tmp_path: Path) -> Store:
-    return Store(tmp_path / "runs.sqlite")
+    return Store(tmp_path / "record.sqlite")
+
+
+@pytest.fixture
+def cache() -> FilingCache:
+    return FilingCache()
 
 
 def run_with(
@@ -82,6 +87,7 @@ def run_with(
     analyst: object,
     clock: ManualClock | None = None,
     concurrency: int = limits.MAX_CONCURRENT_ASSESSMENTS,
+    cache: FilingCache | None = None,
 ) -> Run:
     return execute_run(
         new_run(thesis),
@@ -91,6 +97,7 @@ def run_with(
         fetch_page=FakePages({}),
         clock=clock or ManualClock(),
         concurrency=concurrency,
+        cache=cache,
     )
 
 
@@ -119,10 +126,12 @@ def supports_first_sentence(claim: object, passages: list[Passage]) -> ClaimDraf
 # Identity
 
 
-def test_every_excerpt_is_an_exact_slice_of_the_stored_filing(store: Store) -> None:
+def test_every_excerpt_is_an_exact_slice_of_the_stored_filing(
+    store: Store, cache: FilingCache
+) -> None:
     thesis = request(GROWTH, CUSTOMERS, EXPORT, MARGIN, SUPPLIERS, filings=1)
-    run = run_with(store, thesis, FakeFilings.nvidia(Q2_2027), ExtractiveAnalyst())
-    stored = store.get_source_texts(run.id)
+    run = run_with(store, thesis, FakeFilings.nvidia(Q2_2027), ExtractiveAnalyst(), cache=cache)
+    stored = cache.source_texts(run)
     assert run.evidence, "the extractive engine quotes the recorded 10-Q"
     for item in run.evidence:
         text = stored[item.source_id]
@@ -621,14 +630,16 @@ def test_unreadable_facts_leave_the_run_to_the_filings_and_say_so(store: Store) 
     ]
 
 
-def test_the_xbrl_source_changes_no_source_count_or_denominator(store: Store) -> None:
+def test_the_xbrl_source_changes_no_source_count_or_denominator(
+    store: Store, cache: FilingCache
+) -> None:
     filings = FakeFilings.nvidia(Q2_2027, Q1_2027, FY_2026)  # Q1 was not recorded: HTTP 404
-    run = run_with(store, request(GROWTH, SUPPLIERS), filings, ExtractiveAnalyst())
+    run = run_with(store, request(GROWTH, SUPPLIERS), filings, ExtractiveAnalyst(), cache=cache)
     assert [source.id for source in run.sources] == ["s1", "s2", "s3", "s4"]
     assert run.sources[3].kind == SourceKind.sec_xbrl
     assert run.coverage.sources_requested == 3 and run.coverage.sources_read == 2
     assert "1 of 3 source(s) could not be read." in run.coverage_limits
-    assert len(store.get_source_texts(run.id)) == 2  # the facts are never chunked or stored
+    assert set(cache.source_texts(run)) == {"s1", "s3"}  # the facts are never chunked or stored
     assert {item.source_id for item in run.evidence} <= {"s1", "s3"}
 
 

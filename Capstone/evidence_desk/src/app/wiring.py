@@ -1,12 +1,19 @@
 """The composition root: the one place that reads the environment and builds collaborators.
 
 The HTTP API and the command line ask this module for an engine, an EDGAR
-client and a store; nothing else reads configuration. Nothing here runs at
-import time: each function builds its object when it is called.
+client, the record store and the filing cache; nothing else reads
+configuration. Nothing here runs at import time: each function builds its
+object when it is called.
+
+The data directory (``$EVIDENCE_DESK_DATA_DIR``, default ``data``) holds
+``record/record.sqlite`` (the record: back it up) and ``cache/filings.sqlite``
+(disposable). A version 3 database at ``runs/runs.sqlite`` is left alone, not read.
 """
 
 from __future__ import annotations
 
+import functools
+import logging
 import os
 from pathlib import Path
 
@@ -16,11 +23,14 @@ from app.engines.claude import ClaudeAnalyst
 from app.engines.extractive import ExtractiveAnalyst
 from app.engines.transport import AnthropicTransport
 from app.sources.edgar import EdgarClient
-from app.store import Store
+from app.store import FilingCache, Store
 
+log = logging.getLogger(__name__)
 DATA_DIR_VARIABLE = "EVIDENCE_DESK_DATA_DIR"
-DEFAULT_DATA_DIR = "data/runs"
-DATABASE_NAME = "runs.sqlite"
+DEFAULT_DATA_DIR = "data"
+RECORD_PATH = Path("record") / "record.sqlite"
+CACHE_PATH = Path("cache") / "filings.sqlite"
+VERSION_3_DATABASE = Path("runs") / "runs.sqlite"
 KEY_VARIABLE = "ANTHROPIC_API_KEY"
 CASSETTE_VARIABLE = "EVIDENCE_DESK_CASSETTE"
 RECORD_VARIABLE = "EVIDENCE_DESK_CASSETTE_RECORD"
@@ -93,10 +103,29 @@ def filings_from_env() -> EdgarClient:
 
 
 def data_dir() -> Path:
-    """Where runs are stored: ``$EVIDENCE_DESK_DATA_DIR``, default ``data/runs``."""
+    """The parent of the record and the cache: ``$EVIDENCE_DESK_DATA_DIR``, default ``data``."""
     return Path(os.environ.get(DATA_DIR_VARIABLE, "").strip() or DEFAULT_DATA_DIR)
 
 
+def record_path() -> Path:
+    """The record database: ``data_dir()/record/record.sqlite``."""
+    return data_dir() / RECORD_PATH
+
+
+@functools.cache
+def _note_version_3_database(directory: Path) -> None:
+    """Say once per process that a version 3 database exists and is not read."""
+    old = directory / VERSION_3_DATABASE
+    if old.exists():
+        log.warning("found a version 3 database at %s; it is not read", old)
+
+
 def store_from_env() -> Store:
-    """The SQLite store at ``data_dir()/runs.sqlite``, created if needed."""
-    return Store(data_dir() / DATABASE_NAME)
+    """The record store at ``data_dir()/record/record.sqlite``, created if needed."""
+    _note_version_3_database(data_dir())
+    return Store(record_path())
+
+
+def cache_from_env() -> FilingCache:
+    """The disposable filing cache at ``data_dir()/cache/filings.sqlite``, created if needed."""
+    return FilingCache(data_dir() / CACHE_PATH)

@@ -38,7 +38,7 @@ from app.services.examples import EXAMPLE_THESIS
 from app.services.export import render_markdown
 from app.services.thesis_run import execute_run, new_run
 from app.sources.http import fetch_page as default_fetch_page
-from app.store import Store
+from app.store import FilingCache, Store
 
 DEFAULT_OUT = Path("results")
 NOT_ASSESSED = "Not assessed"
@@ -171,10 +171,13 @@ def main(
     filings: FilingSource | None = None,
     store: Store | None = None,
     fetch_page: PageFetcher = default_fetch_page,
+    cache: FilingCache | None = None,
 ) -> int:
     """Run the command in ``argv`` and return the exit code.
 
     ``filings`` and ``store`` default to :mod:`app.wiring`; tests pass fakes.
+    ``cache`` defaults to the configured filing cache when ``store`` does too;
+    a test that passes its own store and no cache gets a cache for that run only.
     """
     args = _parser().parse_args(argv)
     if args.command == "cassette":
@@ -202,13 +205,17 @@ def main(
         print(f"SEC EDGAR could not be consulted: {exc}", file=sys.stderr)
         return 1
 
-    store = store or wiring.store_from_env()
+    if store is None:
+        store = wiring.store_from_env()
+        cache = cache or wiring.cache_from_env()
     run = new_run(thesis)
     store.save_run(run)
     detail = getattr(analyst, "detail", "")
     engine = f"{analyst.name} ({detail})" if detail else analyst.name
     print(f"{run.id}: testing {len(thesis.claims)} claim(s) on {thesis.ticker} with {engine}")
-    run = execute_run(run, store, filings=filings, analyst=analyst, fetch_page=fetch_page)
+    run = execute_run(
+        run, store, filings=filings, analyst=analyst, fetch_page=fetch_page, cache=cache
+    )
 
     cassette = _cassette_of(analyst)
     if cassette is not None and cassette.pending_keys:

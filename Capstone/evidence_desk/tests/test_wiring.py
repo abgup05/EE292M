@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+import logging
 from pathlib import Path
 
 import pytest
@@ -64,13 +65,30 @@ def test_filings_identify_themselves_to_edgar(monkeypatch: pytest.MonkeyPatch) -
         assert client.user_agent == DEFAULT_USER_AGENT
 
 
-def test_the_store_lives_in_the_configured_data_directory(
+def test_the_record_and_the_cache_live_apart_in_the_configured_data_directory(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.setenv("EVIDENCE_DESK_DATA_DIR", str(tmp_path / "runs"))
-    assert wiring.store_from_env().path == tmp_path / "runs" / "runs.sqlite"
+    monkeypatch.setenv("EVIDENCE_DESK_DATA_DIR", str(tmp_path / "data"))
+    assert wiring.store_from_env().path == tmp_path / "data" / "record" / "record.sqlite"
+    assert wiring.cache_from_env().path == tmp_path / "data" / "cache" / "filings.sqlite"
     monkeypatch.delenv("EVIDENCE_DESK_DATA_DIR")
-    assert wiring.data_dir() == Path("data/runs")
+    assert wiring.data_dir() == Path("data")
+    assert wiring.record_path() == Path("data/record/record.sqlite")
+
+
+def test_a_version_3_database_is_mentioned_once_and_left_alone(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    old = tmp_path / "runs" / "runs.sqlite"
+    old.parent.mkdir()
+    old.write_bytes(b"a version 3 database")
+    monkeypatch.setenv("EVIDENCE_DESK_DATA_DIR", str(tmp_path))
+    with caplog.at_level(logging.WARNING, logger="app.wiring"):
+        wiring.store_from_env()
+        wiring.store_from_env()
+    notes = [r.getMessage() for r in caplog.records if "version 3" in r.getMessage()]
+    assert notes == [f"found a version 3 database at {old}; it is not read"]
+    assert old.read_bytes() == b"a version 3 database"
 
 
 def test_importing_the_entry_points_opens_nothing(

@@ -17,7 +17,7 @@ from pathlib import Path
 import pytest
 
 from app.core.models import Run
-from app.store import Store
+from app.store import FilingCache
 from tests.golden_run import REPLAY_PATH, replay_copy, replay_record
 from tests.replay_run import DEFAULT_CASSETTE
 
@@ -53,7 +53,7 @@ def test_every_replayed_excerpt_is_an_exact_slice_of_its_filing(
     replayed: tuple[Run, list[str], Path],
 ) -> None:
     run, _, scratch = replayed
-    stored = Store(scratch / "replay.sqlite").get_source_texts(run.id)
+    stored = FilingCache(scratch / "cache.sqlite").source_texts(run)
     assert run.evidence, "the recorded answers quote the filings"
     for item in run.evidence:
         text = stored[item.source_id]

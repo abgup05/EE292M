@@ -25,7 +25,7 @@ from app.engines.claude import ClaudeAnalyst
 from app.services.examples import EXAMPLE_THESIS
 from app.services.export import render_markdown
 from app.services.thesis_run import execute_run, new_run
-from app.store import Store
+from app.store import FilingCache, Store
 from tests.fakes import FY_2026, Q1_2027, Q2_2027, FakeFilings, recorded_companies, recorded_html
 
 DEFAULT_CASSETTE = Path("demo/cassettes/nvda-example")
@@ -44,7 +44,11 @@ def recorded_filings() -> FakeFilings:
 
 
 def replay(cassette: Path, data_dir: Path) -> tuple[Run, list[str]]:
-    """Execute the example thesis; return the run and the keys of unanswered requests."""
+    """Execute the example thesis; return the run and the keys of unanswered requests.
+
+    The record goes to ``data_dir/replay.sqlite`` and the source text to
+    ``data_dir/cache.sqlite``.
+    """
     transport = CassetteTransport(cassette)
     analyst = ClaudeAnalyst(transport=transport)
     store = Store(data_dir / "replay.sqlite")
@@ -53,6 +57,7 @@ def replay(cassette: Path, data_dir: Path) -> tuple[Run, list[str]]:
         store,
         filings=recorded_filings(),
         analyst=analyst,
+        cache=FilingCache(data_dir / "cache.sqlite"),
     )
     return run, list(transport.pending_keys)
 

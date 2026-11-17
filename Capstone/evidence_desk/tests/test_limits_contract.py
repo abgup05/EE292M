@@ -1,8 +1,9 @@
 """Every number in ``app.core.limits`` equals the value the data contract states.
 
 The contract is ``Capstone/PROMPT.md`` sections 3 (request) and 4 (method),
-plus the limits this version added (Item coverage, excerpt context, reported
-figures, concurrent assessments). The code reads each limit from the module, so
+plus the limits later versions added (Item coverage, excerpt context, reported
+figures, concurrent assessments; the review note and the saved thesis name).
+The code reads each limit from the module, so
 a test written against the module cannot notice a changed value; this one is
 written against the contract. Changing a limit therefore means changing this
 file in the same commit, and saying why.
@@ -46,8 +47,11 @@ CONTRACT: dict[str, int | float] = {
     "FIGURE_YEARS": 2,
     "MAX_FIGURES_OFFERED": 40,
     "METRICS_CACHE_SECONDS": 900,
-    # Added in this version: claims assessed at once (each is one model call)
+    # Added in version 3: claims assessed at once (each is one model call)
     "MAX_CONCURRENT_ASSESSMENTS": 3,
+    # Added in version 4: a reviewer's note on a decision, and a saved thesis's name
+    "MAX_NOTE_CHARS": 500,
+    "MAX_THESIS_NAME_CHARS": 80,
 }
 
 

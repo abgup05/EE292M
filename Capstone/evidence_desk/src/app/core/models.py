@@ -212,6 +212,110 @@ class Brief(BaseModel):
     status_note: str
 
 
+class DecisionValue(StrEnum):
+    accepted = "accepted"
+    rejected = "rejected"
+
+
+class Decision(BaseModel):
+    """A reviewer's decision on one verified finding of one run.
+
+    Decisions are the one kind of data here that nothing can rebuild: they
+    are kept in the record database, which is the file that is backed up.
+    """
+
+    run_id: str
+    finding_id: str
+    value: DecisionValue
+    note: str = Field(default="", max_length=limits.MAX_NOTE_CHARS)
+    decided_at: datetime
+
+
+class DecisionRequest(BaseModel):
+    """What a client sends for one finding: a value, or null to clear the decision."""
+
+    value: DecisionValue | None
+    note: str = Field(default="", max_length=limits.MAX_NOTE_CHARS)
+
+    @field_validator("note", mode="before")
+    @classmethod
+    def _trim_note(cls, value: object) -> object:
+        return value.strip() if isinstance(value, str) else value
+
+
+class ReviewedClaim(BaseModel):
+    """One claim after review. ``reviewed_verdict`` counts accepted findings only."""
+
+    claim_id: str
+    engine_verdict: Verdict | None
+    reviewed_verdict: Verdict | None
+    accepted: int = 0
+    rejected: int = 0
+    undecided: int = 0
+
+
+class Review(BaseModel):
+    """Every decision on a run and the verdicts that follow from them, computed by the backend."""
+
+    run_id: str
+    decisions: list[Decision] = Field(default_factory=list)
+    claims: list[ReviewedClaim] = Field(default_factory=list)
+    findings_total: int = 0
+    decided: int = 0
+    complete: bool = False
+
+
+class Thesis(BaseModel):
+    """A saved thesis: a named request that can be run again when a new filing arrives."""
+
+    id: str
+    name: str = Field(min_length=1, max_length=limits.MAX_THESIS_NAME_CHARS)
+    request: ThesisRequest
+    created_at: datetime
+    run_ids: list[str] = Field(default_factory=list)
+
+
+class ThesisCreate(BaseModel):
+    """What a client sends to save a thesis."""
+
+    name: str = Field(min_length=1, max_length=limits.MAX_THESIS_NAME_CHARS)
+    request: ThesisRequest
+
+    @field_validator("name", mode="before")
+    @classmethod
+    def _trim_name(cls, value: object) -> object:
+        return " ".join(value.split()) if isinstance(value, str) else value
+
+
+class ClaimChange(BaseModel):
+    """How one claim's result differs between two runs of the same thesis."""
+
+    claim: str
+    before: Verdict | None
+    after: Verdict | None
+    moved: bool
+    reviewed_before: Verdict | None = None
+    reviewed_after: Verdict | None = None
+    excerpts_added: int = 0
+    excerpts_dropped: int = 0
+
+
+class RunComparison(BaseModel):
+    """What moved between an earlier and a later run of one thesis."""
+
+    thesis_id: str | None
+    earlier_run_id: str
+    later_run_id: str
+    earlier_finished_at: datetime | None = None
+    later_finished_at: datetime | None = None
+    sources_added: list[str] = Field(default_factory=list)
+    sources_dropped: list[str] = Field(default_factory=list)
+    claims: list[ClaimChange] = Field(default_factory=list)
+    verdicts_moved: int = 0
+    claims_total: int = 0
+    note: str = ""
+
+
 class Coverage(BaseModel):
     """What the run read and kept, counted by the backend so no view has to."""
 
@@ -242,6 +346,7 @@ class Run(BaseModel):
 
     id: str
     inputs: ThesisRequest
+    thesis_id: str | None = None
     status: RunStatus
     stage: str = "queued"
     stage_detail: str = ""

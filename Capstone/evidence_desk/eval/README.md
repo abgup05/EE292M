@@ -94,6 +94,11 @@ three back, 23 one forward. Every planted error that passed is listed with the r
 years passed: five because the quote itself prints the planted year, two because a date falls in
 the calendar year of a filing's period end.
 
+A second count (since version 11.1) plants one wrong year beside right ones, which is the slip a
+writer makes: in each verified finding that names two or more years, one year at a time is moved
+one year back and the others are left. Of 18 such statements, from 9 findings, 13 are flagged.
+The 5 that pass each end up naming the same year twice ("in 2025 from ... in 2025").
+
 ## Planted mismatches (`results/mismatch-*`)
 
 The `--check` run shows what the meaning check said about findings as the engine wrote them: it

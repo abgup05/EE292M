@@ -1,12 +1,13 @@
-# make backup && make restore-check
-# 2026-11-17T19:13:50Z, version 0.11.0, on the record the live walk had just written. Same disk, same machine.
+# make backup && make restore-check && make backup-status
+# 2026-11-17T20:43:20Z, version 0.11.1, on the record the live walk had just written. Same disk, same machine.
+# The check compares every column of every row of the three tables (since version 0.11.1).
 
 found a version 3 database at /work/data/runs/runs.sqlite; it is not read
-wrote backups/record-20261117T191351Z.sqlite
-wrote backups/record-20261117T191351Z.sqlite.sha256
-wrote backups/decisions-20261117T191351Z.jsonl
-the backup holds 35 runs, 18 decisions and 9 theses
+wrote backups/record-20261117T204219Z.sqlite
+wrote backups/record-20261117T204219Z.sqlite.sha256
+wrote backups/decisions-20261117T204219Z.jsonl
+the backup holds 40 runs, 20 decisions and 10 theses
 found a version 3 database at /work/data/runs/runs.sqlite; it is not read
-PASS: record-20261117T191351Z.sqlite restores to the live record: 35 runs, 18 decisions, 9 theses; taken less than a minute before this check
+PASS: record-20261117T204219Z.sqlite restores to the live record: 40 runs, 20 decisions, 10 theses; taken less than a minute before this check
 found a version 3 database at /work/data/runs/runs.sqlite; it is not read
-backup status: record-20261117T191351Z.sqlite, taken less than a minute ago, holds everything in the record.
+backup status: record-20261117T204219Z.sqlite, taken less than a minute ago, holds everything in the record.

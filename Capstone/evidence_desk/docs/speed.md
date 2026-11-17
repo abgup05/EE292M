@@ -2,6 +2,39 @@
 
 *Two parts. The first was measured at version 11, on 17 November 2026, in answer to the sixth review ([`reviews/review-6-speed-system.md`](reviews/review-6-speed-system.md)): it found that the numbers below it were six versions old, that the time a live run spends on EDGAR had been inferred and never measured, and that "one change" was two. The second part is the version 4 note, kept as it was measured then.*
 
+## Version 11.1: the two measurements the fourth referee faulted, taken again
+
+The fourth referee read two faults out of the committed outputs ([`referee-4-triage.md`](referee-4-triage.md), findings 4 and 5). Both were real, and each changed a number. The sections for version 11 below are kept as they were written. **Where they disagree with this one, this one is right.**
+
+**The live run** (`make time-live RUNS=5`, [`speed/live-timing-v11.1.txt`](speed/live-timing-v11.1.txt)). The script built an EDGAR client for every run, so every timed run fetched the company list. The running app does not: its client lives as long as the app, keeps that list for a day, and resolves the ticker before a run starts. One client now serves all the runs, with the list loaded before the first. Decoding EDGAR's JSON answers and reading a filing back from the cache are stages of their own, and the time no stage covers is taken run by run.
+
+| Five runs each | Whole run: median (range) | EDGAR requests | Parsing | Decoding EDGAR's answers | Reading the filings back from the cache | Covered by no stage: median (range) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Empty filing cache | 1,160 ms (1,046 to 1,551) | 661 ms, 5 requests | 367 ms | 19 ms | none | 45 ms (42 to 48) |
+| Warm filing cache | 326 ms (312 to 527) | 188 ms, 2 requests | none | 31 ms | 1.0 ms | 44 ms (44 to 47) |
+| Empty cache, tagged figures asked for | 1,243 ms (1,066 to 1,272) | 721 ms, 5 requests | 358 ms | 19 ms | none | 44 ms (42 to 47) |
+| Warm cache, tagged figures asked for | 351 ms (321 to 983) | 208 ms, 2 requests | none | 30 ms | 1.5 ms | 47 ms (45 to 50) |
+
+- A run makes **5 requests with an empty cache and 2 with a warm one**, not 6 and 3. Waiting for EDGAR is **57 to 59%** of a run without a key, not "about two thirds".
+- The note below says that what no stage covers on a warm run "is mostly rebuilding the three documents from the cached text". Nothing had timed that, and it was wrong: reading the three filings back takes 1 ms.
+- Decoding the two JSON answers of a run (the filing list and the company facts) takes 19 to 31 ms.
+- **About 45 ms of every run is still covered by no stage**: 42 to 50 ms in all twenty runs, cold or warm. It is a fixed cost this stopwatch does not name. What it is has not been found, and this note does not guess a second time.
+- EDGAR's latency still moves more than anything measured here: the first row's range is 500 ms wide. The rows can be compared with each other because the four conditions are taken in turn.
+
+**The header cut** (`make bench RUNS=20`, three outputs: [`speed/bench-v11.1.txt`](speed/bench-v11.1.txt), [`speed/bench-v11.1-repeat.txt`](speed/bench-v11.1-repeat.txt), and with `COLLECTOR=1` [`speed/bench-v11.1-collector-on.txt`](speed/bench-v11.1-collector-on.txt)). In the version 11 output the times of one variant fall into two groups 40 ms apart on a cycle of five pairs, and in every fifth pair the parse is slower with the cut while the whole run is faster. The cut always ran first in a pair, and nothing kept a garbage collection made due by one run from landing inside the next. Now the order within a pair alternates, and the collector is run before each timed run. It is then either switched off for the timed part, which times the run's own work, or left on as it is in the app, where a run also pays for the collections its own allocations cause.
+
+| 20 pairs | With the cut | Without | Saved per pair: median (interquartile range; range) | Cut faster | Saved with the cut run first; second |
+| --- | ---: | ---: | --- | ---: | --- |
+| Collector off. Parse 3 filings | 255.4 ms | 280.5 ms | 25.4 ms (24.6 to 26.7; 21.3 to 29.7) | 20 of 20 | 25.2 ms; 26.1 ms |
+| Collector off. Whole run | 386.8 ms | 412.8 ms | 24.0 ms (22.8 to 29.0; 20.8 to 34.6) | 20 of 20 | 23.7 ms; 24.9 ms |
+| Collector off, the repeat: parse; whole run | 256.6; 387.5 ms | 281.9; 413.1 ms | 25.7 ms; 25.2 ms | 20; 20 of 20 | 24.8, 25.8 ms; 24.9, 25.5 ms |
+| Collector on. Parse 3 filings | 258.1 ms | 285.1 ms | 27.0 ms (25.9 to 27.8; 23.2 to 32.0) | 20 of 20 | 27.3 ms; 26.7 ms |
+| Collector on. Whole run | 389.5 ms | 415.8 ms | 26.1 ms (23.3 to 28.9; 19.4 to 30.1) | 20 of 20 | 28.7 ms; 23.4 ms |
+
+The two groups are gone. On the parse, the pairs now lie within 9 ms of each other where they had been spread over 85 ms, the cut is faster in every pair where it had been in 16 of 20, and which variant runs first makes no difference with the collector off. With it on, the whole-run saving is 5 ms larger when the cut runs first; ten pairs each way do not show whether that is real.
+
+**The cut saves 25 to 27 ms of an offline run of about 415 ms, 6% of it, and not the 34 ms reported at version 11.** The version 11 runs were also about 45 ms longer in both variants (432 and 462 ms). The only things that differ here are the collection before each timed run and the alternating order, so the extra time and the extra saving both came from those; which of the two, the outputs do not say. Against a live run with an empty cache, 25 ms is about 2% (of 1,160 ms). The sentence below, that the saving on the whole run "agrees with the saving on the parse, as it must", is withdrawn: in the version 11 pairs it did not, pair by pair. In these it does, to within 2 ms.
+
 ## Version 11: where a live run's time goes, measured inside the run
 
 `make time-live` runs the example thesis on filings fetched from SEC EDGAR, with the deterministic engine and no key, five times under each of four conditions, the conditions taken in turn. Every stage is timed by wrapping the functions that make it up, as the offline profile does; "EDGAR requests" is every HTTP request the client made, with the waiting its rate limit imposes. Output: [`speed/live-timing-v11.txt`](speed/live-timing-v11.txt).

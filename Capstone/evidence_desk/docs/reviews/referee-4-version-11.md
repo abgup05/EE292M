@@ -6,7 +6,7 @@
 - **Run on:** 17 November 2026. The session that started it was told to return the referee's findings exactly as written; the text below is what that session returned.
 - **Checks made afterwards:** no file in the checkout was changed after the referee started, and every path it cites is inside the checkout.
 
-**Not yet answered.** None of the eight findings below has been checked against the code or decided. Until each is, read what the README says about the changed paragraphs under a claim, the period check, the restore check and the speed figures with these findings beside it.
+The triage of every finding is in [`../referee-4-triage.md`](../referee-4-triage.md).
 
 ---
 

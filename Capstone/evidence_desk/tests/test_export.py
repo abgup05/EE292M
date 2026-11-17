@@ -1,6 +1,6 @@
 """The Markdown brief: same record and same wording as the API and the page."""
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -10,10 +10,13 @@ from app.core.models import (
     Claim,
     Company,
     Confidence,
+    Decision,
+    DecisionValue,
     Evidence,
     ExtractionStatus,
     Finding,
     FindingChecks,
+    Review,
     Run,
     RunStatus,
     Source,
@@ -23,12 +26,16 @@ from app.core.models import (
     Verdict,
 )
 from app.core.policy import (
+    DECISION_LABELS,
     FIGURES_NOTE,
     PROVENANCE_NOTE,
+    REVIEW_NOTE,
     STATUS_NOTES,
+    UNDECIDED,
     VERDICT_LABELS,
     VERDICT_NOTES,
 )
+from app.core.review import build_review
 from app.services.export import render_markdown
 
 URL = "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm"
@@ -405,3 +412,90 @@ def test_coverage_counts_claims_with_verified_excerpts_or_figures() -> None:
     markdown = render_markdown(_run_with_figures())
     assert "Claims with verified excerpts or figures: 2 of 3" in markdown
     assert "verified evidence:" not in markdown
+
+
+# The reviewed brief
+
+DECIDED = datetime(2026, 11, 17, 16, 30, tzinfo=UTC)
+
+
+def _review_of(run: Run) -> Review:
+    """f1 accepted with a note, f2 rejected with a note; f3 and f4 undecided."""
+    decisions = [
+        Decision(
+            run_id=run.id,
+            finding_id="f1",
+            value=DecisionValue.accepted,
+            note="Matches the segment table.",
+            decided_at=DECIDED - timedelta(minutes=5),
+        ),
+        Decision(
+            run_id=run.id,
+            finding_id="f2",
+            value=DecisionValue.rejected,
+            note="This is about customers, not growth.",
+            decided_at=DECIDED,
+        ),
+    ]
+    return build_review(run, decisions)
+
+
+def test_without_a_review_the_brief_is_unchanged() -> None:
+    run = _complete_run()
+    assert render_markdown(run, None) == render_markdown(run)
+    assert "## Your review" not in render_markdown(run)
+    assert "After your review" not in render_markdown(run)
+
+
+def test_your_review_comes_first_after_the_status() -> None:
+    run = _complete_run()
+    markdown = render_markdown(run, _review_of(run))
+    order = [STATUS_NOTES[RunStatus.partial], "## Your review", "- Run: run-42", "## Decision"]
+    positions = [markdown.index(marker) for marker in order]
+    assert positions == sorted(positions)
+    section = _between(markdown, "## Your review", "- Run: run-42")
+    assert "You decided 2 of 4 findings." in section
+    assert REVIEW_NOTE in section
+
+
+def test_the_verdict_table_gains_the_reviewed_verdict() -> None:
+    run = _complete_run()
+    table = _between(render_markdown(run, _review_of(run)), "## Verdicts", "## Summary")
+    rows = [line for line in table.splitlines() if line.startswith("|")]
+    assert rows[0].replace(" ", "") == (
+        "|Claim|Verdict|Afteryourreview|Supporting|Challenging|Context|"
+    )
+    # c1: f1 (supports) accepted and f2 (challenges) rejected, so supported.
+    assert rows[2].replace(" ", "") == (
+        f"|{CLAIMS[0]}|{VERDICT_LABELS[Verdict.mixed]}|{VERDICT_LABELS[Verdict.supported]}|1|1|1|"
+    ).replace(" ", "")
+    # c2 has no decision yet.
+    assert f"| {DECISION_LABELS[UNDECIDED]} |" in rows[3]
+
+
+def test_each_finding_carries_its_decision_and_rejected_ones_are_struck_and_last() -> None:
+    run = _complete_run()
+    claims = _between(render_markdown(run, _review_of(run)), "## Claims", "## Unknowns")
+    c1 = _between(claims, CLAIMS[0], CLAIMS[1])
+    assert c1.index("Statement f1.") < c1.index("Statement f3.") < c1.index("Statement f2.")
+    assert "#### ~~f2. Statement f2.~~" in c1
+    assert "- Your decision: Accepted. Matches the segment table." in c1
+    assert "- Your decision: Rejected. This is about customers, not growth." in c1
+    f3 = _between(c1, "Statement f3.", "Statement f2.")
+    assert "- Your decision: Undecided" in f3
+    assert "~~" not in _between(c1, "Statement f1.", "Statement f3.")
+
+
+def test_the_footer_dates_the_decisions() -> None:
+    run = _complete_run()
+    markdown = render_markdown(run, _review_of(run))
+    assert markdown.rstrip().endswith(
+        "This brief includes the reviewer's decisions as of 2026-11-17 16:30:00 UTC."
+    )
+
+
+def test_a_review_without_decisions_says_none_were_made() -> None:
+    run = _complete_run()
+    markdown = render_markdown(run, build_review(run, []))
+    assert "You decided 0 of 4 findings." in markdown
+    assert markdown.rstrip().endswith("This brief includes no reviewer decision yet.")

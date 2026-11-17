@@ -17,19 +17,29 @@ from app.api import WEB_DIR, create_app
 from app.core import limits
 from app.core.facts import FactBook
 from app.core.metrics import build_report
-from app.core.models import RunStatus, Verdict
+from app.core.models import Confidence, RunStatus, Stance, ThesisRequest, Verdict
 from app.core.policy import (
+    DECISION_LABELS,
     FIGURES_NOTE,
     PROVENANCE_NOTE,
+    REVIEW_NOTE,
     STATUS_NOTES,
     VERDICT_LABELS,
     VERDICT_NOTES,
 )
-from app.core.ports import SourceError
+from app.core.ports import ClaimDraft, FindingDraft, Quote, SourceError
 from app.engines.extractive import ExtractiveAnalyst
 from app.services.examples import EXAMPLE_THESIS
+from app.services.thesis_run import new_run
 from app.store import Store
-from tests.fakes import FakeFilings, FakePages, ScriptedAnalyst, filing_html, recorded_facts
+from tests.fakes import (
+    FakeFilings,
+    FakePages,
+    ScriptedAnalyst,
+    filing_html,
+    recorded_facts,
+    synthetic_ref,
+)
 
 DECISION = "Whether to keep an overweight position in NVIDIA into the next earnings report"
 CLAIM = "Data center revenue is still growing year over year."
@@ -132,6 +142,17 @@ def test_malformed_json_is_refused(client: TestClient) -> None:
     assert response.json()["error"] == "Invalid request"
 
 
+def test_a_second_run_through_the_api_reads_its_filings_from_the_cache(
+    client: TestClient, filings: FakeFilings
+) -> None:
+    """The API hands every run the same filing cache, so a filing is fetched once."""
+    first = wait_for(client, client.post("/api/runs", json=VALID).json()["id"])
+    second = wait_for(client, client.post("/api/runs", json=VALID).json()["id"])
+    assert first["status"] != "failed" and second["status"] != "failed"
+    assert len(filings.fetched) == 1
+    assert any("local cache" in limit for limit in second["coverage_limits"])
+
+
 def test_an_unknown_ticker_is_refused_before_a_run_starts(client: TestClient) -> None:
     response = client.post("/api/runs", json=VALID | {"ticker": "ZZZZ"})
     assert response.status_code == 422
@@ -174,6 +195,7 @@ def test_a_run_starts_executes_in_the_background_and_is_listed(client: TestClien
         "company": "NVIDIA CORP",
         "started_at": record["started_at"],
         "claims": 1,
+        "thesis_id": None,
     }
 
 
@@ -250,7 +272,9 @@ def test_meta_gives_every_view_its_limits_and_wording(client: TestClient) -> Non
     assert meta["verdict_notes"] == {v.value: note for v, note in VERDICT_NOTES.items()}
     assert meta["provenance_note"] == PROVENANCE_NOTE
     assert meta["figures_note"] == FIGURES_NOTE
-    assert meta["version"] == "0.3.0"
+    assert meta["decision_labels"] == DECISION_LABELS
+    assert meta["review_note"] == REVIEW_NOTE
+    assert meta["version"] == "0.4.0"
     assert meta["engine"] == "extractive"
     assert meta["example"] == EXAMPLE_THESIS.model_dump(mode="json")
 
@@ -262,7 +286,7 @@ def test_health(client: TestClient) -> None:
         "engine": "extractive",
         "model": None,
     }
-    assert __version__ == "0.3.0"
+    assert __version__ == "0.4.0"
 
 
 # Static files
@@ -400,3 +424,306 @@ def test_any_named_sample_record_is_served(client: TestClient) -> None:
 )
 def test_unknown_or_unsafe_sample_names_are_404(client: TestClient, path: str) -> None:
     assert client.get(path).status_code == 404
+
+
+# Reviewer decisions
+
+GROWTH = "Data Center revenue grew from a year ago, driven by demand for Blackwell."
+SLOWING = "Data Center revenue growth slowed sequentially as supply tightened."
+GAMING_CLAIM = "Gaming revenue is still growing year over year."
+GAMING = "Gaming revenue grew from a year ago on demand for new graphics cards."
+NOT_IN_FILING = "Data Center revenue tripled, a sentence that is not in the filing."
+
+
+def draft(statement: str, stance: Stance, passage: Any, text: str) -> FindingDraft:
+    return FindingDraft(statement, stance, [Quote(passage.id, text)], Confidence.high, "Stated.")
+
+
+def mixed_assessment(claim: Any, passages: list[Any]) -> ClaimDraft:
+    """A supporting and a challenging finding, and one whose quote is not in the filing."""
+    passage = passages[0]
+    return ClaimDraft(
+        findings=[
+            draft("Revenue grew.", Stance.supports, passage, GROWTH),
+            draft("Growth slowed.", Stance.challenges, passage, SLOWING),
+            draft("Revenue tripled.", Stance.supports, passage, NOT_IN_FILING),
+        ]
+    )
+
+
+@pytest.fixture
+def store(tmp_path: Path) -> Iterator[Store]:
+    record = Store(tmp_path / "record.sqlite")
+    yield record
+    record.close()
+
+
+@pytest.fixture
+def review_client(store: Store) -> Iterator[TestClient]:
+    app = create_app(
+        store=store,
+        filings=FakeFilings.synthetic(filing_html(GROWTH, SLOWING)),
+        analyst=ScriptedAnalyst(mixed_assessment),
+        fetch_page=FakePages({}),
+    )
+    with TestClient(app) as test_client:
+        yield test_client
+
+
+def decide(client: TestClient, run_id: str, finding_id: str, body: dict[str, Any]) -> Any:
+    return client.put(f"/api/runs/{run_id}/findings/{finding_id}/decision", json=body)
+
+
+def test_the_review_flow_recomputes_the_verdict_after_each_decision(
+    review_client: TestClient,
+) -> None:
+    client = review_client
+    run_id = client.post("/api/runs", json=VALID).json()["id"]
+    record = wait_for(client, run_id)
+    assert record["claims"][0]["verdict"] == Verdict.mixed
+    support, challenge = (f["id"] for f in record["findings"])
+    [withheld] = (f["id"] for f in record["unsupported_findings"])
+
+    review = client.get(f"/api/runs/{run_id}/review").json()
+    assert review["run_id"] == run_id and review["decisions"] == []
+    assert (review["findings_total"], review["decided"], review["complete"]) == (2, 0, False)
+    assert review["claims"] == [
+        {
+            "claim_id": "c1",
+            "engine_verdict": "mixed",
+            "reviewed_verdict": None,
+            "accepted": 0,
+            "rejected": 0,
+            "undecided": 2,
+        }
+    ]
+
+    def reviewed(response: Any) -> tuple[str | None, int, bool]:
+        assert response.status_code == 200, response.text
+        body = response.json()
+        claim = body["claims"][0]
+        assert claim["engine_verdict"] == "mixed"
+        assert body == client.get(f"/api/runs/{run_id}/review").json()
+        return claim["reviewed_verdict"], body["decided"], body["complete"]
+
+    accepted = decide(client, run_id, support, {"value": "accepted", "note": "  Matches.  "})
+    assert reviewed(accepted) == ("supported", 1, False)
+    [decision] = accepted.json()["decisions"]
+    assert decision["finding_id"] == support and decision["note"] == "Matches."
+    assert decision["value"] == "accepted" and decision["decided_at"]
+
+    rejected = decide(client, run_id, challenge, {"value": "rejected"})
+    assert reviewed(rejected) == ("supported", 2, True)
+
+    cleared = decide(client, run_id, support, {"value": None})
+    assert reviewed(cleared) == ("not_addressed", 1, False)
+
+    replaced = decide(client, run_id, challenge, {"value": "accepted", "note": "On reflection."})
+    assert reviewed(replaced) == ("challenged", 1, False)
+    [decision] = replaced.json()["decisions"]
+    assert (decision["value"], decision["note"]) == ("accepted", "On reflection.")
+
+    refused = decide(client, run_id, withheld, {"value": "accepted"})
+    assert refused.status_code == 422 and fields(refused) == ["finding_id"]
+
+    unknown = decide(client, run_id, "f99", {"value": "accepted"})
+    assert unknown.status_code == 404 and unknown.json() == {"detail": "Finding not found"}
+
+    long_note = {"value": "rejected", "note": "x" * (limits.MAX_NOTE_CHARS + 1)}
+    too_long = decide(client, run_id, support, long_note)
+    assert too_long.status_code == 422 and fields(too_long) == ["note"]
+
+    bad_value = decide(client, run_id, support, {"value": "maybe"})
+    assert bad_value.status_code == 422 and fields(bad_value) == ["value"]
+
+    # Nothing refused was kept.
+    assert client.get(f"/api/runs/{run_id}/review").json()["decided"] == 1
+
+
+def test_a_running_run_cannot_be_decided(review_client: TestClient, store: Store) -> None:
+    run = new_run(ThesisRequest.model_validate(VALID))
+    store.save_run(run)
+    response = decide(review_client, run.id, "f1", {"value": "accepted"})
+    assert response.status_code == 409
+    assert set(response.json()) == {"error"} and "running" in response.json()["error"]
+
+
+def test_the_reviewed_export_carries_the_decisions(review_client: TestClient) -> None:
+    client = review_client
+    run_id = client.post("/api/runs", json=VALID).json()["id"]
+    record = wait_for(client, run_id)
+    support, challenge = (f["id"] for f in record["findings"])
+    decide(client, run_id, support, {"value": "accepted", "note": "Matches the table."})
+    decide(client, run_id, challenge, {"value": "rejected"})
+
+    plain = client.get(f"/api/runs/{run_id}/export.md").text
+    assert "## Your review" not in plain and DECISION_LABELS["accepted"] not in plain
+    response = client.get(f"/api/runs/{run_id}/export.md", params={"reviewed": "true"})
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/markdown")
+    reviewed = response.text
+    assert "## Your review" in reviewed and REVIEW_NOTE in reviewed
+    assert "- Your decision: Accepted. Matches the table." in reviewed
+    assert "- Your decision: Rejected." in reviewed
+    assert "After your review" in reviewed
+    assert "This brief includes the reviewer's decisions as of" in reviewed
+
+
+# Saved theses
+
+
+class TwoAnswers:
+    """Supports the data-center claim on its first assessment and challenges it after."""
+
+    def __init__(self) -> None:
+        self.calls: dict[str, int] = {}
+
+    def __call__(self, claim: Any, passages: list[Any]) -> ClaimDraft:
+        count = self.calls[claim.text] = self.calls.get(claim.text, 0) + 1
+        passage = passages[0]
+        if claim.text == GAMING_CLAIM:
+            return ClaimDraft(findings=[draft("Gaming grew.", Stance.supports, passage, GAMING)])
+        if count == 1:
+            return ClaimDraft(findings=[draft("Revenue grew.", Stance.supports, passage, GROWTH)])
+        return ClaimDraft(findings=[draft("Growth slowed.", Stance.challenges, passage, SLOWING)])
+
+
+THESIS = {
+    "name": "NVIDIA after earnings",
+    "request": VALID | {"claims": [CLAIM, GAMING_CLAIM]},
+}
+
+
+@pytest.fixture
+def thesis_filings() -> FakeFilings:
+    return FakeFilings.synthetic(filing_html(GROWTH, SLOWING, GAMING))
+
+
+@pytest.fixture
+def thesis_client(store: Store, thesis_filings: FakeFilings) -> Iterator[TestClient]:
+    app = create_app(
+        store=store,
+        filings=thesis_filings,
+        analyst=ScriptedAnalyst(TwoAnswers()),
+        fetch_page=FakePages({}),
+    )
+    with TestClient(app) as test_client:
+        yield test_client
+
+
+def run_thesis(client: TestClient, thesis_id: str) -> dict[str, Any]:
+    response = client.post(f"/api/theses/{thesis_id}/runs")
+    assert response.status_code == 202, response.text
+    started = response.json()
+    assert set(started) == {"id", "status"} and started["status"] == "running"
+    return wait_for(client, started["id"])
+
+
+def test_a_saved_thesis_runs_twice_and_says_what_moved(
+    thesis_client: TestClient, thesis_filings: FakeFilings
+) -> None:
+    client = thesis_client
+    created = client.post("/api/theses", json=THESIS)
+    assert created.status_code == 201, created.text
+    thesis = created.json()
+    assert thesis["id"].startswith("th-") and thesis["name"] == "NVIDIA after earnings"
+    assert thesis["request"]["claims"] == [CLAIM, GAMING_CLAIM] and thesis["run_ids"] == []
+
+    listing = client.get("/api/theses").json()
+    assert listing == {
+        "theses": [
+            {
+                "id": thesis["id"],
+                "name": "NVIDIA after earnings",
+                "ticker": "NVDA",
+                "claims": 2,
+                "created_at": thesis["created_at"],
+                "runs": 0,
+                "last_run_id": None,
+                "last_status": None,
+            }
+        ]
+    }
+
+    first = run_thesis(client, thesis["id"])
+    assert first["thesis_id"] == thesis["id"]
+    assert [c["verdict"] for c in first["claims"]] == ["supported", "supported"]
+    changes = client.get(f"/api/theses/{thesis['id']}/changes")
+    assert changes.status_code == 409
+    assert changes.json() == {"error": "This thesis has fewer than two finished runs to compare."}
+
+    # A new 10-Q arrives: it is now the one filing read.
+    newer = synthetic_ref(2)
+    thesis_filings.refs.insert(0, newer)
+    thesis_filings.documents[newer.url] = filing_html(GROWTH, SLOWING, GAMING)
+    second = run_thesis(client, thesis["id"])
+    assert [c["verdict"] for c in second["claims"]] == ["challenged", "supported"]
+
+    detail = client.get(f"/api/theses/{thesis['id']}").json()
+    assert detail["thesis"]["run_ids"] == [second["id"], first["id"]]
+    assert detail["runs"] == [
+        {
+            "id": run["id"],
+            "status": run["status"],
+            "started_at": run["started_at"],
+            "finished_at": run["finished_at"],
+        }
+        for run in (second, first)
+    ]
+    [summary] = client.get("/api/theses").json()["theses"]
+    assert (summary["runs"], summary["last_run_id"], summary["last_status"]) == (
+        2,
+        second["id"],
+        "complete",
+    )
+    runs = {run["id"]: run["thesis_id"] for run in client.get("/api/runs").json()["runs"]}
+    assert runs == {first["id"]: thesis["id"], second["id"]: thesis["id"]}
+
+    comparison = client.get(f"/api/theses/{thesis['id']}/changes").json()
+    assert comparison["thesis_id"] == thesis["id"]
+    assert (comparison["earlier_run_id"], comparison["later_run_id"]) == (first["id"], second["id"])
+    assert [(c["claim"], c["before"], c["after"], c["moved"]) for c in comparison["claims"]] == [
+        (CLAIM, "supported", "challenged", True),
+        (GAMING_CLAIM, "supported", "supported", False),
+    ]
+    assert (comparison["verdicts_moved"], comparison["claims_total"]) == (1, 2)
+    assert len(comparison["sources_added"]) == 1 and len(comparison["sources_dropped"]) == 1
+    # The gaming excerpt is the same text, but in a different filing: one in, one out.
+    gaming = comparison["claims"][1]
+    assert (gaming["excerpts_added"], gaming["excerpts_dropped"]) == (1, 1)
+    assert comparison["note"].startswith("1 of 2 verdicts moved; 1 filing is new: ")
+
+
+@pytest.mark.parametrize(
+    ("change", "field"),
+    [
+        ({"name": " "}, "name"),
+        ({"name": "x" * (limits.MAX_THESIS_NAME_CHARS + 1)}, "name"),
+        ({"request": VALID | {"ticker": "ZZZZ"}}, "request.ticker"),
+        ({"request": VALID | {"claims": []}}, "request.claims"),
+        ({"request": VALID | {"extra_urls": ["http://10.0.0.1/"]}}, "request.extra_urls.0"),
+    ],
+)
+def test_an_invalid_thesis_is_refused_naming_its_field(
+    thesis_client: TestClient, change: dict[str, Any], field: str
+) -> None:
+    response = thesis_client.post("/api/theses", json=THESIS | change)
+    assert response.status_code == 422, response.text
+    assert fields(response) == [field]
+    assert thesis_client.get("/api/theses").json() == {"theses": []}
+
+
+def test_unknown_theses_and_review_routes_are_404(thesis_client: TestClient) -> None:
+    client = thesis_client
+    for method, path, detail in [
+        ("GET", "/api/theses/th-000000000000", "Thesis not found"),
+        ("POST", "/api/theses/th-000000000000/runs", "Thesis not found"),
+        ("GET", "/api/theses/th-000000000000/changes", "Thesis not found"),
+        ("GET", "/api/runs/run-nope/review", "Run not found"),
+        ("GET", "/api/runs/run-nope/export.md?reviewed=true", "Run not found"),
+    ]:
+        response = client.request(method, path)
+        assert response.status_code == 404, path
+        assert response.json() == {"detail": detail}
+    response = decide(client, "run-nope", "f1", {"value": "accepted"})
+    assert response.status_code == 404 and response.json() == {"detail": "Run not found"}

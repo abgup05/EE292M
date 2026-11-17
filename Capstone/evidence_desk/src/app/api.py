@@ -16,7 +16,7 @@ import time
 from collections.abc import AsyncIterator, Callable
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -28,20 +28,35 @@ from pydantic import BaseModel
 from app import __version__, wiring
 from app.core import limits, policy
 from app.core.metric_models import MetricsReport
-from app.core.models import TICKER_PATTERN, Company, Run, ThesisRequest
+from app.core.models import (
+    TICKER_PATTERN,
+    Company,
+    Decision,
+    DecisionRequest,
+    Review,
+    Run,
+    RunComparison,
+    RunStatus,
+    Thesis,
+    ThesisCreate,
+    ThesisRequest,
+)
 from app.core.ports import Analyst, FilingSource, PageFetcher, SourceError, UnknownTicker
-from app.services import thesis_run
+from app.core.review import build_review
+from app.services import theses, thesis_run
 from app.services.examples import EXAMPLE_THESIS
 from app.services.export import render_markdown
 from app.services.numbers import load_numbers
 from app.sources.http import fetch_page as default_fetch_page
 from app.sources.urls import canonicalize, validate_public_url
-from app.store import Store
+from app.store import FilingCache, Store
 
 WEB_DIR = Path(__file__).resolve().parents[1] / "web"
 RUN_WORKERS = 2
 INVALID_REQUEST = "Invalid request"
 CRASH_MESSAGE = "The run stopped because of an internal error."
+STILL_RUNNING = "The run is still running; its findings can be decided once it finishes."
+WITHHELD_MESSAGE = "This finding was withheld, so it cannot be decided"
 STATIC_FILES = {
     "/app.js": ("app.js", "text/javascript"),
     "/styles.css": ("styles.css", "text/css"),
@@ -83,10 +98,46 @@ class RunSummary(BaseModel):
     company: str | None
     started_at: datetime
     claims: int
+    thesis_id: str | None
 
 
 class RunList(BaseModel):
     runs: list[RunSummary]
+
+
+class ThesisSummary(BaseModel):
+    """One line of the saved-thesis list."""
+
+    id: str
+    name: str
+    ticker: str
+    claims: int
+    created_at: datetime
+    runs: int
+    last_run_id: str | None
+    last_status: str | None
+
+
+class ThesisList(BaseModel):
+    theses: list[ThesisSummary]
+
+
+class ThesisRunSummary(BaseModel):
+    """One run of a saved thesis."""
+
+    id: str
+    status: str
+    started_at: datetime
+    finished_at: datetime | None
+
+
+class ThesisDetail(BaseModel):
+    thesis: Thesis
+    runs: list[ThesisRunSummary]
+
+
+class Conflict(Exception):
+    """A request that is valid but cannot be carried out in the current state (409)."""
 
 
 def public_limits() -> dict[str, int | float]:
@@ -94,16 +145,17 @@ def public_limits() -> dict[str, int | float]:
     return {name: getattr(limits, name) for name in dir(limits) if name.isupper()}
 
 
-def check_extra_urls(urls: list[str]) -> list[Problem]:
+def check_extra_urls(urls: list[str], prefix: str = "") -> list[Problem]:
     """Each extra URL must be a public http(s) address, and distinct once canonicalized.
 
     This is URL policy, so it lives here at the boundary rather than in the
-    request model (review finding F3).
+    request model (review finding F3). ``prefix`` is the path of the request
+    in the body ("request." inside a saved thesis), so each field is named in full.
     """
     problems: list[Problem] = []
     seen: dict[str, int] = {}
     for index, url in enumerate(urls):
-        field = f"extra_urls.{index}"
+        field = f"{prefix}extra_urls.{index}"
         try:
             canonical = canonicalize(validate_public_url(url))
         except ValueError as exc:  # UnsafeURL, or a URL too malformed to parse
@@ -167,11 +219,16 @@ def create_app(
     analyst: Analyst | None = None,
     fetch_page: PageFetcher = default_fetch_page,
     monotonic: Callable[[], float] = time.monotonic,
+    cache: FilingCache | None = None,
 ) -> FastAPI:
     """Build the application. Collaborators not given are built by :mod:`app.wiring`.
 
     ``monotonic`` is the clock of the metrics cache (injectable for tests).
+    ``cache`` is the filing cache every run shares: the configured one when the
+    store is the configured one, otherwise one in memory for this application.
     """
+    if cache is None:
+        cache = wiring.cache_from_env() if store is None else FilingCache()
     store = store or wiring.store_from_env()
     filings = filings or wiring.filings_from_env()
     analyst = analyst or wiring.analyst_from_env()
@@ -197,29 +254,40 @@ def create_app(
     async def source_unavailable(_: Request, exc: SourceError) -> JSONResponse:
         return JSONResponse(status_code=503, content={"error": str(exc)})
 
+    @app.exception_handler(Conflict)
+    async def conflict(_: Request, exc: Conflict) -> JSONResponse:
+        return JSONResponse(status_code=409, content={"error": str(exc)})
+
     def execute(run: Run) -> None:
         try:
             thesis_run.execute_run(
-                run, store, filings=filings, analyst=analyst, fetch_page=fetch_page
+                run, store, filings=filings, analyst=analyst, fetch_page=fetch_page, cache=cache
             )
         except Exception:  # noqa: BLE001 - last resort: a run must never stay "running"
             log.exception("Run %s crashed", run.id)
             thesis_run.fail_run(run, store, CRASH_MESSAGE)
 
-    @app.post("/api/runs", status_code=202)
-    def start_run(request: ThesisRequest) -> RunStarted:
-        """Validate, resolve the ticker, then execute the run in the background."""
-        problems = check_extra_urls(request.extra_urls)
+    def check_request(request: ThesisRequest, prefix: str = "") -> None:
+        """Refuse unsafe extra URLs and a ticker SEC does not list; fields carry ``prefix``."""
+        problems = check_extra_urls(request.extra_urls, prefix)
         if problems:
             raise RequestRefused(problems)
         try:
             filings.company(request.ticker)
         except UnknownTicker as exc:
-            raise RequestRefused([Problem(field="ticker", message=str(exc))]) from exc
-        run = thesis_run.new_run(request)
-        store.save_run(run)
+            raise RequestRefused([Problem(field=f"{prefix}ticker", message=str(exc))]) from exc
+
+    def submit(run: Run) -> RunStarted:
         executor.submit(execute, run)
         return RunStarted(id=run.id, status=run.status)
+
+    @app.post("/api/runs", status_code=202)
+    def start_run(request: ThesisRequest) -> RunStarted:
+        """Validate, resolve the ticker, then execute the run in the background."""
+        check_request(request)
+        run = thesis_run.new_run(request)
+        store.save_run(run)
+        return submit(run)
 
     @app.get("/api/runs")
     def list_runs() -> RunList:
@@ -233,6 +301,7 @@ def create_app(
                     company=run.company.name if run.company else None,
                     started_at=run.started_at,
                     claims=len(run.inputs.claims),
+                    thesis_id=run.thesis_id,
                 )
                 for run in store.list_runs()
             ]
@@ -244,15 +313,120 @@ def create_app(
             raise HTTPException(status_code=404, detail="Run not found")
         return run
 
+    def review_of(run: Run) -> Review:
+        return build_review(run, store.list_decisions(run.id))
+
     @app.get("/api/runs/{run_id}")
     def get_run(run_id: str) -> Run:
         """The full run record."""
         return load(run_id)
 
     @app.get("/api/runs/{run_id}/export.md")
-    def export_run(run_id: str) -> PlainTextResponse:
-        """The run as a Markdown brief."""
-        return PlainTextResponse(render_markdown(load(run_id)), media_type="text/markdown")
+    def export_run(run_id: str, reviewed: bool = False) -> PlainTextResponse:
+        """The run as a Markdown brief; ``reviewed=true`` adds the reviewer's decisions."""
+        run = load(run_id)
+        review = review_of(run) if reviewed else None
+        return PlainTextResponse(render_markdown(run, review), media_type="text/markdown")
+
+    @app.get("/api/runs/{run_id}/review")
+    def get_review(run_id: str) -> Review:
+        """Every decision on the run and the verdicts that follow from them."""
+        return review_of(load(run_id))
+
+    @app.put("/api/runs/{run_id}/findings/{finding_id}/decision")
+    def put_decision(run_id: str, finding_id: str, body: DecisionRequest) -> Review:
+        """Accept or reject one verified finding, or clear its decision with a null value.
+
+        404 for an unknown run or a finding the run does not have; 409 while the
+        run is still running; 422 (field ``finding_id``) for a withheld finding.
+        """
+        run = load(run_id)
+        if run.status == RunStatus.running:
+            raise Conflict(STILL_RUNNING)
+        verified = {finding.id for finding in run.findings if finding.verified}
+        if finding_id not in verified:
+            withheld = {finding.id for finding in [*run.findings, *run.unsupported_findings]}
+            if finding_id in withheld:
+                raise RequestRefused([Problem(field="finding_id", message=WITHHELD_MESSAGE)])
+            raise HTTPException(status_code=404, detail="Finding not found")
+        if body.value is None:
+            store.clear_decision(run.id, finding_id)
+        else:
+            store.save_decision(
+                Decision(
+                    run_id=run.id,
+                    finding_id=finding_id,
+                    value=body.value,
+                    note=body.note,
+                    decided_at=datetime.now(UTC),
+                )
+            )
+        return review_of(run)
+
+    # Saved theses
+
+    def load_thesis(thesis_id: str) -> Thesis:
+        thesis = store.get_thesis(thesis_id)
+        if thesis is None:
+            raise HTTPException(status_code=404, detail="Thesis not found")
+        return thesis
+
+    @app.post("/api/theses", status_code=201)
+    def create_thesis(body: ThesisCreate) -> Thesis:
+        """Save a named thesis; its request is checked as a run's would be."""
+        check_request(body.request, prefix="request.")
+        return theses.create_thesis(store, body)
+
+    @app.get("/api/theses")
+    def list_theses() -> ThesisList:
+        """Saved theses, newest first, each with its run count and latest run."""
+        summaries = []
+        for thesis in store.list_theses():
+            last = store.get_run(thesis.run_ids[0]) if thesis.run_ids else None
+            summaries.append(
+                ThesisSummary(
+                    id=thesis.id,
+                    name=thesis.name,
+                    ticker=thesis.request.ticker,
+                    claims=len(thesis.request.claims),
+                    created_at=thesis.created_at,
+                    runs=len(thesis.run_ids),
+                    last_run_id=thesis.run_ids[0] if thesis.run_ids else None,
+                    last_status=last.status if last else None,
+                )
+            )
+        return ThesisList(theses=summaries)
+
+    @app.get("/api/theses/{thesis_id}")
+    def get_thesis(thesis_id: str) -> ThesisDetail:
+        """The saved thesis and its runs, newest first."""
+        thesis = load_thesis(thesis_id)
+        runs = [
+            ThesisRunSummary(
+                id=run.id, status=run.status, started_at=run.started_at, finished_at=run.finished_at
+            )
+            for run in store.runs_of_thesis(thesis.id)
+        ]
+        return ThesisDetail(thesis=thesis, runs=runs)
+
+    @app.post("/api/theses/{thesis_id}/runs", status_code=202)
+    def run_thesis(thesis_id: str) -> RunStarted:
+        """Run the saved thesis again, in the background like any run."""
+        try:
+            run = theses.start_thesis_run(store, thesis_id)
+        except theses.UnknownThesis as exc:
+            raise HTTPException(status_code=404, detail="Thesis not found") from exc
+        return submit(run)
+
+    @app.get("/api/theses/{thesis_id}/changes")
+    def thesis_changes(thesis_id: str) -> RunComparison:
+        """What moved between the two newest finished runs of the thesis."""
+        try:
+            return theses.latest_comparison(store, thesis_id)
+        except theses.UnknownThesis as exc:
+            raise HTTPException(status_code=404, detail="Thesis not found") from exc
+        except theses.NotEnoughRuns as exc:
+            raise Conflict(str(exc)) from exc
 
     def resolve(ticker: str) -> Company:
         """The company for a ticker in a path, or a 422 naming the ticker field."""
@@ -292,6 +466,8 @@ def create_app(
             "verdict_labels": {v.value: label for v, label in policy.VERDICT_LABELS.items()},
             "verdict_notes": {v.value: note for v, note in policy.VERDICT_NOTES.items()},
             "provenance_note": policy.PROVENANCE_NOTE,
+            "decision_labels": policy.DECISION_LABELS,
+            "review_note": policy.REVIEW_NOTE,
             "engine": analyst.name,
             "example": EXAMPLE_THESIS.model_dump(mode="json"),
         }

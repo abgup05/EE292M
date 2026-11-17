@@ -7,7 +7,7 @@ to every view, so the page and the Markdown export cannot disagree.
 
 from __future__ import annotations
 
-from app.core.models import Claim, Finding, RunStatus, Stance, Verdict
+from app.core.models import Claim, DecisionValue, Finding, RunStatus, Stance, Verdict
 
 STATUS_NOTES: dict[RunStatus, str] = {
     RunStatus.running: "The run is in progress.",
@@ -39,6 +39,20 @@ VERDICT_NOTES: dict[Verdict, str] = {
     ),
     Verdict.not_addressed: "No verified excerpt in the passages retrieved bears on the claim.",
 }
+
+# A verified finding with no decision yet; not a DecisionValue, because nothing is stored for it.
+UNDECIDED = "undecided"
+
+DECISION_LABELS: dict[str, str] = {
+    DecisionValue.accepted.value: "Accepted",
+    DecisionValue.rejected.value: "Rejected",
+    UNDECIDED: "Undecided",
+}
+
+REVIEW_NOTE = (
+    "The verdict after your review follows by the same rule from the findings you accepted, "
+    "and undecided findings do not count toward it."
+)
 
 PROVENANCE_NOTE = (
     "Evidence comes from the company's own filings with the SEC. It shows what the company "

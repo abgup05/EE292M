@@ -4,10 +4,13 @@ from itertools import product
 
 import pytest
 
-from app.core.models import Claim, Confidence, Finding, RunStatus, Stance, Verdict
+from app.core.models import Claim, Confidence, DecisionValue, Finding, RunStatus, Stance, Verdict
 from app.core.policy import (
+    DECISION_LABELS,
     PROVENANCE_NOTE,
+    REVIEW_NOTE,
     STATUS_NOTES,
+    UNDECIDED,
     VERDICT_LABELS,
     VERDICT_NOTES,
     claim_verdict,
@@ -161,3 +164,13 @@ def test_wording_covers_every_status_and_verdict() -> None:
     assert all(text.strip() for text in [*STATUS_NOTES.values(), *VERDICT_LABELS.values()])
     assert all(text.strip() for text in VERDICT_NOTES.values())
     assert "SEC" in PROVENANCE_NOTE
+
+
+def test_decision_wording_covers_every_value_and_the_undecided_state() -> None:
+    assert DECISION_LABELS == {
+        DecisionValue.accepted.value: "Accepted",
+        DecisionValue.rejected.value: "Rejected",
+        UNDECIDED: "Undecided",
+    }
+    assert REVIEW_NOTE.count(".") == 1 and REVIEW_NOTE.endswith(".")
+    assert "accepted" in REVIEW_NOTE and "undecided" in REVIEW_NOTE

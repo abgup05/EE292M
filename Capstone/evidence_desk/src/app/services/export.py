@@ -1,8 +1,9 @@
 """Markdown export of a thesis run: the same verified record the API returns, as a file.
 
-All status and verdict wording comes from :mod:`app.core.policy`, so the export
-and the page say the same thing. The export computes no verdict; it only
-counts the verified findings the backend already decided per claim.
+All status, verdict and decision wording comes from :mod:`app.core.policy`, so
+the export and the page say the same thing. The export computes no verdict; it
+only counts the verified findings the backend already decided per claim, and,
+for a reviewed brief, shows the :class:`~app.core.models.Review` the backend built.
 """
 
 from __future__ import annotations
@@ -12,10 +13,13 @@ from datetime import UTC, datetime
 from app.core.metric_models import Metric
 from app.core.models import (
     Claim,
+    Decision,
+    DecisionValue,
     Evidence,
     ExtractionStatus,
     Finding,
     FindingChecks,
+    Review,
     Run,
     RunStatus,
     Source,
@@ -23,9 +27,12 @@ from app.core.models import (
     Stance,
 )
 from app.core.policy import (
+    DECISION_LABELS,
     FIGURES_NOTE,
     PROVENANCE_NOTE,
+    REVIEW_NOTE,
     STATUS_NOTES,
+    UNDECIDED,
     VERDICT_LABELS,
     VERDICT_NOTES,
 )
@@ -79,7 +86,29 @@ def _verified_for(run: Run, claim: Claim) -> list[Finding]:
     return [f for f in run.findings if f.claim_id == claim.id and f.verified]
 
 
-def _header(run: Run) -> list[str]:
+def _decision_label(finding_id: str, decisions: dict[str, Decision]) -> str:
+    decision = decisions.get(finding_id)
+    return DECISION_LABELS[decision.value if decision else UNDECIDED]
+
+
+def _your_review(review: Review) -> list[str]:
+    """How much of the run the reviewer decided, and the rule for the reviewed verdict."""
+    return [
+        "## Your review",
+        "",
+        f"You decided {review.decided} of {review.findings_total} findings. {REVIEW_NOTE}",
+        "",
+    ]
+
+
+def _review_footer(review: Review) -> list[str]:
+    if not review.decisions:
+        return ["This brief includes no reviewer decision yet.", ""]
+    latest = max(decision.decided_at for decision in review.decisions)
+    return [f"This brief includes the reviewer's decisions as of {_utc(latest)}.", ""]
+
+
+def _header(run: Run, review: Review | None) -> list[str]:
     company = run.company
     name = f"{company.name} ({company.ticker})" if company else run.inputs.ticker
     lines = [
@@ -87,6 +116,7 @@ def _header(run: Run) -> list[str]:
         "",
         f"**Status: {run.status.upper()}.** {STATUS_NOTES[run.status]}",
         "",
+        *(_your_review(review) if review is not None else []),
         f"- Run: {run.id}",
         f"- Started: {_utc(run.started_at)}",
         f"- Finished: {_utc(run.finished_at)}",
@@ -109,22 +139,25 @@ def _header(run: Run) -> list[str]:
     return lines
 
 
-def _verdict_table(run: Run) -> list[str]:
+def _verdict_table(run: Run, review: Review | None) -> list[str]:
+    reviewed = {c.claim_id: c.reviewed_verdict for c in review.claims} if review else {}
+    after = " After your review |" if review is not None else ""
     lines = [
         "## Verdicts",
         "",
-        "| Claim | Verdict | Supporting | Challenging | Context |",
-        "| --- | --- | ---: | ---: | ---: |",
+        f"| Claim | Verdict |{after} Supporting | Challenging | Context |",
+        f"| --- | --- |{' --- |' if review is not None else ''} ---: | ---: | ---: |",
     ]
     for claim in run.claims:
         findings = _verified_for(run, claim)
         counts = [sum(1 for f in findings if f.stance == stance) for stance in Stance]
         label = VERDICT_LABELS[claim.verdict] if claim.verdict else NOT_AVAILABLE
-        lines.append(
-            f"| {_cell(claim.text)} | {label} | "
-            + " | ".join(str(count) for count in counts)
-            + " |"
-        )
+        cells = [_cell(claim.text), label]
+        if review is not None:
+            verdict = reviewed.get(claim.id)
+            cells.append(VERDICT_LABELS[verdict] if verdict else DECISION_LABELS[UNDECIDED])
+        cells += [str(count) for count in counts]
+        lines.append("| " + " | ".join(cells) + " |")
     return [*lines, ""]
 
 
@@ -187,7 +220,16 @@ def _checks_line(finding: Finding) -> str:
     return f"quote: {quote}; numbers: {numbers}"
 
 
-def _claims(run: Run) -> list[str]:
+def _decision_line(finding_id: str, decisions: dict[str, Decision]) -> str:
+    """ "- Your decision: Rejected. <the reviewer's note>"."""
+    decision = decisions.get(finding_id)
+    note = f" {_text(' '.join(decision.note.split()))}" if decision and decision.note else ""
+    return f"- Your decision: {_decision_label(finding_id, decisions)}.{note}"
+
+
+def _claims(run: Run, review: Review | None) -> list[str]:
+    decisions = {d.finding_id: d for d in review.decisions} if review else {}
+    rejected = {f for f, d in decisions.items() if d.value == DecisionValue.rejected}
     sources = {source.id: source for source in run.sources}
     evidence = {item.id: item for item in run.evidence}
     metrics = {metric.id: metric for metric in run.metrics}
@@ -205,10 +247,15 @@ def _claims(run: Run) -> list[str]:
         if not findings:
             note = VERDICT_NOTES[claim.verdict] if claim.verdict else "This claim was not assessed."
             lines += [f"No verified findings. {note}", ""]
-        for finding in findings:
+        # Rejected findings last in their claim (a stable sort keeps the run's order otherwise).
+        for finding in sorted(findings, key=lambda f: f.id in rejected):
+            heading = f"{finding.id}. {_text(finding.statement)}"
+            if finding.id in rejected:
+                heading = f"~~{heading}~~"
+            lines += [f"#### {heading}", ""]
+            if review is not None:
+                lines.append(_decision_line(finding.id, decisions))
             lines += [
-                f"#### {finding.id}. {_text(finding.statement)}",
-                "",
                 f"- Stance: {finding.stance}; confidence: {finding.confidence}",
                 f"- Rationale: {_text(finding.rationale)}",
                 f"- Sources cited: {finding.filings_cited}",
@@ -263,18 +310,22 @@ def _sources(run: Run) -> list[str]:
     return [*lines, ""]
 
 
-def render_markdown(run: Run) -> str:
-    """Render ``run`` as a Markdown brief.
+def render_markdown(run: Run, review: Review | None = None) -> str:
+    """Render ``run`` as a Markdown brief; with ``review``, the reviewed brief.
 
-    Order: title, status, decision, verdict table (finished runs only), summary,
+    Order: title, status, your review (reviewed brief only), decision, verdict
+    table (finished runs only), summary,
     reported figures (when the run has any), claims with their verified findings,
     their checks, cited figures and excerpts, unknowns, next steps,
-    sources, coverage limits, errors, provenance, withheld findings. Never
-    raises on a running or failed run; those have no verdict table.
+    sources, coverage limits, errors, provenance, withheld findings, and for a
+    reviewed brief a closing line dating the decisions. A reviewed brief adds
+    the reviewed verdict column, each finding's decision and note, and strikes
+    through rejected findings, listed last in their claim. Never raises on a
+    running or failed run; those have no verdict table.
     """
-    lines = _header(run)
+    lines = _header(run, review)
     if run.status in _DECIDED and run.claims:
-        lines += _verdict_table(run)
+        lines += _verdict_table(run, review)
     brief = run.brief
     if brief is not None:
         lines += [
@@ -286,7 +337,7 @@ def render_markdown(run: Run) -> str:
             "",
         ]
     lines += _reported_figures(run)
-    lines += _claims(run)
+    lines += _claims(run, review)
     if brief is not None:
         lines += ["## Unknowns", "", *_bullets(brief.unknowns, "None recorded."), ""]
         lines += ["## Next steps", "", *_bullets(brief.next_steps, "None recorded."), ""]
@@ -304,4 +355,6 @@ def render_markdown(run: Run) -> str:
     else:
         lines.append("- None.")
     lines.append("")
+    if review is not None:
+        lines += _review_footer(review)
     return "\n".join(lines)

@@ -94,6 +94,34 @@ def main() -> int:
         "docs/cassettes.md)",
     )
 
+    status, linked = call("GET", f"/api/runs/{run['id']}/changes")
+    expect(status == 200, "what changed in the filings the run read is listed under its claims")
+    for pair in linked["compared"]:
+        print(
+            f"   compared {pair['form']}: {pair['later']['period_end']} against "
+            f"{pair['earlier']['period_end']}"
+        )
+    for note in linked["notes"]:
+        print(f"   note: {note}")
+    listed_for = [claim["claim_id"] for claim in linked["claims"]]
+    expect(
+        listed_for == [claim["id"] for claim in run["claims"]],
+        "every claim of the run has its list of changes, in the run's order",
+    )
+    expect(
+        bool(linked["compared"]) or bool(linked["notes"]),
+        "each filing was compared with the one before it, or a note says why not",
+    )
+    for claim in linked["claims"]:
+        print(
+            f"   {claim['claim_id']}: {len(claim['changes'])} changed paragraph(s) listed, "
+            f"{claim['matched']} of {claim['considered']} share two words with the claim"
+        )
+    expect(
+        not linked["compared"] or any(claim["changes"] for claim in linked["claims"]),
+        "where filings were compared, at least one claim has a changed paragraph listed",
+    )
+
     findings = run["findings"]
     expect(bool(findings), "the run has verified findings to review")
     first, last = findings[0], findings[-1]

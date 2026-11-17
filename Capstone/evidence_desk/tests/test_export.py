@@ -4,6 +4,19 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
+from app.core.change_models import (
+    ChangeCounts,
+    FilingSide,
+    Paragraph,
+    RewordedParagraph,
+    WordChange,
+)
+from app.core.claim_change_models import (
+    ClaimChanges,
+    ComparedFilings,
+    RelevantChange,
+    RunChanges,
+)
 from app.core.metric_models import Metric
 from app.core.models import (
     Brief,
@@ -599,3 +612,114 @@ def test_a_withheld_reason_is_not_counted_among_the_statements_numbers() -> None
     f1_block = _between(claims, "Statement f1.", "Statement f2.")
     assert "numbers: 2 of 2 matched; reason: withheld (65%)" in f1_block
     assert "Rationale: [Reason withheld" in f1_block
+
+
+# The reading list of changed paragraphs under each claim (docs/claim-changes.md)
+
+LATER_FILING = "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/later.htm"
+EARLIER_FILING = "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000023/earlier.htm"
+
+
+def _paragraph(text: str, url: str) -> Paragraph:
+    return Paragraph(
+        text=text,
+        locator="Item 1A. Risk Factors",
+        start=10,
+        link=f"{url}#:~:text=x",
+        link_kind="passage",
+    )
+
+
+def _run_changes() -> RunChanges:
+    later = FilingSide(
+        form="10-K",
+        period_end="2026-01-25",
+        filed_date="2026-02-25",
+        accession="0001045810-26-000021",
+        url=LATER_FILING,
+        title="later",
+        item_coverage=0.97,
+    )
+    earlier = later.model_copy(update={"period_end": "2025-01-26", "url": EARLIER_FILING})
+    added = RelevantChange(
+        kind="added",
+        form="10-K",
+        item="Item 1A. Risk Factors",
+        paragraph=_paragraph(
+            "A licence is now required for <b>H20</b> sales to China.", LATER_FILING
+        ),
+        score=12.5,
+        matched_terms=["china", "export", "licens"],
+        also_under=["Item 7. Management's Discussion"],
+    )
+    reworded = RelevantChange(
+        kind="reworded",
+        form="10-K",
+        item="Item 7. Management's Discussion",
+        pair=RewordedParagraph(
+            before=_paragraph("Data Center revenue grew on strong demand.", EARLIER_FILING),
+            after=_paragraph("Data Center revenue grew on demand for Blackwell.", LATER_FILING),
+            similarity=0.7,
+            segments=[WordChange(text="Data Center revenue grew on", kind="same")],
+        ),
+        score=9.0,
+        matched_terms=["center", "data", "revenu"],
+    )
+    return RunChanges(
+        run_id="run-42",
+        compared=[
+            ComparedFilings(
+                form="10-K", earlier=earlier, later=later, totals=ChangeCounts(added=3, removed=2)
+            )
+        ],
+        claims=[
+            ClaimChanges(
+                claim_id="c1",
+                changes=[added, reworded],
+                considered=6,
+                matched=4,
+                distinct_matched=3,
+            ),
+            ClaimChanges(claim_id="c2", considered=6),
+            ClaimChanges(claim_id="c3", considered=6),
+        ],
+        notes=["No earlier 10-Q was found to compare with."],
+    )
+
+
+def test_the_brief_has_no_reading_list_unless_the_changes_are_given() -> None:
+    assert "Changed in the filings this run read" not in render_markdown(_complete_run())
+
+
+def test_the_reading_list_sits_after_the_claims_and_says_what_it_is() -> None:
+    markdown = render_markdown(_complete_run(), changes=_run_changes())
+    section = _between(markdown, "## Changed in the filings this run read", "## Unknowns")
+    assert markdown.index("## Claims") < markdown.index("## Changed in the filings this run read")
+    assert "A reading list, not findings" in section
+    assert "No model chose or judged" in section and "counts toward a verdict" in section
+    assert (
+        f"- [10-K for the period ended 2026-01-25]({LATER_FILING}) against "
+        f"[the one for 2025-01-26]({EARLIER_FILING})"
+    ) in section
+    assert "- No earlier 10-Q was found to compare with." in section
+
+
+def test_each_claim_lists_its_changed_paragraphs_with_kind_place_words_and_links() -> None:
+    markdown = render_markdown(_complete_run(), changes=_run_changes())
+    first = _between(markdown, f"### c1: {CLAIMS[0]}", "### c2:")
+    assert "2 listed of 3 that share at least two words with the claim, among 6 changed" in first
+    assert (
+        "1. **Added** in the 10-K, Item 1A. Risk Factors. Shares: china, export, licens. "
+        "Also under Item 7. Management's Discussion."
+    ) in first
+    assert "> A licence is now required for \\<b>H20\\</b> sales to China." in first
+    assert f"[Open in the later filing]({LATER_FILING}#:~:text=x)" in first
+    assert "2. **Reworded** in the 10-K, Item 7. Management's Discussion." in first
+    assert "> Data Center revenue grew on demand for Blackwell." in first
+    assert f"[earlier paragraph]({EARLIER_FILING}#:~:text=x)" in first
+
+
+def test_a_claim_with_no_changed_paragraph_says_so() -> None:
+    markdown = render_markdown(_complete_run(), changes=_run_changes())
+    second = _between(markdown, f"### c2: {CLAIMS[1]}", "### c3:")
+    assert "No changed paragraph shares two words with this claim (6 searched)." in second

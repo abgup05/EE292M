@@ -19,7 +19,7 @@ from typing import Protocol
 from app.core import limits
 from app.core.change_models import FilingChanges, FilingSide
 from app.core.documents import Document, FetchedFiling, FilingRef
-from app.core.filing_diff import diff_documents, totals
+from app.core.filing_diff import MAX_LISTED, diff_documents, totals
 from app.core.models import Company
 from app.core.ports import SourceError
 from app.services.ingest import _read_filing
@@ -109,18 +109,37 @@ def read_filing_pair(
     own_cache = cache is None
     store = FilingCache() if cache is None else cache
     try:
-        later = _read("later", later_ref, company, filings, store)
-        earlier = _read("earlier", earlier_ref, company, filings, store)
+        return read_pair(company, earlier_ref, later_ref, filings=filings, cache=store)
     finally:
         if own_cache:
             store.close()
+
+
+def read_pair(
+    company: Company,
+    earlier_ref: FilingRef,
+    later_ref: FilingRef,
+    *,
+    filings: FormFilingSource,
+    cache: FilingCache,
+) -> FilingPair:
+    """Read two given filings through ``cache`` (later first), as :func:`read_filing_pair` does.
+
+    For a caller that has already chosen the pair. Raises SourceError when either
+    filing cannot be read.
+    """
+    later = _read("later", later_ref, company, filings, cache)
+    earlier = _read("earlier", earlier_ref, company, filings, cache)
     return FilingPair(company, earlier_ref, later_ref, earlier, later)
 
 
-def compare_pair(pair: FilingPair, *, exhaustive: bool = False) -> FilingChanges:
+def compare_pair(
+    pair: FilingPair, *, exhaustive: bool = False, max_listed: int | None = MAX_LISTED
+) -> FilingChanges:
     """What changed from ``pair.earlier`` to ``pair.later``, with the notes a reader needs.
 
-    ``exhaustive`` is passed to :func:`~app.core.filing_diff.diff_documents` (for measuring).
+    ``exhaustive`` and ``max_listed`` (None lists every changed paragraph) are passed to
+    :func:`~app.core.filing_diff.diff_documents`.
     """
     items = diff_documents(
         pair.earlier,
@@ -128,6 +147,7 @@ def compare_pair(pair: FilingPair, *, exhaustive: bool = False) -> FilingChanges
         earlier_url=pair.earlier_ref.url,
         later_url=pair.later_ref.url,
         exhaustive=exhaustive,
+        max_listed=max_listed,
     )
     sides = (_side(pair.earlier_ref, pair.earlier), _side(pair.later_ref, pair.later))
     notes = [

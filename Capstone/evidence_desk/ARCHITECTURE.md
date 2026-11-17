@@ -21,6 +21,7 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/core/compare.py     what moved between two runs of one thesis
     src/app/core/links.py, text.py   text-fragment links to an excerpt; word tokens and sentence spans
     src/app/core/filing_diff.py what was added, removed, reworded or renumbered between two filings, Item by Item; change_models.py is its pure data
+    src/app/core/claim_changes.py   which changed paragraphs of a run's filings share words with each claim (BM25 and a rule of two shared terms; no model); claim_change_models.py is its pure data
     src/app/core/facts.py       FactBook: values from XBRL company facts, placed by their dates
     src/app/core/metrics.py     computes the metrics report from facts; metric_models.py is its pure data
     src/app/core/numcheck.py    the numeric check: each number a statement writes is in what it cites
@@ -41,6 +42,7 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/services/theses.py  saved theses: create, start a run of one, the latest comparison
     src/app/services/export.py  the Markdown brief, plain or with the reviewer's decisions
     src/app/services/filing_changes.py  selects a company's two latest filings of one form, reads them through the cache, compares them
+    src/app/services/claim_changes.py   for a run: the filing before each filing it read, the two comparisons, the ranking per claim; a comparison that cannot be made is a note, never an error
     src/app/store.py            SQLite: Store (the record) and FilingCache (disposable)
     src/app/backup.py           backs up the record; checks that the newest backup restores
     src/app/wiring.py           composition root: reads the environment, builds collaborators
@@ -183,6 +185,7 @@ finding, 409 while running, 422 withheld finding); `GET .../export.md?reviewed=t
 - **A new retrieval variant**: a `Variant` in `VARIANTS` in `evaluation/retrieval_eval.py`. Measure it on the golden
   set (`make eval ARGS='run --variant NAME'`) before it is wired into `retrieval/search.py` or the pipeline.
 - **A change to how two filings are compared** (the threshold for "reworded", what counts as a table row): `core/filing_diff.py`, whose constants sit at its top, with `tests/test_filing_diff.py`. The comparison is separate from a thesis run: `GET /api/companies/{ticker}/changes` and `make changes` both call `services/filing_changes.filing_changes`. Read the pairs a new threshold adds before keeping it (`docs/filing-changes.md`).
+- **A change to which changed paragraphs are listed under a claim** (how many words must be shared, how many are listed, how repeats are folded): `core/claim_changes.py`, whose two constants sit at its top, with `tests/test_claim_changes.py`. It is computed on demand by `GET /api/runs/{id}/changes` from the filings the run read and is not part of the run record, so the tripwire does not move. After a change, run `make sample-run-changes` and read what each claim now lists (`docs/claim-changes.md`).
 
 ## The boundary
 

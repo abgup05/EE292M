@@ -829,3 +829,93 @@ def test_filing_changes_with_one_filing_of_the_form_are_a_503_that_says_so(
 ) -> None:
     response = changes_client.get("/api/companies/NVDA/changes?form=10-Q")
     assert response.status_code == 503 and "10-Q" in response.json()["error"]
+
+
+# What changed in the filings a run read, under each claim
+
+
+@pytest.fixture
+def run_changes_client(tmp_path: Path) -> Iterator[tuple[TestClient, str, Any]]:
+    """A client over a stored, finished run whose two filings each have an earlier one."""
+    from app.store import FilingCache
+    from tests.test_claim_changes import filings_of_a_year, finished_run
+
+    filings = filings_of_a_year()
+    cache = FilingCache()
+    store = Store(tmp_path / "runs.sqlite")
+    run = finished_run(filings, cache)
+    store.save_run(run)
+    app = create_app(
+        store=store,
+        filings=filings,
+        analyst=ExtractiveAnalyst(),
+        fetch_page=FakePages({}),
+        cache=cache,
+    )
+    with TestClient(app) as test_client:
+        yield test_client, run.id, filings
+
+
+def test_the_changes_of_a_run_are_listed_under_each_of_its_claims(run_changes_client) -> None:
+    client, run_id, _ = run_changes_client
+    response = client.get(f"/api/runs/{run_id}/changes")
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["run_id"] == run_id and body["notes"] == []
+    assert [claim["claim_id"] for claim in body["claims"]] == ["china", "margin"]
+    assert {pair["form"] for pair in body["compared"]} == {"10-K", "10-Q"}
+    china = body["claims"][0]
+    added = [change for change in china["changes"] if change["kind"] == "added"]
+    assert added and added[0]["form"] == "10-K"
+    assert added[0]["paragraph"]["link"].startswith("https://www.sec.gov/")
+    assert {"china", "export"} <= set(added[0]["matched_terms"])
+    assert china["matched"] <= china["considered"]
+
+
+def test_the_changes_of_a_finished_run_are_computed_once(run_changes_client) -> None:
+    client, run_id, filings = run_changes_client
+    first = client.get(f"/api/runs/{run_id}/changes").json()
+    asked = len(filings.form_calls)
+    assert asked > 0
+    assert client.get(f"/api/runs/{run_id}/changes").json() == first
+    assert len(filings.form_calls) == asked, "the second answer came from the cache"
+
+
+def test_the_brief_carries_the_reading_list_only_when_asked(run_changes_client) -> None:
+    client, run_id, _ = run_changes_client
+    plain = client.get(f"/api/runs/{run_id}/export.md")
+    assert plain.status_code == 200 and "Changed in the filings this run read" not in plain.text
+    listed = client.get(f"/api/runs/{run_id}/export.md?changes=true")
+    assert listed.status_code == 200 and listed.headers["content-type"].startswith("text/markdown")
+    assert "## Changed in the filings this run read" in listed.text
+    assert "A reading list, not findings" in listed.text and "### china:" in listed.text
+
+
+def test_the_changes_of_an_unknown_run_are_a_404(run_changes_client) -> None:
+    client, _, _ = run_changes_client
+    response = client.get("/api/runs/run-does-not-exist/changes")
+    assert response.status_code == 404 and response.json() == {"detail": "Run not found"}
+
+
+def test_a_source_that_cannot_list_a_form_gives_a_note_and_not_an_error(
+    tmp_path: Path,
+) -> None:
+    from app.store import FilingCache
+    from tests.test_claim_changes import filings_of_a_year, finished_run
+
+    listing, cache = filings_of_a_year(), FilingCache()
+    store = Store(tmp_path / "runs.sqlite")
+    run = finished_run(listing, cache)
+    store.save_run(run)
+    plain = FakeFilings(refs=listing.refs, documents=listing.documents)  # no filings_of_form
+    app = create_app(
+        store=store,
+        filings=plain,
+        analyst=ExtractiveAnalyst(),
+        fetch_page=FakePages({}),
+        cache=cache,
+    )
+    with TestClient(app) as test_client:
+        body = test_client.get(f"/api/runs/{run.id}/changes").json()
+    assert body["compared"] == [] and len(body["notes"]) >= 1
+    assert [claim["changes"] for claim in body["claims"]] == [[], []]

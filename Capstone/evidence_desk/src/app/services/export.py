@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+from app.core.claim_change_models import RelevantChange, RunChanges
 from app.core.metric_models import Metric
 from app.core.models import (
     Claim,
@@ -346,8 +347,88 @@ def _sources(run: Run) -> list[str]:
     return [*lines, ""]
 
 
-def render_markdown(run: Run, review: Review | None = None) -> str:
+CHANGE_KINDS = {
+    "added": "Added",
+    "removed": "Removed",
+    "reworded": "Reworded",
+    "numbers_only": "Numbers only",
+}
+READING_LIST_NOTE = (
+    "A reading list, not findings. Each paragraph below changed between a filing this run read "
+    "and the filing of the same form before it, and is listed because it shares words with the "
+    "claim. No model chose or judged these, and none counts toward a verdict."
+)
+
+
+def _compared(changes: RunChanges) -> list[str]:
+    lines = []
+    for pair in changes.compared:
+        later, earlier = pair.later, pair.earlier
+        lines.append(
+            f"- [{pair.form} for the period ended {later.period_end}]({_url(later.url)}) against "
+            f"[the one for {earlier.period_end}]({_url(earlier.url)})"
+        )
+    return lines
+
+
+def _relevant_change(number: int, change: RelevantChange) -> list[str]:
+    """One listed change: its kind and place, the words it shares, its text and its links."""
+    shares = f" Shares: {_text(', '.join(change.matched_terms))}." if change.matched_terms else ""
+    also = change.also_under
+    repeated = f" Also under {_text('; '.join(also))}." if also else ""
+    kind = CHANGE_KINDS.get(change.kind, change.kind)
+    head = f"{number}. **{kind}** in the {change.form}, {_text(change.item)}.{shares}{repeated}"
+    if change.pair is not None:
+        text, later, earlier = change.pair.after.text, change.pair.after, change.pair.before
+        links = (
+            f"[Open in the later filing]({_url(later.link)}) · "
+            f"[earlier paragraph]({_url(earlier.link)})"
+        )
+    elif change.paragraph is not None:
+        text = change.paragraph.text
+        side = "earlier" if change.kind == "removed" else "later"
+        links = f"[Open in the {side} filing]({_url(change.paragraph.link)})"
+    else:
+        return [head, ""]
+    quoted = [f"   {line}" for line in _blockquote(text)]
+    return [head, "", *quoted, "", f"   {links}", ""]
+
+
+def _reading_list(run: Run, changes: RunChanges) -> list[str]:
+    """The changed paragraphs listed under each claim (``docs/claim-changes.md``)."""
+    lines = ["## Changed in the filings this run read", "", READING_LIST_NOTE, ""]
+    if changes.compared:
+        lines += ["Compared:", "", *_compared(changes), ""]
+    if changes.notes:
+        lines += [*(f"- {_text(note)}" for note in changes.notes), ""]
+    by_claim = {found.claim_id: found for found in changes.claims}
+    for claim in run.claims:
+        found = by_claim.get(claim.id)
+        lines += [f"### {claim.id}: {_text(claim.text)}", ""]
+        if found is None or not found.changes:
+            searched = found.considered if found is not None else 0
+            lines += [
+                f"No changed paragraph shares two words with this claim ({searched} searched).",
+                "",
+            ]
+            continue
+        lines += [
+            f"{len(found.changes)} listed of {found.distinct_matched} that share at least two "
+            f"words with the claim, among {found.considered} changed paragraphs.",
+            "",
+        ]
+        for number, change in enumerate(found.changes, start=1):
+            lines += _relevant_change(number, change)
+    return lines
+
+
+def render_markdown(
+    run: Run, review: Review | None = None, changes: RunChanges | None = None
+) -> str:
     """Render ``run`` as a Markdown brief; with ``review``, the reviewed brief.
+
+    With ``changes``, a reading list follows the claims: the paragraphs that changed in the
+    filings the run read, under each claim they share words with, marked as no finding.
 
     Order: title, status, your review (reviewed brief only), decision, verdict
     table (finished runs only), summary,
@@ -374,6 +455,8 @@ def render_markdown(run: Run, review: Review | None = None) -> str:
         ]
     lines += _reported_figures(run)
     lines += _claims(run, review)
+    if changes is not None:
+        lines += _reading_list(run, changes)
     if brief is not None:
         lines += ["## Unknowns", "", *_bullets(brief.unknowns, "None recorded."), ""]
         lines += ["## Next steps", "", *_bullets(brief.next_steps, "None recorded."), ""]

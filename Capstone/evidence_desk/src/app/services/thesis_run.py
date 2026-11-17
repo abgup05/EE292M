@@ -219,8 +219,8 @@ def execute_run(
     plan_fallbacks = 0
 
     def on_failure(step: str, exc: Exception) -> None:
-        log.warning("%s engine failed during %s: %s", analyst.name, step, _safe(exc))
-        failures.record(step, _safe(exc))
+        log.warning("%s engine failed during %s: %s", analyst.name, step, safe_message(exc))
+        failures.record(step, safe_message(exc))
 
     deterministic = ExtractiveAnalyst()
     engine: Analyst = (
@@ -330,16 +330,16 @@ def execute_run(
             judgements = reader.check(run.inputs, company, claim, items)
             assessment.meaning = apply_judgements(gated.findings, judgements)
         except Exception as exc:  # noqa: BLE001 - any failure leaves the findings unchecked
-            log.warning("the meaning check failed for %s: %s", claim.id, _safe(exc))
-            assessment.check_error = _safe(exc)
+            log.warning("the meaning check failed for %s: %s", claim.id, safe_message(exc))
+            assessment.check_error = safe_message(exc)
 
     def assess_claim(position: int, claim: Claim, offered: list[Passage]) -> _Assessment:
         """Draft, gate and check one claim on a worker thread; fallbacks are kept, not recorded."""
         steps: list[tuple[str, str]] = []
 
         def on_claim_failure(step: str, exc: Exception) -> None:
-            log.warning("%s engine failed during %s: %s", analyst.name, step, _safe(exc))
-            steps.append((step, _safe(exc)))
+            log.warning("%s engine failed during %s: %s", analyst.name, step, safe_message(exc))
+            steps.append((step, safe_message(exc)))
 
         claim_engine: Analyst = (
             analyst
@@ -591,7 +591,7 @@ def sources_read(run: Run) -> int:
     )
 
 
-def _safe(exc: Exception) -> str:
+def safe_message(exc: Exception) -> str:
     """An error description that is safe to show: our own messages, otherwise the type only."""
     if type(exc).__module__.startswith("app."):
         return str(exc)[:320]

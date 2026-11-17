@@ -39,7 +39,7 @@ from app.engines.extractive import ExtractiveAnalyst
 from app.services.export import render_markdown
 from app.services.ingest import filing_title
 from app.services.numbers import select_figures
-from app.services.thesis_run import execute_run, fail_run, new_run
+from app.services.thesis_run import execute_run, fail_run, new_run, safe_message
 from app.sources.filing import parse_filing
 from app.store import FilingCache, Store
 from tests.fakes import (
@@ -1235,3 +1235,9 @@ def test_a_run_that_reads_a_page_you_added_says_so_in_its_provenance(store: Stor
 def test_a_run_on_filings_alone_keeps_the_filings_provenance(store: Store) -> None:
     run = _growth_run(store, _stating("Data Center revenue grew 56% from a year ago."))
     assert run.brief is not None and run.brief.provenance_note == PROVENANCE_NOTE
+
+
+def test_safe_message_shows_our_own_messages_and_only_the_type_of_any_other() -> None:
+    assert safe_message(SourceError("EDGAR answered HTTP 503")) == "EDGAR answered HTTP 503"
+    assert safe_message(SourceError("x" * 400)) == "x" * 320
+    assert safe_message(KeyError("sk-secret-key")) == "KeyError"

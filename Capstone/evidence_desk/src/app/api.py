@@ -28,6 +28,7 @@ from pydantic import BaseModel
 from app import __version__, wiring
 from app.core import limits, policy
 from app.core.change_models import FilingChanges
+from app.core.claim_change_models import RunChanges
 from app.core.metric_models import MetricsReport
 from app.core.models import (
     TICKER_PATTERN,
@@ -53,6 +54,7 @@ from app.core.ports import (
 from app.core.review import build_review
 from app.engines.checker import NoChecker
 from app.services import theses, thesis_run
+from app.services.claim_changes import run_changes
 from app.services.examples import EXAMPLE_THESIS
 from app.services.export import render_markdown
 from app.services.filing_changes import FORMS as CHANGE_FORMS
@@ -226,6 +228,7 @@ class TimedCache[K, V]:
 
 MetricsCache = TimedCache[int, MetricsReport]
 ChangesCache = TimedCache[tuple[int, str], FilingChanges]
+RunChangesCache = TimedCache[str, RunChanges]
 
 
 def create_app(
@@ -256,6 +259,7 @@ def create_app(
     executor = ThreadPoolExecutor(max_workers=RUN_WORKERS, thread_name_prefix="run")
     metrics_cache = MetricsCache(monotonic)
     changes_cache = ChangesCache(monotonic)
+    run_changes_cache = RunChangesCache(monotonic)
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
@@ -344,17 +348,47 @@ def create_app(
     def review_of(run: Run) -> Review:
         return build_review(run, store.list_decisions(run.id))
 
+    def changes_of(run: Run) -> RunChanges:
+        """The run's claim-linked changes, computed once for a finished run and kept a while."""
+        cached = run_changes_cache.get(run.id)
+        if cached is not None:
+            return cached
+        result = run_changes(run, filings=filings, cache=cache)
+        if run.status != RunStatus.running:
+            run_changes_cache.put(run.id, result)
+        return result
+
     @app.get("/api/runs/{run_id}")
     def get_run(run_id: str) -> Run:
         """The full run record."""
         return load(run_id)
 
+    @app.get("/api/runs/{run_id}/changes")
+    def run_filing_changes(run_id: str) -> RunChanges:
+        """For each claim of a run, the paragraphs that changed in the filings it read.
+
+        Each filing the run read is compared with the filing of its form before it, and
+        every changed paragraph is ranked against each claim by keyword overlap. No model
+        is involved and nothing here is a verdict. 404 for an unknown run. A comparison
+        that cannot be made (no earlier filing, EDGAR out of reach, a run still going)
+        is a note in the record, never an error. The answer for a finished run is kept
+        for 15 minutes.
+        """
+        return changes_of(load(run_id))
+
     @app.get("/api/runs/{run_id}/export.md")
-    def export_run(run_id: str, reviewed: bool = False) -> PlainTextResponse:
-        """The run as a Markdown brief; ``reviewed=true`` adds the reviewer's decisions."""
+    def export_run(
+        run_id: str, reviewed: bool = False, changes: bool = False
+    ) -> PlainTextResponse:
+        """The run as a Markdown brief.
+
+        ``reviewed=true`` adds the reviewer's decisions. ``changes=true`` adds the reading
+        list of changed paragraphs under each claim (as ``/api/runs/{id}/changes`` gives it).
+        """
         run = load(run_id)
         review = review_of(run) if reviewed else None
-        return PlainTextResponse(render_markdown(run, review), media_type="text/markdown")
+        listed = changes_of(run) if changes else None
+        return PlainTextResponse(render_markdown(run, review, listed), media_type="text/markdown")
 
     @app.get("/api/runs/{run_id}/review")
     def get_review(run_id: str) -> Review:

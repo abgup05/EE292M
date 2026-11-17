@@ -185,6 +185,35 @@ class FakeFilings:
 
 
 @dataclass
+class FormFakeFilings(FakeFilings):
+    """:class:`FakeFilings` that can also list a company's filings of one form.
+
+    Like :meth:`app.sources.edgar.EdgarClient.filings_of_form`: the configured refs of
+    exactly ``form``, newest filing date first, at most ``limit``; fewer than two is a
+    :class:`SourceError`, as is ``index_error``. Each call is kept in ``form_calls``.
+    """
+
+    form_calls: list[tuple[str, int]] = field(default_factory=list)
+
+    def filings_of_form(self, company: Company, form: str, limit: int) -> list[FilingRef]:
+        """The configured refs of ``form``, newest first, or the configured failure."""
+        self.form_calls.append((form, limit))
+        if self.index_error is not None:
+            raise self.index_error
+        refs = sorted(
+            (ref for ref in self.refs if ref.form == form),
+            key=lambda ref: (ref.filed_date, ref.accession),
+            reverse=True,
+        )
+        if len(refs) < 2:
+            raise SourceError(
+                f"{company.name} has {len(refs)} {form} filing(s) in EDGAR's recent index; "
+                "two are needed to compare"
+            )
+        return refs[:limit]
+
+
+@dataclass
 class FakePages:
     """A page fetcher: URL to ``(final URL, HTML)``, or to the :class:`FetchError` it raises."""
 

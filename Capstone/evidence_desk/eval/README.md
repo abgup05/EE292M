@@ -82,7 +82,7 @@ Generation (`results/generation-*`), every rate with its denominator:
 ## Planted mismatches (`results/mismatch-*`)
 
 The `--check` run shows what the meaning check said about findings as the engine wrote them: it
-rejected 1 of 77. It cannot show whether the check would reject a finding whose quotes do not
+rejected 1 of 78. It cannot show whether the check would reject a finding whose quotes do not
 support it. `mismatch` asks that directly. It replays the golden cassette read-only, takes the 76
 verified findings that have a quote, keeps each one's claim, statement and stance, and replaces its
 quotes with the real, verified quotes of another finding: one about a different company
@@ -93,14 +93,17 @@ checker and prompt, on its own cassette, `cassettes/mismatch/`.
 
 | Pairs | Count | Not supported | Partly | Supported |
 | --- | ---: | ---: | ---: | ---: |
-| Another company's quotes | 76 | 75 | 1 | 0 |
-| Another claim's quotes, same company | 76 | 74 | 2 | 0 |
+| Another company's quotes | 76 | 74 | 2 | 0 |
+| Another claim's quotes, same company | 76 | 76 | 0 | 0 |
 | The findings' own quotes (the `--check` run) | 76 | 1 | 10 | 65 |
 
-A run keeps a finding judged "partly", so 3 of the 152 planted mismatches would still have been
+A run keeps a finding judged "partly", so 2 of the 152 planted mismatches would still have been
 shown and counted. The 48 requests were answered on 17 November 2026 by Claude Haiku as a Claude
-Code subagent, in six fresh contexts of eight requests each; the prompts were handed over under
-neutral file names and the stand-in was not told they were planted. Each request held only
+Code subagent; the prompts were handed over under neutral file names and the stand-in was not
+told they were planted. Thirty-two answers are from the first recording, made in six fresh
+contexts of eight requests each. Sixteen were recorded again later that day, one fresh context
+per request, after the Costco findings changed (below); before that the table read 75, 1, 0 and
+74, 2, 0. Each request held only
 mismatched items, where a run shows the checker a claim's findings together, most of them true.
 And a swapped quote is usually about another topic altogether: this measures the easy case.
 
@@ -111,8 +114,16 @@ And a swapped quote is usually about another topic altogether: this measures the
 - Agreement is with a model-drafted key, unread by the author. Citation is strict: a right
   answer may rest on other evidence than the excerpt named.
 - One recording per prompt: no variance across samples, and no test of the live API call.
-- `cassettes/golden/responses/` holds 40 assess answers for 30 cases. Ten were recorded before the
-  per-filing cap was fixed; the requests they answered are no longer made, so they are never
-  replayed. They are kept as recorded, not edited or removed.
+- `cassettes/golden/responses/` holds 45 assess answers for 30 cases, and both cassettes hold
+  check answers that are no longer asked for. Ten assess answers were recorded before the
+  per-filing cap was fixed. Five more, with four checks and sixteen mismatch checks, answered
+  prompts that changed on 17 November 2026, when a fix to the reported figures (a company whose
+  year is in weeks, `docs/referee-3-triage.md`) changed the figures the five Costco cases are
+  shown. Those requests were answered again, each by a fresh stand-in given only the request:
+  Claude Sonnet 5.5 for the assessments, Claude Haiku 5.5 for the checks. One stand-in wrote its
+  answer file with a shell command where it had been told to run none; its answer is as it wrote
+  it. Verdict agreement stayed at 20 of 24, with `cost-members-renew` and
+  `cost-north-america-dependence` moving in opposite directions. The superseded answers are
+  never replayed; they are kept as recorded, not edited or removed.
 - Facts change when a company files: on a fresh clone without `cache/`, refetched facts may no
   longer match their pin, and `generate` stops rather than score with different figures.

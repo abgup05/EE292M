@@ -26,16 +26,17 @@ Ticker, decision, claims in; verdicts first; each finding opens to its passage; 
 
 | Claim in the draft | Evidence today | State |
 | --- | --- | --- |
-| Every quote shown is an exact span of a passage the engine was shown | The gate's tests; 84 of 84 on the golden set; 18 of 18 on the recorded run | Holds, for the parser's rendering of the filing |
-| Every number in a finding or its reason is in its evidence | The number check's tests; it withheld 2 of 79 findings on the golden set | Holds, with stated blind spots |
-| The reported figures are right | 28 published values for three companies match | Holds for those; other figures are self-consistent only |
+| Every quote shown is an exact span of a passage the engine was shown | The gate's tests; 84 of 84 on the golden set; 18 of 18 on the recorded run, and again 18 of 18 when it was recorded with no reminder of the rule | Holds, for the parser's rendering of the filing |
+| Every number in a finding or its reason is in its evidence | The number check's tests; it withheld 1 of 79 findings on the golden set, and 1 of 19 in the recording with tagged figures | Holds, with stated blind spots: a year is never checked, and a third referee found two false passes that are now tests |
+| The reported figures are right | 28 published values for three companies match; a probe on eight companies | Holds for those 28. On 17 November the probe found the figures wrong for three of the eight (a year in weeks, twelve months taken for a fiscal year, a bank's revenue); fixed, each with a test |
 | Retrieval finds the passage that matters | 18 of 24 in the top eight with the planner's queries; 9 of 24 without | **To redo** once I have read the golden cases |
 | The verdict agrees with a careful reading | 20 of 24; no reversal; 6 of 6 unanswerable claims refused | **To redo**, same reason; and re-recording alone moved it by three cases |
-| A second model catches misreadings of real findings | It withheld 1 of 77 findings and changed no verdict | Not shown. Same model family as the engine |
+| A second model catches misreadings of real findings | It withheld 1 of 78 findings and changed no verdict | Not shown. Same model family as the engine |
 | It tells you what changed between filings | The planted-paragraph test; every line of two real filings counted exactly once; run on eight companies' annual reports; pairs near the threshold read by a model for three | No person has read a comparison; in template-built sections about 3 in 10 borderline pairs are wrong; table rows are counted, never shown |
-| It shows what is new that bears on each claim | The planted-paragraph test; on the recorded example the first paragraph under "Gross margin is expanding" is an added sentence saying it decreased | A keyword match. Nobody has judged the lists; between 126 and 276 changes share two words with each claim and five are shown |
-| A second model rejects evidence that does not fit | 149 of 152 planted mismatches rejected, none accepted; 1 of 76 true pairs rejected | The easy kind of mismatch, answered by a stand-in. The hard kind is not measured |
-| It reads segment, geography and customer figures from the filing's tags | Checked against NVIDIA's own text; members add up to the tagged total on sixteen filings of eight companies | Labels come from tag names; no table compared with the printed one by a person; a finding cannot cite these yet |
+| It shows what is new that bears on each claim | The planted-paragraph test; on the recorded example the first paragraph under "Gross margin is expanding" is an added sentence saying it decreased | A keyword match. Nobody has judged the lists; between 126 and 276 changes share two words with each claim or its search queries and five are shown |
+| A second model rejects evidence that does not fit | 150 of 152 planted mismatches rejected, none accepted; 1 of 76 true pairs rejected | The easy kind of mismatch, answered by a stand-in. The hard kind is not measured |
+| It reads segment, geography and customer figures from the filing's tags | Checked against NVIDIA's own text; members add up to the tagged total on sixteen filings of eight companies | Labels come from tag names; no table compared with the printed one by a person |
+| A finding can cite those figures | Two recordings of the example made the same day, without and with the option: five verified findings cite a tagged figure, citations of figures go from 8 to 20 | That it changes a verdict is not shown: asking the same prompts again moved one too. One company, stand-in models |
 
 ## 5. What failed, and what it taught
 

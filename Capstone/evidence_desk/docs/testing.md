@@ -152,11 +152,11 @@ checker. `make eval ARGS="mismatch --cassette eval/cassettes/mismatch --queries 
 findings that has a quote, with its claim, statement and stance, and swaps in real, verified quotes
 that belong to a finding about another company, or to another claim about the same company. The
 request is built by the production prompt builder and judged like any other. Of 152 such
-mismatches the second model judged 149 not supported, 3 partly and none supported; on the same 76
+mismatches the second model judged 150 not supported, 2 partly and none supported; on the same 76
 findings with their own quotes it had judged 1 not supported, 10 partly and 65 supported
 (`eval/results/mismatch-2026-11-17.md`). The answers are a stand-in's (Claude Haiku as a Claude
-Code subagent, in six fresh contexts of eight requests, given the prompts under neutral file
-names and not told they were planted). A swapped quote is the easy kind of mismatch: usually
+Code subagent, given the prompts under neutral file names and not told they were planted; 16 of
+the 48 were recorded again when the Costco findings changed, `eval/README.md`). A swapped quote is the easy kind of mismatch: usually
 another topic. A quote on the right topic that does not carry the statement is the hard kind,
 and nothing here measures it.
 
@@ -177,6 +177,28 @@ and nothing here measures it.
 | A page that draws a breakdown cell it computed, or a changed paragraph with a stance mark | `uitests/test_breakdowns_dom.py`, `uitests/test_run_changes_dom.py` | each new assertion under its own deliberate break, by the session that built the page |
 
 What these cannot see: whether a changed paragraph listed under a claim bears on it, and whether a breakdown's label is the company's. Both are stated on the page.
+
+## The third referee's findings and milestone 10 (version 10)
+
+| Wrong program | Fails | Seen failing as |
+| --- | --- | --- |
+| A company whose year is in weeks: its 24- and 36-week periods dropped, its fourth quarter never derived | `tests/test_facts.py::test_a_52_week_retailer_gets_its_sixteen_week_fourth_quarter`, on Costco's own facts for two fiscal years | written first; failed before the period lengths were widened |
+| A 16-week quarter shown as growth on the 12 weeks before it | `tests/test_metrics.py::test_quarters_of_unequal_length_are_not_compared_with_each_other` and the test beside it | the length rule switched off: 2 failed, 66 passed |
+| Twelve months to a quarter end taken for a fiscal year | `tests/test_facts.py::test_twelve_months_to_a_quarter_end_is_not_a_fiscal_year`, `tests/test_metrics.py::test_the_reports_fiscal_years_are_fiscal_years` | written first, after `make figures` showed it on Amazon |
+| A bank with no revenue figure | `tests/test_facts.py::test_a_bank_reports_its_revenue_net_of_interest_expense` | written first, after `make figures` showed it on JPMorgan |
+| "Revenue grew 3% while gross margin fell" passing against "(3)%" | `tests/test_numcheck.py::test_a_word_of_decline_about_something_else_does_not_let_growth_match_a_fall` | written first: all three cases passed the old check |
+| "$46 million" passing against "46 customers" | `::test_a_count_of_things_in_a_quote_does_not_match_a_dollar_amount` | written first: four cases |
+| "at fiscal year-end 2026" read as the quantity 2026, and a true finding withheld | `::test_a_year_after_year_end_is_not_a_quantity_in_a_recorded_statement`, on the statement a stand-in wrote | found by the first replay of the tagged recording |
+| One comparison that breaks failing the whole request for a run's changes | `tests/test_claim_changes.py::test_a_comparison_that_breaks_costs_only_its_own_list` | written first: failed with the `ValueError` |
+| A second tagged total taken without a word; a reader stopped by an `assert` | `tests/test_breakdowns.py::test_two_tagged_totals_for_one_period_are_noted_not_silently_resolved`, `::test_annual_values_in_the_rarer_unit_do_not_stop_the_report` | written first: the second failed with `AssertionError`, on an input the referee had not been able to construct |
+| The option ignored, or a failure to read a filing's tags not reported | 12 and 5 tests of `tests/test_tagged_figures.py` | planted by the session that built the feature; restored |
+| A customer's share of 0.22 offered as 0.22% | `tests/test_tagged_figures.py::test_a_share_tagged_as_a_fraction_is_offered_as_a_percentage`, and the replay of the tagged recording | planted in review: it passed every unit test of the module and only the replay failed, so the unit test was added and seen failing |
+| A sample that tells the reader its answers came from another recording | `tests/test_replay_tagged.py::test_a_sample_names_the_recording_it_was_made_from` | found by reading the first screenshot of the new sample |
+| A page that adds up the two offered counts, drops a tagged figure's row, or keeps one of three untrue wordings | `uitests/test_tagged_dom.py` (18 assertions) | the group made to drop its last row: 2 failed |
+
+**A probe, because the answer key covers three companies.** `make figures TICKERS="..."` (`src/app/figures.py`) prints each company's quarters as a run sees them: the quarter's length, its revenue and whether that is reported or derived, its change on a year earlier and on the quarter before, its cash flow, and how many metrics have no value. It computes nothing. Run on the eight probe companies before and after a change, it shows which lines moved (`docs/evidence/figures-eight-companies.md`). It is how the Amazon and JPMorgan faults were found. It cannot say a figure is right.
+
+**Two more recordings replayed** (`tests/test_replay_tagged.py`). Each builds every prompt afresh, as `test_replay.py` does for the first, and compares the verdicts and counts with a baseline read once from the first complete replay. A baseline is not an answer key: it says what the gate, the number check and the verdict rule make of those recorded answers, so a change in any of them is seen.
 
 ## How long the gate takes
 

@@ -56,6 +56,18 @@ its `engine_detail`, for example "replayed from cassette nvda: 6 responses recor
 Code with claude-opus-5-5, 2026-11-17 to 2026-11-17". Never edit an answer after recording it to
 change a verdict; record a new cassette instead. A cassette holds no key and no header.
 
+## The cassettes in this repository
+
+| Cassette | What it holds |
+| --- | --- |
+| `demo/cassettes/nvda-example` | The first recording of the example thesis on the three recorded NVIDIA filings. Its stand-in was reminded of two of the engine's rules. `make replay`, `tests/test_replay.py` and the page's `?sample` use it |
+| `demo/cassettes/nvda-example-plain` | The same prompts answered again with no reminder: the control |
+| `demo/cassettes/nvda-example-tagged` | The example with `tagged_figures` on. The page's `?sample=run-tagged` |
+| `eval/cassettes/golden` | The plans, assessments and meaning checks of the 30-case golden set |
+| `eval/cassettes/mismatch` | The meaning check's answers to planted mismatches |
+
+Each has, or is described in, a README that says who answered and what they were told. `tests/test_replay_tagged.py` replays the second and third.
+
 ## What a cassette does not prove
 
 - It does not exercise the SDK call: a replay never reaches the API, so a change to the request

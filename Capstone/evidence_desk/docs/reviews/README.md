@@ -20,7 +20,7 @@ The referee is not a checklist review. It is the agent in `.claude/agents/refere
 4. Check that nothing in the checkout is newer than the `.started` file and that every file the referee says it opened is inside the checkout. Save the text unedited under a header that says what was read, by which model, and what was removed. Triage every finding in a file of its own.
 5. Remove the worktree.
 
-Both referee runs so far were started with that command typed directly, before the target existed.
+The first two referee runs were started with that command typed directly, before the target existed; the third used the target.
 
 ## Index
 
@@ -34,3 +34,4 @@ Both referee runs so far were started with that command typed directly, before t
 | [referee-2-version-6.md](referee-2-version-6.md) | before Week 9B | `capstone-v6` plus three commits without code (commit `a79cf92`) | A hostile referee again: the filing comparison's claims, and the older ones |
 | [review-5-message-interface-tests.md](review-5-message-interface-tests.md) | before Week 9B | `capstone-v7` | The message, the interface, the tests, time and limits, on the page as it now stands |
 | [referee-3-version-9.md](referee-3-version-9.md) | before Week 9B | `capstone-v9` | A hostile referee a third time: the changes under each claim, the tagged breakdowns, and the older claims again |
+| [review-6-speed-system.md](review-6-speed-system.md) | before Week 9B | `capstone-v10` | Speed, the system, what cannot be rebuilt, one boundary, on the system as it now stands |

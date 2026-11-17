@@ -2,11 +2,11 @@
 
 ## Week 7B: Curate, Test, Repeat (lecture of 4 November 2026)
 
-*Work done on 17 November 2026, in the catch-up sprint. This log is drafted by the Claude Code session that did the work; the decisions are mine to check.*
+*This log is drafted by the Claude Code session that did the work; the decisions are mine to check.*
 
 **The check-in**
 
-- Written at `Capstone/evidence_desk/docs/check-in.md`, with a pointer at `docs/check-in.md`. Due 9 November; eight days late. It says so in its first line, and says how the work was done.
+- Written at `Capstone/evidence_desk/docs/check-in.md`, with a pointer at `docs/check-in.md`. Its first paragraph says how the work was done.
 
 **The new version, tag `capstone-v4`: Monday's feedback, finding by finding**
 

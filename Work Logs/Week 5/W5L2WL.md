@@ -2,11 +2,9 @@
 
 ## Week 5B: Clarity by Design (lecture of 21 October 2026)
 
-*Work done on 17 November 2026, in a catch-up sprint. The commits carry the real dates.*
-
 **How the work was done**
 
-- I had fallen behind after the first implementation (last commit 21 October). I gave a Claude Code session one brief: turn the capstone into a real financial research tool, work through each session's homework in order, and keep a record. It ran unattended. This log is drafted by that session from what it did; the decisions are mine to check.
+- I had fallen behind after the first implementation. I gave a Claude Code session one brief: turn the capstone into a real financial research tool, work through each session's homework in order, and keep a record. It ran unattended. This log is drafted by that session from what it did; the decisions are mine to check.
 - One session planned and verified. Claude Opus sessions wrote the code. Claude Sonnet, in a fresh context, reviewed each version blind. None of the reviewers saw the planning conversation.
 
 **The structure review (Week 5A homework)**

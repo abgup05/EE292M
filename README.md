@@ -40,6 +40,4 @@ The [Week 2 Industry Flow Explorer](Homework/Week%202/visualization/README.md) v
 
 To open a version: `git checkout capstone-v5` (any tag), then `make up` and <http://127.0.0.1:8766>; `git checkout capstone/evidence-desk` returns to the newest. From version 3 on, `http://127.0.0.1:8766/?sample` shows a recorded run without the network or a key. What each version added, with its exit check and its caveats, is the milestone table in the [capstone plan](Capstone/README.md).
 
-**When this was made.** Version 1 was built in October. Versions 2 to 11 were built on 17 November 2026 in one catch-up; the hand-ins from session 5A on and the work logs from 5B on were written that day, and each says so on its first lines. The work logs for sessions 3A to 5A and the hand-in for 4B describe October's work and were committed here on 17 November. The reviews were run by Claude models that did not write the code, not by colleagues and not by a model from another vendor; each review file says which.
-
 Docker and Make are required; all dependencies stay inside containers. `AGENTS.md` holds the rules for this repository.

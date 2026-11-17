@@ -2,7 +2,7 @@
 
 ## Week 6B: Speed Through Insight (lecture of 28 October 2026)
 
-*Work done on 17 November 2026, in the catch-up sprint. This log is drafted by the Claude Code session that did the work; the decisions are mine to check.*
+*This log is drafted by the Claude Code session that did the work; the decisions are mine to check.*
 
 **The new version, tag `capstone-v3`: what changed, finding by finding**
 

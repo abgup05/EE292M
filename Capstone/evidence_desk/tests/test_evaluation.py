@@ -21,14 +21,20 @@ from app.evaluation.golden import GOLDEN_PATH, heading_matches, validate_golden
 from app.evaluation.retrieval_eval import (
     MAX_RANK,
     NOT_IN_TOP,
+    RRF_K,
+    VARIANTS,
     Span,
+    explain_ranking,
     first_relevant_rank,
     is_relevant,
+    rank_by_rrf,
     rank_label,
+    rank_with_headings,
     read_queries,
     read_queries_file,
     recall_at,
     reciprocal_rank,
+    render_explanation,
     score_case,
     summarize,
     variant_queries,
@@ -179,6 +185,78 @@ def test_a_case_whose_passage_is_absent_is_a_miss_not_an_error() -> None:
     summary = summarize([result])
     assert (summary.recall_3.hits, summary.recall_3.total) == (0, 1)
     assert summary.mrr == 0.0
+
+
+# Explaining a rank: the per-term BM25 contributions behind it
+
+
+def test_explain_shows_the_terms_behind_the_relevant_and_the_first_ranked_passage() -> None:
+    index, spans = capped_index()
+    queries = ["export controls China", "accelerators"]
+    explanation = explain_ranking(index, queries, spans)
+    best = index.ranked(queries)
+    assert explanation.top is not None and explanation.relevant is not None
+    assert explanation.top.passage.id == best[0][0].id == "s1-p1"
+    assert explanation.top.rank == 1 and explanation.top.score == pytest.approx(best[0][1])
+    assert explanation.relevant.passage.id == "s1-p6" and explanation.relevant.rank == 6
+    for side in (explanation.top, explanation.relevant):
+        assert side.query == "export controls China"  # the query that gave its best score
+        assert sum(term.score for term in side.terms) == pytest.approx(side.score)
+    assert explanation.top.terms[0].frequency == 6 > explanation.relevant.terms[0].frequency
+    text = render_explanation("export", explanation)
+    assert "s1-p6" in text and "rank 6" in text and "export" in text
+
+
+def test_explain_a_relevant_passage_no_query_matches() -> None:
+    index, _ = capped_index()
+    explanation = explain_ranking(index, ["export controls China"], [Span("s3", 0, 10)])
+    assert explanation.relevant is not None and explanation.relevant.passage.id == "s3-p1"
+    assert explanation.relevant.rank is None and explanation.relevant.score == 0.0
+    assert "unranked" in render_explanation("weather", explanation)
+
+
+# Candidate rankings (measured on the golden set, not wired into the pipeline)
+
+
+def test_rrf_sums_reciprocal_ranks_so_a_passage_several_queries_find_comes_first() -> None:
+    only_claim = passage("s1", 1, 0, "counterparty counterparty risk partners")
+    many = passage("s1", 2, 100, "purchase obligations and supply commitments")
+    filler = passage("s1", 3, 200, "the weather was pleasant")
+    index = PassageIndex([only_claim, many, filler])
+    queries = ["counterparty risk of purchase", "supply commitments", "purchase obligations"]
+    fused = rank_by_rrf(index, queries)
+    assert [p.id for p, _ in fused] == ["s1-p2", "s1-p1"]
+    assert fused[0][1] == pytest.approx(1 / (RRF_K + 2) + 2 / (RRF_K + 1))
+    assert fused[1][1] == pytest.approx(1 / (RRF_K + 1))
+    assert rank_by_rrf(index, ["", "the of"]) == []
+
+
+def test_heading_ranking_scores_the_locator_but_returns_the_exact_passage() -> None:
+    audit = Passage(
+        id="s1-p1",
+        source_id="s1",
+        locator="Item 1. Financial Statements › Tax Audits",
+        text="The position will be sustained on appeal.",
+        start=0,
+    )
+    cash = Passage(id="s1-p2", source_id="s1", locator="Item 7", text="Cash rose.", start=50)
+    index = PassageIndex([audit, cash])
+    assert index.ranked(["tax audit"]) == []
+    ranked = rank_with_headings(index, ["tax audit"])
+    assert [p for p, _ in ranked] == [audit]  # the stored passage, its text unchanged
+    assert rank_with_headings(index, ["tax audit"]) == ranked  # cached index, same answer
+
+
+def test_a_variant_ranking_is_cut_as_the_pipeline_cuts() -> None:
+    index, spans = capped_index()
+    rrf = VARIANTS["queries-rrf"]
+    assert rrf.needs_queries
+    result = score_case(
+        "export", TICKER, index, ["export controls China"], spans, extra=True, rank=rrf.rank
+    )
+    assert result.rank == 6 and result.pipeline_position is None  # three sources: capped
+    for name in ("queries-rrf", "queries-heading", "queries-rrf-heading"):
+        assert VARIANTS[name].needs_queries
 
 
 # Variants and the queries file

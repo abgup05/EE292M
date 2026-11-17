@@ -1,0 +1,45 @@
+# Retrieval evaluation: variant `queries-rrf`
+
+Generated 2026-11-17T12:54:34.759213+00:00. Queries: the claim plus up to 4 queries per case from --queries (a case without an entry falls back to the claim alone); ranked by reciprocal-rank fusion of the per-query rankings (k = 60) instead of the best score over queries.
+
+- Golden set version 1, SHA-256 `4ef5c8d35bf11a1e…`; filings pinned in `eval/filings.json` (SHA-256 `ce02e068cd1d831e…`).
+- Cases: 30 in the set; 24 answerable cases scored; 6 unanswerable cases not scored (retrieval always returns something; whether the answer says so is a generation question).
+- Extra queries from `eval/queries.json` for 24 of 24 cases; 0 fell back to the claim alone.
+
+| Metric | Value | Cases |
+|---|---|---|
+| recall@3 | 41.7% | 10 / 24 |
+| recall@8 (pipeline cut: top 8, at most 5 per filing when there are several) | 66.7% | 16 / 24 |
+| recall@20 | 91.7% | 22 / 24 |
+| MRR (rank beyond 50 counts 0) | 0.430 | over 24 |
+
+Every rate is over the 24 answerable cases. A case counts as a hit when a passage holding at least half of one of its must-retrieve excerpts ranks within the cut-off. recall@8 is what a thesis run would offer the engine: the top 8 with the pipeline's cap of 5 passages per filing applied when the case has more than one filing, exactly as `PassageIndex.cut`. recall@3, recall@20, the rank and MRR use the uncapped ranking; a rank beyond 50 is a miss.
+
+## Per case
+
+| Case | Ticker | Expected | Rank | Pipeline top 8 | Queries | First-ranked passage |
+|---|---|---|---|---|---|---|
+| nvda-data-center-drives-growth | NVDA | supports | 4 | #4 | claim + 4 | s3 Item 7. Management's Discussion and Analysis of Financial Conditio… |
+| nvda-few-buyers-dominate | NVDA | supports | 12 | no | claim + 4 | s3 Item 7. Management's Discussion and Analysis of Financial Conditio… |
+| nvda-china-reopened | NVDA | challenges | 25 | no | claim + 4 | s3 Item 1. Business › Government Regulations |
+| nvda-margin-widened | NVDA | supports | 2 | #2 | claim + 4 | s1 Part I, Item 2. Management’s Discussion and Analysis of Financial … |
+| nvda-cash-returned | NVDA | supports | 6 | #6 | claim + 4 | s2 Part II, Item 2. Unregistered Sales of Equity Securities and Use o… |
+| nvda-no-borrowing | NVDA | challenges | 6 | #6 | claim + 4 | s2 Part I, Item 1. Financial Statements (Unaudited) › Note 5 - Cash E… |
+| nvda-commitments-small | NVDA | challenges | 17 | no | claim + 4 | s3 Item 1A. Risk Factors › Risks Related to Our Global Operating Busi… |
+| nvda-custom-silicon-threat | NVDA | supports | 1 | #1 | claim + 4 | s3 Item 1A. Risk Factors › Risks Related to Our Industry and Markets |
+| nvda-crypto-lawsuit-over | NVDA | challenges | 15 | no | claim + 4 | s3 Item 1A. Risk Factors › Risks Related to Regulatory, Legal, Our St… |
+| cost-members-renew | COST | supports | 1 | #1 | claim + 4 | s1 Item 7. Management's Discussion and Analysis of Financial Conditio… |
+| cost-markup-widened | COST | mixed | 1 | #1 | claim + 4 | s1 Item 7. Management's Discussion and Analysis of Financial Conditio… |
+| cost-tariffs-unrecovered | COST | challenges | 2 | #2 | claim + 4 | s1 Item 1A. Risk Factors › Market and Other External Risks |
+| cost-north-america-dependence | COST | supports | 20 | no | claim + 4 | s1 Item 7. Management's Discussion and Analysis of Financial Conditio… |
+| aapl-china-shrinking | AAPL | challenges | 1 | #1 | claim + 4 | s1 Item 7. Management’s Discussion and Analysis of Financial Conditio… |
+| aapl-margin-runway | AAPL | mixed | 1 | #1 | claim + 4 | s1 Item 7. Management’s Discussion and Analysis of Financial Conditio… |
+| aapl-asian-assembly | AAPL | supports | 1 | #1 | claim + 4 | s1 Item 1A. Risk Factors › Business Risks |
+| aapl-eu-app-store | AAPL | supports | 4 | #4 | claim + 4 | s1 Item 1A. Risk Factors › Legal and Regulatory Compliance Risks |
+| msft-azure-growth | MSFT | supports | 9 | no | claim + 4 | s2 Item 7. MANAGEMENT’S DISCUSSION AND ANALYSIS OF FINANCIAL CONDITIO… |
+| msft-cloud-margin | MSFT | challenges | 5 | #5 | claim + 4 | s2 Item 7. MANAGEMENT’S DISCUSSION AND ANALYSIS OF FINANCIAL CONDITIO… |
+| msft-ai-harm | MSFT | supports | 4 | #4 | claim + 4 | s2 Item 1A. RISK FACTORS › Other digital safety abuses |
+| msft-never-breached | MSFT | challenges | 1 | #1 | claim + 4 | s1 Part II, Item 1A. RISK FACTORS › Security of our information techn… |
+| ko-north-america-volume | KO | challenges | 10 | no | claim + 4 | s2 Item 7. MANAGEMENT’S DISCUSSION AND ANALYSIS OF FINANCIAL CONDITIO… |
+| ko-pricing-lifts-margin | KO | supports | 2 | #2 | claim + 4 | s2 Item 7. MANAGEMENT’S DISCUSSION AND ANALYSIS OF FINANCIAL CONDITIO… |
+| ko-irs-dispute-settled | KO | challenges | 43 | no | claim + 4 | s1 Part II, Item 1. Legal Proceedings |

@@ -113,3 +113,15 @@ def test_rejects_invalid_parameters() -> None:
         Bm25Index(CORPUS, k1=-1.0)
     with pytest.raises(ValueError):
         Bm25Index(CORPUS, b=1.5)
+
+
+def test_contributions_sum_to_the_score_and_name_each_matched_term() -> None:
+    index = Bm25Index(CORPUS)
+    query = "export controls China revenue"
+    for position, score in enumerate(index.scores(query)):
+        parts = index.contributions(query, position)
+        assert sum(part.score for part in parts) == pytest.approx(score)
+        assert all(part.frequency > 0 and part.score > 0 for part in parts)
+    parts = index.contributions(query, 2)  # "Export controls restrict sales of H20 ... China."
+    assert [part.term for part in parts] == ["export", "control", "china"]
+    assert index.contributions("", 2) == []

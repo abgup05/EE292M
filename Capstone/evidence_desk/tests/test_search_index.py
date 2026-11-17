@@ -59,6 +59,20 @@ def test_search_keeps_top_k_with_a_per_source_cap() -> None:
     assert [p.source_id for p in small].count("src-1") == 2 and len(small) == 3
 
 
+def test_a_one_source_index_returns_k_passages_without_the_cap() -> None:
+    # Seven src-1 passages all match: a run on a single filing must not be cut to five.
+    one_source = PassageIndex([p for p in PASSAGES if p.source_id == "src-1"])
+    found = one_source.search(["data center revenue grew"])
+    assert len(found) == 7 > limits.MAX_PASSAGES_PER_SOURCE
+    assert len(one_source.search(["data center revenue grew"], k=6)) == 6
+
+
+def test_a_three_source_index_still_respects_the_cap() -> None:
+    index = PassageIndex(PASSAGES)
+    found = index.search(["data center revenue grew"])
+    assert [p.source_id for p in found].count("src-1") == limits.MAX_PASSAGES_PER_SOURCE
+
+
 def test_one_claims_passages_do_not_depend_on_other_queries_or_their_order() -> None:
     index = PassageIndex(PASSAGES)
     claim_queries = ["a few customers account for most revenue", "customer concentration"]
@@ -80,3 +94,10 @@ def test_blank_queries_are_ignored() -> None:
 
 def test_empty_index() -> None:
     assert PassageIndex([]).search(["revenue"]) == []
+
+
+def test_cut_applied_to_the_ranking_is_the_search() -> None:
+    for index in (PassageIndex(PASSAGES), PassageIndex(PASSAGES[:7])):
+        queries = ["data center revenue grew", "export China"]
+        assert index.cut(index.ranked(queries)) == index.search(queries)
+        assert index.cut(index.ranked(queries), k=3) == index.search(queries, k=3)

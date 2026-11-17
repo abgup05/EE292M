@@ -15,23 +15,25 @@ Metrics, each over the answerable cases scored: recall@3, recall@8 and recall@20
 (share of cases with a relevant passage at that rank or better) and the mean
 reciprocal rank (a miss counts 0). recall@8 is the pipeline's own cut-off
 (``limits.PASSAGES_PER_CLAIM``) and, as in :meth:`PassageIndex.search`, applies
-the per-filing cap ``limits.MAX_PASSAGES_PER_SOURCE``; the other numbers use the
-uncapped ranking.
+the per-filing cap ``limits.MAX_PASSAGES_PER_SOURCE`` when a case has more than one
+filing; the other numbers use the uncapped ranking.
 """
 
 from __future__ import annotations
 
 import json
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+from weakref import WeakKeyDictionary
 
 from app.core import limits
 from app.core.documents import Document, Passage
+from app.core.text import tokenize
 from app.evaluation.golden import GoldenCase, Target
-from app.retrieval.bm25 import Bm25Index
+from app.retrieval.bm25 import Bm25Index, TermScore
 from app.retrieval.chunk import chunk_document
 from app.retrieval.search import PassageIndex
 
@@ -44,6 +46,8 @@ LOCATOR_CHARS = 70
 
 QueryBook = Mapping[str, Sequence[str]]
 Loader = Callable[[str, str], Document]
+Ranker = Callable[[PassageIndex, list[str]], list[tuple[Passage, float]]]
+RRF_K = 60  # Cormack, Clarke and Büttcher (2009); the published constant, not tuned here
 
 
 @dataclass(frozen=True)
@@ -120,20 +124,85 @@ def recall_at(ranks: Sequence[int | None], k: int) -> Recall:
     return Recall(sum(1 for rank in ranks if rank is not None and rank <= k), len(ranks))
 
 
-# Variants: how a case becomes queries. Add one here and it is available everywhere.
+# Rankings: the pipeline's, and candidates measured here before any is wired in.
+
+
+def rank_by_best_score(index: PassageIndex, queries: list[str]) -> list[tuple[Passage, float]]:
+    """The pipeline's ranking: each passage's best BM25 score over the queries."""
+    return index.ranked(queries)
+
+
+def rank_by_rrf(index: PassageIndex, queries: list[str]) -> list[tuple[Passage, float]]:
+    """Reciprocal-rank fusion: each query ranks alone; a passage sums 1 / (RRF_K + rank).
+
+    Only queries that give the passage a positive score count. Ties go to the
+    passage that comes first in the index.
+    """
+    return _fuse(index.passages, [index.ranked([query]) for query in queries])
+
+
+def _fuse(
+    passages: Sequence[Passage], rankings: Sequence[list[tuple[Passage, float]]]
+) -> list[tuple[Passage, float]]:
+    order = {passage.id: n for n, passage in enumerate(passages)}
+    fused: dict[str, float] = {}
+    for ranking in rankings:
+        for rank, (passage, _score) in enumerate(ranking, start=1):
+            fused[passage.id] = fused.get(passage.id, 0.0) + 1.0 / (RRF_K + rank)
+    ids = sorted(fused, key=lambda pid: (-fused[pid], order[pid]))
+    return [(passages[order[pid]], fused[pid]) for pid in ids]
+
+
+_HEADED: WeakKeyDictionary[PassageIndex, PassageIndex] = WeakKeyDictionary()
+
+
+def _headed_index(index: PassageIndex) -> PassageIndex:
+    """An index over the same passages scored as "locator, newline, text" (built once)."""
+    if index not in _HEADED:
+        headed = [replace(p, text=f"{p.locator}\n{p.text}") for p in index.passages]
+        _HEADED[index] = PassageIndex(headed)
+    return _HEADED[index]
+
+
+def _restore(
+    index: PassageIndex, ranked: list[tuple[Passage, float]]
+) -> list[tuple[Passage, float]]:
+    stored = {passage.id: passage for passage in index.passages}
+    return [(stored[passage.id], score) for passage, score in ranked]
+
+
+def rank_with_headings(index: PassageIndex, queries: list[str]) -> list[tuple[Passage, float]]:
+    """Best score over the queries, each passage scored with its section locator before it.
+
+    Returns the stored passages, so every offset and quote is unchanged.
+    """
+    return _restore(index, _headed_index(index).ranked(queries))
+
+
+def rank_by_rrf_with_headings(
+    index: PassageIndex, queries: list[str]
+) -> list[tuple[Passage, float]]:
+    """Reciprocal-rank fusion of per-query rankings that score the locator with the text."""
+    return _restore(index, rank_by_rrf(_headed_index(index), queries))
+
+
+# Variants: how a case becomes queries, and how they rank. Add one here and it is
+# available everywhere.
 
 
 @dataclass(frozen=True)
 class Variant:
-    """A named way of turning a case into retrieval queries.
+    """A named way of turning a case into retrieval queries and ranking the passages.
 
-    ``build`` returns the queries and whether queries beyond the claim were used.
+    ``build`` returns the queries and whether queries beyond the claim were used;
+    ``rank`` orders the passages (the pipeline's ranking unless a candidate says otherwise).
     """
 
     name: str
     description: str
     build: Callable[[GoldenCase, QueryBook], tuple[list[str], bool]]
     needs_queries: bool = False
+    rank: Ranker = rank_by_best_score
 
 
 def _claim_only(case: GoldenCase, book: QueryBook) -> tuple[list[str], bool]:
@@ -146,6 +215,11 @@ def _claim_plus_queries(case: GoldenCase, book: QueryBook) -> tuple[list[str], b
     return ([case.claim, *extra], True) if extra else ([case.claim], False)
 
 
+_WITH_QUERIES = (
+    f"the claim plus up to {limits.MAX_QUERIES_PER_CLAIM} queries per case from --queries "
+    "(a case without an entry falls back to the claim alone)"
+)
+
 VARIANTS: dict[str, Variant] = {
     variant.name: variant
     for variant in (
@@ -154,13 +228,30 @@ VARIANTS: dict[str, Variant] = {
             "the claim text alone (the pipeline with no model key)",
             _claim_only,
         ),
+        Variant("claim+queries", _WITH_QUERIES, _claim_plus_queries, needs_queries=True),
         Variant(
-            "claim+queries",
-            "the claim plus up to "
-            f"{limits.MAX_QUERIES_PER_CLAIM} queries per case from --queries "
-            "(a case without an entry falls back to the claim alone)",
+            "queries-rrf",
+            f"{_WITH_QUERIES}; ranked by reciprocal-rank fusion of the per-query rankings "
+            f"(k = {RRF_K}) instead of the best score over queries",
             _claim_plus_queries,
             needs_queries=True,
+            rank=rank_by_rrf,
+        ),
+        Variant(
+            "queries-heading",
+            f"{_WITH_QUERIES}; best score over queries, each passage scored with its "
+            "section locator before its text",
+            _claim_plus_queries,
+            needs_queries=True,
+            rank=rank_with_headings,
+        ),
+        Variant(
+            "queries-rrf-heading",
+            f"{_WITH_QUERIES}; reciprocal-rank fusion (k = {RRF_K}) of per-query rankings "
+            "that score each passage with its section locator",
+            _claim_plus_queries,
+            needs_queries=True,
+            rank=rank_by_rrf_with_headings,
         ),
     )
 }
@@ -259,10 +350,16 @@ def score_case(
     extra: bool,
     expected: str = "",
     relevant_sections: Sequence[str] = (),
+    rank: Ranker = rank_by_best_score,
 ) -> CaseResult:
-    """Rank ``index`` for ``queries`` and find the first passage overlapping ``spans``."""
-    ranked = [passage for passage, _score in index.ranked(queries)]
-    pipeline = index.search(queries)  # top 8, at most 5 per source, exactly as a run
+    """Rank ``index`` for ``queries`` and find the first passage overlapping ``spans``.
+
+    ``rank`` orders the passages (the pipeline's ranking by default); the
+    pipeline's cut (:meth:`PassageIndex.cut`) is applied to that order.
+    """
+    ordered = rank(index, queries)
+    ranked = [passage for passage, _score in ordered]
+    pipeline = index.cut(ordered)  # top 8, the per-source cap as a run applies it
     position = next(
         (n for n, passage in enumerate(pipeline, start=1) if is_relevant(passage, spans)), None
     )
@@ -357,6 +454,7 @@ def evaluate(
     """Score every answerable case for ``variant``; unanswerable cases are skipped."""
     indexes = IndexCache(loader)
     results: list[CaseResult] = []
+    ranker = get_variant(variant).rank
     for case, targets in cases:
         if case.kind != "answerable":
             continue
@@ -371,9 +469,104 @@ def evaluate(
                 extra=extra,
                 expected=case.expected,
                 relevant_sections=[target.section for target in targets],
+                rank=ranker,
             )
         )
     return results
+
+
+# Explaining a rank: which terms put the first-ranked passage above the one that matters
+
+
+@dataclass(frozen=True)
+class PassageExplanation:
+    """One passage's best score over the queries, and the terms that made it."""
+
+    passage: Passage
+    rank: int | None  # in the uncapped ranking, from 1; None when no query matches it
+    query: str  # the query that gave the best score ("" when none matches)
+    score: float
+    terms: tuple[TermScore, ...]
+    tokens: int  # its length in tokens, which BM25 normalises by
+
+
+@dataclass(frozen=True)
+class Explanation:
+    """The first-ranked passage and the first relevant passage, side by side."""
+
+    queries: tuple[str, ...]
+    top: PassageExplanation | None
+    relevant: PassageExplanation | None
+
+
+def _explain_passage(
+    index: PassageIndex, queries: Sequence[str], passage: Passage, rank: int | None
+) -> PassageExplanation:
+    best_query, best_terms, best_score = "", [], 0.0
+    for query in queries:
+        terms = index.contributions(query, passage)
+        score = sum(term.score for term in terms)
+        if score > best_score:
+            best_query, best_terms, best_score = query, terms, score
+    return PassageExplanation(
+        passage=passage,
+        rank=rank,
+        query=best_query,
+        score=best_score,
+        terms=tuple(sorted(best_terms, key=lambda term: -term.score)),
+        tokens=len(tokenize(passage.text)),
+    )
+
+
+def explain_ranking(
+    index: PassageIndex, queries: Sequence[str], spans: Sequence[Span]
+) -> Explanation:
+    """Per-term BM25 contributions of the first-ranked and the first relevant passage.
+
+    The relevant passage is the best-ranked one holding half of a span; when no
+    query scores any relevant passage, the first relevant passage in document
+    order is shown with rank None.
+    """
+    ranked = [passage for passage, _score in index.ranked(list(queries))]
+    top = _explain_passage(index, queries, ranked[0], 1) if ranked else None
+    rank = next((n for n, p in enumerate(ranked, start=1) if is_relevant(p, spans)), None)
+    if rank is not None:
+        relevant: Passage | None = ranked[rank - 1]
+    else:
+        relevant = next((p for p in index.passages if is_relevant(p, spans)), None)
+    return Explanation(
+        queries=tuple(queries),
+        top=top,
+        relevant=None if relevant is None else _explain_passage(index, queries, relevant, rank),
+    )
+
+
+def _render_side(label: str, side: PassageExplanation) -> list[str]:
+    rank = "unranked" if side.rank is None else f"rank {side.rank}"
+    lines = [
+        f"{label}: {side.passage.id} ({rank}, score {side.score:.2f}, {side.tokens} tokens) "
+        f"{_shorten(side.passage.locator, 140)}",
+        f"  best query: {side.query!r}" if side.query else "  no query term occurs in it",
+    ]
+    lines.extend(
+        f"  {term.term:<16} idf {term.idf:5.2f}  tf {term.frequency:3d}  +{term.score:5.2f}"
+        for term in side.terms
+    )
+    lines.append(f"  text: {_shorten(' '.join(side.passage.text.split()), 240)}")
+    return lines
+
+
+def render_explanation(case_id: str, explanation: Explanation) -> str:
+    """The explanation as plain text: one block per passage, terms by contribution."""
+    lines = [f"== {case_id}: {len(explanation.queries)} queries"]
+    lines.extend(f"  q: {query}" for query in explanation.queries)
+    if explanation.top is not None:
+        lines.extend(_render_side("first-ranked", explanation.top))
+    if explanation.relevant is None:
+        lines.append("must-retrieve: no passage holds half of an excerpt")
+    else:
+        lines.extend(_render_side("must-retrieve", explanation.relevant))
+    return "\n".join(lines) + "\n"
 
 
 # The record
@@ -444,7 +637,7 @@ def render_summary(results: Sequence[CaseResult]) -> str:
         (f"recall@{SHORT_K}", _percent(summary.recall_3), summary.recall_3),
         (
             f"recall@{PIPELINE_K} (pipeline cut: top {PIPELINE_K}, "
-            f"at most {limits.MAX_PASSAGES_PER_SOURCE} per filing)",
+            f"at most {limits.MAX_PASSAGES_PER_SOURCE} per filing when there are several)",
             _percent(summary.recall_pipeline),
             summary.recall_pipeline,
         ),
@@ -510,8 +703,9 @@ def render_markdown(record: Mapping[str, Any], results: Sequence[CaseResult]) ->
         "when a passage holding at least half of one of its must-retrieve excerpts ranks "
         f"within the cut-off. recall@{PIPELINE_K} is what a thesis run would offer the "
         f"engine: the top {PIPELINE_K} with the pipeline's cap of "
-        f"{limits.MAX_PASSAGES_PER_SOURCE} passages per filing applied, exactly as "
-        f"`PassageIndex.search`. recall@{SHORT_K}, recall@{LONG_K}, the rank and MRR use the "
+        f"{limits.MAX_PASSAGES_PER_SOURCE} passages per filing applied when the case has "
+        f"more than one filing, exactly as `PassageIndex.cut`. recall@{SHORT_K}, "
+        f"recall@{LONG_K}, the rank and MRR use the "
         f"uncapped ranking; a rank beyond {MAX_RANK} is a miss.",
         "",
         "## Per case",

@@ -16,8 +16,19 @@ from __future__ import annotations
 
 import math
 from collections import Counter
+from dataclasses import dataclass
 
 from app.core.text import tokenize
+
+
+@dataclass(frozen=True)
+class TermScore:
+    """One query term's part of a text's BM25 score: its idf, frequency and contribution."""
+
+    term: str
+    idf: float
+    frequency: int
+    score: float
 
 
 class Bm25Index:
@@ -67,3 +78,22 @@ class Bm25Index:
                         score += self._idf[term] * frequency * (self.k1 + 1) / (frequency + norm)
             out.append(score)
         return out
+
+    def contributions(self, query: str, position: int) -> list[TermScore]:
+        """The terms of ``query`` found in text ``position``, each with its share of the score.
+
+        In query order; the shares sum to ``scores(query)[position]``. For
+        diagnosis only: :meth:`scores` is the ranking path.
+        """
+        counts, length = self._frequencies[position], self._lengths[position]
+        if not length:
+            return []
+        norm = self.k1 * (1 - self.b + self.b * length / self._average_length)
+        parts: list[TermScore] = []
+        for term in dict.fromkeys(tokenize(query)):
+            frequency = counts.get(term, 0)
+            if frequency and term in self._idf:
+                idf = self._idf[term]
+                score = idf * frequency * (self.k1 + 1) / (frequency + norm)
+                parts.append(TermScore(term, idf, frequency, score))
+        return parts

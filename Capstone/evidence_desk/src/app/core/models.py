@@ -200,6 +200,7 @@ class Coverage(BaseModel):
     findings_verified: int = 0
     findings_withheld: int = 0
     excerpts_verified: int = 0
+    quotes_offered: int = 0
     quotes_rejected: int = 0
 
 

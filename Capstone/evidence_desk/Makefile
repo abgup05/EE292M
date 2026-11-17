@@ -1,4 +1,4 @@
-.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench
+.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench eval eval-validate
 
 export COMPOSE_PROJECT_NAME := ee292m-evidence-desk
 export LOCAL_UID := $(shell id -u)
@@ -18,6 +18,7 @@ help:
 	@echo 'Tripwire: golden-check (the offline example run against tests/golden/golden.json; names the first stage that moved)'
 	@echo 'Tripwire: golden-baseline (rewrite tests/golden/golden.json, and replay.json when the replay has nothing pending; read the diff before committing a new baseline)'
 	@echo 'Speed: profile (cProfile of the offline example run, top 25 by cumulative time, to results/profile-<UTC>.txt); bench RUNS=5 (median wall time of the offline run, in seconds)'
+	@echo "Evaluation: eval ARGS='run --variant claim' (score retrieval on the golden set; ARGS='fetch' fills eval/cache from EDGAR), eval-validate (check every golden case against its filing)"
 	@echo 'Fixtures: fixtures-facts (record XBRL company facts of NVDA, AAPL, MSFT under tests/fixtures/edgar; REFRESH=1 to overwrite)'
 	@echo 'Fixtures: fixtures (record SEC EDGAR responses for NVIDIA under tests/fixtures/edgar; REFRESH=1 to overwrite)'
 	@echo 'Diagnostics: probe TICKERS="AAPL MSFT" (live: parse each company'"'"'s latest 10-K and 10-Q, report Item coverage; writes results/probe-<UTC>.md)'
@@ -87,6 +88,12 @@ fixtures:
 
 replay:
 	$(RUN) python -m tests.replay_run $(ARGS)
+
+eval-validate:
+	$(RUN) python -m app.evaluation validate $(ARGS)
+
+eval:
+	$(RUN) python -m app.evaluation run $(ARGS)
 
 golden-check:
 	$(RUN) pytest -q -p no:cacheprovider tests/test_golden.py

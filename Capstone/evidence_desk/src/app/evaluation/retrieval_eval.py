@@ -1,0 +1,503 @@
+"""Score retrieval on the golden set: where does the passage that matters land?
+
+For each answerable case the passages of its filings are built exactly as a
+thesis run builds them (:func:`app.sources.filing.parse_filing`, then
+:func:`app.retrieval.chunk.chunk_document` with source ids ``s1``, ``s2``, ... in
+the order the case lists its filings) and ranked by
+:class:`app.retrieval.search.PassageIndex` for the queries a *variant* makes
+from the case. A passage is relevant when it lies in the excerpt's filing and
+holds at least half of a must-retrieve excerpt's characters (by offsets in the
+document text). The case's rank is that of the first relevant passage in the
+uncapped ranking, counted from 1; beyond :data:`MAX_RANK` it is "not in top 50"
+and counts as a miss.
+
+Metrics, each over the answerable cases scored: recall@3, recall@8 and recall@20
+(share of cases with a relevant passage at that rank or better) and the mean
+reciprocal rank (a miss counts 0). recall@8 is the pipeline's own cut-off
+(``limits.PASSAGES_PER_CLAIM``) and, as in :meth:`PassageIndex.search`, applies
+the per-filing cap ``limits.MAX_PASSAGES_PER_SOURCE``; the other numbers use the
+uncapped ranking.
+"""
+
+from __future__ import annotations
+
+import json
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import asdict, dataclass, field
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+from app.core import limits
+from app.core.documents import Document, Passage
+from app.evaluation.golden import GoldenCase, Target
+from app.retrieval.bm25 import Bm25Index
+from app.retrieval.chunk import chunk_document
+from app.retrieval.search import PassageIndex
+
+MAX_RANK = 50
+NOT_IN_TOP = f"not in top {MAX_RANK}"
+SHORT_K = 3
+PIPELINE_K = limits.PASSAGES_PER_CLAIM
+LONG_K = 20
+LOCATOR_CHARS = 70
+
+QueryBook = Mapping[str, Sequence[str]]
+Loader = Callable[[str, str], Document]
+
+
+@dataclass(frozen=True)
+class Span:
+    """A must-retrieve excerpt's place: the source id it was given and its offsets."""
+
+    source_id: str
+    start: int
+    end: int
+
+
+def overlap(start: int, end: int, other_start: int, other_end: int) -> int:
+    """Characters shared by the half-open ranges [start, end) and [other_start, other_end)."""
+    return max(0, min(end, other_end) - max(start, other_start))
+
+
+def is_relevant(passage: Passage, spans: Sequence[Span]) -> bool:
+    """True when ``passage`` holds at least half the characters of one of ``spans``."""
+    end = passage.start + len(passage.text)
+    return any(
+        passage.source_id == span.source_id
+        and 2 * overlap(passage.start, end, span.start, span.end) >= span.end - span.start
+        for span in spans
+    )
+
+
+def first_relevant_rank(
+    ranked: Sequence[Passage], spans: Sequence[Span], max_rank: int = MAX_RANK
+) -> int | None:
+    """The 1-based rank of the first relevant passage within ``max_rank``, else None."""
+    for rank, passage in enumerate(ranked[:max_rank], start=1):
+        if is_relevant(passage, spans):
+            return rank
+    return None
+
+
+def reciprocal_rank(rank: int | None) -> float:
+    """1 / rank, or 0.0 for a miss."""
+    return 0.0 if rank is None else 1.0 / rank
+
+
+def rank_label(rank: int | None) -> str:
+    """The rank as shown in the per-case table."""
+    return NOT_IN_TOP if rank is None else str(rank)
+
+
+@dataclass(frozen=True)
+class Recall:
+    """Cases with a relevant passage within the cut-off, over the cases scored."""
+
+    hits: int
+    total: int
+
+    @property
+    def rate(self) -> float | None:
+        """hits / total, or None when nothing was scored."""
+        return self.hits / self.total if self.total else None
+
+    def as_dict(self) -> dict[str, Any]:
+        """The recall with its denominator, for the JSON record."""
+        return {"hits": self.hits, "total": self.total, "rate": self.rate}
+
+
+def recall_at(ranks: Sequence[int | None], k: int) -> Recall:
+    """Recall@k over ``ranks`` (one per case; None is a miss)."""
+    return Recall(sum(1 for rank in ranks if rank is not None and rank <= k), len(ranks))
+
+
+# Variants: how a case becomes queries. Add one here and it is available everywhere.
+
+
+@dataclass(frozen=True)
+class Variant:
+    """A named way of turning a case into retrieval queries.
+
+    ``build`` returns the queries and whether queries beyond the claim were used.
+    """
+
+    name: str
+    description: str
+    build: Callable[[GoldenCase, QueryBook], tuple[list[str], bool]]
+    needs_queries: bool = False
+
+
+def _claim_only(case: GoldenCase, book: QueryBook) -> tuple[list[str], bool]:
+    return [case.claim], False
+
+
+def _claim_plus_queries(case: GoldenCase, book: QueryBook) -> tuple[list[str], bool]:
+    extra = [query for query in book.get(case.id, ()) if query.strip()]
+    extra = extra[: limits.MAX_QUERIES_PER_CLAIM]  # the pipeline keeps at most this many
+    return ([case.claim, *extra], True) if extra else ([case.claim], False)
+
+
+VARIANTS: dict[str, Variant] = {
+    variant.name: variant
+    for variant in (
+        Variant(
+            "claim",
+            "the claim text alone (the pipeline with no model key)",
+            _claim_only,
+        ),
+        Variant(
+            "claim+queries",
+            "the claim plus up to "
+            f"{limits.MAX_QUERIES_PER_CLAIM} queries per case from --queries "
+            "(a case without an entry falls back to the claim alone)",
+            _claim_plus_queries,
+            needs_queries=True,
+        ),
+    )
+}
+
+
+def get_variant(name: str) -> Variant:
+    """The registered variant called ``name``. Raises ValueError for an unknown name."""
+    try:
+        return VARIANTS[name]
+    except KeyError:
+        raise ValueError(f"unknown variant {name!r}; known: {', '.join(VARIANTS)}") from None
+
+
+def variant_queries(name: str, case: GoldenCase, book: QueryBook) -> tuple[list[str], bool]:
+    """The queries variant ``name`` sends for ``case``, and whether extra queries were used."""
+    return get_variant(name).build(case, book)
+
+
+def read_queries(path: Path, case_ids: set[str]) -> dict[str, list[str]]:
+    """A queries file ``{case_id: [query, ...]}``, checked against the golden set's ids.
+
+    Raises ValueError for a malformed file or a case id the golden set does not have.
+    """
+    try:
+        payload = json.loads(path.read_text())
+    except FileNotFoundError as exc:
+        raise ValueError(f"queries file not found: {path}") from exc
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"queries file {path.name} is not valid JSON: {exc}") from exc
+    if not isinstance(payload, dict):
+        raise ValueError("a queries file is a JSON object {case_id: [query, ...]}")
+    book: dict[str, list[str]] = {}
+    for case_id, queries in payload.items():
+        if case_id not in case_ids:
+            raise ValueError(f"queries file names {case_id!r}, which is not a golden case")
+        if not isinstance(queries, list) or not all(isinstance(q, str) for q in queries):
+            raise ValueError(f"queries for {case_id!r} must be a list of strings")
+        book[case_id] = queries
+    return book
+
+
+# Scoring
+
+
+@dataclass(frozen=True)
+class CaseResult:
+    """Where the passage that matters landed for one case."""
+
+    case_id: str
+    ticker: str
+    rank: int | None  # uncapped, within MAX_RANK
+    pipeline_position: int | None  # position in the pipeline's capped top 8
+    extra_queries: bool
+    queries: tuple[str, ...]
+    passages: int
+    top_passage: str = ""  # source id and locator of the first-ranked passage
+    expected: str = ""
+    relevant_sections: tuple[str, ...] = field(default_factory=tuple)
+
+    @property
+    def reciprocal_rank(self) -> float:
+        """1 / rank, or 0 for a miss."""
+        return reciprocal_rank(self.rank)
+
+
+def score_case(
+    case_id: str,
+    ticker: str,
+    index: PassageIndex,
+    queries: list[str],
+    spans: Sequence[Span],
+    *,
+    extra: bool,
+    expected: str = "",
+    relevant_sections: Sequence[str] = (),
+) -> CaseResult:
+    """Rank ``index`` for ``queries`` and find the first passage overlapping ``spans``."""
+    ranked = [passage for passage, _score in index.ranked(queries)]
+    pipeline = index.search(queries)  # top 8, at most 5 per source, exactly as a run
+    position = next(
+        (n for n, passage in enumerate(pipeline, start=1) if is_relevant(passage, spans)), None
+    )
+    top = f"{ranked[0].source_id} {ranked[0].locator}" if ranked else ""
+    return CaseResult(
+        case_id=case_id,
+        ticker=ticker,
+        rank=first_relevant_rank(ranked, spans),
+        pipeline_position=position,
+        extra_queries=extra,
+        queries=tuple(queries),
+        passages=len(index),
+        top_passage=top,
+        expected=expected,
+        relevant_sections=tuple(relevant_sections),
+    )
+
+
+@dataclass(frozen=True)
+class Summary:
+    """The metrics of one variant over the answerable cases."""
+
+    cases: int
+    recall_3: Recall
+    recall_pipeline: Recall
+    recall_20: Recall
+    mrr: float | None
+    extra_query_cases: int
+
+    def as_dict(self) -> dict[str, Any]:
+        """The summary for the JSON record, every rate with its denominator."""
+        return {
+            "cases_scored": self.cases,
+            f"recall@{SHORT_K}": self.recall_3.as_dict(),
+            f"recall@{PIPELINE_K}_pipeline_capped": self.recall_pipeline.as_dict(),
+            f"recall@{LONG_K}": self.recall_20.as_dict(),
+            "mrr": {"value": self.mrr, "total": self.cases, "max_rank": MAX_RANK},
+            "cases_with_extra_queries": self.extra_query_cases,
+        }
+
+
+def summarize(results: Sequence[CaseResult]) -> Summary:
+    """recall@3, the pipeline's capped recall@8, recall@20 and MRR over ``results``."""
+    ranks = [result.rank for result in results]
+    capped = Recall(sum(1 for r in results if r.pipeline_position is not None), len(results))
+    mrr = sum(r.reciprocal_rank for r in results) / len(results) if results else None
+    return Summary(
+        cases=len(results),
+        recall_3=recall_at(ranks, SHORT_K),
+        recall_pipeline=capped,
+        recall_20=recall_at(ranks, LONG_K),
+        mrr=mrr,
+        extra_query_cases=sum(1 for r in results if r.extra_queries),
+    )
+
+
+def spans_for(case: GoldenCase, targets: Sequence[Target]) -> list[Span]:
+    """The targets as spans under the source ids a run would give the case's filings."""
+    return [
+        Span(f"s{case.filings.index(target.accession) + 1}", target.start, target.end)
+        for target in targets
+    ]
+
+
+class IndexCache:
+    """One :class:`PassageIndex` per (ticker, filings in order), built as a run builds it."""
+
+    def __init__(self, loader: Loader) -> None:
+        """Load filings through ``loader(ticker, accession)``."""
+        self._loader = loader
+        self._indexes: dict[tuple[str, tuple[str, ...]], PassageIndex] = {}
+
+    def index(self, case: GoldenCase) -> PassageIndex:
+        """The index over every passage of the case's filings, sources ``s1``, ``s2``, ..."""
+        key = (case.ticker, tuple(case.filings))
+        if key not in self._indexes:
+            passages = [
+                passage
+                for number, accession in enumerate(case.filings, start=1)
+                for passage in chunk_document(f"s{number}", self._loader(case.ticker, accession))
+            ]
+            self._indexes[key] = PassageIndex(passages)
+        return self._indexes[key]
+
+
+def evaluate(
+    cases: Sequence[tuple[GoldenCase, list[Target]]],
+    loader: Loader,
+    variant: str,
+    book: QueryBook,
+) -> list[CaseResult]:
+    """Score every answerable case for ``variant``; unanswerable cases are skipped."""
+    indexes = IndexCache(loader)
+    results: list[CaseResult] = []
+    for case, targets in cases:
+        if case.kind != "answerable":
+            continue
+        queries, extra = variant_queries(variant, case, book)
+        results.append(
+            score_case(
+                case.id,
+                case.ticker,
+                indexes.index(case),
+                queries,
+                spans_for(case, targets),
+                extra=extra,
+                expected=case.expected,
+                relevant_sections=[target.section for target in targets],
+            )
+        )
+    return results
+
+
+# The record
+
+
+def limits_snapshot() -> dict[str, Any]:
+    """Every number the score depends on, so a later run can tell whether they changed."""
+    bm25 = Bm25Index([])
+    return {
+        "PASSAGE_TARGET_CHARS": limits.PASSAGE_TARGET_CHARS,
+        "PASSAGE_MAX_CHARS": limits.PASSAGE_MAX_CHARS,
+        "PASSAGES_PER_CLAIM": limits.PASSAGES_PER_CLAIM,
+        "MAX_PASSAGES_PER_SOURCE": limits.MAX_PASSAGES_PER_SOURCE,
+        "MAX_QUERIES_PER_CLAIM": limits.MAX_QUERIES_PER_CLAIM,
+        "bm25_k1": bm25.k1,
+        "bm25_b": bm25.b,
+        "max_rank": MAX_RANK,
+    }
+
+
+def build_record(
+    results: Sequence[CaseResult],
+    *,
+    variant: str,
+    inputs: Mapping[str, Any],
+    unanswerable: Sequence[str],
+    generated_at: datetime,
+) -> dict[str, Any]:
+    """The JSON record of one scoring run: pinned inputs, summary and every case."""
+    summary = summarize(results)
+    return {
+        "kind": "retrieval-evaluation",
+        "generated_at": generated_at.isoformat(),
+        "variant": {"name": variant, "description": get_variant(variant).description},
+        "inputs": {**inputs, "limits": limits_snapshot()},
+        "summary": summary.as_dict(),
+        "cases": [
+            {
+                **asdict(result),
+                "queries": list(result.queries),
+                "relevant_sections": list(result.relevant_sections),
+                "rank_label": rank_label(result.rank),
+                "reciprocal_rank": result.reciprocal_rank,
+            }
+            for result in results
+        ],
+        "unscored_unanswerable_cases": list(unanswerable),
+    }
+
+
+def _cell(value: object) -> str:
+    return " ".join(str(value).split()).replace("|", "\\|")
+
+
+def _percent(recall: Recall) -> str:
+    return "n/a" if recall.rate is None else f"{recall.rate:.1%}"
+
+
+def _shorten(text: str, size: int = LOCATOR_CHARS) -> str:
+    return text if len(text) <= size else text[: size - 1] + "…"
+
+
+def render_summary(results: Sequence[CaseResult]) -> str:
+    """The metrics as a Markdown table, every rate with its numerator and denominator."""
+    summary = summarize(results)
+    mrr = "n/a" if summary.mrr is None else f"{summary.mrr:.3f}"
+    rows = [
+        (f"recall@{SHORT_K}", _percent(summary.recall_3), summary.recall_3),
+        (
+            f"recall@{PIPELINE_K} (pipeline cut: top {PIPELINE_K}, "
+            f"at most {limits.MAX_PASSAGES_PER_SOURCE} per filing)",
+            _percent(summary.recall_pipeline),
+            summary.recall_pipeline,
+        ),
+        (f"recall@{LONG_K}", _percent(summary.recall_20), summary.recall_20),
+    ]
+    lines = ["| Metric | Value | Cases |", "|---|---|---|"]
+    lines.extend(f"| {name} | {value} | {r.hits} / {r.total} |" for name, value, r in rows)
+    lines.append(f"| MRR (rank beyond {MAX_RANK} counts 0) | {mrr} | over {summary.cases} |")
+    return "\n".join(lines) + "\n"
+
+
+def render_cases(results: Sequence[CaseResult]) -> str:
+    """The per-case Markdown table."""
+    lines = [
+        f"| Case | Ticker | Expected | Rank | Pipeline top {PIPELINE_K} | Queries | "
+        "First-ranked passage |",
+        "|---|---|---|---|---|---|---|",
+    ]
+    for r in results:
+        pipeline = f"#{r.pipeline_position}" if r.pipeline_position is not None else "no"
+        queries = f"claim + {len(r.queries) - 1}" if r.extra_queries else "claim"
+        row = [
+            r.case_id,
+            r.ticker,
+            r.expected,
+            rank_label(r.rank),
+            pipeline,
+            queries,
+            _shorten(r.top_passage),
+        ]
+        lines.append("| " + " | ".join(_cell(cell) for cell in row) + " |")
+    return "\n".join(lines) + "\n"
+
+
+def render_markdown(record: Mapping[str, Any], results: Sequence[CaseResult]) -> str:
+    """The whole report: inputs, summary, how to read it, and the per-case table."""
+    inputs = record["inputs"]
+    variant = record["variant"]
+    summary = summarize(results)
+    fallback = summary.cases - summary.extra_query_cases
+    lines = [
+        f"# Retrieval evaluation: variant `{variant['name']}`",
+        "",
+        f"Generated {record['generated_at']}. Queries: {variant['description']}.",
+        "",
+        f"- Golden set version {inputs['golden_version']}, SHA-256 "
+        f"`{inputs['golden_sha256'][:16]}…`; filings pinned in `eval/filings.json` "
+        f"(SHA-256 `{inputs['filings_sha256'][:16]}…`).",
+        f"- Cases: {inputs['cases_total']} in the set; {summary.cases} answerable cases scored; "
+        f"{inputs['cases_unanswerable']} unanswerable cases not scored (retrieval always "
+        "returns something; whether the answer says so is a generation question).",
+    ]
+    if get_variant(variant["name"]).needs_queries:
+        lines.append(
+            f"- Extra queries from `{inputs.get('queries_file')}` for "
+            f"{summary.extra_query_cases} of {summary.cases} cases; {fallback} fell back to "
+            "the claim alone."
+        )
+    lines += [
+        "",
+        render_summary(results),
+        f"Every rate is over the {summary.cases} answerable cases. A case counts as a hit "
+        "when a passage holding at least half of one of its must-retrieve excerpts ranks "
+        f"within the cut-off. recall@{PIPELINE_K} is what a thesis run would offer the "
+        f"engine: the top {PIPELINE_K} with the pipeline's cap of "
+        f"{limits.MAX_PASSAGES_PER_SOURCE} passages per filing applied, exactly as "
+        f"`PassageIndex.search`. recall@{SHORT_K}, recall@{LONG_K}, the rank and MRR use the "
+        f"uncapped ranking; a rank beyond {MAX_RANK} is a miss.",
+        "",
+        "## Per case",
+        "",
+        render_cases(results),
+    ]
+    return "\n".join(lines)
+
+
+def write_record(
+    record: Mapping[str, Any], markdown: str, out_dir: Path, variant: str, when: datetime
+) -> tuple[Path, Path]:
+    """Write ``retrieval-<variant>-<UTC date>.json`` and ``.md`` under ``out_dir``."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    stem = f"retrieval-{variant}-{when.strftime('%Y-%m-%d')}"
+    json_path = out_dir / f"{stem}.json"
+    md_path = out_dir / f"{stem}.md"
+    json_path.write_text(json.dumps(record, indent=2) + "\n")
+    md_path.write_text(markdown)
+    return json_path, md_path

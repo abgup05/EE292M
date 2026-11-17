@@ -1,0 +1,530 @@
+{
+  "version": 1,
+  "status": "Drafted by a Claude Opus session from the filing text on 2026-11-17 and validated mechanically. Not yet read case by case by the author.",
+  "cases": [
+    {
+      "id": "nvda-data-center-drives-growth",
+      "ticker": "NVDA",
+      "filings": ["0001045810-26-000075", "0001045810-26-000052", "0001045810-26-000021"],
+      "claim": "Sales of AI server hardware are still the main engine of the chipmaker's top-line expansion.",
+      "kind": "answerable",
+      "expected": "supports",
+      "must_retrieve": [
+        {
+          "accession": "0001045810-26-000075",
+          "section": "Part I, Item 2",
+          "text": "Revenue growth in the second quarter and the first half of fiscal year 2027 was driven by data center products for accelerated computing and AI solutions."
+        },
+        {
+          "accession": "0001045810-26-000075",
+          "section": "Part I, Item 2",
+          "text": "Data Center revenue was $89.0 billion, up 117% from a year ago and up 18% sequentially, driven by the ramp of our Blackwell Ultra infrastructure."
+        }
+      ],
+      "why": "MD&A attributes the quarter's revenue growth to data center products and reports Data Center revenue up 117% from a year ago."
+    },
+    {
+      "id": "nvda-few-buyers-dominate",
+      "ticker": "NVDA",
+      "filings": ["0001045810-26-000075", "0001045810-26-000052", "0001045810-26-000021"],
+      "claim": "A handful of large buyers make up a big slice of the company's sales.",
+      "kind": "answerable",
+      "expected": "supports",
+      "must_retrieve": [
+        {
+          "accession": "0001045810-26-000075",
+          "section": "Part I, Item 2",
+          "text": "For the first half of fiscal year 2027, three direct customers represented 16%, 15%, and 13% of total revenue, all of which was primarily attributable to the Compute & Networking segment."
+        },
+        {
+          "accession": "0001045810-26-000075",
+          "section": "Part I, Item 2",
+          "text": "Our revenue is concentrated among a limited number of direct and indirect customers and this trend may continue."
+        }
+      ],
+      "why": "Three direct customers accounted for 44% of first-half revenue and the filing calls revenue concentrated."
+    },
+    {
+      "id": "nvda-china-reopened",
+      "ticker": "NVDA",
+      "filings": ["0001045810-26-000075", "0001045810-26-000052", "0001045810-26-000021"],
+      "claim": "Washington's licence approvals have made China a meaningful market again for its top data-centre chips.",
+      "kind": "answerable",
+      "expected": "challenges",
+      "must_retrieve": [
+        {
+          "accession": "0001045810-26-000075",
+          "section": "Part I, Item 2",
+          "text": "After incurring that charge, we have made a fraction of the allowed shipments under the USG’s H200 licensing program. Those shipments account for less than 1% of Data Center revenue in our most recent quarter."
+        },
+        {
+          "accession": "0001045810-26-000075",
+          "section": "Part II, Item 1A",
+          "text": "Beginning in February 2026, the USG granted licenses that would allow us to ship small amounts of H200 products to specific China-based customers, but such sales were restricted by the PRC government, and we have been unable to sell all the products for which we have licenses."
+        }
+      ],
+      "why": "Licensed H200 sales were restricted by the PRC government and the shipments made are under 1% of Data Center revenue."
+    },
+    {
+      "id": "nvda-margin-widened",
+      "ticker": "NVDA",
+      "filings": ["0001045810-26-000075", "0001045810-26-000052", "0001045810-26-000021"],
+      "claim": "Profit on each dollar of sales has improved compared with a year earlier.",
+      "kind": "answerable",
+      "expected": "supports",
+      "must_retrieve": [
+        {
+          "accession": "0001045810-26-000075",
+          "section": "Part I, Item 2",
+          "text": "Gross margin increased to 75.0% for the second quarter of fiscal year 2027 compared to 72.4% for the second quarter of fiscal year 2026, and 75.0% for the first half of fiscal year 2027 compared to 66.6% for the first half of fiscal year 2026 due to improved mix from Blackwell Ultra."
+        }
+      ],
+      "why": "Gross margin rose from 72.4% to 75.0% year over year."
+    },
+    {
+      "id": "nvda-cash-returned",
+      "ticker": "NVDA",
+      "filings": ["0001045810-26-000075", "0001045810-26-000052", "0001045810-26-000021"],
+      "claim": "Management is handing large sums back to owners through buybacks and a much bigger quarterly payout.",
+      "kind": "answerable",
+      "expected": "supports",
+      "must_retrieve": [
+        {
+          "accession": "0001045810-26-000075",
+          "section": "Part I, Item 2",
+          "text": "In the second quarter and first half of fiscal year 2027, we repurchased 94 million and 203 million shares of our common stock for $19.7 billion and $39.8 billion, respectively."
+        },
+        {
+          "accession": "0001045810-26-000075",
+          "section": "Part I, Item 2",
+          "text": "On May 18, 2026, we increased our quarterly cash dividend from $0.01 per share to $0.25 per share."
+        }
+      ],
+      "why": "$39.8 billion of repurchases in the first half and the quarterly dividend raised from $0.01 to $0.25 per share."
+    },
+    {
+      "id": "nvda-no-borrowing",
+      "ticker": "NVDA",
+      "filings": ["0001045810-26-000075", "0001045810-26-000052", "0001045810-26-000021"],
+      "claim": "The company funds itself entirely from operations and has stayed away from the bond market.",
+      "kind": "answerable",
+      "expected": "challenges",
+      "must_retrieve": [
+        {
+          "accession": "0001045810-26-000075",
+          "section": "Part I, Item 2",
+          "text": "In June 2026, we issued an aggregate of $25.0 billion of senior unsecured notes across seven tranches for general corporate purposes."
+        },
+        {
+          "accession": "0001045810-26-000075",
+          "section": "Part II, Item 1A",
+          "text": "As of July 26, 2026, we had $33.5 billion aggregate principal amount of senior notes outstanding."
+        }
+      ],
+      "why": "It issued $25.0 billion of notes in June 2026 and has $33.5 billion of senior notes outstanding."
+    },
+    {
+      "id": "nvda-commitments-small",
+      "ticker": "NVDA",
+      "filings": ["0001045810-26-000075", "0001045810-26-000052", "0001045810-26-000021"],
+      "claim": "Its purchase obligations and guarantees to partners are modest and carry little counterparty risk.",
+      "kind": "answerable",
+      "expected": "challenges",
+      "must_retrieve": [
+        {
+          "accession": "0001045810-26-000075",
+          "section": "Part I, Item 2",
+          "text": "We have significantly increased our supply and capacity commitments from $119 billion last quarter to $279 billion as of July 26, 2026 to meet future demand."
+        },
+        {
+          "accession": "0001045810-26-000075",
+          "section": "Part II, Item 1A",
+          "text": "Customers or partners may fail to fulfill their financial commitments, secure necessary capital or infrastructure, complete projects on schedule or within budget, or experience financial distress or insolvency."
+        }
+      ],
+      "why": "Supply commitments more than doubled to $279 billion in a quarter and a new risk factor warns that partners may default."
+    },
+    {
+      "id": "nvda-custom-silicon-threat",
+      "ticker": "NVDA",
+      "filings": ["0001045810-26-000075", "0001045810-26-000052", "0001045810-26-000021"],
+      "claim": "Big cloud customers designing their own accelerators could cut demand for its GPUs.",
+      "kind": "answerable",
+      "expected": "supports",
+      "must_retrieve": [
+        {
+          "accession": "0001045810-26-000021",
+          "section": "Item 1A",
+          "text": "Some of our customers have in-house expertise and internal development capabilities similar to some of ours and can use or develop their own solutions to replace those we are providing."
+        }
+      ],
+      "why": "The 10-K risk factors say customers can develop their own solutions to replace NVIDIA's."
+    },
+    {
+      "id": "nvda-crypto-lawsuit-over",
+      "ticker": "NVDA",
+      "filings": ["0001045810-26-000075", "0001045810-26-000052", "0001045810-26-000021"],
+      "claim": "The old shareholder suit over crypto-mining demand is finished and no longer a legal overhang.",
+      "kind": "answerable",
+      "expected": "challenges",
+      "must_retrieve": [
+        {
+          "accession": "0001045810-26-000075",
+          "section": "Part I, Item 1",
+          "text": "On March 25, 2026, the district court granted plaintiffs’ motion for class certification and certified a class of investors consisting of all persons or entities who purchased or otherwise acquired NVIDIA common stock between August 10, 2017, and November 15, 2018, inclusive"
+        },
+        {
+          "accession": "0001045810-26-000052",
+          "section": "Part I, Item 1",
+          "text": "On March 25, 2026, the district court granted plaintiffs’ motion for class certification and certified a class of investors consisting of all persons or entities who purchased or otherwise acquired NVIDIA common stock between August 10, 2017, and November 15, 2018, inclusive"
+        }
+      ],
+      "why": "The case was remanded and a class was certified in March 2026, so the suit is still live."
+    },
+    {
+      "id": "nvda-workforce-unionising",
+      "ticker": "NVDA",
+      "filings": ["0001045810-26-000075", "0001045810-26-000052", "0001045810-26-000021"],
+      "claim": "Employees at its main engineering sites are organising a union, raising the risk of strikes.",
+      "kind": "unanswerable",
+      "expected": "none",
+      "must_retrieve": [],
+      "why": "None of the three filings mentions labour unions, collective bargaining, strikes or work stoppages; every 'union' is 'European Union'."
+    },
+    {
+      "id": "cost-members-renew",
+      "ticker": "COST",
+      "filings": ["0000909832-26-000093"],
+      "claim": "Shoppers keep paying to re-up their club cards, and fee income is still climbing.",
+      "kind": "answerable",
+      "expected": "supports",
+      "must_retrieve": [
+        {
+          "accession": "0000909832-26-000093",
+          "section": "Item 7",
+          "text": "Membership fee revenue increased 11% in 2026, driven by new member sign-ups, membership fee increases, and upgrades to Executive memberships. At the end of 2026, member renewal rates were 92.3% in the U.S. and Canada and 89.8% worldwide."
+        }
+      ],
+      "why": "Membership fee revenue rose 11% and renewal rates were 92.3% in the U.S. and Canada."
+    },
+    {
+      "id": "cost-markup-widened",
+      "ticker": "COST",
+      "filings": ["0000909832-26-000093"],
+      "claim": "The warehouse chain's merchandise markup widened noticeably this year.",
+      "kind": "answerable",
+      "expected": "mixed",
+      "must_retrieve": [
+        {
+          "accession": "0000909832-26-000093",
+          "section": "Item 7",
+          "text": "Gross margin percentage decreased three basis points. Excluding the impact of gasoline price inflation on net sales, gross margin percentage was 11.22%, an increase of 10 basis points."
+        }
+      ],
+      "why": "Reported gross margin fell three basis points; excluding gasoline it rose only ten, which qualifies 'noticeably'."
+    },
+    {
+      "id": "cost-tariffs-unrecovered",
+      "ticker": "COST",
+      "filings": ["0000909832-26-000093"],
+      "claim": "Import duties have been a pure cost that the retailer has no way to claw back.",
+      "kind": "answerable",
+      "expected": "challenges",
+      "must_retrieve": [
+        {
+          "accession": "0000909832-26-000093",
+          "section": "Item 7",
+          "text": "We paid the government approximately $500 in IEEPA tariffs. In February 2026, the U.S. Supreme Court ruled that the IEEPA tariffs were unlawful."
+        },
+        {
+          "accession": "0000909832-26-000093",
+          "section": "Item 7",
+          "text": "During 2026, we began filing for refunds and received $184, made up of $174 in refunds, recorded as a reduction to merchandise costs, and $10 recorded as interest income."
+        }
+      ],
+      "why": "The IEEPA tariffs were ruled unlawful and Costco has already received $184 million in refunds."
+    },
+    {
+      "id": "cost-north-america-dependence",
+      "ticker": "COST",
+      "filings": ["0000909832-26-000093"],
+      "claim": "Almost all of the club's sales and profit come from the US and Canada, leaving little geographic diversification.",
+      "kind": "answerable",
+      "expected": "supports",
+      "must_retrieve": [
+        {
+          "accession": "0000909832-26-000093",
+          "section": "Item 1A",
+          "text": "Our financial and operational performance is highly dependent on our U.S. and Canadian operations, which comprised 86% and 83% of net sales and operating income in 2026."
+        }
+      ],
+      "why": "The U.S. and Canada were 86% of net sales and 83% of operating income."
+    },
+    {
+      "id": "cost-franchising",
+      "ticker": "COST",
+      "filings": ["0000909832-26-000093"],
+      "claim": "Costco is converting some of its warehouses into franchised stores operated by third parties.",
+      "kind": "unanswerable",
+      "expected": "none",
+      "must_retrieve": [],
+      "why": "The 10-K never mentions franchising (no occurrence of 'franchis')."
+    },
+    {
+      "id": "aapl-china-shrinking",
+      "ticker": "AAPL",
+      "filings": ["0000320193-26-000026"],
+      "claim": "Demand for the iPhone maker's products in Greater China is still contracting.",
+      "kind": "answerable",
+      "expected": "challenges",
+      "must_retrieve": [
+        {
+          "accession": "0000320193-26-000026",
+          "section": "Item 7",
+          "text": "Greater China net sales increased during 2026 compared to 2025 primarily due to higher net sales of iPhone and Mac."
+        }
+      ],
+      "why": "Greater China net sales rose 28% in fiscal 2026 after falling 4% the year before."
+    },
+    {
+      "id": "aapl-margin-runway",
+      "ticker": "AAPL",
+      "filings": ["0000320193-26-000026"],
+      "claim": "Hardware margins should keep expanding from here thanks to a richer product mix.",
+      "kind": "answerable",
+      "expected": "mixed",
+      "must_retrieve": [
+        {
+          "accession": "0000320193-26-000026",
+          "section": "Item 7",
+          "text": "Products gross margin and gross margin percentage increased during 2026 compared to 2025 primarily due to product mix and tariff refunds, partially offset by higher costs, including memory."
+        },
+        {
+          "accession": "0000320193-26-000026",
+          "section": "Item 7",
+          "text": "As a result, the Company believes, in general, gross margins will be subject to volatility and downward pressure."
+        }
+      ],
+      "why": "Product margin rose on mix and tariff refunds, but the company expects gross margins to face downward pressure."
+    },
+    {
+      "id": "aapl-asian-assembly",
+      "ticker": "AAPL",
+      "filings": ["0000320193-26-000026"],
+      "claim": "Nearly all of its devices are put together by contract manufacturers in Asia, a concentration risk.",
+      "kind": "answerable",
+      "expected": "supports",
+      "must_retrieve": [
+        {
+          "accession": "0000320193-26-000026",
+          "section": "Item 1A",
+          "text": "The Company relies on single-source partners in the U.S., Asia and Europe to supply and manufacture many components, and on partners primarily located in Asia for final assembly of substantially all of the Company’s hardware products."
+        }
+      ],
+      "why": "The risk factors say final assembly of substantially all hardware is done by partners primarily in Asia."
+    },
+    {
+      "id": "aapl-eu-app-store",
+      "ticker": "AAPL",
+      "filings": ["0000320193-26-000026"],
+      "claim": "European competition law has already forced it to loosen App Store terms and fees.",
+      "kind": "answerable",
+      "expected": "supports",
+      "must_retrieve": [
+        {
+          "accession": "0000320193-26-000026",
+          "section": "Item 1A",
+          "text": "the Company has implemented changes to iOS, iPadOS, the App Store and Safari® in the EU as it seeks to comply with the Digital Markets Act (“DMA”), including new business terms and alternative fee structures for iOS and iPadOS apps"
+        },
+        {
+          "accession": "0000320193-26-000026",
+          "section": "Item 3",
+          "text": "On March 25, 2024, the Commission announced that it had opened a formal noncompliance investigation against the Company under Article 5(4) of the EU DMA (“Article 5(4) Investigation”)."
+        }
+      ],
+      "why": "Apple changed App Store terms and fees in the EU to comply with the DMA and faces DMA investigations."
+    },
+    {
+      "id": "aapl-electric-car",
+      "ticker": "AAPL",
+      "filings": ["0000320193-26-000026"],
+      "claim": "Apple is close to launching its own branded electric car.",
+      "kind": "unanswerable",
+      "expected": "none",
+      "must_retrieve": [],
+      "why": "The 10-K does not mention cars or vehicles (no occurrence of 'vehicle', 'automobile' or 'self-driving')."
+    },
+    {
+      "id": "msft-azure-growth",
+      "ticker": "MSFT",
+      "filings": ["0001193125-26-436133", "0001193125-26-323660"],
+      "claim": "Its public cloud platform is still growing at a very fast pace.",
+      "kind": "answerable",
+      "expected": "supports",
+      "must_retrieve": [
+        {
+          "accession": "0001193125-26-436133",
+          "section": "Part I, Item 2",
+          "text": "Azure revenue increased $10.8 billion or 48% driven by demand for services across the platform with continued growth across all workloads."
+        }
+      ],
+      "why": "Azure revenue grew 48% in the quarter ended September 30, 2026."
+    },
+    {
+      "id": "msft-cloud-margin",
+      "ticker": "MSFT",
+      "filings": ["0001193125-26-436133", "0001193125-26-323660"],
+      "claim": "The cloud business is becoming more profitable as it scales up.",
+      "kind": "answerable",
+      "expected": "challenges",
+      "must_retrieve": [
+        {
+          "accession": "0001193125-26-436133",
+          "section": "Part I, Item 2",
+          "text": "Microsoft Cloud gross margin percentage decreased to 66% driven by sales mix shift to Azure, offset in part by product-level margin improvements, primarily in Azure."
+        },
+        {
+          "accession": "0001193125-26-436133",
+          "section": "Part I, Item 2",
+          "text": "The investments we are making in cloud and datacenter infrastructure and devices will continue to increase our operating costs and may decrease our operating margins."
+        }
+      ],
+      "why": "Microsoft Cloud gross margin percentage fell to 66% and MD&A warns infrastructure investment may lower margins."
+    },
+    {
+      "id": "msft-ai-harm",
+      "ticker": "MSFT",
+      "filings": ["0001193125-26-436133", "0001193125-26-323660"],
+      "claim": "Shipping generative AI features carries a real chance of embarrassing or legally costly failures.",
+      "kind": "answerable",
+      "expected": "supports",
+      "must_retrieve": [
+        {
+          "accession": "0001193125-26-436133",
+          "section": "Part II, Item 1A",
+          "text": "The increasing scale and adoption of AI amplifies challenges that may affect its development, deployment, and use, which could give rise to reputational, competitive, or legal harm."
+        },
+        {
+          "accession": "0001193125-26-323660",
+          "section": "Item 1A",
+          "text": "The increasing scale and adoption of AI amplifies challenges that may affect its development, deployment, and use, which could give rise to reputational, competitive, or legal harm."
+        }
+      ],
+      "why": "Both filings carry a risk factor that AI issues may cause reputational, competitive or legal harm."
+    },
+    {
+      "id": "msft-never-breached",
+      "ticker": "MSFT",
+      "filings": ["0001193125-26-436133", "0001193125-26-323660"],
+      "claim": "State-backed hackers have never managed to get inside the company's own corporate systems.",
+      "kind": "answerable",
+      "expected": "challenges",
+      "must_retrieve": [
+        {
+          "accession": "0001193125-26-323660",
+          "section": "Item 1A",
+          "text": "a nation-state associated threat actor used a password spray attack to compromise a legacy test account and, in turn, gain access to Microsoft email accounts."
+        },
+        {
+          "accession": "0001193125-26-323660",
+          "section": "Item 1A",
+          "text": "The threat actor used information it obtained to gain unauthorized access to some of our source code repositories and internal systems"
+        },
+        {
+          "accession": "0001193125-26-436133",
+          "section": "Part II, Item 1A",
+          "text": "we have experienced cybersecurity incidents in which such actors have gained unauthorized access to our systems and data, as well as customer, partner, and supplier systems and data."
+        }
+      ],
+      "why": "The 10-K describes a nation-state actor reaching Microsoft email, source code repositories and internal systems."
+    },
+    {
+      "id": "msft-stock-split",
+      "ticker": "MSFT",
+      "filings": ["0001193125-26-436133", "0001193125-26-323660"],
+      "claim": "The board has approved a stock split to make the shares more affordable for retail investors.",
+      "kind": "unanswerable",
+      "expected": "none",
+      "must_retrieve": [],
+      "why": "Neither filing mentions a stock split (no occurrence of 'split')."
+    },
+    {
+      "id": "ko-north-america-volume",
+      "ticker": "KO",
+      "filings": ["0001628280-26-067844", "0001628280-26-010047"],
+      "claim": "Consumers in North America bought noticeably more of the company's drinks in the latest quarter.",
+      "kind": "answerable",
+      "expected": "challenges",
+      "must_retrieve": [
+        {
+          "accession": "0001628280-26-067844",
+          "section": "Part I, Item 2",
+          "text": "Unit case volume in North America was even, which included 2% growth in Trademark Coca-Cola, 1% growth in juice, value-added dairy and plant-based beverages, as well as growth in energy drinks, offset by a 4% decline in water, sports, coffee and tea as well as a 2% decline in sparkling flavors."
+        }
+      ],
+      "why": "North America unit case volume was even in the third quarter of 2026."
+    },
+    {
+      "id": "ko-pricing-lifts-margin",
+      "ticker": "KO",
+      "filings": ["0001628280-26-067844", "0001628280-26-010047"],
+      "claim": "Price increases are lifting the beverage maker's profitability on each dollar of revenue.",
+      "kind": "answerable",
+      "expected": "supports",
+      "must_retrieve": [
+        {
+          "accession": "0001628280-26-067844",
+          "section": "Part I, Item 2",
+          "text": "Our gross profit margin increased to 63.2% for the three months ended October 2, 2026, compared to 61.5% for the three months ended September 26, 2025."
+        },
+        {
+          "accession": "0001628280-26-067844",
+          "section": "Part I, Item 2",
+          "text": "The increases were primarily due to the favorable impact of pricing initiatives and foreign currency exchange rate fluctuations, commodity cost stabilization, as well as the impact of the sale of our finished product operations in Nigeria."
+        }
+      ],
+      "why": "Gross profit margin rose to 63.2%, primarily on pricing initiatives among other factors."
+    },
+    {
+      "id": "ko-irs-dispute-settled",
+      "ticker": "KO",
+      "filings": ["0001628280-26-067844", "0001628280-26-010047"],
+      "claim": "The long fight with the US tax authority over foreign licensing income is settled and no longer a cash risk.",
+      "kind": "answerable",
+      "expected": "challenges",
+      "must_retrieve": [
+        {
+          "accession": "0001628280-26-010047",
+          "section": "Item 1A",
+          "text": "On November 18, 2020, the U.S. Tax Court (“Tax Court”) issued an opinion (“Opinion”) predominantly siding with the IRS."
+        },
+        {
+          "accession": "0001628280-26-067844",
+          "section": "Part I, Item 1",
+          "text": "In that event, the Company would not receive a refund of the applicable portion or all of the $6.0 billion it paid in response to the IRS invoices issued in September 2024 and the related accrued interest receivable of $589 million as of October 2, 2026."
+        }
+      ],
+      "why": "The Tax Court sided with the IRS, the company has appealed, and $6.0 billion paid may not be refunded."
+    },
+    {
+      "id": "ko-cannabis-stake",
+      "ticker": "KO",
+      "filings": ["0001628280-26-067844", "0001628280-26-010047"],
+      "claim": "Coca-Cola is taking an equity stake in a cannabis-infused beverage maker.",
+      "kind": "unanswerable",
+      "expected": "none",
+      "must_retrieve": [],
+      "why": "Neither filing mentions cannabis or CBD."
+    },
+    {
+      "id": "ko-bitcoin-treasury",
+      "ticker": "KO",
+      "filings": ["0001628280-26-067844", "0001628280-26-010047"],
+      "claim": "The company holds bitcoin on its balance sheet as a treasury reserve asset.",
+      "kind": "unanswerable",
+      "expected": "none",
+      "must_retrieve": [],
+      "why": "Neither filing mentions bitcoin, cryptocurrency or digital assets."
+    }
+  ]
+}

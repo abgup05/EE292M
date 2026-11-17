@@ -1,48 +1,65 @@
 # Evidence Desk — capstone plan
 
-**In three sentences.** Evidence Desk turns one research question and the decision it informs into a brief whose every factual finding links to an exact excerpt from a page the tool actually retrieved. Citations are verified on the server before anything reaches the browser or the Markdown export, and a brief with thin evidence is marked partial rather than presented as complete. The user is a researcher or project lead who needs to see what supports a conclusion, what conflicts with it, and what is still unknown before acting.
+**In one sentence.** For an equity analyst who has to decide whether a thesis still holds after a new filing, Evidence Desk tests each claim in the thesis against the company's own SEC filings and reported numbers, and we will know it works because every verdict opens to an exact filing passage and a golden set of questions with known passages measures how often the right one is retrieved and cited.
 
-Evidence Desk is a proposed research workbench for turning an open-ended project question into a decision brief whose findings can be checked against source passages. It is meant for a researcher or project lead making a real choice: whether to proceed, revise a plan, or investigate further. The deliverable is a detailed answer with traceable citations, conflicting evidence, and visible gaps.
+**In three sentences.** You give Evidence Desk a ticker, the decision you are facing and the claims your thesis rests on. It reads the company's latest annual and quarterly reports from SEC EDGAR, and for each claim returns a verdict (supported, challenged, mixed or not addressed) with the exact passages behind it, each verified on the server against the stored filing text before anything reaches the page or the export. When the evidence is thin the brief says **partial** and gives the reasons; it never fills a gap with a confident sentence.
 
-These files contain the plan and the [coding-agent prompt](PROMPT.md). The first working slice is implemented in [`evidence_desk/`](evidence_desk/README.md); `starting_point` does not exist in this repository, so it was built on the Week 2 app's stack and conventions instead.
+The working application is in [`evidence_desk/`](evidence_desk/README.md). The prompt for the current milestone is [`PROMPT.md`](PROMPT.md).
+
+## What changed since the first plan
+
+The first version (tag `capstone-v1`) was a general research-brief tool: any question, any public web page. The structure review of that version ([review 1](evidence_desk/docs/reviews/review-1-structure.md)) found that the plan named "a researcher or project lead" but no concrete reader, and gave no evidence by which anyone would know it worked. Both were true.
+
+The project is now narrowed to the research I actually want it for, equity research, and to the place where a thesis is checked: the company's own filings. This merges the second idea in [`idea pitches.md`](idea%20pitches.md), the investment thesis change tracker, with the part of the first version that worked, the citation gate. Narrowing it also makes it testable. A filing has a stable identifier, a fixed text and reported numbers with published values, so there is an answer key. The open web had none.
 
 ## Why it is worth doing
 
-Deep research often fails at the last step: a polished summary is difficult to audit, and a citation may point to a page that does not support the stated claim. Evidence Desk makes the source passage a first-class part of the result. The researcher can inspect how a conclusion was reached, see where sources disagree, and decide whether the evidence is strong enough to act on. The tool is useful across topics because it takes the user's question, decision, and scope as inputs rather than embedding one domain's assumptions.
+An analyst's thesis is a short list of claims. Each quarter a 10-Q of a hundred pages arrives, and the question is narrow: which of my claims does this support, which does it challenge, and which does it not speak to. The work today is search and copy, and the notes that result do not record where a sentence came from. A language model will answer the question fluently, but a fluent answer with a citation that does not say what the sentence claims is worse than no answer, because it reads the same as a correct one.
 
-## First working result
-
-The first version accepts one question, one decision, optional scope notes, and public HTML links. A configured search provider can add sources. The application plans 3–6 subquestions, retrieves up to the selected budget of 6–15 distinct sources, and returns a brief with 3–8 findings when evidence permits. Each factual finding must link to an exact excerpt from a stored source. When fewer than six sources are available or a key question remains unresolved, the brief says **partial** and explains why.
-
-A real demonstration starts with the public [NIST AI Risk Management Framework](https://www.nist.gov/publications/artificial-intelligence-risk-management-framework-ai-rmf-10) and [GAO technology assessment](https://www.gao.gov/products/gao-24-106946). These seed links test retrieval, metadata capture, and citation tracing. They are not prewritten answers.
+Evidence Desk makes the passage the unit of the result. A verdict is computed by the backend from the findings that survived the quote check; a model can propose a stance but cannot assert a verdict. The analyst can open the filing at the passage, accept or reject each finding, and export a brief that records those decisions.
 
 ## Milestones
 
-| Milestone | Reviewable result | Exit check |
-| --- | --- | --- |
-| 1. Provenance proof | One real HTML page becomes a stored source, exact excerpt, verified finding, and clickable citation | Altering the excerpt invalidates the finding |
-| 2. Research run | Question form, 3–6 subquestions, multiple sources, synthesis, and partial-run state | A two-source seed run is marked partial and explains coverage |
-| 3. Discovery and export | Optional web search, deduplication, source budget, and Markdown brief | A run shows source counts, failures, and traceable exported citations |
-| 4. Hardening | Input and URL safeguards, failure recovery, and focused tests | Invalid URLs and source instructions cannot redirect the run |
+Each milestone is one prompt and ends in a tagged version that can be opened on its own (`git checkout <tag>`, then `make up` in `Capstone/evidence_desk`).
 
-The first milestone tackles the main uncertainty: whether generated conclusions can be tied to passages the application actually retrieved. Later work can add PDFs, private collections with permission controls, saved projects, comparison across runs, and scheduled updates.
+| # | Tag | Reviewable result | Exit check |
+| --- | --- | --- | --- |
+| 1 | `capstone-v1` | A generic research brief: one real page becomes a stored source, an exact excerpt and a verified finding | Altering the excerpt withholds the finding |
+| 2 | `capstone-v2` | Filings and claims: a thesis run over a real 10-K and 10-Qs, verdicts first, each excerpt in context with a link into the filing | A recorded 10-Q splits into its Items; a quote with one word changed is withheld |
+| 3 | `capstone-v3` | Reported numbers with an answer key: a metrics panel computed from XBRL facts; a numeric check on findings; tests at four levels and a tripwire; one measured speed change | Published values for three companies reproduce; a statement whose number is in neither its quote nor a reported fact is withheld |
+| 4 | `capstone-v4` | Reviewer decisions and saved theses: accept or reject each finding; re-run a saved thesis and see which verdicts moved; backup with a tested restore | A restore from backup returns every decision; a re-run names the claims whose verdict changed |
+| 5 | `capstone-v5` | Measured retrieval: a golden set with the passage that must come back; retrieval and generation scored apart; a second model checks that each excerpt supports its statement | Recall on the golden set is reported per retrieval variant; an unanswerable claim is refused |
+| 6 | `capstone-v6` | What changed between two filings: added, removed and reworded risk factors and moved numbers | A planted paragraph change is reported as added and removed |
+
+The draft write-up is due on 30 November and the final in finals week.
 
 ## Main risks
 
-| Risk | How the first version handles it |
+| Risk | How it is handled |
 | --- | --- |
-| A citation looks plausible but does not support the claim | Store exact source excerpts; verify they exist in the extracted text; show the excerpt beside the finding |
-| Search and retrieval leave blind spots | Show failed pages and unanswered subquestions; mark insufficient coverage partial |
-| Several pages repeat one underlying source | Canonicalize URLs and flag source dependence; do not count duplicates as corroboration |
-| Retrieved pages contain adversarial instructions | Treat page text as data and keep it separate from tool instructions |
-| Slow, costly, or blocked retrieval | Bound candidate results, source count, time, and response size; retain usable evidence from partial runs |
+| A quote is real but does not support the statement made about it | The quote check alone cannot see this. A numeric check (milestone 3), a second-model support check (5) and the reviewer's own decision (4) are three separate layers; none is trusted alone |
+| Filings differ in structure from one company to the next, and Item detection fails | Detection is tested on recorded real filings at full size. If it fails, the document is kept whole, the quote check still applies, and the coverage limits say that Items were not found |
+| Retrieval misses the passage that matters, and the claim reads as "not addressed" | The verdict is worded as "no verified evidence in the passages retrieved", the run is marked partial, and the golden set (5) measures how often the right passage is in the top results |
+| A filing contains text written to steer a model | Filing text is passed as data inside marked elements and is only ever quoted; a test plants an instruction and checks the output is unchanged |
+| EDGAR access is refused or limited | Requests carry a descriptive User-Agent, stay under EDGAR's rate limit and are cached; a failed filing is recorded as a failed source and the run continues |
 
 ## Frontend and backend boundary
 
-The backend owns search access, page retrieval, extraction, source records, synthesis, and citation verification. It returns a structured brief only after checking that cited excerpts exist in the stored pages. The frontend collects inputs and renders run progress, findings, excerpts, and export actions.
+The backend owns EDGAR access, credentials, extraction, retrieval, the engines, quote verification, the verdict rule, the status rule and every count shown. The frontend collects the thesis, shows progress and draws the record.
 
-The boundary is deliberately after verification. If verification moved one function earlier into the frontend, a direct API or Markdown export could publish unchecked findings, and different clients could disagree about whether a citation was valid. Server-side verification gives every output path the same rule.
+The boundary sits after verification and after the verdict rule. If the verdict were computed one function later, in the browser, the Markdown export and any API client could show a verdict that the checked evidence does not support, and two views could disagree about the same run.
 
 ## Scope and success
 
-The first version covers public HTML pages and one research run at a time. PDF parsing, authenticated sources, collaboration, monitoring, and automated decisions are later work. Success means a reviewer can start a run, inspect how each factual finding maps to a real passage, and see a clear partial result when the available evidence is thin. The app should never fill missing evidence with a confident-sounding claim.
+In scope: US filers of 10-K and 10-Q reports, one company per run, the latest annual report and the quarterly reports after it, and up to five extra public pages the user supplies. Out of scope: prices, forecasts, PDFs, 8-K exhibits, foreign filers, earnings-call transcripts and any automated buy or sell decision.
+
+Success means an analyst can enter a thesis, read the verdicts, open any finding at its passage in the filing, and see a partial result with its reasons when the evidence is thin. It is measured, from milestone 5, by the golden set: how often the passage that must come back is retrieved, how often a cited quote is exact, and how often an unanswerable claim is refused.
+
+Evidence Desk reads what the company itself reported. It does not check the company against outsiders, and it says so on every brief.
+
+## Review findings answered here
+
+Findings that were built in are listed in the hand-in for the session that reviewed them (`Homework/`). A finding that was not built in as written gets one line here, with the reason.
+
+- **Review 1, F5** (add an extractor registry keyed by content type, with the fetcher carrying bytes): answered with one adapter per source kind behind a shared `Document` shape, not a content-type registry. The next format this project needs is a filing, which is HTML with a different structure, not a PDF, and PDFs remain out of scope.
+- **Review 1, F10** (give each subquestion a `kind` field for the extractive engine to branch on): not built. The deterministic engine no longer guesses a stance at all; a claim it handles gets the verdict "passages found, not judged".

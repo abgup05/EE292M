@@ -1,104 +1,59 @@
 # Evidence Desk
 
-A web tool that turns one research question into a source-backed decision
-brief. Every factual finding links to an exact excerpt from a page the backend
-retrieved, verified as a substring of the stored text before it reaches the
-browser or the Markdown export. When evidence is thin the brief says
-**PARTIAL**; when nothing usable was retrieved it says **FAILED** and gives no
-synthetic answer.
+Evidence Desk tests the claims of an investment thesis against a company's own SEC filings. It is for an equity analyst who has to decide whether a thesis still holds after a new filing: you enter a ticker, the decision and the claims; it reads the latest annual report (10-K) and the quarterly reports (10-Q) filed after it, and returns a verdict for each claim with the exact passages behind it. Every quote is verified against the stored filing text on the server before it reaches the page or the Markdown export. When the evidence is thin the brief says **PARTIAL** and gives the reasons.
 
-This is the first working slice described in [`../PROMPT.md`](../PROMPT.md).
-The `starting_point` fork named there does not exist in this repository, so
-the app was built on the stack and conventions of the Week 2 app instead
-(Python 3.14 / FastAPI, Docker Compose on `127.0.0.1`, static frontend,
-Makefile-only execution). See [`ARCHITECTURE.md`](ARCHITECTURE.md).
+This is version 2 (tag `capstone-v2`) of the capstone. The plan and the milestones are in [`../README.md`](../README.md), the prompt this version was built from is [`../PROMPT.md`](../PROMPT.md), and the design is in [`ARCHITECTURE.md`](ARCHITECTURE.md).
+
+![The first screen: one sentence saying what the page does, then the thesis form](docs/screenshots/first-screen.png)
 
 ## Run it
 
-You need Docker running and Make. From this directory (or from the
-repository root, where `make` targets the capstone by default):
+You need Docker running and Make. From this directory, or from the repository root:
 
 ```sh
-cp .env.example .env   # optional: add ANTHROPIC_API_KEY and/or BRAVE_SEARCH_API_KEY
-make build
+cp .env.example .env   # optional: ANTHROPIC_API_KEY, ANTHROPIC_MODEL, SEC_USER_AGENT
 make up                # http://127.0.0.1:8766
 make down
 ```
 
-Without credentials the app still works: planning uses a template and
-synthesis is a deterministic extractive mode that quotes exact sentences with
-`low` confidence. With `ANTHROPIC_API_KEY`, Claude plans the subquestions and
-drafts findings from the stored text; the same verification gate applies.
-With `BRAVE_SEARCH_API_KEY`, up to 30 search results are merged with the seed
-URLs; otherwise the run records that only seed URLs were considered.
+The app needs the internet to reach SEC EDGAR (`www.sec.gov` and `data.sec.gov`, and nothing else for filings). It works without any key: the deterministic engine quotes the sentences that best match each claim and judges no stance, so every claim reads "passages found, not judged". With `ANTHROPIC_API_KEY`, Claude plans the retrieval queries, drafts findings with a stance and writes the summary; the same quote check applies to everything it returns.
 
-## Demo path
+## What you see
 
-1. `make up`, open http://127.0.0.1:8766, click **Load seed example**.
-2. Click **Run research**. The banner shows RUNNING, then PARTIAL.
-3. Open a finding: each evidence block shows its stance, the section heading
-   it sits under, the exact excerpt, and a link to the source page.
-4. The sources table shows publisher, publication date (or "not available")
-   and the UTC retrieval time separately. Failed pages show their error.
+1. `make up`, open <http://127.0.0.1:8766>, click **Load example** (five claims about NVIDIA) and **Test the thesis**.
+2. The banner shows the status and what was read, each number with its denominator: sources read, passages indexed, claims with verified evidence, findings verified and withheld, quotes verified and rejected.
+3. The verdicts come first, one row per claim. Open a claim to read its findings; each excerpt is shown in its surrounding text with the Item of the filing it sits under, the filing it came from, and a link that opens the filing at that passage.
+4. The sources table keeps the filing date and the UTC retrieval time in separate columns.
 5. **Download Markdown brief** exports the same verified record.
 
-`make demo` runs the same seed case against the live container without a
-browser and writes `results/demo-<UTC>.md` with a measured summary and the
-exported brief. The record behind the numbers below is committed as
-[`demo/demo-2026-10-22.md`](demo/demo-2026-10-22.md).
+`http://127.0.0.1:8766/?sample` shows a recorded run without starting one. From the command line, `make run ARGS='example'` runs the same pipeline synchronously and writes `results/<run-id>.json` and `.md`; `make demo` drives the live HTTP API end to end and writes `results/demo-<UTC>.md`.
 
-## Measured results (demo, 2026-10-22)
+## Measured results (live demo, 17 November 2026)
 
-Run with `ANTHROPIC_API_KEY` set (model `claude-opus-5-5`), no search key:
+The record is committed as [`demo/demo-2026-11-17-v2.md`](demo/demo-2026-11-17-v2.md) with its run record beside it.
 
-- Status **PARTIAL**, wall time 38 s, 6 subquestions planned by Claude.
-- NIST AI RMF 1.0 page: retrieved and extracted; title, publisher `NIST` and
-  publication date `2023-01-26` came from the page's metadata, retrieval time
-  recorded separately in UTC.
-- GAO `gao-24-106946`: **HTTP 403** from the server to this fetcher (bot
-  protection). Recorded as a failed source; the run continued.
-- 4 findings, 4 evidence excerpts, all verified as exact substrings of the
-  stored NIST text; every finding is flagged single-source. 0 withheld.
-- 2 of 6 subquestions answered (governance obligations; pilot scoping); the
-  other 4 are listed as unanswered.
-- Coverage limits recorded: no search provider; fewer than six sources;
-  4 subquestions unanswered. Hence PARTIAL, not complete.
-
-An earlier demo run exposed a real extraction bug: the NIST abstract is loose
-text in a `<div>` outside the page's `<article>`, and the first extractor
-dropped it, leaving only the citation block. Claude then produced 3 findings
-whose excerpts were not in the stored text, and the verification gate
-withheld all 3 (0 verified). The extractor was fixed with a failing test
-first; the next run verified 4 of 4.
+- **Read from EDGAR:** 3 of 3 filings for NVIDIA (10-Q for the period ended 2026-07-26, 10-Q for 2026-04-26, 10-K for 2026-01-25), 73, 69 and 150 sections, 636 passages indexed. Wall time 3.2 s from request to finished record.
+- **Quotes:** 15 offered, 15 verified as exact spans of the stored text, 0 rejected.
+- **Verdicts:** 5 of 5 claims "passages found, not judged", so the run is **PARTIAL**.
+- **Why not judged:** the Claude engine was configured, but every model call was refused by the API with "credit balance is too low" (HTTP 400). All seven engine steps fell back to the deterministic engine, and the run says so in its errors and coverage limits. **The model-backed path was not exercised live in this version.** It is covered only by tests against a stub client.
 
 ## Verification
 
 ```sh
-make verify   # build, ruff lint/format, node --check, 110 offline tests, live smoke
-make test     # offline unit tests only
-make fixtures # record the real seed pages under tests/fixtures (REFRESH=1 to overwrite)
+make verify       # build, ruff lint and format, node --check, 385 offline tests, live smoke test
+make test         # offline tests only (T=tests/test_gate.py for one file)
+make fixtures     # record the EDGAR responses used by the tests (REFRESH=1 to overwrite)
+make screenshots  # headless Chromium renders the first screen and the sample record into docs/screenshots
 ```
 
-Tests cover request validation, URL safety (private and local addresses,
-embedded credentials, redirects to private hosts, non-HTML, size cap,
-timeouts, redirect loops), canonicalization and deduplication (mirrors and
-identical content count once), exact-excerpt verification (a corrupted excerpt
-removes its finding; a bad evidence ID marks the finding unsupported),
-partial/failed status rules, the time budget, the Claude backend with a stub
-client (page text passed as data, JSON schema requested, refusal and
-truncation raise), the extractive backend, Markdown export, the API, and the
-recorded NIST fixture. The smoke test exercises the live container without
-internet access.
+What the tests cover: request validation and every rejection in the prompt; the EDGAR client (host allow-list, rate spacing, retries, size cap, the filing selection rule) against a mock transport; the filing parser on a recorded NVIDIA 10-Q and 10-K at full size; chunking invariants; BM25 against a brute-force scorer written from the formula; the quote gate (a changed word withholds the finding, whitespace and typographic differences do not, the shown excerpt is always the stored span); the verdict and status rules; the pipeline on recorded filings with a fake EDGAR and a scripted engine (a planted instruction in a passage cannot change a verdict; one failed filing does not erase the others; an engine failure falls back and is recorded); the API, the command line and the Markdown export. The smoke test exercises the running container without the internet.
 
 ## Known limitations
 
-- GAO.gov answers this fetcher with HTTP 403. The app reports that honestly;
-  it does not emulate a browser to get around it.
-- Only public HTML. PDFs (including the full AI RMF PDF), authenticated pages
-  and private drives are out of scope for this slice.
-- With no search provider, coverage is limited to the seed URLs, so a
-  two-seed run is always partial by design.
-- The Claude backend was exercised in the demo runs above; the Brave search
-  backend was tested only against a mock transport, not the live API.
-- Runs execute in a worker thread inside the API process; there is no queue
-  or resume after a restart.
+- **The model engine was not run live in this version** (see above).
+- **Filing structure beyond NVIDIA.** The parser's tests use NVIDIA's filings. A probe of the latest filings of seven other companies on 17 November found Apple, Microsoft, Coca-Cola, Tesla and Amazon split into their Items correctly; **Costco's 10-K was not segmented** (its headings read "Item 1A—Risk Factors", with a dash where the parser expects a full stop) and fell back to one "Full document" section; and **JPMorgan's filings**, which cross-reference Items to pages of an annual report, were left almost entirely under "Cover page". The quote check still holds for these, but the locators are wrong or missing. Neither is fixed in this version.
+- **Retrieval is unmeasured.** Passages are ranked by BM25 on the claim's words. There is no golden set yet, so nothing here says how often the passage that matters is in the top eight.
+- **A quote can be exact and still not support the statement made about it.** The gate checks that the words are in the filing, not that they mean what the finding says.
+- **The page was checked by eye from three screenshots**, not by a user and not in more than one browser. The links that open a filing at a passage were not clicked in a real browser.
+- Only 10-K and 10-Q filers. No PDFs, 8-K exhibits, foreign filers or transcripts.
+- Runs execute in a worker thread inside the API process; there is no queue and no resume after a restart.

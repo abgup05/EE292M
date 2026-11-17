@@ -1,0 +1,31 @@
+Header cut, interleaved: 20 pairs, one process, 2026-11-17 20:36:34 UTC
+  The order within a pair alternates: the cut first in odd pairs, second in even ones.
+  The garbage collector is run before each timed run and switched off during it.
+  parse 3 filings: cut 255.4 ms, no cut 280.5 ms (medians)
+    saved per pair: median +25.4 ms, IQR +24.6 to +26.7 ms, range +21.3 to +29.7 ms; cut faster in 20 of 20
+    median saved by order: cut run first +25.2 ms (10 pairs), cut run second +26.1 ms (10 pairs)
+  whole run:       cut 386.8 ms, no cut 412.8 ms (medians)
+    saved per pair: median +24.0 ms, IQR +22.8 to +29.0 ms, range +20.8 to +34.6 ms; cut faster in 20 of 20
+    median saved by order: cut run first +23.7 ms (10 pairs), cut run second +24.9 ms (10 pairs)
+  record sha256: a95ce509390cc42a29e02ace2d2255d8c3ddce47a9c6a904a11adb3971304007
+  pairs (ms): parse cut/no cut, whole cut/no cut, which ran first
+     258.5  280.5    391.4  412.2   cut
+     256.1  280.6    389.3  412.5   no cut
+     257.3  280.9    390.7  413.1   cut
+     257.5  280.0    389.6  413.3   no cut
+     255.1  280.0    387.8  410.8   cut
+     253.9  280.3    385.4  411.3   no cut
+     255.1  279.7    386.7  410.9   cut
+     254.4  281.6    385.2  414.0   no cut
+     253.3  278.7    383.6  409.1   cut
+     254.6  281.1    382.6  409.9   no cut
+     252.1  281.8    382.0  416.6   cut
+     255.6  280.4    386.7  408.3   no cut
+     256.4  277.7    387.9  410.4   cut
+     255.7  283.9    385.4  416.7   no cut
+     254.8  280.3    386.8  410.0   cut
+     252.2  280.1    383.2  414.0   no cut
+     252.1  281.8    382.5  414.6   cut
+     258.4  283.0    392.7  414.5   no cut
+     256.9  283.3    387.3  416.8   cut
+     255.7  281.5    389.4  413.1   no cut

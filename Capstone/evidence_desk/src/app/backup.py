@@ -11,8 +11,10 @@ prints what it wrote and how many runs, decisions and theses the copy holds.
 ``python -m app.backup restore-check`` (``make restore-check``) checks the
 newest backup's SHA-256, restores it into a temporary directory, opens it
 with :class:`~app.store.Store` and compares it with the live record: the same
-runs, decisions and saved theses, each compared as the text that is stored, so
-a record that no longer parses is compared too. It then fails if any record in
+runs, decisions and saved theses, each row compared column by column as it is
+stored (the record text, and the columns beside it that the app reads on their
+own, such as a run's thesis id), so a record that no longer parses is compared
+too, and a failure names the row and the column. It then fails if any record in
 the backup cannot be read by this version of the app: a restore would keep
 such a record in the file and the app would show nothing of it. It prints
 PASS with the backup's age, or FAIL with the first difference, and exits 1 on
@@ -222,15 +224,45 @@ RECORD_KINDS: tuple[tuple[str, str], ...] = (
 MAX_NAMED = 3  # unreadable records named in a failure; the rest are counted
 
 
+RECORD_COLUMN = "record"  # the stored JSON of a row: too long to quote in a failure
+_ABSENT = object()  # a column one side's table does not have (a backup from another schema)
+
+
+def _shown(value: object) -> str:
+    return "no such column" if value is _ABSENT else str(value)
+
+
+def _row_difference(
+    word: str, key: str, was: dict[str, object], now: dict[str, object]
+) -> str | None:
+    """The first column in which one row differs between the backup and the live record."""
+    columns = [*now, *(column for column in was if column not in now)]
+    for column in columns:
+        before, after = was.get(column, _ABSENT), now.get(column, _ABSENT)
+        if before == after:
+            continue
+        named = (
+            f"{word} {key} differs between the backup and the live record in its {column} column"
+        )
+        if column == RECORD_COLUMN:
+            return named
+        return f"{named}: {_shown(before)} in the backup, {_shown(after)} live"
+    return None
+
+
 def _stored_difference(table: str, word: str, backup: Store, live: Store) -> str | None:
-    """The first record of ``table`` that the two do not hold as the same text, if any."""
-    in_backup, in_live = backup.raw_records(table), live.raw_records(table)
+    """The first row of ``table`` that the two do not hold alike, column by column, if any.
+
+    Every column is compared as stored, without parsing: the record text, and the columns
+    the app reads on their own (a run's ``thesis_id``, the times lists are ordered by).
+    """
+    in_backup, in_live = backup.raw_rows(table), live.raw_rows(table)
     missing = _first_set_difference(word, list(in_backup), list(in_live))
     if missing:
         return missing
     for key in sorted(in_live):
-        if in_backup[key] != in_live[key]:
-            return f"{word} {key} differs between the backup and the live record"
+        if found := _row_difference(word, key, in_backup[key], in_live[key]):
+            return found
     return None
 
 
@@ -238,8 +270,9 @@ def _difference(restored: Store, live: Store) -> str | None:
     """The first difference between a restored backup and the live record, most telling first.
 
     Runs by id, then every decision field by field (so a changed decision is named
-    with what changed), then every stored record as text, which also covers runs
-    whose content changed and records neither side can parse.
+    with what changed), then every row of every table column by column as stored,
+    which also covers runs whose content changed, records neither side can parse and
+    the columns kept beside the record (a run's thesis id, a decision's time).
     """
     return (
         _first_set_difference("run", restored.run_ids(), live.run_ids())
@@ -279,8 +312,8 @@ def age_words(taken: datetime | None, now: datetime) -> str:
 def restore_check(live: Store, directory: Path, now: datetime | None = None) -> str:
     """Restore the newest backup and compare it with ``live``; the PASS line, or raise.
 
-    Fails on the first record the two do not hold as the same stored text, and
-    then on any record in the backup that this version cannot read.
+    Fails on the first row the two do not hold alike in every column, naming the row
+    and the column, and then on any record in the backup that this version cannot read.
     """
     database = newest_backup(directory)
     if database is None:
@@ -325,8 +358,9 @@ def status(live: Store, directory: Path, now: datetime | None = None) -> str:
     try:
         behind: list[str] = []
         for table, noun in (("runs", "run"), ("decisions", "decision"), ("theses", "thesis")):
-            held, current = copy.store.raw_records(table), live.raw_records(table)
-            count = sum(1 for key, record in current.items() if held.get(key) != record)
+            # Every column, as restore-check compares them, so the two never disagree.
+            held, current = copy.store.raw_rows(table), live.raw_rows(table)
+            count = sum(1 for key, row in current.items() if held.get(key) != row)
             if count:
                 plural = "theses" if noun == "thesis" else f"{noun}s"
                 behind.append(f"{count} {noun}" if count == 1 else f"{count} {plural}")

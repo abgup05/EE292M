@@ -59,6 +59,13 @@ CREATE TABLE IF NOT EXISTS theses (
 );
 """
 
+# The tables of the record, and the SQL expression that keys a row of each.
+RECORD_KEYS: Final = {
+    "runs": "id",
+    "decisions": "run_id || '/' || finding_id",
+    "theses": "id",
+}
+
 CACHE_SCHEMA = """
 CREATE TABLE IF NOT EXISTS texts (
     content_hash TEXT PRIMARY KEY,
@@ -280,17 +287,31 @@ class Store:
         """Every stored record of ``table`` as its text, by key, without parsing any of them.
 
         ``table`` is "runs", "decisions" or "theses". A decision's key is
-        "<run id>/<finding id>". This is what a backup is compared by: a record that
-        no longer validates is still a record, and still has to be the same on both sides.
+        "<run id>/<finding id>". A record that no longer validates is still a record, and
+        is returned too. The other columns of a row are in :meth:`raw_rows`.
         """
-        queries = {
-            "runs": "SELECT id, record FROM runs",
-            "decisions": "SELECT run_id || '/' || finding_id, record FROM decisions",
-            "theses": "SELECT id, record FROM theses",
-        }
-        if table not in queries:
+        if table not in RECORD_KEYS:
             raise ValueError(f"no table {table!r} in the record")
-        return {key: record for key, record in self._db.query(queries[table])}
+        rows = self._db.query(f"SELECT {RECORD_KEYS[table]}, record FROM {table}")
+        return {key: record for key, record in rows}
+
+    def raw_rows(self, table: str) -> dict[str, dict[str, object]]:
+        """Every row of ``table`` with every one of its columns, by key, without parsing any.
+
+        ``table`` is "runs", "decisions" or "theses"; keys are as :meth:`raw_records` gives
+        them. Each row maps column name to stored value, in the table's column order. This is
+        what a restored backup is compared by: besides the record text, a row holds columns
+        the app reads on their own (a run's ``thesis_id``, which :meth:`runs_of_thesis`
+        selects by, and the times lists are ordered by).
+        """
+        if table not in RECORD_KEYS:
+            raise ValueError(f"no table {table!r} in the record")
+        columns = [row[1] for row in self._db.query(f"PRAGMA table_info({table})")]
+        # ``table`` is one of three fixed names; the column names come from the file's own
+        # schema (a backup may be any file), so they are quoted as SQL identifiers.
+        selected = ", ".join('"' + column.replace('"', '""') + '"' for column in columns)
+        rows = self._db.query(f"SELECT {RECORD_KEYS[table]}, {selected} FROM {table}")
+        return {row[0]: dict(zip(columns, row[1:], strict=True)) for row in rows}
 
     def unreadable(self) -> list[str]:
         """Stored records that no longer validate against the current models, named.

@@ -47,6 +47,9 @@ RISK_TEXT = (
     "Our business depends on a small number of contract manufacturers in Asia, and any "
     "disruption at those suppliers could delay shipments and reduce revenue."
 )
+# About 120 characters of it, cut at a word: an excerpt that ends inside a word is not a
+# span the gate accepts, and the golden set is validated with the gate's own search.
+RISK_EXCERPT = RISK_TEXT[:121].rsplit(" ", 1)[0]
 MDA_TEXT = (
     "Revenue increased twelve percent compared with the prior year, driven by higher unit "
     "volumes in the services segment and favourable pricing on new contracts."
@@ -84,7 +87,7 @@ def case(**overrides: Any) -> dict[str, Any]:
         "kind": "answerable",
         "expected": "supports",
         "must_retrieve": [
-            {"accession": ACCESSION, "section": "Item 1A", "text": RISK_TEXT[:120]},
+            {"accession": ACCESSION, "section": "Item 1A", "text": RISK_EXCERPT},
         ],
         "why": "The risk factor names the dependence on a few manufacturers.",
     }
@@ -309,18 +312,18 @@ def test_a_correct_case_validates_and_finds_its_span() -> None:
     assert result.ok, result
     target = result.checks[0].targets[0]
     text = synthetic_document().text
-    assert text[target.start : target.end] == RISK_TEXT[:120]
+    assert text[target.start : target.end] == RISK_EXCERPT
     assert target.section.startswith("Item 1A")
 
 
 def test_validation_rejects_an_excerpt_that_is_not_in_the_filing() -> None:
-    altered = RISK_TEXT[:120].replace("small", "large")
+    altered = RISK_EXCERPT.replace("small", "large")
     bad = case(must_retrieve=[{"accession": ACCESSION, "section": "Item 1A", "text": altered}])
     assert any("not found" in problem for problem in problems_of(golden(bad)))
 
 
 def test_validation_rejects_a_wrong_section_prefix() -> None:
-    record = {"accession": ACCESSION, "section": "Item 7", "text": RISK_TEXT[:120]}
+    record = {"accession": ACCESSION, "section": "Item 7", "text": RISK_EXCERPT}
     bad = case(must_retrieve=[record])
     assert any("Item 1A. Risk Factors" in problem for problem in problems_of(golden(bad)))
 

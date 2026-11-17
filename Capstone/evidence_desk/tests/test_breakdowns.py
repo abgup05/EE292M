@@ -427,6 +427,76 @@ def test_the_same_total_tagged_twice_is_not_a_conflict() -> None:
     assert not any("more than one value" in note for note in products.notes)
 
 
+# A figure tagged twice with different rounding: the most precise tag is shown
+
+
+def _alpha_tagged_twice(*alpha: str) -> BreakdownReport:
+    """Products Alpha (tagged as given, in that order) and Beta 40; the total is 100 (millions)."""
+    contexts = (
+        FY
+        + context("a", start="2025-01-27", end="2026-01-25", dims={PRODUCT: "x:AlphaMember"})
+        + context("b", start="2025-01-27", end="2026-01-25", dims={PRODUCT: "x:BetaMember"})
+    )
+    html = document(
+        contexts,
+        fact("us-gaap:Revenues", "c-1", "100"),
+        *alpha,
+        fact("us-gaap:Revenues", "b", "40"),
+    )
+    return report_of(html)
+
+
+# 60 million as a note tags it (decimals -6), and as a discussion rounds it to tenths of a
+# billion (decimals -8): 0.1 billion.
+EXACT_ALPHA = fact("us-gaap:Revenues", "a", "60")
+ROUNDED_ALPHA = fact("us-gaap:Revenues", "a", "0.1", scale="9", decimals="-8")
+
+
+@pytest.mark.parametrize(
+    "order",
+    [(ROUNDED_ALPHA, EXACT_ALPHA), (EXACT_ALPHA, ROUNDED_ALPHA)],
+    ids=["rounded-first", "exact-first"],
+)
+def test_the_most_precisely_tagged_value_is_shown_whichever_comes_first(
+    order: tuple[str, str],
+) -> None:
+    """The first fact met won: a rounded 100 could be shown over the exact 60.
+
+    The rounded value is the exact one rounded to its own precision, so the two agree and
+    there is nothing to note.
+    """
+    products = breakdown(_alpha_tagged_twice(*order), "revenue_by_product")
+    assert row_values(products, "x:AlphaMember") == {"2026-01-25": 60e6}
+    assert products.adds_up is True
+    assert not any("more than one value" in note for note in products.notes)
+
+
+def test_a_coarser_value_that_disagrees_beyond_its_rounding_is_still_noted() -> None:
+    """0.2 billion (to tenths of a billion) is not 60 million rounded: a real conflict."""
+    disagreeing = fact("us-gaap:Revenues", "a", "0.2", scale="9", decimals="-8")
+    products = breakdown(_alpha_tagged_twice(disagreeing, EXACT_ALPHA), "revenue_by_product")
+    assert row_values(products, "x:AlphaMember") == {"2026-01-25": 60e6}
+    conflict = next(note for note in products.notes if "more than one value" in note)
+    assert "Alpha for 2026-01-25" in conflict and "60 shown" in conflict and "200" in conflict
+
+
+def test_an_exact_tag_is_finer_than_any_rounded_one() -> None:
+    """decimals="INF" is the finest; a value rounded to hundreds of thousands agrees with it."""
+    exact = fact("us-gaap:Revenues", "a", "60,012,345", scale="0", decimals="INF")
+    rounded = fact("us-gaap:Revenues", "a", "60.0", scale="6", decimals="-5")
+    products = breakdown(_alpha_tagged_twice(rounded, exact), "revenue_by_product")
+    assert row_values(products, "x:AlphaMember") == {"2026-01-25": 60_012_345}
+    assert not any("more than one value" in note for note in products.notes)
+
+
+def test_a_tag_without_decimals_is_the_coarsest_and_its_difference_is_noted() -> None:
+    """With no decimals the rounding cannot be checked, so a different value stays a conflict."""
+    undeclared = fact("us-gaap:Revenues", "a", "100").replace(' decimals="-6"', "")
+    products = breakdown(_alpha_tagged_twice(undeclared, EXACT_ALPHA), "revenue_by_product")
+    assert row_values(products, "x:AlphaMember") == {"2026-01-25": 60e6}
+    assert any("more than one value" in note for note in products.notes)
+
+
 def test_annual_values_in_the_rarer_unit_do_not_stop_the_report() -> None:
     """The third referee, finding 6: an assertion stood where a filing could reach it.
 

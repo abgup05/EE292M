@@ -225,6 +225,21 @@ What these cannot see: whether a changed paragraph listed under a claim bears on
 
 Two checks are commands, not tests, because they need what the gate must not need. `make two-writers` starts the app on a scratch record and has it and a one-off container write that record at the same time, then checks SQLite's integrity and every row (`docs/evidence/two-writers.txt`). `make header-cut-check` parses live filings with and without the parser's header cut and compares the documents whole (`docs/evidence/header-cut-fourteen-filings.md`). Each shows that something held once, on one laptop, on one day.
 
+## The fourth referee's findings (version 11.1)
+
+Each fix began as a test that failed ([`referee-4-triage.md`](referee-4-triage.md)):
+
+- **A whole quote** (`tests/test_gate.py`): a quote that cuts a number at a decimal point or a thousands separator, on either side, is not found (ten cases); nor is one that cuts a word; a later whole occurrence is found after one that is cut; a number or a word before a full stop, a comma or an apostrophe is still quotable; and a finding whose only quote cuts a number is withheld. Each case runs on the exact and on the normalised search.
+- **Years** (`tests/test_periods.py`, `tests/test_numcheck.py`): a year from 1900 to 1989 that the quote prints is found, and one it does not print is still reported; a year directly before each of the fourteen financial nouns is a year, and "2025 employees", "2,025 stores", "2025 units" and "2025 customers" stay counts; a wrong year before "revenue" is no longer matched against a bare number in a quote.
+- **One wrong year beside right ones** (`tests/test_periods.py`, `tests/test_evaluation_generation.py`): one planted statement per year named, each with exactly one year moved, and the report's second table.
+- **The restore check, column by column** (`tests/test_backup.py`, `tests/test_store.py`): a backup that differs from the record only in a run's `thesis_id`, in a decision's time or in a thesis's creation time fails, and the failure names the record and the column; an untouched copy passes.
+- **The Markdown brief** (`tests/test_export.py`): an excerpt cannot become an image, a link, emphasis, code or a heading; undoing the escapes gives back the stored excerpt exactly; an ordinary excerpt is written unchanged; every other piece of text the export did not write is escaped too; the export's own links still work and a URL cannot close one early. The verdict table counts the distinct filings each claim's verified findings quote.
+- **A figure tagged twice** (`tests/test_breakdowns.py`): the most precisely tagged value is shown whichever comes first, and a coarser value that disagrees beyond its rounding is still noted.
+
+Three existing tests had cut a quote in the middle of a word by slicing a string at a fixed length, which the gate now refuses, as it should; they cut at a word now. Their expectations did not change.
+
+The two measurements the referee faulted are commands, not tests (`make bench`, `make time-live`), and what changed in them is in [`speed.md`](speed.md).
+
 ## How long the gate takes
 
 Measured on this laptop on 17 November 2026 at version 8, with the Docker image's layers already
@@ -234,8 +249,9 @@ smoke test, three page renders and 99 page assertions), took 33 s by the wall cl
 each; a first build of the image takes minutes and was not timed. At version 10 the same two
 measurements, once each: 23 s (pytest reports 23.06 s for 1,361 tests) and 34 s for the whole
 gate on a fresh clone, now with seven page renders and 142 page assertions. At version 11: 26 s
-(pytest reports 26.19 s for 1,499 tests) and 38 s for the whole gate, with 156 page assertions
-(`docs/evidence/verify-fresh.txt`).
+(pytest reports 26.19 s for 1,499 tests) and 38 s for the whole gate, with 156 page assertions.
+At version 11.1: 26 s again (26.03 s for 1,580 tests) and 38 s for the whole gate, with the same
+156 page assertions (`docs/evidence/verify-fresh.txt`).
 
 ## What no test here can see
 

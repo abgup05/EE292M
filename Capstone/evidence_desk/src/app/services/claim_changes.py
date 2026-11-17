@@ -1,4 +1,4 @@
-"""For each claim of a run, the changed paragraphs of the filings it read that share its words.
+"""For each claim of a run, the changed paragraphs of its newest 10-K and 10-Q that share its words.
 
 One use case. For each form (10-K, 10-Q) among the filings the run read, take the
 newest one it read and the filing of that form filed immediately before it, read
@@ -7,6 +7,11 @@ both through the :class:`~app.store.FilingCache` as
 paragraph listed. Then :func:`app.core.claim_changes.relevant_changes` ranks the
 changed paragraphs for each claim. This is keyword retrieval (BM25 and shared
 words), not a model's judgement.
+
+So at most two pairs are compared, never one per filing read. A default run reads
+one 10-K and two 10-Qs: the older 10-Q is not compared with the one before it
+(it is often the earlier side of the 10-Q pair, being the one filed just before
+the newest). The brief's heading and note (:mod:`app.services.export`) say so.
 
 The pair is fixed by the run, not by today's index: the later filing is the one
 the run read (found in EDGAR's list by its accession) and the earlier one is the
@@ -171,15 +176,18 @@ def run_changes(
     filings: FilingSource | FormFilingSource,
     cache: FilingCache | None = None,
 ) -> RunChanges:
-    """For each claim of ``run``, the changed paragraphs of the filings it read that share words.
+    """For each claim of ``run``, the changed paragraphs that share its words.
 
-    ``filings`` must be able to list a company's filings of one form
-    (``filings_of_form``, as :class:`app.sources.edgar.EdgarClient` can); a source that
-    cannot gives a note per form. With no ``cache``, one in memory serves this call
-    only. Never raises for a comparison that cannot be made: an unfinished run, a run
-    that read no filing, a missing earlier filing, an EDGAR failure or a pair of
-    filings the comparison itself fails on each give a note,
-    and every claim of the run still has its (then empty) record.
+    The paragraphs that changed between the newest 10-K the run read and the 10-K before
+    it, and between the newest 10-Q it read and the 10-Q before it (:func:`filings_read`);
+    an older filing the run read is not compared with the one before it.
+
+    ``filings`` must be able to list a company's filings of one form (``filings_of_form``,
+    as :class:`app.sources.edgar.EdgarClient` can); a source that cannot gives a note per
+    form. With no ``cache``, one in memory serves this call only. Never raises for a
+    comparison that cannot be made: an unfinished run, a run that read no filing, a missing
+    earlier filing, an EDGAR failure or a pair of filings the comparison itself fails on
+    each give a note, and every claim of the run still has its (then empty) record.
     """
     if run.status == RunStatus.running:
         return _empty(run, NOT_FINISHED_NOTE)

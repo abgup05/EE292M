@@ -27,7 +27,7 @@ import httpx
 from app.core.documents import FetchedFiling, FilingRef
 from app.core.models import Company
 from app.core.ports import SourceError, UnknownTicker
-from app.sources.xbrl import fetch_company_facts
+from app.sources.xbrl import decode_json, fetch_company_facts
 
 ALLOWED_HOSTS = frozenset({"www.sec.gov", "data.sec.gov"})
 TICKERS_URL = "https://www.sec.gov/files/company_tickers.json"
@@ -307,7 +307,7 @@ class EdgarClient:
     def _get_json(self, url: str, what: str) -> Any:
         body = self.get(url)
         try:
-            return json.loads(body)
+            return decode_json(body)
         except (json.JSONDecodeError, UnicodeDecodeError) as exc:
             raise SourceError(f"EDGAR returned malformed data for {what}") from exc
 

@@ -12,7 +12,10 @@ XBRL does, and these are what theses are about. The rules:
   says the same thing). A context with any other dimension, or a typed one, is a
   different breakdown (product revenue within one segment, say) and is left out.
   Where the same member and period are tagged both plainly and with a qualifier,
-  the plain fact wins.
+  the plain fact wins. Where it is tagged as plainly twice with different
+  rounding, the most precise tag wins (``decimals``: "INF" finest, none
+  coarsest); the coarser value is noted as a conflict only when it is not the
+  finer one rounded to its own precision.
 - **Which concept.** Revenue is tagged with different concepts by different
   companies (:data:`REVENUE_CONCEPTS`); for each breakdown the concept with the
   most member-period values on the axis is used, and the breakdown records it.
@@ -44,6 +47,7 @@ XBRL does, and these are what theses are about. The rules:
 
 from __future__ import annotations
 
+import math
 import re
 from collections import Counter, defaultdict
 from collections.abc import Mapping
@@ -488,11 +492,57 @@ def _column(kind: str, period: Period) -> PeriodColumn:
     )
 
 
+def _precision(fact: TaggedFact) -> float:
+    """How finely ``fact`` is tagged: its ``decimals`` as a number, larger is finer.
+
+    "INF" (exact) is the finest; no ``decimals``, or one that is not a whole number, the
+    coarsest.
+    """
+    if fact.decimals is None:
+        return -math.inf
+    if fact.decimals.strip().upper() == "INF":
+        return math.inf
+    try:
+        return int(fact.decimals)
+    except ValueError:
+        return -math.inf
+
+
+def _rounding_of(finer: _Cell, coarser: _Cell) -> bool:
+    """Whether ``coarser``'s value is ``finer``'s rounded to ``coarser``'s declared precision.
+
+    Within half a unit of that precision, either way at an exact half (filers round half up
+    or to even), and itself a whole number of units. A tag with no usable ``decimals`` is
+    never taken for a rounding: its precision is not known.
+    """
+    places = _precision(coarser.fact)
+    if not math.isfinite(places):
+        return False
+    unit = 10.0 ** (-places)
+    tolerance = 1e-9 * max(abs(coarser.fact.value), unit)
+    units = coarser.fact.value / unit
+    whole = abs(units - round(units)) * unit <= tolerance
+    return whole and abs(coarser.fact.value - finer.fact.value) <= unit / 2 + tolerance
+
+
 def _pick(candidates: list[_Cell], conflicts: list[str], what: str) -> _Cell:
-    """The plainest candidate; a different value tagged as plainly is noted, not hidden."""
-    ordered = sorted(candidates, key=lambda cell: cell.rank)
+    """The plainest candidate, and of those the most precisely tagged; a real rival is noted.
+
+    A filing can tag one figure twice with different rounding (``decimals="-8"`` in the
+    discussion, ``"-6"`` in the note): the finer one is shown, and the coarser is no
+    conflict when it is the finer one rounded to its own precision. A different value tagged
+    as plainly and not explained by rounding is noted, not hidden; among equally precise
+    tags the first met is shown.
+    """
+    ordered = sorted(candidates, key=lambda cell: (cell.rank, -_precision(cell.fact)))
     chosen = ordered[0]
-    rivals = {c.fact.value for c in ordered if c.rank == chosen.rank} - {chosen.fact.value}
+    rivals = {
+        c.fact.value
+        for c in ordered
+        if c.rank == chosen.rank
+        and c.fact.value != chosen.fact.value
+        and not (_precision(c.fact) < _precision(chosen.fact) and _rounding_of(chosen, c))
+    }
     if rivals:
         others = ", ".join(millions_text(value) for value in sorted(rivals))
         conflicts.append(

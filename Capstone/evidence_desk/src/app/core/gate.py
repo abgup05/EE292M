@@ -7,7 +7,10 @@ matches exactly or after collapsing whitespace and folding typographic quotes,
 dashes and the ellipsis, and keeps the *stored* span, never the engine's
 wording. So every excerpt shown is byte-exact:
 ``stored_text[e.start : e.start + len(e.excerpt)] == e.excerpt``, and carries
-the locator of the offered passage that holds it. A quote found only elsewhere
+the locator of the offered passage that holds it. A span never begins or ends
+inside a word or a number: "revenue was $46.7" is not a quote of "revenue was
+$46.78 billion", since the excerpt shown, and number-checked, would carry 46.7
+(:func:`is_whole`). A quote found only elsewhere
 in the source is rejected: the engine was not shown it, and a passage never
 holds a heading line the parser wrote.
 
@@ -66,6 +69,39 @@ _FOLDS: dict[str, str] = {
 # Spans that normalisation rewrites: whitespace runs other than one plain space, and folds.
 # A lone plain space is already normal, so typical prose produces few matches.
 _REWRITE = re.compile(r"\s{2,}|[^\S ]|[" + "".join(_FOLDS) + "]")
+# A decimal point or a thousands separator: a cut beside one, between two digits, splits a number.
+NUMBER_SEPARATORS = ".,"
+
+
+def _splits(text: str, cut: int) -> bool:
+    """True when a span boundary at offset ``cut`` of ``text`` falls inside a word or a number.
+
+    Inside: between two letters or digits ("reve|nue", "46|78"), or on either
+    side of a decimal point or thousands separator between two digits ("46|.78",
+    "46.|78", "1|,234", "1,|234"). A boundary before punctuation that is not
+    between two digits is not inside anything: "46.7|." ends a sentence, "U.S|."
+    an abbreviation, "company|'s" a word.
+    """
+    if cut <= 0 or cut >= len(text):
+        return False
+    before, after = text[cut - 1], text[cut]
+    if before.isalnum() and after.isalnum():
+        return True
+    separator_after = (
+        after in NUMBER_SEPARATORS
+        and before.isdigit()
+        and cut + 1 < len(text)
+        and text[cut + 1].isdigit()
+    )
+    separator_before = (
+        before in NUMBER_SEPARATORS and after.isdigit() and cut >= 2 and text[cut - 2].isdigit()
+    )
+    return separator_after or separator_before
+
+
+def is_whole(text: str, begin: int, end: int) -> bool:
+    """True when ``text[begin:end]`` neither begins nor ends inside a word or a number."""
+    return not _splits(text, begin) and not _splits(text, end)
 
 
 def normalise(text: str) -> str:
@@ -146,14 +182,19 @@ class TextIndex:
         Searches from original offset ``start``. An exact match wins; otherwise
         both sides are normalised (see :func:`normalise`) and the match is
         mapped back, so ``text[start:end]`` is the stored span. Surrounding
-        whitespace of the quote is ignored.
+        whitespace of the quote is ignored. On either path an occurrence that
+        begins or ends inside a word or a number (:func:`is_whole`) is skipped
+        and the next one tried: "revenue was $46.7" is not a quote of
+        "revenue was $46.78 billion".
         """
         wanted = quote.strip()
         if not wanted:
             return None
         exact = self.text.find(wanted, start)
-        if exact >= 0:
-            return exact, exact + len(wanted)
+        while exact >= 0:
+            if is_whole(self.text, exact, exact + len(wanted)):
+                return exact, exact + len(wanted)
+            exact = self.text.find(wanted, exact + 1)
         needle = normalise(wanted).strip()
         if not needle:
             return None
@@ -163,8 +204,9 @@ class TextIndex:
             finish = position + len(needle)
             if self._aligned(position, finish, len(haystack)):
                 begin = self._to_original(position)
-                if begin >= start:
-                    return begin, self._to_original(finish - 1) + 1
+                end = self._to_original(finish - 1) + 1
+                if begin >= start and is_whole(self.text, begin, end):
+                    return begin, end
             position = haystack.find(needle, position + 1)
         return None
 

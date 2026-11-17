@@ -2622,8 +2622,8 @@ function renderClaims(run, ctx) {
 
 // ---------------------------------------------------------------- changed paragraphs, by claim
 
-/** What was compared: each filing the run read with the one before it, which the run itself never read. */
-const CC_EARLIER = "Each filing this run read is compared with the filing of its form filed before it. The earlier filing was fetched for this comparison; the run did not read it.";
+/** What was compared: the newest report of each form the run read, with the one filed before it. */
+const CC_EARLIER = "The newest annual report and the newest quarterly report this run read are each compared with the filing of the same form filed before it. An older quarterly report this run read is not compared. The earlier filing of each pair was fetched for the comparison, and this run may not have read it.";
 
 /** Why these paragraphs are listed, said wherever they are. */
 const CC_WHY = "These paragraphs are listed because they share words with the claim or the search queries the run wrote for it: no model chose or judged them, they are not findings, and none counts toward the verdict.";
@@ -2734,7 +2734,7 @@ function comparedBlock(record) {
   return h(
     "div",
     { "data-cc-compared": "" },
-    h("p", { class: "cc-title" }, h("strong", { text: "Changed since the filing before each one this run read" }), " ", ruleMark()),
+    h("p", { class: "cc-title" }, h("strong", { text: "Changed since the previous annual and quarterly report" }), " ", ruleMark()),
     h("p", { class: "cc-earlier", text: CC_EARLIER }),
     compared.length
       ? h(
@@ -2762,7 +2762,7 @@ function claimChangesBlock(claimId, entry) {
       "p",
       { class: "cc-none", id: claimChangesId(claimId), "data-claim-changes": claimId },
       ruleMark(),
-      " Changed since the filing before each one this run read: no paragraph shares at least two words with this claim or the search queries the run wrote for it, among ",
+      " Changed since the previous annual and quarterly report: no paragraph shares at least two words with this claim or the search queries the run wrote for it, among ",
       field("considered", entry.considered),
       ` changed ${unit(entry.considered, "paragraph", "paragraphs")} searched.`,
     );
@@ -2782,7 +2782,7 @@ function claimChangesBlock(claimId, entry) {
     h(
       "summary",
       null,
-      h("span", { class: "cc-summary-text" }, `Changed since the filing before each one this run read: ${plural(changes.length, "paragraph", "paragraphs")} that share words with this claim or the search queries the run wrote for it`),
+      h("span", { class: "cc-summary-text" }, `Changed since the previous annual and quarterly report: ${plural(changes.length, "paragraph", "paragraphs")} that share words with this claim or the search queries the run wrote for it`),
       " ",
       ruleMark(),
     ),

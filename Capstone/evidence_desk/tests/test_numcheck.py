@@ -501,3 +501,67 @@ def test_a_count_still_matches_a_count_and_a_table_number_still_matches_an_amoun
 ) -> None:
     check = check_numbers(statement, [quote], [])
     assert check.status == "passed", check.details
+
+
+# A year used as an adjective (fourth referee, 17 November 2026) --------------------------------
+
+FISCAL_2025_QUOTE = "Revenue for fiscal year 2025 was $130.5 billion"
+
+
+@pytest.mark.parametrize(
+    ("text", "year"),
+    [
+        ("2025 revenue was $130.5 billion.", "2025"),
+        ("2025 revenues were higher.", "2025"),
+        ("2025 Revenue was a record.", "2025"),
+        ("2025 sales rose.", "2025"),
+        ("2026 net income rose 12%.", "2026"),
+        ("2025 income fell.", "2025"),
+        ("2024 earnings were restated.", "2024"),
+        ("2025 results included a charge.", "2025"),
+        ("2025 margin was 75.0%.", "2025"),
+        ("2025 margins widened.", "2025"),
+        ("2026 guidance was raised.", "2026"),
+        ("The 2026 outlook is cautious.", "2026"),
+        ("The 2025 annual report says so.", "2025"),
+        ("The 2025 10-K says so.", "2025"),
+        ("The 2026 10-Q says so.", "2026"),
+    ],
+)
+def test_a_year_directly_before_a_financial_noun_is_a_year(text: str, year: str) -> None:
+    assert year not in [q.raw for q in quantities(text)]
+
+
+@pytest.mark.parametrize(
+    ("text", "value"),
+    [
+        ("The company has 2025 employees.", 2025),
+        ("It operates 2,025 stores.", 2025),
+        ("It shipped 2025 units.", 2025),
+        ("It serves 2025 customers.", 2025),
+    ],
+)
+def test_a_number_before_any_other_noun_stays_a_count(text: str, value: float) -> None:
+    assert [(q.value, q.unit) for q in quantities(text)] == [(value, "count")]
+
+
+def test_2025_revenue_above_a_fiscal_2025_quote_checks_only_the_amount() -> None:
+    """The referee's case: 2025 was read as a count, which no "fiscal year 2025" can match.
+
+    Before the fix the true statement failed with "2025" unmatched; the year reached
+    the number check and never the period check.
+    """
+    check = check_numbers("2025 revenue was $130.5 billion.", [FISCAL_2025_QUOTE], [])
+    assert check.status == "passed" and check.checked == 1 and check.unmatched == []
+
+
+def test_a_wrong_year_before_revenue_is_not_matched_against_a_bare_number_in_a_quote() -> None:
+    """Before the fix "2023 revenue" passed as a count above a quote that counts 2023 things."""
+    check = check_numbers(
+        "2023 revenue was $130.5 billion.",
+        ["The company had 2023 employees and revenue of $130.5 billion."],
+        [],
+    )
+    assert check.checked == 1 and [d.split(" matched")[0] for d in check.details] == [
+        "$130.5 billion"
+    ]

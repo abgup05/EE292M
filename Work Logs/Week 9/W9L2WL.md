@@ -111,15 +111,35 @@ After the first pass I asked the session to keep going: another round of buildin
 - **The build agent ran `python3` on the host twice**, against the rule that everything runs through make. Read-only, nothing installed; it said so in its report.
 - **The record is still on one disk.** The review's suggestion, a copy of the decisions on a branch of their own, was not carried out: where the record goes is mine to decide.
 
+**After version 11: a fourth referee, and version 11.1**
+
+- **A fourth hostile reading**, of version 11: the referee agent again, Claude Sonnet 5.5, read-only, on a checkout without the logs, the hand-ins, the earlier reviews and the triage notes. Its brief had gained four lines naming the claims of versions 10 and 11. Eight findings, unedited in `Capstone/evidence_desk/docs/reviews/referee-4-version-11.md`; the decisions are in `Capstone/evidence_desk/docs/referee-4-triage.md` and in `Homework/Week 9/W9L2.md`.
+- **Checked before anything was changed.** Each claim was read against the code first. Seven held. One, a restore-check output from an older version, was true of the tag and already fixed in the commit after it.
+- **Two build sessions, test first, on files that do not overlap.** One on the gate and the years: a quote must be whole, years from 1900, a year before a financial noun, one wrong year planted beside right ones. One on the record and the brief: the restore check column by column, the Markdown brief's escaping, a count of filings in its verdict table, the wording of the changed-paragraph lists, and of a figure tagged twice the more precise. 81 new tests; 1,580 in all.
+- **The two measurements were corrected and taken again.** The benchmark alternates the order within a pair and runs the garbage collector before each timed run: 25 to 27 ms saved, in 20 of 20 pairs, three times. The live timing uses one client with the company list already loaded: 5 requests cold and 2 warm.
+- **Nothing recorded moved.** Both evaluations and the replays were run again: the same verdicts, the same 84 of 84 quotes, the same 34 of 34 years. The new measurement, one year moved beside right ones: 13 of 18 flagged.
+- **Tagged `capstone-v11.1`** after the gate passed on a fresh clone: 1,580 tests, the smoke test, 156 page assertions, 38 s. The live walk passes, 33 checks. The restore check passes column by column on 40 runs, 20 decisions and 10 theses.
+
+**What went wrong in this part**
+
+- **Two published numbers were wrong.** "The header cut saves 34 ms" and "a live run makes 6 requests, two thirds of it waiting" both came from measurements written up with a spread and a repeat. The first always ran the cut first and let one run's garbage collection land in the next. The second counted a request the app makes once a day. 25 to 27 ms, and 5 requests.
+- **The evidence was in the committed output.** The benchmark's twenty pairs sat in the repository beside the sentence they contradicted. A reader with no tools found the cycle of five by reading the columns.
+- **A guess stated as a fact was false.** "Mostly rebuilding the three documents from the cached text" had never been timed. Timed, it is 1 ms. About 45 ms of every run is still attributed to nothing; the note says so now and guesses nothing.
+- **Checking one false sentence found another.** "Each filing this run read is compared" was the referee's. "The run did not read the earlier filing" had been added after the third referee and is untrue for the quarterly pair: the recorded sample compares two quarterly reports that the run read.
+- **The stricter quote rule broke three tests, and the tests were at fault.** Each built a quote by slicing a string at a fixed length, in the middle of a word. The golden set is validated with the gate's own search, so a cut excerpt there would have failed as well: all thirty cases still validate.
+- **One wrong year beside a right one is caught less often than every year moved**: 13 of 18 against 21 of 25. The five misses are one case: the later of two consecutive years, moved back, lands on the earlier, and the statement names one year twice.
+- **A build session started `python3` on the host again**, by mistake, and stopped it. The other wrote a log to `/tmp` and deleted it. Nothing was installed. The first rule was in its brief; the second, that nothing is written outside the repository, was in neither brief.
+
 **Status**
 
-Version 11. The gate from a fresh clone: 1,499 offline tests, the smoke test, 156 assertions on the rendered page, in 38 s. Eleven tags. What that does not mean:
+Version 11.1. The gate from a fresh clone: 1,580 offline tests, the smoke test, 156 assertions on the rendered page, in 38 s. Twelve tags. What that does not mean:
 
 - No person has read the thirty golden cases, the code, a filing comparison, a list of changes under a claim, or a breakdown table against the printed one.
 - The model path has not run through the API since October: both keys were refused again, and every model answer here is a recording made by a stand-in.
 - A finding can cite the tagged figures, on NVIDIA only and in recordings only. A finding that rests on figures alone is checked for its numbers and read by a second model, and by nothing else.
 - The reported figures are checked against published values for three companies, and were wrong for three of the other five until version 10.
-- The period check reports and withholds nothing, has seen no real error, and cannot see the wrong column of a table.
+- The period check reports and withholds nothing, has seen no real error, cannot see the wrong column of a table, and misses one wrong year beside a right one in 5 of 18 planted cases.
+- About 45 ms of every live run is attributed to no stage, an older quarterly report a run read is compared with nothing, and a bare number in a quote still matches an amount a thousand, a million or a billion times its size.
 - The record has no copy off this laptop; `make backup-status` now says so each time the app starts.
 - No colleague has reviewed this, and my reviews of colleagues are still owed.
 - The link that opens a filing at a passage has never been clicked in a real browser.
@@ -136,7 +156,8 @@ A proposed order, mine to change. The outline is `Capstone/evidence_desk/docs/dr
 6. Ask a colleague to review it, and review theirs.
 7. Copy the record off this laptop: at least `backups/decisions-<UTC>.jsonl`, and say where.
 8. Decide whether an unverified year should withhold a finding, after reading a second thesis with the check on. Milestone 12 (table rows that keep their column headings) is what the wrong-column case waits on.
-9. Write the draft from the outline, with the results table as it then stands.
+9. Find what the 45 ms of every run that no stage covers is, or say in the draft that it is not known.
+10. Write the draft from the outline, with the results table as it then stands.
 
 **Takeaway**
 
@@ -149,3 +170,5 @@ And in the second pass each new feature's first fault showed in its first real o
 A fourth, from the end of the day. The oldest figures in the tool had been wrong for three companies of eight since version 3, under an answer key that covered the other three. An answer key says the checked values are right; it says nothing about the rows nobody keyed. Printing every company's figures side by side took one small command, and it had not been written because nothing was failing.
 
 And a fifth, about measuring. The period check passed every test written for it and every real finding it was shown. What told its strength and its one fault apart was making true statements wrong on purpose and counting. The same afternoon a restore check that had passed for seven versions turned out unable to fail, and a timing nobody had needed showed two requests too many. In all three the passing check was the less informative one.
+
+And a sixth, about the measurements themselves. Two numbers were written up with twenty pairs, a spread and a repeat, and both were wrong in how they were taken: an order that never changed, a collector nobody had thought about, a request the app does not make. The pairs that showed it were committed beside the summary. Reporting a number carefully is not a check of how it was taken; that took a reader who was told to expect it to be wrong.

@@ -33,8 +33,9 @@ RULE_GLYPH = "ƒ"
 NEW_WORDINGS = {
     "dom-sample.html": (
         "this claim or the search queries the run wrote for it",
-        "Changed since the filing before each one this run read",
-        "The earlier filing was fetched for this comparison; the run did not read it.",
+        "Changed since the previous annual and quarterly report",
+        "An older quarterly report this run read is not compared.",
+        "The earlier filing of each pair was fetched for the comparison, and this run may not have read it.",
     ),
     "dom-breakdowns.html": ("Not tied to any run",),
 }
@@ -42,6 +43,10 @@ OLD_WORDINGS = (
     re.compile(r"share(?:s)? (?:at least two )?words with (?:this|the) claim(?! or the search queries)"),
     re.compile(r"Changed in the filings (?:since the one before|this run read)"),
     re.compile(r"as one filing tags them"),
+    # The fourth referee: only the newest report of each form is compared, and the earlier
+    # quarterly report of a pair is often one the run did read.
+    re.compile(r"filing before each one (?:this|the) run read"),
+    re.compile(r"the run did not read it"),
 )
 # Every dump `make uitest` renders; each must have been written after the page last changed.
 DUMPS = {

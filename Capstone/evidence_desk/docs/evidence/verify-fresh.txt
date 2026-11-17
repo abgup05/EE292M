@@ -1,10 +1,12 @@
 # make verify-fresh
-# 2026-11-17T19:11:57Z, a fresh clone of commit a9edf2f on capstone/evidence-desk
+# 2026-11-17T20:49:49Z, a fresh clone of commit 341697e on capstone/evidence-desk, version 0.11.1
+# The commit this file is in differs from 341697e only in this file and in the lines of
+# README.md and docs/testing.md that quote it.
 
 All checks passed!
 151 files already formatted
-1499 passed in 26.19s
+1580 passed in 26.03s
 smoke: ok
-156 passed in 1.71s
+156 passed in 1.70s
 
 # wall clock for the whole command, with the Docker image's layers cached: 38 s

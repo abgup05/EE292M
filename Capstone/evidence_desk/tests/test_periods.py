@@ -25,6 +25,7 @@ from app.core.periods import (
     check_periods,
     fiscal_calendar,
     period_mentions,
+    shift_each_year,
     shift_years,
     years_in,
 )
@@ -247,7 +248,7 @@ def test_no_year_period_mentions_finds_is_a_number_the_number_check_checks() -> 
         ("2026-01-25", {2026}),
         ("2025 2024 Change", {2024, 2025}),
         ("$2,026 million and 1,995 units", set()),
-        ("1989 and 1990 and 2101", {1990}),
+        ("1899 and 1900 and 2101", {1900}),
         ("up 117% from a year ago", set()),
     ],
 )
@@ -478,3 +479,118 @@ def test_the_comparison_year_after_compared_to_is_a_year() -> None:
     assert shift_years(statement, -1) == (
         "Greater China net sales increased during 2025 compared to 2024."
     )
+
+
+# A year before 1990 is evidence too (fourth referee, 17 November 2026) -------------------------
+
+INCORPORATED = "The company was incorporated in Delaware in {year}."
+
+
+@pytest.mark.parametrize("year", [1900, 1919, 1950, 1989])
+def test_a_year_before_1990_that_the_quote_prints_is_found(year: int) -> None:
+    """The evidence stopped at 1990 while a statement's years start at 1900."""
+    quote = INCORPORATED.format(year=year)
+    assert years_in(quote) == {year}
+    check = check_periods(
+        f"The company was incorporated in {year}.", [(quote, FY2026_10K)], [], NVIDIA_CALENDAR
+    )
+    assert check.status == "passed" and check.details == [f"{year} is in a quote"]
+
+
+def test_a_year_before_1990_that_the_quote_does_not_print_is_still_unverified() -> None:
+    check = check_periods(
+        "The company was incorporated in 1925.",
+        [(INCORPORATED.format(year=1919), FY2026_10K)],
+        [],
+        NVIDIA_CALENDAR,
+    )
+    assert check.status == "unverified" and check.unverified == ["1925"]
+
+
+def test_the_years_an_excerpt_shows_are_the_years_a_statement_can_name() -> None:
+    assert years_in("1899 and 1900 and 2100 and 2101") == {1900, 2100}
+
+
+# A year used as an adjective is a year the period check reads (fourth referee) -----------------
+
+
+def test_a_year_before_a_financial_noun_is_a_mention() -> None:
+    assert [(m.raw, m.year, m.fiscal) for m in period_mentions("2025 revenue was a record.")] == [
+        ("2025", 2025, False)
+    ]
+    assert [m.year for m in period_mentions("2026 net income and 2025 sales rose.")] == [2026, 2025]
+
+
+def test_a_wrong_year_before_revenue_is_unverified_and_the_right_one_passes() -> None:
+    wrong = check_periods(
+        "2023 revenue was $130.5 billion.", [(REFEREE_QUOTE, FY2026_10K)], [], NVIDIA_CALENDAR
+    )
+    assert wrong.status == "unverified" and wrong.unverified == ["2023"]
+    right = check_periods(
+        "2025 revenue was $130.5 billion.", [(REFEREE_QUOTE, FY2026_10K)], [], NVIDIA_CALENDAR
+    )
+    assert right.status == "passed" and right.details == ["2025 is in a quote"]
+
+
+@pytest.mark.parametrize(
+    "text",
+    ["The company has 2025 employees.", "It operates 2,025 stores.", "It shipped 2025 units."],
+)
+def test_a_count_before_any_other_noun_is_not_a_mention(text: str) -> None:
+    assert period_mentions(text) == []
+
+
+# Planting one wrong year beside right ones (fourth referee) ------------------------------------
+
+
+def test_shift_each_year_moves_one_year_at_a_time_and_leaves_the_others() -> None:
+    statement = "Gross margin was 71.1% in fiscal 2026, down from 75.0% in fiscal 2025."
+    planted = shift_each_year(statement, -1)
+    assert [(mention.raw, text) for mention, text in planted] == [
+        ("fiscal 2026", "Gross margin was 71.1% in fiscal 2025, down from 75.0% in fiscal 2025."),
+        ("fiscal 2025", "Gross margin was 71.1% in fiscal 2026, down from 75.0% in fiscal 2024."),
+    ]
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        (
+            "In fiscal years 2025 and 2026 margin fell.",
+            [
+                "In fiscal years 2024 and 2026 margin fell.",
+                "In fiscal years 2025 and 2025 margin fell.",
+            ],
+        ),
+        ("FY26 and FY25 revenue.", ["FY25 and FY25 revenue.", "FY26 and FY24 revenue."]),
+        (
+            "As of January 25, 2026, up from 2025 revenue.",
+            [
+                "As of January 25, 2025, up from 2025 revenue.",
+                "As of January 25, 2026, up from 2024 revenue.",
+            ],
+        ),
+        ("Revenue rose in fiscal 2026.", ["Revenue rose in fiscal 2025."]),
+        ("It has 2000 employees and no year.", []),
+    ],
+)
+def test_shift_each_year_plants_one_statement_per_year_named(
+    text: str, expected: list[str]
+) -> None:
+    planted = [moved for _, moved in shift_each_year(text, -1)]
+    assert planted == expected
+    for moved in planted:
+        # One year moved, nothing else: the same text once digits are masked.
+        assert re.sub(r"\d", "0", moved) == re.sub(r"\d", "0", text)
+
+
+def test_each_planted_year_is_flagged_where_the_evidence_holds_only_the_right_ones() -> None:
+    statement = "Revenue was $130.5 billion in fiscal 2025 and grew in fiscal 2026."
+    excerpts = [(REFEREE_QUOTE, FY2026_10K)]
+    assert check_periods(statement, excerpts, [], NVIDIA_CALENDAR).status == "passed"
+    flagged = [
+        check_periods(moved, excerpts, [], NVIDIA_CALENDAR).unverified
+        for _, moved in shift_each_year(statement, -1)
+    ]
+    # fiscal 2025 -> 2024 is nowhere; fiscal 2026 -> 2025 is in the quote, so it passes.
+    assert flagged == [["fiscal 2024"], []]

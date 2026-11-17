@@ -228,7 +228,7 @@ def test_restore_check_fails_when_a_run_changed_though_its_id_did_not(
     assert backup.main(["restore-check", "--dir", str(directory)], store=store, now=NOON) == 1
     assert capsys.readouterr().out.splitlines()[-1] == (
         "FAIL: record-20261117T120000Z.sqlite: run run-2 differs between the backup and the "
-        "live record"
+        "live record in its record column"
     )
 
 
@@ -275,6 +275,103 @@ def test_a_record_changed_in_a_way_no_parser_sees_still_fails(
         "thesis th-old differs between the backup and the live record"
         in (capsys.readouterr().out.splitlines()[-1])
     )
+
+
+# Every column of every row, not only the stored record text --------------------------------
+
+
+def _alter_backup(directory: Path, sql: str, parameters: tuple[str, ...]) -> None:
+    """Change the newest backup in place and write its checksum again, as a stale copy would be.
+
+    The checksum is rewritten so the check reaches the comparison: this is a backup that is
+    intact as a file and differs from the live record, not a corrupted one.
+    """
+    database = backup.newest_backup(directory)
+    assert database is not None
+    with closing(sqlite3.connect(database)) as connection:
+        connection.execute(sql, parameters)
+        connection.commit()
+        connection.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+    backup.checksum_path(database).write_text(f"{backup.file_sha256(database)}  {database.name}\n")
+
+
+def _restore_check_line(store: Store, directory: Path, capsys: pytest.CaptureFixture[str]) -> str:
+    code = backup.main(["restore-check", "--dir", str(directory)], store=store, now=NOON)
+    line = capsys.readouterr().out.splitlines()[-1]
+    assert code == (0 if line.startswith("PASS") else 1)
+    return line
+
+
+def test_restore_check_fails_naming_a_runs_thesis_id_that_differs_in_the_backup(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Only the record text was compared: a backup whose thesis_id column differed passed.
+
+    ``Store.runs_of_thesis`` reads that column, so "what moved" would break after a restore.
+    """
+    store = Store(tmp_path / "record.sqlite")
+    run = _run("run-1")
+    run.thesis_id = "th-1"
+    store.save_run(run)
+    directory = tmp_path / "backups"
+    backup.main(["backup", "--dir", str(directory)], store=store, now=NOON)
+    _alter_backup(directory, "UPDATE runs SET thesis_id = ? WHERE id = ?", ("th-9", "run-1"))
+    line = _restore_check_line(store, directory, capsys)
+    assert line == (
+        "FAIL: record-20261117T120000Z.sqlite: run run-1 differs between the backup and the "
+        "live record in its thesis_id column: th-9 in the backup, th-1 live"
+    )
+
+
+def test_restore_check_fails_naming_a_decisions_time_that_differs_in_the_backup(
+    store: Store, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    directory = tmp_path / "backups"
+    backup.main(["backup", "--dir", str(directory)], store=store, now=NOON)
+    earlier = (NOON - timedelta(hours=1)).isoformat()
+    _alter_backup(
+        directory,
+        "UPDATE decisions SET decided_at = ? WHERE run_id = ? AND finding_id = ?",
+        (earlier, "run-1", "f1"),
+    )
+    line = _restore_check_line(store, directory, capsys)
+    assert line.startswith("FAIL: record-20261117T120000Z.sqlite: ")
+    assert "the decision on run-1/f1 differs" in line and "in its decided_at column" in line
+    assert earlier in line and NOON.isoformat() in line
+
+
+def test_restore_check_fails_naming_a_thesiss_creation_time_that_differs_in_the_backup(
+    store: Store, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    directory = tmp_path / "backups"
+    backup.main(["backup", "--dir", str(directory)], store=store, now=NOON)
+    later = (NOON + timedelta(days=1)).isoformat()
+    _alter_backup(directory, "UPDATE theses SET created_at = ? WHERE id = ?", (later, "th-1"))
+    line = _restore_check_line(store, directory, capsys)
+    assert line.startswith("FAIL: record-20261117T120000Z.sqlite: ")
+    assert "thesis th-1 differs" in line and "in its created_at column" in line
+    assert later in line
+
+
+def test_restore_check_passes_on_an_untouched_copy_of_every_column(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The column-by-column comparison finds nothing in a copy nobody changed."""
+    store = Store(tmp_path / "record.sqlite")
+    run = _run("run-1")
+    run.thesis_id = "th-1"
+    store.save_run(run)
+    store.save_run(_run("run-2"))
+    store.save_decision(_decision(note="Checked against the filing."))
+    store.save_thesis(
+        Thesis(id="th-1", name="NVIDIA growth", request=REQUEST, created_at=NOON, run_ids=["run-1"])
+    )
+    directory = tmp_path / "backups"
+    backup.main(["backup", "--dir", str(directory)], store=store, now=NOON)
+    _alter_backup(directory, "UPDATE runs SET thesis_id = thesis_id WHERE id = ?", ("run-1",))
+    line = _restore_check_line(store, directory, capsys)
+    assert line.startswith("PASS: record-20261117T120000Z.sqlite restores to the live record:")
+    assert line.endswith("; taken less than a minute before this check")
 
 
 @pytest.mark.parametrize(

@@ -1,6 +1,6 @@
 # Architecture
 
-Evidence Desk (version 0.11.0) tests an equity analyst's thesis claims against the company's own SEC filings and shows,
+Evidence Desk (version 0.11.1) tests an equity analyst's thesis claims against the company's own SEC filings and shows,
 per claim, the verbatim passages and figures that support or challenge it. A reviewer can accept or reject each
 finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the brief; `docs/reviews/` the review.
 
@@ -46,7 +46,7 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/services/theses.py  saved theses: create, start a run of one, the latest comparison
     src/app/services/export.py  the Markdown brief, plain or with the reviewer's decisions
     src/app/services/filing_changes.py  selects a company's two latest filings of one form, reads them through the cache, compares them
-    src/app/services/claim_changes.py   for a run: the filing before each filing it read, the two comparisons, the ranking per claim; a comparison that cannot be made is a note, never an error
+    src/app/services/claim_changes.py   for a run: the filing before the newest annual and the newest quarterly report it read, the two comparisons, the ranking per claim; a comparison that cannot be made is a note, never an error
     src/app/services/breakdowns.py   the latest filing of a form, fetched and read into breakdowns
     src/app/services/tagged_figures.py   for a run that asks: the tags of the newest annual and quarterly report it read, as figures; a filing that cannot be read is a reason, never an error
     src/app/store.py            SQLite: Store (the record) and FilingCache (disposable)
@@ -80,8 +80,8 @@ Two SQLite files under the data directory (`EVIDENCE_DESK_DATA_DIR`; `data/`, gi
 - **Backup.** `make backup` copies the record with SQLite's online backup (safe while the app runs) to
   `backups/record-<UTC>.sqlite` with a `.sha256`, and writes `backups/decisions-<UTC>.jsonl`, one line per decision.
   `make restore-check` verifies the newest backup's hash, restores it to a temporary directory and compares it with
-  the live record: every run, decision and thesis as the text that is stored, so a record that no longer parses is
-  compared too. It then fails if any record in the backup cannot be read by this version. PASS with the backup's age,
+  the live record: every column of every stored run, decision and thesis, so a record that no longer parses is
+  compared too, and so is the link from a run to its thesis. It then fails if any record in the backup cannot be read by this version. PASS with the backup's age,
   or FAIL with the first difference. `make backup-status` says in one line what was made or changed since the newest
   backup; `make up` prints it. `make two-writers` has the app and a one-off container write one scratch record at
   once (`EVIDENCE_DESK_DATA_DIR`, overridden for that target only) and checks its integrity and every row.
@@ -113,7 +113,9 @@ Two SQLite files under the data directory (`EVIDENCE_DESK_DATA_DIR`; `data/`, gi
 7. **Verify.** `gate.gate_claim` locates each quote inside a passage offered for its claim (the one it names, else
    another offered passage of the same source, whose locator the excerpt then carries) in the stored text
    (`FilingCache.source_texts`) and keeps the stored span; a quote found only elsewhere in the source, or one that
-   includes a heading line the parser wrote, is rejected. A cited figure must have been offered; `core/numcheck`
+   includes a heading line the parser wrote, is rejected. A quote must also be whole (`gate.is_whole`): an
+   occurrence that begins or ends inside a word, or inside a number at a decimal point or a thousands separator, is
+   passed over, and a later whole occurrence is still found. A cited figure must have been offered; `core/numcheck`
    requires every number a statement writes to appear in its excerpts or figures. A finding with no surviving quote
    or figure, or an unmatched number, is withheld and counted. A verified finding's reason, a claim's commentary,
    the unknowns and the next steps are checked the same way: a reason or commentary with an unmatched number is

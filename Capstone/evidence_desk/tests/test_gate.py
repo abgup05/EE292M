@@ -145,13 +145,23 @@ def test_locate_random_substrings_round_trip() -> None:
         text = "".join(rng.choice(alphabet) for _ in range(rng.randint(40, 400)))
         index = TextIndex(text)
         length = rng.randint(20, len(text))
-        begin = rng.randint(0, len(text) - length)
-        quote = _perturb(text[begin : begin + length], rng)
+        start = rng.randint(0, len(text) - length)
+        begin, end = _whole_span(text, start, start + length)
+        quote = _perturb(text[begin:end], rng)
         if not quote.strip():
             continue
         span = index.locate(quote)
         assert span is not None, (text, quote)
         assert _normalised(text[span[0] : span[1]]) == _normalised(quote)
+
+
+def _whole_span(text: str, begin: int, end: int) -> tuple[int, int]:
+    """``(begin, end)`` widened until neither end is inside a word: a quote the gate accepts."""
+    while begin > 0 and text[begin - 1].isalnum() and text[begin].isalnum():
+        begin -= 1
+    while end < len(text) and text[end - 1].isalnum() and text[end].isalnum():
+        end += 1
+    return begin, end
 
 
 def _perturb(quote: str, rng: random.Random) -> str:
@@ -178,8 +188,8 @@ def _large_text(characters: int, seed: int = 7) -> tuple[str, list[str]]:
     text = "\n".join(lines)[:characters]
     quotes = []
     for _ in range(50):
-        begin = rng.randint(0, len(text) - 200)
-        quotes.append(text[begin : begin + 120].replace(" ", "\n").replace("’", "'"))
+        begin, end = _whole_span(text, (start := rng.randint(0, len(text) - 200)), start + 120)
+        quotes.append(text[begin:end].replace(" ", "\n").replace("’", "'"))
     quotes[-1] = "a quote that is nowhere in the text at all"
     return text, quotes
 
@@ -297,11 +307,12 @@ def test_too_long_quote_is_rejected() -> None:
 
 
 def test_quote_at_the_length_limits_is_kept() -> None:
-    text = "x" * 10 + " " + "y" * 700
+    # Each quote is a whole word of the text: a quote may not begin or end inside one.
+    shortest = "y" * limits.MIN_EXCERPT_CHARS
+    longest = "z" * limits.MAX_EXCERPT_CHARS
+    text = f"{'x' * 10} {shortest} {longest} end"
     sources = {"s1": StoredSource(text=text, url=URL_1)}
     passages = {"p1": _passage("p1", "s1", text, "Full document")}
-    shortest = "y" * limits.MIN_EXCERPT_CHARS
-    longest = "y" * limits.MAX_EXCERPT_CHARS
     result = gate_claim(
         claim_id="c1",
         draft=ClaimDraft(findings=[_finding(("p1", shortest)), _finding(("p1", longest))]),
@@ -738,3 +749,77 @@ def test_a_reason_whose_numbers_are_in_the_quotes_is_kept_as_written() -> None:
     (finding,) = result.findings
     assert finding.rationale == reason and result.reasons_withheld == 0
     assert finding.checks.numbers_detail == ["56% matched 56% in a quote"]
+
+
+# A located span must not begin or end inside a number or a word (fourth referee) ---------------
+
+AMOUNT = "Total revenue was $46.78 billion for the quarter; costs were 1,234 million."
+
+
+@pytest.mark.parametrize(
+    "quote",
+    [
+        "revenue was $46.7",  # ends inside the decimals
+        "revenue was $46.",  # ends just after the decimal point
+        "revenue was $46",  # ends just before the decimal point
+        "78 billion for the quarter",  # begins inside the decimals
+        ".78 billion for the quarter",  # begins at the decimal point
+        "6.78 billion for the quarter",  # begins inside the whole part
+        "costs were 1",  # ends before a thousands separator
+        "costs were 1,",  # ends after it
+        "234 million",  # begins after it
+        ",234 million",  # begins at it
+    ],
+)
+def test_a_quote_that_cuts_a_number_is_not_found(quote: str) -> None:
+    assert locate(quote, AMOUNT) is None
+    assert locate(quote.replace(" ", "\n"), AMOUNT.replace(" ", "  ")) is None
+
+
+@pytest.mark.parametrize("quote", ["tal revenue was", "Total revenue wa", "nue was $46.78"])
+def test_a_quote_that_cuts_a_word_is_not_found(quote: str) -> None:
+    assert locate(quote, AMOUNT) is None
+    assert locate(quote.replace(" ", "\n"), AMOUNT.replace(" ", "  ")) is None
+
+
+def test_a_later_whole_occurrence_is_found_after_one_that_cuts_a_number() -> None:
+    text = "Q1 revenue was $46.78 billion. Q2 revenue was $46.7 billion."
+    span = locate("revenue was $46.7", text)
+    assert span == (text.index("Q2") + 3, text.index("Q2") + 3 + len("revenue was $46.7"))
+
+
+def test_a_later_whole_occurrence_is_found_after_one_inside_a_word() -> None:
+    text = "Up front: the margins fell, and the margin on services rose."
+    whole = text.index("the margin on")
+    assert locate("the margin", text) == (whole, whole + len("the margin"))
+    # The same on the normalised path: the stored spaces are non-breaking, the quote's plain.
+    stored = text.replace(" ", " ")
+    assert locate("the margin", stored) == (whole, whole + len("the margin"))
+
+
+@pytest.mark.parametrize(
+    ("text", "quote"),
+    [
+        ("Revenue was 46.7. Margin rose.", "Revenue was 46.7"),  # a number ends a sentence
+        ("Revenue was 46.7. Margin rose.", "Revenue was 46.7."),
+        ("Revenue was 1,234, and margin rose.", "Revenue was 1,234"),  # a comma after a number
+        ("Sales in the U.S. rose.", "Sales in the U.S"),  # an abbreviation before a full stop
+        ("The company's revenue rose.", "The company"),  # a word before an apostrophe
+        ("The company’s revenue rose.", "The company"),
+    ],
+)
+def test_a_whole_number_or_word_before_punctuation_is_still_found(text: str, quote: str) -> None:
+    span = locate(quote, text)
+    assert span is not None and text[span[0] : span[1]] == quote
+    respaced = text.replace(" ", "\n")
+    span = locate(quote, respaced)
+    assert span is not None and respaced[span[0] : span[1]] == quote.replace(" ", "\n")
+
+
+def test_a_quote_that_cuts_a_number_withholds_a_finding_that_would_have_shown_the_cut() -> None:
+    """Before the fix "revenue was $41" verified, and the excerpt shown carried $41."""
+    draft = _stated("Data Center revenue was $41 billion.", ("p2", "Data Center revenue was $41"))
+    result = _gate_figures(draft)
+    assert result.evidence == [] and result.quotes_rejected == 1
+    [withheld] = result.unsupported
+    assert withheld.withheld_reason == "no verified quote or reported figure"

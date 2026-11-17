@@ -1,6 +1,6 @@
 {
   "kind": "generation-evaluation",
-  "generated_at": "2026-11-17T18:58:13.222621+00:00",
+  "generated_at": "2026-11-17T20:34:18.124327+00:00",
   "models": "replayed from cassette golden: 79 responses recorded via Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the engine's rules, Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the rules and Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17 with claude-haiku-5-5 and claude-sonnet-5-5, 2026-11-17 to 2026-11-17",
   "stand_in_note": "A recording answered by a stand-in (any `via` other than the model a run calls) is an upper bound for quote validity: a stand-in that copies from the prompt in front of it quotes more exactly than a model may, so the quote and citation scores may be lower live.",
   "decision": "Whether the thesis still holds after the latest filings",
@@ -245,6 +245,69 @@
             ]
           }
         ]
+      },
+      "planted_single_year": {
+        "shift": -1,
+        "findings": 9,
+        "statements": 18,
+        "flagged": 13,
+        "not_flagged": [
+          {
+            "case_id": "nvda-margin-widened",
+            "finding_id": "f3",
+            "moved": "fiscal year 2026",
+            "statement": "On a full-year basis the picture is the opposite: gross margin fell to 71.1% in fiscal year 2025 from 75.0% in fiscal year 2025.",
+            "flagged": false,
+            "details": [
+              "fiscal year 2025 is in a quote",
+              "fiscal year 2025 is in a quote"
+            ]
+          },
+          {
+            "case_id": "cost-members-renew",
+            "finding_id": "f2",
+            "moved": "2026",
+            "statement": "Part of the growth in membership income comes from the fee increase rather than from renewals alone: the fee increase accounted for approximately 30% and 40% of membership income growth during 2025 and 2025.",
+            "flagged": false,
+            "details": [
+              "2025 is in a quote",
+              "2025 is in a quote"
+            ]
+          },
+          {
+            "case_id": "cost-markup-widened",
+            "finding_id": "f3",
+            "moved": "fiscal 2026",
+            "statement": "The XBRL-derived annual gross margin was 12.8% in both fiscal 2025 and fiscal 2025, so it shows no widening.",
+            "flagged": false,
+            "details": [
+              "fiscal 2025 is the fiscal year of a cited figure (period ended 2025-08-31)",
+              "fiscal 2025 is the fiscal year of a cited figure (period ended 2025-08-31)"
+            ]
+          },
+          {
+            "case_id": "aapl-china-shrinking",
+            "finding_id": "f1",
+            "moved": "2026",
+            "statement": "Greater China net sales increased during 2025 compared to 2025, primarily due to higher net sales of iPhone and Mac.",
+            "flagged": false,
+            "details": [
+              "2025 is in a quote",
+              "2025 is in a quote"
+            ]
+          },
+          {
+            "case_id": "ko-pricing-lifts-margin",
+            "finding_id": "f2",
+            "moved": "2025",
+            "statement": "The full-year picture is similar: gross profit margin increased to 61.6% in 2024 from 61.1% in 2024, mainly from favorable pricing and the refranchising of some bottling operations, partly offset by currency and higher commodity costs.",
+            "flagged": false,
+            "details": [
+              "2024 is in a quote",
+              "2024 is in a quote"
+            ]
+          }
+        ]
       }
     }
   },
@@ -296,6 +359,7 @@
       "periods_checked": 0,
       "periods_unverified": [],
       "periods_planted": [],
+      "periods_single_year": [],
       "retrieval_hit": false,
       "agrees": true,
       "refused": null,
@@ -429,6 +493,7 @@
           ]
         }
       ],
+      "periods_single_year": [],
       "retrieval_hit": true,
       "agrees": true,
       "refused": null,
@@ -600,6 +665,7 @@
           ]
         }
       ],
+      "periods_single_year": [],
       "retrieval_hit": false,
       "agrees": true,
       "refused": null,
@@ -732,6 +798,30 @@
           "details": [
             "fiscal year 2027 is not in the quotes, the cited figures or the period of a filing quoted",
             "fiscal year 2026 is in a quote"
+          ]
+        }
+      ],
+      "periods_single_year": [
+        {
+          "case_id": "nvda-margin-widened",
+          "finding_id": "f3",
+          "moved": "fiscal year 2026",
+          "statement": "On a full-year basis the picture is the opposite: gross margin fell to 71.1% in fiscal year 2025 from 75.0% in fiscal year 2025.",
+          "flagged": false,
+          "details": [
+            "fiscal year 2025 is in a quote",
+            "fiscal year 2025 is in a quote"
+          ]
+        },
+        {
+          "case_id": "nvda-margin-widened",
+          "finding_id": "f3",
+          "moved": "fiscal year 2025",
+          "statement": "On a full-year basis the picture is the opposite: gross margin fell to 71.1% in fiscal year 2026 from 75.0% in fiscal year 2024.",
+          "flagged": true,
+          "details": [
+            "fiscal year 2026 is in a quote",
+            "fiscal year 2024 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
           ]
         }
       ],
@@ -908,6 +998,7 @@
           ]
         }
       ],
+      "periods_single_year": [],
       "retrieval_hit": true,
       "agrees": true,
       "refused": null,
@@ -1081,6 +1172,7 @@
           ]
         }
       ],
+      "periods_single_year": [],
       "retrieval_hit": true,
       "agrees": true,
       "refused": null,
@@ -1131,6 +1223,7 @@
       "periods_checked": 0,
       "periods_unverified": [],
       "periods_planted": [],
+      "periods_single_year": [],
       "retrieval_hit": false,
       "agrees": true,
       "refused": null,
@@ -1179,6 +1272,7 @@
       "periods_checked": 0,
       "periods_unverified": [],
       "periods_planted": [],
+      "periods_single_year": [],
       "retrieval_hit": false,
       "agrees": true,
       "refused": null,
@@ -1312,6 +1406,7 @@
           ]
         }
       ],
+      "periods_single_year": [],
       "retrieval_hit": true,
       "agrees": true,
       "refused": null,
@@ -1354,6 +1449,7 @@
       "periods_checked": 0,
       "periods_unverified": [],
       "periods_planted": [],
+      "periods_single_year": [],
       "retrieval_hit": false,
       "agrees": null,
       "refused": true,
@@ -1495,6 +1591,52 @@
           ]
         }
       ],
+      "periods_single_year": [
+        {
+          "case_id": "cost-members-renew",
+          "finding_id": "f1",
+          "moved": "2026",
+          "statement": "Membership fee revenue rose 11% in 2025, and renewal rates were 92.3% in the U.S. and Canada and 89.8% worldwide at the end of 2026, which supports both parts of the claim.",
+          "flagged": true,
+          "details": [
+            "2025 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be",
+            "2026 is in a quote"
+          ]
+        },
+        {
+          "case_id": "cost-members-renew",
+          "finding_id": "f1",
+          "moved": "2026",
+          "statement": "Membership fee revenue rose 11% in 2026, and renewal rates were 92.3% in the U.S. and Canada and 89.8% worldwide at the end of 2025, which supports both parts of the claim.",
+          "flagged": true,
+          "details": [
+            "2026 is in a quote",
+            "2025 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        },
+        {
+          "case_id": "cost-members-renew",
+          "finding_id": "f2",
+          "moved": "2026",
+          "statement": "Part of the growth in membership income comes from the fee increase rather than from renewals alone: the fee increase accounted for approximately 30% and 40% of membership income growth during 2025 and 2025.",
+          "flagged": false,
+          "details": [
+            "2025 is in a quote",
+            "2025 is in a quote"
+          ]
+        },
+        {
+          "case_id": "cost-members-renew",
+          "finding_id": "f2",
+          "moved": "2025",
+          "statement": "Part of the growth in membership income comes from the fee increase rather than from renewals alone: the fee increase accounted for approximately 30% and 40% of membership income growth during 2026 and 2024.",
+          "flagged": true,
+          "details": [
+            "2026 is in a quote",
+            "2024 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        }
+      ],
       "retrieval_hit": true,
       "agrees": false,
       "refused": null,
@@ -1590,6 +1732,30 @@
           ]
         }
       ],
+      "periods_single_year": [
+        {
+          "case_id": "cost-markup-widened",
+          "finding_id": "f3",
+          "moved": "fiscal 2026",
+          "statement": "The XBRL-derived annual gross margin was 12.8% in both fiscal 2025 and fiscal 2025, so it shows no widening.",
+          "flagged": false,
+          "details": [
+            "fiscal 2025 is the fiscal year of a cited figure (period ended 2025-08-31)",
+            "fiscal 2025 is the fiscal year of a cited figure (period ended 2025-08-31)"
+          ]
+        },
+        {
+          "case_id": "cost-markup-widened",
+          "finding_id": "f3",
+          "moved": "fiscal 2025",
+          "statement": "The XBRL-derived annual gross margin was 12.8% in both fiscal 2026 and fiscal 2024, so it shows no widening.",
+          "flagged": true,
+          "details": [
+            "fiscal 2026 is the fiscal year of a cited figure (period ended 2026-08-30)",
+            "fiscal 2024 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        }
+      ],
       "retrieval_hit": true,
       "agrees": true,
       "refused": null,
@@ -1642,6 +1808,7 @@
       "periods_checked": 0,
       "periods_unverified": [],
       "periods_planted": [],
+      "periods_single_year": [],
       "retrieval_hit": true,
       "agrees": false,
       "refused": null,
@@ -1735,6 +1902,30 @@
           ]
         }
       ],
+      "periods_single_year": [
+        {
+          "case_id": "cost-north-america-dependence",
+          "finding_id": "f1",
+          "moved": "August 30, 2026",
+          "statement": "The auditor's critical audit matter reports $219,823 million of revenue in the United States and $40,561 million in Canada for the year ended August 30, 2025, against total fiscal 2026 revenue of $303.15B. The two countries are by far the largest revenue contributors, which supports the sales half of the claim.",
+          "flagged": true,
+          "details": [
+            "August 30, 2025 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be",
+            "fiscal 2026 is in a quote"
+          ]
+        },
+        {
+          "case_id": "cost-north-america-dependence",
+          "finding_id": "f1",
+          "moved": "fiscal 2026",
+          "statement": "The auditor's critical audit matter reports $219,823 million of revenue in the United States and $40,561 million in Canada for the year ended August 30, 2026, against total fiscal 2025 revenue of $303.15B. The two countries are by far the largest revenue contributors, which supports the sales half of the claim.",
+          "flagged": true,
+          "details": [
+            "August 30, 2026 is in a quote",
+            "fiscal 2025 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        }
+      ],
       "retrieval_hit": false,
       "agrees": true,
       "refused": null,
@@ -1777,6 +1968,7 @@
       "periods_checked": 0,
       "periods_unverified": [],
       "periods_planted": [],
+      "periods_single_year": [],
       "retrieval_hit": false,
       "agrees": null,
       "refused": true,
@@ -1910,6 +2102,30 @@
           ]
         }
       ],
+      "periods_single_year": [
+        {
+          "case_id": "aapl-china-shrinking",
+          "finding_id": "f1",
+          "moved": "2026",
+          "statement": "Greater China net sales increased during 2025 compared to 2025, primarily due to higher net sales of iPhone and Mac.",
+          "flagged": false,
+          "details": [
+            "2025 is in a quote",
+            "2025 is in a quote"
+          ]
+        },
+        {
+          "case_id": "aapl-china-shrinking",
+          "finding_id": "f1",
+          "moved": "2025",
+          "statement": "Greater China net sales increased during 2026 compared to 2024, primarily due to higher net sales of iPhone and Mac.",
+          "flagged": true,
+          "details": [
+            "2026 is in a quote",
+            "2024 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
+          ]
+        }
+      ],
       "retrieval_hit": true,
       "agrees": true,
       "refused": null,
@@ -2001,6 +2217,7 @@
           ]
         }
       ],
+      "periods_single_year": [],
       "retrieval_hit": true,
       "agrees": true,
       "refused": null,
@@ -2053,6 +2270,7 @@
       "periods_checked": 0,
       "periods_unverified": [],
       "periods_planted": [],
+      "periods_single_year": [],
       "retrieval_hit": true,
       "agrees": true,
       "refused": null,
@@ -2105,6 +2323,7 @@
       "periods_checked": 0,
       "periods_unverified": [],
       "periods_planted": [],
+      "periods_single_year": [],
       "retrieval_hit": true,
       "agrees": true,
       "refused": null,
@@ -2147,6 +2366,7 @@
       "periods_checked": 0,
       "periods_unverified": [],
       "periods_planted": [],
+      "periods_single_year": [],
       "retrieval_hit": false,
       "agrees": null,
       "refused": true,
@@ -2197,6 +2417,7 @@
       "periods_checked": 0,
       "periods_unverified": [],
       "periods_planted": [],
+      "periods_single_year": [],
       "retrieval_hit": true,
       "agrees": true,
       "refused": null,
@@ -2249,6 +2470,7 @@
       "periods_checked": 0,
       "periods_unverified": [],
       "periods_planted": [],
+      "periods_single_year": [],
       "retrieval_hit": true,
       "agrees": false,
       "refused": null,
@@ -2301,6 +2523,7 @@
       "periods_checked": 0,
       "periods_unverified": [],
       "periods_planted": [],
+      "periods_single_year": [],
       "retrieval_hit": true,
       "agrees": true,
       "refused": null,
@@ -2349,6 +2572,7 @@
       "periods_checked": 0,
       "periods_unverified": [],
       "periods_planted": [],
+      "periods_single_year": [],
       "retrieval_hit": true,
       "agrees": true,
       "refused": null,
@@ -2391,6 +2615,7 @@
       "periods_checked": 0,
       "periods_unverified": [],
       "periods_planted": [],
+      "periods_single_year": [],
       "retrieval_hit": false,
       "agrees": null,
       "refused": true,
@@ -2441,6 +2666,7 @@
       "periods_checked": 0,
       "periods_unverified": [],
       "periods_planted": [],
+      "periods_single_year": [],
       "retrieval_hit": true,
       "agrees": true,
       "refused": null,
@@ -2533,6 +2759,30 @@
           "details": [
             "2026 is not in the quotes, the cited figures or the period of a filing quoted",
             "2025 is in a quote"
+          ]
+        }
+      ],
+      "periods_single_year": [
+        {
+          "case_id": "ko-pricing-lifts-margin",
+          "finding_id": "f2",
+          "moved": "2025",
+          "statement": "The full-year picture is similar: gross profit margin increased to 61.6% in 2024 from 61.1% in 2024, mainly from favorable pricing and the refranchising of some bottling operations, partly offset by currency and higher commodity costs.",
+          "flagged": false,
+          "details": [
+            "2024 is in a quote",
+            "2024 is in a quote"
+          ]
+        },
+        {
+          "case_id": "ko-pricing-lifts-margin",
+          "finding_id": "f2",
+          "moved": "2024",
+          "statement": "The full-year picture is similar: gross profit margin increased to 61.6% in 2025 from 61.1% in 2023, mainly from favorable pricing and the refranchising of some bottling operations, partly offset by currency and higher commodity costs.",
+          "flagged": true,
+          "details": [
+            "2025 is in a quote",
+            "2023 is not in the quotes, the cited figures or the period of a filing quoted; it is a year or two before the fiscal year of a filing quoted or a cited figure, as a report's comparison year would be"
           ]
         }
       ],
@@ -2675,6 +2925,52 @@
           ]
         }
       ],
+      "periods_single_year": [
+        {
+          "case_id": "ko-irs-dispute-settled",
+          "finding_id": "f1",
+          "moved": "2007",
+          "statement": "The company reports that it is still in litigation with the IRS over tax years 2006 through 2009, so the dispute is not settled.",
+          "flagged": true,
+          "details": [
+            "2006 is not in the quotes, the cited figures or the period of a filing quoted",
+            "2009 is in a quote"
+          ]
+        },
+        {
+          "case_id": "ko-irs-dispute-settled",
+          "finding_id": "f1",
+          "moved": "2009",
+          "statement": "The company reports that it is still in litigation with the IRS over tax years 2007 through 2008, so the dispute is not settled.",
+          "flagged": true,
+          "details": [
+            "2007 is in a quote",
+            "2008 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        },
+        {
+          "case_id": "ko-irs-dispute-settled",
+          "finding_id": "f3",
+          "moved": "2007",
+          "statement": "The cash exposure remains: the IRS notice sought approximately $3.3 billion of additional federal income tax for 2006 through 2009, and the company's expected tax rate excludes the effect of the litigation if it does not prevail.",
+          "flagged": true,
+          "details": [
+            "2006 is not in the quotes, the cited figures or the period of a filing quoted",
+            "2009 is in a quote"
+          ]
+        },
+        {
+          "case_id": "ko-irs-dispute-settled",
+          "finding_id": "f3",
+          "moved": "2009",
+          "statement": "The cash exposure remains: the IRS notice sought approximately $3.3 billion of additional federal income tax for 2007 through 2008, and the company's expected tax rate excludes the effect of the litigation if it does not prevail.",
+          "flagged": true,
+          "details": [
+            "2007 is in a quote",
+            "2008 is not in the quotes, the cited figures or the period of a filing quoted"
+          ]
+        }
+      ],
       "retrieval_hit": false,
       "agrees": true,
       "refused": null,
@@ -2717,6 +3013,7 @@
       "periods_checked": 0,
       "periods_unverified": [],
       "periods_planted": [],
+      "periods_single_year": [],
       "retrieval_hit": false,
       "agrees": null,
       "refused": true,
@@ -2759,6 +3056,7 @@
       "periods_checked": 0,
       "periods_unverified": [],
       "periods_planted": [],
+      "periods_single_year": [],
       "retrieval_hit": false,
       "agrees": null,
       "refused": true,

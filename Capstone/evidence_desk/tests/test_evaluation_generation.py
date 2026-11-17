@@ -82,7 +82,8 @@ def raw_case(case_id: str, claim: str, *, expected: str = "none", target: str = 
                 {
                     "accession": ACCESSION,
                     "section": "Item 1A" if target == RISK_TEXT else "Item 7",
-                    "text": target[:120],
+                    # Up to 120 characters, cut after a whole word as a quote must be.
+                    "text": target[:121].rsplit(" ", 1)[0],
                 }
             ]
             if target
@@ -774,18 +775,23 @@ FILING_PERIODS = {ACCESSION: date(2026, 1, 25)}
 NOT_IN_EVIDENCE = "is not in the quotes, the cited figures or the period of a filing quoted"
 
 
-def period_run(checker_judged: dict[str, list[str]] | None = None) -> list:
+def period_run(
+    checker_judged: dict[str, list[str]] | None = None,
+    *,
+    answers: dict[str, Script] = PERIOD_ANSWERS,
+    figures: dict[str, CompanyFigures] = PERIOD_FIGURES,
+) -> list:
     transport = (
-        scripted(PERIOD_ANSWERS)
+        scripted(answers)
         if checker_judged is None
-        else scripted_with_checks(PERIOD_ANSWERS, checker_judged)
+        else scripted_with_checks(answers, checker_judged)
     )
     run = evaluate_generation(
         synthetic_cases(),
         LOADER,
         synthetic_book(),
         {TICKER: COMPANY},
-        PERIOD_FIGURES,
+        figures,
         transport,
         None if checker_judged is None else ClaudeChecker(transport=transport),
         filing_periods=FILING_PERIODS,
@@ -889,3 +895,89 @@ def test_the_recorded_nvidia_facts_give_the_figures_a_fiscal_calendar(tmp_path: 
     figures = figures_for(read_facts("NVDA", NVIDIA, None, cache_dir=tmp_path, fetch=None))
     assert figures.calendar is not None
     assert figures.calendar.fiscal_year(date(2026, 7, 26)) == 2027
+
+
+# One wrong year beside right ones: each year of a statement naming two or more moved alone
+
+# Without a calendar the 10-K for the year ended 2026-01-25 may be fiscal 2026 or fiscal 2027,
+# so moving "fiscal 2027" back one year still passes and moving "fiscal 2026" back does not.
+SINGLE_YEAR_ANSWERS: dict[str, Script] = {
+    **PERIOD_ANSWERS,
+    CASES[3][1]: lambda u: [
+        finding("Revenue rose in fiscal 2027 and in fiscal 2026.", "supports", [quote(u, MDA_TEXT)])
+    ],
+}
+NO_CALENDAR_FIGURES = {TICKER: CompanyFigures([], "no figures in this test", calendar=None)}
+
+
+def single_year_run() -> list:
+    return period_run(answers=SINGLE_YEAR_ANSWERS, figures=NO_CALENDAR_FIGURES)
+
+
+def test_one_year_at_a_time_is_moved_in_findings_that_name_two_or_more() -> None:
+    periods = summarize_generation(single_year_run()).periods
+    assert periods is not None
+    # Only the retrieval-miss finding names two years; the others name one and are left out.
+    single = periods.single_year
+    assert [(s.case_id, s.moved) for s in single] == [
+        ("retrieval-miss", "fiscal 2027"),
+        ("retrieval-miss", "fiscal 2026"),
+    ]
+    assert [s.statement for s in single] == [
+        "Revenue rose in fiscal 2026 and in fiscal 2026.",
+        "Revenue rose in fiscal 2027 and in fiscal 2025.",
+    ]
+    assert [s.flagged for s in single] == [False, True]
+    counts = periods.single_year_counts()
+    assert (counts.findings, counts.statements, counts.flagged) == (1, 2, 1)
+    assert [s.moved for s in counts.not_flagged] == ["fiscal 2027"]
+    # The existing measurement, every year moved together, is unchanged by the new one.
+    assert {row.findings for row in periods.planted_by_shift()} == {3}
+
+
+def test_the_report_has_the_single_year_table_beside_the_all_years_one() -> None:
+    outcomes = single_year_run()
+    record = build_record(
+        outcomes, models="a script", inputs={}, figures={}, generated_at=datetime(2026, 11, 17)
+    )
+    markdown = render_markdown(record, outcomes)
+    assert markdown.index("### Planted wrong years") < markdown.index(
+        "### One planted wrong year beside right ones"
+    )
+    section = markdown.split("### One planted wrong year beside right ones", 1)[1]
+    section = section.split("## How to read it", 1)[0]
+    assert (
+        "| Findings that name two or more years | Statements planted | Flagged | Not flagged |"
+    ) in section
+    assert "| 1 | 2 | 1 | 1 |" in section
+    assert "| retrieval-miss | fiscal 2027 | Revenue rose in fiscal 2026 and in fiscal 2026. |" in (
+        section
+    )
+    single = record["summary"]["periods"]["planted_single_year"]
+    assert (single["shift"], single["findings"], single["statements"], single["flagged"]) == (
+        -1,
+        1,
+        2,
+        1,
+    )
+    assert [s["moved"] for s in single["not_flagged"]] == ["fiscal 2027"]
+    # The all-years measurement keeps its own key.
+    assert [row["shift"] for row in record["summary"]["periods"]["planted"]["by_shift"]] == [
+        -1,
+        -2,
+        -3,
+        1,
+    ]
+
+
+def test_with_no_finding_naming_two_years_the_single_year_table_says_so() -> None:
+    outcomes = period_run()
+    record = build_record(
+        outcomes, models="a script", inputs={}, figures={}, generated_at=datetime(2026, 11, 17)
+    )
+    single = record["summary"]["periods"]["planted_single_year"]
+    assert (single["findings"], single["statements"], single["flagged"]) == (0, 0, 0)
+    section = render_markdown(record, outcomes).split(
+        "### One planted wrong year beside right ones", 1
+    )[1]
+    assert "No verified finding names two or more years." in section

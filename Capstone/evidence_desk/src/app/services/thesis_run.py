@@ -289,7 +289,9 @@ def execute_run(
     if run.inputs.tagged_figures:
         # Opt-in: the figures join the prompt after the company-facts figures and the record
         # with the other metrics, so a finding's metric_ids resolve on the page and in the brief.
-        tagged = load_tagged_figures(company, filings, ingested.filing_refs.values())
+        tagged = load_tagged_figures(
+            company, filings, ingested.filing_refs.values(), cache=cache
+        )
         run.metrics += tagged.figures
         run.metrics_notes += tagged.notes
         figures = [*figures, *tagged.figures]

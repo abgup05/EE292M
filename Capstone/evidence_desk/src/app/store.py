@@ -73,6 +73,12 @@ CREATE TABLE IF NOT EXISTS filings (
     retrieved_at TEXT NOT NULL,
     PRIMARY KEY (accession, parser_version)
 );
+CREATE TABLE IF NOT EXISTS tagged (
+    accession TEXT NOT NULL,
+    reader_version TEXT NOT NULL,
+    report TEXT NOT NULL,
+    PRIMARY KEY (accession, reader_version)
+);
 """
 
 
@@ -348,7 +354,7 @@ class CachedFiling:
 
 
 class FilingCache:
-    """Disposable: document text once per content hash, and parsed filings by accession.
+    """Disposable: document text once per content hash, parsed filings and their tags by accession.
 
     Thread-safe. ``path`` may be ``":memory:"`` for a cache that lives as long
     as the object (what a run gets when it is given no cache).
@@ -408,6 +414,23 @@ class FilingCache:
                     retrieved_at.isoformat(),
                 ),
             )
+
+    def put_tagged(self, accession: str, reader_version: str, report: str) -> None:
+        """Keep what ``reader_version`` read from the tags of filing ``accession``, as JSON text."""
+        with self._db.transaction(durable=False) as connection:
+            connection.execute(
+                "INSERT OR REPLACE INTO tagged (accession, reader_version, report) "
+                "VALUES (?, ?, ?)",
+                (accession, reader_version, report),
+            )
+
+    def get_tagged(self, accession: str, reader_version: str) -> str | None:
+        """What ``reader_version`` read from the tags of filing ``accession``, if it is kept."""
+        rows = self._db.query(
+            "SELECT report FROM tagged WHERE accession = ? AND reader_version = ?",
+            (accession, reader_version),
+        )
+        return rows[0][0] if rows else None
 
     def lookup_filing(self, accession: str, parser_version: str) -> CachedFiling | None:
         """The filing ``accession`` as ``parser_version`` parsed it, if it is cached."""

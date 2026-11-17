@@ -9,15 +9,25 @@ text, and the tags are only in the raw HTML), read its inline XBRL
 (:mod:`app.core.tagged_figures`). A filing whose tags cannot be read is a sentence
 in ``errors`` (:data:`app.core.policy.TAGGED_UNAVAILABLE`), never an exception:
 the run goes on without its figures and is partial for that reason.
+
+What was read from a filing is kept in the disposable filing cache, by accession and
+by :data:`READER_VERSION`, so a later run does not fetch the filing again: a filing
+does not change, and a change to the reader changes the version. A failure is never
+kept.
 """
 
 from __future__ import annotations
 
+import hashlib
 import logging
 from collections.abc import Iterable
 from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Final
 
-from app.core import policy
+from pydantic import ValidationError
+
+from app.core import breakdown_models, breakdowns, policy
 from app.core.breakdown_models import BreakdownReport
 from app.core.breakdowns import build_report
 from app.core.documents import FilingRef
@@ -26,7 +36,9 @@ from app.core.models import Company
 from app.core.ports import FilingSource, SourceError
 from app.core.tagged_figures import select_tagged, tagged_units
 from app.services.breakdowns import filing_info
+from app.sources import ixbrl
 from app.sources.ixbrl import read_tagged_facts
+from app.store import FilingCache
 
 log = logging.getLogger(__name__)
 
@@ -36,6 +48,22 @@ NO_BREAKDOWN = (
     "The {form} for the period ended {period_end} tags no revenue by segment, product or "
     "geography and no customer's share; no tagged figure is offered from it."
 )
+
+
+def reader_version() -> str:
+    """Identifies the code that turns a filing's HTML into its breakdowns.
+
+    The SHA-256 of the three source files that do it (the tag reader, the
+    breakdown builder and the record's shape), so that editing any of them makes
+    every kept report a miss, as editing the parser does for kept text.
+    """
+    digest = hashlib.sha256()
+    for module in (ixbrl, breakdowns, breakdown_models):
+        digest.update(Path(module.__file__ or "").read_bytes())
+    return digest.hexdigest()[:16]
+
+
+READER_VERSION: Final = reader_version()
 
 
 @dataclass
@@ -60,8 +88,27 @@ def newest_reports(refs: Iterable[FilingRef]) -> list[FilingRef]:
     return sorted(chosen, key=lambda ref: (ref.period_end, ref.filed_date), reverse=True)
 
 
-def _read(company: Company, filings: FilingSource, ref: FilingRef) -> BreakdownReport | str:
+def _kept(cache: FilingCache | None, ref: FilingRef) -> BreakdownReport | None:
+    """The breakdowns of ``ref`` as this reader kept them, if it did and they still read."""
+    if cache is None:
+        return None
+    stored = cache.get_tagged(ref.accession, READER_VERSION)
+    if stored is None:
+        return None
+    try:
+        return BreakdownReport.model_validate_json(stored)
+    except ValidationError:
+        log.warning("The kept tags of %s do not read; the filing is read again", ref.accession)
+        return None
+
+
+def _read(
+    company: Company, filings: FilingSource, ref: FilingRef, cache: FilingCache | None
+) -> BreakdownReport | str:
     """The breakdowns tagged in ``ref``, or why they could not be read."""
+    kept = _kept(cache, ref)
+    if kept is not None:
+        return kept
     try:
         fetched = filings.fetch(ref)
     except SourceError as exc:
@@ -73,14 +120,21 @@ def _read(company: Company, filings: FilingSource, ref: FilingRef) -> BreakdownR
         facts = read_tagged_facts(fetched.html)
         if facts.reason is not None:
             return facts.reason.rstrip(".")
-        return build_report(facts, company=company, filing=filing_info(ref))
+        report = build_report(facts, company=company, filing=filing_info(ref))
     except Exception as exc:  # noqa: BLE001 - a filing is untrusted text; its tags are optional
         log.exception("Reading the tags of %s failed", ref.url)
         return f"its tags could not be read ({type(exc).__name__})"
+    if cache is not None:
+        cache.put_tagged(ref.accession, READER_VERSION, report.model_dump_json())
+    return report
 
 
 def load_tagged_figures(
-    company: Company, filings: FilingSource, refs: Iterable[FilingRef]
+    company: Company,
+    filings: FilingSource,
+    refs: Iterable[FilingRef],
+    *,
+    cache: FilingCache | None = None,
 ) -> TaggedFigures:
     """Read the tags of the newest annual and quarterly report among ``refs`` (those the run read).
 
@@ -88,6 +142,7 @@ def load_tagged_figures(
     :data:`app.core.limits.MAX_TAGGED_FIGURES_OFFERED`), notes on what was not
     offered, and a :data:`~app.core.policy.TAGGED_UNAVAILABLE` sentence for each
     filing whose tags could not be read. Never raises for EDGAR or for a filing's content.
+    With a ``cache``, a filing whose tags this reader has read before is not fetched again.
     """
     result = TaggedFigures()
     chosen = newest_reports(refs)
@@ -97,7 +152,7 @@ def load_tagged_figures(
             result.notes.append(NOT_READ.format(kind=kind))
     reports: list[BreakdownReport] = []
     for ref in chosen:
-        read = _read(company, filings, ref)
+        read = _read(company, filings, ref, cache)
         if isinstance(read, str):
             result.errors.append(
                 policy.TAGGED_UNAVAILABLE.format(

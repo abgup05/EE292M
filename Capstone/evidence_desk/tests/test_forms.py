@@ -533,3 +533,21 @@ REFUSES = [
 @pytest.mark.parametrize("claim", REFUSES)
 def test_the_grammar_still_refuses(claim: str) -> None:
     assert isinstance(compile_claim(claim), NotNumeric), compile_claim(claim)
+
+
+# The model readers' prompt names every form and field the schema allows
+
+
+def test_the_readers_prompt_explains_the_new_forms_and_fields() -> None:
+    from app.core.claim_reading import READING_SCHEMA
+    from app.engines.claim_reader import READ_SYSTEM
+
+    test = READING_SCHEMA["properties"]["test"]["anyOf"][0]["properties"]
+    term = test["left"]["properties"]
+    for field in ("each", "each_since", "and_test"):
+        assert field in test and f"{field}:" in READ_SYSTEM, field
+    assert "base" in term and "base:" in READ_SYSTEM
+    for form in ("compare", "change"):
+        assert f"- {form}:" in READ_SYSTEM or f"fn {form}" in READ_SYSTEM, form
+    assert "a part's figure at any period other than the newest filing" not in READ_SYSTEM
+    assert "period kind FY" in READ_SYSTEM  # a share or a part of a named fiscal year

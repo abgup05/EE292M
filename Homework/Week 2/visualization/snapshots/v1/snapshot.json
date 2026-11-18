@@ -1,0 +1,17 @@
+{
+  "exported_from": "http://127.0.0.1:8701",
+  "notes": [],
+  "open_run": "run-ae36a23c3400",
+  "page_files": [
+    "app.js",
+    "index.html",
+    "styles.css"
+  ],
+  "routes": {
+    "/api/research": "api/research.json",
+    "/api/research/run-ae36a23c3400": "api/research/run-ae36a23c3400.json",
+    "/api/research/run-ae36a23c3400/export.md": "api/research/run-ae36a23c3400/export.md"
+  },
+  "tag": "capstone-v1",
+  "version": 1
+}

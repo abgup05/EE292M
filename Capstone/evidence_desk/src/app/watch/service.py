@@ -53,7 +53,7 @@ from app.services import theses, thesis_run
 from app.services.filing_changes import compare_pair, read_pair
 from app.sources.http import fetch_page as default_fetch_page
 from app.store import FilingCache, Store
-from app.watch.store import WatchStatus, WatchStore, item_id
+from app.watch.store import WatchStatus, WatchStore, item_id, stamp
 
 log = logging.getLogger(__name__)
 
@@ -278,6 +278,9 @@ def start_waiting_run(store: Store, watches: WatchStore, ident: str, now: dateti
     if not watches.start_waiting(ident, run.id, now):
         thesis_run.fail_run(run, store, "The waiting run was started from another request.")
         raise NotWaiting(ident)
+    started = watches.get_item(ident)
+    if started is not None and started.kind == InboxKind.running:
+        _save(watches, started)  # its headline now says the run is under way
     return run
 
 
@@ -403,10 +406,10 @@ class Watcher:
 
     def cycle(self) -> CycleReport:
         """Poll, work, and record the heartbeat with what the cycle did."""
-        report = CycleReport(started_at=self.now().isoformat())
+        report = CycleReport(started_at=stamp(self.now()))
         self.poll(report)
         self.work(report)
-        report.finished_at = self.now().isoformat()
+        report.finished_at = stamp(self.now())
         self.status.beat(
             self.worker, self.started_at, self.now(), self.settings.interval_seconds, asdict(report)
         )
@@ -437,6 +440,8 @@ class Watcher:
         )
         item.kind = InboxKind.failed
         item.updated_at = self.now()
+        if item.run is not None and item.run.state == "running":  # its worker stopped mid-run
+            item.run = item.run.model_copy(update={"state": "failed"})
         item.error = wording.JOB_GAVE_UP.format(attempts=job.attempts, reason=reason.rstrip("."))
         _save(self.watches, item)
 
@@ -516,6 +521,8 @@ class Watcher:
         _save(self.watches, item)
         finished = self.execute(run)
         if finished.status == RunStatus.failed:
+            # The item says the run failed now; the job is retried (a new run) or gives up.
+            _save(self.watches, _complete(self.store, item, finished, self.now()))
             raise JobFailed(wording.RUN_FAILED.format(reason=_run_failure(finished)))
         _save(self.watches, _complete(self.store, item, finished, self.now()))
         return f"ran {run.id}"

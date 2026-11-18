@@ -239,6 +239,9 @@ def test_policy_ask_leaves_the_run_waiting_until_the_owner_starts_it() -> None:
     assert len(d.store.get_thesis(d.thesis_id).run_ids) == 1  # type: ignore[union-attr]
 
     run = start_waiting_run(d.store, d.watches, item.id, d.clock())
+    started = d.watches.get_item(item.id)
+    assert started is not None and started.kind == InboxKind.running
+    assert started.headline.endswith("A run is under way.")
     with pytest.raises(LookupError):
         start_waiting_run(d.store, d.watches, item.id, d.clock())
     finished = d.execute(run)
@@ -280,6 +283,12 @@ def test_a_run_that_fails_is_retried_with_backoff_and_then_reported_failed() -> 
     assert first.jobs_retried == 1
     [job] = d.watches.jobs()
     assert job.state == JobState.queued and "HTTP 503" in job.error
+    [between] = d.watches.list_items(limit=10, offset=0).items
+    assert between.kind == InboxKind.failed and "HTTP 503" in between.error
+    assert between.run is not None and (between.run.state, between.run.status) == (
+        "failed",
+        "failed",
+    )
     for wait in wording.BACKOFF_SECONDS:
         d.clock.advance(wait)
         d.watcher.cycle()
@@ -289,6 +298,7 @@ def test_a_run_that_fails_is_retried_with_backoff_and_then_reported_failed() -> 
     [item] = d.watches.list_items(limit=10, offset=0).items
     assert item.kind == InboxKind.failed
     assert "HTTP 503" in item.error and f"{wording.MAX_ATTEMPTS} attempts" in item.error
+    assert item.run is not None and item.run.state == "failed"
     d.source.periodic_filings = real  # type: ignore[method-assign]
 
 

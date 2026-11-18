@@ -1,6 +1,6 @@
 """Compiler against model on the golden computed claims (evaluation only, never in a run).
 
-``make eval ARGS='compiler-vs-model --record --max-calls 60'`` gives a model, for each
+``make eval ARGS='compiler-vs-model --record --max-calls 70'`` gives a model, for each
 case of ``eval/claim-results.json``, the reported-figure lines a run would offer for
 that company as of the case's date (the same lines an assessment prompt shows, plus
 the filing's tagged figures for a share of revenue) and the claim, and asks through

@@ -10,8 +10,9 @@ and is judged as before. No model compiles, computes or counts anything here.
 A small grammar of regular expressions, checked in a fixed order: first the reasons a claim is *not* a
 numeric claim this version computes (a forecast or a conditional, a cause, peers or expectations, a top-N
 share, a valuation, a calendar year, a measure outside the set, a margin it does not name, a judgement, a
-segment's or a geography's growth), then the eight forms. A claim that compiles prints a canonical test with
-unbound periods; one that does not gets a reason, shown on the claim as `compile_note`.
+segment's or a geography's growth), then the forms. A claim that compiles prints a canonical test with
+unbound periods; one that does not gets a reason, shown on the claim as `compile_note`. A claim refused
+whole may be two tests joined by "and" (below).
 
 **The whole sentence.** A claim compiles only when its test explains every content word of the sentence. After
 the grammar reads a test, every phrase that test accounts for is struck out of the claim: its measures, its
@@ -25,7 +26,9 @@ revenue") is not the company's measure: it is refused, unless the sentence is th
 which is read from the newest filing's tags. A test that compares a measure with itself is refused. One form is
 exempt from the word count: a share of revenue is read by one pattern anchored at both ends of the sentence, so
 it has no words left over; its subject is free text, matched later against the filing's tagged members (one
-that matches none cannot be computed, and says so). The rule lives in `unexplained()` and
+that matches none cannot be computed, and says so). The pattern may end with a period from a fixed list ("last
+fiscal year", "in fiscal 2026", "in the latest quarter"), and a subject that says "together", "combined" or
+"collectively", or joins names with "and" before "are", is refused as a sum of several parts. The rule lives in `unexplained()` and
 `compile_claim()`. `tests/test_whole_sentence.py` started with 16 new sentences, four for each way a claim was
 read wrongly (a part read as the whole, an unknown measure read as a known one, a named period ignored, half a
 claim dropped), and two tests of the refusal's wording: all 18 failed on the grammar before the rule. Two of
@@ -43,8 +46,15 @@ against the old grammar.
 | faster_than | Operating income is growing faster than revenue. | `yoy(operating_income)[Q] > yoy(revenue)[Q]` |
 | compound | Revenue has compounded at over 10% for five years. | `cagr(revenue, 5y)[FY] > 10%` |
 | share | Data center is more than 80% of revenue. | `share(segment "Data Center")[filing] > 80%` |
+| share, a named year | Data Center revenue made up over 80% of total revenue last fiscal year. | `share(segment "Data Center")[FY] > 80%` |
+| compare | Operating cash flow was above net income in the latest fiscal year. | `operating_cash_flow[FY] > net_income[FY]` |
+| change over a span | Revenue more than tripled between fiscal 2023 and fiscal 2025. | `change(revenue, FY2023)[FY2025] > 200%` |
+| each of N periods | Gross margin has stayed above 70% for the last four quarters. | `each(4): gross_margin[Q] > 70%` |
+| every year since | Free cash flow has risen every year since fiscal 2023. | `each(since FY2023): free_cash_flow[FY] > free_cash_flow[FY-1]` |
+| two tests, "and" | Revenue grew more than 50% year over year and gross margin is above 70%. | `(yoy(revenue)[Q] > 50%) and (gross_margin[Q] > 70%)` |
 
-Periods: `Q` (the newest quarter), `Q-k`, `FY`, `FY-k`, `FY2026`, `Q2 FY2027`, `TTM`, `TTM-4`, `filing`. Measures:
+Periods: `Q` (the newest quarter), `Q-k`, `FY`, `FY-k`, `FY2026`, `Q2 FY2027`, `TTM`, `TTM-4`, `filing`
+(a share's or a part's: the newest filing's newest period). Measures:
 revenue, gross profit, operating income, net income, R&D, operating expenses, operating cash flow, capital
 expenditure, free cash flow, the four margins and R&D's share of revenue, free cash flow margin, diluted EPS,
 cash, inventory, receivables. The exact canonical forms are in `eval/claim-tests.json` (`canonical_form`).
@@ -77,24 +87,40 @@ the company labels so), reads the measures from the facts, and compares. A quart
 derived when it can be (the fourth quarter as the year less nine months), and the formula says so. House
 definitions: operating expenses are gross profit less operating income; a streak counts sequential rises; a
 CAGR runs over fiscal years. A share of revenue comes from the newest filing's tagged breakdowns (a segment or
-product, a geography, or the largest single customer, leaving out rows marked as not a customer). The result
+product, a geography, or the largest single customer, leaving out rows marked as not a customer), or, for a
+fiscal year or quarter the claim names, from the column of the newest 10-K or 10-Q of that length (350 to 380
+days, or 80 to 100) ending within 10 days of that period's end in the facts; when no filing read has one,
+it cannot be computed and the reason lists the periods each filing reports. A part's revenue or operating
+income is read the same way. A change, `change(m, BASE)[P]`, is growth from BASE to P on a positive base. A test
+held in each of N periods is computed once per period, each a quarter (or a fiscal year) earlier, and two
+tests joined by "and" once each; the result holds when every part holds, fails when any part fails, and
+otherwise cannot be computed, naming the part. It carries `combines` ("each" or "and") and `parts` (each part
+computed alone, newest first); its `left` and `right` are the first part's, and it has no `margin`. The
+result
 carries both sides, every operand with the facts it read (accession, form, filing date), the arithmetic line
 by line, the margin, and `cannot_compute` with the reason when a side is missing.
 
 **History.** For each compiled claim, the outcome as of every 10-K and 10-Q filing date in the five years to
 the newest one (`HISTORY_YEARS`, at most `MAX_HISTORY_POINTS` = 24 points), each from the facts filed by that
 date, from the facts the run already has: no extra request. A point is `flipped` when its outcome differs from
-the last point before it that could be computed. A share has no history: the breakdowns come from one filing.
+the last point before it that could be computed. A share or a part has no history, in any part of a test: the
+breakdowns come from one filing. A test held in each of several periods, or two tests joined by "and", has one
+point per filing date like any other, its `bound` naming every part.
 
-**The golden computed claims.** `eval/claim-results.json`: 52 cases (r01 to r52) over NVIDIA, Apple and
+**The golden computed claims.** `eval/claim-results.json`: 69 cases (r01 to r69) over NVIDIA, Apple and
 Microsoft at several dates, all three outcomes present. The expected values are written by
 `evaluation/claim_oracle.py` (`make claim-results-key ARGS='--write'`), a separate route that reads the raw
 company-facts JSON, places periods and labels fiscal years on its own, and never calls the evaluator.
 `tests/test_claim_results.py` checks that the key is exactly what the oracle gives (so no expected value was
 edited), and that the evaluator, run as of each case's date, agrees on the outcome, the bound test and both
-sides to a relative 1e-9, with no fact filed after the date: **52 of 52**. While building it the two routes
+sides to a relative 1e-9, with no fact filed after the date: **69 of 69**. While building it the two routes
 disagreed once, on r14 (NVIDIA fiscal 2008): the oracle labelled the comparative years of the first filings
-wrongly. The oracle's rule was fixed and only r14 changed; no expected value was edited by hand.
+wrongly. The oracle's rule was fixed and only r14 changed; no expected value was edited by hand. Cases r53 to r69
+were added with the forms below (each of N periods, every year since, a change over a span, two measures
+compared, two tests joined by "and", a share for the latest and a named fiscal year); the oracle reads them by
+its own rules (it moves period tokens back step by step, splits "and" in the text, and takes a year's share from
+the recorded 10-K's column that ends exactly on that year's end) and agreed with the evaluator on all 17 the
+first time it was run.
 
 ## In a run (`services/computed.py`)
 
@@ -194,11 +220,15 @@ names anything unsupported. "Not a claim this tool can compute" is a valid answe
 **One normal form** (`core/claim_normal.py`, pure). Readers write one test in several ways; each
 reading is put in one form before readings are compared: `a > b` and `b < a` are one (the more
 recent term first); a named fiscal year or quarter is counted back from the newest one the facts
-hold (in a run; the harness, which reads no facts, leaves it named); a share or a part is always of
-the newest filing; growth above or below zero is a rise or fall on the same span (`yoy`, `qoq`,
-`cagr` over N years); a compound rate over one year is the growth; a count of rises is a whole
-number (`> 3` is `>= 4`); numbers to six significant digits; a member's name without case, spacing
-or "&". `>` and `>=` stay different for an amount or a percent. Each equivalence has a test that
+hold (in a run; the harness, which reads no facts, leaves it named), a share's or a part's
+too (its `filing` period stays apart: whether the newest filing is the 10-K is not known there);
+growth above or below zero is a rise or fall on the same span (`yoy`, `qoq`, `cagr` over N years,
+`change` from its base); a compound rate over one year, and a change over one year (or quarter), is
+the growth; a count of rises is a whole number (`> 3` is `>= 4`); a test held in each of one period
+is the test, every year since a named one is that many years, and a rise on the period before held
+in each of N periods is a streak of at least N; two tests joined by "and" and a comparison of two
+measures are put in one order; numbers to six significant digits; a member's name without case,
+spacing or "&". `>` and `>=` stay different for an amount or a percent. Each equivalence has a test that
 failed first against a stub returning the canonical text (`tests/test_claim_normal.py`).
 
 **What counts** (`policy.reading_agreement`):
@@ -250,14 +280,14 @@ the judge's files for sets A and B are `eval/results/claim-readers-claim-tests-f
 
 ## Compiler against a model (evaluation only)
 
-`make eval ARGS='compiler-vs-model --record --max-calls 60'` gives a model, for each of the 52 golden cases, the
+`make eval ARGS='compiler-vs-model --record --max-calls 70'` gives a model, for each of the 69 golden cases, the
 reported-figure lines an assessment prompt would show for that company as of the case's date (plus the tagged
 figures for a share) and the claim, and asks for holds, fails or cannot_tell with a JSON schema, through the
 cassette `eval/cassettes/compiler-vs-model`. It prints how many requests the cassette already answers and how
 many it would make before making any, refuses `--record` without `--max-calls` or above it, and scores the
 model and the compiler against the key, saying where the answers came from. It was built and tested with a
 fake transport only. **No model answer has been recorded, so there is no model score.** Without a recording
-the command says: 52 cases, 0 answered, 52 requests to make.
+the command says: 69 cases, 0 answered, 69 requests to make (run on 18 November 2026, after the forms round).
 
 ## Claims the grammar's author did not write
 
@@ -396,7 +426,74 @@ judgement files; no earlier judgement was changed. `make claim-foreign` (records
 | Refused, after (metric, form, period, phrasing) | 52 (26, 21, 2, 3) | 60 (33, 8, 3, 16) |
 | Not numeric, refused | 37 of 37 | 40 of 40 |
 
-**Own labels.** The 150 development and 60 held-out labels and the 52 golden results still pass unchanged
+**The forms round (18 November 2026, both sets as development material).** The model readers were
+limited by the forms, not by reading, so the forms that recur in the "form" and "period" refusals of
+sets A and B were added, each to the catalogue the readers' prompt and schema are built from
+(`core/claim_reading.py`, `engines/claim_reader.py`), the normal form, the evaluator (as of a date,
+with history except for a share or a part) and, where the whole-sentence rule still holds, the grammar:
+
+- **each of the last N periods** (`each(N): T`, N from 2 to `MAX_EACH_PERIODS` = 12): T held in
+  each of the latest N quarters or fiscal years, or in each quarter of a named fiscal year (f003,
+  f047, f052, f084, g015, g041). "Grew in each of the last four quarters" stays refused unless the
+  claim says sequentially or year over year;
+- **every year since a named one** (`each(since FY2023): T`), only for a change on the year
+  before (f006, f066); said of a level it is refused, since whether the named year counts is unclear;
+- **a change over a span** (`change(m, BASE)[P]`): between two named fiscal years, since one, over
+  the past N years, and multiples (doubled, tripled, quadrupled, "three times its fiscal 2023
+  level"; f009, f027); a compound rate from one named year to another (g067);
+- **two measures compared** (`compare`): the levels of two measures of the same kind in one
+  period (f021, f093);
+- **a share, or a part's figure, for a fiscal year or quarter** a filing read reports, latest or
+  named (f002, g044), refused with the periods the filings do report when none has it;
+- **two tests joined by "and"**, a conjunction that holds only when both do, with the operands,
+  arithmetic and history of both; tried only when the claim is refused whole, each part must
+  compile alone, and a period named in one part only refuses it. Contrast words are still refused.
+- **g046** (set B's one wrong compile, two segments summed read as one): fixed by a rule, a share
+  whose subject says "together", "combined" or "collectively", or joins names with "and" before
+  "are", is a sum of parts, which no filing tags.
+
+| Grammar alone, judged by the grammar's author | Set A (83 numeric) | Set B (80 numeric) |
+|---|---|---|
+| Compiled and right, after the catalogue | 31 | 19 |
+| Compiled and right, after the forms | 42 | 23 |
+| Compiled and **wrong**, after the forms | 0 | 0 (g046 now refused) |
+| Refused, after the forms (metric, form, period, phrasing) | 41 (22, 15, 1, 3) | 57 (33, 8, 2, 14) |
+| Not numeric, refused | 37 of 37 | 40 of 40 |
+
+Commands and records: `make claim-foreign` (`eval/results/claim-tests-foreign-forms.txt`) and
+`make claim-foreign ARGS="--claims eval/claim-tests-foreign-b.json --judgements
+eval/claim-tests-foreign-b-judgements.json"` (`eval/results/claim-tests-foreign-b-forms.txt`). The
+15 new readings and g046's refusal were judged by the session that wrote the forms ("forms, 18 November 2026"); no
+earlier judgement changed. `tests/test_forms.py` holds each form's evaluator, schema, normal-form and
+grammar tests (written first and seen failing) and the sentences that must still be refused.
+
+**Left out, and why** (by what the refusals show):
+
+- *Approximate or ranged figures* ("about", "roughly", "mid-30s", "barely", "well over", "double
+  digits", "tiny", "the vast majority", "flat"; f010, f026, f043, f051, f055, f060, f069, f094, f100,
+  f102, g016, g052, g061, g086, g091, g093, g105): no bound to test without inventing one.
+- *Ranks and records* (the largest segment, a record, the biggest quarter; f061, f082, g058, g103):
+  each would need every member or every period ranked; four claims, no common shape.
+- *A part's revenue or its change in the grammar* (g042, f049, g084, g097): the readers' schema and the
+  evaluator take a part for a named year or quarter, but the grammar still refuses a part's figure:
+  its name is free text before "revenue" inside a sentence the whole-sentence rule must check, and the
+  rule cannot tell a member's name from an unexplained word. A share is read by a sentence anchored at
+  both ends; a part's value is not.
+- *A part held in each of several periods* (g003, g043, g096, f089): a part comes from one filing, which
+  holds two or three of its periods at most.
+- *A change in a margin in points* ("expanded by more than ten points", f020; "expanded to over 46%",
+  f044): one claim each; a change in a percentage stays refused as ambiguous.
+- *A multiple of, or a difference from, another measure* ("more than three times total debt", g017;
+  "exceeded interest expense by more than $1 billion", g023): one claim each.
+- *Sums of measures or members* (f063, g061, g104, g046): no tag gives the sum.
+- *Half years, calendar quarter names, a month's year end* (g019, f058, g056, g099): the fiscal
+  calendar does not place them.
+- *Phrasing of forms that now exist* ("beat ... in all four quarters" f107, "keeps climbing" f096, "the
+  rate fell in each" f019, "repurchased more ... than" g064, "grew faster ... over fiscal 2023 to 2025"
+  g060, "ended the year at over twice" g010, "north of" f022): readable by a model reader under the new
+  schema, not added to the grammar one phrasing at a time.
+
+**Own labels.** The 150 development and 60 held-out labels and the 69 golden results still pass unchanged
 (`tests/test_foreign_claims.py::test_the_own_labels_still_compile_exactly`, `tests/test_claim_results.py`), after
 the whole-sentence rule too: no own label that expected a compile now refuses (`make claim-labels`: 150 of 150;
 the pin: 210 of 210). While the rule was being written, five development labels did refuse (d016, d025, d044,
@@ -442,7 +539,9 @@ outstanding, which the catalogue does not hold; it has the diluted weighted-aver
   catalogue, with both sets as development material, 31 of 83 and 19 of 80 rightly, 0 and 1 wrongly: not a
   held-out score.
 - How often a model parser agrees with the grammar, or which of the two is right when they differ: nothing
-  has been recorded.
+  has been recorded. After the forms round, with both sets as development material, the grammar reads 42 of
+  83 (set A) and 23 of 80 (set B) rightly and none wrongly, by its author's judgement: not a held-out score,
+  and the new forms have not been read by a model through the API here.
 - Whether a computed test agrees with what an analyst means: "expanding" is read as against the same quarter a
   year earlier, not the previous quarter. The canonical test is printed beside every outcome so a reader can
   see which comparison was made.

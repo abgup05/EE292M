@@ -79,7 +79,7 @@ payload that never held the later facts.
 | The restatement ledger | `tests/test_restatements.py` | 2015-06-30, 2019-03-01, 2023-11-01 on each of the three |
 | Claim evaluation and history | `tests/test_claim_eval.py` | Seven claims of five forms on the last six filing dates, every twelfth, and the day before each of the last three, on each of the three |
 | A run | `tests/test_as_of_run.py`, `tests/test_computed_run.py` | The recorded NVDA run as of 2026-06-01 and the day after the annual report |
-| The golden computed claims | `tests/test_claim_results.py` | Each of the 52 cases as of its date |
+| The golden computed claims | `tests/test_claim_results.py` | Each of the 69 cases as of its date |
 
 Both checks were shown to catch a leak: `test_the_checks_catch_a_filter_that_reads_the_period_end_instead_of_the_filing_date`
 swaps the filter for one that treats a fact as known once its period has ended, and both fire.

@@ -12,12 +12,16 @@
 
   It loads the computed-claims sample (?sample=computed) in a frame and has the page's own code
   draw, in turn:
-  - readers: the example run with a second reader, made here the way app/services/computed.py
-    makes it (docs/claim-tests.md): on c1 the model reads another test (the readings differ: the
-    test's read_by is the grammar alone, counted_as is "" and its note begins with the backend's
-    sentence), on c2 the model reads the same test (read_by both), on c3, which the grammar did
-    not compile, the model reads a test; and a third reading on c4, to show that the page lists
-    however many readers there are. No example run has a second reader: none was recorded.
+  - readers: the example run read by three readers (the grammar and two model readers), with the
+    record's real fields (ClaimReading.normal_form, ComputedTest.agreement, agreement_label,
+    read_by, dissent, Run.claim_reading_rule) made here the way app/services/computed.py and
+    app.core.policy.reading_agreement make them: on c1 no two readers agree (not counted), on c2
+    two agree and the third reads another test (a dissent: counted), on c3, which the grammar did
+    not compile, one model reads a test and nobody agrees, on c4 all three agree, on c5 two agree
+    and the third refuses (a refusal is not a dissent). The live sample (?sample=run-live) has
+    every reader agreeing or refusing, so it shows neither a dissent nor a disagreement;
+  - and: c2 of the example made a test of two parts joined by "and" (c1's test and c2's), put
+    together the way app.core.claim_eval._combined does it, since no recorded run has one;
   - the restatement lookup, with sample mode off and a stand-in for `fetch`: a refused date (422),
     the example ledger (200) and EDGAR out of reach (503), each in the README's shape;
   - a run asked for as of a date: the request the form sends, a refused date (422), and the
@@ -103,19 +107,25 @@ function record(step, extra) {
   calls = [];
 }
 
-/** What the page drew for each claim: the counted tag, the readings, the line when they differ, the board's computed part. */
+/** What the page drew for each claim: the counted tag, the readers' marks and agreement, the readings, the board's computed part. */
 function claimsDrawn(doc) {
   return JSON.stringify(
     [...doc.querySelectorAll("#claim-list details.claim")].map((docket) => {
       const id = docket.dataset.docket;
       const row = doc.querySelector(`#scorecard li[data-claim-id="${id}"]`);
+      const readers = docket.querySelector("[data-readers]");
       return {
         id,
         counted: (docket.querySelector("[data-counted]") || {}).dataset?.counted || "",
         readers: [...docket.querySelectorAll(".readings li")].map((li) => li.dataset.reader),
         canonicals: [...docket.querySelectorAll(".readings li")].map((li) => li.dataset.canonical),
+        marks: [...docket.querySelectorAll("[data-reader-mark]")].map((m) => [m.dataset.readerMark, m.dataset.mark, m.dataset.why]),
+        agreement: readers ? readers.dataset.agreement : "",
+        agreementLabel: text(docket.querySelector("[data-agreement-label]")),
+        dissent: text(docket.querySelector("[data-dissent]")),
         differ: text(docket).includes("Readings differ: not counted"),
         board: text(row && row.querySelector("[data-board-computed]")),
+        boardReaders: text(row && row.querySelector("[data-board-readers]")),
         note: text(docket.querySelector("[data-test-note]")),
         compileNote: text(docket.querySelector("[data-compile-note] p")),
         flag: text(docket.querySelector("summary .docket-meta")),
@@ -138,29 +148,93 @@ async function run() {
   };
   record("sample", { claims: claimsDrawn(doc) });
 
-  // Two readers (and three on one claim), made the way the backend makes them.
+  // Three readers, with the record's real fields, made the way the backend makes them.
   const variant = JSON.parse(JSON.stringify(ex.run));
-  variant.claim_readers = "grammar and model";
-  variant.claim_reader_detail = "the grammar, and claude-haiku-5-5 as the model parser (made in this harness: no model was asked)";
+  variant.claim_readers = "grammar, model and model_2";
+  variant.claim_reader_detail = "claude-haiku-5-5 (made in this harness: no model was asked); claude-sonnet-5-5 (made in this harness: no model was asked)";
+  variant.claim_reading_rule = "Three readers (grammar, model and model_2): a computed test counts when at least two of them reach the same test (in one normal form). A different test from the third is shown as a dissent and the test still counts; a refusal is not a dissent. When no two agree, every reading is shown and nothing counts.";
   const byId = Object.fromEntries(variant.claims.map((claim) => [claim.id, claim]));
+  const reading = (reader, canonical, reason = "") => ({ reader, canonical, reason, normal_form: canonical });
+  const refusal = (reader, reason) => ({ reader, canonical: "none", reason, normal_form: "none" });
+  // c1: no two agree.
   const c1 = byId.c1;
-  const modelC1 = "gross_margin[Q] > gross_margin[Q-1]";
-  c1.readings.push({ reader: "model", canonical: modelC1, reason: "" });
-  c1.computed.read_by = ["grammar"];
-  c1.computed.counted_as = "";
-  c1.computed.note = `Readings differ: not counted. The grammar read ${c1.computed.canonical}; the model read ${modelC1}. The verdict rests on the findings alone.`;
+  const otherC1 = "gross_margin[Q] > gross_margin[Q-1]";
+  c1.readings = [reading("grammar", c1.computed.canonical), reading("model", otherC1), refusal("model_2", "the model reader: a judgement, not a test")];
+  Object.assign(c1.computed, { agreement: "not_agreed", agreement_label: "not counted: no two readers agree", read_by: ["grammar"], dissent: [], counted_as: "",
+    note: `Readings differ: not counted. The grammar read ${c1.computed.canonical}; model read ${otherC1}; model_2 read no test (the model reader: a judgement, not a test). The verdict rests on the findings alone.` });
+  // c2: two agree, the third dissents.
   const c2 = byId.c2;
-  c2.readings.push({ reader: "model", canonical: c2.computed.canonical, reason: "" });
-  c2.computed.read_by = ["grammar", "model"];
+  const otherC2 = "yoy(revenue)[Q] > 100%";
+  c2.readings = [reading("grammar", c2.computed.canonical), reading("model", c2.computed.canonical), reading("model_2", otherC2)];
+  Object.assign(c2.computed, { agreement: "agreed_with_dissent", agreement_label: "counted, with one dissenting reading", read_by: ["grammar", "model"], dissent: [c2.readings[2]],
+    note: `Counted, with one dissenting reading: model_2 read ${otherC2}.` });
+  // c3: the grammar did not compile it; one model reads a test, the other refuses: nobody agrees.
   const c3 = byId.c3;
-  c3.readings.push({ reader: "model", canonical: "yoy(segment \"Data Center\")[Q] > 0%", reason: "" });
-  c3.compile_note += ` Readings differ: not counted. The grammar read no test; the model read yoy(segment "Data Center")[Q] > 0%. The verdict rests on the findings alone.`;
+  const modelC3 = "yoy(revenue(segment \"Data Center\"))[filing] > 0%";
+  c3.readings = [c3.readings[0], reading("model", modelC3), refusal("model_2", "the model reader: a part's growth with no period")];
+  c3.compile_note += ` Readings differ: not counted. The grammar read no test; model read ${modelC3}; model_2 read no test. The verdict rests on the findings alone.`;
+  // c4: all three agree.
   const c4 = byId.c4;
-  c4.readings.push({ reader: "model", canonical: c4.computed.canonical, reason: "" }, { reader: "second-model", canonical: c4.computed.canonical, reason: "" });
-  c4.computed.read_by = ["grammar", "model", "second-model"];
+  c4.readings = [reading("grammar", c4.computed.canonical), reading("model", c4.computed.canonical), reading("model_2", c4.computed.canonical)];
+  Object.assign(c4.computed, { agreement: "agreed", agreement_label: "at least two readers agree", read_by: ["grammar", "model", "model_2"], dissent: [] });
+  // c5: two agree, the third refuses (not a dissent).
+  const c5 = byId.c5;
+  c5.readings = [reading("grammar", c5.computed.canonical), reading("model", c5.computed.canonical), refusal("model_2", "the model reader: a year this tool does not place")];
+  Object.assign(c5.computed, { agreement: "agreed", agreement_label: "at least two readers agree", read_by: ["grammar", "model"], dissent: [] });
   win.eval(`renderRun(${JSON.stringify(variant)})`);
-  await until(() => text(doc.querySelector("[data-claim-readers]")).includes("grammar and model"), "the run with two readers");
-  record("readers", { claims: claimsDrawn(doc), readersLine: text(doc.querySelector("[data-claim-readers]")) });
+  await until(() => text(doc.querySelector("[data-claim-readers]")).includes("model_2"), "the run with three readers");
+  record("readers", {
+    claims: claimsDrawn(doc),
+    readersLine: text(doc.querySelector("[data-claim-readers]")),
+    rule: text(doc.querySelector("[data-claim-reading-rule]")),
+    howtoRule: text(doc.getElementById("howto-reading-rule")),
+  });
+
+  // Two tests joined by "and": c1's test and c2's, as app.core.claim_eval._combined joins them.
+  const joined = JSON.parse(JSON.stringify(ex.run));
+  const one = joined.claims.find((claim) => claim.id === "c1").computed;
+  const two = joined.claims.find((claim) => claim.id === "c2");
+  const parts = [one, JSON.parse(JSON.stringify(two.computed))];
+  const outcomes = parts.map((part) => part.outcome);
+  const outcome = outcomes.includes("fails") ? "fails" : outcomes.every((o) => o === "holds") ? "holds" : "cannot_compute";
+  const word = outcome === "holds" ? "holds" : outcome === "fails" ? "fails" : "cannot tell";
+  const seen = new Set();
+  two.computed = Object.assign({}, parts[0], {
+    canonical: `(${parts[0].canonical}) and (${parts[1].canonical})`,
+    bound: parts.map((part) => `(${part.bound || part.canonical})`).join(" and "),
+    outcome,
+    outcome_label: { holds: "Holds", fails: "Fails", cannot_compute: "Cannot be computed" }[outcome],
+    operands: parts.flatMap((part) => part.operands).filter((op) => !seen.has(op.term) && seen.add(op.term)),
+    arithmetic: [...parts.flatMap((part) => part.arithmetic), `both of 2 tests: ${outcomes.filter((o) => o === "holds").length} hold, ${outcomes.filter((o) => o === "fails").length} fail, ${outcomes.filter((o) => o === "cannot_compute").length} cannot be told: ${word}`],
+    margin: null,
+    margin_display: "",
+    counted_as: { holds: "supports", fails: "challenges" }[outcome] || "",
+    combines: "and",
+    parts,
+    history: parts[0].history,
+  });
+  win.eval(`renderRun(${JSON.stringify(joined)})`);
+  await until(() => doc.querySelector('[data-computed-test="c2"] [data-combines="and"]'), "the test of two parts");
+  const block = doc.querySelector('[data-computed-test="c2"]');
+  record("and", {
+    test: JSON.stringify(two.computed),
+    parts: JSON.stringify([...block.querySelectorAll(".ct-part")].map((li) => ({
+      index: li.dataset.part,
+      outcome: li.dataset.outcome,
+      bound: text(li.querySelector("[data-part-bound]")),
+      margin: text(li.querySelector("[data-part-margin]")),
+      sides: text(li.querySelector("[data-sides]")),
+      arithmetic: [...li.querySelectorAll(".ct-arith li")].map(text),
+    }))),
+    combine: text(block.querySelector(".ct-combine")),
+    tally: text(block.querySelector("[data-combine-tally]")),
+    sidesOutsideParts: String([...block.querySelectorAll("[data-sides]")].filter((node) => !node.closest(".ct-part")).length),
+    operands: JSON.stringify([...block.querySelectorAll(".ct-table tbody tr")].map((tr) => tr.dataset.operand)),
+    margin: text(block.querySelector("[data-margin]")),
+    outcome: block.querySelector(".ct-result [data-outcome]").dataset.outcome,
+    lane: text(doc.querySelector('#tot [data-tot-claim="c2"] [data-history-parts]')),
+    laneHead: JSON.stringify([...doc.querySelectorAll('#tot [data-tot-claim="c2"] thead th')].map(text)),
+  });
 
   // The restatement lookup, sample mode off.
   win.eval("state.sample = false; setFormEnabled(true)");

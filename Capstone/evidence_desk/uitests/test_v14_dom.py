@@ -28,6 +28,7 @@ COPIES = {
     "sample-computed.json": "run.json",
     "sample-as-of.json": "as-of-run.json",
     "sample-restatements.json": "restatements.json",
+    "sample-readers.json": "run-readers.json",
 }
 DUMPS = {"computed": ("dom-computed.html", "sample-computed.json"), "as-of": ("dom-as-of.html", "sample-as-of.json")}
 OUTCOME_GLYPH = {"holds": "⊨", "fails": "⊭", "cannot_compute": "⊘"}
@@ -341,33 +342,84 @@ def drawn(step: str) -> dict[str, dict[str, Any]]:
 
 
 def test_the_harness_ran_every_step_and_made_no_unexpected_call() -> None:
-    assert list(steps()) == ["sample", "readers", "ledger-422", "ledger-200", "ledger-503", "run-422", "run-as-of", "inbox", "theses"]
+    assert list(steps()) == ["sample", "readers", "and", "ledger-422", "ledger-200", "ledger-503", "run-422", "run-as-of", "inbox", "theses"]
     for step in steps():
         assert recorded(step, "unexpected") == [], step
 
 
-def test_readings_that_differ_are_both_shown_and_not_counted() -> None:
+def marks(claim: dict[str, Any]) -> list[tuple[str, str]]:
+    return [(reader, mark) for reader, mark, _ in claim["marks"]]
+
+
+def test_readings_that_differ_are_all_shown_and_not_counted() -> None:
     claims = drawn("readers")
     c1 = claims["c1"]
-    assert c1["readers"] == ["grammar", "model"] and len(set(c1["canonicals"])) == 2
-    assert c1["differ"] and c1["counted"] == "differ"
+    assert c1["readers"] == ["grammar", "model", "model_2"] and len(set(c1["canonicals"])) == 3
+    assert c1["differ"] and c1["counted"] == "differ" and c1["agreement"] == "not_agreed"
+    assert c1["agreementLabel"] == "not counted: no two readers agree"
+    assert marks(c1) == [("grammar", "same"), ("model", "other"), ("model_2", "refused")]
     assert "Readings differ: not counted" in c1["board"] and "Readings differ: not counted" in c1["flag"]
+    assert c1["boardReaders"] == "" and c1["dissent"] == ""
     assert c1["note"].startswith("Note: Readings differ: not counted.")
     # The grammar's test of a claim it did not compile: no test, the model's reading beside it.
     c3 = claims["c3"]
-    assert c3["readers"] == ["grammar", "model"] and c3["canonicals"][0] == "none" and c3["differ"]
+    assert c3["readers"] == ["grammar", "model", "model_2"] and c3["canonicals"][0] == "none" and c3["differ"]
+    assert marks(c3) == [("grammar", "refused"), ("model", "other"), ("model_2", "refused")]
     assert "Readings differ: not counted" in c3["compileNote"]
-    assert "grammar and model" in steps()["readers"]["data-readers-line"]
+    assert "grammar, model and model_2" in steps()["readers"]["data-readers-line"]
 
 
-def test_readings_that_agree_count_and_any_number_of_readers_is_listed() -> None:
+def test_a_dissent_is_shown_and_the_test_still_counts() -> None:
+    c2 = drawn("readers")["c2"]
+    assert c2["agreement"] == "agreed_with_dissent" and c2["agreementLabel"] == "counted, with one dissenting reading"
+    assert marks(c2) == [("grammar", "same"), ("model", "same"), ("model_2", "dissent")]
+    assert c2["counted"] == "challenges" and not c2["differ"]
+    assert c2["dissent"] == "≠ Dissent: Model 2 read yoy(revenue)[Q] > 100%"
+    assert c2["boardReaders"] == "2 of 3 readers, one dissenting"
+
+
+def test_readings_that_agree_count_and_say_how_many_readers_agreed() -> None:
     claims = drawn("readers")
-    assert claims["c2"]["readers"] == ["grammar", "model"] and not claims["c2"]["differ"]
-    assert claims["c2"]["counted"] == "challenges"
-    assert claims["c4"]["readers"] == ["grammar", "model", "second-model"] and not claims["c4"]["differ"]
-    assert claims["c4"]["counted"] == "supports"
-    # The sample itself has one reader and nothing differs.
-    assert all(not c["differ"] and c["readers"] == ["grammar"] for c in drawn("sample").values())
+    c4, c5 = claims["c4"], claims["c5"]
+    assert marks(c4) == [("grammar", "same"), ("model", "same"), ("model_2", "same")]
+    assert c4["agreement"] == "agreed" and c4["counted"] == "supports" and c4["boardReaders"] == "3 of 3 readers"
+    # A refusal is not a dissent: two of three, counted, no dissent line.
+    assert marks(c5) == [("grammar", "same"), ("model", "same"), ("model_2", "refused")]
+    assert c5["agreement"] == "agreed" and c5["boardReaders"] == "2 of 3 readers" and c5["dissent"] == ""
+    # Each mark says what the reader read, or why it read nothing, with who the reader is.
+    reason = next(why for reader, _, why in c5["marks"] if reader == "model_2")
+    assert reason == "Model 2 (claude-sonnet-5-5 (made in this harness: no model was asked)) read no test: the model reader: a year this tool does not place"
+    # The rule in words, in the run head and in "How to read this".
+    rule = steps()["readers"]["data-rule"]
+    assert rule.startswith("Three readers (grammar, model and model_2)")
+    assert steps()["readers"]["data-howto-rule"] == f"This run's rule: {rule}"
+    # The sample itself has one reader: its mark, and nothing differs.
+    for claim in drawn("sample").values():
+        assert not claim["differ"] and claim["readers"] == ["grammar"]
+        assert claim["agreement"] in ("one_reader", "none", "")
+
+
+def test_a_test_of_two_parts_draws_every_part_and_how_they_combine() -> None:
+    step = steps()["and"]
+    test = json.loads(step["data-test"])
+    parts = json.loads(step["data-parts"])
+    assert [p["index"] for p in parts] == ["0", "1"]
+    for drawn_part, part in zip(parts, test["parts"], strict=True):
+        assert drawn_part["outcome"] == part["outcome"]
+        assert drawn_part["bound"] == part["bound"]
+        assert drawn_part["margin"] == part["margin_display"]
+        assert drawn_part["arithmetic"] == part["arithmetic"]
+        assert drawn_part["sides"].startswith(f'Compared: {part["left"]["term"]} = {part["left"]["display"]}')
+    # The record's last line of arithmetic says how the parts came out together; the whole test's sides are not shown as the first part's.
+    assert step["data-tally"] == f'Together: {test["arithmetic"][-1]}'
+    assert "both hold" in step["data-combine"]
+    assert step["data-sides-outside-parts"] == "0"
+    assert json.loads(step["data-operands"]) == [op["term"] for op in test["operands"]]
+    assert step["data-margin"] == "each part has its own"
+    assert step["data-outcome"] == test["outcome"]
+    # One history line for the whole test, and the table says whose sides each point gives.
+    assert "One line for the whole test of 2 parts" in step["data-lane"]
+    assert json.loads(step["data-lane-head"])[4:6] == ["First part's left", "First part's right"]
 
 
 def test_the_ledger_lookup_sends_the_date_and_says_each_refusal() -> None:

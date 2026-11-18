@@ -31,6 +31,8 @@ DUMPS = {
     "run": (WEB / "sample-run.json", "dom-sample.html"),
     "run-tagged": (WEB / "sample-run-tagged.json", "dom-run-tagged.html"),
     "synthetic": (WEB / "sample-synthetic.json", "dom-synthetic.html"),
+    "run-live": (WEB / "sample-run-live.json", "dom-run-live.html"),
+    "readers": (WEB / "sample-readers.json", "dom-readers.html"),
 }
 every_run = pytest.mark.parametrize("name", sorted(DUMPS))
 

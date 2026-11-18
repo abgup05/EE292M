@@ -33,6 +33,8 @@
 //   changes   between two filings (`/api/companies/{ticker}/changes`), cyan, square tags:
 //             # numbers only, ~ reworded, + added, − removed; inside a reworded
 //             paragraph, added words are underlined and removed ones struck through
+//   computed  ⊨ holds, ⊭ fails, ⊘ cannot be computed (a test's outcome, never a verdict)
+//   readers   ● read the test shown, ≠ read another test, ○ read no test (one mark per reader)
 //
 // Drawing, not computing: the time line places record dates on an axis, a sparkline places
 // a series' values in a box, and a negative number is set in its colour from the sign of the
@@ -212,6 +214,9 @@ const BARE_SAMPLE_NOTES = {
   "as-of": `Version 14's example run as of 1 Mar 2026 (docs/examples/v14/as-of-run.json): the same five claims, reading only what was filed by that date. It was ${"made offline by make examples (tests/examples_v14.py) from the recorded NVIDIA fixtures with the extractive engine: no model was asked and no cassette was replayed, and no EDGAR request was made. Clock times are fixed at 2026-11-18 12:00 UTC. The extractive engine judges no stance, so a verdict here is supported or challenged only through its computed test. Copied unedited from docs/examples/v14/ by make sample-v14."}`,
   "run-events":
     "A live run of 18 November 2026 on NVIDIA (run run-39d0b17b5396), answered by the Anthropic API: claude-opus-5-5 read the passages and claude-haiku-5-5 checked their meaning. It is copied unedited from results/run-39d0b17b5396.json. Its first claim is about the chief executive leaving, and the 8-K of 12 Nov 2026 postdates the evidence of one of its findings.",
+  "run-live":
+    "A live run of 18 November 2026 on NVIDIA (run run-7fa4a528d428), answered by the Anthropic API: claude-opus-5-5 read the passages, claude-haiku-5-5 checked their meaning, and three readers turned each claim into a test: the grammar (a fixed rule, no model), claude-haiku-5-5 and claude-sonnet-5-5. It is copied unedited from results/run-7fa4a528d428.json. Three of its five claims became tests that all three readers read alike (one of them held in each of the last four quarters); no reader could turn the other two into a test.",
+  readers: `Version 14's example run with two model readers (docs/examples/v14/run-readers.json): six claims of set C read by the grammar, claude-haiku-5-5 and claude-sonnet-5-5. The readers' answers were ${"replayed read-only from the cassette eval/cassettes/claim-readers, recorded through the Anthropic API on 18 Nov 2026; the findings come from the extractive engine (no model) on the recorded NVIDIA fixtures, made offline by make examples with no EDGAR request. Clock times are fixed at 2026-11-18 12:00 UTC. Copied unedited from docs/examples/v14/ by make sample-v14."}`,
 };
 
 /** Samples stored as a bare RestatementLedger, copied unedited from docs/examples/v14 by make sample-v14. */
@@ -2309,7 +2314,7 @@ async function loadSample(name) {
   $("tagged-link").hidden = true;
   $("events-link").hidden = true;
   $("inbox-link").hidden = true;
-  for (const id of ["computed-link", "as-of-link", "ledger-link"]) if ($(id)) $(id).hidden = true;
+  for (const id of ["live-link", "computed-link", "readers-link", "as-of-link", "ledger-link"]) if ($(id)) $(id).hidden = true;
   hideRunView();
   if (!SAMPLE_NAME.test(name)) {
     showLoadError("That sample name is not valid: use lower-case letters, digits and hyphens.", null);
@@ -2730,8 +2735,10 @@ function renderHead(run) {
         h("span", { class: "label", text: "Claims read into tests by: " }),
         run.claim_readers,
         str(run.claim_reader_detail) ? h("span", { class: "engine-detail" }, " — ", provenanceDetail(run.claim_reader_detail)) : "",
+        str(run.claim_reading_rule) ? h("span", { class: "run-rule", "data-claim-reading-rule": "", text: ` ${run.claim_reading_rule}` }) : "",
       )
     : "";
+  renderHowtoRule(run);
   const details = h(
     "p",
     { class: "run-meta" },
@@ -2748,9 +2755,27 @@ function renderHead(run) {
     download = h("a", { class: "download", href: briefHref(run.id, false), download: `evidence-desk-${run.id}.md`, text: "Download Markdown brief" });
   }
   els.runHead.replaceChildren(
-    h("div", { class: "run-head-main" }, title, decision, engineLine, checkerLine, readersLine, details, asOfLine(run), thesisLine(run), sampleNoteLine()),
+    h(
+      "div",
+      { class: "run-head-main" },
+      title,
+      decision,
+      // How the run was made, in one small block under the question: the answer follows it.
+      h("div", { class: "run-provenance" }, engineLine, checkerLine, readersLine, details, asOfLine(run)),
+      thesisLine(run),
+      sampleNoteLine(),
+    ),
     h("div", { class: "run-head-actions" }, download, run.status !== "running" && !state.sample ? h("span", { class: "muted", text: "Print this page for a paper copy of the note." }) : ""),
   );
+}
+
+/** "How to read this" names the counting rule of the run on show, in the record's words (`claim_reading_rule`). */
+function renderHowtoRule(run) {
+  const slot = $("howto-reading-rule");
+  if (!slot) return;
+  const rule = str(run?.claim_reading_rule);
+  slot.hidden = !rule;
+  slot.replaceChildren(rule ? h("span", null, h("strong", { text: "This run's rule: " }), rule) : "");
 }
 
 /**
@@ -2839,8 +2864,8 @@ function renderScorecard(run) {
         h("span", { class: "claim-id", text: claim.id }),
         " ",
         claim.text,
-        assessedText(claim) ? h("span", { class: "assessed", text: assessedText(claim) }) : "",
-        boardComputed(claim),
+        // Who read the findings and what the computed test says, on one line under the claim.
+        h("span", { class: "score-sub" }, assessedText(claim) ? h("span", { class: "assessed", text: assessedText(claim) }) : "", boardComputed(claim)),
       ),
       h("span", { class: "score-counts" }, `${plural(list(claim.finding_ids).length, "finding", "findings")} · `, ...passages),
     );
@@ -2905,6 +2930,7 @@ function renderSummary(run) {
 function renderClaims(run, ctx) {
   const open = new Set([...els.claimList.querySelectorAll("details[open]")].map((d) => d.id));
   els.claimList.replaceChildren();
+  const readers = readerDetails(run);
   list(run.claims).forEach((claim, position) => {
     const id = `claim-${position}`;
     const model = modelAssessed(claim);
@@ -2932,8 +2958,8 @@ function renderClaims(run, ctx) {
       );
     }
     // Version 14: the computed part of the verdict, before the findings (the reading of the filings).
-    if (claim.computed && typeof claim.computed === "object") body.append(computedTest(claim, run.company?.cik));
-    else if (str(claim.compile_note)) body.append(compileNote(claim));
+    if (claim.computed && typeof claim.computed === "object") body.append(computedTest(claim, run.company?.cik, readers));
+    else if (str(claim.compile_note)) body.append(compileNote(claim, readers));
     if (list(claim.queries).length) {
       body.append(h("p", { class: "queries" }, h("span", { class: "label", text: "Searched with: " }), claim.queries.join(" · ")));
     }
@@ -4426,7 +4452,14 @@ const COUNTED_WORDS = { supports: "Counted as support", challenges: "Counted as 
 const READINGS_DIFFER = "Readings differ: not counted";
 /** A reader that read no test answers this canonical (app.core.policy.NO_TEST). */
 const NO_TEST = "none";
-const READER_WORDS = { grammar: "The grammar (a fixed rule, no model)", model: "The model parser (a model's reading)" };
+/** `ComputedTest.agreement` when no two readers reached the same test (app.core.policy.NOT_AGREED). */
+const NOT_AGREED = "not_agreed";
+/** The agreements under which the test counts and `read_by` names the readers who agreed (app.core.policy). */
+const AGREED = new Set(["agreed", "agreed_with_dissent"]);
+const READER_WORDS = { grammar: "The grammar (a fixed rule, no model)", model: "The first model reader", model_2: "The second model reader" };
+const READER_SHORT = { grammar: "Grammar", model: "Model 1", model_2: "Model 2" };
+/** One mark per reader: read the test shown, read another test (a dissent when the test still counts), read no test. */
+const READER_MARK = { same: "●", dissent: "≠", other: "≠", refused: "○" };
 const ACCESSION_ID = /^\d{10}-\d{2}-\d{6}$/;
 
 function testOutcome(outcome, label) {
@@ -4456,25 +4489,18 @@ function filingRef(ref, cik) {
   return url ? externalLink(url, words) : h("span", { text: words });
 }
 
-/**
- * Did this claim's readers read different tests? Read from the record's own fields: the test
- * names who read it (`read_by`), the claim every reader's reading (`readings`). With one reader
- * (the default) they cannot differ. The backend's note on the test says it in words too.
- */
+function testOf(claim) {
+  return claim?.computed && typeof claim.computed === "object" ? claim.computed : null;
+}
+
+/** The record's conclusion that no two readers agreed (`ComputedTest.agreement`); the page works nothing out. */
 function readingsDiffer(claim) {
-  const readings = list(claim?.readings);
-  if (readings.length < 2) return false;
-  const test = claim.computed;
-  if (test && typeof test === "object") {
-    const readBy = list(test.read_by);
-    return readings.some((reading) => !readBy.includes(reading.reader));
-  }
-  return readings.some((reading) => str(reading.canonical) && reading.canonical !== NO_TEST);
+  return str(testOf(claim)?.agreement) === NOT_AGREED;
 }
 
 /** What the verdict rule made of the test, in words: counted as support or a challenge, not counted, or the readings differ. */
 function countedTag(claim) {
-  const test = claim.computed;
+  const test = testOf(claim);
   if (readingsDiffer(claim)) {
     return h("span", { class: "ct-counted c-differ", "data-counted": "differ" }, limitGlyph(), ` ${READINGS_DIFFER}`);
   }
@@ -4483,32 +4509,106 @@ function countedTag(claim) {
   return h("span", { class: "ct-counted c-none", "data-counted": "none", text: "Not counted" });
 }
 
-/** Who read the claim: each reader's test, or "no test" and why, as the record lists them (one or more). */
-function readingsBlock(claim) {
+/**
+ * Each model reader's own detail (model, and the API or a recording), from `claim_reader_detail`,
+ * which the record writes one model reader after another, separated by "; ". When the parts do not
+ * line up with the model readers, every model reader gets the whole line.
+ */
+function readerDetails(run) {
+  const readers = str(run?.claim_readers).split(/, | and /).map((name) => name.trim()).filter(Boolean);
+  const models = readers.filter((name) => name !== "grammar");
+  const detail = str(run?.claim_reader_detail);
+  const parts = detail.split("; ").map((part) => part.trim()).filter(Boolean);
+  const out = { grammar: "a fixed rule, no model" };
+  models.forEach((name, index) => {
+    out[name] = parts.length === models.length ? parts[index] : detail;
+  });
+  return out;
+}
+
+/** How one reader's reading stands to the test shown, from the record's own lists (`read_by`, `dissent`). */
+function readingKind(reading, test) {
+  const reader = str(reading?.reader);
+  if (!str(reading?.canonical) || reading.canonical === NO_TEST) return "refused";
+  if (test && list(test.read_by).includes(reader)) return "same";
+  if (test && list(test.dissent).some((other) => str(other?.reader) === reader)) return "dissent";
+  return "other";
+}
+
+/** One reader's mark: what it read, in words on hover or focus (and to a screen reader), with who the reader is. */
+function readerMark(reading, test, details = {}) {
+  const reader = str(reading?.reader);
+  const kind = readingKind(reading, test);
+  const name = READER_SHORT[reader] ?? (reader || "A reader");
+  let said;
+  if (kind === "same") said = test ? `read this test: ${str(reading.canonical)}` : `read ${str(reading.canonical)}`;
+  else if (kind === "dissent") said = `read another test, a dissent: ${str(reading.canonical)}`;
+  else if (kind === "other") said = `read another test: ${str(reading.canonical)}`;
+  else said = `read no test${str(reading?.reason) ? `: ${reading.reason}` : ""}`;
+  const who = str(details[reader]);
+  const why = `${name}${who && who !== name ? ` (${who})` : ""} ${said}`;
+  return h(
+    "span",
+    { class: `reader-mark rm-${kind}`, "data-reader-mark": reader, "data-mark": kind, "data-why": why, tabindex: "0" },
+    h("span", { class: "glyph", "aria-hidden": "true", text: READER_MARK[kind] }),
+    h("span", { class: "reader-short", text: name }),
+    h("span", { class: "visually-hidden", text: `: ${why}` }),
+  );
+}
+
+/**
+ * Who read the claim and whether they agreed, in one row: a mark per reader, the record's
+ * agreement label, and each dissenting reading. Nothing is compared here: the marks come from
+ * the test's `read_by` and `dissent`, the agreement from `agreement` and `agreement_label`.
+ */
+function readersRow(claim, details = {}) {
   const readings = list(claim?.readings);
   if (readings.length === 0) return "";
-  const readBy = list(claim.computed?.read_by);
+  const test = testOf(claim);
+  const agreement = str(test?.agreement);
+  const dissent = list(test?.dissent);
   return h(
     "div",
-    { class: "ct-readings", "data-readings": claim.id },
-    h("p", { class: "label" }, "Who read the claim", readBy.length ? h("span", { class: "muted", "data-read-by": readBy.join(" "), text: ` · the test above was read by: ${readBy.join(" and ")}` }) : ""),
-    h(
-      "ul",
-      { class: "readings" },
-      readings.map((reading) => {
-        const read = str(reading.canonical) && reading.canonical !== NO_TEST;
-        return h(
-          "li",
-          { "data-reader": str(reading.reader), "data-canonical": str(reading.canonical) },
-          h("span", { class: "reader-name", text: READER_WORDS[reading.reader] ?? (str(reading.reader) || "a reader") }),
-          ": ",
-          read ? h("code", { text: reading.canonical }) : h("span", { class: "muted", text: "no test" }),
-          str(reading.reason) ? h("span", { class: "muted", text: ` (${reading.reason})` }) : "",
-        );
-      }),
-    ),
-    readingsDiffer(claim) ? limitLine("p", h("strong", { text: `${READINGS_DIFFER}.` }), " The grammar's test, if any, is computed and shown, but it counts as nothing: the verdict rests on the findings alone.") : "",
+    { class: "ct-readers", "data-readers": str(claim.id), "data-agreement": agreement || "none" },
+    h("span", { class: "label", text: "Read by " }),
+    h("span", { class: "reader-marks" }, ...readings.map((reading) => readerMark(reading, test, details))),
+    test && str(test.agreement_label) ? h("span", { class: `ct-agreement a-${agreement === NOT_AGREED ? "differ" : agreement === "agreed_with_dissent" ? "dissent" : "agreed"}`, "data-agreement-label": agreement, text: test.agreement_label }) : "",
+    dissent.length
+      ? h(
+          "p",
+          { class: "ct-dissent", "data-dissent": dissent.map((reading) => str(reading?.reader)).join(" ") },
+          h("span", { class: "glyph", "aria-hidden": "true", text: "≠ " }),
+          h("span", { class: "label", text: "Dissent: " }),
+          ...dissent.flatMap((reading, index) => [index ? "; " : "", `${READER_SHORT[reading?.reader] ?? str(reading?.reader)} read `, h("code", { text: str(reading?.canonical) })]),
+        )
+      : "",
   );
+}
+
+/** Every reading in full: each reader's test, or "no test" and why, as the record lists them (one or more). */
+function readingsBlock(claim, { folded = true } = {}) {
+  const readings = list(claim?.readings);
+  if (readings.length === 0) return "";
+  const readBy = list(testOf(claim)?.read_by);
+  const items = h(
+    "ul",
+    { class: "readings" },
+    readings.map((reading) => {
+      const read = str(reading.canonical) && reading.canonical !== NO_TEST;
+      return h(
+        "li",
+        { "data-reader": str(reading.reader), "data-canonical": str(reading.canonical) },
+        h("span", { class: "reader-name", text: READER_WORDS[reading.reader] ?? (str(reading.reader) || "a reader") }),
+        ": ",
+        read ? h("code", { text: reading.canonical }) : h("span", { class: "muted", text: "no test" }),
+        str(reading.reason) ? h("span", { class: "muted", text: ` (${reading.reason})` }) : "",
+        read && str(reading.normal_form) && reading.normal_form !== reading.canonical ? h("span", { class: "muted", "data-normal-form": reading.normal_form }, " · compared as ", h("code", { text: reading.normal_form })) : "",
+      );
+    }),
+  );
+  const by = readBy.length ? h("span", { class: "muted", "data-read-by": readBy.join(" "), text: ` · the test above is the reading of: ${readBy.join(" and ")}` }) : "";
+  if (!folded) return h("div", { class: "ct-readings", "data-readings": claim.id }, items);
+  return h("details", { class: "ct-readings", "data-readings": claim.id }, h("summary", null, "Every reading", by), items);
 }
 
 /** One fact a value was read from: concept, period, value, the filing (linked) and its flags. */
@@ -4545,70 +4645,165 @@ function operandRow(operand, cik) {
 
 /** "left {comparison} right", each side as the record words it. */
 function sidesLine(test) {
-  const side = (operand) => (operand && typeof operand === "object" ? [h("code", { text: str(operand.term) }), " = ", h("strong", { text: str(operand.display) || "—" })] : [h("span", { class: "muted", text: "not recorded" })]);
+  // A constant (a threshold) is its own display: "70%", not "70% = 70%".
+  const side = (operand) => {
+    if (!operand || typeof operand !== "object") return [h("span", { class: "muted", text: "not recorded" })];
+    if (str(operand.term) && str(operand.term) === str(operand.display)) return [h("strong", { text: operand.display })];
+    return [h("code", { text: str(operand.term) }), " = ", h("strong", { text: str(operand.display) || "—" })];
+  };
   return h("p", { class: "ct-sides", "data-sides": "" }, h("span", { class: "label", text: "Compared: " }), ...side(test.left), ` ${str(test.comparison)} `, ...side(test.right));
+}
+
+/** How a test of several parts is put together, in words: the rule of app.core.claim_eval._combined, not a result. */
+const COMBINE_WORDS = {
+  each: "A test held in each of several periods: it holds when every period's test holds, fails when any one fails, and otherwise cannot be computed.",
+  and: "Two tests joined by \u201cand\u201d: it holds when both hold, fails when either fails, and otherwise cannot be computed.",
+};
+
+function isCombined(test) {
+  return Boolean(str(test?.combines)) && list(test?.parts).length > 0;
+}
+
+/** The table of every value a test read: term, what it is, its value, how it was computed and the facts. */
+function operandTable(operands, cik, label) {
+  if (!operands.length) return "";
+  return h(
+    "div",
+    { class: "table-wrap", tabindex: "0", role: "region", "aria-label": label },
+    h(
+      "table",
+      { class: "ct-table" },
+      h("thead", null, h("tr", null, ["Value", "Is", "How", "Read from"].map((t, i) => h("th", { scope: "col", class: i === 1 ? "num" : null, text: t })))),
+      h("tbody", null, operands.map((operand) => operandRow(operand, cik))),
+    ),
+  );
+}
+
+function arithmeticList(lines) {
+  return lines.length ? h("ol", { class: "ct-arith" }, lines.map((line) => h("li", { text: str(line) }))) : "";
+}
+
+/**
+ * The parts of an "each" or an "and" test, every one drawn: its bound expression, its outcome
+ * and margin, its two sides, its arithmetic and, for a part that could not be computed, why.
+ * Then the record's own last line of arithmetic, which says how the parts came out together.
+ * The operands of every part are in the one table above (the record lists each once).
+ */
+function partsBlock(claim, test) {
+  const parts = list(test.parts);
+  const combines = str(test.combines);
+  const lines = list(test.arithmetic);
+  const tally = lines.length ? str(lines[lines.length - 1]) : "";
+  return h(
+    "div",
+    { class: "ct-parts-block", "data-combines": combines },
+    h("p", { class: "ct-combine" }, h("span", { class: "label", text: combines === "each" ? `Each of ${parts.length} periods. ` : `Both of ${parts.length} tests. ` }), COMBINE_WORDS[combines] ?? `The parts combine as "${combines}".`),
+    h(
+      "ol",
+      { class: "ct-parts" },
+      parts.map((part, index) => {
+        const key = token(part?.outcome, TEST_MARK);
+        return h(
+          "li",
+          { class: `ct-part o-${key}`, "data-part": String(index), "data-outcome": key },
+          h(
+            "p",
+            { class: "ct-part-head" },
+            h("code", { "data-part-bound": "", text: str(part?.bound) || str(part?.canonical) }),
+            " ",
+            testOutcome(part?.outcome, part?.outcome_label),
+            str(part?.margin_display) ? h("span", { class: `ct-margin${signClass(part.margin_display)}`, "data-part-margin": "", text: ` ${part.margin_display}` }) : "",
+          ),
+          str(part?.reason) ? h("p", { class: "ct-reason", "data-part-reason": "" }, h("span", { class: "label", text: "Why it could not be computed: " }), part.reason) : "",
+          part && typeof part === "object" ? sidesLine(part) : "",
+          h("div", { "data-part-arith": "" }, arithmeticList(list(part?.arithmetic))),
+          str(part?.note) ? h("p", { class: "ct-note muted", "data-part-note": "", text: part.note }) : "",
+        );
+      }),
+    ),
+    tally ? h("p", { class: "ct-tally", "data-combine-tally": "" }, h("span", { class: "label", text: "Together: " }), tally) : "",
+  );
 }
 
 /**
  * A claim's computed test: the canonical expression, the outcome (with why it could not be
- * computed), what the verdict rule counted, the bound test, the operands with each value's
- * filing and date, the arithmetic, the margin and who read it.
+ * computed), what the verdict rule counted, who read it and whether they agreed, the bound test,
+ * the operands with each value's filing and date, the arithmetic and the margin. A test of
+ * several parts ("each", "and") draws every part.
  */
-function computedTest(claim, cik) {
+function computedTest(claim, cik, details = {}) {
   const test = claim.computed;
   const operands = list(test.operands);
   const outcome = token(test.outcome, TEST_MARK);
+  const combined = isCombined(test);
   return h(
     "section",
-    { class: `ct o-${outcome}`, id: `claim-${claim.id}-test`, "data-computed-test": claim.id, "aria-label": `Computed test of claim ${claim.id}` },
+    { class: `ct o-${outcome}${combined ? " is-combined" : ""}`, id: `claim-${claim.id}-test`, "data-computed-test": claim.id, "aria-label": `Computed test of claim ${claim.id}` },
     h(
       "div",
       { class: "ct-head" },
-      h("p", { class: "ct-kicker" }, ruleMark("Computed from the XBRL facts by a fixed rule, no model"), str(test.form) ? h("span", { class: "muted", text: ` · form: ${test.form}` }) : ""),
+      h("p", { class: "ct-kicker" }, ruleMark("Computed from the XBRL facts by a fixed rule, no model"), str(test.form) ? h("span", { class: "muted", text: ` · form: ${test.form}${combined ? `, ${test.combines}` : ""}` }) : ""),
       h("p", { class: "ct-expr" }, h("code", { "data-canonical": "", text: str(test.canonical) })),
       h("p", { class: "ct-result" }, testOutcome(test.outcome, test.outcome_label), countedTag(claim)),
+      readersRow(claim, details),
     ),
     str(test.reason) ? h("p", { class: "ct-reason", "data-reason": "" }, h("span", { class: "label", text: "Why it could not be computed: " }), test.reason) : "",
     h("p", { class: "ct-bound" }, h("span", { class: "label", text: "Computed for: " }), str(test.bound) ? h("code", { "data-bound": "", text: test.bound }) : h("span", { class: "muted", text: "no period could be placed" })),
     str(test.as_of) ? h("p", { class: "ct-asof", "data-test-as-of": test.as_of }, h("span", { class: "label", text: "Facts read up to: " }), dateLabel(test.as_of)) : "",
-    sidesLine(test),
-    operands.length
-      ? h(
-          "div",
-          { class: "table-wrap", tabindex: "0", role: "region", "aria-label": `Values read for claim ${claim.id}` },
-          h(
-            "table",
-            { class: "ct-table" },
-            h("thead", null, h("tr", null, ["Value", "Is", "How", "Read from"].map((t, i) => h("th", { scope: "col", class: i === 1 ? "num" : null, text: t })))),
-            h("tbody", null, operands.map((operand) => operandRow(operand, cik))),
-          ),
-        )
-      : "",
-    list(test.arithmetic).length ? h("div", { class: "ct-arith-block" }, h("p", { class: "label", text: "The arithmetic" }), h("ol", { class: "ct-arith" }, list(test.arithmetic).map((line) => h("li", { text: str(line) })))) : "",
-    h("p", { class: "ct-margin-line" }, h("span", { class: "label", text: "Margin: " }), h("span", { class: `ct-margin${signClass(str(test.margin_display))}`, "data-margin": "", text: str(test.margin_display) || "none: not computed" })),
+    combined ? "" : sidesLine(test),
+    operandTable(operands, cik, `Values read for claim ${claim.id}`),
+    combined
+      ? partsBlock(claim, test)
+      : list(test.arithmetic).length
+        ? h("div", { class: "ct-arith-block" }, h("p", { class: "label", text: "The arithmetic" }), arithmeticList(list(test.arithmetic)))
+        : "",
+    combined && !str(test.margin_display)
+      ? h("p", { class: "ct-margin-line" }, h("span", { class: "label", text: "Margin: " }), h("span", { class: "ct-margin muted", "data-margin": "", text: "each part has its own" }))
+      : h("p", { class: "ct-margin-line" }, h("span", { class: "label", text: "Margin: " }), h("span", { class: `ct-margin${signClass(str(test.margin_display))}`, "data-margin": "", text: str(test.margin_display) || "none: not computed" })),
     str(test.note) ? h("p", { class: "ct-note", "data-test-note": "" }, h("span", { class: "label", text: "Note: " }), test.note) : "",
     readingsBlock(claim),
   );
 }
 
-/** A claim that did not compile: the backend's words for what was not understood, said quietly, and who read it. */
-function compileNote(claim) {
+/**
+ * A claim that did not compile: the backend's words for what was not understood, said quietly,
+ * then each reader's mark and, with more than one reader, each reader's reason.
+ */
+function compileNote(claim, details = {}) {
+  const several = list(claim.readings).length > 1;
   return h(
     "div",
     { class: "ct-not", "data-compile-note": claim.id },
     h("p", { class: "muted" }, h("span", { class: "glyph", "aria-hidden": "true", text: "⊘ " }), h("span", { class: "label", text: "No computed test. " }), str(claim.compile_note)),
-    readingsBlock(claim),
+    several ? readersRow(claim, details) : "",
+    readingsBlock(claim, { folded: !several }),
   );
+}
+
+/**
+ * How many readers read the test the board shows, from the record: `read_by` against every reading,
+ * when the counting rule says they agreed; the record's label otherwise (one reader, or none agreeing).
+ */
+function boardReaders(claim) {
+  const test = testOf(claim);
+  const agreement = str(test?.agreement);
+  if (!agreement || agreement === NOT_AGREED) return "";
+  const total = list(claim.readings).length;
+  const agreeing = list(test.read_by).length;
+  const words = AGREED.has(agreement) && total > 1 ? `${agreeing} of ${total} readers${list(test.dissent).length ? ", one dissenting" : ""}` : str(test.agreement_label);
+  if (!words) return "";
+  return h("span", { class: "score-readers", "data-board-readers": agreement, "data-read-by-count": String(agreeing), "data-readers-total": String(total), text: words });
 }
 
 /** On the verdict board: the computed part of the verdict, apart from the model's or the engine's reading of the findings. */
 function boardComputed(claim) {
-  const test = claim.computed;
-  if (!test || typeof test !== "object") {
+  const test = testOf(claim);
+  if (!test) {
     if (!str(claim.compile_note)) return "";
     return h("span", { class: "score-computed is-none", "data-board-computed": "none", text: "No computed test: the verdict rests on the findings" });
   }
-  return h("span", { class: "score-computed", "data-board-computed": token(test.outcome, TEST_MARK) }, h("span", { class: "label", text: "Computed, no model: " }), testOutcome(test.outcome, test.outcome_label), " ", countedTag(claim));
+  const readers = boardReaders(claim);
+  return h("span", { class: "score-computed", "data-board-computed": token(test.outcome, TEST_MARK) }, h("span", { class: "label", text: "Computed, no model: " }), testOutcome(test.outcome, test.outcome_label), " ", countedTag(claim), readers ? [" · ", readers] : "");
 }
 
 // ---- the thesis over time
@@ -4670,6 +4865,13 @@ function totClaim(claim, scale, cik) {
     h("p", { class: "tot-now" }, h("span", { class: "muted", text: "Now: " }), testOutcome(test.outcome, test.outcome_label), " ", h("code", { class: "tot-expr", text: str(test.canonical) })),
   );
   const note = str(test.history_note) ? h("p", { class: "hint tot-note", "data-history-note": str(claim.id), text: test.history_note }) : "";
+  // A test of several parts has one line for the whole test; each point's two sides are its first part's.
+  const combined = isCombined(test);
+  const firstPart = combined ? str(list(test.parts)[0]?.canonical) : "";
+  const partsNote = combined
+    ? h("p", { class: "hint tot-parts-note", "data-history-parts": str(test.combines) }, `One line for the whole test of ${list(test.parts).length} parts. At each point the record gives the whole test's outcome and the two sides of its first part`, firstPart ? [" (", h("code", { text: firstPart }), ")"] : "", "; it does not give the other parts' values at each point.")
+    : "";
+  const sides = (point) => (str(point.left_display) || str(point.right_display) ? ` (${combined ? "first part " : ""}${str(point.left_display) || "n/a"} against ${str(point.right_display) || "n/a"})` : "");
   if (points.length === 0 || !scale) {
     return h("div", { class: "tot-claim no-history", "data-tot-claim": str(claim.id), "data-points": "0" }, head, note);
   }
@@ -4680,6 +4882,7 @@ function totClaim(claim, scale, cik) {
     head,
     totSvg(claim, points, scale),
     note,
+    partsNote,
     flips.length
       ? h(
           "ul",
@@ -4691,8 +4894,8 @@ function totClaim(claim, scale, cik) {
               h("span", { class: "glyph", "aria-hidden": "true", text: "◯ " }),
               `Flipped to ${TEST_FALLBACK[point.outcome] ?? str(point.outcome)} with the `,
               filingRef(point, cik),
-              str(point.bound) ? [": ", h("code", { text: point.bound })] : "",
-              str(point.left_display) || str(point.right_display) ? ` (${str(point.left_display) || "n/a"} against ${str(point.right_display) || "n/a"})` : "",
+              str(point.bound) && !combined ? [": ", h("code", { text: point.bound })] : "",
+              sides(point),
             ),
           ),
         )
@@ -4707,7 +4910,7 @@ function totClaim(claim, scale, cik) {
         h(
           "table",
           null,
-          h("thead", null, h("tr", null, ["Filed", "Form", "Outcome", "Test", "Left", "Right", "Flipped", "Why not"].map((t) => h("th", { scope: "col", text: t })))),
+          h("thead", null, h("tr", null, ["Filed", "Form", "Outcome", "Test", combined ? "First part's left" : "Left", combined ? "First part's right" : "Right", "Flipped", "Why not"].map((t) => h("th", { scope: "col", text: t })))),
           h(
             "tbody",
             null,
@@ -4770,7 +4973,8 @@ function totSvg(claim, points, { lo, hi, width }) {
     const key = token(point.outcome, TEST_MARK);
     const x = xAt(dayOf(point.filed));
     const y = yAt(point.outcome);
-    const words = `${str(point.form)} filed ${dateLabel(point.filed)}: ${TEST_FALLBACK[key] ?? str(point.outcome)}${str(point.bound) ? `, ${point.bound}` : ""}${str(point.left_display) ? ` (${point.left_display} against ${str(point.right_display) || "n/a"})` : ""}${str(point.reason) ? `. ${point.reason}` : ""}`;
+    const first = isCombined(claim.computed) ? "first part " : "";
+    const words = `${str(point.form)} filed ${dateLabel(point.filed)}: ${TEST_FALLBACK[key] ?? str(point.outcome)}${str(point.bound) ? `, ${point.bound}` : ""}${str(point.left_display) ? ` (${first}${point.left_display} against ${str(point.right_display) || "n/a"})` : ""}${str(point.reason) ? `. ${point.reason}` : ""}`;
     svg.append(s("circle", { cx: x, cy: y, r: 3.2, class: `tot-pt o-${key}`, "data-point": str(point.filed) }, s("title", { text: words })));
     if (point.flipped === true) {
       svg.append(s("circle", { cx: x, cy: y, r: 7, class: "tot-flip", "data-flip": str(point.filed) }, s("title", { text: `Flipped: ${words}` })));
@@ -5030,10 +5234,10 @@ function initSpecimen() {
   // Version 14's parts are excerpts of the backend's example payloads (docs/examples/v14), in their real shapes.
   const v14run = v14.run ?? { claims: [] };
   document.getElementById("spec-compiled")?.replaceChildren(
-    ...list(v14run.claims).map((claim) => (claim.computed ? computedTest(claim, v14run.company?.cik) : compileNote(claim))),
+    ...list(v14run.claims).map((claim) => (claim.computed ? computedTest(claim, v14run.company?.cik, readerDetails(v14run)) : compileNote(claim, readerDetails(v14run)))),
   );
   const tot = document.getElementById("spec-tot");
-  if (tot) drawThesisOverTime(tot, v14run);
+  if (tot) drawThesisOverTime(tot, v14.tot ?? v14run);
   document.getElementById("spec-asof-banner")?.replaceChildren(asOfBanner(v14.as_of));
   document.getElementById("spec-ledger")?.replaceChildren(restatementLedger(v14.restatements));
   document.getElementById("spec-peers")?.replaceChildren(peerStrip(v14.peers));

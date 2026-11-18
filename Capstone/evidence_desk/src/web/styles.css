@@ -758,8 +758,11 @@ button.secondary:not(:disabled):hover { background: var(--surface-2); }
 .ticker-chip { font-family: var(--font-code); font-weight: 700; color: var(--ink); padding: 0 0.35rem; border: 1px solid var(--ink); letter-spacing: 0.05em; }
 .decision { margin-top: 0.55rem !important; font-family: var(--font-prose); font-size: var(--prose-size); line-height: 1.45; max-width: 70ch; }
 .decision .label { font-family: var(--font-label); font-variant-caps: var(--label-caps); text-transform: var(--label-transform); letter-spacing: var(--label-track); font-size: 0.9em; }
-.run-engine { font-size: var(--step--1); margin-top: 0.2rem !important; color: var(--ink-2); }
-.run-head-main > .run-engine:first-of-type { margin-top: 0.6rem !important; }
+.run-engine { font-size: var(--step--1); margin-top: 0.1rem !important; color: var(--ink-2); }
+/* How the run was made: one small block under the decision, the same type for every line. */
+.run-provenance { margin-top: 0.6rem; padding-left: 0.6rem; border-left: 1px solid var(--line-strong); max-width: 88ch; display: grid; gap: 0.1rem; }
+.run-provenance > p { margin: 0 !important; font-size: var(--step--1); line-height: 1.4; color: var(--ink-2); }
+.run-provenance .label { color: var(--ink); }
 .engine-used { font-weight: 700; color: var(--ink); font-family: var(--font-code); }
 .engine-detail { color: var(--ink-2); }
 .run-meta { font-size: var(--step--1); color: var(--ink-2); overflow-wrap: anywhere; margin-top: 0.15rem !important; }
@@ -857,7 +860,10 @@ button.secondary:not(:disabled):hover { background: var(--surface-2); }
 .score-claim { min-width: 0; font-family: var(--font-prose); font-size: var(--step-0); }
 .score-counts { font-family: var(--font-data); font-size: var(--step--1); color: var(--ink-2); text-align: right; }
 .claim-id { font-family: var(--font-code); font-size: var(--step--1); font-weight: 700; color: var(--ink-2); }
-.assessed { display: block; font-family: var(--font-ui); font-size: var(--step--2); color: var(--ink-2); }
+.assessed { display: inline; font-family: var(--font-ui); font-size: var(--step--2); color: var(--ink-2); }
+.score-sub { display: flex; flex-wrap: wrap; align-items: center; gap: 0.15rem 0.9rem; margin-top: 0.15rem; }
+.score-sub:empty { display: none; }
+.score-sub .score-computed { margin-top: 0; }
 
 /* With a review: the engine's stamp and the one after your review are two columns of the board. */
 .score-row.has-review { grid-template-columns: 11.5rem 11.5rem minmax(0, 1fr) 15rem; }
@@ -1697,6 +1703,69 @@ p.bd-adds-yes, dt .bd-adds-yes { font-weight: 650; color: var(--ink); }
 .score-computed.is-none { color: var(--ink-2); }
 .docket-computed .glyph { font-family: var(--font-mono); }
 .run-readers .engine-detail { color: var(--ink-2); }
+.run-rule { display: block; color: var(--ink-2); font-size: var(--step--2); max-width: 80ch; }
+
+/* Who read a claim: one mark per reader, the record's agreement, the dissent. The reason a
+ * reader gives shows on hover and on focus (each mark takes the focus), and is in the text for a
+ * screen reader. */
+.ct-readers { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.6rem; font-family: var(--font-ui); font-size: var(--step--1); }
+.ct-readers > .label { margin: 0; color: var(--ink-2); }
+.reader-marks { display: inline-flex; flex-wrap: wrap; gap: 0.3rem; }
+.reader-mark { position: relative; display: inline-flex; align-items: center; gap: 0.3em; padding: 0 0.45rem; border: 1px solid var(--line-strong); border-radius: 999px; font-size: var(--step--2); line-height: 1.6; white-space: nowrap; cursor: help; background: var(--surface); }
+.reader-mark .glyph { font-family: var(--font-mono); font-size: 1.05em; }
+.reader-mark.rm-same { border-color: var(--rule); }
+.reader-mark.rm-same .glyph { color: var(--rule); }
+.reader-mark.rm-dissent, .reader-mark.rm-other { border-style: dashed; border-color: var(--limit); }
+.reader-mark.rm-dissent .glyph, .reader-mark.rm-other .glyph { color: var(--limit); }
+.reader-mark.rm-refused { color: var(--ink-2); border-style: dotted; }
+.reader-mark:focus-visible { outline: 2px solid var(--focus, var(--ink)); outline-offset: 2px; }
+.ct-readers .reader-mark:hover::after, .ct-readers .reader-mark:focus::after {
+  content: attr(data-why);
+  position: absolute; z-index: 20; left: 0; top: calc(100% + 4px);
+  width: max-content; max-width: min(32rem, 80vw);
+  padding: 0.35rem 0.55rem; white-space: normal; text-align: left;
+  font-family: var(--font-ui); font-size: var(--step--1); font-weight: 400; line-height: 1.4;
+  color: var(--ink); background: var(--surface); border: 1px solid var(--ink); box-shadow: 0 2px 8px rgb(0 0 0 / 0.18);
+}
+.ct-agreement { color: var(--ink-2); font-weight: 600; }
+.ct-agreement.a-dissent { color: var(--limit); }
+.ct-agreement.a-differ { color: var(--limit); }
+.ct-dissent { flex-basis: 100%; margin: 0; color: var(--ink-2); }
+.ct-dissent .glyph { color: var(--limit); font-family: var(--font-mono); }
+details.ct-readings > summary { cursor: pointer; font-size: var(--step--1); color: var(--ink-2); }
+.ct-not .ct-readers { margin-top: 0.35rem; }
+.score-readers { color: var(--ink-2); font-family: var(--font-ui); }
+
+/* A test of several parts: every part drawn, then how they came out together. */
+.ct-parts-block { font-size: var(--step--1); }
+.ct-combine { margin: 0; color: var(--ink-2); max-width: 80ch; }
+.ct-combine .label { color: var(--ink); }
+.ct-parts { margin: 0.4rem 0 0; padding: 0; list-style: none; display: grid; gap: 0.35rem; counter-reset: part; }
+.ct-part { min-width: 0; padding: 0.3rem 0 0.3rem 0.7rem; border-left: 2px solid var(--line-strong); counter-increment: part; }
+.ct-part.o-holds { border-left-color: var(--support); }
+.ct-part.o-fails { border-left-color: var(--challenge); }
+.ct-part.o-cannot_compute { border-left-style: dashed; }
+.ct-part > p, .ct-part > div { margin: 0.1rem 0 0; }
+.ct-part-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.2rem 0.6rem; }
+.ct-part-head::before { content: counter(part) "."; color: var(--ink-2); font-family: var(--font-mono); }
+.ct-part-head code { font-weight: 600; }
+.ct-part .ct-outcome { font-size: var(--step--2); padding: 0 0.4rem; border-width: 1.5px; }
+.ct-part .ct-arith { margin-top: 0.1rem; }
+.ct-tally { margin: 0.45rem 0 0; font-family: var(--font-mono); }
+.ct-tally .label { font-family: var(--font-ui); }
+.tot-parts-note code { font-size: 0.95em; }
+
+/* At phone width a test's values stack, one value to a block, instead of a table to scroll. */
+@media (max-width: 600px) {
+  .ct .table-wrap { overflow: visible; }
+  .ct-table { min-width: 0; }
+  .ct-table thead { display: none; }
+  .ct-table, .ct-table tbody, .ct-table tr, .ct-table th, .ct-table td { display: block; width: auto; }
+  .ct-table tr { padding: 0.45rem 0; border-bottom: 1px solid var(--line); }
+  .ct-table th, .ct-table td { padding: 0.1rem 0; border: 0; }
+  .ct-table .num { text-align: left; }
+  .ct-table th[scope="row"] code { overflow-wrap: normal; word-break: normal; }
+}
 
 /* The thesis over time: one lane per compiled claim, high in the note under the time line. */
 .tot { display: grid; gap: 1.1rem; }

@@ -112,7 +112,7 @@ demo: build
 # test reads its DOM instead (uitests/test_run_changes_dom.py).
 SHOTS := first-screen sample-run sample-run-phone sample-synthetic sample-changes sample-changes-phone sample-breakdowns tagged-figures \
 	first-screen-terminal sample-run-terminal sample-run-phone-terminal sample-events sample-events-terminal sample-events-phone \
-	sample-synthetic-terminal sample-changes-terminal sample-breakdowns-terminal specimen specimen-terminal specimen-phone
+	sample-synthetic-terminal sample-changes-terminal sample-breakdowns-terminal specimen specimen-terminal specimen-v13 specimen-note specimen-note-terminal specimen-views specimen-phone
 screenshots:
 	@mkdir -p docs/screenshots results
 	@touch results/.screenshots-started
@@ -138,6 +138,10 @@ screenshots:
 	$(COMPOSE) run --rm shots --window-size=1280,2400 --screenshot=/work/docs/screenshots/sample-breakdowns-terminal.png "http://app:8000/?sample=breakdowns&theme=terminal" && \
 	$(COMPOSE) run --rm shots --allow-file-access-from-files --window-size=1280,3600 --screenshot=/work/docs/screenshots/specimen.png "file:///work/src/web/specimen.html?theme=paper" && \
 	$(COMPOSE) run --rm shots --allow-file-access-from-files --window-size=1280,3600 --screenshot=/work/docs/screenshots/specimen-terminal.png "file:///work/src/web/specimen.html?theme=terminal" && \
+	$(COMPOSE) run --rm shots --allow-file-access-from-files --window-size=1280,3600 --screenshot=/work/docs/screenshots/specimen-v13.png "file:///work/src/web/specimen.html?theme=paper&only=v13" && \
+	$(COMPOSE) run --rm shots --allow-file-access-from-files --window-size=1280,3600 --screenshot=/work/docs/screenshots/specimen-note.png "file:///work/src/web/specimen.html?theme=paper&only=note" && \
+	$(COMPOSE) run --rm shots --allow-file-access-from-files --window-size=1280,3600 --screenshot=/work/docs/screenshots/specimen-note-terminal.png "file:///work/src/web/specimen.html?theme=terminal&only=note" && \
+	$(COMPOSE) run --rm shots --allow-file-access-from-files --window-size=1280,2400 --screenshot=/work/docs/screenshots/specimen-views.png "file:///work/src/web/specimen.html?theme=paper&only=views" && \
 	$(COMPOSE) run --rm shots --allow-file-access-from-files --window-size=390,3000 --screenshot=/work/docs/screenshots/specimen-phone.png "file:///work/src/web/specimen.html?theme=paper"
 	@for name in $(SHOTS); do \
 		test docs/screenshots/$$name.png -nt results/.screenshots-started \

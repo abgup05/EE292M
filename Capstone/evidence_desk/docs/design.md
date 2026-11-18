@@ -241,7 +241,9 @@ changes. Use it on any run whose record has dated filings.
 - *Every mark* is a link to its filing, with an SVG `<title>`, an `aria-label` and a tooltip on
   hover or focus.
 
-**Verdict board** (`#scorecard`). One row per claim on one baseline grid: the stamp, the claim, then the record's counts at the right. With a review it has four columns, the engine's stamp, the stamp after your review, the claim and the counts, under one header row (`#board-head`). Each row keeps its own column labels for screen readers, visually hidden.
+**Run head** (`#run-head`). The company and the decision, the question the note answers, in the note's prose type. Under them, one small block with a hairline at its left (`.run-provenance`) says how the run was made, in one type size: the engine that read the filings, who checked meaning, who read the claims into tests with the counting rule, the run's id and times, and how old the evidence is. Then the saved thesis, if any, and a sample's note. The answer, the status line and the board, follows directly.
+
+**Verdict board** (`#scorecard`). One row per claim on one baseline grid: the stamp, the claim, then the record's counts at the right. Under the claim, one line (`.score-sub`): who assessed the findings, then the computed part. With a review it has four columns, the engine's stamp, the stamp after your review, the claim and the counts, under one header row (`#board-head`). Each row keeps its own column labels for screen readers, visually hidden.
 
 **Verdict stamp** (`.pill.verdict`). Square corners, capitals, a tinted fill. Use it only for a
 claim's verdict. A **stance pill** (`.pill.stance`) is round and is used only for a finding's
@@ -380,22 +382,44 @@ is ignored, so additive changes to these payloads do not break the page. The fun
      accession) and its derived or restated flag;
    - the arithmetic, line by line, then the margin and the backend's note.
 
-   A claim that did not compile shows its `compile_note` quietly instead, behind a dashed rule.
-2. **Which part of a verdict is computed.** On the verdict board each claim keeps the engine's
-   "Assessed by" line (the reading of the filings: a model's or the extractive engine's) and
-   gains a second line: "Computed, no model:" with the outcome and what it counted, or "No
-   computed test: the verdict rests on the findings". The docket's summary line adds "⊨
-   Computed: Holds". The note under the verdicts ("How to read this") adds one sentence on
-   computed tests when the run has one.
-3. **Who read the claim.** The head says who read the claims into tests (`claim_readers`, with
-   `claim_reader_detail`). Each test lists every reading in `Claim.readings` (however many
-   readers there are) and names the readers of the test shown (`read_by`).
+   **A test of several parts** (`combines` "each" or "and", with `parts`) draws every part, each
+   on its own rule in its outcome's colour: its bound expression, outcome and margin, its two
+   sides, its arithmetic and, for a part that could not be computed, why. A line above says how
+   the parts combine (each of N periods, or both tests: holds when every part holds, fails when
+   any fails), and the record's last line of arithmetic ("each of 4 tests: 4 hold, 0 fail, 0
+   cannot be told: holds") follows as "Together". The whole test shows no sides of its own (the
+   record's `left` and `right` are the first part's) and its margin reads "each part has its
+   own". The operand table lists every part's values once, as the record does.
 
-   The readings differ when a reader in `readings` is not in the test's `read_by` (or, for a
-   claim that did not compile, when another reader read a test). Then the test, the board and
-   the docket say "Readings differ: not counted" in the limit colour, and the backend's note
-   says what each reader read. The page wants a field for this from the backend rather than
-   working it out.
+   A threshold is written once on the sides line ("> 70%", not "70% = 70%"). At phone width the
+   operand table stacks, one value to a block.
+
+   A claim that did not compile shows its `compile_note` quietly instead, behind a dashed rule.
+   With several readers it also shows each reader's mark and, in the open, each reader's reason.
+2. **Which part of a verdict is computed.** On the verdict board each claim keeps the engine's
+   "Assessed by" line (the reading of the filings: a model's or the extractive engine's) and,
+   on the same line, "Computed, no model:" with the outcome, what it counted and how many readers
+   agreed ("3 of 3 readers", "2 of 3 readers, one dissenting": the length of `read_by` against
+   the claim's readings, when `agreement` says they agreed), or "No computed test: the verdict
+   rests on the findings". The docket's summary line adds "⊨ Computed: Holds". The note under the
+   verdicts ("How to read this") adds one sentence on computed tests when the run has one.
+3. **Who read the claim.** The head says who read the claims into tests (`claim_readers`, with
+   `claim_reader_detail`) and the counting rule in words (`claim_reading_rule`), which "How to
+   read this" repeats for the run on show. Under each test's outcome, one row:
+   - one mark per reading in `Claim.readings`: ● read this test (the reader is in `read_by`),
+     ≠ read another test (in `dissent`, or any other test when nobody agreed), ○ read no test.
+     Each mark takes the focus; on hover or focus it says who the reader is (the model and where
+     its answers came from, from `claim_reader_detail`) and what it read, or why it read nothing.
+     The same words are in the mark for a screen reader;
+   - the record's `agreement_label` ("at least two readers agree", "counted, with one dissenting
+     reading", "not counted: no two readers agree", "one reader: the grammar");
+   - each dissenting reading, "≠ Dissent: Model 2 read …".
+
+   Every reading in full, with the normal form the rule compared where it differs from the
+   reader's writing, is behind "Every reading" at the end of the test. When `agreement` is
+   `not_agreed`, the test, the board and the docket say "Readings differ: not counted" in the
+   limit colour, and the backend's note says what each reader read. The page compares no
+   readings: the marks come from `read_by` and `dissent`, the conclusion from `agreement`.
 4. **The thesis over time** (`drawThesisOverTime`, from each compiled claim's `history`). It is
    a block of its own, directly under the time line (code `TOT`). Each compiled claim gets a
    lane:
@@ -407,7 +431,12 @@ is ignored, so additive changes to these payloads do not break the page. The fun
      10-K filed 25 Feb 2026", linked, with the bound test and both sides);
    - every point as a table behind a fold.
 
-   A claim with no history (a share of revenue) shows only its `history_note`. A claim that did
+   A test of several parts has one line for the whole test. The record gives, at each point,
+   the whole test's outcome and the two sides of its first part only, so the lane says so, the
+   table's columns are "First part's left" and "First part's right", and each flip's sides read
+   "first part 78.4% against 70%".
+
+   A claim with no history (a share of revenue, a part of the company) shows only its `history_note`. A claim that did
    not compile is named in one line. The lanes share one date axis and are drawn again when the
    note changes width.
 5. **As of a date.** The drawer has a date field, "As of a past date" (`as_of`), sent with the
@@ -438,10 +467,20 @@ is ignored, so additive changes to these payloads do not break the page. The fun
    canonical test, before and after). The saved theses list takes each thesis's `watch` from
    `GET /api/theses`.
 
-The recorded samples are `?sample=computed` (the example run: two tests that hold, one that
-fails, one that cannot be computed, one claim that does not compile), `?sample=as-of` (the same
-claims as of 1 Mar 2026) and `?sample=restatements` (NVIDIA's ledger from the recorded facts).
-All three were made offline with the extractive engine: no model, no cassette.
+The recorded samples are `?sample=run-live`, offered first on the first screen: a live NVIDIA
+run of 18 Nov 2026 answered by the Anthropic API (claude-opus-5-5 reading, claude-haiku-5-5
+checking) with three claim readers (the grammar, claude-haiku-5-5, claude-sonnet-5-5), copied
+unedited from `results/run-7fa4a528d428.json`: three tests all three readers read alike, one of
+them held in each of the last four quarters, and two claims no reader could read.
+`?sample=readers` (`docs/examples/v14/run-readers.json`) shows what the live run does not: the
+grammar refusing while both models agree ("2 of 3 readers"), two writings of one test, and a
+test that cannot be computed; its readers' answers are replayed from a cassette recorded through
+the API. `?sample=computed` (the example run: two tests that hold, one that fails, one that
+cannot be computed, one claim that does not compile), `?sample=as-of` (the same claims as of
+1 Mar 2026) and `?sample=restatements` (NVIDIA's ledger from the recorded facts) were made
+offline with the extractive engine: no model, no cassette. No recorded run has a dissent, a
+disagreement or a test of two parts joined by "and": `uitests/v14.html` makes each from the
+example run, and the specimen shows a dissent made up from the live run's c4, labelled.
 
 **Not built: the peer strip.** The backend has no peers route, so the strip is only on the
 specimen, on made-up data, under the heading "Not built". It is not on the page.
@@ -493,11 +532,32 @@ live-run sample, the command bar, the caution and the predated mark. For every r
 `uitests/v14.html` drives the page for what the examples do not show, and the same file checks
 what it recorded:
 
-- two and three readers, made the way the backend makes them;
+- three readers with the record's real fields, made the way the backend makes them: no two
+  agreeing, a dissent, a claim the grammar did not compile with one model reading a test, all
+  three agreeing, two agreeing and one refusing;
+- a test of two parts joined by "and", put together as the backend does: every part drawn,
+  the tally, no whole-test sides, one history line labelled as the first part's sides;
 - the ledger lookup's 422, 200 and 503;
 - a run sent with `as_of`, refused and then drawn;
 - an inbox item with `moved.computed`;
 - the theses list with each thesis's `watch`.
+
+`uitests/test_live_readers_dom.py` checks the live three-reader sample and the two-model example
+against their JSON:
+
+- the live sample is byte for byte the run's record (when `results/` holds it), is offered
+  first, and says where it came from and who answered;
+- the reading rule in the head and in "How to read this";
+- each reader's mark on each claim, from `read_by` and `dissent`, with its words on hover and
+  focus and for a screen reader;
+- each test's agreement, dissent and counted state, and on the board "N of M readers";
+- each reader's reason on a claim no reader could read, in the open;
+- the grammar refusing while both models agree, and the normal form shown where a writing differs;
+- every part of the "each" test (expression, outcome, margin, sides, arithmetic), the tally,
+  the operands, and its one history line with the first part's sides labelled.
+
+The run samples' time line, tape, reading order and status line are checked by
+`uitests/test_run_events_dom.py` for both as well.
 
 `uitests/test_inbox_dom.py` checks the recorded inbox against its JSON:
 

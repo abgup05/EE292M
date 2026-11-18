@@ -185,6 +185,17 @@ const state = {
   claimChangesOpen: new Set(), // claim ids whose "Changed in the filings" block the reader opened
   sampleNote: "", // where a sample record came from, said in the run's head
   timelineRun: null, // the run whose time line is drawn, redrawn when the note changes width
+  // The standing watch (version 13): /api/watch/meta, the watches by thesis, the health, the inbox.
+  watchMeta: null,
+  watches: new Map(),
+  watchesLoaded: false,
+  health: null,
+  inboxUnread: null,
+  inboxPage: null,
+  inboxThesis: null, // the thesis the inbox is filtered to, or null for every thesis
+  inboxOffsets: [], // the offsets of the pages before this one, to go back by the API's own offsets
+  inboxSeq: 0,
+  itemComparison: null, // an inbox item's `moved`, shown under the run it made
 };
 
 /** Samples that have a recorded RunChanges beside them; any other sample shows no such block and asks for none. */
@@ -313,6 +324,20 @@ const els = {
   leaveSample: $("leave-sample"),
   statusbarRun: $("statusbar-run"),
   keysHowto: $("keys-howto"),
+  inboxView: $("inbox-view"),
+  inboxHead: $("inbox-head"),
+  inboxButton: $("inbox-button"),
+  inboxCount: $("inbox-count"),
+  inboxItems: $("inbox-items"),
+  inboxCollapsed: $("inbox-collapsed"),
+  inboxPaging: $("inbox-paging"),
+  inboxMessage: $("inbox-message"),
+  watches: $("watches"),
+  watchesSection: $("watches-section"),
+  watchDown: $("watch-down"),
+  watchHealth: $("watch-health"),
+  thesisWatch: $("thesis-watch"),
+  thesisWatchSection: $("thesis-watch-section"),
 };
 
 // ---------------------------------------------------------------- helpers
@@ -642,7 +667,9 @@ async function api(url, options = {}) {
     payload = null;
   }
   if (!response.ok) {
-    const message = typeof payload?.error === "string" ? payload.error : `the server answered HTTP ${response.status}`;
+    // The app's refusals carry `error`; FastAPI's own 404s carry `detail`.
+    const message =
+      typeof payload?.error === "string" ? payload.error : typeof payload?.detail === "string" ? payload.detail : `the server answered HTTP ${response.status}`;
     const details = Array.isArray(payload?.details) ? payload.details : [];
     throw new ApiError(message, response.status, details);
   }
@@ -974,6 +1001,7 @@ function renderFiguresOnly(report) {
   els.empty.hidden = true;
   els.runView.hidden = true;
   els.thesisView.hidden = true;
+  els.inboxView.hidden = true;
   els.changesView.hidden = true;
   els.breakdownsView.hidden = true;
   els.figuresView.hidden = false;
@@ -1067,6 +1095,7 @@ function renderChanges(record, sampleNote) {
   els.runView.hidden = true;
   els.figuresView.hidden = true;
   els.thesisView.hidden = true;
+  els.inboxView.hidden = true;
   els.breakdownsView.hidden = true;
   els.changesView.hidden = false;
   document.body.classList.add("has-run");
@@ -1389,6 +1418,7 @@ function renderBreakdowns(report, sampleNote) {
   els.runView.hidden = true;
   els.figuresView.hidden = true;
   els.thesisView.hidden = true;
+  els.inboxView.hidden = true;
   els.changesView.hidden = true;
   els.breakdownsView.hidden = false;
   document.body.classList.add("has-run");
@@ -1627,9 +1657,22 @@ function renderTheses(theses) {
       },
       h("span", { class: "recent-name" }, h("strong", { text: str(thesis.name) }), str(thesis.ticker) ? ` · ${thesis.ticker}` : ""),
       h("span", { class: "recent-meta" }, `${plural(thesis.claims, "claim", "claims")} · ${plural(thesis.runs, "run", "runs")}`, last),
+      watchTag(state.watches.get(thesis.id)),
     );
     els.theses.append(h("li", null, button));
   }
+}
+
+/** On a saved thesis in the list: on watch, its policy, and its unread items, as the API says. */
+function watchTag(watch) {
+  if (!watch) return "";
+  return h(
+    "span",
+    { class: "watch-tag", "data-watch-tag": str(watch.policy) },
+    h("span", { class: "glyph", "aria-hidden": "true", text: "◉" }),
+    ` On watch · ${str(watch.policy_label)}`,
+    Number.isFinite(watch.unread) && watch.unread > 0 ? ` · ${num(watch.unread)} unread` : "",
+  );
 }
 
 function toggleSavePanel(open) {
@@ -1734,6 +1777,7 @@ function renderThesis(thesis, runs) {
       h("ol", { class: "thesis-claims" }, claims.map((claim) => h("li", { text: String(claim) }))),
     ),
   );
+  renderThesisWatch(thesis.id);
   els.runAgain.textContent = runs.length ? "Run again on the latest filings" : "Run it on the latest filings";
   els.runAgain.disabled = false;
   els.runAgainMessage.hidden = true;
@@ -1824,16 +1868,24 @@ function comparisonVerdict(verdict, reviewed, side, missingText) {
 function renderComparison(container, comparison, currentRunId) {
   const claims = list(comparison.claims);
   container.replaceChildren();
-  if (str(comparison.note)) container.append(h("p", { class: "changes-note", text: comparison.note }));
+  // A RunComparison has `note` and counts; an inbox item's `moved` has `comparison_note` and no counts.
+  const note = str(comparison.note) || str(comparison.comparison_note);
+  if (note) container.append(h("p", { class: "changes-note", text: note }));
+  const counted = Number.isFinite(comparison.verdicts_moved) && Number.isFinite(comparison.claims_total);
   container.append(
     h(
       "p",
       { class: "changes-runs" },
-      h("span", { class: "count-value", "data-cmp": "verdicts_moved", text: num(comparison.verdicts_moved) }),
-      " of ",
-      h("span", { class: "count-value", "data-cmp": "claims_total", text: num(comparison.claims_total) }),
-      ` ${unit(comparison.claims_total, "verdict", "verdicts")} moved. Earlier run `,
-      runRef(comparison.earlier_run_id, currentRunId),
+      counted
+        ? [
+            h("span", { class: "count-value", "data-cmp": "verdicts_moved", text: num(comparison.verdicts_moved) }),
+            " of ",
+            h("span", { class: "count-value", "data-cmp": "claims_total", text: num(comparison.claims_total) }),
+            ` ${unit(comparison.claims_total, "verdict", "verdicts")} moved. `,
+          ]
+        : "",
+      "Earlier run ",
+      comparison.earlier_run_id ? runRef(comparison.earlier_run_id, currentRunId) : "none (the thesis's first run)",
       comparison.earlier_finished_at ? `, finished ${utc(comparison.earlier_finished_at)}` : "",
       "; later run ",
       runRef(comparison.later_run_id, currentRunId),
@@ -1879,12 +1931,21 @@ function renderComparison(container, comparison, currentRunId) {
       h("p", { class: "label", text: title }),
       list(titles).length ? h("ul", { class: "plain-list" }, list(titles).map((t) => h("li", { text: String(t) }))) : h("p", { class: "muted", text: "None." }),
     );
-  container.append(h("div", { class: "changes-filings-wrap" }, filings("New filings in the later run", comparison.sources_added, "added"), filings("Filings the later run no longer read", comparison.sources_dropped, "dropped")));
+  container.append(
+    h(
+      "div",
+      { class: "changes-filings-wrap" },
+      filings("New filings in the later run", comparison.sources_added, "added"),
+      Array.isArray(comparison.sources_dropped) ? filings("Filings the later run no longer read", comparison.sources_dropped, "dropped") : "",
+    ),
+  );
 }
 
 /** In the run view: what moved, when the comparison's later run is this run. */
 function renderRunChanges(run) {
-  const comparison = state.comparison;
+  // The thesis's latest comparison, else the comparison of the inbox item that opened this run.
+  const fromItem = state.itemComparison?.later_run_id === run.id ? state.itemComparison : null;
+  const comparison = state.comparison?.later_run_id === run.id ? state.comparison : fromItem;
   const show = Boolean(comparison) && comparison.later_run_id === run.id;
   els.changesSection.hidden = !show;
   if (show) renderComparison(els.changes, comparison, run.id);
@@ -2172,9 +2233,11 @@ function hideRunView() {
   els.changesView.hidden = true;
   els.breakdownsView.hidden = true;
   els.thesisView.hidden = true;
+  els.inboxView.hidden = true;
   els.loadError.hidden = true;
   els.empty.hidden = true;
   document.body.classList.remove("has-run");
+  els.inboxButton?.setAttribute("aria-expanded", "false");
   renderCommandBar(null);
   state.timelineRun = null;
 }
@@ -2215,12 +2278,17 @@ async function loadSample(name) {
   $("breakdowns-link").hidden = true;
   $("tagged-link").hidden = true;
   $("events-link").hidden = true;
+  $("inbox-link").hidden = true;
   hideRunView();
   if (!SAMPLE_NAME.test(name)) {
     showLoadError("That sample name is not valid: use lower-case letters, digits and hyphens.", null);
     return;
   }
   try {
+    if (Object.hasOwn(INBOX_SAMPLES, name)) {
+      await loadInboxSample(name);
+      return;
+    }
     const payload = await api(`sample-${name}.json`, { cache: "no-store" });
     // A bare run, copied unedited from a run's record: its note is the page's, its wording /api/meta's.
     if (!payload.run && typeof payload.id === "string" && Array.isArray(payload.claims)) {
@@ -2284,6 +2352,7 @@ function renderRun(run) {
   els.changesView.hidden = true;
   els.breakdownsView.hidden = true;
   els.thesisView.hidden = true;
+  els.inboxView.hidden = true;
   els.runView.hidden = false;
   document.body.classList.add("has-run");
   state.run = run;
@@ -4218,6 +4287,7 @@ function chartTable(title, seriesList) {
 
 /** The run or saved thesis named in the hash: {kind: "run" | "thesis", id}, or null. */
 function hashTarget() {
+  if (location.hash === "#inbox") return { kind: "inbox", id: "" };
   const match = /^#(run|thesis)=(.+)$/.exec(location.hash);
   if (!match) return null;
   try {
@@ -4232,6 +4302,7 @@ function openHashTarget() {
   if (!target) return;
   if (target.kind === "run" && target.id !== state.runId) watchRun(target.id);
   if (target.kind === "thesis" && target.id !== state.thesisId) openThesis(target.id);
+  if (target.kind === "inbox" && els.inboxView.hidden) openInbox();
 }
 
 // ---------------------------------------------------------------- version 14 components
@@ -4556,6 +4627,781 @@ function initSpecimen() {
   }
 }
 
+// ---------------------------------------------------------------- the standing watch (version 13)
+//
+// Watches, the inbox and the watcher's health, drawn from /api/watch, /api/inbox and
+// /api/watch/health, with the words of /api/watch/meta. Every headline, count, label and
+// reason is the backend's; the page orders nothing (the inbox comes unread first, as the
+// API sends it) and counts nothing but the folded items it draws on one line.
+
+/** The recorded inbox (?sample=inbox): the watch's example payloads, copied unedited by `make sample-inbox`. */
+const INBOX_SAMPLES = { inbox: "sample-inbox.json", "inbox-page-2": "sample-inbox-page-2.json" };
+const INBOX_SAMPLE_NOTE =
+  "The standing watch's example payloads (docs/examples/v13), written by `make watch-examples` from an offline scenario: a made-up EDGAR index of NVIDIA filings, a fake clock that starts at 18 Nov 2026 09:00 UTC, and scripted verdicts (no model, no cassette). They are copied unedited. In sample mode the page sends nothing: no watch changes, no run starts, nothing is marked read.";
+const INBOX_KIND = { not_relevant: "○", waiting: "◇", running: "◌", moved: "◆", nothing_moved: "·", failed: "▲" };
+const WATCH_POLL_MS = 60000;
+
+function kindLabel(kind) {
+  return str(state.watchMeta?.kind_labels?.[kind]) || String(kind ?? "");
+}
+
+function policyLabels() {
+  const labels = state.watchMeta?.policy_labels;
+  return labels && typeof labels === "object" ? labels : { ask: "Ask before running", auto: "Run at once" };
+}
+
+/** A refusal in the server's words: the 422's fields, else its one sentence. */
+function refusal(error) {
+  if (error.status === 422 && error.details.length) {
+    return `${error.message}: ${error.details.map((d) => `${str(d.field) || "request"}: ${str(d.message)}`).join("; ")}`;
+  }
+  return error.message;
+}
+
+function setMessage(node, text, kind = "error") {
+  if (!node) return;
+  node.textContent = text;
+  node.className = `watch-message ${kind === "error" ? "is-error" : "is-ok"}`;
+  node.hidden = !text;
+}
+
+// ---- health
+
+/** The watcher's health, in the bar: alive or not, its last cycle, the queue and the runs waiting. */
+function renderHealth() {
+  const node = els.watchHealth;
+  const health = state.health;
+  if (!node) return;
+  const inboxSample = state.sample && Object.hasOwn(INBOX_SAMPLES, state.sampleName);
+  if (!health || (state.sample && !inboxSample)) {
+    node.hidden = true;
+    return;
+  }
+  const alive = health.alive === true;
+  node.hidden = false;
+  node.className = `watch-health ${alive ? "is-alive" : "is-down"}`;
+  node.dataset.alive = String(alive);
+  node.title = [str(health.note), health.last_cycle_at ? `Last cycle ${utc(health.last_cycle_at)}.` : ""].filter(Boolean).join(" ");
+  node.replaceChildren(
+    h("span", { class: "glyph health-dot", "aria-hidden": "true", text: alive ? "●" : "○" }),
+    h("span", { class: "health-word", text: alive ? "Watch alive" : "Watch not running" }),
+    h(
+      "span",
+      { class: "health-detail" },
+      // The time of day only; the whole date and time are in the title, with the watcher's note.
+      health.last_cycle_at ? ` · last cycle ${utc(health.last_cycle_at).slice(11)}` : "",
+      " · queue ",
+      h("span", { "data-health": "queue_depth", text: num(health.queue_depth) }),
+      " · ",
+      h("span", { "data-health": "waiting_runs", text: num(health.waiting_runs) }),
+      " waiting",
+    ),
+  );
+  renderWatchDown();
+}
+
+/** Near every watch control: when the watcher is not alive, nothing new will be noticed until it runs. */
+function watchDownLine() {
+  const health = state.health;
+  if (!health || health.alive === true) return null;
+  return limitLine(
+    "p",
+    h("strong", { text: "The watcher is not running." }),
+    " No new filing will be noticed, and no watched thesis run, until it runs. ",
+    str(health.note),
+  );
+}
+
+function renderWatchDown() {
+  const line = watchDownLine();
+  if (els.watchDown) {
+    els.watchDown.hidden = !line;
+    els.watchDown.replaceChildren(...(line ? [line] : []));
+  }
+  const card = els.thesisWatch?.querySelector(".watch-down-slot");
+  if (card) card.replaceChildren(...(line ? [line] : []));
+}
+
+// ---- the unread count
+
+function renderInboxCount() {
+  const node = els.inboxCount;
+  if (!node) return;
+  const unread = state.inboxUnread;
+  node.hidden = !Number.isFinite(unread);
+  node.textContent = Number.isFinite(unread) ? num(unread) : "";
+  node.dataset.unread = Number.isFinite(unread) ? String(unread) : "";
+  els.inboxButton?.setAttribute("aria-label", Number.isFinite(unread) ? `Inbox, ${num(unread)} unread` : "Inbox");
+}
+
+/** Health, watches, the words and the unread count, from the server. A 404 means a server without the watch: it stays hidden. */
+async function refreshWatchState() {
+  if (state.sample) return;
+  try {
+    if (!state.watchMeta) state.watchMeta = await api("/api/watch/meta");
+  } catch (error) {
+    if (error.status === 404) {
+      els.inboxButton.hidden = true;
+      return;
+    }
+  }
+  const [health, watches, inbox] = await Promise.allSettled([api("/api/watch/health"), api("/api/watch"), api("/api/inbox?limit=1")]);
+  state.health = health.status === "fulfilled" ? health.value : null;
+  if (watches.status === "fulfilled") {
+    state.watches = new Map(list(watches.value.watches).map((w) => [w.thesis_id, w]));
+    state.watchesLoaded = true;
+  }
+  if (inbox.status === "fulfilled" && Number.isFinite(inbox.value.unread)) state.inboxUnread = inbox.value.unread;
+  renderHealth();
+  renderInboxCount();
+  if (state.theses.size) renderTheses([...state.theses.values()]);
+  if (state.thesisId && !els.thesisView.hidden) renderThesisWatch(state.thesisId);
+}
+
+function startWatchPolling() {
+  refreshWatchState();
+  setInterval(() => {
+    if (!document.hidden) refreshWatchState();
+  }, WATCH_POLL_MS);
+}
+
+// ---- a watch: put on, policy, take off
+
+/**
+ * The watch of one saved thesis: its policy (changeable), the last and next check, the last
+ * errors and its unread items; or, when it is not watched, a control to put it on watch.
+ */
+function watchCard(thesisId, watch, sample = state.sample) {
+  const labels = policyLabels();
+  const current = watch ? str(watch.policy) : str(state.watchMeta?.default_policy) || "ask";
+  const message = h("p", { class: "watch-message", role: "status", hidden: true });
+  const name = `policy-${thesisId}`;
+  const choice = h(
+    "fieldset",
+    { class: "watch-policy" },
+    h("legend", { text: watch ? "When a new filing bears on a claim" : "Put it on watch: when a new filing bears on a claim" }),
+    ...Object.entries(labels).map(([value, label]) =>
+      h(
+        "label",
+        { class: "watch-choice" },
+        h("input", {
+          type: "radio",
+          name,
+          value,
+          checked: value === current,
+          disabled: sample,
+          "data-policy": value,
+          onchange: watch ? () => putWatch(thesisId, value, message) : null,
+        }),
+        ` ${label}`,
+        value === "auto" ? h("span", { class: "hint", text: " (each run uses the model, within the daily cap)" }) : "",
+      ),
+    ),
+  );
+  const parts = [h("div", { class: "watch-down-slot" }, ...(watchDownLine() ? [watchDownLine()] : []))];
+  if (watch) {
+    const check = (iso) => (iso ? utc(iso) : str(watch.next_check_note) || "—");
+    parts.push(
+      h(
+        "p",
+        { class: "watch-state" },
+        h("span", { class: "watch-on", text: "On watch" }),
+        ` since ${utc(watch.watching_since)} · `,
+        h("strong", { "data-watch": "policy_label", text: str(watch.policy_label) || labels[watch.policy] || "" }),
+      ),
+      h(
+        "dl",
+        { class: "watch-facts" },
+        h("div", null, h("dt", { text: "Last check" }), h("dd", { "data-watch": "last_check_at", text: check(watch.last_check_at) })),
+        h("div", null, h("dt", { text: "Next check" }), h("dd", { "data-watch": "next_check_at", text: check(watch.next_check_at) })),
+        h("div", null, h("dt", { text: "Last error" }), h("dd", { "data-watch": "last_error", class: watch.last_error ? "is-error" : null, text: str(watch.last_error) || "None" })),
+        str(watch.last_job_error) ? h("div", null, h("dt", { text: "Last failed job" }), h("dd", { "data-watch": "last_job_error", class: "is-error", text: watch.last_job_error })) : "",
+        h(
+          "div",
+          null,
+          h("dt", { text: "Inbox" }),
+          h(
+            "dd",
+            null,
+            h("span", { "data-watch": "unread", text: num(watch.unread) }),
+            " unread · ",
+            h("span", { "data-watch": "waiting_runs", text: num(watch.waiting_runs) }),
+            ` ${unit(watch.waiting_runs, "run", "runs")} waiting · `,
+            h("a", { href: "#inbox", onclick: (event) => { event.preventDefault(); openInbox({ thesisId }); }, text: "open its inbox" }),
+          ),
+        ),
+      ),
+      choice,
+      h(
+        "div",
+        { class: "watch-actions" },
+        h("button", { type: "button", class: "secondary small", "data-unwatch": thesisId, disabled: sample, onclick: () => deleteWatch(thesisId, message), text: "Take it off watch" }),
+      ),
+    );
+  } else {
+    parts.push(
+      h("p", { class: "watch-state muted", text: "Not on watch. On watch, the watcher reads the company's filing index every few minutes and says here and in the inbox what each new filing means for these claims." }),
+      choice,
+      h(
+        "div",
+        { class: "watch-actions" },
+        h("button", {
+          type: "button",
+          class: "primary small",
+          "data-watch-put": thesisId,
+          disabled: sample,
+          onclick: () => putWatch(thesisId, choice.querySelector("input:checked")?.value ?? current, message),
+          text: "Put it on watch",
+        }),
+      ),
+    );
+  }
+  if (sample) parts.push(h("span", { class: "page-tag inline-tag", text: "sample: nothing is saved" }));
+  parts.push(message);
+  return h("div", { class: watch ? "watch-card is-on" : "watch-card", "data-watch-thesis": thesisId }, ...parts);
+}
+
+/** Put a thesis on watch, or change its policy. 201 or 200 answer with the watch. */
+async function putWatch(thesisId, policy, message) {
+  if (state.sample) return;
+  setMessage(message, "Saving…", "ok");
+  try {
+    const answer = await api(`/api/theses/${encodeURIComponent(thesisId)}/watch`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ policy }),
+    });
+    if (!answer.watch || answer.watch.thesis_id !== thesisId) throw new ApiError("the server did not return this thesis's watch", 0);
+    state.watches.set(thesisId, answer.watch);
+    rerenderWatch(thesisId, answer.created ? `On watch: ${str(answer.watch.policy_label)}.` : `Policy changed: ${str(answer.watch.policy_label)}.`);
+  } catch (error) {
+    const reason =
+      error.status === 404 ? "no saved thesis with that id exists" : error.status === 503 ? `${error.message}. Nothing was saved` : refusal(error);
+    setMessage(message, `The watch could not be saved: ${reason}.`);
+    resetPolicy(thesisId);
+  }
+}
+
+async function deleteWatch(thesisId, message) {
+  if (state.sample) return;
+  try {
+    const answer = await api(`/api/theses/${encodeURIComponent(thesisId)}/watch`, { method: "DELETE" });
+    if (answer.watching !== false) throw new ApiError("the server did not say the watch ended", 0);
+    state.watches.delete(thesisId);
+    rerenderWatch(thesisId, "Taken off watch. Its inbox items stay.");
+  } catch (error) {
+    if (error.status === 409) {
+      // Not watched any more (taken off elsewhere): show it as the server has it.
+      state.watches.delete(thesisId);
+      rerenderWatch(thesisId, `${error.message}.`);
+      return;
+    }
+    setMessage(message, `The watch could not be ended: ${error.status === 404 ? "no saved thesis with that id exists" : refusal(error)}.`);
+  }
+}
+
+/** A refused policy change leaves the radio on the policy the server has. */
+function resetPolicy(thesisId) {
+  const watch = state.watches.get(thesisId);
+  if (!watch) return;
+  for (const card of document.querySelectorAll(`[data-watch-thesis="${CSS.escape(thesisId)}"]`)) {
+    for (const input of card.querySelectorAll("input[data-policy]")) input.checked = input.value === watch.policy;
+  }
+}
+
+/** Draw a thesis's watch again wherever it is on screen, with a message under it. */
+function rerenderWatch(thesisId, note) {
+  if (state.thesisId === thesisId && !els.thesisView.hidden) renderThesisWatch(thesisId, note);
+  if (!els.inboxView.hidden) renderWatches(note, thesisId);
+  if (state.theses.size) renderTheses([...state.theses.values()]);
+  refreshWatchState();
+}
+
+function renderThesisWatch(thesisId, note = "") {
+  if (!els.thesisWatchSection) return;
+  if (!state.watchMeta || !state.watchesLoaded) {
+    els.thesisWatchSection.hidden = true;
+    return;
+  }
+  els.thesisWatchSection.hidden = false;
+  const card = watchCard(thesisId, state.watches.get(thesisId) ?? null);
+  els.thesisWatch.replaceChildren(card);
+  if (note) setMessage(card.querySelector(".watch-message"), note, "ok");
+}
+
+/** Every watch, oldest first as the API lists them, in the inbox view. */
+function renderWatches(note = "", noteThesis = "") {
+  const watches = [...state.watches.values()];
+  // A note about a watch no longer listed (taken off) goes above the list.
+  if (note && noteThesis && !state.watches.has(noteThesis)) setMessage(els.inboxMessage, note, "ok");
+  if (watches.length === 0) {
+    els.watches.replaceChildren(
+      h("p", { class: "muted", "data-empty": "watches", text: "No thesis is on watch. Open a saved thesis and put it on watch; its new filings then arrive here." }),
+    );
+    return;
+  }
+  els.watches.replaceChildren(
+    h(
+      "ul",
+      { class: "watch-list" },
+      watches.map((watch) =>
+        h(
+          "li",
+          { "data-watch-id": watch.thesis_id },
+          h(
+            "p",
+            { class: "watch-name" },
+            h("strong", { text: str(watch.thesis_name) }),
+            " · ",
+            h("span", { class: "ticker-chip", text: str(watch.ticker) }),
+            ` ${str(watch.company_name)}`,
+          ),
+          watchCard(watch.thesis_id, watch),
+        ),
+      ),
+    ),
+  );
+  if (note && noteThesis) {
+    const card = els.watches.querySelector(`[data-watch-thesis="${CSS.escape(noteThesis)}"] .watch-message`);
+    setMessage(card, note, "ok");
+  }
+}
+
+// ---- the inbox
+
+/** Open the inbox view: from the bar, the `i` key, #inbox, or a thesis's "open its inbox". */
+function openInbox({ thesisId = null, offset = 0 } = {}) {
+  closeDrawer(false);
+  if (state.sample) {
+    if (Object.hasOwn(INBOX_SAMPLES, state.sampleName)) {
+      showInboxView();
+      els.inboxItems.querySelector("article")?.focus?.({ preventScroll: true });
+      return;
+    }
+    showInboxView();
+    renderInboxHead(null);
+    els.watchesSection.hidden = true;
+    els.inboxItems.replaceChildren();
+    els.inboxCollapsed.replaceChildren();
+    els.inboxPaging.replaceChildren();
+    setMessage(els.inboxMessage, "", "ok");
+    els.inboxItems.append(
+      h("li", { class: "muted", "data-empty": "sample" }, "This sample holds no inbox. ", h("a", { href: "?sample=inbox", text: "See the recorded inbox of the standing watch" }), "."),
+    );
+    return;
+  }
+  state.inboxThesis = thesisId;
+  state.inboxOffsets = [];
+  loadInbox(offset);
+}
+
+function showInboxView() {
+  stopWatching();
+  state.viewSeq += 1;
+  hideRunView();
+  els.loading.hidden = true;
+  els.inboxView.hidden = false;
+  document.body.classList.add("has-run");
+  els.watchesSection.hidden = false;
+  els.inboxButton?.setAttribute("aria-expanded", "true");
+  if (!state.sample) history.replaceState(null, "", "#inbox");
+}
+
+async function loadInbox(offset) {
+  showInboxView();
+  const seq = ++state.inboxSeq;
+  setMessage(els.inboxMessage, "Loading the inbox…", "ok");
+  const query = new URLSearchParams({ offset: String(offset) });
+  if (state.inboxThesis) query.set("thesis_id", state.inboxThesis);
+  try {
+    if (!state.watchMeta) state.watchMeta = await api("/api/watch/meta");
+    const [page, watches, health] = await Promise.all([api(`/api/inbox?${query}`), api("/api/watch"), api("/api/watch/health").catch(() => null)]);
+    if (seq !== state.inboxSeq) return;
+    state.watches = new Map(list(watches.watches).map((w) => [w.thesis_id, w]));
+    state.watchesLoaded = true;
+    state.health = health;
+    renderHealth();
+    setMessage(els.inboxMessage, "", "ok");
+    renderInbox(page);
+  } catch (error) {
+    if (seq !== state.inboxSeq) return;
+    renderInboxHead(null);
+    els.inboxItems.replaceChildren();
+    els.inboxCollapsed.replaceChildren();
+    els.inboxPaging.replaceChildren(h("button", { type: "button", class: "secondary small", onclick: () => loadInbox(offset), text: "Try again" }));
+    const reason = error.status === 404 ? "this server has no inbox (it is older than version 13)" : refusal(error);
+    setMessage(els.inboxMessage, `The inbox could not be loaded: ${reason}.`);
+  }
+}
+
+function renderInboxHead(page) {
+  const thesis = state.inboxThesis ? state.watches.get(state.inboxThesis) : null;
+  els.inboxHead.replaceChildren(
+    h(
+      "div",
+      { class: "run-head-main" },
+      h("p", { class: "company-name", text: "Inbox" }),
+      h(
+        "p",
+        { class: "run-meta" },
+        page
+          ? [
+              h("span", { class: "count-value", "data-inbox": "unread", text: num(page.unread) }),
+              " unread of ",
+              h("span", { class: "count-value", "data-inbox": "total", text: num(page.total) }),
+              ` ${unit(page.total, "item", "items")}`,
+              thesis ? ` for “${str(thesis.thesis_name)}”` : state.inboxThesis ? " for one thesis" : "",
+              ". Unread first, then newest first.",
+            ]
+          : "The standing watch's new filings, each with what it means for the watched theses.",
+        state.inboxThesis && !state.sample ? [" ", h("a", { href: "#inbox", onclick: (event) => { event.preventDefault(); openInbox(); }, text: "Show every thesis" })] : "",
+      ),
+      sampleNoteLine(),
+    ),
+  );
+}
+
+/** One page of the inbox exactly as the API ordered it; the folded kinds go on one line under it. */
+function renderInbox(page) {
+  if (!page || !Array.isArray(page.items)) throw new ApiError("the inbox page has no items", 0);
+  state.inboxPage = page;
+  if (Number.isFinite(page.unread) && !state.inboxThesis) state.inboxUnread = page.unread;
+  renderInboxCount();
+  renderInboxHead(page);
+  renderWatches();
+  renderWatchDown();
+  const open = page.items.filter((item) => item.collapsed !== true);
+  const folded = page.items.filter((item) => item.collapsed === true);
+  els.inboxItems.replaceChildren(...open.map((item) => h("li", null, inboxItem(item))));
+  if (page.items.length === 0) {
+    els.inboxItems.append(h("li", { class: "muted", "data-empty": "inbox", text: page.offset > 0 ? "No items on this page." : "The inbox is empty: no watched thesis has a new filing yet." }));
+  }
+  renderFolded(folded);
+  renderPaging(page);
+}
+
+/**
+ * The folded items ("seen, not relevant"): one line with how many this page holds, opening to
+ * each one's headline and filing. The count is of the items drawn here, not a figure of the record.
+ */
+function renderFolded(folded) {
+  if (folded.length === 0) {
+    els.inboxCollapsed.replaceChildren();
+    return;
+  }
+  const kinds = [...new Set(folded.map((item) => item.kind))];
+  els.inboxCollapsed.replaceChildren(
+    h(
+      "details",
+      { class: "inbox-folded", "data-folded-count": String(folded.length) },
+      h(
+        "summary",
+        null,
+        h("span", { class: "glyph", "aria-hidden": "true", text: INBOX_KIND.not_relevant }),
+        ` ${kinds.map(kindLabel).join(", ")}: `,
+        h("span", { class: "count-value", "data-folded": "count", text: num(folded.length) }),
+        ` ${unit(folded.length, "filing", "filings")} on this page`,
+        h("span", { class: "fold-hint", text: ". No run was needed." }),
+      ),
+      h("ol", { class: "inbox-items is-folded" }, folded.map((item) => h("li", null, inboxItem(item)))),
+    ),
+  );
+}
+
+function renderPaging(page) {
+  const parts = [];
+  if (state.sample) {
+    if (page.offset > 0) parts.push(h("a", { class: "tool", href: "?sample=inbox", "data-page": "first", text: "First page" }));
+  } else {
+    if (state.inboxOffsets.length) {
+      parts.push(
+        h("button", {
+          type: "button",
+          class: "secondary small",
+          "data-page": "newer",
+          onclick: () => loadInbox(state.inboxOffsets.pop()),
+          text: "Newer items",
+        }),
+      );
+    }
+    if (Number.isInteger(page.next_offset)) {
+      parts.push(
+        h("button", {
+          type: "button",
+          class: "secondary small",
+          "data-page": "older",
+          onclick: () => {
+            state.inboxOffsets.push(page.offset);
+            loadInbox(page.next_offset);
+          },
+          text: "Older items",
+        }),
+      );
+    }
+    const unreadIds = page.items.filter((item) => !item.read_at).map((item) => item.id);
+    if (unreadIds.length) parts.push(h("button", { type: "button", class: "secondary small", "data-mark-page": "", onclick: () => markRead(unreadIds, true), text: "Mark this page read" }));
+  }
+  if (Number.isInteger(page.next_offset)) parts.push(h("span", { class: "hint", "data-next-offset": String(page.next_offset), text: "More items are on the next page." }));
+  els.inboxPaging.replaceChildren(...parts);
+}
+
+/** One inbox item: its kind, headline, the filing, the triage per claim, the run and what moved. */
+function inboxItem(item) {
+  const kind = token(item.kind, INBOX_KIND);
+  const unread = !item.read_at;
+  const message = h("p", { class: "watch-message", role: "status", hidden: true });
+  const node = h(
+    "article",
+    { class: `inbox-item k-${kind}${unread ? " is-unread" : ""}`, "data-item-id": str(item.id), "data-kind": kind, "data-unread": String(unread), tabindex: "-1" },
+    h(
+      "header",
+      { class: "inbox-item-head" },
+      h("span", { class: `kind-tag k-${kind}`, "data-kind-label": "" }, h("span", { class: "glyph", "aria-hidden": "true", text: INBOX_KIND[kind] ?? "·" }), ` ${kindLabel(item.kind)}`),
+      unread ? h("span", { class: "unread-mark", text: "Unread" }) : h("span", { class: "read-mark", text: `Read ${utc(item.read_at)}` }),
+      h("span", { class: "inbox-when", text: `${str(item.ticker)} · ${str(item.thesis_name)} · ${utc(item.updated_at)}` }),
+    ),
+    h("p", { class: "inbox-headline", text: str(item.headline) }),
+    item.collapsed ? "" : inboxFiling(item.filing),
+    item.collapsed ? h("p", { class: "inbox-filing-line" }, externalLink(item.filing?.url, str(item.filing?.label) || "the filing")) : inboxTriage(item.triage),
+    inboxRun(item, message),
+    inboxMoved(item.moved),
+    h(
+      "div",
+      { class: "inbox-actions" },
+      h("button", {
+        type: "button",
+        class: "linklike",
+        "data-mark": unread ? "read" : "unread",
+        disabled: state.sample,
+        onclick: () => markRead([item.id], unread),
+        text: unread ? "Mark read" : "Mark unread",
+      }),
+    ),
+    message,
+  );
+  return node;
+}
+
+/** The filing that arrived: form and accession linked to sec.gov, its dates and, for an 8-K, its items. */
+function inboxFiling(filing) {
+  if (!filing) return "";
+  const items = list(filing.items);
+  return h(
+    "div",
+    { class: "inbox-filing" },
+    h(
+      "p",
+      null,
+      externalLink(filing.url, [h("strong", { text: str(filing.form) }), ` ${str(filing.accession)}`]),
+      ` · filed ${str(filing.filed_date)}`,
+      str(filing.report_date) ? ` · report date ${filing.report_date}` : "",
+    ),
+    items.length
+      ? h(
+          "ul",
+          { class: "inbox-filing-items" },
+          items.map((it) => h("li", { "data-item-number": str(it.number) }, h("strong", { text: `Item ${str(it.number)}` }), ` ${str(it.title)}`, str(it.category) ? h("span", { class: "event-cat", text: ` (${it.category})` }) : "")),
+        )
+      : "",
+  );
+}
+
+/** Does it bear on the thesis, and why: the rules, then each claim with its reasons and paragraphs. */
+function inboxTriage(triage) {
+  if (!triage) return "";
+  const rules = list(triage.rules);
+  const ruleLabels = state.watchMeta?.rule_labels ?? {};
+  return h(
+    "div",
+    { class: "inbox-triage" },
+    h(
+      "p",
+      { class: "triage-summary" },
+      ruleMark("By rule, no model"),
+      " ",
+      str(triage.summary),
+      rules.length ? h("span", { class: "triage-rules" }, " · ", rules.map((r) => str(ruleLabels[r]) || r).join(", ")) : "",
+    ),
+    h(
+      "ul",
+      { class: "triage-claims" },
+      list(triage.claims).map((claim) =>
+        h(
+          "li",
+          { "data-claim-id": str(claim.claim_id), "data-bears": String(claim.bears === true) },
+          h(
+            "p",
+            { class: "triage-claim" },
+            h("span", { class: "claim-id", text: str(claim.claim_id) }),
+            " ",
+            str(claim.claim),
+            h("span", { class: claim.bears ? "bears is-yes" : "bears is-no", text: claim.bears ? " bears on it" : " does not bear on it" }),
+          ),
+          list(claim.reasons).length ? h("ul", { class: "triage-reasons" }, list(claim.reasons).map((r) => h("li", { text: String(r) }))) : "",
+          list(claim.paragraphs).length
+            ? h(
+                "ul",
+                { class: "triage-paragraphs" },
+                list(claim.paragraphs).map((p) =>
+                  h(
+                    "li",
+                    null,
+                    // The record's own kind; "changed" has no mark of its own, so it keeps its word.
+                    Object.hasOwn(CHANGE_MARK, p.kind) ? changeMark(p.kind) : h("span", { class: "chg-mark c-reworded" }, h("span", { class: "chg-label", text: capitalize(str(p.kind)) })),
+                    ` ${str(p.item)}`,
+                    h("blockquote", { class: "triage-paragraph", text: str(p.text) }),
+                    list(p.matched_terms).length ? h("span", { class: "hint", text: `Shared words: ${list(p.matched_terms).join(", ")} · ` }) : "",
+                    externalLink(p.link, "Open in the filing, at this paragraph"),
+                  ),
+                ),
+              )
+            : "",
+        ),
+      ),
+    ),
+    list(triage.notes).length ? h("ul", { class: "triage-notes" }, list(triage.notes).map((n) => h("li", { text: String(n) }))) : "",
+  );
+}
+
+/** The run the filing caused: waiting (with the button), under way, finished or failed. */
+function inboxRun(item, message) {
+  const run = item.run;
+  if (!run) return item.error ? limitLine("p", str(item.error)) : "";
+  const openRun = run.run_id
+    ? h("button", { type: "button", class: "secondary small", "data-open-run": run.run_id, onclick: () => openItemRun(item, message), text: run.state === "running" ? "Open the run under way" : "Open the run in the note" })
+    : "";
+  const parts = [];
+  if (run.state === "waiting") {
+    parts.push(
+      h("p", { class: "waiting-reason", text: str(run.waiting_reason) }),
+      h("button", { type: "button", class: "primary small", "data-run-now": str(item.id), onclick: (event) => runNow(item, event.currentTarget, message), text: "Run now (uses the model)" }),
+    );
+  } else {
+    parts.push(
+      h(
+        "p",
+        { class: "inbox-run-line" },
+        "Run ",
+        h("code", { text: str(run.run_id) || "—" }),
+        run.status ? [" · ", h("span", { class: `status-word st-${token(run.status, STATUS_GLYPH)}` }, statusMark(run.status), ` ${capitalize(run.status)}`)] : run.state === "running" ? " · under way" : "",
+        str(run.started_by) ? ` · started by ${run.started_by === "owner" ? "you, from the inbox" : "the watch"}` : "",
+        " ",
+        openRun,
+      ),
+    );
+  }
+  if (item.error) parts.push(limitLine("p", str(item.error)));
+  return h("div", { class: `inbox-run r-${token(run.state, { waiting: 1, running: 1, finished: 1, failed: 1 })}` }, ...parts);
+}
+
+/** What the run changed: the record's line, the verdicts that moved, new cautions, notes and 8-Ks; the comparison one click away. */
+function inboxMoved(moved) {
+  if (!moved) return "";
+  const parts = [h("p", { class: "moved-line", "data-moved": String(moved.moved === true), text: str(moved.line) })];
+  const verdicts = list(moved.verdicts);
+  if (verdicts.length) {
+    parts.push(h("ul", { class: "moved-verdicts" }, verdicts.map((v) => h("li", null, h("span", { class: "moved-claim", text: str(v.claim) }), " ", verdictPill(v.before), h("span", { class: "moved-arrow", "aria-label": "became", text: " → " }), verdictPill(v.after)))));
+  }
+  for (const caution of list(moved.new_cautions)) parts.push(limitLine("p", h("strong", { text: "New caution: " }), `${str(caution.claim)} `, str(caution.text)));
+  for (const note of list(moved.new_notes)) parts.push(h("p", { class: "moved-note" }, h("strong", { text: "New note on the 8-Ks: " }), `${str(note.claim)} `, str(note.text)));
+  if (list(moved.new_events).length) {
+    parts.push(h("p", { class: "moved-events" }, h("strong", { text: "New on the time line: " }), ...list(moved.new_events).flatMap((e, i) => [i ? "; " : "", externalLink(e.url, str(e.label) || str(e.accession)), list(e.items).length ? ` (Items ${list(e.items).join(", ")})` : ""])));
+  }
+  if (list(moved.claims).length) {
+    const body = h("div", { class: "moved-compare-body" });
+    parts.push(
+      h(
+        "details",
+        { class: "moved-compare", ontoggle: (event) => event.currentTarget.open && !body.childElementCount && renderComparison(body, moved, null) },
+        h("summary", { text: "Compare with the previous run, claim by claim" }),
+        body,
+      ),
+    );
+  }
+  return h("div", { class: "inbox-moved" }, ...parts);
+}
+
+/** Open the run an item made in the note, with its comparison (the item's own) under the head. */
+function openItemRun(item, message) {
+  const runId = item.run?.run_id;
+  if (!runId) return;
+  if (state.sample) {
+    setMessage(message, `Run ${runId} is not part of this sample: the scenario's runs are not recorded beside it.`);
+    return;
+  }
+  state.itemComparison = item.moved && item.moved.later_run_id === runId ? item.moved : null;
+  watchRun(runId);
+}
+
+/** Start a waiting run (it uses the model). 202: the run; 409: nothing waits any more, so the item is read again. */
+async function runNow(item, button, message) {
+  if (state.sample) {
+    setMessage(message, "Sample: nothing is started. On a live inbox this starts the run, which uses the model.");
+    return;
+  }
+  button.disabled = true;
+  setMessage(message, "Starting the run…", "ok");
+  try {
+    const started = await api(`/api/inbox/${encodeURIComponent(item.id)}/run`, { method: "POST" });
+    if (typeof started.id !== "string" || !started.id) throw new ApiError("the server did not return a run id", 0);
+    await reloadItem(item.id, `Run ${started.id} started.`);
+  } catch (error) {
+    if (error.status === 409) {
+      await reloadItem(item.id, `The run was not started: ${error.message}.`, true);
+      return;
+    }
+    button.disabled = false;
+    setMessage(message, `The run could not be started: ${error.status === 404 ? "this inbox item no longer exists" : refusal(error)}.`);
+  }
+}
+
+/** Read one item again (after its run started, or after a 409) and draw it in its place. */
+async function reloadItem(itemId, note, isError = false) {
+  const slot = [...document.querySelectorAll("article.inbox-item")].find((node) => node.dataset.itemId === itemId);
+  try {
+    const fresh = await api(`/api/inbox/${encodeURIComponent(itemId)}`);
+    const node = inboxItem(fresh);
+    slot?.replaceWith(node);
+    setMessage(node.querySelector(".watch-message"), note, isError ? "error" : "ok");
+  } catch (error) {
+    setMessage(slot?.querySelector(".watch-message"), `${note} The item could not be read again: ${refusal(error)}.`);
+  }
+  refreshWatchState();
+}
+
+/** Mark items read (or unread again); the answer carries the inbox's unread count. */
+async function markRead(ids, read) {
+  if (state.sample || ids.length === 0) return;
+  try {
+    const answer = await api("/api/inbox/read", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ids, read }) });
+    if (Number.isFinite(answer.unread)) state.inboxUnread = answer.unread;
+    renderInboxCount();
+    loadInbox(state.inboxPage?.offset ?? 0);
+  } catch (error) {
+    setMessage(els.inboxMessage, `Could not mark ${ids.length === 1 ? "the item" : "the items"} ${read ? "read" : "unread"}: ${refusal(error)}.`);
+  }
+}
+
+/** ?sample=inbox: the example payloads, drawn as a live inbox would be, with nothing sent. */
+async function loadInboxSample(name) {
+  const [page, watches, health, watchMeta] = await Promise.all([
+    api(INBOX_SAMPLES[name], { cache: "no-store" }),
+    api("sample-inbox-watches.json", { cache: "no-store" }),
+    api("sample-inbox-health.json", { cache: "no-store" }),
+    api("sample-inbox-meta.json", { cache: "no-store" }),
+  ]);
+  applyMeta(await api("/api/meta"), { sample: true });
+  state.watchMeta = watchMeta;
+  state.watches = new Map(list(watches.watches).map((w) => [w.thesis_id, w]));
+  state.watchesLoaded = true;
+  state.health = health;
+  state.sampleNote = INBOX_SAMPLE_NOTE;
+  els.formNote.textContent = `Sample mode: ${INBOX_SAMPLE_NOTE}`;
+  showInboxView();
+  renderHealth();
+  renderInbox(page);
+}
+
 // ---------------------------------------------------------------- the first screen, the thesis drawer, the guide
 
 /** Whether the first screen is showing: no run or other record, so the form is the page. */
@@ -4617,6 +5463,7 @@ function initLayout() {
   els.drawerClose?.addEventListener("click", () => closeDrawer());
   els.drawerScrim?.addEventListener("click", () => closeDrawer());
   els.howtoButton?.addEventListener("click", toggleHowto);
+  els.inboxButton?.addEventListener("click", () => openInbox());
   els.keysHowto?.addEventListener("click", () => {
     els.keysDialog?.close?.();
     if (onFirstScreen()) return;
@@ -4743,6 +5590,10 @@ function onKey(event) {
       event.preventDefault();
       toggleTheme();
       break;
+    case "i":
+      event.preventDefault();
+      openInbox();
+      break;
     case "e":
       if (onFirstScreen()) break;
       event.preventDefault();
@@ -4831,6 +5682,7 @@ function init() {
   loadMeta();
   refreshRecent();
   refreshTheses();
+  startWatchPolling();
   openHashTarget();
 }
 

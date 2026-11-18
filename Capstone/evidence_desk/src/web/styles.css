@@ -1728,6 +1728,126 @@ p.bd-adds-yes, dt .bd-adds-yes { font-weight: 650; color: var(--ink); }
 .type-sample { margin: 0.2rem 0; }
 .spec-row { display: flex; flex-wrap: wrap; gap: 0.5rem 0.8rem; align-items: center; }
 
+/* ------------------------------------------------------------ the standing watch (version 13)
+ * The inbox, a thesis's watch and the watcher's health. Kinds keep the record's words and a
+ * glyph each; colour only repeats them: moved in the change colour, waiting dashed, failed in
+ * the limit colour, not relevant folded and grey. */
+
+.inbox-button { position: relative; }
+.inbox-count {
+  display: inline-block;
+  min-width: 1.4em;
+  margin-left: 0.15rem;
+  padding: 0 0.3rem;
+  font-family: var(--font-data);
+  font-size: var(--step--2);
+  font-weight: 800;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--bar-bg);
+  background: var(--accent);
+  border-radius: 1px;
+}
+.inbox-count[data-unread="0"] { color: var(--ink-2); background: transparent; border: 1px solid var(--line-strong); }
+.watch-health { display: inline-flex; align-items: baseline; gap: 0.3rem; font-family: var(--font-data); font-size: var(--step--2); color: var(--ink-2); white-space: nowrap; max-width: 26rem; overflow: hidden; text-overflow: ellipsis; }
+.watch-health.is-alive .health-dot { color: var(--support); }
+.watch-health.is-down .health-dot, .watch-health.is-down .health-word { color: var(--limit); font-weight: 700; }
+.health-word { font-weight: 600; color: var(--ink); }
+
+.watch-down { margin: 0.8rem 0 0; }
+.watch-down .mark-limit, .watch-down-slot .mark-limit { margin: 0 0 0.5rem; padding: 0.45rem 0.7rem; border-left: 3px solid var(--limit); background: var(--limit-bg); font-weight: 400; }
+.watch-message { margin: 0.4rem 0 0; font-size: var(--step--1); }
+.watch-message.is-error { color: var(--reject); font-weight: 600; }
+.watch-message.is-ok { color: var(--ink-2); }
+
+.watch-card { padding: 0.2rem 0 0.4rem; }
+.watch-state { margin: 0 0 0.4rem; }
+.watch-on { font-family: var(--font-label); font-variant-caps: var(--label-caps); text-transform: var(--label-transform); letter-spacing: var(--label-track); font-weight: 700; color: var(--support); }
+.watch-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 0.2rem 1.2rem; margin: 0 0 0.6rem; font-size: var(--step--1); }
+.watch-facts dt { font-size: var(--step--2); font-weight: 700; color: var(--ink-2); }
+.watch-facts dd { margin: 0; font-family: var(--font-data); }
+.watch-facts dd.is-error { color: var(--reject); font-family: var(--font-ui); }
+.watch-policy { margin: 0 0 0.5rem; padding: 0; border: 0; }
+.watch-policy legend { padding: 0; margin-bottom: 0.2rem; font-size: var(--step--1); font-weight: 600; }
+.watch-choice { display: inline-flex; align-items: baseline; gap: 0.35rem; margin-right: 1.4rem; font-size: var(--step--1); }
+.watch-choice > input { width: auto; min-width: 0; margin: 0; padding: 0; accent-color: var(--accent); }
+.watch-choice .hint { font-weight: 400; }
+.watch-actions { display: flex; gap: 0.5rem; align-items: center; }
+.watch-list { list-style: none; margin: 0; padding: 0; }
+.watch-list > li + li { margin-top: 0.8rem; padding-top: 0.8rem; border-top: 1px solid var(--line); }
+.watch-name { margin: 0 0 0.3rem; }
+.watch-tag { display: block; font-size: var(--step--2); color: var(--support); font-weight: 600; }
+
+.inbox-items { list-style: none; margin: 0; padding: 0; }
+.inbox-items > li + li { margin-top: 0.2rem; }
+.inbox-item { position: relative; padding: 0.7rem 0.8rem 0.7rem 1rem; border-top: 1px solid var(--line); outline: none; }
+.inbox-item.is-unread { box-shadow: inset 3px 0 0 var(--accent); }
+.inbox-item-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.8rem; font-size: var(--step--2); }
+.kind-tag {
+  font-family: var(--font-label);
+  font-variant-caps: var(--label-caps);
+  text-transform: var(--label-transform);
+  letter-spacing: var(--label-track);
+  font-weight: 700;
+  font-size: var(--step--1);
+  padding: 0 0.4rem;
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+}
+.kind-tag.k-moved { color: var(--change); border-color: var(--change); background: var(--change-bg); }
+.kind-tag.k-waiting { border-style: dashed; color: var(--accent); border-color: var(--accent); }
+.kind-tag.k-running { border-style: dotted; }
+.kind-tag.k-failed { color: var(--limit); border-color: var(--limit); background: var(--limit-bg); }
+.kind-tag.k-not_relevant, .kind-tag.k-nothing_moved { color: var(--ink-2); }
+.unread-mark { font-weight: 800; color: var(--accent); }
+.read-mark, .inbox-when { color: var(--ink-2); }
+.inbox-headline { margin: 0.3rem 0 0.35rem; font-family: var(--font-prose); font-size: var(--step-1); line-height: 1.3; max-width: 70ch; }
+.inbox-filing { font-size: var(--step--1); }
+.inbox-filing p { margin: 0; }
+.inbox-filing-items { list-style: none; margin: 0.15rem 0 0; padding: 0; color: var(--ink-2); }
+.inbox-filing-line { margin: 0; font-size: var(--step--1); }
+.inbox-triage { margin-top: 0.5rem; font-size: var(--step--1); }
+.triage-summary { margin: 0 0 0.3rem; }
+.triage-rules { color: var(--ink-2); }
+.triage-claims { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.3rem; }
+.triage-claims > li { padding-left: 0.7rem; border-left: 2px solid var(--line); }
+.triage-claims > li[data-bears="true"] { border-left-color: var(--ink); }
+.triage-claim { margin: 0; max-width: 80ch; }
+.bears { font-weight: 700; }
+.bears.is-yes { color: var(--ink); }
+.bears.is-no { color: var(--ink-2); font-weight: 400; }
+.triage-reasons, .triage-notes { margin: 0.1rem 0 0; padding-left: 1.1rem; color: var(--ink-2); }
+.triage-paragraphs { list-style: none; margin: 0.25rem 0 0; padding: 0; }
+.triage-paragraph { margin: 0.2rem 0; padding-left: 0.7rem; border-left: 2px solid var(--change); font-family: var(--font-prose); max-width: 70ch; }
+.inbox-run { margin-top: 0.5rem; font-size: var(--step--1); }
+.inbox-run p { margin: 0 0 0.3rem; }
+.inbox-run.r-waiting { padding: 0.45rem 0.7rem; border: 1.5px dashed var(--accent); }
+.waiting-reason { color: var(--ink); }
+.inbox-run-line .secondary { margin-left: 0.4rem; }
+.inbox-moved { margin-top: 0.5rem; font-size: var(--step--1); }
+.inbox-moved > p { margin: 0 0 0.3rem; }
+.moved-line { font-weight: 700; }
+.moved-line[data-moved="true"] { color: var(--change); }
+.moved-verdicts { list-style: none; margin: 0 0 0.3rem; padding: 0; }
+.moved-verdicts li { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; }
+.moved-claim { font-family: var(--font-prose); }
+.moved-arrow { color: var(--ink-2); font-weight: 700; }
+.moved-compare > summary { cursor: pointer; color: var(--accent); }
+.moved-compare-body { margin-top: 0.4rem; }
+.inbox-actions { margin-top: 0.4rem; font-size: var(--step--1); }
+.inbox-folded { margin-top: 0.6rem; border-top: 1px solid var(--line); }
+.inbox-folded > summary { cursor: pointer; padding: 0.45rem 0; font-family: var(--font-data); font-size: var(--step--1); color: var(--ink-2); }
+.inbox-folded > summary .count-value { font-weight: 700; color: var(--ink); }
+.inbox-items.is-folded .inbox-item { padding-top: 0.4rem; padding-bottom: 0.4rem; }
+.inbox-items.is-folded .inbox-headline { font-size: var(--step-0); color: var(--ink-2); }
+.inbox-paging { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.8rem; }
+
+:root[data-theme="terminal"] .inbox-item:hover { background: var(--surface-2); }
+:root[data-theme="terminal"] .inbox-headline { font-family: var(--font-sans); font-size: var(--step-0); font-weight: 600; }
+:root[data-theme="terminal"] .inbox-item.is-unread { box-shadow: inset 3px 0 0 var(--accent); background: rgb(255 173 51 / 0.03); }
+:root[data-theme="terminal"] .inbox-count { color: #000; }
+:root[data-theme="terminal"] .triage-paragraph, :root[data-theme="terminal"] .moved-claim { font-family: var(--font-sans); }
+
 /* ------------------------------------------------------------ the tape: the newest period's key figures
  * One dense row under the company's name. Every value is the record's display string, set on a
  * decimal grid; the line under it is its series. */
@@ -1873,6 +1993,9 @@ body.drawer-open .thesis-button { background: var(--ink); color: var(--bar-bg); 
   .tape-cell:nth-child(2n) { border-right: 0; }
   .tape-cell { border-bottom: 1px solid var(--line); }
   .statusbar > span:not(.statusbar-run) { display: none; }
+  .health-detail { display: none; }
+  .inbox-count { margin-left: 0; }
+  .watch-choice { display: flex; margin-right: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1896,7 +2019,7 @@ body.drawer-open .thesis-button { background: var(--ink); color: var(--bar-bg); 
     color-scheme: light;
   }
   body { font-size: 10pt; background: #fff; }
-  .cmdbar, .howto, .statusbar, .drawer-scrim, .form-panel, .skip-link, .footer, .keys-dialog,
+  .cmdbar, .howto, .statusbar, .drawer-scrim, .watch-actions, .inbox-actions, .inbox-paging, .watch-policy, .form-panel, .skip-link, .footer, .keys-dialog,
   .review-slot, .decision-controls, .run-head-actions, .tl-tip, #stages-wrap, .chart-table, .prov-more > summary::after,
   #legend, button, .cc-error button { display: none !important; }
   .banner-fold > .banner-full { display: block; }

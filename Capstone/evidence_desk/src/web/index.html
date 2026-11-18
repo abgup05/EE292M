@@ -40,6 +40,8 @@
       <div class="cmd-tools">
         <span id="sample-tag" class="page-tag" hidden>Sample record</span>
         <a id="leave-sample" class="tool leave-sample" href="./" hidden>Leave the sample</a>
+        <span id="watch-health" class="watch-health" role="status" hidden></span>
+        <button type="button" id="inbox-button" class="tool inbox-button" aria-controls="inbox-view" aria-keyshortcuts="i">Inbox <span id="inbox-count" class="inbox-count" hidden></span><kbd class="key-hint" aria-hidden="true">i</kbd></button>
         <button type="button" id="howto-button" class="tool" aria-controls="howto" aria-expanded="false">How to read this</button>
         <button type="button" id="theme-toggle" class="tool theme-toggle" aria-keyshortcuts="t">
           <span class="theme-option" data-theme-option="paper">Paper</span><span class="theme-option" data-theme-option="terminal">Terminal</span>
@@ -62,6 +64,7 @@
               <li><a id="tagged-link" class="sample-button" href="?sample=run-tagged">See the same run with tagged figures offered</a> <span class="sample-what">segment, product and customer figures a finding can cite</span></li>
               <li><a id="changes-link" class="sample-button" href="?sample=changes">See a recorded filing comparison</a> <span class="sample-what">NVIDIA's two latest 10-Ks, paragraph by paragraph</span></li>
               <li><a id="breakdowns-link" class="sample-button" href="?sample=breakdowns">See recorded segments and customers</a> <span class="sample-what">the tables a 10-K tags, with their changes</span></li>
+              <li><a id="inbox-link" class="sample-button" href="?sample=inbox">See a recorded inbox of the standing watch</a> <span class="sample-what">six kinds of item on made-up NVIDIA filings, scripted verdicts</span></li>
             </ul>
           </div>
         </div>
@@ -69,7 +72,7 @@
           <h2 class="rail-title">How to read a run</h2>
           <p id="distinction" class="distinction">Each verdict follows by a fixed rule from the findings that passed their checks. <strong>Checked:</strong> every quote was found word for word in the stored filing, and numbers were matched to quotes and reported figures. <strong>Not checked:</strong> whether a quote supports or challenges the claim is the engine's reading of it. Read the quotes before you rely on a verdict.</p>
           <p class="howto-para">The tape under the company's name is the newest period's reported figures, each with the line of its series. The time line puts the run on one axis of dates: bars above it are the annual (10-K) and quarterly (10-Q) reports the run read, with a dot where a verified quote comes from one; below it are the 8-Ks the record lists since the annual report, filled diamonds for those with an item of a substantive category and small circles for routine ones; the hatched band runs from the newest filing read to the run, and nothing filed in it is in the record. Hover over or focus a mark to read it; select it to open the filing.</p>
-          <p class="howto-para">The page's marks are explained in the legend at the end of the note. Keys: <kbd>/</kbd> ticker, <kbd>e</kbd> your thesis, <kbd>j</kbd> <kbd>k</kbd> claims, <kbd>t</kbd> theme, <kbd>?</kbd> all keys. Printing gives the whole note.</p>
+          <p class="howto-para">The page's marks are explained in the legend at the end of the note. Keys: <kbd>/</kbd> ticker, <kbd>e</kbd> your thesis, <kbd>i</kbd> the inbox, <kbd>j</kbd> <kbd>k</kbd> claims, <kbd>t</kbd> theme, <kbd>?</kbd> all keys. Printing gives the whole note.</p>
         </div>
       </div>
     </section>
@@ -257,9 +260,29 @@
           </div>
           <ul id="thesis-runs" class="recent thesis-runs"></ul>
         </section>
+        <section id="thesis-watch-section" class="block" aria-labelledby="thesis-watch-title" hidden>
+          <h3 id="thesis-watch-title" class="block-title" data-code="WCH">The standing watch</h3>
+          <div id="thesis-watch"></div>
+        </section>
         <section id="thesis-changes-section" class="block" aria-labelledby="thesis-changes-title">
           <h3 id="thesis-changes-title" class="block-title" data-code="MOV">What moved</h3>
           <div id="thesis-changes"></div>
+        </section>
+      </div>
+
+      <div id="inbox-view" hidden>
+        <div id="inbox-head" class="run-head"></div>
+        <p id="watch-down" class="watch-down" role="alert" hidden></p>
+        <section id="watches-section" class="block" aria-labelledby="watches-title">
+          <h3 id="watches-title" class="block-title" data-code="WCH">On watch</h3>
+          <div id="watches"></div>
+        </section>
+        <section id="inbox-section" class="block" aria-labelledby="inbox-title">
+          <h3 id="inbox-title" class="block-title" data-code="INB">New filings</h3>
+          <p id="inbox-message" class="watch-message" role="status" hidden></p>
+          <ol id="inbox-items" class="inbox-items"></ol>
+          <div id="inbox-collapsed"></div>
+          <nav id="inbox-paging" class="inbox-paging" aria-label="Pages of the inbox"></nav>
         </section>
       </div>
 
@@ -427,6 +450,7 @@
     <dl class="keys-list">
       <div><dt><kbd>/</kbd></dt><dd>Put the cursor in the ticker</dd></div>
       <div><dt><kbd>e</kbd></dt><dd>Open or close your thesis (the form) beside a result</dd></div>
+      <div><dt><kbd>i</kbd></dt><dd>Open the inbox of the standing watch</dd></div>
       <div><dt><kbd>j</kbd></dt><dd>Next claim</dd></div>
       <div><dt><kbd>k</kbd></dt><dd>Previous claim</dd></div>
       <div><dt><kbd>Enter</kbd></dt><dd>Open or close the claim in focus</dd></div>
@@ -440,7 +464,7 @@
 
   <div id="drawer-scrim" class="drawer-scrim" hidden></div>
   <div id="statusbar" class="statusbar" aria-hidden="true">
-    <span><kbd>/</kbd> ticker</span><span><kbd>e</kbd> thesis</span><span><kbd>j</kbd><kbd>k</kbd> claims</span><span><kbd>t</kbd> theme</span><span><kbd>?</kbd> keys</span>
+    <span><kbd>/</kbd> ticker</span><span><kbd>e</kbd> thesis</span><span><kbd>i</kbd> inbox</span><span><kbd>j</kbd><kbd>k</kbd> claims</span><span><kbd>t</kbd> theme</span><span><kbd>?</kbd> keys</span>
     <span id="statusbar-run" class="statusbar-run"></span>
   </div>
 

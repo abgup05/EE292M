@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Watch and inbox check</title>
+</head>
+<body>
+<!--
+  The standing watch's states. `make uitest` loads this file in headless Chromium with the
+  same-origin rule off for this page only (KEYS_FLAGS in the Makefile) and dumps its DOM.
+
+  It loads the recorded inbox (?sample=inbox) in a frame, then turns sample mode off and puts a
+  stand-in for `fetch` in the frame, so that the page's own code for each answer of the watch
+  routes runs: a run started (202), a run no longer waiting (409), a refused policy (422), EDGAR
+  out of reach (503), a watch already ended (409), an empty inbox and no watches beside a
+  watcher that is not running, an unreachable server, paging by the API's offsets, and marking
+  an item read. Each answer is a committed example payload from docs/examples/v13 or, for the
+  refusals the examples do not include, the shape its README gives ({"error": "..."}). One page
+  is made here: inbox.json cut to its first four items with next_offset 4, because no example
+  page has a next page. Calls to any other /api/ route are answered 500 and listed as unexpected.
+
+  It decides nothing: after each step it writes what the page showed and what it sent into the
+  list below, and uitests/test_inbox_dom.py judges it.
+-->
+<iframe id="app" title="Evidence Desk" src="http://app:8000/?sample=inbox" width="1200" height="900"></iframe>
+<ol id="steps"></ol>
+<p id="done" data-done="false">running</p>
+<script>
+"use strict";
+const frame = document.getElementById("app");
+const steps = document.getElementById("steps");
+const done = document.getElementById("done");
+const EXAMPLES = "file:///work/docs/examples/v13/";
+let routes = {};
+let calls = [];
+let unexpected = [];
+
+function readFile(url) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", url);
+    xhr.onload = () => resolve(JSON.parse(xhr.responseText));
+    xhr.onerror = () => reject(new Error(`could not read ${url}`));
+    xhr.send();
+  });
+}
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function until(test, what) {
+  for (let i = 0; i < 80; i += 1) {
+    if (test()) return;
+    await sleep(50);
+  }
+  throw new Error(`timed out waiting for ${what}`);
+}
+
+function stubFetch(realFetch) {
+  const win = frame.contentWindow;
+  return (input, options = {}) => {
+    const url = new URL(String(input), win.location.href);
+    const method = (options.method || "GET").toUpperCase();
+    if (!url.pathname.startsWith("/api/") || url.pathname === "/api/meta") return realFetch(input, options);
+    const key = `${method} ${url.pathname}${url.search}`;
+    calls.push({ key, body: options.body || "" });
+    const answer = routes[key] ?? routes[`${method} ${url.pathname}`];
+    if (answer === "unreachable") return Promise.reject(new win.TypeError("Failed to fetch"));
+    if (!answer) {
+      unexpected.push(key);
+      return Promise.resolve(new win.Response(JSON.stringify({ error: "unexpected call in the harness" }), { status: 500 }));
+    }
+    const [status, body] = answer;
+    return Promise.resolve(new win.Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } }));
+  };
+}
+
+function text(node) {
+  return node ? node.textContent.replace(/\s+/g, " ").trim() : "";
+}
+
+function record(step, extra) {
+  const doc = frame.contentDocument;
+  const li = document.createElement("li");
+  li.dataset.step = step;
+  li.dataset.inboxMessage = text(doc.getElementById("inbox-message"));
+  li.dataset.itemMessages = JSON.stringify([...doc.querySelectorAll("article.inbox-item .watch-message")].map(text).filter(Boolean));
+  li.dataset.cardMessages = JSON.stringify([...doc.querySelectorAll(".watch-card .watch-message")].map(text).filter(Boolean));
+  li.dataset.kinds = JSON.stringify([...doc.querySelectorAll("#inbox-items > li > article.inbox-item")].map((a) => a.dataset.kind));
+  li.dataset.badge = doc.getElementById("inbox-count").hidden ? "" : text(doc.getElementById("inbox-count"));
+  li.dataset.empty = JSON.stringify([...doc.querySelectorAll("[data-empty]")].map((n) => n.dataset.empty));
+  li.dataset.watchDown = doc.getElementById("watch-down").hidden ? "" : text(doc.getElementById("watch-down"));
+  li.dataset.health = doc.getElementById("watch-health").hidden ? "" : text(doc.getElementById("watch-health"));
+  li.dataset.healthAlive = doc.getElementById("watch-health").dataset.alive || "";
+  li.dataset.policyChecked = (doc.querySelector("#watches input[data-policy]:checked") || {}).value || "";
+  li.dataset.paging = JSON.stringify([...doc.querySelectorAll("#inbox-paging [data-page]")].map((n) => n.dataset.page));
+  li.dataset.calls = JSON.stringify(calls);
+  li.dataset.unexpected = JSON.stringify(unexpected);
+  Object.assign(li.dataset, extra || {});
+  li.textContent = step;
+  steps.append(li);
+  calls = [];
+}
+
+async function reloadSample(win, doc) {
+  win.eval("state.sample = true");
+  await win.eval("loadInboxSample('inbox')");
+  // Drawn in sample mode the watch controls are disabled; drawn again with it off, they act.
+  win.eval("state.sample = false; renderWatches()");
+  await until(() => doc.querySelector("[data-run-now]"), "the sample inbox again");
+}
+
+async function run() {
+  const win = frame.contentWindow;
+  const doc = frame.contentDocument;
+  const ex = {};
+  for (const name of ["inbox", "inbox-page-2", "inbox-item-after-run", "watches", "health", "health-not-running", "meta", "error-422", "waiting-run-started", "mark-read", "watch-put", "unwatch"]) {
+    ex[name] = await readFile(`${EXAMPLES}${name}.json`);
+  }
+  record("sample", {
+    items: String(doc.querySelectorAll("article.inbox-item").length),
+    runNow: text(doc.querySelector("[data-run-now]")),
+  });
+
+  const waiting = ex.inbox.items.find((item) => item.kind === "waiting").id;
+  const thesis = ex.watches.watches[0].thesis_id;
+  const background = {
+    "GET /api/watch/health": [200, ex.health],
+    "GET /api/watch": [200, ex.watches],
+    "GET /api/inbox?limit=1": [200, ex.inbox],
+  };
+  win.eval("state.sample = false; renderWatches()");
+  win.fetch = stubFetch(win.fetch.bind(win));
+
+  // 409: nothing waits any more; the page reads the item again.
+  routes = { ...background, [`POST /api/inbox/${waiting}/run`]: [409, { error: "This inbox item has no run waiting" }], [`GET /api/inbox/${waiting}`]: [200, ex["inbox-item-after-run"]] };
+  doc.querySelector("[data-run-now]").click();
+  await until(() => doc.querySelector(`article[data-item-id="${waiting}"] .watch-message:not([hidden])`) && doc.querySelector(`article[data-item-id="${waiting}"]`).dataset.kind !== "waiting", "the 409");
+  record("run-409", { kindAfter: doc.querySelector(`article[data-item-id="${waiting}"]`).dataset.kind });
+
+  // 202: the run started; the item is read again.
+  await reloadSample(win, doc);
+  calls = [];
+  routes = { ...background, [`POST /api/inbox/${waiting}/run`]: [202, ex["waiting-run-started"]], [`GET /api/inbox/${waiting}`]: [200, ex["inbox-item-after-run"]] };
+  doc.querySelector("[data-run-now]").click();
+  await until(() => !doc.querySelector("[data-run-now]") && text(doc.querySelector(`article[data-item-id="${waiting}"] .watch-message`)), "the 202");
+  record("run-202");
+
+  // 422: a refused policy; the radio goes back to the server's.
+  routes = { ...background, [`PUT /api/theses/${thesis}/watch`]: [422, ex["error-422"]] };
+  doc.querySelector('#watches input[data-policy="auto"]').click();
+  await until(() => text(doc.querySelector("#watches .watch-card .watch-message")).includes("could not"), "the 422");
+  record("watch-422");
+
+  // 503: EDGAR out of reach; nothing saved.
+  routes = { ...background, [`PUT /api/theses/${thesis}/watch`]: [503, { error: "The filing index could not be read from EDGAR" }] };
+  doc.querySelector('#watches input[data-policy="auto"]').click();
+  await until(() => text(doc.querySelector("#watches .watch-card .watch-message")).includes("Nothing was saved"), "the 503");
+  record("watch-503");
+
+  // 200: the policy changed (the example answer of a PUT).
+  routes = { ...background, [`PUT /api/theses/${thesis}/watch`]: [200, ex["watch-put"]] };
+  doc.querySelector('#watches input[data-policy="auto"]').click();
+  await until(() => text(doc.querySelector("#watches .watch-card .watch-message")).includes("Run at once"), "the 200");
+  record("watch-200");
+
+  // 409 on taking it off: the watch had already ended.
+  routes = { ...background, "GET /api/watch": [200, { watches: [], interval_seconds: 900 }], [`DELETE /api/theses/${thesis}/watch`]: [409, { error: "This thesis is not on watch" }] };
+  doc.querySelector("#watches [data-unwatch]").click();
+  await until(() => doc.querySelector('#watches [data-empty="watches"]'), "the unwatch 409");
+  record("unwatch-409");
+
+  // Empty: no watches, an empty inbox, and a watcher that has never run.
+  routes = {
+    "GET /api/inbox?offset=0": [200, { items: [], total: 0, unread: 0, limit: 20, offset: 0, next_offset: null }],
+    "GET /api/watch": [200, { watches: [], interval_seconds: 900 }],
+    "GET /api/watch/health": [200, ex["health-not-running"]],
+  };
+  await win.eval("loadInbox(0)");
+  await until(() => doc.querySelector('#inbox-items [data-empty="inbox"]'), "the empty inbox");
+  record("empty");
+
+  // The server out of reach.
+  routes = { "GET /api/inbox?offset=0": "unreachable", "GET /api/watch": "unreachable", "GET /api/watch/health": "unreachable" };
+  await win.eval("loadInbox(0)");
+  await until(() => text(doc.getElementById("inbox-message")).includes("could not be loaded"), "the unreachable server");
+  record("unreachable");
+
+  // Paging by the API's offsets: a first page of four (made here) and the example's last page.
+  const first = { ...ex.inbox, items: ex.inbox.items.slice(0, 4), limit: 4, next_offset: 4 };
+  routes = { ...background, "GET /api/inbox?offset=0": [200, first], "GET /api/inbox?offset=4": [200, ex["inbox-page-2"]] };
+  await win.eval("loadInbox(0)");
+  await until(() => doc.querySelector('#inbox-paging [data-page="older"]'), "the first page");
+  record("page-1");
+  doc.querySelector('#inbox-paging [data-page="older"]').click();
+  await until(() => doc.querySelector('#inbox-paging [data-page="newer"]'), "the second page");
+  record("page-2");
+  doc.querySelector('#inbox-paging [data-page="newer"]').click();
+  await until(() => doc.querySelector('#inbox-paging [data-page="older"]'), "back to the first page");
+  record("page-back");
+
+  // Marking one item read: the ids sent, the unread count the answer carries, then the page again.
+  routes = { ...background, "POST /api/inbox/read": [200, ex["mark-read"]], "GET /api/inbox?offset=0": [200, first] };
+  const target = doc.querySelector('article.inbox-item [data-mark="read"]');
+  const targetId = target.closest("article").dataset.itemId;
+  target.click();
+  await until(() => calls.some((c) => c.key === "GET /api/inbox?offset=0"), "the reload after marking");
+  await sleep(100);
+  record("mark-read", { target: targetId });
+
+  done.dataset.done = "true";
+  done.textContent = "done";
+}
+
+function waitForInbox(tries) {
+  let ready = false;
+  try {
+    const doc = frame.contentDocument;
+    ready = Boolean(doc && doc.querySelector("#inbox-items article.inbox-item") && doc.querySelector("[data-run-now]"));
+  } catch (e) {
+    done.textContent = `the frame could not be read: ${e.message}`;
+    return;
+  }
+  if (ready) {
+    run().catch((error) => {
+      done.textContent = `failed: ${error.message}`;
+    });
+    return;
+  }
+  if (tries <= 0) {
+    done.textContent = "the inbox never rendered in the frame";
+    return;
+  }
+  setTimeout(() => waitForInbox(tries - 1), 100);
+}
+
+frame.addEventListener("load", () => waitForInbox(80));
+</script>
+</body>
+</html>

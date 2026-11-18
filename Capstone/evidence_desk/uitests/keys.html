@@ -81,6 +81,12 @@ function run() {
   record("e-open");
   press(doc.activeElement, "Escape");
   record("e-close");
+  press(doc.body, "i");
+  record("i", {
+    inbox: doc.getElementById("inbox-view").hidden ? "hidden" : "shown",
+    run: doc.getElementById("run-view").hidden ? "hidden" : "shown",
+    empty: (doc.querySelector("#inbox-items [data-empty]") || { dataset: {} }).dataset.empty || "",
+  });
   done.dataset.done = "true";
   done.textContent = "done";
 }

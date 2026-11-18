@@ -382,13 +382,14 @@ market-probe:
 	$(RUN) python -m app.market_probe $(ARGS)
 
 outside-view:
-	$(RUN) python -m app.outside $(or $(T),NVDA) --claim "$(CLAIM)" $(ARGS)
+	$(RUN) python -m app.outside $(or $(T),NVDA) --claim "$(CLAIM)" $(if $(AS_OF),--as-of "$(AS_OF)",) $(ARGS)
 
-# PRICE and PRICE_DATE are required: no single-stock price source was found (docs/market-view.md).
+# The price is the newest quarter-end price SEC's 13F filings give (docs/market-view.md);
+# PRICE=... PRICE_DATE=YYYY-MM-DD gives your own instead. AS_OF=YYYY-MM-DD reads as of a day.
 # PRICES=path/to/closes.csv adds the reactions to the 8-Ks of the claim's categories; INDEX=fred
 # (FRED's S&P 500, read live) or INDEX=path/to/index.csv is the index they are measured against.
 market-view:
-	$(RUN) python -m app.market $(or $(T),NVDA) --price "$(PRICE)" --price-date "$(PRICE_DATE)" --claim "$(CLAIM)" $(if $(PRICES),--prices "$(PRICES)",) $(if $(INDEX),--index "$(INDEX)",) $(ARGS)
+	$(RUN) python -m app.market $(or $(T),NVDA) --claim "$(CLAIM)" $(if $(PRICE),--price "$(PRICE)" --price-date "$(PRICE_DATE)",) $(if $(AS_OF),--as-of "$(AS_OF)",) $(if $(PRICES),--prices "$(PRICES)",) $(if $(INDEX),--index "$(INDEX)",) $(ARGS)
 
 # Live, on purpose: the frames, SIC list and company facts the offline example reads
 # (tests/fixtures/frames/manifest.json says what and when). REFRESH=1 writes over them.
@@ -400,7 +401,7 @@ fixtures-market:
 market-examples:
 	$(RUN) python -m tests.market_examples $(ARGS)
 
-# Live: the outside view and the valuation's inputs from the facts on the eight probe
-# companies (no price is read). Writes results/market-check-<UTC>.md.
+# Live: both views on the eight probe companies, with the 13F quarter-end price and what
+# each could not compute. Writes results/market-check-<UTC>.md. TICKERS="..." for others.
 market-check:
-	$(RUN) python -m app.market_check $(ARGS)
+	$(RUN) python -m app.market_check $(TICKERS) $(ARGS)

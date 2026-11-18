@@ -10,11 +10,16 @@ EDGAR or a price source cannot give what is needed.
     GET  /api/companies/{ticker}/market              ?price=&price_date=&as_of=&claim=
                                                      &discount_rate=&terminal_growth=&tax_rate=
                                                      &operating_margin=&sales_to_capital=
+    GET  /api/companies/{ticker}/analytics           ?claim=&claim_id=&as_of=&price=&price_date=
     POST /api/companies/{ticker}/market/reactions    {"closes": [...], "index": ..., ...}
 
-The reactions route is a POST only because the daily closes travel in the body (no
-price source answers a script for single stocks: ``docs/market-view.md``); it computes
-and returns, and keeps nothing.
+The market route takes ``price`` and ``price_date`` together (the user's own price) or
+neither: without them the price is the newest quarter-end price SEC's 13F filings give
+as of the date (:mod:`app.sources.thirteenf`). The analytics route returns both views'
+results in the one analytic shape (:mod:`app.services.view_analytics`). The reactions route is
+a POST only because the daily closes travel in the body (no source of daily single-stock
+prices may be read by a script: ``docs/market-view.md``); it computes and returns, and
+keeps nothing.
 """
 
 from __future__ import annotations
@@ -28,19 +33,26 @@ from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.core import limits
-from app.core.analysis_models import EventReaction, MarketView, OutsideView
 from app.core.models import Company, as_of_problem
 from app.core.ports import FilingSource, SourceError
 from app.core.price_series import Close
-from app.core.valuation import Price
+from app.core.view_models import EventReaction, MarketView, OutsideView
 from app.services import market_view as market
 from app.services.outside_view import MAX_YEARS, outside_view
+from app.services.view_analytics import Analytic, market_analytics, outside_analytics
 from app.sources.frames import FramesSource
-from app.sources.prices import FredSeries, PriceFetchError, supplied_series
+from app.sources.prices import (
+    FredSeries,
+    PriceFetchError,
+    PriceProvider,
+    SuppliedPrice,
+    supplied_series,
+)
+from app.sources.thirteenf import QuarterEndPrices, ThirteenFSource
 
 ACCESSION = r"^\d{10}-\d{2}-\d{6}$"
 MAX_CLOSES = 20_000
-SUPPLIED_PRICE = "price supplied on the request for {day}"
+CLAIM_ID = r"^[A-Za-z0-9_.:-]{1,64}$"
 
 Claim = Annotated[str, Query(max_length=limits.MAX_CLAIM_CHARS)]
 
@@ -83,6 +95,16 @@ class ReactionRequest(BaseModel):
     days: int = Field(default=3, ge=1, le=60)
 
 
+class Analytics(BaseModel):
+    """Both views' results for one claim, each in the one analytic shape."""
+
+    company: Company
+    claim: str
+    as_of: str
+    analytics: list[Analytic] = Field(default_factory=list)
+    notes: list[str] = Field(default_factory=list)
+
+
 class Reactions(BaseModel):
     """The market's move after each 8-K read, and the notes on which were chosen."""
 
@@ -97,12 +119,25 @@ def add_routes(
     *,
     filings: FilingSource,
     frames: FramesSource,
+    thirteenf: ThirteenFSource,
     resolve: Callable[[str], Company],
     today: Callable[[], date] = lambda: datetime.now(UTC).date(),
     index_source: FredSeries | None = None,
 ) -> None:
     """Add the outside-view and market-view routes to ``app``."""
     fred = index_source or FredSeries()
+
+    def provider(price: float | None, price_date: date | None, day: date) -> PriceProvider:
+        """The user's price when both parts are given, else SEC's quarter-end price."""
+        if (price is None) != (price_date is None):
+            raise _refuse(
+                "price" if price is None else "price_date",
+                "price and price_date go together: give both, or neither for the 13F price",
+            )
+        if price is None or price_date is None:
+            return QuarterEndPrices(thirteenf)
+        _check_as_of(price_date, day, "price_date")
+        return SuppliedPrice(price, price_date)
 
     @app.get("/api/companies/{ticker}/outside")
     def company_outside(
@@ -130,8 +165,8 @@ def add_routes(
     @app.get("/api/companies/{ticker}/market")
     def company_market(
         ticker: str,
-        price: Annotated[float, Query(gt=0, lt=1e9)],
-        price_date: date,
+        price: Annotated[float | None, Query(gt=0, lt=1e9)] = None,
+        price_date: date | None = None,
         as_of: date | None = None,
         claim: Claim = "",
         discount_rate: Annotated[float | None, Query(gt=0, le=50)] = None,
@@ -140,11 +175,11 @@ def add_routes(
         operating_margin: Annotated[float | None, Query(gt=-100, lt=100)] = None,
         sales_to_capital: Annotated[float | None, Query(gt=0, le=100)] = None,
     ) -> MarketView:
-        """Valuation at the price given, and the revenue growth that price implies."""
+        """Valuation at the price (the user's, or SEC's quarter-end) and the growth it implies."""
         day = today()
         _check_as_of(as_of, day)
-        _check_as_of(price_date, day, "price_date")
-        if price_date > (as_of or day):
+        prices = provider(price, price_date, day)
+        if price_date is not None and price_date > (as_of or day):
             raise _refuse("price_date", "price_date must not be after as_of")
         rate = discount_rate if discount_rate is not None else market.DISCOUNT_RATE
         growth = terminal_growth if terminal_growth is not None else market.TERMINAL_GROWTH
@@ -155,7 +190,7 @@ def add_routes(
             company,
             filings,
             frames,
-            price=Price(price, price_date, SUPPLIED_PRICE.format(day=price_date.isoformat())),
+            prices=prices,
             today=day,
             as_of=as_of,
             claim=claim,
@@ -166,6 +201,37 @@ def add_routes(
                 operating_margin=operating_margin,
                 sales_to_capital=sales_to_capital,
             ),
+        )
+
+    @app.get("/api/companies/{ticker}/analytics")
+    def company_analytics(
+        ticker: str,
+        claim: Claim = "",
+        claim_id: Annotated[str, Query(pattern=CLAIM_ID)] = "c1",
+        as_of: date | None = None,
+        price: Annotated[float | None, Query(gt=0, lt=1e9)] = None,
+        price_date: date | None = None,
+    ) -> Analytics:
+        """The outside and market views of one claim as a flat list of analytics."""
+        day = today()
+        _check_as_of(as_of, day)
+        prices = provider(price, price_date, day)
+        if price_date is not None and price_date > (as_of or day):
+            raise _refuse("price_date", "price_date must not be after as_of")
+        company = resolve(ticker)
+        outside = outside_view(company, claim, filings, frames, today=day, as_of=as_of)
+        viewed = market.market_view(
+            company, filings, frames, prices=prices, today=day, as_of=as_of, claim=claim
+        )
+        return Analytics(
+            company=company,
+            claim=claim,
+            as_of=(as_of or day).isoformat(),
+            analytics=[
+                *outside_analytics(outside, [claim_id]),
+                *market_analytics(viewed, [claim_id]),
+            ],
+            notes=[*outside.notes, *viewed.notes],
         )
 
     @app.post("/api/companies/{ticker}/market/reactions")

@@ -1,11 +1,13 @@
-"""The market view from the command line (``make market-view T=NVDA PRICE=... PRICE_DATE=...``).
+"""The market view from the command line (``make market-view T=NVDA``).
 
 Live: the company's XBRL facts and 8-K index from EDGAR, SEC's revenue frames through the
 disposable cache, and, when asked, FRED's S&P 500 level as the index. The price is the
-one given (no source of single-stock prices was found that a script may use without an
-account: ``docs/market-view.md``); daily closes for a reaction to an 8-K come from a CSV
-file the user put in the repository (``--prices``). Prints the valuation, the reverse
-DCF and the reactions, and writes the result as JSON to ``results/market-<ticker>-<UTC>.json``.
+newest quarter-end price SEC's 13F filings give as of the date
+(:mod:`app.sources.thirteenf`), or the user's own (``--price`` with ``--price-date``).
+Daily closes for a reaction to an 8-K come from a CSV file the user put in the
+repository (``--prices``): no source of daily single-stock prices may be read by a
+script (``docs/market-view.md``). Prints the valuation, the reverse DCF and the
+reactions, and writes the result as JSON to ``results/market-<ticker>-<UTC>.json``.
 
 Exit codes: 0 when the view was made, 1 when a source failed, 2 for a refused argument.
 """
@@ -21,10 +23,17 @@ from pathlib import Path
 from app import wiring
 from app.core.models import as_of_problem
 from app.core.ports import SourceError, UnknownTicker
-from app.core.valuation import Price
 from app.services.market_view import DcfInputs, describe, market_view
 from app.sources.frames import FramesSource
-from app.sources.prices import CsvFilePrices, FredSeries, PriceFetchError
+from app.sources.prices import (
+    CsvFilePrices,
+    FredSeries,
+    PriceFetchError,
+    PriceProvider,
+    PriceUnavailable,
+    SuppliedPrice,
+)
+from app.sources.thirteenf import QuarterEndPrices, ThirteenFSource
 
 RESULTS = Path("results")
 
@@ -33,8 +42,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     """Parse the arguments, make the view, print it and write it."""
     parser = argparse.ArgumentParser(prog="market-view")
     parser.add_argument("ticker")
-    parser.add_argument("--price", type=float, required=True, help="USD per share")
-    parser.add_argument("--price-date", type=date.fromisoformat, required=True)
+    parser.add_argument("--price", type=float, default=None, help="USD per share (your own)")
+    parser.add_argument("--price-date", type=date.fromisoformat, default=None)
     parser.add_argument("--claim", default="")
     parser.add_argument("--as-of", type=date.fromisoformat, default=None)
     parser.add_argument("--prices", type=Path, default=None, help="a CSV of the stock's closes")
@@ -54,7 +63,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.as_of is not None and (problem := as_of_problem(args.as_of, today)):
         print(f"market-view: {problem}", file=sys.stderr)
         return 2
-    if not args.price > 0:
+    if (args.price is None) != (args.price_date is None):
+        print("market-view: --price and --price-date go together", file=sys.stderr)
+        return 2
+    if args.price is not None and not args.price > 0:
         print("market-view: the price must be positive", file=sys.stderr)
         return 2
     root = Path.cwd()
@@ -70,9 +82,6 @@ def main(argv: Sequence[str] | None = None) -> int:
     except PriceFetchError as exc:
         print(f"market-view: {exc}", file=sys.stderr)
         return 1
-    price = Price(
-        args.price, args.price_date, f"price supplied on the command line for {args.price_date}"
-    )
     dcf = DcfInputs(
         discount_rate=args.discount_rate,
         terminal_growth=args.terminal_growth,
@@ -82,13 +91,18 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     with wiring.filings_from_env() as edgar:
         frames = FramesSource(edgar.get, wiring.frames_dir())
+        prices: PriceProvider = (
+            SuppliedPrice(args.price, args.price_date, "on the command line")
+            if args.price is not None
+            else QuarterEndPrices(ThirteenFSource(edgar.get, wiring.thirteenf_dir()))
+        )
         try:
             company = edgar.company(args.ticker)
             view = market_view(
                 company,
                 edgar,
                 frames,
-                price=price,
+                prices=prices,
                 today=today,
                 as_of=args.as_of,
                 claim=args.claim,
@@ -101,7 +115,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         except (SourceError, UnknownTicker) as exc:
             print(f"market-view: {exc}", file=sys.stderr)
             return 1
-        except ValueError as exc:
+        except (ValueError, PriceUnavailable) as exc:
             print(f"market-view: {exc}", file=sys.stderr)
             return 2
     print("\n".join(describe(view)))

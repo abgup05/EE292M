@@ -74,6 +74,7 @@ from app.services.restatements import company_restatements
 from app.sources.edgar import EdgarClient
 from app.sources.frames import FramesSource
 from app.sources.http import fetch_page as default_fetch_page
+from app.sources.thirteenf import ThirteenFSource
 from app.sources.urls import canonicalize, validate_public_url
 from app.store import FactStore, FilingCache, Store
 from app.watch import routes as watch_routes
@@ -272,6 +273,7 @@ def create_app(
     claim_reader: ClaimReaders = None,
     wall_clock: Callable[[], datetime] | None = None,
     frames: FramesSource | None = None,
+    thirteenf: ThirteenFSource | None = None,
 ) -> FastAPI:
     """Build the application. Collaborators not given are built by :mod:`app.wiring`.
 
@@ -699,12 +701,19 @@ def create_app(
         }
 
     # The outside view and the market view: app/analysis_routes.py.
+    sec_get = filings.get if isinstance(filings, EdgarClient) else None
     if frames is None:
-        get = filings.get if isinstance(filings, EdgarClient) else None
-        frames = FramesSource(get, wiring.frames_dir())
+        frames = FramesSource(sec_get, wiring.frames_dir())
+    if thirteenf is None:
+        thirteenf = ThirteenFSource(sec_get, wiring.thirteenf_dir())
     clock = wall_clock or (lambda: datetime.now(UTC))
     analysis_routes.add_routes(
-        app, filings=filings, frames=frames, resolve=resolve, today=lambda: clock().date()
+        app,
+        filings=filings,
+        frames=frames,
+        thirteenf=thirteenf,
+        resolve=resolve,
+        today=lambda: clock().date(),
     )
 
     # The standing watch (version 13): app/watch/routes.py.

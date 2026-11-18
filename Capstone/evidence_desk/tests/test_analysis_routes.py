@@ -11,6 +11,7 @@ from fastapi.testclient import TestClient
 from app.api import create_app
 from app.core.ports import SourceError
 from app.sources.frames import FramesSource
+from app.sources.thirteenf import ThirteenFSource
 from tests import market_examples
 
 GOOD = {"price": 150, "price_date": "2026-11-17"}
@@ -32,6 +33,7 @@ def _fields(response: Any) -> set[str]:
         ({**GOOD, "price": 0}, "price"),
         ({**GOOD, "price": -3}, "price"),
         ({"price_date": "2026-11-17"}, "price"),
+        ({"price": 150}, "price_date"),
         ({**GOOD, "price_date": "2026-11-19"}, "price_date"),
         ({**GOOD, "as_of": "2026-06-01"}, "price_date"),
         ({**GOOD, "discount_rate": 3, "terminal_growth": 3}, "terminal_growth"),
@@ -80,7 +82,11 @@ def test_market_uses_only_facts_filed_by_the_price_date(http: TestClient) -> Non
 def test_market_answers_503_when_edgar_fails() -> None:
     broken = market_examples._filings()
     broken.facts_error = SourceError("EDGAR is down")
-    app = create_app(filings=broken, frames=FramesSource(None, market_examples.FRAMES))
+    app = create_app(
+        filings=broken,
+        frames=FramesSource(None, market_examples.FRAMES),
+        thirteenf=ThirteenFSource(None, market_examples.THIRTEENF),
+    )
     response = TestClient(app).get("/api/companies/NVDA/market", params=GOOD)
     assert response.status_code == 503
 
@@ -117,7 +123,7 @@ def test_reactions_read_no_close_after_as_of(http: TestClient) -> None:
             "closes": stocks,
             "index": "supplied",
             "index_closes": indexes,
-            "claim": market_examples.MARKET_CLAIM,
+            "claim": market_examples.REACTION_CLAIM,
             "as_of": "2026-07-10",
         },
     )
@@ -144,9 +150,61 @@ def test_reaction_to_a_named_accession(http: TestClient) -> None:
 def test_outside_view_as_of_admits_only_years_a_year_old(http: TestClient) -> None:
     response = http.get(
         "/api/companies/NVDA/outside",
-        params={"claim": market_examples.OUTSIDE_CLAIM, "as_of": "2025-06-30"},
+        params={"claim": market_examples.CLAIM, "as_of": "2025-06-30"},
     )
     assert response.status_code == 200, response.text
     view = response.json()
     assert max(view["years_read"]) <= 2023
     assert date.fromisoformat(view["as_of"]) == date(2025, 6, 30)
+
+
+# The price SEC gives, and nothing from after the date
+
+
+def test_market_without_a_price_reads_the_quarter_end_price_from_13f(http: TestClient) -> None:
+    view = http.get("/api/companies/NVDA/market").json()
+    assert view["price_provider"] == "SEC Form 13F"
+    assert (view["price_day"], view["price_known"]) == ("2026-09-30", "2026-11-12")
+    assert "Confirmed within 0.5%" in view["price_note"]
+    market = view["valuation"][0]
+    # The recorded 13F of Swiss National Bank: 14,360,762,780 dollars ÷ 62,881,000 shares.
+    assert market["inputs"][0]["value"] == pytest.approx(14_360_762_780 / 62_881_000)
+    assert market["inputs"][0]["display"] == "$228.38"
+
+
+def test_market_as_of_a_day_uses_no_13f_filed_after_it(http: TestClient) -> None:
+    # On 2026-11-11 the September quarter's 13F (filed 2026-11-12) is not public: the price
+    # is the June quarter's, and no input was filed after the date.
+    view = http.get("/api/companies/NVDA/market", params={"as_of": "2026-11-11"}).json()
+    assert (view["price_day"], view["price_known"]) == ("2026-06-30", "2026-08-11")
+    dcf_inputs = view["reverse_dcf"]["inputs"]
+    for item in [i for r in view["valuation"] for i in r["inputs"]] + dcf_inputs:
+        assert item["filed"] <= "2026-11-11", item
+        assert item["date"] <= "2026-11-11", item
+    # The facts are cut at the price's date, not at the view's: nothing filed after June.
+    assert max(i["filed"] for r in view["valuation"] for i in r["inputs"]) <= "2026-08-11"
+
+
+def test_a_company_no_13f_read_holds_is_a_view_that_says_why() -> None:
+    app = create_app(
+        filings=market_examples._filings(),
+        frames=FramesSource(None, market_examples.FRAMES),
+        thirteenf=ThirteenFSource(None, market_examples.FRAMES),  # no 13F on disk there
+    )
+    response = TestClient(app).get("/api/companies/NVDA/market")
+    assert response.status_code == 200, response.text
+    view = response.json()
+    (only,) = view["valuation"]
+    assert only["outcome"] == "cannot_compute" and "No 13F read gives a price" in only["reason"]
+    assert view["reverse_dcf"] is None
+
+
+def test_analytics_route_validates_and_returns_both_providers(http: TestClient) -> None:
+    refused = _fields(http.get("/api/companies/NVDA/analytics", params={"claim_id": "a b"}))
+    assert refused == {"query.claim_id"}
+    body = http.get(
+        "/api/companies/NVDA/analytics",
+        params={"claim": market_examples.CLAIM, "claim_id": "c7"},
+    ).json()
+    assert {a["provider"] for a in body["analytics"]} == {"outside_view", "market_view"}
+    assert all(a["claim_ids"] == ["c7"] for a in body["analytics"])

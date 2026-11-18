@@ -1,25 +1,53 @@
 """The market view of one company: valuation now, what the price implies, and reactions to 8-Ks.
 
-One job: read the company's facts filed by the price's date, read the price (supplied,
-or from a price source), and hand them to :mod:`app.core.valuation`,
+One job: ask the price provider for the price as of the date (the user's own, or the
+newest quarter-end price SEC's 13F filings give: :mod:`app.sources.prices`,
+:mod:`app.sources.thirteenf`), read the company's facts filed by the price's date, and
+hand them to :mod:`app.core.valuation`,
 :mod:`app.core.reverse_dcf` and :mod:`app.core.reaction`; read SEC's revenue frames for
 the spread of ten-year growth of companies of the company's size
 (:func:`app.core.base_rates.growth_distribution`); list the 8-Ks filed in the
 :data:`EVENT_LOOKBACK_DAYS` before the as-of date and pick those of the claim's
 categories (:func:`app.core.events.claim_categories`), or the one named.
 
-Nothing is read from after the as-of date: the facts are those filed by the price's
-date, the price's date is not after the as-of date, and the closes are cut at it.
+The reverse DCF is set beside three things a reader can check it against: the company's
+own trailing growth, the spread of ten-year growth among filers that were its size, and
+the revenue the implied growth reaches in year ten beside the largest revenue any filer
+has reported. It is solved again with the operating margin at the industry's median,
+because the margin held for ten years is the assumption a rich margin makes doubtful.
+
+Nothing is read from after the as-of date: the price is dated on or before it and was
+public from its source by then, the facts are those filed by the price's date (what the
+price could know), and the closes are cut at it.
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, timedelta
 
 from app.core import events as event_rules
-from app.core.analysis_models import (
+from app.core.base_rates import growth_distribution, percentile
+from app.core.claim_eval import Measures
+from app.core.documents import FilingRef
+from app.core.facts import FactBook, FactsError
+from app.core.frames import Panel, admitted_years, cutoff
+from app.core.metrics import percent_text, usd_text
+from app.core.models import Company
+from app.core.periods import fiscal_calendar
+from app.core.ports import FilingSource, SourceError
+from app.core.price_series import PriceSeries, close_on_or_before, closes_until
+from app.core.reaction import ESTIMATION_DAYS, event_reaction
+from app.core.reverse_dcf import DcfAssumptions, implied_growth, sensitivity
+from app.core.valuation import (
+    Valuation,
+    money,
+    shares_outstanding,
+    trailing_growth,
+    valuation,
+)
+from app.core.view_models import (
     AnalysisResult,
     Distribution,
     EventReaction,
@@ -28,21 +56,9 @@ from app.core.analysis_models import (
     ResultInput,
     ReverseDcf,
 )
-from app.core.base_rates import growth_distribution
-from app.core.claim_eval import Measures
-from app.core.documents import FilingRef
-from app.core.facts import FactBook, FactsError
-from app.core.frames import admitted_years, cutoff
-from app.core.metrics import percent_text, usd_text
-from app.core.models import Company
-from app.core.periods import fiscal_calendar
-from app.core.ports import FilingSource, SourceError
-from app.core.price_series import PriceSeries, close_on_or_before, closes_until
-from app.core.reaction import ESTIMATION_DAYS, event_reaction
-from app.core.reverse_dcf import DcfAssumptions, implied_growth, sensitivity
-from app.core.valuation import Price, Valuation, shares_outstanding, trailing_growth, valuation
-from app.services.outside_view import load_panel
+from app.services.outside_view import INDUSTRY_FLOOR, load_panel
 from app.sources.frames import FramesSource
+from app.sources.prices import PriceProvider, PriceUnavailable
 
 DISCOUNT_RATE = 9.0
 TERMINAL_GROWTH = 3.0
@@ -52,10 +68,27 @@ DCF_YEARS = 10
 SIZE_BAND = 2.0
 EVENT_LOOKBACK_DAYS = 400
 MAX_REACTIONS = 3
+MIN_PEERS_FOR_MARGIN = 5
 LABEL_NOTE = (
     "Arithmetic under stated assumptions, not a forecast and not advice: it says what "
     "constant growth the price would need if every assumption below held."
 )
+
+
+@dataclass(frozen=True)
+class Outside:
+    """What SEC's frames add to the reverse DCF, each None when the frames cannot give it.
+
+    ``spread`` gives the ten-year growth of filers of the company's size, counting those
+    at least as fast as a rate; ``largest`` is the largest revenue any filer reported in
+    the newest frame year (name, revenue, year); ``peer_margin`` the median and the 90th
+    percentile of the operating margin of the company's industry class that year (median,
+    90th percentile, members, class name, year).
+    """
+
+    spread: Callable[[float], Distribution] | None = None
+    largest: tuple[str, float, int] | None = None
+    peer_margin: tuple[float, float, int, str, int] | None = None
 
 
 @dataclass(frozen=True)
@@ -84,13 +117,13 @@ def _sales_to_capital(found: Valuation) -> tuple[float, str]:
     if invested <= 0:
         return FALLBACK_SALES_TO_CAPITAL, (
             f"sales-to-capital {FALLBACK_SALES_TO_CAPITAL:g} (a stated default: invested capital "
-            f"= equity + debt − cash and securities is {usd_text(invested)}, not positive)"
+            f"= equity + debt − cash and securities is {money(invested)}, not positive)"
         )
     ratio = revenue.value / invested
     return ratio, (
-        f"sales-to-capital {ratio:.2f}: trailing revenue {usd_text(revenue.value)} ÷ invested "
-        f"capital {usd_text(invested)} (equity {usd_text(equity.value)} + debt "
-        f"{usd_text(debt.value)} − cash and securities {usd_text(cash.value)}, {equity.period}); "
+        f"sales-to-capital {ratio:.2f}: trailing revenue {money(revenue.value)} ÷ invested "
+        f"capital {money(invested)} (equity {money(equity.value)} + debt "
+        f"{money(debt.value)} − cash and securities {money(cash.value)}, {equity.period}); "
         "each dollar of new revenue is assumed to need capital at this ratio"
     )
 
@@ -101,7 +134,7 @@ def reverse_dcf(
     inputs: DcfInputs,
     *,
     own_growth: list[AnalysisResult],
-    spread: Callable[[float], Distribution] | None,
+    outside: Outside,
     as_of: str,
     price_day: str,
 ) -> ReverseDcf:
@@ -143,7 +176,7 @@ def reverse_dcf(
     if margin is None:
         margin = income.value / revenue.value * 100
         margin_text = (
-            f"the trailing operating margin, {usd_text(income.value)} ÷ {usd_text(revenue.value)}"
+            f"the trailing operating margin, {money(income.value)} ÷ {money(revenue.value)}"
         )
     s2c, s2c_text = (
         (
@@ -171,12 +204,12 @@ def reverse_dcf(
         base.reading = base.reason
         return base
     solved = implied_growth(target, assumptions)
-    base.target = f"enterprise value {usd_text(target)}"
+    base.target = f"enterprise value {money(target)}"
     base.inputs = [
         ResultInput(
             label="Enterprise value (the target)",
             value=target,
-            display=usd_text(target),
+            display=money(target),
             source="computed: market value + debt − cash and securities",
             date=price_day,
         ),
@@ -184,7 +217,7 @@ def reverse_dcf(
         *income.inputs,
     ]
     base.assumptions = [
-        f"Starting revenue {usd_text(revenue.value)} ({revenue.label}).",
+        f"Starting revenue {money(revenue.value)} ({revenue.label}).",
         f"Operating margin {assumptions.operating_margin:.1f}%, every year: {margin_text}.",
         f"Tax on operating profit {assumptions.tax_rate:g}%"
         + (" (the US federal rate, a stated default)." if inputs.tax_rate is None else "."),
@@ -217,31 +250,119 @@ def reverse_dcf(
         return base
     base.value = solved.growth
     base.display = f"{percent_text(solved.growth)} a year for {assumptions.years} years"
-    base.formula = (
-        f"PV(g) = enterprise value {usd_text(target)}, solved for g between −50% and +100%"
-    )
+    base.formula = f"PV(g) = enterprise value {money(target)}, solved for g between −50% and +100%"
+    reached = revenue.value * (1 + solved.growth / 100) ** assumptions.years
+    base.implied_revenue = reached
+    base.implied_revenue_display = money(reached)
+    sentences = [
+        f"At these assumptions the enterprise value of {money(target)} needs revenue to grow "
+        f"{percent_text(solved.growth)} a year for {assumptions.years} years, from "
+        f"{money(revenue.value)} to {money(reached)}."
+    ]
     own = next(
         (c for c in own_growth if c.kind.startswith("revenue_cagr") and c.value is not None), None
     )
-    compare = (
-        f"; the company's own revenue grew {own.display} a year over its last three fiscal years"
-        if own
-        else ""
-    )
-    outside = ""
-    if spread is not None:
-        base.distribution = spread(solved.growth)
+    if own:
+        sentences.append(
+            f"The company's own revenue grew {own.display} a year over its last three fiscal years."
+        )
+    if outside.largest is not None:
+        name, most, year = outside.largest
+        sentences.append(
+            f"The largest revenue any filer reported for {year} is {money(most)} ({name}): "
+            f"the implied year-{assumptions.years} revenue is {reached / most:.1f} times that."
+        )
+    if outside.spread is not None:
+        base.distribution = outside.spread(solved.growth)
         dist = base.distribution
         if dist.n:
-            outside = (
-                f"; of {dist.n} ten-year spans of companies of its size, {dist.at_least} grew at "
-                f"least that fast (median {dist.displays['p50']})"
+            sentences.append(
+                f"Of {dist.n} ten-year spans of filers that started at its size, {dist.at_least} "
+                f"grew at least that fast (median {dist.displays['p50']} a year; "
+                f"{dist.dropped} more could not be followed for ten years)."
             )
-    base.reading = (
-        f"At these assumptions the enterprise value of {usd_text(target)} needs revenue to grow "
-        f"{percent_text(solved.growth)} a year for {assumptions.years} years{compare}{outside}."
-    )
+        else:
+            sentences.append(
+                "No filer that started at its size can be followed for ten years in the frames."
+            )
+    if outside.peer_margin is not None and inputs.operating_margin is None:
+        median, top, members, class_name, year = outside.peer_margin
+        for key, words, margin in (
+            ("peer_median", "median", median),
+            ("peer_p90", "90th percentile", top),
+        ):
+            base.scenarios.append(
+                _margin_scenario(
+                    f"{rid}:{key}",
+                    words,
+                    margin,
+                    target,
+                    assumptions,
+                    members,
+                    class_name,
+                    year,
+                    as_of,
+                )
+            )
+            sentences.append(base.scenarios[-1].reading)
+    solved_cells = [c.implied_growth for c in base.grid if c.implied_growth is not None]
+    if solved_cells:
+        sentences.append(
+            f"Across the grid (discount rate ±2 points, margin ±5 points) the implied growth "
+            f"runs from {percent_text(min(solved_cells))} to {percent_text(max(solved_cells))} a "
+            f"year ({len(solved_cells)} of {len(base.grid)} cells solve)."
+        )
+    base.reading = " ".join(sentences)
     return base
+
+
+def _margin_scenario(
+    rid: str,
+    words: str,
+    margin: float,
+    target: float,
+    assumptions: DcfAssumptions,
+    members: int,
+    class_name: str,
+    year: int,
+    as_of: str,
+) -> AnalysisResult:
+    """The same model solved with the operating margin at a point of the industry's spread."""
+    result = AnalysisResult(
+        id=rid,
+        kind=f"reverse_dcf_{rid.rsplit(':', 1)[-1]}_margin",
+        label=f"Implied growth if the operating margin were the industry's {words}",
+        unit="percent",
+        data_origin="market_prices",
+        as_of=as_of,
+        assumptions=[
+            f"Operating margin {margin:.1f}%: the {words} of the {members} {class_name} with an "
+            f"operating margin in {year} (SEC frames); every other assumption unchanged.",
+        ],
+    )
+    lead = (
+        f"With the operating margin at the industry's {words} of {margin:.1f}% (n = {members}, "
+        f"{year}) instead of {assumptions.operating_margin:.1f}%"
+    )
+    try:
+        varied = replace(assumptions, operating_margin=margin)
+    except ValueError as exc:
+        result.outcome, result.reason = "cannot_compute", f"The assumptions are impossible: {exc}."
+        result.reading = result.reason
+        return result
+    solved = implied_growth(target, varied)
+    result.note = solved.note
+    if solved.growth is None:
+        result.outcome, result.reason = "cannot_compute", solved.reason
+        result.reading = f"{lead}, no growth from −50% to +100% a year reaches the price."
+        return result
+    result.value = solved.growth
+    result.display = f"{percent_text(solved.growth)} a year for {assumptions.years} years"
+    result.formula = (
+        f"PV(g) = enterprise value {money(target)} with the operating margin {margin:.1f}%"
+    )
+    result.reading = f"{lead}, the same price needs {percent_text(solved.growth)} a year."
+    return result
 
 
 def reactions(
@@ -394,12 +515,85 @@ def _reaction(
     return result
 
 
+def _outside(
+    company: Company,
+    filings: FilingSource,
+    frames: FramesSource,
+    size: float,
+    *,
+    today: date,
+    as_of: date | None,
+    notes: list[str],
+) -> Outside:
+    """What the frames add to the reverse DCF for a company of trailing revenue ``size``."""
+    years = admitted_years(as_of, today)
+    if not years:
+        return Outside()
+    last_end = cutoff(as_of, today)
+    newest = years[-1]
+    wanted = [("revenue", y) for y in years] + [("operating_income", newest)]
+    panel, _, _ = load_panel(frames, wanted, last_end)
+
+    def spread(at_least: float) -> Distribution:
+        return growth_distribution(
+            panel,
+            size / SIZE_BAND,
+            size * SIZE_BAND,
+            span=DCF_YEARS,
+            at_least=at_least,
+            exclude=company.cik,
+        )
+
+    largest = max(
+        (
+            (panel.names.get(cik, str(cik)), value.value, newest)
+            for cik, value in panel.group("revenue", newest).items()
+            if cik != company.cik
+        ),
+        key=lambda found: found[1],
+        default=None,
+    )
+    return Outside(spread, largest, _peer_margin(company, filings, frames, panel, newest, notes))
+
+
+def _peer_margin(
+    company: Company,
+    filings: FilingSource,
+    frames: FramesSource,
+    panel: Panel,
+    year: int,
+    notes: list[str],
+) -> tuple[float, float, int, str, int] | None:
+    """The median and 90th percentile of the industry class's operating margin in ``year``."""
+    try:
+        profile = filings.company_profile(company)
+    except SourceError as exc:
+        notes.append(f"The industry code could not be read ({exc}); no peer-margin scenario.")
+        return None
+    members = {cik for cik, _ in frames.sic_members(profile.sic)} if profile.sic else set()
+    margins = [
+        found.value
+        for cik in sorted(members - {company.cik})
+        if (revenue := panel.get("revenue", cik, year)) is not None
+        and revenue.value >= INDUSTRY_FLOOR
+        and (found := panel.measure("operating_margin", cik, year)).value is not None
+    ]
+    if len(margins) < MIN_PEERS_FOR_MARGIN:
+        notes.append(
+            f"Fewer than {MIN_PEERS_FOR_MARGIN} other SIC {profile.sic or 'none'} filers have an "
+            f"operating margin in {year} ({len(margins)}); no peer-margin scenario."
+        )
+        return None
+    name = f"other SIC {profile.sic} filers with revenue of at least {usd_text(INDUSTRY_FLOOR)}"
+    return percentile(margins, 50), percentile(margins, 90), len(margins), name, year
+
+
 def market_view(
     company: Company,
     filings: FilingSource,
     frames: FramesSource | None,
     *,
-    price: Price,
+    prices: PriceProvider,
     today: date,
     as_of: date | None = None,
     claim: str = "",
@@ -411,17 +605,36 @@ def market_view(
 ) -> MarketView:
     """The market view. Raises :class:`SourceError` when EDGAR cannot give the facts.
 
-    Raises ValueError when the price is dated after the as-of date (or after today).
+    A provider with no price for the company and date is not an error: the view says
+    why in a market value that cannot be computed, and computes nothing from a price.
     """
     day = as_of or today
-    if price.day > day:
-        raise ValueError(f"the price's date {price.day} is after the as-of date {day}")
     view = MarketView(
-        company=company,
-        claim=claim,
-        as_of=day.isoformat(),
-        price_source=price.source,
+        company=company, claim=claim, as_of=day.isoformat(), price_provider=prices.name
     )
+    try:
+        price = prices.price(company, day)
+    except PriceUnavailable as exc:
+        view.valuation = [
+            AnalysisResult(
+                id=f"market_value:{company.ticker}:{day.isoformat()}",
+                kind="market_value",
+                label="Market value",
+                outcome="cannot_compute",
+                reason=str(exc),
+                reading=str(exc),
+                unit="USD",
+                data_origin="market_prices",
+                as_of=day.isoformat(),
+            )
+        ]
+        view.notes.append("No price: no valuation, no reverse DCF.")
+        return view
+    if price.day > day or (price.known is not None and price.known > day):
+        raise ValueError(f"the price's date {price.day} is after the as-of date {day}")
+    view.price_source, view.price_note = price.source, price.note
+    view.price_day = price.day.isoformat()
+    view.price_known = price.known.isoformat() if price.known else ""
     payload = filings.company_facts(company)
     try:
         book = FactBook(payload, as_of=price.day)
@@ -429,25 +642,27 @@ def market_view(
         raise SourceError(f"The XBRL company facts could not be read: {exc}") from exc
     measures = Measures(book, fiscal_calendar(payload, as_of=price.day))
     shares = shares_outstanding(payload, price.day)
-    found = valuation(company.ticker, price, shares, measures, day.isoformat())
+    found = valuation(
+        company.ticker,
+        price,
+        shares,
+        measures,
+        day.isoformat(),
+        companyfacts=payload,
+        later_shares=shares_outstanding(payload, day),
+    )
     view.valuation = found.results
+    view.notes.append(
+        f"Facts: those filed by the price's date, {price.day.isoformat()} (what the price could "
+        "know); a filing after it is not read."
+    )
     own = trailing_growth(book, as_of=day.isoformat())
-    spread: Callable[[float], Distribution] | None = None
+    outside = Outside()
     if frames is not None and found.revenue is not None and found.revenue.value:
-        years = admitted_years(as_of, today)
-        panel, _, _ = load_panel(frames, [("revenue", y) for y in years], cutoff(as_of, today))
         size = found.revenue.value
-
-        def spread(at_least: float) -> Distribution:
-            return growth_distribution(
-                panel,
-                size / SIZE_BAND,
-                size * SIZE_BAND,
-                span=DCF_YEARS,
-                at_least=at_least,
-                exclude=company.cik,
-            )
-
+        outside = _outside(
+            company, filings, frames, size, today=today, as_of=as_of, notes=view.notes
+        )
         if frames.not_read:
             view.notes.append(f"Frames not on disk, not read: {len(frames.not_read)}.")
     view.reverse_dcf = reverse_dcf(
@@ -455,7 +670,7 @@ def market_view(
         found,
         dcf or DcfInputs(),
         own_growth=own,
-        spread=spread,
+        outside=outside,
         as_of=day.isoformat(),
         price_day=price.day.isoformat(),
     )
@@ -465,15 +680,27 @@ def market_view(
         )
         view.notes += notes
     else:
-        view.notes.append("No daily closes were given; no reaction to an 8-K is computed.")
+        view.notes.append(
+            "No daily closes were given; no reaction to an 8-K is computed (the 13F price "
+            "source has one price a quarter)."
+        )
     return view
+
+
+TRACED_IN_TEXT = frozenset({"market_value", "enterprise_value"})
+
+
+def _short(source: str) -> str:
+    """A source for one line of text: cut at the first colon (the JSON has all of it)."""
+    return source.split(":", 1)[0]
 
 
 def describe(view: MarketView) -> list[str]:
     """The view as lines of text for the command line."""
     lines = [
         f"Market view: {view.company.name} ({view.company.ticker}) as of {view.as_of}",
-        f"Price: {view.price_source}",
+        f"Price: {view.price_source or '(none)'}",
+        *([f"  {view.price_note}"] if view.price_note else []),
         "",
     ]
     for result in view.valuation:
@@ -481,8 +708,14 @@ def describe(view: MarketView) -> list[str]:
         lines.append(f"  {result.reading or result.reason}")
         if result.formula:
             lines.append(f"  formula: {result.formula}")
+        if result.note and result.kind != "market_value":
+            lines.append(f"  note: {result.note}")
+        if result.kind not in TRACED_IN_TEXT:
+            if result.inputs:
+                lines.append(f"  inputs: {len(result.inputs)} facts, listed in the JSON")
+            continue
         lines.extend(
-            f"  input: {i.label} = {i.display} ({i.source}, {i.date}"
+            f"  input: {i.label} = {i.display} ({_short(i.source)}, {i.date}"
             + (f", filed {i.filed}" if i.filed else "")
             + ")"
             for i in result.inputs
@@ -506,6 +739,10 @@ def describe(view: MarketView) -> list[str]:
                 lines.append(f"    {rate:g}%: " + "  ".join(row))
         for comparison in dcf.comparisons:
             lines.append(f"  compare: {comparison.reading or comparison.reason}")
+        for scenario in dcf.scenarios:
+            lines.append(f"  scenario: {scenario.reading or scenario.reason}")
+            if scenario.note:
+                lines.append(f"    {scenario.note}")
         if dcf.distribution is not None:
             d = dcf.distribution
             lines.append(

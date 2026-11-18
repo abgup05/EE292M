@@ -22,7 +22,7 @@ You need Docker running and Make. From this directory, or from the repository ro
 
 ```sh
 cp .env.example .env   # optional: ANTHROPIC_API_KEY, ANTHROPIC_MODEL, SEC_USER_AGENT
-make up                # http://127.0.0.1:8766
+make up                # http://127.0.0.1:8766, and the watcher beside it
 make down
 ```
 
@@ -49,6 +49,8 @@ make down
 
 ![What changed between NVIDIA's two latest annual reports: counts by Item, then the paragraphs, with changed words marked](docs/screenshots/sample-changes.png)
 
+**The standing watch** (version 13). A saved thesis can be put on watch (`PUT /api/theses/{id}/watch`). The watcher, a second container started by `make up`, reads the company's filing index on EDGAR every 15 minutes; for each new 10-K, 10-Q or 8-K it decides by rule, without a model, which claims it bears on, and either runs the thesis again and says what moved, or leaves the run waiting for you (policy `ask`, the default; `auto` runs at once, at most five times a day). The inbox (`GET /api/inbox`) says what arrived and why it matters or does not. `make watch-status` says whether the watcher is alive; `make watch-once` does one cycle by hand. How it decides, what it costs and where it is wrong: [`docs/watch.md`](docs/watch.md); every payload: [`docs/examples/v13/`](docs/examples/v13/README.md). The page for it is not part of this branch.
+
 From the command line, `make run ARGS='example'` runs the same pipeline and writes `results/<run-id>.json` and `.md`; `make changes ARGS="NVDA --form 10-K"` writes the filing comparison. `make probe TICKERS="AAPL COST"` reports how well a company's filings split into their Items, and `make figures TICKERS="COST AMZN"` prints each company's quarters as a run would see them.
 
 ## The system
@@ -61,13 +63,14 @@ flowchart LR
       CODE["Code<br/>src/, tests/, uitests/, docker/"]
       REC["Recorded data, in git<br/>EDGAR fixtures, cassette,<br/>golden records, golden set"]
       ENVF[".env<br/>API key, SEC user agent<br/>gitignored"]
-      RECORD[("data/record/record.sqlite<br/>runs, decisions, saved theses<br/>gitignored; cannot be rebuilt")]
-      CACHE[("data/cache/filings.sqlite<br/>filing text, once per filing<br/>gitignored; disposable")]
+      RECORD[("data/record/record.sqlite<br/>runs, decisions, saved theses,<br/>watches, watch jobs, inbox<br/>gitignored; cannot be rebuilt")]
+      CACHE[("data/cache/filings.sqlite<br/>filing text, once per filing;<br/>the watcher's heartbeat<br/>gitignored; disposable")]
       BACKUPS["backups/<br/>copies of the record<br/>gitignored; same disk"]
       RESULTS["results/<br/>exports and probe reports<br/>gitignored; disposable"]
     end
     subgraph DOCKER["Docker Compose, started only by make"]
       APP["app container, make up<br/>FastAPI routes, pipeline, gate, policy<br/>published on 127.0.0.1:8766 only"]
+      WATCH["watch container, make up<br/>python -m app.watch: polls EDGAR,<br/>triages, runs or queues; no port"]
       ONEOFF["one-off app containers<br/>make test, run, probe, replay,<br/>fixtures, eval, backup"]
       SHOTS["shots<br/>headless Chromium"]
       LOCK["lock (uv) and jscheck (node)"]
@@ -86,6 +89,12 @@ flowchart LR
   REC -->|"fixtures for tests,<br/>recorded answers for replay"| ONEOFF
   APP <--> RECORD
   APP <--> CACHE
+  WATCH <--> RECORD
+  WATCH <--> CACHE
+  CODE -->|"bind mount at /work"| WATCH
+  ENVF -->|"environment variables"| WATCH
+  SEC -->|"HTTPS: one index request<br/>per watched company per cycle"| WATCH
+  WATCH -->|"runs with policy auto"| MODEL
   ONEOFF <--> RECORD
   ONEOFF --> RESULTS
   RECORD -->|"make backup"| BACKUPS
@@ -102,7 +111,7 @@ flowchart LR
   REC <-->|"git over HTTPS"| GITHUB
 ```
 
-**Where each part runs.** Everything runs on one laptop. The served backend is one container. The page's JavaScript runs in the browser, not in the container that serves it. `make test`, `run`, `probe`, `replay`, `fixtures`, `eval` and `backup` each start a separate short-lived container from the same image; these bypass the served app, and the ones that read filings reach EDGAR themselves. Nothing listens beyond `127.0.0.1`.
+**Where each part runs.** Everything runs on one laptop. The served backend is one container; the watcher is a second one, from the same image, sharing the data directory and listening on no port. The page's JavaScript runs in the browser, not in the container that serves it. `make test`, `run`, `probe`, `replay`, `fixtures`, `eval` and `backup` each start a separate short-lived container from the same image; these bypass the served app, and the ones that read filings reach EDGAR themselves. Nothing listens beyond `127.0.0.1`.
 
 **How code reaches it.** The repository is mounted into every container, so the running code is the working tree: the image holds only the dependencies, and a changed file is served without a rebuild (the page's files at once, Python code when the app is next started). `jscheck` mounts the tree read-only. The app, the one-off containers, `lock` and `shots` mount it read-write; `shots` is a third-party image (headless Chromium), and what it writes is the screenshots and the page dumps. Dependencies are installed when the image is built, from PyPI and the container registries, never while it runs. The only other copy of the code is the private GitHub repository, reached by `git push` over HTTPS.
 
@@ -140,6 +149,8 @@ Every number has the command that produced it and its denominator in [`docs/resu
 | 8-Ks split into their items (`make events-probe`, 18 November) | Every 8-K of the last 12 months of eight companies: 190 of 200 listed items found before two fixes (Coca-Cola's "Item 9.01(d).", JPMorgan's "Item 5.02(e)"), 200 of 200 after | [`docs/events.md`](docs/events.md), [`docs/evidence/`](docs/evidence/) |
 | Which claims an 8-K bears on (`make event-categories`) | On 84 claims labelled before the rule existed (39 with no category): precision 0.90 and recall 0.92 on the first score; 0.94 and 1.00 after one tuning pass on the same claims, so fitted. Three false alarms remain | [`docs/events.md`](docs/events.md) |
 | NVIDIA's 8-Ks, live (`make events T=NVDA`, 18 November) | 12 since the annual report of 25 February, 8 read. The 8-K of 12 November, Item 5.02, reports the resignation of Jen-Hsun Huang as President and Chief Executive Officer | [`docs/evidence/events-nvda.txt`](docs/evidence/events-nvda.txt) |
+| The standing watch's triage on a year of NVIDIA's real filings (`make watch-replay`, 18 November, live EDGAR, no model) | 19 filings fed one at a time; triage agreed with labels written before the replay on 12 of 19, and flagged 11 of the 13 labelled as bearing. Five false alarms, all Item 5.02 (a director or another officer, not the chief executive); two misses, both Item 8.01 (a $25 billion note issue, the Hugging Face acquisition). The labels are the building agent's, not a person's | [`docs/watch.md`](docs/watch.md), [`docs/evidence/watch-replay-nvda.md`](docs/evidence/watch-replay-nvda.md) |
+| A run and the watcher writing one record at once (`make watch-contention`, 18 November, offline) | Both always succeed and the file passes its integrity check (a test in the gate). Timed in 6 alternated pairs: median 299 ms alone, 318 ms with a watcher doing about 200 cycles meanwhile; the ranges overlap | [`docs/evidence/watch-contention.txt`](docs/evidence/watch-contention.txt) |
 | The gate from a fresh clone (`make verify-fresh`, 18 November) | 1,702 offline tests, the smoke test, 168 assertions on the rendered page, in 42 s | [`docs/evidence/verify-fresh.txt`](docs/evidence/verify-fresh.txt), [`docs/testing.md`](docs/testing.md) |
 | The running app, end to end, on live filings (`make live-walk`) | Passes: a judged run, decisions, the reviewed brief, a saved thesis run twice, the comparisons, the breakdowns, and a run that asks for the tagged figures and is offered 40 | [`docs/evidence/live-walk.txt`](docs/evidence/live-walk.txt) |
 | The period check (`make eval`) | All 34 years named by the golden set's findings are in their evidence: no false alarm. With a wrong year planted in each of the 25 findings that name one, it flags 21 moved one year back, 24 two back, 25 three back and 23 one forward. With one year of several moved and the others left right, it flags 13 of 18 planted statements | [`docs/period-check.md`](docs/period-check.md) |
@@ -151,7 +162,7 @@ Read all of it with three cautions. **The model answers are recordings made by s
 ## Verification
 
 ```sh
-make verify         # build, lint, 1,702 offline tests, smoke test, browser-level test
+make verify         # build, lint, 1,781 offline tests, smoke test, browser-level test
 make test           # offline tests only (T=tests/test_gate.py for one file)
 make golden-check   # the tripwire: one recorded run, compared stage by stage
 make replay         # the recorded model-backed run, offline
@@ -172,12 +183,18 @@ make events T=NVDA  # live: the 8-Ks filed since the annual report, their items,
 make events-probe   # live: every 8-K of the last 12 months of the eight probe companies, each listed item found or not
 make event-categories   # offline: precision and recall of the claim-category rule on 84 labelled claims
 make screenshots    # renders the page, both themes and phone width, and the specimen into docs/screenshots, for a person to look at
+make watch-once     # one watcher cycle: poll each watched company, triage, run or queue
+make watch-status   # is the watcher alive, the queue, and each watch's last and next check
+make watch-examples # offline: the watch's API payloads into docs/examples/v13
+make watch-replay   # live, no model: a year of NVIDIA's filings fed to triage, against eval/watch-replay-nvda.json
+make watch-contention   # offline: a run timed alone and with a watcher writing the same record
 ```
 
 [`docs/testing.md`](docs/testing.md) names one test at each of four levels, the wrong programs each new test now fails on, the tripwire and how to read it, and what no test here can see.
 
 ## Known limitations
 
+- **The watch's triage is a category rule, and it is wrong in two known ways.** Every Item 5.02 is flagged for a claim about leadership, whoever comes or goes (five false alarms in a year of NVIDIA's filings), and Item 8.01 ("Other events") is treated as routine, so a large debt issue or an acquisition filed under it is missed (two in the same year). It does not notify; the inbox is read when you look. A watched thesis with policy `auto` and the Claude engine spends model calls without asking, up to the daily cap. [`docs/watch.md`](docs/watch.md) lists the rest.
 - **The link that opens a filing at a passage has not been checked in a browser.** It is built with a text fragment from the excerpt's first and last words. An excerpt that spans lines links by its first line; a table row links to the filing without a passage, and the page says which. A headless browser sent to sec.gov to check one link was refused as an undeclared automated tool. Click one before relying on them.
 - **The Anthropic API path has not been exercised live since version 1** (22 October). The engine and the checker are tested against stub clients and through recorded answers; neither exercises the SDK call.
 - **The meaning check is a second model of the same family.** It reads without the first model's reasoning, but it is not an independent party. On the golden set it withheld 1 of 78 findings and changed no verdict. Shown 152 planted mismatches (real quotes moved under a statement they do not belong to) it rejected 150 and agreed with none; that is the easy kind of mismatch, and a quote on the right topic that does not carry the statement has not been tried.

@@ -69,6 +69,7 @@ from app.services.numbers import load_numbers
 from app.sources.http import fetch_page as default_fetch_page
 from app.sources.urls import canonicalize, validate_public_url
 from app.store import FilingCache, Store
+from app.watch import routes as watch_routes
 
 WEB_DIR = Path(__file__).resolve().parents[1] / "web"
 RUN_WORKERS = 2
@@ -248,6 +249,7 @@ def create_app(
     monotonic: Callable[[], float] = time.monotonic,
     cache: FilingCache | None = None,
     checker: Checker | None = None,
+    wall_clock: Callable[[], datetime] | None = None,
 ) -> FastAPI:
     """Build the application. Collaborators not given are built by :mod:`app.wiring`.
 
@@ -256,6 +258,7 @@ def create_app(
     store is the configured one, otherwise one in memory for this application.
     ``checker`` reads every run's findings again: the configured one when the
     engine is the configured one, otherwise none unless one is given.
+    ``wall_clock`` is the time the standing watch's routes use (injectable for tests).
     """
     if cache is None:
         cache = wiring.cache_from_env() if store is None else FilingCache()
@@ -616,6 +619,17 @@ def create_app(
             "engine": analyst.name,
             "model": model if isinstance(model, str) else None,
         }
+
+    # The standing watch (version 13): app/watch/routes.py.
+    watch_routes.add_routes(
+        app,
+        store=store,
+        cache=cache,
+        filings=filings,
+        execute=execute,
+        background=executor.submit,
+        now=wall_clock or (lambda: datetime.now(UTC)),
+    )
 
     @app.get("/", include_in_schema=False)
     def index() -> FileResponse:

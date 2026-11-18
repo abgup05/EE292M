@@ -1,0 +1,25 @@
+{
+  "created": true,
+  "watch": {
+    "thesis_id": "th-090c6b0da873",
+    "thesis_name": "Jane Smith is gone",
+    "ticker": "NVDA",
+    "company_name": "NVIDIA CORP",
+    "policy": "auto",
+    "policy_label": "Run at once",
+    "watching_since": "2026-11-18T09:00:00Z",
+    "last_check_at": null,
+    "next_check_at": null,
+    "next_check_note": "At the watcher's next cycle.",
+    "last_error": "",
+    "last_job_error": "",
+    "jobs": {
+      "queued": 0,
+      "running": 0,
+      "done": 0,
+      "failed": 0
+    },
+    "unread": 0,
+    "waiting_runs": 0
+  }
+}

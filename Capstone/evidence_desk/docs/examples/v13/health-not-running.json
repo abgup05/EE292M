@@ -1,0 +1,19 @@
+{
+  "alive": false,
+  "note": "No watcher has finished a cycle: start it with `make up` or run `make watch-once`.",
+  "worker": null,
+  "started_at": null,
+  "last_cycle_at": null,
+  "interval_seconds": 900,
+  "stale_after_seconds": 1860,
+  "last_cycle": {},
+  "jobs": {
+    "queued": 0,
+    "running": 0,
+    "done": 0,
+    "failed": 0
+  },
+  "queue_depth": 0,
+  "waiting_runs": 0,
+  "watches": 0
+}

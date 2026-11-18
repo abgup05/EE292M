@@ -289,7 +289,7 @@ disclosure before printing and closes them after, so a run prints as a whole res
 
 `prefers-reduced-motion` turns both off, and the `j` and `k` scrolling with them.
 
-## Version 13 components (on the specimen only, for now)
+## Version 14 components (on the specimen only, for now)
 
 These draw records the backend does not send yet; each takes the shape below and computes
 nothing. They live in `app.js` as `compiledTest`, `thesisOverTime`, `asOfControl`, `asOfBanner`,

@@ -267,8 +267,8 @@ def test_the_tape_shows_the_records_own_figures_in_order(name: str) -> None:
 def test_the_run_leads_with_the_answer(name: str) -> None:
     soup = page(name)
     # In the markup (the order of a phone and of paper): the company and the decision, the verdicts,
-    # the status line, then the whole thesis's tape and summary, the claims' dockets and the rest.
-    order = ["rail-head", "scorecard", "status-banner", "tape-section", "summary-section", "claim-list", "timeline-section", "figures-section"]
+    # the status line, then the whole thesis's result (the strip of verdicts), its summary, the verdict table and the figures, the claims' dockets and the rest.
+    order = ["rail-head", "scorecard", "status-banner", "overview-mast", "summary-section", "verdict-table", "tape-section", "claim-list", "timeline-section", "figures-section"]
     every = [node.get("id") for node in soup.select("#run-view [id]")]
     assert [i for i in every if i in order] == order
     # How the run was made is one step away, in the Run drawer, not above the answer.

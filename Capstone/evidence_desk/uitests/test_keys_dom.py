@@ -145,7 +145,7 @@ def test_theme_in_the_address_sets_the_terminal_theme_without_storing_it() -> No
 def test_the_keys_dialog_lists_every_key_the_page_answers() -> None:
     soup = terminal()
     keys = [words.get_text() for words in soup.select("#keys-dialog .keys-list dt kbd")]
-    assert keys == ["/", "e", "i", "j", "k", "1", "9", "Enter", "r", "t", "?", "Esc"]
+    assert keys == ["/", "e", "i", "j", "k", "1", "9", "Enter", "r", "t", "?", ".", "Esc"]
     assert soup.select_one("#run-button")["aria-keyshortcuts"] == "r"
     assert [tab["aria-keyshortcuts"] for tab in soup.select('#tabs [role="tab"]')] == [str(n) for n in range(1, len(soup.select('#tabs [role="tab"]')) + 1)]
     assert soup.select_one("#ticker")["aria-keyshortcuts"] == "/"

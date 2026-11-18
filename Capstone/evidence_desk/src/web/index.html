@@ -37,18 +37,24 @@
           <span id="cmd-status" class="cmd-status"></span><span class="chip-word">Run</span><kbd class="key-hint" aria-hidden="true">r</kbd>
         </button>
         <a id="cmd-asof" class="tool cmd-asof" href="#events-section"></a>
+        <span id="cmd-verdicts" class="cmd-verdicts"></span>
       </div>
       <div class="cmd-tools">
         <span id="sample-tag" class="page-tag" hidden>Sample record</span>
         <a id="leave-sample" class="tool leave-sample" href="./" hidden>Leave the sample</a>
         <span id="watch-health" class="watch-health" role="status" hidden></span>
         <button type="button" id="inbox-button" class="tool inbox-button" aria-controls="inbox-view" aria-keyshortcuts="i">Inbox <span id="inbox-count" class="inbox-count" hidden></span><kbd class="key-hint" aria-hidden="true">i</kbd></button>
-        <button type="button" id="howto-button" class="tool" aria-controls="run-drawer" aria-expanded="false" title="How to read this page: what a verdict rests on, the marks, the terms">Guide</button>
-        <button type="button" id="theme-toggle" class="tool theme-toggle" aria-keyshortcuts="t">
-          <span class="theme-option" data-theme-option="paper">Paper</span><span class="theme-option" data-theme-option="terminal">Terminal</span>
-          <kbd class="key-hint" aria-hidden="true">t</kbd>
-        </button>
-        <button type="button" id="keys-button" class="tool" aria-haspopup="dialog" aria-controls="keys-dialog" aria-keyshortcuts="?">Keys <kbd class="key-hint" aria-hidden="true">?</kbd></button>
+        <!-- One menu for what is not about the record on screen: the guide, the theme, the keys. -->
+        <details id="bar-menu" class="menu">
+          <summary class="tool menu-button">Menu</summary>
+          <div class="menu-panel">
+            <button type="button" id="howto-button" class="menu-item" aria-controls="run-drawer" aria-expanded="false">Guide: how to read this page</button>
+            <button type="button" id="theme-toggle" class="menu-item theme-toggle" aria-keyshortcuts="t">
+              <span class="menu-word">Theme</span><span class="theme-option" data-theme-option="paper">Paper</span><span class="theme-option" data-theme-option="terminal">Terminal</span><kbd class="key-hint" aria-hidden="true">t</kbd>
+            </button>
+            <button type="button" id="keys-button" class="menu-item" aria-haspopup="dialog" aria-controls="keys-dialog" aria-keyshortcuts="?">Keys and codes <kbd class="key-hint" aria-hidden="true">?</kbd></button>
+          </div>
+        </details>
       </div>
     </div>
   </header>
@@ -110,8 +116,8 @@
 
         <div class="actions actions-run">
           <button type="submit" id="submit" class="primary">Test the thesis</button>
-          <button type="button" id="load-example" class="secondary">Load the example thesis</button>
-          <button type="button" id="save-thesis" class="secondary" aria-expanded="false" aria-controls="save-panel" hidden>Save this thesis</button>
+          <button type="button" id="load-example" class="linklike">Load the example thesis</button>
+          <button type="button" id="save-thesis" class="linklike" aria-expanded="false" aria-controls="save-panel" hidden>Save this thesis</button>
         </div>
         <div class="save-panel" id="save-panel" hidden>
           <div class="field">
@@ -274,7 +280,7 @@
           <nav id="rail" class="pane rail" aria-labelledby="scorecard-title">
             <div id="rail-head" class="rail-head"></div>
             <div id="review-line" class="review-line" hidden></div>
-            <h3 id="scorecard-title" class="pane-label" data-code="VRD">Verdicts by claim</h3>
+            <h3 id="scorecard-title" class="pane-label">Claims</h3>
             <a id="rail-thesis" class="rail-all" href="#workspace" data-select="" aria-current="true"><span class="rail-all-name">The whole thesis</span><span class="rail-all-what">summary, sources, limits</span></a>
             <div id="board-head" class="board-head" aria-hidden="true" hidden><span>Engine</span><span>After your review</span></div>
             <ol id="scorecard" class="scorecard"></ol>
@@ -294,18 +300,28 @@
             <div id="centre-scroll" class="pane-scroll" tabindex="-1">
 
               <div id="panel-overview" class="tabpanel" data-tab="overview" data-scope="thesis">
-                <section id="tape-section" class="tape-block" aria-labelledby="tape-title" hidden>
-                  <h3 id="tape-title" class="visually-hidden">The newest period's reported figures</h3>
-                  <div id="tape" class="tape"></div>
-                </section>
+                <!-- The result first: when the run was made and one cell per claim, coloured by its verdict. -->
+                <div id="overview-mast" class="overview-mast"></div>
 
-                <section id="summary-section" class="block" aria-labelledby="summary-title" hidden>
-                  <h3 id="summary-title" class="block-title" data-code="SUM">Summary</h3>
-                  <div id="summary-box" data-mw="summary">
-                    <p id="summary-origin" class="origin"></p>
-                    <p id="summary" class="summary"></p>
-                  </div>
-                </section>
+                <div class="overview-grid">
+                  <section id="summary-section" class="block" aria-labelledby="summary-title" hidden>
+                    <h3 id="summary-title" class="block-title" data-code="SUM">Summary</h3>
+                    <div id="summary-box" data-mw="summary">
+                      <p id="summary-origin" class="origin"></p>
+                      <p id="summary" class="summary"></p>
+                    </div>
+                  </section>
+
+                  <section id="verdicts-section" class="block" aria-labelledby="verdicts-title">
+                    <h3 id="verdicts-title" class="block-title" data-code="VRD">Verdicts</h3>
+                    <div id="verdict-table"></div>
+                  </section>
+
+                  <section id="tape-section" class="block tape-block" aria-labelledby="tape-title" hidden>
+                    <h3 id="tape-title" class="block-title" data-code="KEY">Newest figures</h3>
+                    <div id="tape" class="tape"></div>
+                  </section>
+                </div>
 
                 <section id="changes-section" class="block" aria-labelledby="changes-title" tabindex="-1" hidden>
                   <h3 id="changes-title" class="block-title" data-code="MOV">What moved since the earlier run</h3>
@@ -516,6 +532,7 @@
       <div><dt><kbd>r</kbd></dt><dd>Open or close the Run drawer: who did the work, and how to read the page</dd></div>
       <div><dt><kbd>t</kbd></dt><dd>Switch between the Paper and Terminal themes</dd></div>
       <div><dt><kbd>?</kbd></dt><dd>Show these keys</dd></div>
+      <div><dt><kbd>.</kbd><span class="keys-code">code</span></dt><dd>In the ticker field, then Enter: go to the panel with that code (<code>.fig</code> the figures, <code>.evt</code> the 8-Ks, <code>.sum</code> the summary, <code>.vrd</code> the verdicts, <code>.fnd</code> the findings, <code>.src</code> the sources, <code>.lim</code> the limits, <code>.tl</code> the time line, <code>.run</code> the Run drawer, <code>.gde</code> the guide, <code>.ins</code> the inspector). The codes are the dim letters before each title in Terminal.</dd></div>
       <div><dt><kbd>Esc</kbd></dt><dd>Close this list, a drawer or the inspector's sheet</dd></div>
     </dl>
     <p class="hint">Keys do nothing while you type in a field. Printing lays the whole note out as a document. What the verdicts rest on, the time line, the marks and the samples are in <button type="button" class="linklike" id="keys-howto">the guide</button>.</p>
@@ -524,7 +541,7 @@
 
   <div id="drawer-scrim" class="drawer-scrim" hidden></div>
   <div id="statusbar" class="statusbar" aria-hidden="true">
-    <span><kbd>/</kbd> ticker</span><span><kbd>e</kbd> thesis</span><span><kbd>i</kbd> inbox</span><span><kbd>j</kbd><kbd>k</kbd> claims</span><span><kbd>1</kbd>–<kbd>9</kbd> tabs</span><span><kbd>r</kbd> run</span><span><kbd>t</kbd> theme</span><span><kbd>?</kbd> keys</span>
+    <span class="statusbar-hint">/ then .code and Enter goes to a panel · ? lists the keys</span>
     <span id="statusbar-run" class="statusbar-run"></span>
   </div>
 

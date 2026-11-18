@@ -1,0 +1,806 @@
+{
+  "key": "780892258840ce5c27888e54",
+  "step": "propose",
+  "via": "the Anthropic API",
+  "model": "claude-opus-5-5",
+  "recorded_at": "2026-11-18T22:57:18+00:00",
+  "response": {
+    "claims": [
+      {
+        "claim_id": "c1",
+        "implications": [
+          {
+            "sentence": "Data Center's share of revenue in the newest filing is above 80%.",
+            "expect": "holds",
+            "why": "If data center keeps growing while the rest of the business is smaller, it should make up the large majority of revenue.",
+            "test": {
+              "form": "share",
+              "left": {
+                "fn": "share",
+                "subject": "revenue",
+                "member": "Data Center",
+                "axis": "segment",
+                "years": 0,
+                "period": {
+                  "kind": "filing",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "op": ">",
+              "right_term": {
+                "fn": "share",
+                "subject": "revenue",
+                "member": "Data Center",
+                "axis": "segment",
+                "years": 0,
+                "period": {
+                  "kind": "filing",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "right_number": {
+                "value": 80,
+                "unit": "percent"
+              },
+              "each": 0,
+              "each_since": 0
+            }
+          },
+          {
+            "sentence": "Compute and Networking Segment revenue grew year over year in the newest filing.",
+            "expect": "holds",
+            "why": "Data center sales sit in the Compute and Networking segment, so that segment should also be growing on a year earlier.",
+            "test": {
+              "form": "growth_threshold",
+              "left": {
+                "fn": "yoy",
+                "subject": "revenue",
+                "member": "Compute and Networking Segment",
+                "axis": "segment",
+                "years": 0,
+                "period": {
+                  "kind": "filing",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "op": ">",
+              "right_term": {
+                "fn": "yoy",
+                "subject": "revenue",
+                "member": "Compute and Networking Segment",
+                "axis": "segment",
+                "years": 0,
+                "period": {
+                  "kind": "filing",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "right_number": {
+                "value": 0,
+                "unit": "percent"
+              },
+              "each": 0,
+              "each_since": 0
+            }
+          },
+          {
+            "sentence": "Receivables grew faster year over year than revenue in the latest quarter.",
+            "expect": "fails",
+            "why": "Healthy demand-driven growth should not rely on receivables outpacing sales; if they do, the quality of the growth is in doubt.",
+            "test": {
+              "form": "faster_than",
+              "left": {
+                "fn": "yoy",
+                "subject": "receivables",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "op": ">",
+              "right_term": {
+                "fn": "yoy",
+                "subject": "revenue",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "right_number": {
+                "value": 0,
+                "unit": "percent"
+              },
+              "each": 0,
+              "each_since": 0
+            }
+          }
+        ]
+      },
+      {
+        "claim_id": "c2",
+        "implications": [
+          {
+            "sentence": "The largest customer's share of revenue in the newest filing is above 10%.",
+            "expect": "holds",
+            "why": "If a few customers account for much of revenue, the biggest one alone should exceed the 10% disclosure line.",
+            "test": {
+              "form": "share",
+              "left": {
+                "fn": "max_share",
+                "subject": "customer",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "filing",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "op": ">",
+              "right_term": {
+                "fn": "max_share",
+                "subject": "customer",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "filing",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "right_number": {
+                "value": 10,
+                "unit": "percent"
+              },
+              "each": 0,
+              "each_since": 0
+            }
+          },
+          {
+            "sentence": "Hyperscale's share of revenue in the newest filing is above 40%.",
+            "expect": "holds",
+            "why": "The concentration comes from a few hyperscale buyers, so the hyperscale line should carry a large share of revenue.",
+            "test": {
+              "form": "share",
+              "left": {
+                "fn": "share",
+                "subject": "revenue",
+                "member": "Hyperscale",
+                "axis": "segment",
+                "years": 0,
+                "period": {
+                  "kind": "filing",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "op": ">",
+              "right_term": {
+                "fn": "share",
+                "subject": "revenue",
+                "member": "Hyperscale",
+                "axis": "segment",
+                "years": 0,
+                "period": {
+                  "kind": "filing",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "right_number": {
+                "value": 40,
+                "unit": "percent"
+              },
+              "each": 0,
+              "each_since": 0
+            }
+          }
+        ]
+      },
+      {
+        "claim_id": "c3",
+        "implications": [
+          {
+            "sentence": "China Including Hong Kong's share of revenue in the newest filing is below 10%.",
+            "expect": "holds",
+            "why": "If export controls bite, China should be a small part of revenue.",
+            "test": {
+              "form": "share",
+              "left": {
+                "fn": "share",
+                "subject": "revenue",
+                "member": "China Including Hong Kong",
+                "axis": "geography",
+                "years": 0,
+                "period": {
+                  "kind": "filing",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "op": "<",
+              "right_term": {
+                "fn": "share",
+                "subject": "revenue",
+                "member": "China Including Hong Kong",
+                "axis": "geography",
+                "years": 0,
+                "period": {
+                  "kind": "filing",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "right_number": {
+                "value": 10,
+                "unit": "percent"
+              },
+              "each": 0,
+              "each_since": 0
+            }
+          },
+          {
+            "sentence": "China Including Hong Kong revenue fell year over year in the newest filing.",
+            "expect": "holds",
+            "why": "Restrictions that limit sales should show up as China revenue shrinking against a year earlier.",
+            "test": {
+              "form": "growth_threshold",
+              "left": {
+                "fn": "yoy",
+                "subject": "revenue",
+                "member": "China Including Hong Kong",
+                "axis": "geography",
+                "years": 0,
+                "period": {
+                  "kind": "filing",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "op": "<",
+              "right_term": {
+                "fn": "yoy",
+                "subject": "revenue",
+                "member": "China Including Hong Kong",
+                "axis": "geography",
+                "years": 0,
+                "period": {
+                  "kind": "filing",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "right_number": {
+                "value": 0,
+                "unit": "percent"
+              },
+              "each": 0,
+              "each_since": 0
+            }
+          },
+          {
+            "sentence": "Inventory grew faster year over year than revenue in the latest quarter.",
+            "expect": "holds",
+            "why": "Product that cannot be shipped to China would pile up, so inventory would outgrow sales.",
+            "test": {
+              "form": "faster_than",
+              "left": {
+                "fn": "yoy",
+                "subject": "inventory",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "op": ">",
+              "right_term": {
+                "fn": "yoy",
+                "subject": "revenue",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "right_number": {
+                "value": 0,
+                "unit": "percent"
+              },
+              "each": 0,
+              "each_since": 0
+            }
+          }
+        ]
+      },
+      {
+        "claim_id": "c4",
+        "implications": [
+          {
+            "sentence": "Gross margin in the latest quarter is above the previous quarter's.",
+            "expect": "holds",
+            "why": "Margins that are truly expanding should also rise sequentially, not only against a year earlier.",
+            "test": {
+              "form": "direction",
+              "left": {
+                "fn": "value",
+                "subject": "gross_margin",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "op": ">",
+              "right_term": {
+                "fn": "value",
+                "subject": "gross_margin",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "Q",
+                  "back": 1,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "right_number": {
+                "value": 0,
+                "unit": "percent"
+              },
+              "each": 0,
+              "each_since": 0
+            }
+          },
+          {
+            "sentence": "Gross margin in the latest fiscal year is above the prior fiscal year's.",
+            "expect": "holds",
+            "why": "If expansion is a trend rather than a one-quarter rebound, the full-year margin should also be higher.",
+            "test": {
+              "form": "direction",
+              "left": {
+                "fn": "value",
+                "subject": "gross_margin",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "FY",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "op": ">",
+              "right_term": {
+                "fn": "value",
+                "subject": "gross_margin",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "FY",
+                  "back": 1,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "right_number": {
+                "value": 0,
+                "unit": "percent"
+              },
+              "each": 0,
+              "each_since": 0
+            }
+          },
+          {
+            "sentence": "Operating margin in the latest quarter is above the same quarter a year earlier.",
+            "expect": "holds",
+            "why": "A wider gross margin only matters if operating costs do not absorb it, so operating margin should rise too.",
+            "test": {
+              "form": "direction",
+              "left": {
+                "fn": "value",
+                "subject": "operating_margin",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "op": ">",
+              "right_term": {
+                "fn": "value",
+                "subject": "operating_margin",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "Q",
+                  "back": 4,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "right_number": {
+                "value": 0,
+                "unit": "percent"
+              },
+              "each": 0,
+              "each_since": 0
+            }
+          }
+        ]
+      },
+      {
+        "claim_id": "c5",
+        "implications": [
+          {
+            "sentence": "Capital expenditure as a share of revenue in the latest quarter is below 5%.",
+            "expect": "holds",
+            "why": "A company that outsources manufacturing to a few suppliers should need little capex of its own.",
+            "test": {
+              "form": "threshold",
+              "left": {
+                "fn": "value",
+                "subject": "capex_ratio",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "op": "<",
+              "right_term": {
+                "fn": "value",
+                "subject": "capex_ratio",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "right_number": {
+                "value": 5,
+                "unit": "percent"
+              },
+              "each": 0,
+              "each_since": 0
+            }
+          },
+          {
+            "sentence": "Inventory grew year over year in the latest quarter.",
+            "expect": "holds",
+            "why": "Dependence on a few suppliers pushes the company to secure supply ahead of demand, which raises inventory.",
+            "test": {
+              "form": "growth_threshold",
+              "left": {
+                "fn": "yoy",
+                "subject": "inventory",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "op": ">",
+              "right_term": {
+                "fn": "yoy",
+                "subject": "inventory",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "right_number": {
+                "value": 0,
+                "unit": "percent"
+              },
+              "each": 0,
+              "each_since": 0
+            }
+          },
+          {
+            "sentence": "Cost of revenue grew faster year over year than revenue in the latest quarter.",
+            "expect": "fails",
+            "why": "If concentrated suppliers held strong pricing power, costs would outgrow sales; a stable margin would show that this power is limited.",
+            "test": {
+              "form": "faster_than",
+              "left": {
+                "fn": "yoy",
+                "subject": "cost_of_revenue",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "op": ">",
+              "right_term": {
+                "fn": "yoy",
+                "subject": "revenue",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "right_number": {
+                "value": 0,
+                "unit": "percent"
+              },
+              "each": 0,
+              "each_since": 0
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

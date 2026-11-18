@@ -1,7 +1,7 @@
 {
   "note": "A recorded run of the NVIDIA example thesis on three recorded filings and the 8-Ks NVIDIA filed after the annual report, as recorded on 17 November 2026. The model answers are replayed from the cassette demo/cassettes/nvda-example; see its README for how they were produced.",
   "meta": {
-    "version": "0.12.0",
+    "version": "0.13.0",
     "figures_note": "Reported figures are computed by the backend from the XBRL facts the company filed with the SEC; each shows the facts it used and its arithmetic.",
     "limits": {
       "CONTEXT_CHARS": 240,
@@ -134,7 +134,7 @@
     }
   },
   "run": {
-    "id": "run-0ed7f6c80957",
+    "id": "run-8d4f4f19d19f",
     "inputs": {
       "ticker": "NVDA",
       "decision": "Whether to keep an overweight position in NVIDIA into the next earnings report",
@@ -154,8 +154,8 @@
     "status": "complete",
     "stage": "done",
     "stage_detail": "",
-    "started_at": "2026-11-18T08:22:42.078768Z",
-    "finished_at": "2026-11-18T08:22:42.540064Z",
+    "started_at": "2026-11-18T10:30:08.759515Z",
+    "finished_at": "2026-11-18T10:30:09.198277Z",
     "company": {
       "cik": 1045810,
       "ticker": "NVDA",
@@ -349,7 +349,7 @@
         "accession": null,
         "period_end": null,
         "published_date": null,
-        "retrieved_at": "2026-11-18T08:22:42.446904Z",
+        "retrieved_at": "2026-11-18T10:30:09.106605Z",
         "content_hash": "f6870031195cd1dc226506fcf891f4096679d400ac6139b9909a117dc9648f9b",
         "extraction_status": "extracted",
         "sections": 0,

@@ -23,7 +23,7 @@ def _watched(store: Store) -> WatchStore:
     return watches
 
 
-def test_restore_check_fails_naming_an_inbox_item_read_after_the_backup(tmp_path: Path) -> None:
+def test_restore_check_says_behind_on_an_inbox_item_read_after_the_backup(tmp_path: Path) -> None:
     store = Store(tmp_path / "record.sqlite")
     watches = _watched(store)
     directory = tmp_path / "backups"
@@ -34,11 +34,30 @@ def test_restore_check_fails_naming_an_inbox_item_read_after_the_backup(tmp_path
 
     try:
         backup.restore_check(store, directory, NOON)
-    except backup.RestoreCheckFailed as failure:
-        assert "inbox item ib-1 differs" in str(failure)
-        assert "read_at column" in str(failure)
+    except backup.BackupBehind as behind:
+        assert "1 inbox item written since (first: inbox item ib-1)" in str(behind)
     else:
         raise AssertionError("restore-check passed on an inbox item changed after the backup")
+
+
+def test_restore_check_fails_naming_an_inbox_item_changed_with_no_later_time(
+    tmp_path: Path,
+) -> None:
+    """A row both hold that differs with nothing dated after the backup is a broken backup."""
+    store = Store(tmp_path / "record.sqlite")
+    _watched(store)
+    directory = tmp_path / "backups"
+    backup.take_backup(store, directory, NOON)
+    with closing(sqlite3.connect(store.path)) as connection, connection:
+        connection.execute("UPDATE inbox SET kind = 'moved' WHERE id = 'ib-1'")
+    try:
+        backup.restore_check(store, directory, NOON)
+    except backup.BackupBehind:
+        raise AssertionError("a change with no later time was taken for a late write") from None
+    except backup.RestoreCheckFailed as failure:
+        assert "inbox item ib-1 differs" in str(failure) and "kind column" in str(failure)
+    else:
+        raise AssertionError("restore-check passed on an inbox item changed in place")
 
 
 def test_restore_check_fails_on_a_job_queued_after_the_backup(tmp_path: Path) -> None:

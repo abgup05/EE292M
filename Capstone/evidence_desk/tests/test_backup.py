@@ -157,14 +157,18 @@ def test_restore_check_fails_naming_a_decision_changed_after_the_backup(
     )
 
 
-def test_restore_check_fails_on_a_new_run_or_thesis_and_uses_the_newest_backup(
+def test_restore_check_says_behind_on_a_new_run_and_uses_the_newest_backup(
     store: Store, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     directory = tmp_path / "backups"
     backup.main(["backup", "--dir", str(directory)], store=store, now=NOON)
-    store.save_run(_run("run-3"))
-    assert backup.main(["restore-check", "--dir", str(directory)], store=store) == 1
-    assert "run run-3 is in the live record but not in the backup" in capsys.readouterr().out
+    store.save_run(_run("run-3").model_copy(update={"started_at": NOON + timedelta(minutes=1)}))
+    assert backup.main(["restore-check", "--dir", str(directory)], store=store) == 2
+    assert capsys.readouterr().out.splitlines()[-1] == (
+        "BEHIND: record-20261117T120000Z.sqlite holds the live record as it was when it was "
+        "taken, and the live record has 1 run written since (first: run run-3); run "
+        "`make backup` and check again"
+    )
     later = NOON + timedelta(minutes=5)
     backup.main(["backup", "--dir", str(directory)], store=store, now=later)
     assert backup.main(["restore-check", "--dir", str(directory)], store=store) == 0
@@ -423,3 +427,49 @@ def test_status_says_what_the_newest_backup_does_not_hold(
         "backup status: record-20261117T120000Z.sqlite, taken 2 days ago, does not hold 1 run "
         "and 1 decision made or changed since (run `make backup`)."
     )
+
+
+def test_a_run_missing_from_the_backup_that_started_before_it_fails(
+    store: Store, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A row the backup should hold and does not is a broken backup, not a late write."""
+    directory = tmp_path / "backups"
+    backup.main(["backup", "--dir", str(directory)], store=store, now=NOON)
+    early = _run("run-0").model_copy(update={"started_at": NOON - timedelta(hours=1)})
+    store.save_run(early)
+    assert backup.main(["restore-check", "--dir", str(directory)], store=store) == 1
+    assert capsys.readouterr().out.splitlines()[-1] == (
+        "FAIL: record-20261117T120000Z.sqlite: run run-0 is in the live record but not in "
+        "the backup"
+    )
+
+
+def test_a_late_run_does_not_hide_a_broken_row_beside_it(
+    store: Store, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    directory = tmp_path / "backups"
+    backup.main(["backup", "--dir", str(directory)], store=store, now=NOON)
+    store.save_run(_run("run-3").model_copy(update={"started_at": NOON + timedelta(minutes=5)}))
+    early = _run("run-0").model_copy(update={"started_at": NOON - timedelta(hours=1)})
+    store.save_run(early)
+    assert backup.main(["restore-check", "--dir", str(directory)], store=store) == 1
+    assert "FAIL:" in capsys.readouterr().out
+
+
+def test_a_decision_and_a_thesis_written_after_the_backup_are_behind_not_broken(
+    store: Store, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    directory = tmp_path / "backups"
+    backup.main(["backup", "--dir", str(directory)], store=store, now=NOON)
+    later = NOON + timedelta(minutes=5)
+    store.save_decision(
+        _decision(DecisionValue.rejected, note="Changed my mind.").model_copy(
+            update={"decided_at": later}
+        )
+    )
+    store.save_thesis(
+        Thesis(id="th-2", name="Later", request=REQUEST, created_at=later, run_ids=["run-2"])
+    )
+    assert backup.main(["restore-check", "--dir", str(directory)], store=store) == 2
+    out = capsys.readouterr().out.splitlines()[-1]
+    assert out.startswith("BEHIND:") and "1 decision and 1 thesis written since" in out

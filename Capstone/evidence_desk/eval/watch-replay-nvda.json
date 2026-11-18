@@ -1,0 +1,37 @@
+{
+  "about": "Labels for make watch-replay: for each NVIDIA filing of the twelve months to 18 Nov 2026, does it bear on a claim of the thesis below, and on which. Written by the agent that built the watch (Claude Opus 5.5) from `make watch-replay ARGS=\"--list --since 2025-11-18\"` (form, date, items and each item's opening sentences), BEFORE triage was run on any of them, and committed before the first replay. 'Bears' means: an owner of this thesis would want to look at it again because of this filing. Never change a label to match a result; if a label is wrong, say so in the replay's write-up and leave the file as it was.",
+  "written": "18 November 2026",
+  "since": "2025-11-18",
+  "thesis": {
+    "name": "NVIDIA: leadership, data centre growth, balance sheet",
+    "decision": "Whether to keep holding NVIDIA shares through the next year",
+    "claims": [
+      "Jensen Huang's leadership as chief executive is a key reason to own NVIDIA.",
+      "Data center revenue keeps growing faster than the rest of the business.",
+      "NVIDIA's balance sheet is strong, with little debt.",
+      "NVIDIA grows by acquiring software and platform companies.",
+      "Gross margins stay above 70 percent."
+    ]
+  },
+  "labels": [
+    {"accession": "0001045810-25-000228", "filed": "2025-11-19", "form": "8-K", "items": "2.02,9.01", "bears": true, "claims": ["c2", "c5"], "why": "Quarterly results announced: revenue mix and margins."},
+    {"accession": "0001045810-25-000230", "filed": "2025-11-19", "form": "10-Q", "items": "", "bears": true, "claims": ["c2", "c3", "c5"], "why": "Quarterly report: segment revenue, debt, margins."},
+    {"accession": "0001045810-26-000003", "filed": "2026-01-23", "form": "8-K", "items": "5.02", "bears": false, "claims": [], "why": "A director (Persis Drell) resigned from the board; not the chief executive, and no claim is about the board."},
+    {"accession": "0001045810-26-000019", "filed": "2026-02-25", "form": "8-K", "items": "2.02,9.01", "bears": true, "claims": ["c2", "c5"], "why": "Quarterly and annual results announced."},
+    {"accession": "0001045810-26-000021", "filed": "2026-02-25", "form": "10-K", "items": "", "bears": true, "claims": ["c2", "c3", "c5"], "why": "Annual report: segment revenue, debt, margins."},
+    {"accession": "0001045810-26-000024", "filed": "2026-03-06", "form": "8-K", "items": "5.02,9.01", "bears": false, "claims": [], "why": "A variable compensation plan for officers adopted; no officer comes or goes."},
+    {"accession": "0001045810-26-000026", "filed": "2026-04-27", "form": "8-K", "items": "5.02", "bears": false, "claims": [], "why": "The chief accounting officer retires and is replaced; not the chief executive."},
+    {"accession": "0001045810-26-000028", "filed": "2026-05-08", "form": "8-K", "items": "5.02", "bears": false, "claims": [], "why": "A new director appointed; no claim is about the board."},
+    {"accession": "0001045810-26-000051", "filed": "2026-05-20", "form": "8-K", "items": "2.02,9.01", "bears": true, "claims": ["c2", "c5"], "why": "Quarterly results announced."},
+    {"accession": "0001045810-26-000052", "filed": "2026-05-20", "form": "10-Q", "items": "", "bears": true, "claims": ["c2", "c3", "c5"], "why": "Quarterly report."},
+    {"accession": "0001193125-26-275783", "filed": "2026-06-18", "form": "8-K", "items": "8.01,9.01", "bears": true, "claims": ["c3"], "why": "About $25 billion of new notes issued: directly against 'little debt'."},
+    {"accession": "0001045810-26-000056", "filed": "2026-06-30", "form": "8-K", "items": "5.07", "bears": false, "claims": [], "why": "Annual meeting vote results; routine."},
+    {"accession": "0001045810-26-000060", "filed": "2026-07-02", "form": "8-K", "items": "5.02", "bears": false, "claims": [], "why": "The head of worldwide field operations retires and is succeeded; not the chief executive."},
+    {"accession": "0001045810-26-000069", "filed": "2026-08-17", "form": "8-K", "items": "1.01,2.03,7.01", "bears": true, "claims": ["c3"], "why": "Residual value guarantees for a data centre campus: a new off-balance-sheet obligation (Item 2.03). A partnership, not an acquisition, so not c4."},
+    {"accession": "0001045810-26-000073", "filed": "2026-08-26", "form": "8-K", "items": "2.02,9.01", "bears": true, "claims": ["c2", "c5"], "why": "Quarterly results announced."},
+    {"accession": "0001045810-26-000075", "filed": "2026-08-26", "form": "10-Q", "items": "", "bears": true, "claims": ["c2", "c3", "c5"], "why": "Quarterly report."},
+    {"accession": "0001045810-26-000078", "filed": "2026-09-03", "form": "8-K", "items": "8.01", "bears": true, "claims": ["c3", "c4"], "why": "Agreement to acquire Hugging Face for about $11.9 billion: a platform acquisition, paid for from the balance sheet."},
+    {"accession": "0001045810-26-000082", "filed": "2026-11-12", "form": "8-K", "items": "5.02,9.01", "bears": true, "claims": ["c1"], "why": "Jen-Hsun Huang resigned as chief executive; an interim CEO named."},
+    {"accession": "0001045810-26-000088", "filed": "2026-11-17", "form": "8-K", "items": "2.02,9.01", "bears": true, "claims": ["c2", "c5"], "why": "Quarterly results announced."}
+  ]
+}

@@ -1233,7 +1233,8 @@
               "an:gross_margin:yoy",
               "an:gross_margin:trend8",
               "an:c2:headroom",
-              "an:c2:history"
+              "an:c2:history",
+              "an:peer:NVDA:gross_margin:2025:2026-11-18"
             ]
           }
         ],
@@ -1241,8 +1242,10 @@
         "analytic_ids": [
           "an:c2:headroom",
           "an:c2:history",
+          "an:base_rate:NVDA:none:2026-11-18",
           "an:gross_margin:yoy",
           "an:gross_margin:trend8",
+          "an:peer:NVDA:gross_margin:2025:2026-11-18",
           "an:eq:dio"
         ],
         "corollaries": [],
@@ -1701,18 +1704,25 @@
               "an:revenue:fy2026:path",
               "an:revenue:fy2026:since",
               "an:c3:needed",
-              "an:bridge:growth:revenue_by_product:fy"
+              "an:bridge:growth:revenue_by_product:fy",
+              "an:base_rate:NVDA:size:yoy(revenue)[t] > 100%:2026-11-18",
+              "an:base_rate:NVDA:industry:yoy(revenue)[t] > 100%:2026-11-18",
+              "an:reverse_dcf:NVDA:2026-09-30"
             ]
           }
         ],
         "relevance_note": "",
         "analytic_ids": [
           "an:c3:needed",
+          "an:base_rate:NVDA:size:yoy(revenue)[t] > 100%:2026-11-18",
+          "an:base_rate:NVDA:industry:yoy(revenue)[t] > 100%:2026-11-18",
           "an:revenue:fy2026:path",
           "an:revenue:fy2026:since",
           "an:bridge:growth:revenue_by_product:fy",
+          "an:peer:NVDA:revenue_growth:2025:2026-11-18",
           "an:eq:dso",
-          "an:eq:deferred_revenue"
+          "an:eq:deferred_revenue",
+          "an:reverse_dcf:NVDA:2026-09-30"
         ],
         "corollaries": [],
         "corollary_flag": "",
@@ -2194,7 +2204,9 @@
             "analytic_ids": [
               "an:c4:sides",
               "an:bridge:cash:fy2026",
-              "an:bridge:cash:ttm"
+              "an:bridge:cash:ttm",
+              "an:base_rate:NVDA:size:free_cash_flow[t] > net_income[t]:2026-11-18",
+              "an:base_rate:NVDA:industry:free_cash_flow[t] > net_income[t]:2026-11-18"
             ]
           },
           {
@@ -2211,11 +2223,13 @@
         "relevance_note": "",
         "analytic_ids": [
           "an:c4:sides",
+          "an:base_rate:NVDA:size:free_cash_flow[t] > net_income[t]:2026-11-18",
+          "an:base_rate:NVDA:industry:free_cash_flow[t] > net_income[t]:2026-11-18",
           "an:bridge:cash:fy2026",
           "an:bridge:cash:ttm",
-          "an:eq:cash_conversion",
-          "an:eq:sbc_ratio",
-          "an:eq:capex_ratio"
+          "an:peer:NVDA:fcf_margin:2025:2026-11-18",
+          "an:peer:NVDA:cash_conversion:2025:2026-11-18",
+          "an:eq:cash_conversion"
         ],
         "corollaries": [],
         "corollary_flag": "",
@@ -2298,7 +2312,8 @@
               "an:revenue:yoy",
               "an:revenue:acceleration",
               "an:revenue:trend8",
-              "an:bridge:growth:revenue_by_product:q"
+              "an:bridge:growth:revenue_by_product:q",
+              "an:reverse_dcf:NVDA:2026-09-30"
             ]
           }
         ],
@@ -2311,8 +2326,10 @@
           "an:revenue:acceleration",
           "an:revenue:trend8",
           "an:bridge:growth:revenue_by_product:q",
+          "an:peer:NVDA:revenue_growth:2025:2026-11-18",
           "an:eq:dso",
-          "an:eq:deferred_revenue"
+          "an:eq:deferred_revenue",
+          "an:reverse_dcf:NVDA:2026-09-30"
         ],
         "corollaries": [],
         "corollary_flag": "",
@@ -2409,7 +2426,7 @@
       "period_end": null,
       "published_date": null,
       "retrieved_at": "2026-11-18T12:00:00Z",
-      "content_hash": "f6870031195cd1dc226506fcf891f4096679d400ac6139b9909a117dc9648f9b",
+      "content_hash": "3abe0bd1e44eb8f1cdc7691da77fcf927426c76d4feffbe0c3892d21246a7ffc",
       "extraction_status": "extracted",
       "sections": 0,
       "characters": 0,
@@ -3116,8 +3133,8 @@
     "periods_checked": 21,
     "periods_unverified": 0,
     "periods_comparative": 0,
-    "analytics_computed": 22,
-    "analytics_unavailable": 2,
+    "analytics_computed": 33,
+    "analytics_unavailable": 1,
     "analytics_providers_failed": 0,
     "corollaries_proposed": 0,
     "corollaries_computed": 0,
@@ -12257,6 +12274,7 @@
         "kind": "yoy",
         "label": "Gross margin, change on a year earlier",
         "question": "Which way is gross margin moving on a year earlier?",
+        "scope": "claim",
         "claim_ids": [
           "c2"
         ],
@@ -12300,6 +12318,7 @@
         "kind": "trend8",
         "label": "Gross margin, change over the last 8 quarters",
         "question": "Where does gross margin stand against the last two years?",
+        "scope": "claim",
         "claim_ids": [
           "c2"
         ],
@@ -12353,6 +12372,7 @@
         "kind": "fiscal_path",
         "label": "Revenue by fiscal year, to FY2026",
         "question": "What has revenue done over the last fiscal years?",
+        "scope": "claim",
         "claim_ids": [
           "c3"
         ],
@@ -12416,6 +12436,7 @@
         "kind": "since",
         "label": "Revenue in the newest quarter since FY2026, on a year earlier",
         "question": "What has happened to revenue since that fiscal year ended?",
+        "scope": "claim",
         "claim_ids": [
           "c3"
         ],
@@ -12459,6 +12480,7 @@
         "kind": "yoy",
         "label": "Revenue, change on a year earlier",
         "question": "Which way is revenue moving on a year earlier?",
+        "scope": "claim",
         "claim_ids": [
           "c5"
         ],
@@ -12502,6 +12524,7 @@
         "kind": "acceleration",
         "label": "Revenue, growth on a year earlier now against the quarter before",
         "question": "Is revenue growth speeding up or slowing?",
+        "scope": "claim",
         "claim_ids": [
           "c5"
         ],
@@ -12575,6 +12598,7 @@
         "kind": "trend8",
         "label": "Revenue, compound quarterly growth over the last 8 quarters",
         "question": "Where does revenue stand against the last two years?",
+        "scope": "claim",
         "claim_ids": [
           "c5"
         ],
@@ -12618,6 +12642,7 @@
         "kind": "headroom",
         "label": "Room of the test, against a typical move",
         "question": "How much room does the test have, against how far the figure usually moves?",
+        "scope": "claim",
         "claim_ids": [
           "c2"
         ],
@@ -12671,6 +12696,7 @@
         "kind": "history",
         "label": "How often the test held before",
         "question": "How often has this been true before?",
+        "scope": "claim",
         "claim_ids": [
           "c2"
         ],
@@ -12704,6 +12730,7 @@
         "kind": "needed",
         "label": "Needed against reached",
         "question": "How far short did it fall?",
+        "scope": "claim",
         "claim_ids": [
           "c3"
         ],
@@ -12757,6 +12784,7 @@
         "kind": "sides",
         "label": "Left side as a share of the right, reading by reading",
         "question": "Is the gap between the two sides closing or widening?",
+        "scope": "claim",
         "claim_ids": [
           "c4"
         ],
@@ -12820,6 +12848,7 @@
         "kind": "bridge",
         "label": "Net income to free cash flow, FY2026",
         "question": "Where did the cash go between net income and free cash flow?",
+        "scope": "claim",
         "claim_ids": [
           "c4"
         ],
@@ -12856,6 +12885,26 @@
             "label": "PaymentsToAcquireProductiveAssets",
             "value": 6042000000.0,
             "display": "$6.04B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "ShareBasedCompensation:2025-01-27..2026-01-25",
+            "label": "ShareBasedCompensation",
+            "value": 6386000000.0,
+            "display": "$6.39B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "DepreciationDepletionAndAmortization:2025-01-27..2026-01-25",
+            "label": "DepreciationDepletionAndAmortization",
+            "value": 2843000000.0,
+            "display": "$2.84B",
             "accession": "0001045810-26-000021",
             "form": "10-K",
             "filed": "2026-02-25"
@@ -12901,7 +12950,7 @@
             "filed": "2026-02-25"
           }
         ],
-        "reading": "In FY2026, net income of $120.07B became operating cash flow of $102.72B ($17.35B less) and, after capital expenditure of $6.04B, free cash flow of $96.68B: $23.39B below net income. Over the same period accounts receivable rose $15.40B (to $38.47B) and inventory rose $11.32B (to $21.40B): a rise in either takes cash without touching net income.",
+        "reading": "In FY2026, net income of $120.07B became operating cash flow of $102.72B ($17.35B less) and, after capital expenditure of $6.04B, free cash flow of $96.68B: $23.39B below net income. Non-cash charges added back on the way: stock-based compensation of $6.39B and depreciation and amortization of $2.84B. Over the same period accounts receivable rose $15.40B (to $38.47B) and inventory rose $11.32B (to $21.40B): a rise in either takes cash without touching net income.",
         "reading_origin": "code",
         "available": true,
         "note": ""
@@ -12913,6 +12962,7 @@
         "kind": "bridge",
         "label": "Net income to free cash flow, the four quarters to Q2 FY2027",
         "question": "Where did the cash go between net income and free cash flow?",
+        "scope": "claim",
         "claim_ids": [
           "c4"
         ],
@@ -13045,6 +13095,86 @@
           },
           {
             "ref_kind": "fact",
+            "id": "AllocatedShareBasedCompensationExpense:2026-04-27..2026-07-26",
+            "label": "AllocatedShareBasedCompensationExpense",
+            "value": 2027000000.0,
+            "display": "$2.03B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "ShareBasedCompensation:2026-01-26..2026-04-26",
+            "label": "ShareBasedCompensation",
+            "value": 1928000000.0,
+            "display": "$1.93B",
+            "accession": "0001045810-26-000052",
+            "form": "10-Q",
+            "filed": "2026-05-20"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "ShareBasedCompensation:2025-10-27..2026-01-25",
+            "label": "ShareBasedCompensation",
+            "value": 1633000000.0,
+            "display": "$1.63B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "AllocatedShareBasedCompensationExpense:2025-07-28..2025-10-26",
+            "label": "AllocatedShareBasedCompensationExpense",
+            "value": 1655000000.0,
+            "display": "$1.66B",
+            "accession": "0001045810-25-000230",
+            "form": "10-Q",
+            "filed": "2025-11-19"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "DepreciationDepletionAndAmortization:2026-04-27..2026-07-26",
+            "label": "DepreciationDepletionAndAmortization",
+            "value": 1127000000.0,
+            "display": "$1.13B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "DepreciationDepletionAndAmortization:2026-01-26..2026-04-26",
+            "label": "DepreciationDepletionAndAmortization",
+            "value": 997000000.0,
+            "display": "$997.0M",
+            "accession": "0001045810-26-000052",
+            "form": "10-Q",
+            "filed": "2026-05-20"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "DepreciationDepletionAndAmortization:2025-10-27..2026-01-25",
+            "label": "DepreciationDepletionAndAmortization",
+            "value": 812000000.0,
+            "display": "$812.0M",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "DepreciationDepletionAndAmortization:2025-07-28..2025-10-26",
+            "label": "DepreciationDepletionAndAmortization",
+            "value": 751000000.0,
+            "display": "$751.0M",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
             "id": "AccountsReceivableNetCurrent:..2026-07-26",
             "label": "AccountsReceivableNetCurrent",
             "value": 63059000000.0,
@@ -13084,7 +13214,7 @@
             "filed": "2025-08-27"
           }
         ],
-        "reading": "In the four quarters to Q2 FY2027, net income of $192.88B became operating cash flow of $134.36B ($58.52B less) and, after capital expenditure of $7.35B, free cash flow of $127.01B: $65.87B below net income. Over the same period accounts receivable rose $35.25B (to $63.06B) and inventory rose $16.61B (to $31.57B): a rise in either takes cash without touching net income.",
+        "reading": "In the four quarters to Q2 FY2027, net income of $192.88B became operating cash flow of $134.36B ($58.52B less) and, after capital expenditure of $7.35B, free cash flow of $127.01B: $65.87B below net income. Non-cash charges added back on the way: stock-based compensation of $7.24B and depreciation and amortization of $3.69B. Over the same period accounts receivable rose $35.25B (to $63.06B) and inventory rose $16.61B (to $31.57B): a rise in either takes cash without touching net income.",
         "reading_origin": "code",
         "available": true,
         "note": ""
@@ -13096,6 +13226,7 @@
         "kind": "earnings_quality",
         "label": "Cash conversion: operating cash flow ÷ net income",
         "question": "Is net income turning into cash?",
+        "scope": "claim",
         "claim_ids": [
           "c4"
         ],
@@ -13279,6 +13410,7 @@
         "kind": "earnings_quality",
         "label": "Receivable days: accounts receivable ÷ the quarter's revenue × its days",
         "question": "Is revenue being collected, or building up in receivables?",
+        "scope": "claim",
         "claim_ids": [
           "c3",
           "c5"
@@ -13343,6 +13475,7 @@
         "kind": "earnings_quality",
         "label": "Inventory days: inventory ÷ the quarter's cost of revenue × its days",
         "question": "Is inventory building ahead of sales?",
+        "scope": "claim",
         "claim_ids": [
           "c2"
         ],
@@ -13400,232 +13533,49 @@
         "note": ""
       },
       {
-        "id": "an:eq:sbc_ratio",
-        "provider": "facts",
-        "data_origin": "sec_xbrl_facts",
-        "kind": "earnings_quality",
-        "label": "Stock-based compensation as a share of revenue, four quarters",
-        "question": "How much of the cost base is paid in stock, which cash flow does not show?",
-        "claim_ids": [
-          "c4"
-        ],
-        "measure": "sbc_ratio",
-        "period": "the four quarters to Q2 FY2027",
-        "value": null,
-        "unit": "percent",
-        "display": "n/a",
-        "formula": "",
-        "inputs": [],
-        "reading": "",
-        "reading_origin": "code",
-        "available": false,
-        "note": "No value for stock-based compensation (ShareBasedCompensation, AllocatedShareBasedCompensationExpense) for the quarter ended 2026-07-26."
-      },
-      {
-        "id": "an:eq:capex_ratio",
-        "provider": "facts",
-        "data_origin": "sec_xbrl_facts",
-        "kind": "earnings_quality",
-        "label": "Capital expenditure as a share of revenue, four quarters",
-        "question": "How much of revenue goes back into capital expenditure?",
-        "claim_ids": [
-          "c4"
-        ],
-        "measure": "capex_ratio",
-        "period": "the four quarters to Q2 FY2027",
-        "value": 2.4273110450244086,
-        "unit": "percent",
-        "display": "2.4%",
-        "formula": "7,354 ÷ 302,969; USD millions",
-        "inputs": [
-          {
-            "ref_kind": "fact",
-            "id": "PaymentsToAcquireProductiveAssets:2026-04-27..2026-07-26",
-            "label": "PaymentsToAcquireProductiveAssets",
-            "value": 2677000000.0,
-            "display": "$2.68B",
-            "accession": "0001045810-26-000075",
-            "form": "10-Q",
-            "filed": "2026-08-26"
-          },
-          {
-            "ref_kind": "fact",
-            "id": "PaymentsToAcquireProductiveAssets:2026-01-26..2026-04-26",
-            "label": "PaymentsToAcquireProductiveAssets",
-            "value": 1757000000.0,
-            "display": "$1.76B",
-            "accession": "0001045810-26-000052",
-            "form": "10-Q",
-            "filed": "2026-05-20"
-          },
-          {
-            "ref_kind": "fact",
-            "id": "PaymentsToAcquireProductiveAssets:2025-10-27..2026-01-25",
-            "label": "PaymentsToAcquireProductiveAssets",
-            "value": 1284000000.0,
-            "display": "$1.28B",
-            "accession": "0001045810-26-000021",
-            "form": "10-K",
-            "filed": "2026-02-25"
-          },
-          {
-            "ref_kind": "fact",
-            "id": "PaymentsToAcquireProductiveAssets:2025-07-28..2025-10-26",
-            "label": "PaymentsToAcquireProductiveAssets",
-            "value": 1636000000.0,
-            "display": "$1.64B",
-            "accession": "0001045810-26-000075",
-            "form": "10-Q",
-            "filed": "2026-08-26"
-          },
-          {
-            "ref_kind": "fact",
-            "id": "Revenues:2026-04-27..2026-07-26",
-            "label": "Revenues",
-            "value": 96221000000.0,
-            "display": "$96.22B",
-            "accession": "0001045810-26-000075",
-            "form": "10-Q",
-            "filed": "2026-08-26"
-          },
-          {
-            "ref_kind": "fact",
-            "id": "Revenues:2026-01-26..2026-04-26",
-            "label": "Revenues",
-            "value": 81615000000.0,
-            "display": "$81.61B",
-            "accession": "0001045810-26-000052",
-            "form": "10-Q",
-            "filed": "2026-05-20"
-          },
-          {
-            "ref_kind": "fact",
-            "id": "Revenues:2025-10-27..2026-01-25",
-            "label": "Revenues",
-            "value": 68127000000.0,
-            "display": "$68.13B",
-            "accession": "0001045810-26-000021",
-            "form": "10-K",
-            "filed": "2026-02-25"
-          },
-          {
-            "ref_kind": "fact",
-            "id": "Revenues:2025-07-28..2025-10-26",
-            "label": "Revenues",
-            "value": 57006000000.0,
-            "display": "$57.01B",
-            "accession": "0001045810-25-000230",
-            "form": "10-Q",
-            "filed": "2025-11-19"
-          },
-          {
-            "ref_kind": "fact",
-            "id": "PaymentsToAcquireProductiveAssets:2025-04-28..2025-07-27",
-            "label": "PaymentsToAcquireProductiveAssets",
-            "value": 1895000000.0,
-            "display": "$1.90B",
-            "accession": "0001045810-26-000075",
-            "form": "10-Q",
-            "filed": "2026-08-26"
-          },
-          {
-            "ref_kind": "fact",
-            "id": "PaymentsToAcquireProductiveAssets:2025-01-27..2025-04-27",
-            "label": "PaymentsToAcquireProductiveAssets",
-            "value": 1227000000.0,
-            "display": "$1.23B",
-            "accession": "0001045810-26-000052",
-            "form": "10-Q",
-            "filed": "2026-05-20"
-          },
-          {
-            "ref_kind": "fact",
-            "id": "PaymentsToAcquireProductiveAssets:2024-10-28..2025-01-26",
-            "label": "PaymentsToAcquireProductiveAssets",
-            "value": 1077000000.0,
-            "display": "$1.08B",
-            "accession": "0001045810-26-000021",
-            "form": "10-K",
-            "filed": "2026-02-25"
-          },
-          {
-            "ref_kind": "fact",
-            "id": "PaymentsToAcquireProductiveAssets:2024-07-29..2024-10-27",
-            "label": "PaymentsToAcquireProductiveAssets",
-            "value": 813000000.0,
-            "display": "$813.0M",
-            "accession": "0001045810-25-000230",
-            "form": "10-Q",
-            "filed": "2025-11-19"
-          },
-          {
-            "ref_kind": "fact",
-            "id": "Revenues:2025-04-28..2025-07-27",
-            "label": "Revenues",
-            "value": 46743000000.0,
-            "display": "$46.74B",
-            "accession": "0001045810-26-000075",
-            "form": "10-Q",
-            "filed": "2026-08-26"
-          },
-          {
-            "ref_kind": "fact",
-            "id": "Revenues:2025-01-27..2025-04-27",
-            "label": "Revenues",
-            "value": 44062000000.0,
-            "display": "$44.06B",
-            "accession": "0001045810-26-000052",
-            "form": "10-Q",
-            "filed": "2026-05-20"
-          },
-          {
-            "ref_kind": "fact",
-            "id": "Revenues:2024-10-28..2025-01-26",
-            "label": "Revenues",
-            "value": 39331000000.0,
-            "display": "$39.33B",
-            "accession": "0001045810-26-000021",
-            "form": "10-K",
-            "filed": "2026-02-25"
-          },
-          {
-            "ref_kind": "fact",
-            "id": "Revenues:2024-07-29..2024-10-27",
-            "label": "Revenues",
-            "value": 35082000000.0,
-            "display": "$35.08B",
-            "accession": "0001045810-25-000230",
-            "form": "10-Q",
-            "filed": "2025-11-19"
-          }
-        ],
-        "reading": "Capital expenditure as a share of revenue was 2.4% over the four quarters to Q2 FY2027, against 3.0% over the four quarters a year before.",
-        "reading_origin": "code",
-        "available": true,
-        "note": ""
-      },
-      {
         "id": "an:eq:deferred_revenue",
         "provider": "facts",
         "data_origin": "sec_xbrl_facts",
         "kind": "earnings_quality",
         "label": "Deferred revenue, change on a year earlier",
         "question": "Is revenue billed ahead of delivery growing or shrinking?",
+        "scope": "claim",
         "claim_ids": [
           "c3",
           "c5"
         ],
         "measure": "deferred_revenue",
         "period": "Q2 FY2027",
-        "value": null,
+        "value": 215.08599508599508,
         "unit": "percent",
-        "display": "n/a",
-        "formula": "",
-        "inputs": [],
-        "reading": "",
+        "display": "+215.1%",
+        "formula": "($6.41B − $2.04B) ÷ $2.04B",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "ContractWithCustomerLiabilityCurrent:..2026-07-26",
+            "label": "ContractWithCustomerLiabilityCurrent",
+            "value": 4616000000.0,
+            "display": "$4.62B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "ContractWithCustomerLiabilityCurrent:..2025-07-27",
+            "label": "ContractWithCustomerLiabilityCurrent",
+            "value": 980000000.0,
+            "display": "$980.0M",
+            "accession": "0001045810-25-000209",
+            "form": "10-Q",
+            "filed": "2025-08-27"
+          }
+        ],
+        "reading": "Deferred revenue was $6.41B at the end of Q2 FY2027, +215.1% on a year earlier ($2.04B); revenue grew +105.9% over the same year.",
         "reading_origin": "code",
-        "available": false,
-        "note": "The facts tag no deferred revenue at this quarter's end."
+        "available": true,
+        "note": ""
       },
       {
         "id": "an:part:data_center:q:growth",
@@ -13634,6 +13584,7 @@
         "kind": "part_growth",
         "label": "Data Center revenue, growth on a year earlier",
         "question": "Is Data Center growing faster or slower than the company?",
+        "scope": "claim",
         "claim_ids": [
           "c5"
         ],
@@ -13697,6 +13648,7 @@
         "kind": "part_growth",
         "label": "Data Center revenue, growth on a year earlier",
         "question": "Is Data Center growing faster or slower than the company?",
+        "scope": "claim",
         "claim_ids": [
           "c5"
         ],
@@ -13760,6 +13712,7 @@
         "kind": "part_pace",
         "label": "Data Center revenue, growth now against growth before",
         "question": "Is Data Center growth speeding up or slowing?",
+        "scope": "claim",
         "claim_ids": [
           "c5"
         ],
@@ -13813,6 +13766,7 @@
         "kind": "bridge",
         "label": "Revenue by product or service: each part's contribution to growth",
         "question": "Which parts of the business drove the growth?",
+        "scope": "claim",
         "claim_ids": [
           "c5"
         ],
@@ -13896,6 +13850,7 @@
         "kind": "bridge",
         "label": "Revenue by product or service: each part's contribution to growth",
         "question": "Which parts of the business drove the growth?",
+        "scope": "claim",
         "claim_ids": [
           "c3"
         ],
@@ -14031,12 +13986,680 @@
         "reading_origin": "code",
         "available": true,
         "note": ""
+      },
+      {
+        "id": "an:base_rate:NVDA:none:2026-11-18",
+        "provider": "outside_view",
+        "data_origin": "sec_frames",
+        "kind": "base_rate",
+        "label": "Base rate of the claim's test",
+        "question": "How often has this been true of comparable companies, and did it last?",
+        "scope": "claim",
+        "claim_ids": [
+          "c2"
+        ],
+        "measure": "",
+        "period": "",
+        "value": null,
+        "unit": "count",
+        "display": "n/a",
+        "formula": "",
+        "inputs": [],
+        "reading": "The test each(4): gross_margin[Q] > 70% is not read on frames: a test held in each of several periods is not read on frames in this version.",
+        "reading_origin": "code",
+        "available": false,
+        "note": "The test each(4): gross_margin[Q] > 70% is not read on frames: a test held in each of several periods is not read on frames in this version. A base rate is a count of what happened to other companies in past years; it is not a probability for this company and not a forecast."
+      },
+      {
+        "id": "an:peer:NVDA:gross_margin:2025:2026-11-18",
+        "provider": "outside_view",
+        "data_origin": "sec_frames",
+        "kind": "peer_standing",
+        "label": "Gross margin among SIC 3674 filers with revenue of at least $100.0M",
+        "question": "Where does the company stand among its industry on this?",
+        "scope": "claim",
+        "claim_ids": [
+          "c2"
+        ],
+        "measure": "gross_margin",
+        "period": "CY2025",
+        "value": 95.16129032258064,
+        "unit": "percent",
+        "display": "rank 4 of 63",
+        "formula": "percentile = 100 × lower ÷ (n − 1) = 100 × 59 ÷ 62",
+        "inputs": [
+          {
+            "ref_kind": "frame",
+            "id": "us-gaap/GrossProfit/USD/CY2024 and CY2025",
+            "label": "Gross profit: every class member's row",
+            "value": null,
+            "display": "",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          },
+          {
+            "ref_kind": "frame",
+            "id": "us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax|Revenues|SalesRevenueNet|RevenueFromContractWithCustomerIncludingAssessedTax|RevenuesNetOfInterestExpense/USD/CY2024 and CY2025",
+            "label": "Revenue: every class member's row",
+            "value": null,
+            "display": "",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          },
+          {
+            "ref_kind": "frame",
+            "id": "us-gaap/CostOfRevenue|CostOfGoodsAndServicesSold|CostOfGoodsSold/USD/CY2024 and CY2025",
+            "label": "Cost of revenue: every class member's row",
+            "value": null,
+            "display": "",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          }
+        ],
+        "reading": "Gross margin ranks 4 of 63 in 2025 at 71.1% (above 95% of the others; class median 41.2%) among SIC 3674 filers with revenue of at least $100.0M; a year earlier it ranks 4 of 64 in 2024 at 75.0% (above 95% of the others; class median 41.3%).",
+        "reading_origin": "code",
+        "available": true,
+        "note": "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked) Measure: Gross profit ÷ revenue. Rank 1 is the highest value; the percentile is the share of the other members with a lower value. Frames carry no filing date: a value restated later is the restated value."
+      },
+      {
+        "id": "an:base_rate:NVDA:size:yoy(revenue)[t] > 100%:2026-11-18",
+        "provider": "outside_view",
+        "data_origin": "sec_frames",
+        "kind": "base_rate",
+        "label": "Base rate of yoy(revenue)[t] > 100% among filers with revenue of at least $100.00B",
+        "question": "How often has this been true of comparable companies, and did it last?",
+        "scope": "claim",
+        "claim_ids": [
+          "c3"
+        ],
+        "measure": "revenue",
+        "period": "CY2011 to CY2025",
+        "value": 0.0,
+        "unit": "percent",
+        "display": "0 of 366 (0.0%)",
+        "formula": "held ÷ computable = 0 ÷ 366",
+        "inputs": [
+          {
+            "ref_kind": "frame",
+            "id": "us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax|Revenues|SalesRevenueNet|RevenueFromContractWithCustomerIncludingAssessedTax|RevenuesNetOfInterestExpense/USD/CY2010 to CY2025",
+            "label": "Revenue: every filer's row, by the first concept that has one",
+            "value": null,
+            "display": "",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          }
+        ],
+        "reading": "Among filers with revenue of at least $100.00B (the company left out), yoy(revenue)[t] > 100% held in 0 of 366 company-years from 2011 to 2025; none that held could be read a year later.",
+        "reading_origin": "code",
+        "available": true,
+        "note": "Class: every filer in SEC's annual frames whose revenue in the test's base year was at least $100.00B (half the company's newest revenue, rounded down to 1, 2 or 5 times a power of ten) Each year t is a calendar-year frame: SEC places in it, for each filer, the fiscal year that best fits the calendar year; t-1 is the frame a year earlier, and the two periods must end a whole number of years apart. Frames carry no filing date: a value restated later is the restated value. The company itself is not counted: the rate is of the other filers of the class, and the years in which the test held for the company are listed apart. A filer in the class in the base year with no value in year t (it was bought, went under, stopped filing, or changed its tags) is in the class but not computable: the rate is of the filers that can still be read. A parent and a subsidiary that both file are two filers; a filer that reports in another currency is in no USD frame. The SIC code is the filer's code today, not the code it had in year t. A base rate is a count of what happened to other companies in past years; it is not a probability for this company and not a forecast."
+      },
+      {
+        "id": "an:base_rate:NVDA:industry:yoy(revenue)[t] > 100%:2026-11-18",
+        "provider": "outside_view",
+        "data_origin": "sec_frames",
+        "kind": "base_rate",
+        "label": "Base rate of yoy(revenue)[t] > 100% among SIC 3674 filers with revenue of at least $100.0M",
+        "question": "How often has this been true of comparable companies, and did it last?",
+        "scope": "claim",
+        "claim_ids": [
+          "c3"
+        ],
+        "measure": "revenue",
+        "period": "CY2011 to CY2025",
+        "value": 1.4354066985645932,
+        "unit": "percent",
+        "display": "15 of 1045 (1.4%)",
+        "formula": "held ÷ computable = 15 ÷ 1045",
+        "inputs": [
+          {
+            "ref_kind": "frame",
+            "id": "us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax|Revenues|SalesRevenueNet|RevenueFromContractWithCustomerIncludingAssessedTax|RevenuesNetOfInterestExpense/USD/CY2010 to CY2025",
+            "label": "Revenue: every filer's row, by the first concept that has one",
+            "value": null,
+            "display": "",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          }
+        ],
+        "reading": "Among SIC 3674 filers with revenue of at least $100.0M (the company left out), yoy(revenue)[t] > 100% held in 15 of 1045 company-years from 2011 to 2025; of the 12 that held and could be read a year later, 3 still held.",
+        "reading_origin": "code",
+        "available": true,
+        "note": "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked) Each year t is a calendar-year frame: SEC places in it, for each filer, the fiscal year that best fits the calendar year; t-1 is the frame a year earlier, and the two periods must end a whole number of years apart. Frames carry no filing date: a value restated later is the restated value. The company itself is not counted: the rate is of the other filers of the class, and the years in which the test held for the company are listed apart. A filer in the class in the base year with no value in year t (it was bought, went under, stopped filing, or changed its tags) is in the class but not computable: the rate is of the filers that can still be read. A parent and a subsidiary that both file are two filers; a filer that reports in another currency is in no USD frame. The SIC code is the filer's code today, not the code it had in year t. A base rate is a count of what happened to other companies in past years; it is not a probability for this company and not a forecast."
+      },
+      {
+        "id": "an:peer:NVDA:revenue_growth:2025:2026-11-18",
+        "provider": "outside_view",
+        "data_origin": "sec_frames",
+        "kind": "peer_standing",
+        "label": "Revenue growth, year over year among SIC 3674 filers with revenue of at least $100.0M",
+        "question": "Where does the company stand among its industry on this?",
+        "scope": "claim",
+        "claim_ids": [
+          "c3",
+          "c5"
+        ],
+        "measure": "revenue_growth",
+        "period": "CY2025",
+        "value": 91.93548387096774,
+        "unit": "percent",
+        "display": "rank 6 of 63",
+        "formula": "percentile = 100 × lower ÷ (n − 1) = 100 × 57 ÷ 62",
+        "inputs": [
+          {
+            "ref_kind": "frame",
+            "id": "us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax|Revenues|SalesRevenueNet|RevenueFromContractWithCustomerIncludingAssessedTax|RevenuesNetOfInterestExpense/USD/CY2024 and CY2025",
+            "label": "Revenue: every class member's row",
+            "value": null,
+            "display": "",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          }
+        ],
+        "reading": "Revenue growth, year over year ranks 6 of 63 in 2025 at 65.5% (above 92% of the others; class median 13.0%) among SIC 3674 filers with revenue of at least $100.0M; a year earlier it ranks 4 of 61 in 2024 at 114.2% (above 95% of the others; class median -2.1%).",
+        "reading_origin": "code",
+        "available": true,
+        "note": "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked) Measure: Revenue as tagged. Rank 1 is the highest value; the percentile is the share of the other members with a lower value. Frames carry no filing date: a value restated later is the restated value."
+      },
+      {
+        "id": "an:base_rate:NVDA:size:free_cash_flow[t] > net_income[t]:2026-11-18",
+        "provider": "outside_view",
+        "data_origin": "sec_frames",
+        "kind": "base_rate",
+        "label": "Base rate of free_cash_flow[t] > net_income[t] among filers with revenue of at least $100.00B",
+        "question": "How often has this been true of comparable companies, and did it last?",
+        "scope": "claim",
+        "claim_ids": [
+          "c4"
+        ],
+        "measure": "free_cash_flow",
+        "period": "CY2011 to CY2025",
+        "value": 57.831325301204814,
+        "unit": "percent",
+        "display": "48 of 83 (57.8%)",
+        "formula": "held ÷ computable = 48 ÷ 83",
+        "inputs": [
+          {
+            "ref_kind": "frame",
+            "id": "us-gaap/PaymentsToAcquirePropertyPlantAndEquipment|PaymentsToAcquireProductiveAssets/USD/CY2011 to CY2025",
+            "label": "Capital expenditure: every filer's row, by the first concept that has one",
+            "value": null,
+            "display": "",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          },
+          {
+            "ref_kind": "frame",
+            "id": "us-gaap/NetIncomeLoss/USD/CY2011 to CY2025",
+            "label": "Net income: every filer's row, by the first concept that has one",
+            "value": null,
+            "display": "",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          },
+          {
+            "ref_kind": "frame",
+            "id": "us-gaap/NetCashProvidedByUsedInOperatingActivities/USD/CY2011 to CY2025",
+            "label": "Operating cash flow: every filer's row, by the first concept that has one",
+            "value": null,
+            "display": "",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          }
+        ],
+        "reading": "Among filers with revenue of at least $100.00B (the company left out), free_cash_flow[t] > net_income[t] held in 48 of 83 company-years from 2011 to 2025; of the 32 that held and could be read a year later, 20 still held.",
+        "reading_origin": "code",
+        "available": true,
+        "note": "Class: every filer in SEC's annual frames whose revenue in the test's base year was at least $100.00B (half the company's newest revenue, rounded down to 1, 2 or 5 times a power of ten) Each year t is a calendar-year frame: SEC places in it, for each filer, the fiscal year that best fits the calendar year; t-1 is the frame a year earlier, and the two periods must end a whole number of years apart. Frames carry no filing date: a value restated later is the restated value. The company itself is not counted: the rate is of the other filers of the class, and the years in which the test held for the company are listed apart. A filer in the class in the base year with no value in year t (it was bought, went under, stopped filing, or changed its tags) is in the class but not computable: the rate is of the filers that can still be read. A parent and a subsidiary that both file are two filers; a filer that reports in another currency is in no USD frame. The SIC code is the filer's code today, not the code it had in year t. A base rate is a count of what happened to other companies in past years; it is not a probability for this company and not a forecast."
+      },
+      {
+        "id": "an:base_rate:NVDA:industry:free_cash_flow[t] > net_income[t]:2026-11-18",
+        "provider": "outside_view",
+        "data_origin": "sec_frames",
+        "kind": "base_rate",
+        "label": "Base rate of free_cash_flow[t] > net_income[t] among SIC 3674 filers with revenue of at least $100.0M",
+        "question": "How often has this been true of comparable companies, and did it last?",
+        "scope": "claim",
+        "claim_ids": [
+          "c4"
+        ],
+        "measure": "free_cash_flow",
+        "period": "CY2011 to CY2025",
+        "value": 64.80446927374301,
+        "unit": "percent",
+        "display": "116 of 179 (64.8%)",
+        "formula": "held ÷ computable = 116 ÷ 179",
+        "inputs": [
+          {
+            "ref_kind": "frame",
+            "id": "us-gaap/PaymentsToAcquirePropertyPlantAndEquipment|PaymentsToAcquireProductiveAssets/USD/CY2011 to CY2025",
+            "label": "Capital expenditure: every filer's row, by the first concept that has one",
+            "value": null,
+            "display": "",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          },
+          {
+            "ref_kind": "frame",
+            "id": "us-gaap/NetIncomeLoss/USD/CY2011 to CY2025",
+            "label": "Net income: every filer's row, by the first concept that has one",
+            "value": null,
+            "display": "",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          },
+          {
+            "ref_kind": "frame",
+            "id": "us-gaap/NetCashProvidedByUsedInOperatingActivities/USD/CY2011 to CY2025",
+            "label": "Operating cash flow: every filer's row, by the first concept that has one",
+            "value": null,
+            "display": "",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          }
+        ],
+        "reading": "Among SIC 3674 filers with revenue of at least $100.0M (the company left out), free_cash_flow[t] > net_income[t] held in 116 of 179 company-years from 2011 to 2025; of the 75 that held and could be read a year later, 56 still held.",
+        "reading_origin": "code",
+        "available": true,
+        "note": "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked) Each year t is a calendar-year frame: SEC places in it, for each filer, the fiscal year that best fits the calendar year; t-1 is the frame a year earlier, and the two periods must end a whole number of years apart. Frames carry no filing date: a value restated later is the restated value. The company itself is not counted: the rate is of the other filers of the class, and the years in which the test held for the company are listed apart. A filer in the class in the base year with no value in year t (it was bought, went under, stopped filing, or changed its tags) is in the class but not computable: the rate is of the filers that can still be read. A parent and a subsidiary that both file are two filers; a filer that reports in another currency is in no USD frame. The SIC code is the filer's code today, not the code it had in year t. A base rate is a count of what happened to other companies in past years; it is not a probability for this company and not a forecast."
+      },
+      {
+        "id": "an:peer:NVDA:fcf_margin:2025:2026-11-18",
+        "provider": "outside_view",
+        "data_origin": "sec_frames",
+        "kind": "peer_standing",
+        "label": "Free cash flow margin among SIC 3674 filers with revenue of at least $100.0M",
+        "question": "Where does the company stand among its industry on this?",
+        "scope": "claim",
+        "claim_ids": [
+          "c4"
+        ],
+        "measure": "fcf_margin",
+        "period": "CY2025",
+        "value": 98.36065573770492,
+        "unit": "percent",
+        "display": "rank 2 of 62",
+        "formula": "percentile = 100 × lower ÷ (n − 1) = 100 × 60 ÷ 61",
+        "inputs": [
+          {
+            "ref_kind": "frame",
+            "id": "us-gaap/NetCashProvidedByUsedInOperatingActivities/USD/CY2024 and CY2025",
+            "label": "Operating cash flow: every class member's row",
+            "value": null,
+            "display": "",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          },
+          {
+            "ref_kind": "frame",
+            "id": "us-gaap/PaymentsToAcquirePropertyPlantAndEquipment|PaymentsToAcquireProductiveAssets/USD/CY2024 and CY2025",
+            "label": "Capital expenditure: every class member's row",
+            "value": null,
+            "display": "",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          },
+          {
+            "ref_kind": "frame",
+            "id": "us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax|Revenues|SalesRevenueNet|RevenueFromContractWithCustomerIncludingAssessedTax|RevenuesNetOfInterestExpense/USD/CY2024 and CY2025",
+            "label": "Revenue: every class member's row",
+            "value": null,
+            "display": "",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          }
+        ],
+        "reading": "Free cash flow margin ranks 2 of 62 in 2025 at 44.8% (above 98% of the others; class median 8.9%) among SIC 3674 filers with revenue of at least $100.0M; a year earlier it ranks 1 of 63 in 2024 at 46.6% (above 100% of the others; class median 5.7%).",
+        "reading_origin": "code",
+        "available": true,
+        "note": "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked) Measure: (Operating cash flow − capital expenditure) ÷ revenue. Rank 1 is the highest value; the percentile is the share of the other members with a lower value. Frames carry no filing date: a value restated later is the restated value."
+      },
+      {
+        "id": "an:peer:NVDA:cash_conversion:2025:2026-11-18",
+        "provider": "outside_view",
+        "data_origin": "sec_frames",
+        "kind": "peer_standing",
+        "label": "Cash conversion among SIC 3674 filers with revenue of at least $100.0M",
+        "question": "Where does the company stand among its industry on this?",
+        "scope": "claim",
+        "claim_ids": [
+          "c4"
+        ],
+        "measure": "cash_conversion",
+        "period": "CY2025",
+        "value": 16.216216216216218,
+        "unit": "percent",
+        "display": "rank 32 of 38",
+        "formula": "percentile = 100 × lower ÷ (n − 1) = 100 × 6 ÷ 37",
+        "inputs": [
+          {
+            "ref_kind": "frame",
+            "id": "us-gaap/NetCashProvidedByUsedInOperatingActivities/USD/CY2024 and CY2025",
+            "label": "Operating cash flow: every class member's row",
+            "value": null,
+            "display": "",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          },
+          {
+            "ref_kind": "frame",
+            "id": "us-gaap/NetIncomeLoss/USD/CY2024 and CY2025",
+            "label": "Net income: every class member's row",
+            "value": null,
+            "display": "",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          }
+        ],
+        "reading": "Cash conversion ranks 32 of 38 in 2025 at 0.86× (above 16% of the others; class median 1.76×) among SIC 3674 filers with revenue of at least $100.0M; a year earlier it ranks 31 of 36 in 2024 at 0.88× (above 14% of the others; class median 1.88×).",
+        "reading_origin": "code",
+        "available": true,
+        "note": "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked) Measure: Operating cash flow ÷ net income, when net income is positive. Rank 1 is the highest value; the percentile is the share of the other members with a lower value. Frames carry no filing date: a value restated later is the restated value."
+      },
+      {
+        "id": "an:pe:NVDA:2026-09-30",
+        "provider": "market_view",
+        "data_origin": "market_prices",
+        "kind": "pe",
+        "label": "Market value ÷ net income",
+        "question": "What is being paid for a dollar of earnings?",
+        "scope": "company",
+        "claim_ids": [],
+        "measure": "pe",
+        "period": "2026-09-30",
+        "value": 28.53580742330684,
+        "unit": "multiple",
+        "display": "28.5×",
+        "formula": "$5.50T ÷ $192.88B",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "NetIncomeLoss",
+            "label": "Net income (NetIncomeLoss)",
+            "value": 59688000000.0,
+            "display": "$59.69B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "NetIncomeLoss",
+            "label": "Net income (NetIncomeLoss)",
+            "value": 58321000000.0,
+            "display": "$58.32B",
+            "accession": "0001045810-26-000052",
+            "form": "10-Q",
+            "filed": "2026-05-20"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "NetIncomeLoss",
+            "label": "Net income (NetIncomeLoss, derived)",
+            "value": 42960000000.0,
+            "display": "$42.96B",
+            "accession": "",
+            "form": "",
+            "filed": "2026-05-12"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "NetIncomeLoss",
+            "label": "Net income (NetIncomeLoss)",
+            "value": 31910000000.0,
+            "display": "$31.91B",
+            "accession": "0001045810-25-000230",
+            "form": "10-Q",
+            "filed": "2025-11-19"
+          }
+        ],
+        "reading": "Market value ÷ net income is 28.5×: $5.50T over net income, four quarters ended 2026-07-26 of $192.88B.",
+        "reading_origin": "code",
+        "available": true,
+        "note": "The price is quarter-end price from SEC Form 13F-HR 0001582202-26-000008 of Swiss National Bank, filed 2026-11-12: the value of its NVIDIA CORPORATION position (CUSIP 67066G104) ÷ the shares held, of 2026-09-30 (public 2026-11-12)."
+      },
+      {
+        "id": "an:fcf_yield:NVDA:2026-09-30",
+        "provider": "market_view",
+        "data_origin": "market_prices",
+        "kind": "fcf_yield",
+        "label": "Free cash flow yield",
+        "question": "What does its free cash flow yield at this price?",
+        "scope": "company",
+        "claim_ids": [],
+        "measure": "fcf_yield",
+        "period": "2026-09-30",
+        "value": 2.307539410729515,
+        "unit": "percent",
+        "display": "2.3%",
+        "formula": "$127.01B ÷ $5.50T",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "NetCashProvidedByUsedInOperatingActivities",
+            "label": "Free cash flow (NetCashProvidedByUsedInOperatingActivities, derived)",
+            "value": 24077000000.0,
+            "display": "$24.08B",
+            "accession": "",
+            "form": "",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "PaymentsToAcquireProductiveAssets",
+            "label": "Free cash flow (PaymentsToAcquireProductiveAssets, derived)",
+            "value": 2677000000.0,
+            "display": "$2.68B",
+            "accession": "",
+            "form": "",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "NetCashProvidedByUsedInOperatingActivities",
+            "label": "Free cash flow (NetCashProvidedByUsedInOperatingActivities)",
+            "value": 50344000000.0,
+            "display": "$50.34B",
+            "accession": "0001045810-26-000052",
+            "form": "10-Q",
+            "filed": "2026-05-20"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "PaymentsToAcquireProductiveAssets",
+            "label": "Free cash flow (PaymentsToAcquireProductiveAssets)",
+            "value": 1757000000.0,
+            "display": "$1.76B",
+            "accession": "0001045810-26-000052",
+            "form": "10-Q",
+            "filed": "2026-05-20"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "NetCashProvidedByUsedInOperatingActivities",
+            "label": "Free cash flow (NetCashProvidedByUsedInOperatingActivities, derived)",
+            "value": 36188000000.0,
+            "display": "$36.19B",
+            "accession": "",
+            "form": "",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "PaymentsToAcquireProductiveAssets",
+            "label": "Free cash flow (PaymentsToAcquireProductiveAssets, derived)",
+            "value": 1284000000.0,
+            "display": "$1.28B",
+            "accession": "",
+            "form": "",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "NetCashProvidedByUsedInOperatingActivities",
+            "label": "Free cash flow (NetCashProvidedByUsedInOperatingActivities, derived)",
+            "value": 23751000000.0,
+            "display": "$23.75B",
+            "accession": "",
+            "form": "",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "PaymentsToAcquireProductiveAssets",
+            "label": "Free cash flow (PaymentsToAcquireProductiveAssets, derived)",
+            "value": 1636000000.0,
+            "display": "$1.64B",
+            "accession": "",
+            "form": "",
+            "filed": "2026-08-26"
+          }
+        ],
+        "reading": "Free cash flow, four quarters ended 2026-07-26 of $127.01B is 2.3% of the market value of $5.50T.",
+        "reading_origin": "code",
+        "available": true,
+        "note": "The price is quarter-end price from SEC Form 13F-HR 0001582202-26-000008 of Swiss National Bank, filed 2026-11-12: the value of its NVIDIA CORPORATION position (CUSIP 67066G104) ÷ the shares held, of 2026-09-30 (public 2026-11-12)."
+      },
+      {
+        "id": "an:reverse_dcf:NVDA:2026-09-30",
+        "provider": "market_view",
+        "data_origin": "market_prices",
+        "kind": "reverse_dcf",
+        "label": "Revenue growth the price implies (reverse DCF)",
+        "question": "What growth does the price already assume?",
+        "scope": "company",
+        "claim_ids": [
+          "c3",
+          "c5"
+        ],
+        "measure": "revenue",
+        "period": "2026-09-30",
+        "value": 13.411142935510725,
+        "unit": "percent",
+        "display": "13.4% a year for 10 years",
+        "formula": "PV(g) = enterprise value $5.48T, solved for g between −50% and +100%",
+        "inputs": [
+          {
+            "ref_kind": "computed",
+            "id": "Enterprise value (the target)",
+            "label": "Enterprise value (the target)",
+            "value": 5480738000000.0,
+            "display": "$5.48T",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          },
+          {
+            "ref_kind": "fact",
+            "id": "Revenues",
+            "label": "Revenue (Revenues)",
+            "value": 96221000000.0,
+            "display": "$96.22B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "Revenues",
+            "label": "Revenue (Revenues)",
+            "value": 81615000000.0,
+            "display": "$81.61B",
+            "accession": "0001045810-26-000052",
+            "form": "10-Q",
+            "filed": "2026-05-20"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "Revenues",
+            "label": "Revenue (Revenues, derived)",
+            "value": 68127000000.0,
+            "display": "$68.13B",
+            "accession": "",
+            "form": "",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "Revenues",
+            "label": "Revenue (Revenues)",
+            "value": 57006000000.0,
+            "display": "$57.01B",
+            "accession": "0001045810-25-000230",
+            "form": "10-Q",
+            "filed": "2025-11-19"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "OperatingIncomeLoss",
+            "label": "Operating income (OperatingIncomeLoss)",
+            "value": 63734000000.0,
+            "display": "$63.73B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "OperatingIncomeLoss",
+            "label": "Operating income (OperatingIncomeLoss)",
+            "value": 53536000000.0,
+            "display": "$53.54B",
+            "accession": "0001045810-26-000052",
+            "form": "10-Q",
+            "filed": "2026-05-20"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "OperatingIncomeLoss",
+            "label": "Operating income (OperatingIncomeLoss, derived)",
+            "value": 44299000000.0,
+            "display": "$44.30B",
+            "accession": "",
+            "form": "",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "OperatingIncomeLoss",
+            "label": "Operating income (OperatingIncomeLoss)",
+            "value": 36010000000.0,
+            "display": "$36.01B",
+            "accession": "0001045810-25-000230",
+            "form": "10-Q",
+            "filed": "2025-11-19"
+          }
+        ],
+        "reading": "At these assumptions the enterprise value of $5.48T needs revenue to grow 13.4% a year for 10 years, from $302.97B to $1.07T. The company's own revenue grew +100.0% a year over its last three fiscal years. The largest revenue any filer reported for 2025 is $716.92B (AMAZON.COM, INC.): the implied year-10 revenue is 1.5 times that. Of 40 ten-year spans of filers that started at its size (revenue of $151.48B to $605.94B; starts 2009 to 2015), 0 grew at least that fast (median 1.3% a year, 90th percentile 8.0%; 4 more could not be followed for ten years). With the operating margin at the industry's median of 4.2% (n = 61, 2025) instead of 65.2%, no growth from −50% to +100% a year reaches the price. With the operating margin at the industry's 90th percentile of 26.6% (n = 61, 2025) instead of 65.2%, the same price needs 28.1% a year. Across the grid (discount rate ±2 points, margin ±5 points) the implied growth runs from 6.5% to 19.7% a year (15 of 15 cells solve).",
+        "reading_origin": "code",
+        "available": true,
+        "note": "Arithmetic under stated assumptions, not a forecast and not advice: it says what constant growth the price would need if every assumption below held. Starting revenue $302.97B (Revenue, four quarters ended 2026-07-26). Operating margin 65.2%, every year: the trailing operating margin, $197.58B ÷ $302.97B. Tax on operating profit 21% (the US federal rate, a stated default). Sales-to-capital 1.47: trailing revenue $302.97B ÷ invested capital $205.76B (equity $228.98B + debt $33.37B − cash and securities $56.59B, 2026-07-26); each dollar of new revenue is assumed to need capital at this ratio. Discount rate 9% a year (a stated default, near a long-run US equity return). After 10 years, growth of 3% a year forever. Cash flow = revenue × margin × (1 − tax) − (revenue − last year's revenue) ÷ sales-to-capital; discounted at the end of each year; compared with the enterprise value. An implied growth is arithmetic: the growth at which a discounted cash flow under the stated assumptions equals the price. Change an assumption and it changes; it is not a forecast and not a price target."
       }
     ],
     "providers": [
-      "facts"
+      "facts",
+      "outside_view",
+      "market_view"
     ],
     "providers_failed": [],
+    "provider_reasons": {},
     "analytics_by": "code",
     "corollaries_step": "not_asked",
     "argument_step": "not_asked",

@@ -2462,9 +2462,7 @@
           "an:free_cash_flow:fy2026:since",
           "an:bridge:cash:fy2026",
           "an:bridge:cash:ttm",
-          "an:eq:cash_conversion",
-          "an:eq:sbc_ratio",
-          "an:eq:capex_ratio"
+          "an:eq:cash_conversion"
         ],
         "corollaries": [],
         "corollary_flag": "",
@@ -3385,8 +3383,8 @@
     "periods_checked": 20,
     "periods_unverified": 0,
     "periods_comparative": 0,
-    "analytics_computed": 23,
-    "analytics_unavailable": 3,
+    "analytics_computed": 22,
+    "analytics_unavailable": 2,
     "analytics_providers_failed": 0,
     "corollaries_proposed": 0,
     "corollaries_computed": 0,
@@ -13910,6 +13908,7 @@
         "kind": "yoy",
         "label": "Gross margin, change on a year earlier",
         "question": "Which way is gross margin moving on a year earlier?",
+        "scope": "claim",
         "claim_ids": [
           "c1"
         ],
@@ -13953,6 +13952,7 @@
         "kind": "trend8",
         "label": "Gross margin, change over the last 8 quarters",
         "question": "Where does gross margin stand against the last two years?",
+        "scope": "claim",
         "claim_ids": [
           "c1"
         ],
@@ -14006,6 +14006,7 @@
         "kind": "fiscal_path",
         "label": "Effective tax rate by fiscal year, to FY2025",
         "question": "What has effective tax rate done over the last fiscal years?",
+        "scope": "claim",
         "claim_ids": [
           "c2"
         ],
@@ -14028,6 +14029,7 @@
         "kind": "yoy",
         "label": "Revenue, change on a year earlier",
         "question": "Which way is revenue moving on a year earlier?",
+        "scope": "claim",
         "claim_ids": [
           "c3",
           "c6"
@@ -14072,6 +14074,7 @@
         "kind": "acceleration",
         "label": "Revenue, growth on a year earlier now against the quarter before",
         "question": "Is revenue growth speeding up or slowing?",
+        "scope": "claim",
         "claim_ids": [
           "c3",
           "c6"
@@ -14146,6 +14149,7 @@
         "kind": "trend8",
         "label": "Revenue, compound quarterly growth over the last 8 quarters",
         "question": "Where does revenue stand against the last two years?",
+        "scope": "claim",
         "claim_ids": [
           "c3",
           "c6"
@@ -14190,6 +14194,7 @@
         "kind": "fiscal_path",
         "label": "Revenue by fiscal year, to FY2026",
         "question": "What has revenue done over the last fiscal years?",
+        "scope": "claim",
         "claim_ids": [
           "c4"
         ],
@@ -14253,6 +14258,7 @@
         "kind": "since",
         "label": "Revenue in the newest quarter since FY2026, on a year earlier",
         "question": "What has happened to revenue since that fiscal year ended?",
+        "scope": "claim",
         "claim_ids": [
           "c4"
         ],
@@ -14296,6 +14302,7 @@
         "kind": "fiscal_path",
         "label": "Free cash flow by fiscal year, to FY2026",
         "question": "What has free cash flow done over the last fiscal years?",
+        "scope": "claim",
         "claim_ids": [
           "c5"
         ],
@@ -14359,6 +14366,7 @@
         "kind": "since",
         "label": "Free cash flow in the newest quarter since FY2026, on a year earlier",
         "question": "What has happened to free cash flow since that fiscal year ended?",
+        "scope": "claim",
         "claim_ids": [
           "c5"
         ],
@@ -14402,6 +14410,7 @@
         "kind": "headroom",
         "label": "Room of the test, against a typical move",
         "question": "How much room does the test have, against how far the figure usually moves?",
+        "scope": "claim",
         "claim_ids": [
           "c1"
         ],
@@ -14455,6 +14464,7 @@
         "kind": "history",
         "label": "How often the test held before",
         "question": "How often has this been true before?",
+        "scope": "claim",
         "claim_ids": [
           "c1"
         ],
@@ -14488,6 +14498,7 @@
         "kind": "needed",
         "label": "Needed against reached",
         "question": "How far short did it fall?",
+        "scope": "claim",
         "claim_ids": [
           "c3"
         ],
@@ -14541,6 +14552,7 @@
         "kind": "bridge",
         "label": "Net income to free cash flow, FY2026",
         "question": "Where did the cash go between net income and free cash flow?",
+        "scope": "claim",
         "claim_ids": [
           "c5"
         ],
@@ -14634,6 +14646,7 @@
         "kind": "bridge",
         "label": "Net income to free cash flow, the four quarters to Q2 FY2027",
         "question": "Where did the cash go between net income and free cash flow?",
+        "scope": "claim",
         "claim_ids": [
           "c5"
         ],
@@ -14817,6 +14830,7 @@
         "kind": "earnings_quality",
         "label": "Cash conversion: operating cash flow ÷ net income",
         "question": "Is net income turning into cash?",
+        "scope": "claim",
         "claim_ids": [
           "c5"
         ],
@@ -15000,6 +15014,7 @@
         "kind": "earnings_quality",
         "label": "Receivable days: accounts receivable ÷ the quarter's revenue × its days",
         "question": "Is revenue being collected, or building up in receivables?",
+        "scope": "claim",
         "claim_ids": [
           "c3",
           "c4",
@@ -15065,6 +15080,7 @@
         "kind": "earnings_quality",
         "label": "Inventory days: inventory ÷ the quarter's cost of revenue × its days",
         "question": "Is inventory building ahead of sales?",
+        "scope": "claim",
         "claim_ids": [
           "c1"
         ],
@@ -15122,217 +15138,13 @@
         "note": ""
       },
       {
-        "id": "an:eq:sbc_ratio",
-        "provider": "facts",
-        "data_origin": "sec_xbrl_facts",
-        "kind": "earnings_quality",
-        "label": "Stock-based compensation as a share of revenue, four quarters",
-        "question": "How much of the cost base is paid in stock, which cash flow does not show?",
-        "claim_ids": [
-          "c5"
-        ],
-        "measure": "sbc_ratio",
-        "period": "the four quarters to Q2 FY2027",
-        "value": null,
-        "unit": "percent",
-        "display": "n/a",
-        "formula": "",
-        "inputs": [],
-        "reading": "",
-        "reading_origin": "code",
-        "available": false,
-        "note": "No value for stock-based compensation (ShareBasedCompensation, AllocatedShareBasedCompensationExpense) for the quarter ended 2026-07-26."
-      },
-      {
-        "id": "an:eq:capex_ratio",
-        "provider": "facts",
-        "data_origin": "sec_xbrl_facts",
-        "kind": "earnings_quality",
-        "label": "Capital expenditure as a share of revenue, four quarters",
-        "question": "How much of revenue goes back into capital expenditure?",
-        "claim_ids": [
-          "c5"
-        ],
-        "measure": "capex_ratio",
-        "period": "the four quarters to Q2 FY2027",
-        "value": 2.4273110450244086,
-        "unit": "percent",
-        "display": "2.4%",
-        "formula": "7,354 ÷ 302,969; USD millions",
-        "inputs": [
-          {
-            "ref_kind": "fact",
-            "id": "PaymentsToAcquireProductiveAssets:2026-04-27..2026-07-26",
-            "label": "PaymentsToAcquireProductiveAssets",
-            "value": 2677000000.0,
-            "display": "$2.68B",
-            "accession": "0001045810-26-000075",
-            "form": "10-Q",
-            "filed": "2026-08-26"
-          },
-          {
-            "ref_kind": "fact",
-            "id": "PaymentsToAcquireProductiveAssets:2026-01-26..2026-04-26",
-            "label": "PaymentsToAcquireProductiveAssets",
-            "value": 1757000000.0,
-            "display": "$1.76B",
-            "accession": "0001045810-26-000052",
-            "form": "10-Q",
-            "filed": "2026-05-20"
-          },
-          {
-            "ref_kind": "fact",
-            "id": "PaymentsToAcquireProductiveAssets:2025-10-27..2026-01-25",
-            "label": "PaymentsToAcquireProductiveAssets",
-            "value": 1284000000.0,
-            "display": "$1.28B",
-            "accession": "0001045810-26-000021",
-            "form": "10-K",
-            "filed": "2026-02-25"
-          },
-          {
-            "ref_kind": "fact",
-            "id": "PaymentsToAcquireProductiveAssets:2025-07-28..2025-10-26",
-            "label": "PaymentsToAcquireProductiveAssets",
-            "value": 1636000000.0,
-            "display": "$1.64B",
-            "accession": "0001045810-26-000075",
-            "form": "10-Q",
-            "filed": "2026-08-26"
-          },
-          {
-            "ref_kind": "fact",
-            "id": "Revenues:2026-04-27..2026-07-26",
-            "label": "Revenues",
-            "value": 96221000000.0,
-            "display": "$96.22B",
-            "accession": "0001045810-26-000075",
-            "form": "10-Q",
-            "filed": "2026-08-26"
-          },
-          {
-            "ref_kind": "fact",
-            "id": "Revenues:2026-01-26..2026-04-26",
-            "label": "Revenues",
-            "value": 81615000000.0,
-            "display": "$81.61B",
-            "accession": "0001045810-26-000052",
-            "form": "10-Q",
-            "filed": "2026-05-20"
-          },
-          {
-            "ref_kind": "fact",
-            "id": "Revenues:2025-10-27..2026-01-25",
-            "label": "Revenues",
-            "value": 68127000000.0,
-            "display": "$68.13B",
-            "accession": "0001045810-26-000021",
-            "form": "10-K",
-            "filed": "2026-02-25"
-          },
-          {
-            "ref_kind": "fact",
-            "id": "Revenues:2025-07-28..2025-10-26",
-            "label": "Revenues",
-            "value": 57006000000.0,
-            "display": "$57.01B",
-            "accession": "0001045810-25-000230",
-            "form": "10-Q",
-            "filed": "2025-11-19"
-          },
-          {
-            "ref_kind": "fact",
-            "id": "PaymentsToAcquireProductiveAssets:2025-04-28..2025-07-27",
-            "label": "PaymentsToAcquireProductiveAssets",
-            "value": 1895000000.0,
-            "display": "$1.90B",
-            "accession": "0001045810-26-000075",
-            "form": "10-Q",
-            "filed": "2026-08-26"
-          },
-          {
-            "ref_kind": "fact",
-            "id": "PaymentsToAcquireProductiveAssets:2025-01-27..2025-04-27",
-            "label": "PaymentsToAcquireProductiveAssets",
-            "value": 1227000000.0,
-            "display": "$1.23B",
-            "accession": "0001045810-26-000052",
-            "form": "10-Q",
-            "filed": "2026-05-20"
-          },
-          {
-            "ref_kind": "fact",
-            "id": "PaymentsToAcquireProductiveAssets:2024-10-28..2025-01-26",
-            "label": "PaymentsToAcquireProductiveAssets",
-            "value": 1077000000.0,
-            "display": "$1.08B",
-            "accession": "0001045810-26-000021",
-            "form": "10-K",
-            "filed": "2026-02-25"
-          },
-          {
-            "ref_kind": "fact",
-            "id": "PaymentsToAcquireProductiveAssets:2024-07-29..2024-10-27",
-            "label": "PaymentsToAcquireProductiveAssets",
-            "value": 813000000.0,
-            "display": "$813.0M",
-            "accession": "0001045810-25-000230",
-            "form": "10-Q",
-            "filed": "2025-11-19"
-          },
-          {
-            "ref_kind": "fact",
-            "id": "Revenues:2025-04-28..2025-07-27",
-            "label": "Revenues",
-            "value": 46743000000.0,
-            "display": "$46.74B",
-            "accession": "0001045810-26-000075",
-            "form": "10-Q",
-            "filed": "2026-08-26"
-          },
-          {
-            "ref_kind": "fact",
-            "id": "Revenues:2025-01-27..2025-04-27",
-            "label": "Revenues",
-            "value": 44062000000.0,
-            "display": "$44.06B",
-            "accession": "0001045810-26-000052",
-            "form": "10-Q",
-            "filed": "2026-05-20"
-          },
-          {
-            "ref_kind": "fact",
-            "id": "Revenues:2024-10-28..2025-01-26",
-            "label": "Revenues",
-            "value": 39331000000.0,
-            "display": "$39.33B",
-            "accession": "0001045810-26-000021",
-            "form": "10-K",
-            "filed": "2026-02-25"
-          },
-          {
-            "ref_kind": "fact",
-            "id": "Revenues:2024-07-29..2024-10-27",
-            "label": "Revenues",
-            "value": 35082000000.0,
-            "display": "$35.08B",
-            "accession": "0001045810-25-000230",
-            "form": "10-Q",
-            "filed": "2025-11-19"
-          }
-        ],
-        "reading": "Capital expenditure as a share of revenue was 2.4% over the four quarters to Q2 FY2027, against 3.0% over the four quarters a year before.",
-        "reading_origin": "code",
-        "available": true,
-        "note": ""
-      },
-      {
         "id": "an:eq:deferred_revenue",
         "provider": "facts",
         "data_origin": "sec_xbrl_facts",
         "kind": "earnings_quality",
         "label": "Deferred revenue, change on a year earlier",
         "question": "Is revenue billed ahead of delivery growing or shrinking?",
+        "scope": "claim",
         "claim_ids": [
           "c3",
           "c4",
@@ -15357,6 +15169,7 @@
         "kind": "part_growth",
         "label": "Data Center revenue, growth on a year earlier",
         "question": "Is Data Center growing faster or slower than the company?",
+        "scope": "claim",
         "claim_ids": [
           "c6"
         ],
@@ -15420,6 +15233,7 @@
         "kind": "part_growth",
         "label": "Data Center revenue, growth on a year earlier",
         "question": "Is Data Center growing faster or slower than the company?",
+        "scope": "claim",
         "claim_ids": [
           "c6"
         ],
@@ -15483,6 +15297,7 @@
         "kind": "part_pace",
         "label": "Data Center revenue, growth now against growth before",
         "question": "Is Data Center growth speeding up or slowing?",
+        "scope": "claim",
         "claim_ids": [
           "c6"
         ],
@@ -15536,6 +15351,7 @@
         "kind": "bridge",
         "label": "Revenue by product or service: each part's contribution to growth",
         "question": "Which parts of the business drove the growth?",
+        "scope": "claim",
         "claim_ids": [
           "c3",
           "c6"
@@ -15620,6 +15436,7 @@
         "kind": "bridge",
         "label": "Revenue by product or service: each part's contribution to growth",
         "question": "Which parts of the business drove the growth?",
+        "scope": "claim",
         "claim_ids": [
           "c4"
         ],
@@ -15761,6 +15578,7 @@
       "facts"
     ],
     "providers_failed": [],
+    "provider_reasons": {},
     "analytics_by": "code",
     "corollaries_step": "not_asked",
     "argument_step": "not_asked",

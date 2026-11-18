@@ -13082,6 +13082,7 @@
         "kind": "yoy",
         "label": "Gross margin, change on a year earlier",
         "question": "Which way is gross margin moving on a year earlier?",
+        "scope": "claim",
         "claim_ids": [
           "c1"
         ],
@@ -13125,6 +13126,7 @@
         "kind": "trend8",
         "label": "Gross margin, change over the last 8 quarters",
         "question": "Where does gross margin stand against the last two years?",
+        "scope": "claim",
         "claim_ids": [
           "c1"
         ],
@@ -13178,6 +13180,7 @@
         "kind": "yoy",
         "label": "Revenue, change on a year earlier",
         "question": "Which way is revenue moving on a year earlier?",
+        "scope": "claim",
         "claim_ids": [
           "c2",
           "c3",
@@ -13223,6 +13226,7 @@
         "kind": "acceleration",
         "label": "Revenue, growth on a year earlier now against the quarter before",
         "question": "Is revenue growth speeding up or slowing?",
+        "scope": "claim",
         "claim_ids": [
           "c2",
           "c3",
@@ -13298,6 +13302,7 @@
         "kind": "trend8",
         "label": "Revenue, compound quarterly growth over the last 8 quarters",
         "question": "Where does revenue stand against the last two years?",
+        "scope": "claim",
         "claim_ids": [
           "c2",
           "c3",
@@ -13343,6 +13348,7 @@
         "kind": "fiscal_path",
         "label": "Revenue by fiscal year, to FY2008",
         "question": "What has revenue done over the last fiscal years?",
+        "scope": "claim",
         "claim_ids": [
           "c5"
         ],
@@ -13365,6 +13371,7 @@
         "kind": "since",
         "label": "Revenue in the newest quarter since FY2008, on a year earlier",
         "question": "What has happened to revenue since that fiscal year ended?",
+        "scope": "claim",
         "claim_ids": [
           "c5"
         ],
@@ -13408,6 +13415,7 @@
         "kind": "headroom",
         "label": "Room of the test, against a typical move",
         "question": "How much room does the test have, against how far the figure usually moves?",
+        "scope": "claim",
         "claim_ids": [
           "c1"
         ],
@@ -13461,6 +13469,7 @@
         "kind": "history",
         "label": "How often the test held before",
         "question": "How often has this been true before?",
+        "scope": "claim",
         "claim_ids": [
           "c1"
         ],
@@ -13494,6 +13503,7 @@
         "kind": "headroom",
         "label": "Room of the test, against a typical move",
         "question": "How much room does the test have, against how far the figure usually moves?",
+        "scope": "claim",
         "claim_ids": [
           "c2"
         ],
@@ -13547,6 +13557,7 @@
         "kind": "needed",
         "label": "Needed against reached",
         "question": "How far short did it fall?",
+        "scope": "claim",
         "claim_ids": [
           "c2"
         ],
@@ -13600,6 +13611,7 @@
         "kind": "history",
         "label": "How often the test held before",
         "question": "How often has this been true before?",
+        "scope": "claim",
         "claim_ids": [
           "c2"
         ],
@@ -13633,6 +13645,7 @@
         "kind": "history",
         "label": "How often the test held before",
         "question": "How often has this been true before?",
+        "scope": "claim",
         "claim_ids": [
           "c4"
         ],
@@ -13655,6 +13668,7 @@
         "kind": "earnings_quality",
         "label": "Receivable days: accounts receivable ÷ the quarter's revenue × its days",
         "question": "Is revenue being collected, or building up in receivables?",
+        "scope": "claim",
         "claim_ids": [
           "c2",
           "c3",
@@ -13721,6 +13735,7 @@
         "kind": "earnings_quality",
         "label": "Inventory days: inventory ÷ the quarter's cost of revenue × its days",
         "question": "Is inventory building ahead of sales?",
+        "scope": "claim",
         "claim_ids": [
           "c1"
         ],
@@ -13784,6 +13799,7 @@
         "kind": "earnings_quality",
         "label": "Deferred revenue, change on a year earlier",
         "question": "Is revenue billed ahead of delivery growing or shrinking?",
+        "scope": "claim",
         "claim_ids": [
           "c2",
           "c3",
@@ -13809,6 +13825,7 @@
         "kind": "part_growth",
         "label": "Data Center revenue, growth on a year earlier",
         "question": "Is Data Center growing faster or slower than the company?",
+        "scope": "claim",
         "claim_ids": [
           "c3",
           "c4"
@@ -13873,6 +13890,7 @@
         "kind": "part_growth",
         "label": "Data Center revenue, growth on a year earlier",
         "question": "Is Data Center growing faster or slower than the company?",
+        "scope": "claim",
         "claim_ids": [
           "c3",
           "c4"
@@ -13937,6 +13955,7 @@
         "kind": "part_pace",
         "label": "Data Center revenue, growth now against growth before",
         "question": "Is Data Center growth speeding up or slowing?",
+        "scope": "claim",
         "claim_ids": [
           "c3",
           "c4"
@@ -13991,6 +14010,7 @@
         "kind": "bridge",
         "label": "Revenue by product or service: each part's contribution to growth",
         "question": "Which parts of the business drove the growth?",
+        "scope": "claim",
         "claim_ids": [
           "c2",
           "c3",
@@ -14076,6 +14096,7 @@
         "kind": "bridge",
         "label": "Revenue by product or service: each part's contribution to growth",
         "question": "Which parts of the business drove the growth?",
+        "scope": "claim",
         "claim_ids": [
           "c5"
         ],
@@ -14217,6 +14238,7 @@
       "facts"
     ],
     "providers_failed": [],
+    "provider_reasons": {},
     "analytics_by": "code",
     "corollaries_step": "not_asked",
     "argument_step": "not_asked",

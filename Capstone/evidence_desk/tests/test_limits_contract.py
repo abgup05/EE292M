@@ -66,6 +66,11 @@ CONTRACT: dict[str, int | float | str] = {
     # Added in version 13: the earliest date a run or a ledger may be computed as of (XBRL
     # company facts begin in 2009)
     "EARLIEST_AS_OF": "2009-01-01",
+    # Added in version 13: a computed claim's history covers the last five years of 10-K and
+    # 10-Q filing dates, at most 24 points; a streak walks back at most 40 periods
+    "HISTORY_YEARS": 5,
+    "MAX_HISTORY_POINTS": 24,
+    "MAX_STREAK_PERIODS": 40,
 }
 
 

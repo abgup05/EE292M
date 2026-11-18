@@ -42,6 +42,8 @@ import re
 from dataclasses import dataclass, replace
 from typing import Literal
 
+from app.core.limits import MAX_CLAIM_CHARS
+
 Form = Literal[
     "direction",
     "acceleration",
@@ -57,7 +59,6 @@ PeriodKind = Literal["Q", "FY", "TTM", "filing"]
 Function = Literal["value", "yoy", "qoq", "streak", "cagr", "share", "max_share"]
 MetricKind = Literal["flow", "ratio", "per_share", "instant"]
 
-MAX_CLAIM_CHARS = 400
 FORMS: tuple[str, ...] = (
     "direction",
     "acceleration",

@@ -176,6 +176,25 @@ AS_OF_REQUESTED_NOTE = (
     "and nothing filed later."
 )
 AS_OF_NOTHING_READ = "No filing was read, so the evidence has no date."
+
+# Computed claims (app.core.claimtest, app.core.claim_eval). A compiled claim's outcome is
+# verified evidence computed from the facts: it holds (counts as support), fails (counts as
+# a challenge) or cannot be computed (counts as nothing, and says why).
+COMPUTED_LABELS: dict[str, str] = {
+    "holds": "Holds",
+    "fails": "Fails",
+    "cannot_compute": "Cannot be computed",
+}
+COMPUTED_COUNTS: dict[str, str] = {"holds": "supports", "fails": "challenges"}
+COMPUTED_NO_HISTORY = (
+    "A share of revenue is read from the newest filing's tagged breakdowns, which have no "
+    "history in the company facts; no history is drawn."
+)
+COMPUTED_HISTORY_NOTE = (
+    "The outcome as of each of the {points} 10-K and 10-Q filing dates in the {years} years to "
+    "{last}, each from the facts filed by that date{capped}; it flipped {flips} time(s)."
+)
+COMPUTED_NOT_NUMERIC = "Not a numeric claim this version computes: {reason}."
 EVENT_COUNTS = (
     "{listed} 8-K(s) filed since the annual report of {annual}: {read} read, {failed} could not "
     "be read, {capped} not read because of the cap of {cap} per run, {index_only} routine 8-K(s) "

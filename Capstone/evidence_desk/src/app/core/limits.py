@@ -62,6 +62,13 @@ EVENT_PASSAGES_PER_CLAIM = 2
 # Dated facts (app.core.facts, app.core.claimtest). A run or a ledger may be computed as of a
 # past date no earlier than this: XBRL company facts begin in 2009.
 EARLIEST_AS_OF = "2009-01-01"
+# A computed claim's history (app.core.claim_eval): its outcome as of each 10-K and 10-Q
+# filing date of the last five years, at most 24 points (five years of quarterly filers
+# give 20), from the facts the run already has.
+HISTORY_YEARS = 5
+MAX_HISTORY_POINTS = 24
+# Periods a streak ("has grown for N consecutive quarters") walks back at most.
+MAX_STREAK_PERIODS = 40
 
 # Review and saved theses
 MAX_NOTE_CHARS = 500

@@ -25,14 +25,17 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 
+from app.core import events as event_rules
 from app.core import limits, policy
 from app.core.documents import Passage
+from app.core.event_models import Event, EventItem
 from app.core.gate import GateResult, RunIds, StoredSource, gate_claim
 from app.core.meaning import MeaningResult, apply_judgements, check_items
 from app.core.metric_models import Metric
 from app.core.models import (
     Brief,
     Claim,
+    Company,
     Coverage,
     Evidence,
     ExtractionStatus,
@@ -60,7 +63,8 @@ from app.engines.extractive import ExtractiveAnalyst
 from app.engines.fallback import FallbackAnalyst
 from app.retrieval.chunk import chunk_document
 from app.retrieval.search import PassageIndex
-from app.services.ingest import ingest
+from app.services import events as event_service
+from app.services.ingest import Ingested, ingest
 from app.services.numbers import NumbersResult, load_numbers, select_figures
 from app.services.tagged_figures import load_tagged_figures
 from app.sources.http import fetch_page as default_fetch_page
@@ -245,7 +249,11 @@ def execute_run(
         return fail_run(run, store, str(exc))
     run.company = company
     run.claims = [
-        Claim(id=f"c{position}", text=text)
+        Claim(
+            id=f"c{position}",
+            text=text,
+            categories=[category.value for category in event_rules.claim_categories(text)],
+        )
         for position, text in enumerate(run.inputs.claims, start=1)
     ]
 
@@ -275,6 +283,9 @@ def execute_run(
             time_limit_hit=ingested.time_limit_hit,
         )
         return fail_run(run, store, reasons[0])
+
+    _stage(run, store, "events")
+    timeline = _read_events(run, company, ingested, filings, cache, out_of_time)
 
     _stage(run, store, "numbers")
     # The facts are recorded as a source but are not a document: they are never chunked or
@@ -322,16 +333,16 @@ def execute_run(
         for passage in chunk_document(source_id, document)
     ]
     index = PassageIndex(passages)
+    # 8-K sections never join the index: they are offered only to a claim of their category.
+    pinned = _pin_event_passages(run, company, timeline)
     urls = {source.id: source.url for source in run.sources}
     # Quotes are verified against the text as stored, read back the one way stored text is read.
     texts = cache.source_texts(run)
-    missing = sorted(set(ingested.documents) - set(texts))
+    read_ids = [*ingested.documents, *(e.source_id for e in run.timeline if e.source_id)]
+    missing = sorted(set(read_ids) - set(texts))
     if missing:
         raise RuntimeError(f"the stored text of {', '.join(missing)} is missing from the cache")
-    stored = {
-        source_id: StoredSource(texts[source_id], urls[source_id])
-        for source_id in ingested.documents
-    }
+    stored = {source_id: StoredSource(texts[source_id], urls[source_id]) for source_id in read_ids}
     run.coverage.passages_indexed = len(passages)
 
     _stage(run, store, "assessing")
@@ -388,7 +399,7 @@ def execute_run(
         claim.queries = [query for query in queries[position] if query.strip()][
             : limits.MAX_QUERIES_PER_CLAIM
         ]
-        offered = index.search([claim.text, *claim.queries])
+        offered = [*index.search([claim.text, *claim.queries]), *pinned.get(claim.id, [])]
         claim.passages_considered = len(offered)
         if offered:
             return pool.submit(assess_claim, position, claim, offered)
@@ -460,6 +471,8 @@ def execute_run(
                 coverage.reasons_withheld += 1
             policy.mark_counted(verified)
             claim.verdict = policy.claim_verdict(verified)
+            # Reported, never withheld: an 8-K later than a finding changes no verdict.
+            _mark_predated(claim, verified, evidence, offered_figures, run)
             unknowns.extend(draft.unknowns)
             coverage.findings_verified += len(verified)
             coverage.findings_withheld += len(withheld)
@@ -477,6 +490,7 @@ def execute_run(
                 coverage.claims_with_evidence += 1
             store.save_run(run)
     _record_meaning_limits(run, reader, analyst, unchecked)
+    _note_events(run, timeline)
 
     _stage(run, store, "verifying")
     summary_step = len(failures)
@@ -536,6 +550,118 @@ def execute_run(
         provenance_note=policy.provenance_note(run.sources),
     )
     return _finish(run, store, status)
+
+
+def _read_events(
+    run: Run,
+    company: Company,
+    ingested: Ingested,
+    filings: FilingSource,
+    cache: FilingCache,
+    out_of_time: Callable[[], bool],
+) -> event_service.Timeline:
+    """List the 8-Ks since the newest annual report read, read some, and date the evidence.
+
+    Sets ``run.timeline`` and ``run.as_of``. A failure here is a reason on an event
+    or the index error on the as-of block, never an error of the run.
+    """
+    refs = list(ingested.filing_refs.values())
+    annual = [ref.filed_date for ref in refs if ref.form.startswith("10-K")]
+    timeline = event_service.read_timeline(
+        company,
+        filings,
+        cache,
+        annual_filed=max(annual, default=None),
+        periodic_filed=max((ref.filed_date for ref in refs), default=None),
+        out_of_time=out_of_time,
+    )
+    run.timeline = timeline.events
+    read = [(ref.form, ref.filed_date, ref.url) for ref in refs]
+    run.as_of = event_service.as_of(timeline, read, run.started_at.date())
+    return timeline
+
+
+def _pin_event_passages(
+    run: Run, company: Company, timeline: event_service.Timeline
+) -> dict[str, list[Passage]]:
+    """The 8-K sections offered to each claim, by claim id; their 8-Ks become run sources.
+
+    A claim is offered up to :data:`~app.core.limits.EVENT_PASSAGES_PER_CLAIM` item
+    sections of its own categories from 8-Ks read, newest first. An 8-K is a source
+    of the run only when one of its sections is offered.
+    """
+    by_claim: dict[str, list[tuple[Event, EventItem]]] = {}
+    for claim in run.claims:
+        chosen = event_rules.pinned_items(
+            claim.categories, timeline.events, limits.EVENT_PASSAGES_PER_CLAIM
+        )
+        if chosen:
+            by_claim[claim.id] = chosen
+    source_ids: dict[str, str] = {}
+    for chosen in by_claim.values():
+        for item_event, _item in chosen:
+            if item_event.id in source_ids:
+                continue
+            source_id = f"s{len(run.sources) + 1}"
+            source_ids[item_event.id] = source_id
+            item_event.source_id = source_id
+            run.sources.append(
+                event_service.event_source(source_id, item_event, company, item_event.url)
+            )
+    return {
+        claim_id: event_service.event_passages(chosen, timeline.documents, source_ids)
+        for claim_id, chosen in by_claim.items()
+    }
+
+
+def _mark_predated(
+    claim: Claim,
+    verified: list[Finding],
+    evidence: list[Evidence],
+    figures: dict[str, Metric],
+    run: Run,
+) -> None:
+    """Mark each verified finding an 8-K postdates, and caution a claim whose verdict rests on one.
+
+    A finding's dates are those of every filing it cites: the filing of each excerpt
+    and of each input of each cited figure. Only findings counted toward the verdict
+    carry the claim's caution.
+    """
+    if not claim.categories or not run.timeline:
+        return
+    published = {source.id: source.published_date for source in run.sources}
+    by_evidence = {item.id: item for item in evidence}
+    for finding in verified:
+        dates = [
+            published.get(by_evidence[evidence_id].source_id)
+            for evidence_id in finding.evidence_ids
+            if evidence_id in by_evidence
+        ]
+        dates += [
+            fact.filed
+            for metric_id in finding.metric_ids
+            if metric_id in figures
+            for fact in figures[metric_id].inputs
+        ]
+        finding.predated_by = event_rules.predating(
+            [day for day in dates if day], claim.categories, run.timeline
+        )
+    claim.caution = event_rules.claim_caution(
+        [f.predated_by for f in verified if f.counted_as is not None], run.timeline
+    )
+
+
+def _note_events(run: Run, timeline: event_service.Timeline) -> None:
+    """Give each claim of a substantive category what the 8-Ks do and do not report on it."""
+    newest = run.as_of.newest_filed if run.as_of is not None else None
+    for claim in run.claims:
+        claim.event_note = event_rules.events_note(
+            claim.categories,
+            timeline.events,
+            timeline.annual_filed,
+            newest,
+            timeline.index_error,
+        )
 
 
 def _record_meaning_limits(

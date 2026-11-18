@@ -61,6 +61,26 @@ def _query(claim: str) -> str:
     return " ".join(words)
 
 
+def _quoted(passage_id: str, sentence: str) -> FindingDraft:
+    """A context finding quoting ``sentence`` from passage ``passage_id``."""
+    return FindingDraft(
+        statement=_statement(sentence),
+        stance=Stance.context,
+        quotes=[Quote(passage_id=passage_id, text=sentence)],
+        confidence=Confidence.low,
+        rationale=FINDING_RATIONALE,
+    )
+
+
+def _opening(passage: Passage) -> tuple[str, str] | None:
+    """The passage's first sentence a quote may be (40 characters up to the excerpt limit)."""
+    for start, end in sentence_spans(passage.text):
+        sentence = passage.text[start:end]
+        if MIN_SENTENCE_CHARS <= len(sentence) <= limits.MAX_EXCERPT_CHARS:
+            return passage.id, sentence
+    return None
+
+
 def _statement(sentence: str) -> str:
     statement = f"{STATEMENT_PREFIX}{sentence}"
     if len(statement) <= MAX_STATEMENT_CHARS:
@@ -90,12 +110,19 @@ class ExtractiveAnalyst:
 
         Candidates are sentences of 40 to 400 characters; ties go to the earlier
         passage, then the earlier sentence. Each quote is an exact substring of
-        its passage. ``figures`` are accepted for the interface and ignored:
-        this engine judges nothing, so it cites no figure.
+        its passage. A current report's passage offered to the claim (one with a
+        ``form``, pinned there because the claim bears on its item) is quoted
+        first, by its opening sentence, whatever words it shares; the findings
+        stay at most :data:`~app.core.limits.MAX_FINDINGS_PER_CLAIM`. ``figures``
+        are accepted for the interface and ignored: this engine judges nothing,
+        so it cites no figure.
         """
         wanted = set(tokenize(claim.text))
+        pinned = [_opening(p) for p in passages if p.form]
         candidates: list[tuple[int, int, int, str, str]] = []
         for passage_order, passage in enumerate(passages):
+            if passage.form:
+                continue
             for sentence_order, (start, end) in enumerate(sentence_spans(passage.text)):
                 sentence = passage.text[start:end]
                 if not MIN_SENTENCE_CHARS <= len(sentence) <= MAX_SENTENCE_CHARS:
@@ -108,30 +135,33 @@ class ExtractiveAnalyst:
         candidates.sort()
         findings: list[FindingDraft] = []
         quoted: set[str] = set()
+        for passage_id, sentence in (item for item in pinned if item is not None):
+            if sentence in quoted or len(findings) >= limits.MAX_FINDINGS_PER_CLAIM:
+                continue
+            quoted.add(sentence)
+            findings.append(_quoted(passage_id, sentence))
+        current = len(findings)
+        matched = 0
         for _shared, _passage_order, _sentence_order, passage_id, sentence in candidates:
+            if matched >= MAX_QUOTED_SENTENCES or len(findings) >= limits.MAX_FINDINGS_PER_CLAIM:
+                break
             if sentence in quoted:
                 continue
             quoted.add(sentence)
-            findings.append(
-                FindingDraft(
-                    statement=_statement(sentence),
-                    stance=Stance.context,
-                    quotes=[Quote(passage_id=passage_id, text=sentence)],
-                    confidence=Confidence.low,
-                    rationale=FINDING_RATIONALE,
-                )
-            )
-            if len(findings) >= MAX_QUOTED_SENTENCES:
-                break
+            findings.append(_quoted(passage_id, sentence))
+            matched += 1
         if not findings:
             return ClaimDraft(rationale=NO_MATCH_RATIONALE)
-        return ClaimDraft(
-            findings=findings,
-            rationale=(
-                f"{len(findings)} sentence(s) quoted because they share the most terms with "
-                "the claim; no stance was judged."
-            ),
+        rationale = (
+            f"{matched} sentence(s) quoted because they share the most terms with the claim; "
+            "no stance was judged."
         )
+        if current:
+            rationale = (
+                f"{current} opening sentence(s) quoted from current reports (8-K) filed after "
+                f"the periodic reports, on a subject the claim bears on; {rationale}"
+            )
+        return ClaimDraft(findings=findings, rationale=rationale)
 
     def summarize(
         self,

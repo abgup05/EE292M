@@ -52,7 +52,7 @@ WIDE = [
 ]
 MID = ["mid-c2-evidence", "mid-pick", "mid-escape"]
 PHONE_RUN = ["phone-loaded", "phone-c2-evidence", "phone-scrolled", "phone-c2-overview", "phone-c2-time", "phone-events", "phone-figures", "phone-limits", "phone-terminal"]
-EVERY = [*WIDE, "laptop-c1", "wide-first", *MID, *PHONE_RUN, "phone-first", "phone-inbox", "wide-inbox"]
+EVERY = [*WIDE, "laptop-c1", "wide-first", *MID, *PHONE_RUN, "phone-first", "phone-inbox", "wide-inbox", "laptop-inbox-terminal"]
 # Every step that shows the run (not the first screen, not the inbox).
 RUN_STEPS = [*WIDE, "laptop-c1", *MID, *PHONE_RUN]
 
@@ -357,7 +357,7 @@ def test_a_phone_reads_in_place_what_a_wide_window_reads_in_the_inspector() -> N
 # ---------------------------------------------------------------- the bar
 
 
-@pytest.mark.parametrize("name", [*WIDE, "laptop-c1", "wide-first", "wide-inbox"])
+@pytest.mark.parametrize("name", [*WIDE, "laptop-c1", "wide-first", "wide-inbox", "laptop-inbox-terminal"])
 def test_the_bar_is_one_row_with_every_control_inside_the_window(name: str) -> None:
     s = step(name)
     assert int(s["data-bar-height"]) <= 48, "the bar wrapped to a second row"

@@ -3389,10 +3389,11 @@ function renderFinding(finding, ctx, withheld = false) {
     }
     margin.append(renderEvidence(item, ctx.sources.get(item.source_id)));
   }
-  if (pickable) main.append(pickButton(list(finding.evidence_ids).length ? "Read the quote in its context" : "Read the figures it cites"));
   if (!withheld && finding.verified !== false) {
     main.append(h("div", { class: "review-slot", "data-review-finding": finding.id, hidden: true }));
   }
+  // After the quotes: the way to read them in the text around them (or, with no quote, the figures cited).
+  if (pickable) article.append(pickButton(list(finding.evidence_ids).length ? "Read the quote in its context" : "Read the figures it cites"));
   return article;
 }
 
@@ -4966,7 +4967,7 @@ function boardComputed(claim) {
     return h("span", { class: "score-computed is-none", "data-board-computed": "none", text: "No computed test: the verdict rests on the findings" });
   }
   const readers = boardReaders(claim);
-  return h("span", { class: "score-computed", "data-board-computed": token(test.outcome, TEST_MARK) }, h("span", { class: "label", "data-computed-by": computedByWords(claim).model ? "models" : "grammar", text: computedByWords(claim).board }), testOutcome(test.outcome, test.outcome_label), " ", countedTag(claim), readers ? [" · ", readers] : "");
+  return h("span", { class: "score-computed", "data-board-computed": token(test.outcome, TEST_MARK) }, h("span", { class: "label", "data-computed-by": computedByWords(claim).model ? "models" : "grammar", text: computedByWords(claim).board }), testOutcome(test.outcome, test.outcome_label), " ", countedTag(claim), readers ? [h("span", { class: "sep", "aria-hidden": "true", text: " · " }), readers] : "");
 }
 
 // ---- the thesis over time
@@ -5392,6 +5393,19 @@ function initSpecimen() {
   // Open the first claims, so the specimen shows findings with their quotes in the margin.
   for (const docket of [...document.querySelectorAll("#claim-list details.claim")].slice(0, 3)) docket.open = true;
   watchTimelineWidth();
+  // The frame's own parts, drawn by the page's code from the same record: the centre pane's head for
+  // the first claim, the tabs (the first one shown as selected), and the inspector reading its first finding.
+  const shown = list(data.run.claims)[0];
+  if (shown) document.getElementById("spec-sel-head")?.replaceChildren(...selectionHead(data.run, shown));
+  const specTabs = TABS.map(tabButton);
+  specTabs.forEach((tab, index) => {
+    tab.removeAttribute("id");
+    tab.setAttribute("aria-selected", String(index === 0));
+    tab.disabled = index !== 0;
+  });
+  document.getElementById("spec-tabs")?.replaceChildren(...specTabs);
+  const read = firstFinding(shown);
+  document.getElementById("spec-inspector")?.replaceChildren(...((read && inspectFinding(read.id)) ?? [h("p", { class: "ins-none muted", text: "The made-up record's first claim has no finding to read." })]));
 
   const v14 = data.v14;
   // Version 14's parts are excerpts of the backend's example payloads (docs/examples/v14), in their real shapes.
@@ -6398,18 +6412,27 @@ function applySelection() {
 }
 
 /** The centre pane's head: what the rail has selected. A claim's id, stamps, counts and flags are the record's. */
-function drawSelectionHead(run, claim) {
-  if (!els.selHead) return;
+function selectionHead(run, claim) {
   if (!claim) {
-    els.selHead.replaceChildren(
-      h("div", { class: "sel-line" }, h("span", { class: "sel-id", text: "Thesis" }), briefActions(run)),
-      h("h3", { id: "sel-title", class: "sel-title", text: "The whole thesis" }),
-    );
-    return;
+    return [h("div", { class: "sel-line" }, h("span", { class: "sel-id sel-id-thesis", text: "Thesis" }), briefActions(run)), h("h3", { id: "sel-title", class: "sel-title", text: "The whole thesis" })];
   }
-  els.selHead.replaceChildren(
+  return [
     h("div", { class: "sel-line" }, h("span", { class: "claim-id sel-id", text: claim.id }), claimStamps(claim, currentReview(run)), docketMeta(claim, run)),
     h("h3", { id: "sel-title", class: "sel-title", text: claim.text }),
+  ];
+}
+
+function drawSelectionHead(run, claim) {
+  if (els.selHead) els.selHead.replaceChildren(...selectionHead(run, claim));
+}
+
+/** One tab: its number key, then its name. */
+function tabButton(tab, index) {
+  return h(
+    "button",
+    { type: "button", role: "tab", id: `tab-${tab.id}`, class: "tab", "data-tab": tab.id, "aria-selected": "false", tabindex: "-1", "aria-keyshortcuts": String(index + 1), onclick: () => setTab(tab.id) },
+    h("kbd", { class: "tab-key", "aria-hidden": "true", text: String(index + 1) }),
+    h("span", { class: "tab-label", text: tab.label }),
   );
 }
 
@@ -6492,12 +6515,8 @@ function firstPick(run, claim) {
     const first = list(run.timeline)[0];
     return first && str(first.id) ? { kind: "event", id: str(first.id) } : null;
   };
-  if (state.tab === "evidence") {
-    if (claim) return firstFinding(claim);
-    // The whole thesis's evidence is its sources and what was withheld: the first withheld finding that cites anything.
-    const withheld = els.withheld?.querySelector(".finding[data-pick]");
-    return withheld ? parsePick(withheld.dataset.pick) : null;
-  }
+  // The whole thesis's evidence is its sources and what was withheld, behind a fold: nothing is read at the side until one is picked.
+  if (state.tab === "evidence") return claim ? firstFinding(claim) : null;
   if (state.tab === "time") return test ?? newestEvent();
   if (state.tab === "events") return newestEvent();
   if (state.tab === "figures") {
@@ -6606,16 +6625,7 @@ function onTabKey(event) {
 
 function initWorkspace() {
   if (!els.tabs || FLAT) return;
-  els.tabs.replaceChildren(
-    ...TABS.map((tab, index) =>
-      h(
-        "button",
-        { type: "button", role: "tab", id: `tab-${tab.id}`, class: "tab", "data-tab": tab.id, "aria-selected": "false", tabindex: "-1", "aria-keyshortcuts": String(index + 1), onclick: () => setTab(tab.id) },
-        h("kbd", { class: "tab-key", "aria-hidden": "true", text: String(index + 1) }),
-        h("span", { class: "tab-label", text: tab.label }),
-      ),
-    ),
-  );
+  els.tabs.replaceChildren(...TABS.map(tabButton));
   for (const panel of els.centreScroll.querySelectorAll(".tabpanel")) panel.setAttribute("role", "tabpanel");
   els.tabs.addEventListener("keydown", onTabKey);
   els.railThesis?.addEventListener("click", (event) => {
@@ -6908,10 +6918,18 @@ function beforePrint() {
   }
   // How the run was made lives in the Run drawer on screen; on paper it follows the verdicts.
   if (els.runInfo && els.rail && !els.runInfo.hidden && !els.runView.hidden) els.rail.after(els.runInfo);
+  // Paper is Paper: the Terminal theme's own rules (its black boards, its amber cells) are not for a printer.
+  const theme = document.documentElement.getAttribute("data-theme");
+  if (theme && theme !== "paper") {
+    state.themeBeforePrint = theme;
+    applyTheme("paper");
+  }
 }
 function afterPrint() {
   while (printOpened.length) printOpened.pop().open = false;
   if (els.runInfo && els.guideSlot && els.runInfo.parentElement !== els.runDrawer) els.guideSlot.before(els.runInfo);
+  if (state.themeBeforePrint) applyTheme(state.themeBeforePrint);
+  state.themeBeforePrint = "";
 }
 
 /** Redraw the time line when the note changes width (a resized window, a rotated phone). */

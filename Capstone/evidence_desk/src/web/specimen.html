@@ -19,7 +19,7 @@
 </head>
 <!--
   The specimen: every component of the page once, on made-up data, in both themes (the toggle,
-  or ?theme=terminal). Linked from nowhere; ?only=tokens|marks|v14|views|note shows one part. Served at /specimen.html, or see it in
+  or ?theme=terminal). Linked from nowhere; ?only=tokens|marks|v14|views|frame|note shows one part. Served at /specimen.html, or see it in
   docs/screenshots/specimen*.png (`make screenshots`). The data is inline, below, as JSON.
   Written from sample-synthetic.json plus made-up 8-Ks, excerpts of docs/examples/v14 and a made-up peer strip (not built).
 -->
@@ -33,11 +33,10 @@
         <input id="ticker" name="ticker" type="text" autocomplete="off" spellcheck="false" maxlength="12" value="EXMP" aria-keyshortcuts="/">
         <kbd class="key-hint" aria-hidden="true">/</kbd>
       </div>
-      <dl id="cmd-run" class="cmd-run" aria-label="The run on screen" hidden>
-        <div class="cmd-cell" data-cmd="status"><dt>Status</dt><dd id="cmd-status"></dd></div>
-        <div class="cmd-cell" data-cmd="engine"><dt>Engine</dt><dd id="cmd-engine"></dd></div>
-        <div class="cmd-cell cmd-asof" data-cmd="as-of"><dt>As of</dt><dd id="cmd-asof"></dd></div>
-      </dl>
+      <div id="cmd-run" class="cmd-run" role="group" aria-label="The run on screen" hidden>
+        <span class="tool run-chip"><span id="cmd-status" class="cmd-status"></span><span class="chip-word">Run</span></span>
+        <a id="cmd-asof" class="tool cmd-asof" href="#events-section"></a>
+      </div>
       <div class="cmd-tools">
         <span class="page-tag">Specimen</span>
         <button type="button" id="theme-toggle" class="tool theme-toggle" aria-keyshortcuts="t">
@@ -161,122 +160,177 @@
         </div>
       </section>
 
+      <section class="spec-section" data-part="frame" aria-labelledby="spec-frame-title">
+        <h2 id="spec-frame-title">The frame: the rail's selection, the tabs, the inspector</h2>
+        <p class="spec-shape">On the page a run fills the window: the claims are listed once, in the rail (drawn in the note below, as "Verdicts by claim"); what the rail has selected is shown in the centre pane under tabs; and whatever is picked there is read in the inspector. The page's own code draws the three parts below from the made-up record: the centre pane's head for a claim, the tabs, and the inspector reading that claim's first finding. See <code>docs/screenshots/frame-*.png</code> for the frame itself.</p>
+        <div class="spec-grid">
+          <div>
+            <span class="spec-label">The centre pane's head and its tabs</span>
+            <header id="spec-sel-head" class="sel-head"></header>
+            <div id="spec-tabs" class="tabs" role="presentation"></div>
+            <span class="spec-label">The entry for the whole thesis, and a selected row</span>
+            <a class="rail-all" href="#spec-frame-title" aria-current="false"><span class="rail-all-name">The whole thesis</span><span class="rail-all-what">summary, sources, limits</span></a>
+            <a class="rail-all" href="#spec-frame-title" aria-current="true"><span class="rail-all-name">The whole thesis</span><span class="rail-all-what">selected</span></a>
+          </div>
+          <div>
+            <span class="spec-label">The inspector, reading a finding</span>
+            <div id="spec-inspector" class="inspector spec-inspector"></div>
+          </div>
+        </div>
+      </section>
+
       <section class="spec-section" data-part="note" aria-labelledby="spec-note-title">
         <h2 id="spec-note-title">The note: a run, every component once</h2>
-        <p class="spec-shape">The page's own run view, drawn by app.js from a made-up record: the head, the status line (open it for every count), the tape of the newest period's figures, the verdict board with a review, the time line, what moved since an earlier run, the claim dockets with margin quotes, the withheld findings behind one line, the figures with sparklines, the 8-K register, the sources, the limits and the legend.</p>
+        <p class="spec-shape">The page's own run view, drawn by app.js from a made-up record and laid out flat, as on paper: the rail (the company, the decision, the verdicts with a review), the status line (open it for every count), then every tab's panel one after another: the tape of the newest period's figures, the summary, what moved since an earlier run, the claim dockets with their quotes, the sources, the withheld findings behind one line, the time line, the 8-K register, the figures with sparklines and the limits; then how the run was made (the Run drawer) and the legend.</p>
         <p id="loading" hidden></p><div id="load-error" hidden></div><div id="empty-state" hidden></div>
         <div id="figures-view" hidden></div><div id="changes-view" hidden></div><div id="breakdowns-view" hidden></div><div id="thesis-view" hidden></div><div id="inbox-view" hidden></div><div id="ledger-view" hidden></div>
+      <!-- The page's run view, flat: every tab's panel and every claim's docket at once, as on paper. No rail selection, no tabs, no inspector (they are shown in "The frame" above). -->
       <div id="run-view">
-        <div id="asof-banner" class="asof-banner" role="note" aria-label="A run as of a past date" hidden></div>
-        <div id="run-head" class="run-head"></div>
-
-        <div id="status-banner" class="banner" role="status" aria-live="polite"></div>
-        <div id="stages-wrap" hidden>
-          <ol id="stages" class="stages" aria-label="Run progress"></ol>
-        </div>
-
-        <section id="tape-section" class="tape-block" aria-labelledby="tape-title" hidden>
-          <h3 id="tape-title" class="visually-hidden">The newest period's reported figures</h3>
-          <div id="tape" class="tape"></div>
-        </section>
-
-        <section class="block" aria-labelledby="scorecard-title">
-          <h3 id="scorecard-title" class="block-title" data-code="VRD">Verdicts by claim</h3>
+      <div id="asof-banner" class="asof-banner" role="note" aria-label="A run as of a past date" hidden></div>
+      <div id="workspace" class="ws ws-flat">
+        <nav id="rail" class="pane rail" aria-labelledby="scorecard-title">
+          <div id="rail-head" class="rail-head"></div>
           <div id="review-line" class="review-line" hidden></div>
-          <div id="board-head" class="board-head" aria-hidden="true" hidden><span>Engine</span><span>After your review</span><span>Claim</span><span>Evidence</span></div>
+          <h3 id="scorecard-title" class="pane-label" data-code="VRD">Verdicts by claim</h3>
+          <div id="board-head" class="board-head" aria-hidden="true" hidden><span>Engine</span><span>After your review</span></div>
           <ol id="scorecard" class="scorecard"></ol>
-        </section>
+        </nav>
 
-        <section id="timeline-section" class="block timeline-block" aria-labelledby="timeline-title" hidden>
-          <h3 id="timeline-title" class="block-title" data-code="TL">The record on a time line</h3>
-          <div id="timeline" class="timeline"></div>
-        </section>
+        <!-- After the rail in the markup (paper and a phone read the verdicts first); across the top of the panes on a wide screen. -->
+        <div class="run-strip">
+          <div id="status-banner" class="banner" role="status" aria-live="polite"></div>
+          <div id="stages-wrap" hidden>
+            <ol id="stages" class="stages" aria-label="Run progress"></ol>
+          </div>
+        </div>
 
-        <section id="tot-section" class="block tot-block" aria-labelledby="tot-title" hidden>
-          <h3 id="tot-title" class="block-title" data-code="TOT">The thesis over time</h3>
-          <div id="tot" class="tot"></div>
-        </section>
+        <section id="centre" class="pane centre" aria-label="The whole thesis, then each claim">
+          <div id="centre-scroll" class="pane-scroll" tabindex="-1">
 
-        <section id="changes-section" class="block" aria-labelledby="changes-title" tabindex="-1" hidden>
-          <h3 id="changes-title" class="block-title" data-code="MOV">What moved since the earlier run</h3>
-          <div id="changes"></div>
-        </section>
+            <div id="panel-overview" class="tabpanel" data-tab="overview" data-scope="thesis">
+              <section id="tape-section" class="tape-block" aria-labelledby="tape-title" hidden>
+                <h3 id="tape-title" class="visually-hidden">The newest period's reported figures</h3>
+                <div id="tape" class="tape"></div>
+              </section>
 
-        <section id="summary-section" class="block" aria-labelledby="summary-title" hidden>
-          <h3 id="summary-title" class="block-title" data-code="SUM">Summary</h3>
-          <div id="summary-box" data-mw="summary">
-            <p id="summary-origin" class="origin"></p>
-            <p id="summary" class="summary"></p>
+              <section id="summary-section" class="block" aria-labelledby="summary-title" hidden>
+                <h3 id="summary-title" class="block-title" data-code="SUM">Summary</h3>
+                <div id="summary-box" data-mw="summary">
+                  <p id="summary-origin" class="origin"></p>
+                  <p id="summary" class="summary"></p>
+                </div>
+              </section>
+
+              <section id="changes-section" class="block" aria-labelledby="changes-title" tabindex="-1" hidden>
+                <h3 id="changes-title" class="block-title" data-code="MOV">What moved since the earlier run</h3>
+                <div id="changes"></div>
+              </section>
+
+              <div class="block-pair">
+                <section id="unknowns-section" class="block" aria-labelledby="unknowns-title" hidden>
+                  <h3 id="unknowns-title" class="block-title" data-code="UNK">Unknowns</h3>
+                  <ul id="unknowns" class="plain-list"></ul>
+                </section>
+
+                <section id="next-section" class="block" aria-labelledby="next-title" hidden>
+                  <h3 id="next-title" class="block-title" data-code="NXT">Next steps</h3>
+                  <ul id="next-steps" class="plain-list"></ul>
+                </section>
+              </div>
+              <p class="panel-none muted">The summary, the newest figures and what moved appear here when the run has them.</p>
+            </div>
+
+            <!-- Every claim's docket is here; only the selected claim's is shown, the others are inert. -->
+            <div id="panel-claim" class="tabpanel" data-tab="overview evidence" data-scope="claim">
+              <h3 id="claims-title" class="visually-hidden">Claims and their evidence</h3>
+              <div id="claim-list"></div>
+            </div>
+
+            <div id="panel-evidence" class="tabpanel" data-tab="evidence" data-scope="thesis">
+              <section class="block" aria-labelledby="sources-title">
+                <h3 id="sources-title" class="block-title" data-code="SRC">Sources</h3>
+                <div class="table-wrap" tabindex="0" role="region" aria-labelledby="sources-title">
+                  <table id="sources" class="sources">
+                    <thead>
+                      <tr>
+                        <th scope="col">ID</th>
+                        <th scope="col">Form</th>
+                        <th scope="col">Period end</th>
+                        <th scope="col">Filed</th>
+                        <th scope="col">Retrieved (UTC)</th>
+                        <th scope="col" class="num">Sections</th>
+                        <th scope="col" class="num">Characters</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Link</th>
+                      </tr>
+                    </thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section id="withheld-section" class="block withheld" aria-labelledby="withheld-title" hidden>
+                <h3 id="withheld-title" class="block-title" data-code="WHD"><span class="glyph g-limit" aria-hidden="true">▲</span> Withheld findings</h3>
+                <div id="withheld"></div>
+              </section>
+
+              <div id="run-filing-changes" class="cc-compared" aria-live="polite" hidden></div>
+            </div>
+
+            <div id="panel-time" class="tabpanel" data-tab="time" data-scope="both">
+              <section id="timeline-section" class="block timeline-block" aria-labelledby="timeline-title" hidden>
+                <h3 id="timeline-title" class="block-title" data-code="TL">The record on a time line</h3>
+                <div id="timeline" class="timeline"></div>
+              </section>
+
+              <section id="tot-section" class="block tot-block" aria-labelledby="tot-title" hidden>
+                <h3 id="tot-title" class="block-title" data-code="TOT">The thesis over time</h3>
+                <div id="tot" class="tot"></div>
+              </section>
+              <p class="panel-none muted">This record has no dated filings to draw and no claim read into a test.</p>
+            </div>
+
+            <div id="panel-events" class="tabpanel" data-tab="events" data-scope="both">
+              <section id="events-section" class="block" aria-labelledby="events-title" tabindex="-1" hidden>
+                <h3 id="events-title" class="block-title" data-code="EVT">Since the annual report</h3>
+                <div id="events"></div>
+              </section>
+              <p class="panel-none muted">This record lists no 8-Ks: it was made before the run kept them.</p>
+            </div>
+
+            <div id="panel-figures" class="tabpanel" data-tab="figures" data-scope="both">
+              <section id="figures-section" class="block" aria-labelledby="figures-title" hidden>
+                <h3 id="figures-title" class="block-title" data-code="FIG">Reported figures</h3>
+                <div id="figures"></div>
+              </section>
+              <p class="panel-none muted">The record holds no reported figures.</p>
+            </div>
+
+            <div id="panel-limits" class="tabpanel" data-tab="limits" data-scope="both">
+              <div class="block-pair">
+                <section id="coverage-limits" class="block" aria-labelledby="limits-title" tabindex="-1">
+                  <h3 id="limits-title" class="block-title" data-code="LIM">Coverage limits</h3>
+                  <ul id="limits" class="mark-list"></ul>
+                </section>
+
+                <section class="block" aria-labelledby="errors-title">
+                  <h3 id="errors-title" class="block-title" data-code="ERR">Errors</h3>
+                  <ul id="errors" class="mark-list"></ul>
+                  <div id="errors-more"></div>
+                </section>
+              </div>
+            </div>
+
           </div>
         </section>
 
-        <section class="block" aria-labelledby="claims-title">
-          <h3 id="claims-title" class="block-title" data-code="CLM">Claims and their evidence</h3>
-          <div id="run-filing-changes" class="cc-compared" aria-live="polite" hidden></div>
-          <div id="claim-list"></div>
-        </section>
-
-        <section id="withheld-section" class="block withheld" aria-labelledby="withheld-title" hidden>
-          <h3 id="withheld-title" class="block-title" data-code="WHD"><span class="glyph g-limit" aria-hidden="true">▲</span> Withheld findings</h3>
-          <div id="withheld"></div>
-        </section>
-
-        <section id="figures-section" class="block" aria-labelledby="figures-title" hidden>
-          <h3 id="figures-title" class="block-title" data-code="FIG">Reported figures</h3>
-          <div id="figures"></div>
-        </section>
-
-        <section id="events-section" class="block" aria-labelledby="events-title" tabindex="-1" hidden>
-          <h3 id="events-title" class="block-title" data-code="EVT">Since the annual report</h3>
-          <div id="events"></div>
-        </section>
-
-        <div class="block-pair">
-          <section id="unknowns-section" class="block" aria-labelledby="unknowns-title" hidden>
-            <h3 id="unknowns-title" class="block-title" data-code="UNK">Unknowns</h3>
-            <ul id="unknowns" class="plain-list"></ul>
-          </section>
-
-          <section id="next-section" class="block" aria-labelledby="next-title" hidden>
-            <h3 id="next-title" class="block-title" data-code="NXT">Next steps</h3>
-            <ul id="next-steps" class="plain-list"></ul>
-          </section>
         </div>
 
-        <section class="block" aria-labelledby="sources-title">
-          <h3 id="sources-title" class="block-title" data-code="SRC">Sources</h3>
-          <div class="table-wrap" tabindex="0" role="region" aria-labelledby="sources-title">
-            <table id="sources" class="sources">
-              <thead>
-                <tr>
-                  <th scope="col">ID</th>
-                  <th scope="col">Form</th>
-                  <th scope="col">Period end</th>
-                  <th scope="col">Filed</th>
-                  <th scope="col">Retrieved (UTC)</th>
-                  <th scope="col" class="num">Sections</th>
-                  <th scope="col" class="num">Characters</th>
-                  <th scope="col">Status</th>
-                  <th scope="col">Link</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
+        <section id="run-info" class="run-info block" aria-labelledby="run-info-title">
+          <h3 id="run-info-title" class="block-title" data-code="RUN">How this run was made (the Run drawer)</h3>
+          <div id="run-head" class="run-head"></div>
+          <p id="provenance" class="provenance"></p>
         </section>
-
-        <div class="block-pair">
-          <section id="coverage-limits" class="block" aria-labelledby="limits-title" tabindex="-1">
-            <h3 id="limits-title" class="block-title" data-code="LIM">Coverage limits</h3>
-            <ul id="limits" class="mark-list"></ul>
-          </section>
-
-          <section class="block" aria-labelledby="errors-title">
-            <h3 id="errors-title" class="block-title" data-code="ERR">Errors</h3>
-            <ul id="errors" class="mark-list"></ul>
-            <div id="errors-more"></div>
-          </section>
-        </div>
 
         <details id="legend" class="legend block" open>
           <summary>The marks on this page</summary>
@@ -311,8 +365,6 @@
             <div><dt><span class="decision-mark d-undecided"><span class="glyph" aria-hidden="true">☐</span><span>Undecided</span></span></dt><dd>Your decision is still to make; dashed, because the verdict after your review is provisional until you decide.</dd></div>
           </dl>
         </details>
-
-        <p id="provenance" class="provenance"></p>
       </div>
 
       </section>
@@ -325,9 +377,10 @@
       <div><dt><kbd>/</kbd></dt><dd>Put the cursor in the ticker</dd></div>
       <div><dt><kbd>e</kbd></dt><dd>Open or close your thesis (the form) beside a result</dd></div>
       <div><dt><kbd>i</kbd></dt><dd>Open the inbox of the standing watch</dd></div>
-      <div><dt><kbd>j</kbd></dt><dd>Next claim</dd></div>
-      <div><dt><kbd>k</kbd></dt><dd>Previous claim</dd></div>
-      <div><dt><kbd>Enter</kbd></dt><dd>Open or close the claim in focus</dd></div>
+      <div><dt><kbd>j</kbd></dt><dd>Select the next claim (on the page, not on this specimen)</dd></div>
+      <div><dt><kbd>k</kbd></dt><dd>Select the previous claim, then the whole thesis</dd></div>
+      <div><dt><kbd>1</kbd>–<kbd>9</kbd></dt><dd>Show that tab of the selection</dd></div>
+      <div><dt><kbd>r</kbd></dt><dd>Open or close the Run drawer</dd></div>
       <div><dt><kbd>t</kbd></dt><dd>Switch between the Paper and Terminal themes</dd></div>
       <div><dt><kbd>?</kbd></dt><dd>Show these keys</dd></div>
       <div><dt><kbd>Esc</kbd></dt><dd>Close this list</dd></div>

@@ -892,6 +892,9 @@ button.secondary:not(:disabled):hover { background: var(--surface-2); }
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
 }
 .score-row .score-computed.is-none { font-size: var(--step--2); }
+.score-row .score-computed { gap: var(--s-1) var(--s-2); font-size: var(--step--2); }
+.score-row .score-computed .ct-counted:not(.c-differ) { color: var(--ink-2); font-weight: 500; font-size: var(--step--2); }
+.score-row .score-computed .sep { display: none; }
 
 /* With a review: the engine's stamp and the one after your review, each under its own label. */
 .score-verdicts { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--s-1) var(--s-3); }
@@ -991,7 +994,7 @@ button.decide[aria-pressed="true"] { background: var(--accent); color: var(--acc
 
 .changes-note { margin: 0 0 0.4rem; max-width: 88ch; font-family: var(--font-prose); }
 .changes-runs { margin: 0 0 0.55rem; font-size: var(--step--1); color: var(--ink-2); }
-.changes { width: 100%; min-width: 680px; border-collapse: collapse; font-size: var(--step--1); }
+.changes { width: 100%; min-width: 36rem; border-collapse: collapse; font-size: var(--step--1); }
 .changes th, .changes td { text-align: left; vertical-align: top; padding: var(--row-pad) 0.6rem; border-bottom: 1px solid var(--line); }
 .changes thead th { color: var(--ink-2); font-weight: 600; white-space: nowrap; border-bottom: 1.5px solid var(--ink); font-family: var(--font-label); font-variant-caps: var(--label-caps); text-transform: var(--label-transform); letter-spacing: var(--label-track); }
 .changes tbody tr:last-child > * { border-bottom: 0; }
@@ -1359,6 +1362,7 @@ svg.chart { display: block; width: 100%; height: auto; font-family: var(--font-d
 .sources tbody tr:last-child > * { border-bottom: 0; }
 .sources tbody tr:hover > * { background: var(--surface-2); }
 .sources .num { text-align: right; font-variant-numeric: tabular-nums; }
+.sources td:nth-child(n + 3):nth-child(-n + 7) { white-space: nowrap; }
 .sources .gloss { color: var(--ink-2); }
 .sources .not-read { font-weight: 600; }
 
@@ -1619,13 +1623,14 @@ p.bd-adds-yes, dt .bd-adds-yes { font-weight: 650; color: var(--ink); }
  * bold tag; a routine one (results, exhibits, governance, disclosure) stays plain and muted.
  * Neither is a verdict, limit, model, rule or change mark. Opening sentences are quoted as
  * excerpts are. A finding that an 8-K postdates, and a claim's caution, use the ▲. */
-.event-counts { margin: 0 0 0.7rem; font-family: var(--font-data); font-size: var(--step--1); max-width: 95ch; }
+.event-counts { margin: 0 0 var(--s-3); font-family: var(--font-data); font-size: var(--step--1); color: var(--ink-2); }
+.event-asof { margin: 0 0 var(--s-2); font-family: var(--font-prose); font-size: var(--step-0); }
 .events { list-style: none; margin: 0; padding: 0; border-top: 1.5px solid var(--ink); }
 :root[data-theme="terminal"] .events { border-top-color: var(--line-strong); }
-.event { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); gap: 0 1rem; padding: 0.55rem 0.2rem 0.6rem; border-bottom: 1px solid var(--line); scroll-margin-top: 1rem; }
+.event { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); gap: 0 1rem; padding: var(--s-2) var(--s-2) var(--s-2) var(--s-3); border-bottom: 1px solid var(--line); scroll-margin-top: 1rem; }
 .event > * { grid-column: 2; }
 .event > .event-head { grid-column: 1 / -1; display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); gap: 0 1rem; align-items: baseline; }
-.event.ev-substantive { box-shadow: inset 3px 0 0 var(--ink); padding-left: 0.7rem; }
+.event.ev-substantive { box-shadow: inset 3px 0 0 var(--ink); }
 .event.ev-routine { color: var(--ink-2); }
 .event:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
 .event:target, .event.is-flash { background: var(--surface-2); }
@@ -1662,14 +1667,16 @@ p.bd-adds-yes, dt .bd-adds-yes { font-weight: 650; color: var(--ink); }
 .ct { min-width: 0; max-width: 100%; margin: 0.2rem 0 1rem; border: 1px solid var(--line-strong); border-left: 4px solid var(--rule); background: var(--surface); }
 .ct code, .ct-not code, .tot code { white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
 .ct-not, .tot-claim { min-width: 0; }
-.ct > * { margin: 0; padding: 0 0.85rem; }
-.ct > p, .ct > div { margin-top: 0.45rem; }
-.ct > :last-child { padding-bottom: 0.7rem; }
-.ct-head { display: grid; gap: 0.3rem; padding-top: 0.55rem !important; padding-bottom: 0.55rem !important; margin-top: 0 !important; border-bottom: 1px solid var(--line); background: var(--rule-bg, var(--surface-2)); }
+.ct > * { margin: 0; padding: 0 var(--s-3); }
+.ct > p, .ct > div { margin-top: var(--s-2); }
+.ct > :last-child { padding-bottom: var(--s-3); }
+.ct-head { display: grid; gap: var(--s-1); padding-top: var(--s-2) !important; padding-bottom: var(--s-2) !important; margin-top: 0 !important; border-bottom: 1px solid var(--line); }
 .ct-head p { margin: 0; }
-.ct-kicker { font-size: var(--step--1); }
-.ct-kicker .rule-mark { white-space: normal; max-width: 100%; }
-.ct-expr { font-family: var(--font-mono); font-size: var(--step-0); font-weight: 600; overflow-wrap: anywhere; }
+/* Who read the claim and that the arithmetic is code: a sentence, so the fixed rule's olive and its ƒ without the tag's box. */
+.ct-kicker { font-size: var(--step--1); color: var(--ink-2); }
+.ct-kicker .rule-mark { display: inline; padding: 0; border: 0; background: none; white-space: normal; font-weight: 600; }
+.ct-kicker .rule-mark .g-rule { margin-right: 0.3em; }
+.ct-expr { font-family: var(--font-mono); font-size: var(--step-1); font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
 .ct-expr code { background: none; padding: 0; }
 .ct-result { display: flex; flex-wrap: wrap; gap: 0.4rem 0.8rem; align-items: center; }
 .ct-outcome { display: inline-flex; align-items: center; gap: 0.35em; padding: 0.05rem 0.55rem; font-family: var(--font-label); font-weight: 700; font-variant-caps: var(--label-caps); text-transform: var(--label-transform); letter-spacing: 0.05em; border: 2px solid currentColor; white-space: nowrap; }
@@ -1888,7 +1895,11 @@ body.as-of-run .rail-head { border-left: 6px double var(--ink); }
   .peer { grid-template-columns: minmax(0, 1fr); }
 }
 
-/* The specimen page: the design system, every component once. */
+/* The specimen page: the design system, every component once. Its run view is flat (every panel
+   and docket at once); the frame's own parts are shown beside it. */
+.inspector.spec-inspector { display: block; padding: var(--s-3) var(--s-4); border: 1px solid var(--line-strong); background: var(--pane-side); }
+.spec-section .rail-all { margin-top: var(--s-1); border: 1px solid var(--line); }
+.spec-section .tab:disabled { opacity: 1; cursor: default; }
 .spec-layout { grid-template-columns: minmax(0, 1fr); max-width: 1240px; }
 .spec-stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; }
 .spec-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 1rem 2.5rem; align-items: start; }
@@ -2062,6 +2073,7 @@ body.as-of-run .rail-head { border-left: 6px double var(--ink); }
 .sel-head { padding: var(--s-3) 0 var(--s-2); }
 .sel-line { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-3); min-height: 1.6rem; font-size: var(--step--1); }
 .sel-id { font-family: var(--font-code); font-size: var(--step-0); font-weight: 700; color: var(--ink); }
+.sel-id-thesis { font-family: var(--font-label); font-variant-caps: var(--label-caps); text-transform: var(--label-transform); letter-spacing: var(--label-track); font-size: var(--label-size); color: var(--ink-2); }
 .sel-line .run-head-actions { margin-left: auto; }
 .sel-title { margin: var(--s-1) 0 0; max-width: 62ch; font-family: var(--font-prose); font-size: var(--step-2); font-weight: 600; line-height: 1.25; letter-spacing: -0.005em; }
 :root[data-theme="terminal"] .sel-title { font-size: var(--step-1); letter-spacing: 0; }
@@ -2128,13 +2140,23 @@ body.as-of-run .rail-head { border-left: 6px double var(--ink); }
 .inspector .event, .inspector .event > .event-head { display: block; padding: 0; border: 0; box-shadow: none; }
 .inspector .event-head > .event-date { display: none; }
 /* A table of values in the inspector stacks, one value to a block: the pane is narrow. */
-.inspector .table-wrap { overflow: visible; border: 0; }
+.inspector .table-wrap, :root[data-theme="terminal"] .inspector .table-wrap { overflow: visible; border: 0; }
 .inspector .fig-body .table-wrap .inputs, .inspector .ct-table { min-width: 0; }
 .inspector :is(.inputs, .ct-table) thead { display: none; }
 .inspector :is(.inputs, .ct-table), .inspector :is(.inputs, .ct-table) :is(tbody, tr, th, td) { display: block; width: auto; }
-.inspector :is(.inputs, .ct-table) tr { padding: var(--s-2) 0; border-top: 1px solid var(--line); }
+.inspector :is(.inputs, .ct-table) tr { padding: var(--s-3) 0; border-top: 1px solid var(--line-strong); }
 .inspector :is(.inputs, .ct-table) :is(th, td) { padding: 0.1rem 0; border: 0; text-align: left; white-space: normal; }
-.inspector .inputs td[data-th]::before { content: attr(data-th) ": "; color: var(--ink-2); }
+.inspector .ct-table tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-1) var(--s-3); align-items: start; }
+.inspector .ct-table th[scope="row"] code { font-size: var(--step-0); }
+.inspector .ct-table td.num { text-align: right; font-size: var(--step-1); }
+.inspector .ct-table td:nth-child(n + 3) { grid-column: 1 / -1; }
+.inspector .ct-facts { gap: 0; }
+.inspector .ct-fact { padding: var(--s-1) 0; border-top: 1px dotted var(--line); line-height: 1.45; }
+.inspector .ct-arith { padding-left: 1.6rem; font-size: var(--step--2); line-height: 1.6; }
+/* A figure's reported values: one block per value, each cell named. */
+.inspector .inputs td { display: grid; grid-template-columns: 7rem minmax(0, 1fr); gap: var(--s-2); }
+.inspector .inputs td[data-th]::before { content: attr(data-th); color: var(--ink-2); font-size: var(--step--2); }
+.inspector .inputs .num { text-align: left; font-weight: 700; }
 
 /* ------------------------------------------------------------ the workspace: a screen at least 641px wide
  * The page fills the window and does not scroll; each pane scrolls inside itself. */
@@ -2150,7 +2172,8 @@ body.as-of-run .rail-head { border-left: 6px double var(--ink); }
   /* Each scrolling pane is the containing block of what is inside it, so nothing positioned (a label kept
      for a screen reader, a tooltip) escapes the pane and makes the page itself taller than the window. */
   body.app .result-panel, body.app.is-first .form-panel, body.app .rail, body.app .pane-scroll { position: relative; }
-  body.app .result-panel { min-height: 0; overflow-y: auto; padding: var(--s-5) max(var(--s-5), calc((100% - 78rem) / 2)) var(--s-6); background: var(--pane-main); }
+  /* A document view is set to a measure: its column is as wide as its prose and tables read well, and centred. */
+  body.app .result-panel { min-height: 0; overflow-y: auto; padding: var(--s-5) max(var(--s-5), calc((100% - 66rem) / 2)) var(--s-6); background: var(--pane-main); }
 
   /* The first screen: the form in the first pane, the guide and how it works in the second. */
   body.app.is-first > .layout { grid-template-columns: minmax(20rem, 27rem) minmax(0, 1fr); }
@@ -2240,14 +2263,26 @@ body.as-of-run .rail-head { border-left: 6px double var(--ink); }
   /* Read in the inspector, so not twice in the centre pane: a test's operands, a quote's context, an 8-K's opening sentences. */
   body.app .ct-detail { display: none; }
   body.app .ws .centre .excerpt .context, body.app .ws .centre .evidence-hl { display: none; }
-  body.app .ws .centre .excerpt { margin: var(--s-1) 0; padding-left: var(--s-3); border-left: 2px solid var(--line-strong); font-size: 0.95rem; line-height: 1.55; }
+  body.app .ws .centre .excerpt { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; white-space: normal; margin: var(--s-1) 0; padding-left: var(--s-3); border-left: 2px solid var(--line-strong); font-size: var(--step-0); line-height: 1.5; color: var(--ink-2); }
   body.app .ws .centre .excerpt mark { padding: 0; background: none; color: inherit; }
+  body.app .ws .centre .evidence-caption :is(.locator, a.ext) { display: none; }
+  body.app .ws .centre .evidence { margin-top: var(--s-2); }
+  body.app .ws .centre .finding > .pick { grid-column: 1 / -1; }
+  body.app .ws .centre .finding-statement { font-size: var(--prose-size); font-weight: 500; line-height: 1.4; }
+  :root[data-theme="terminal"] body.app .claim-body { padding: 0; }
   body.app .ws .centre .event :is(.event-opening, .event-link, .event-roles) { display: none; }
   body.app .ws .centre .fig-row > .fig-body { display: none; }
   body.app .ws .centre .fig-label::before { content: none; }
 
 
   :root[data-theme="terminal"] body.app > .statusbar { position: static; }
+  /* The statement's badge says who wrote the finding; its reason, under the same violet rule, does not repeat it. */
+  body.app .ws .centre .finding-main > p.mw .badge-model { display: none; }
+}
+/* A window at least a laptop wide: the bar is one row, and the watch's detail is what gives way. */
+@media screen and (min-width: 1280px) {
+  .cmdbar { flex-wrap: nowrap; }
+  .watch-health { overflow: hidden; text-overflow: ellipsis; }
 }
 
 /* A window too narrow for three panes: the rail is a strip across the top, the inspector a sheet from the bottom. */
@@ -2312,6 +2347,7 @@ body.as-of-run .rail-head { border-left: 6px double var(--ink); }
   text-align: center;
 }
 :root[data-theme="terminal"] .rail > .pane-label { margin: var(--s-2) var(--pane-pad) 0; padding: 0; }
+:root[data-theme="terminal"] .block-title .g-limit { margin-right: 0.4em; }
 :root[data-theme="terminal"] .rail-all { border-top: 0; }
 :root[data-theme="terminal"] .rail-all-name, :root[data-theme="terminal"] .score-claim { font-family: var(--font-sans); }
 :root[data-theme="terminal"] .rail-all:hover, :root[data-theme="terminal"] .score-row:hover { box-shadow: inset 2px 0 0 var(--accent); }
@@ -2455,6 +2491,8 @@ body.as-of-run .rail-head { border-left: 6px double var(--ink); }
   .run-info > .block-title, .run-info > .provenance { display: none; }
   .rail > .pane-label { padding: var(--s-4) 0 var(--s-1); }
   .rail-all, .score-row { padding-left: 0; padding-right: 0; }
+  /* What was selected or picked on screen is not marked on paper. */
+  .score-row[aria-current="true"], .is-picked, .is-picked > summary { background: none !important; box-shadow: none !important; }
   .score-row .assessed, .score-row .score-computed > .label { position: static; width: auto; height: auto; margin: 0; overflow: visible; clip: auto; white-space: normal; }
   .claim { break-inside: auto; border-top: 1.5px solid #000; }
   .finding, .evidence, .event, .fig-row, .chart-block { break-inside: avoid; }

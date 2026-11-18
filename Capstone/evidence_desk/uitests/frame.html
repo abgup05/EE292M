@@ -267,6 +267,9 @@ async function run() {
   doc = frame.contentDocument;
   const panel = doc.getElementById("result-panel");
   record(frame, "wide-inbox", { panelScrolls: String(panel.scrollHeight > panel.clientHeight), panelOverflowY: frame.contentWindow.getComputedStyle(panel).overflowY });
+  // The widest bar there is: the recorded inbox in Terminal (mono), with the watch's health in it, on a laptop.
+  frame = await open("?sample=inbox&theme=terminal", 1280, 800, (d) => !d.getElementById("inbox-view").hidden && d.querySelector("#inbox-items article") && !d.getElementById("watch-health").hidden, "the recorded inbox at 1280x800, Terminal");
+  record(frame, "laptop-inbox-terminal");
 
   done.dataset.done = "true";
   done.textContent = "done";

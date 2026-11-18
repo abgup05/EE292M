@@ -228,9 +228,31 @@ assumptions at a dated price, not a forecast).
 
 The model is the engine's by default (`ANTHROPIC_ANALYSIS_MODEL`, then `ANTHROPIC_MODEL`, then
 `claude-opus-5-5`), 10,000 output tokens, one attempt of at most 110 seconds. Record text goes
-in escaped and every string the model returns is unescaped. The schema has no union and no
-nullable field (`tests/test_analysis_run.py` runs the counter of `tests/test_reading_schema.py`
-over both schemas).
+in escaped and every string the model returns is unescaped.
+
+**The answer is asked for flat, and code regroups it.** The API compiles a schema into a grammar
+and refused the first `analyse` schema, which spelled the sentence object out under each of nine
+sections, a condition and a scenario (HTTP 400, "The compiled grammar is too large"); it accepted
+`propose`. The schema now states the sentence once:
+
+    leans[]       {claim_id, lean}
+    sentences[]   {about, section, scenario, text, cites[]}
+    conditions[]  {about, text, cites[], measure, comparison, threshold, unit, event_category}
+    leans_on[]    claim ids
+    weakest_link  a claim id
+
+`about` is a claim id or `thesis`; `section` is the schema's only enum (assessment, case_for,
+case_against, decides for a claim; bottom_line, weakest_why, strongest_for, strongest_against,
+scenario for the thesis); `scenario` is the scenario's name when the section is scenario.
+`parse_argument` puts each sentence under its claim and section in the order written, which
+gives the record the same shape as before (`ClaimArgument`, `ThesisArgument`), and checks in
+code what the schema no longer does: a lean, comparison, unit or category it does not know
+becomes `unclear`, `none` or empty; a sentence about a claim the run does not have, in a
+section that is not its subject's, over a section's cap or in a fourth scenario is cut, counted
+in `analysis_sentences_cut`, and `argument_note` says why once per reason. Neither schema has a
+union or a nullable field, and `tests/test_analysis_schema.py` keeps the `analyse` schema at no
+more than half the size of the accepted `propose` schema (schema nodes plus enum members), with
+one enum and four object definitions.
 
 ### The audit (`core/analysis_audit`)
 

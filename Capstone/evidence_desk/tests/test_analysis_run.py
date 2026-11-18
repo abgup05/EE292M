@@ -24,7 +24,7 @@ from app.engines.cassette import CassetteTransport
 from app.engines.transport import EngineError, ModelRequest
 from app.services.thesis_run import execute_run, new_run
 from app.store import FilingCache, Store
-from tests.fakes import FakePages, ScriptedAnalyst
+from tests.fakes import FakePages, ScriptedAnalyst, flat_argument
 from tests.replay_run import recorded_filings
 from tests.test_reading_schema import union_parameters
 
@@ -164,7 +164,8 @@ class FakeTransport:
         answer = self.answers[request.step]
         if isinstance(answer, Exception):
             raise answer
-        return answer
+        # The scripted arguments are written nested, as the record holds them.
+        return flat_argument(answer) if request.step == "analyse" else answer
 
 
 def _run(tmp_path: Path, analyser: Any = None, name: str = "record") -> Run:

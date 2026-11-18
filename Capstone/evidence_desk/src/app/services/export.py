@@ -21,6 +21,7 @@ from datetime import UTC, datetime
 from urllib.parse import quote as percent_encode
 
 from app.core.claim_change_models import RelevantChange, RunChanges
+from app.core.event_models import Event, EventStatus
 from app.core.metric_models import Metric
 from app.core.models import (
     Claim,
@@ -39,6 +40,9 @@ from app.core.models import (
 )
 from app.core.policy import (
     DECISION_LABELS,
+    EVENT_INDEX_UNREAD_COUNTS,
+    EVENTS_NONE,
+    EVENTS_NOTE,
     FIGURES_NOTE,
     NO_CHECKER_NOTE,
     REVIEW_NOTE,
@@ -200,6 +204,8 @@ def _header(run: Run, review: Review | None) -> list[str]:
     if run.status == RunStatus.running:
         detail = f" ({_text(run.stage_detail)})" if run.stage_detail else ""
         lines.append(f"- Stage: {run.stage}{detail}")
+    if run.as_of is not None and run.as_of.line:
+        lines += ["", _text(run.as_of.line, line_start=True)]
     lines += ["", "## Decision", "", _text(run.inputs.decision, line_start=True), ""]
     if run.inputs.scope_notes:
         lines += [f"**Scope notes:** {_text(run.inputs.scope_notes)}", ""]
@@ -260,6 +266,51 @@ def _excerpt(item: Evidence, sources: dict[str, Source]) -> list[str]:
     url = item.link or (source.url if source else "")
     where = f"[{_link_text(title)}]({_url(url)})" if url else _link_text(title)
     return [*_blockquote(item.excerpt), "", f"— {_text(item.locator)}, {where}", ""]
+
+
+EVENTS_HEADING_MD = "## Events since the annual report"
+EVENT_STATUS_WORDS = {
+    EventStatus.read: "read",
+    EventStatus.failed: "could not be read",
+    EventStatus.capped: "not read: the cap per run came first",
+    EventStatus.out_of_time: "not read: the run time limit came first",
+    EventStatus.index_only: "listed from the index only",
+}
+
+
+def _event(event: Event) -> list[str]:
+    """One 8-K: its date, form and link, each item with its category, the opening quoted."""
+    kind = "substantive" if event.substantive else "routine"
+    status = EVENT_STATUS_WORDS[event.status]
+    if event.reason:
+        status += f": {_text(event.reason)}"
+    where = f"[{_link_text(event.form)}, filed {event.filed_label}]({_url(event.url)})"
+    lines = [f"- {where} ({kind}; {status})"]
+    for item in event.items:
+        lines.append(f"  - Item {item.number}. {_text(item.title)} ({item.category})")
+        if item.roles:
+            lines.append(f"    - Roles named: {_text(', '.join(item.roles))}")
+        lines += [f"    - “{_text(sentence)}”" for sentence in item.opening]
+    return lines
+
+
+def _events(run: Run) -> list[str]:
+    """The 8-Ks since the annual report, newest first, and what became of each; none in old runs."""
+    as_of = run.as_of
+    if as_of is None:
+        return []
+    lines = [EVENTS_HEADING_MD, "", EVENTS_NOTE, ""]
+    if as_of.index_error:
+        error = as_of.index_error.rstrip(".")
+        lines += [_text(EVENT_INDEX_UNREAD_COUNTS.format(error=error), line_start=True), ""]
+        return lines
+    lines += [_text(as_of.counts.line, line_start=True), ""]
+    if not run.timeline:
+        annual = as_of.annual_filed or NOT_AVAILABLE
+        return [*lines, _text(EVENTS_NONE.format(annual=annual), line_start=True), ""]
+    for event in run.timeline:
+        lines += _event(event)
+    return [*lines, ""]
 
 
 def _figure_line(metric: Metric) -> str:
@@ -350,6 +401,16 @@ def _period_lines(finding: Finding) -> list[str]:
     return [f"- {PERIOD_UNVERIFIED_PREFIX}{_text('; '.join(missing))}."] if missing else []
 
 
+def _predated_lines(finding: Finding, timeline: dict[str, Event]) -> list[str]:
+    """ "- [Predates the 8-K of 12 Nov 2026, Item 5.02](<link>)", one per later 8-K."""
+    lines: list[str] = []
+    for mark in finding.predated_by:
+        event = timeline.get(mark.event_id)
+        label = _link_text(mark.label)
+        lines.append(f"- [{label}]({_url(event.url)})" if event else f"- {label}")
+    return lines
+
+
 def _decision_line(finding_id: str, decisions: dict[str, Decision]) -> str:
     """ "- Your decision: Rejected. <the reviewer's note>"."""
     decision = decisions.get(finding_id)
@@ -373,6 +434,11 @@ def _claims(run: Run, review: Review | None) -> list[str]:
             ]
         if claim.rationale:
             lines += [_text(claim.rationale, line_start=True), ""]
+        if claim.caution:
+            lines += [f"**Caution:** {_text(claim.caution)}", ""]
+        if claim.event_note:
+            lines += [f"**8-Ks since the annual report:** {_text(claim.event_note)}", ""]
+        timeline = {event.id: event for event in run.timeline}
         findings = _verified_for(run, claim)
         if not findings:
             note = VERDICT_NOTES[claim.verdict] if claim.verdict else "This claim was not assessed."
@@ -392,6 +458,7 @@ def _claims(run: Run, review: Review | None) -> list[str]:
                 f"- Checks: {_checks_line(finding)}",
                 _meaning_line(finding),
                 *_period_lines(finding),
+                *_predated_lines(finding, timeline),
             ]
             if finding.count_note:
                 counted = finding.counted_as or Stance.context
@@ -546,7 +613,8 @@ def render_markdown(
 
     Order: title, status, your review (reviewed brief only), decision, verdict
     table (finished runs only), summary,
-    reported figures (when the run has any), claims with their verified findings,
+    reported figures (when the run has any), the 8-Ks since the annual report (runs
+    from version 12), claims with their caution and 8-K note and their verified findings,
     their checks, cited figures and excerpts, unknowns, next steps,
     sources, coverage limits, errors, provenance, withheld findings, and for a
     reviewed brief a closing line dating the decisions. A reviewed brief adds
@@ -568,6 +636,7 @@ def render_markdown(
             "",
         ]
     lines += _reported_figures(run)
+    lines += _events(run)
     lines += _claims(run, review)
     if changes is not None:
         lines += _reading_list(run, changes)

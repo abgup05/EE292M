@@ -283,3 +283,46 @@ def test_the_example_thesis_has_no_claim_an_8k_bears_on() -> None:
     assert {claim: claim_categories(claim) for claim in EXAMPLE_THESIS.claims} == {
         claim: [] for claim in EXAMPLE_THESIS.claims
     }
+
+
+def test_the_brief_carries_the_as_of_line_the_events_the_caution_and_the_mark() -> None:
+    from app.services.export import EVENTS_HEADING_MD, render_markdown
+
+    analyst = ScriptedAnalyst(quote_the_annual_report)
+    run = run_with(filings((DEPARTURE_8K, departure_html())), analyst)
+    brief = render_markdown(run)
+    assert run.as_of is not None and f"\n{run.as_of.line}\n" in brief
+    events = brief.split(EVENTS_HEADING_MD, 1)[1].split("\n## ", 1)[0]
+    assert run.as_of.counts.line in events
+    assert f"- [8-K, filed 10 Mar 2026]({DEPARTURE_8K.url}) (substantive; read)" in events
+    assert "  - Item 5.02. Departure of Directors or Certain Officers" in events
+    assert "    - Roles named: Chief Executive Officer" in events
+    assert f"    - “{DEPARTURE}”" in events
+    [claim] = run.claims
+    assert f"**Caution:** {claim.caution}" in brief
+    assert f"- [Predates the 8-K of 10 Mar 2026, Item 5.02]({DEPARTURE_8K.url})" in brief
+    assert brief.index(EVENTS_HEADING_MD) < brief.index("## Claims")
+
+
+def test_8k_text_in_the_brief_is_escaped_as_excerpts_are() -> None:
+    from app.services.export import EVENTS_HEADING_MD, render_markdown
+
+    hostile = current_report_html(
+        (
+            "5.02",
+            "Departure of Directors or Certain Officers.",
+            ["On March 9, 2026, *Jane* [Smith](https://evil.example) <b>resigned</b> as CEO."],
+        ),
+    )
+    brief = render_markdown(run_with(filings((DEPARTURE_8K, hostile)), ScriptedAnalyst()))
+    events = brief.split(EVENTS_HEADING_MD, 1)[1].split("\n## ", 1)[0]
+    assert "\\*Jane\\* \\[Smith\\](https://evil.example)" in events
+    assert "[Smith](https://evil.example)" not in brief
+
+
+def test_a_run_from_version_11_renders_with_no_event_section() -> None:
+    from app.services.export import EVENTS_HEADING_MD, render_markdown
+
+    run = Run.model_validate_json(gzip.decompress(OLD_RUN.read_bytes()))
+    brief = render_markdown(run)
+    assert EVENTS_HEADING_MD not in brief and "Evidence as of" not in brief

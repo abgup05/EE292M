@@ -1,4 +1,4 @@
-// Evidence Desk frontend (version 5).
+// Evidence Desk frontend (the research-note design: docs/design.md).
 //
 // Collects a thesis, starts a run, polls it, and draws the record the API
 // returns; records the reader's decision on each verified finding; saves a
@@ -33,6 +33,12 @@
 //   changes   between two filings (`/api/companies/{ticker}/changes`), cyan, square tags:
 //             # numbers only, ~ reworded, + added, − removed; inside a reworded
 //             paragraph, added words are underlined and removed ones struck through
+//
+// Drawing, not computing: the time line places record dates on an axis, a sparkline places
+// a series' values in a box, and a negative number is set in its colour from the sign of the
+// record's own value. Every date, label, count, outcome and percentile a reader sees is a
+// record field or wording from /api/meta. The theme ("paper" or "terminal") is the reader's
+// setting, kept in localStorage when the browser allows it, else it follows the system.
 
 "use strict";
 
@@ -177,10 +183,36 @@ const state = {
   // The RunChanges of the finished run on screen: {runId, status: "loading" | "ready" | "failed", record, error}.
   claimChanges: null,
   claimChangesOpen: new Set(), // claim ids whose "Changed in the filings" block the reader opened
+  sampleNote: "", // where a sample record came from, said in the run's head
+  timelineRun: null, // the run whose time line is drawn, redrawn when the note changes width
+  // The standing watch (version 13): /api/watch/meta, the watches by thesis, the health, the inbox.
+  watchMeta: null,
+  watches: new Map(),
+  watchesLoaded: false,
+  health: null,
+  inboxUnread: null,
+  inboxPage: null,
+  inboxThesis: null, // the thesis the inbox is filtered to, or null for every thesis
+  inboxOffsets: [], // the offsets of the pages before this one, to go back by the API's own offsets
+  inboxSeq: 0,
+  itemComparison: null, // an inbox item's `moved`, shown under the run it made
 };
 
 /** Samples that have a recorded RunChanges beside them; any other sample shows no such block and asks for none. */
 const SAMPLE_RUN_CHANGES = { run: "sample-run-changes.json" };
+
+/**
+ * Samples stored as a bare run, copied unedited from a run's own record (results/<run>.json):
+ * they carry no note and no wording, so the note is here and the wording comes from /api/meta.
+ */
+const BARE_SAMPLE_NOTES = {
+  "run-events":
+    "A live run of 18 November 2026 on NVIDIA (run run-39d0b17b5396), answered by the Anthropic API: claude-opus-5-5 read the passages and claude-haiku-5-5 checked their meaning. It is copied unedited from results/run-39d0b17b5396.json. Its first claim is about the chief executive leaving, and the 8-K of 12 Nov 2026 postdates the evidence of one of its findings.",
+};
+
+const THEMES = ["paper", "terminal"];
+const THEME_KEY = "evidence-desk-theme";
+const THEME_NAMES = { paper: "Paper", terminal: "Terminal" };
 
 const $ = (id) => document.getElementById(id);
 
@@ -271,6 +303,41 @@ const els = {
   errors: $("errors"),
   errorsMore: $("errors-more"),
   provenance: $("provenance"),
+  cmdRun: $("cmd-run"),
+  cmdStatus: $("cmd-status"),
+  cmdEngine: $("cmd-engine"),
+  cmdAsof: $("cmd-asof"),
+  themeToggle: $("theme-toggle"),
+  keysButton: $("keys-button"),
+  keysDialog: $("keys-dialog"),
+  timelineSection: $("timeline-section"),
+  timeline: $("timeline"),
+  tapeSection: $("tape-section"),
+  tape: $("tape"),
+  boardHead: $("board-head"),
+  howto: $("howto"),
+  howtoButton: $("howto-button"),
+  thesisButton: $("thesis-button"),
+  formPanel: $("form-panel"),
+  drawerClose: $("drawer-close"),
+  drawerScrim: $("drawer-scrim"),
+  leaveSample: $("leave-sample"),
+  statusbarRun: $("statusbar-run"),
+  keysHowto: $("keys-howto"),
+  inboxView: $("inbox-view"),
+  inboxHead: $("inbox-head"),
+  inboxButton: $("inbox-button"),
+  inboxCount: $("inbox-count"),
+  inboxItems: $("inbox-items"),
+  inboxCollapsed: $("inbox-collapsed"),
+  inboxPaging: $("inbox-paging"),
+  inboxMessage: $("inbox-message"),
+  watches: $("watches"),
+  watchesSection: $("watches-section"),
+  watchDown: $("watch-down"),
+  watchHealth: $("watch-health"),
+  thesisWatch: $("thesis-watch"),
+  thesisWatchSection: $("thesis-watch-section"),
 };
 
 // ---------------------------------------------------------------- helpers
@@ -600,7 +667,9 @@ async function api(url, options = {}) {
     payload = null;
   }
   if (!response.ok) {
-    const message = typeof payload?.error === "string" ? payload.error : `the server answered HTTP ${response.status}`;
+    // The app's refusals carry `error`; FastAPI's own 404s carry `detail`.
+    const message =
+      typeof payload?.error === "string" ? payload.error : typeof payload?.detail === "string" ? payload.detail : `the server answered HTTP ${response.status}`;
     const details = Array.isArray(payload?.details) ? payload.details : [];
     throw new ApiError(message, response.status, details);
   }
@@ -926,11 +995,13 @@ async function onFiguresOnly() {
 }
 
 function renderFiguresOnly(report) {
+  renderCommandBar(null);
   els.loading.hidden = true;
   els.loadError.hidden = true;
   els.empty.hidden = true;
   els.runView.hidden = true;
   els.thesisView.hidden = true;
+  els.inboxView.hidden = true;
   els.changesView.hidden = true;
   els.breakdownsView.hidden = true;
   els.figuresView.hidden = false;
@@ -939,12 +1010,7 @@ function renderFiguresOnly(report) {
     h(
       "div",
       { class: "run-head-main" },
-      h(
-        "p",
-        { class: "company" },
-        h("strong", { text: str(report.company) || "Company" }),
-        Number.isFinite(report.cik) ? h("span", { class: "muted small" }, " · ", h("abbr", { title: "The SEC's numeric identifier for this company", text: "CIK" }), ` ${report.cik}`) : "",
-      ),
+      companyTitle({ name: str(report.company), cik: report.cik }, str(report.ticker)),
       h("p", { class: "run-meta", text: "Reported figures read from the company's XBRL data. No run was started and no claim was tested." }),
     ),
   );
@@ -1022,12 +1088,14 @@ function renderChanges(record, sampleNote) {
     showLoadError("The comparison could not be shown: the record names no filings or Items.", null);
     return;
   }
+  renderCommandBar(null);
   els.loading.hidden = true;
   els.loadError.hidden = true;
   els.empty.hidden = true;
   els.runView.hidden = true;
   els.figuresView.hidden = true;
   els.thesisView.hidden = true;
+  els.inboxView.hidden = true;
   els.breakdownsView.hidden = true;
   els.changesView.hidden = false;
   document.body.classList.add("has-run");
@@ -1037,14 +1105,8 @@ function renderChanges(record, sampleNote) {
     h(
       "div",
       { class: "run-head-main" },
-      h(
-        "p",
-        { class: "company" },
-        state.sample ? h("span", { class: "page-tag inline", text: "Sample record" }) : "",
-        h("strong", { text: str(company.ticker) || "Company" }),
-        str(company.name) ? ` · ${company.name}` : "",
-        Number.isFinite(company.cik) ? h("span", { class: "muted small" }, " · ", h("abbr", { title: "The SEC's numeric identifier for this company", text: "CIK" }), ` ${company.cik}`) : "",
-      ),
+      state.sample ? h("span", { class: "page-tag inline", text: "Sample record" }) : "",
+      companyTitle(company),
       h("p", { class: "run-meta", text: "What changed between two of the company's filings, Item by Item. No run was started and no claim was tested." }),
       sampleNote ? h("p", { class: "run-meta", text: `Sample: ${sampleNote}` }) : "",
     ),
@@ -1349,12 +1411,14 @@ function renderBreakdowns(report, sampleNote) {
     showLoadError("The tagged facts could not be shown: the record names no filing or breakdowns.", null);
     return;
   }
+  renderCommandBar(null);
   els.loading.hidden = true;
   els.loadError.hidden = true;
   els.empty.hidden = true;
   els.runView.hidden = true;
   els.figuresView.hidden = true;
   els.thesisView.hidden = true;
+  els.inboxView.hidden = true;
   els.changesView.hidden = true;
   els.breakdownsView.hidden = false;
   document.body.classList.add("has-run");
@@ -1365,14 +1429,8 @@ function renderBreakdowns(report, sampleNote) {
     h(
       "div",
       { class: "run-head-main" },
-      h(
-        "p",
-        { class: "company" },
-        state.sample ? h("span", { class: "page-tag inline", text: "Sample record" }) : "",
-        h("strong", { text: str(company.ticker) || "Company" }),
-        str(company.name) ? ` · ${company.name}` : "",
-        Number.isFinite(company.cik) ? h("span", { class: "muted small" }, " · ", h("abbr", { title: "The SEC's numeric identifier for this company", text: "CIK" }), ` ${company.cik}`) : "",
-      ),
+      state.sample ? h("span", { class: "page-tag inline", text: "Sample record" }) : "",
+      companyTitle(company),
       h("p", { class: "run-meta", text: "The company's latest filing of the form chosen, read when asked for the segments, products, geographies and customers it tags. Not tied to any run: no run was started and no claim was tested." }),
       sampleNote ? h("p", { class: "run-meta", text: `Sample: ${sampleNote}` }) : "",
     ),
@@ -1470,13 +1528,18 @@ function breakdownCell(value, period) {
     changePart = h(
       "details",
       { class: "bd-change" },
-      h("summary", null, change ? h("span", { class: "bd-change-display", text: change }) : h("span", { class: "bd-no-change" }, h("span", { "aria-hidden": "true", text: "—" }), h("span", { class: "visually-hidden", text: "no change stated; open to read why" }))),
+      h("summary", null, change ? h("span", { class: `bd-change-display${signClass(change)}`, text: change }) : h("span", { class: "bd-no-change" }, h("span", { "aria-hidden": "true", text: "—" }), h("span", { class: "visually-hidden", text: "no change stated; open to read why" }))),
       h("span", { class: "bd-formula", text: formula }),
     );
   } else if (change) {
-    changePart = h("span", { class: "bd-change-display", text: change });
+    changePart = h("span", { class: `bd-change-display${signClass(change)}`, text: change });
   }
-  return h("td", { class: "bd-cell", "data-period": key }, h("span", { class: "bd-display", text: str(value.display) }), changePart);
+  return h("td", { class: "bd-cell", "data-period": key }, h("span", { class: `bd-display${signClass(str(value.display))}`, text: str(value.display) }), changePart);
+}
+
+/** " num-neg" for a display string the record writes with a leading minus sign; "" otherwise. Reads the sign, computes nothing. */
+function signClass(display) {
+  return /^\s*[-−(]/.test(str(display)) ? " num-neg" : "";
 }
 
 /** Whether the rows add up to the tagged total: yes, no (a limit) or not checked, each drawn differently. */
@@ -1594,9 +1657,22 @@ function renderTheses(theses) {
       },
       h("span", { class: "recent-name" }, h("strong", { text: str(thesis.name) }), str(thesis.ticker) ? ` · ${thesis.ticker}` : ""),
       h("span", { class: "recent-meta" }, `${plural(thesis.claims, "claim", "claims")} · ${plural(thesis.runs, "run", "runs")}`, last),
+      watchTag(state.watches.get(thesis.id)),
     );
     els.theses.append(h("li", null, button));
   }
+}
+
+/** On a saved thesis in the list: on watch, its policy, and its unread items, as the API says. */
+function watchTag(watch) {
+  if (!watch) return "";
+  return h(
+    "span",
+    { class: "watch-tag", "data-watch-tag": str(watch.policy) },
+    h("span", { class: "glyph", "aria-hidden": "true", text: "◉" }),
+    ` On watch · ${str(watch.policy_label)}`,
+    Number.isFinite(watch.unread) && watch.unread > 0 ? ` · ${num(watch.unread)} unread` : "",
+  );
 }
 
 function toggleSavePanel(open) {
@@ -1678,6 +1754,7 @@ async function openThesis(thesisId) {
 }
 
 function renderThesis(thesis, runs) {
+  renderCommandBar(null);
   els.loading.hidden = true;
   els.loadError.hidden = true;
   els.empty.hidden = true;
@@ -1693,12 +1770,14 @@ function renderThesis(thesis, runs) {
     h(
       "div",
       { class: "run-head-main" },
-      h("p", { class: "company" }, h("span", { class: "label", text: "Saved thesis: " }), h("strong", { text: str(thesis.name) })),
+      h("p", { class: "company-name" }, str(thesis.name)),
+      h("p", { class: "company-line company" }, h("span", { class: "label", text: "Saved thesis" }), str(request.ticker) ? h("strong", { class: "ticker-chip", text: str(request.ticker) }) : ""),
       h("p", { class: "decision" }, h("span", { class: "label", text: "Decision: " }), str(request.decision)),
       h("p", { class: "run-meta", text: `${str(request.ticker)} · ${plural(claims.length, "claim", "claims")} · ${plural(request.filings, "filing", "filings")} per run · saved ${utc(thesis.created_at)}` }),
       h("ol", { class: "thesis-claims" }, claims.map((claim) => h("li", { text: String(claim) }))),
     ),
   );
+  renderThesisWatch(thesis.id);
   els.runAgain.textContent = runs.length ? "Run again on the latest filings" : "Run it on the latest filings";
   els.runAgain.disabled = false;
   els.runAgainMessage.hidden = true;
@@ -1789,16 +1868,24 @@ function comparisonVerdict(verdict, reviewed, side, missingText) {
 function renderComparison(container, comparison, currentRunId) {
   const claims = list(comparison.claims);
   container.replaceChildren();
-  if (str(comparison.note)) container.append(h("p", { class: "changes-note", text: comparison.note }));
+  // A RunComparison has `note` and counts; an inbox item's `moved` has `comparison_note` and no counts.
+  const note = str(comparison.note) || str(comparison.comparison_note);
+  if (note) container.append(h("p", { class: "changes-note", text: note }));
+  const counted = Number.isFinite(comparison.verdicts_moved) && Number.isFinite(comparison.claims_total);
   container.append(
     h(
       "p",
       { class: "changes-runs" },
-      h("span", { class: "count-value", "data-cmp": "verdicts_moved", text: num(comparison.verdicts_moved) }),
-      " of ",
-      h("span", { class: "count-value", "data-cmp": "claims_total", text: num(comparison.claims_total) }),
-      ` ${unit(comparison.claims_total, "verdict", "verdicts")} moved. Earlier run `,
-      runRef(comparison.earlier_run_id, currentRunId),
+      counted
+        ? [
+            h("span", { class: "count-value", "data-cmp": "verdicts_moved", text: num(comparison.verdicts_moved) }),
+            " of ",
+            h("span", { class: "count-value", "data-cmp": "claims_total", text: num(comparison.claims_total) }),
+            ` ${unit(comparison.claims_total, "verdict", "verdicts")} moved. `,
+          ]
+        : "",
+      "Earlier run ",
+      comparison.earlier_run_id ? runRef(comparison.earlier_run_id, currentRunId) : "none (the thesis's first run)",
       comparison.earlier_finished_at ? `, finished ${utc(comparison.earlier_finished_at)}` : "",
       "; later run ",
       runRef(comparison.later_run_id, currentRunId),
@@ -1844,12 +1931,21 @@ function renderComparison(container, comparison, currentRunId) {
       h("p", { class: "label", text: title }),
       list(titles).length ? h("ul", { class: "plain-list" }, list(titles).map((t) => h("li", { text: String(t) }))) : h("p", { class: "muted", text: "None." }),
     );
-  container.append(h("div", { class: "changes-filings-wrap" }, filings("New filings in the later run", comparison.sources_added, "added"), filings("Filings the later run no longer read", comparison.sources_dropped, "dropped")));
+  container.append(
+    h(
+      "div",
+      { class: "changes-filings-wrap" },
+      filings("New filings in the later run", comparison.sources_added, "added"),
+      Array.isArray(comparison.sources_dropped) ? filings("Filings the later run no longer read", comparison.sources_dropped, "dropped") : "",
+    ),
+  );
 }
 
 /** In the run view: what moved, when the comparison's later run is this run. */
 function renderRunChanges(run) {
-  const comparison = state.comparison;
+  // The thesis's latest comparison, else the comparison of the inbox item that opened this run.
+  const fromItem = state.itemComparison?.later_run_id === run.id ? state.itemComparison : null;
+  const comparison = state.comparison?.later_run_id === run.id ? state.comparison : fromItem;
   const show = Boolean(comparison) && comparison.later_run_id === run.id;
   els.changesSection.hidden = !show;
   if (show) renderComparison(els.changes, comparison, run.id);
@@ -1932,7 +2028,7 @@ function renderReviewLine(run) {
 /** The "After your review" cell of a scorecard row, from the Review's claim entry. */
 function reviewedSlot(entry) {
   const verdict = entry?.reviewed_verdict ?? null;
-  const slot = h("span", { class: "verdict-slot slot-reviewed", "data-reviewed-verdict": verdict ?? "none" }, h("span", { class: "slot-label", text: "After your review" }));
+  const slot = h("span", { class: "verdict-slot slot-reviewed", "data-reviewed-verdict": verdict ?? "none" }, h("span", { class: "slot-label visually-hidden", text: "After your review" }));
   if (!verdict) {
     slot.append(h("span", { class: "pill review-pending", text: "not reviewed yet" }));
     return slot;
@@ -2137,9 +2233,13 @@ function hideRunView() {
   els.changesView.hidden = true;
   els.breakdownsView.hidden = true;
   els.thesisView.hidden = true;
+  els.inboxView.hidden = true;
   els.loadError.hidden = true;
   els.empty.hidden = true;
   document.body.classList.remove("has-run");
+  els.inboxButton?.setAttribute("aria-expanded", "false");
+  renderCommandBar(null);
+  state.timelineRun = null;
 }
 
 function showLoadError(message, retry) {
@@ -2167,20 +2267,42 @@ async function loadSample(name) {
   els.thesesBlock.hidden = false;
   els.theses.replaceChildren(h("li", { class: "muted", text: "Saved theses are not loaded in sample mode." }));
   els.saveThesis.hidden = false;
-  const link = $("sample-link");
-  link.textContent = "Leave the sample";
-  link.href = location.pathname;
+  // The way out of sample mode sits in the command bar; the sample links are not offered inside one.
+  $("sample-link").hidden = true;
+  if (els.leaveSample) {
+    els.leaveSample.href = location.pathname;
+    els.leaveSample.hidden = false;
+  }
   $("synthetic-link").hidden = true;
   $("changes-link").hidden = true;
   $("breakdowns-link").hidden = true;
   $("tagged-link").hidden = true;
+  $("events-link").hidden = true;
+  $("inbox-link").hidden = true;
   hideRunView();
   if (!SAMPLE_NAME.test(name)) {
     showLoadError("That sample name is not valid: use lower-case letters, digits and hyphens.", null);
     return;
   }
   try {
+    if (Object.hasOwn(INBOX_SAMPLES, name)) {
+      await loadInboxSample(name);
+      return;
+    }
     const payload = await api(`sample-${name}.json`, { cache: "no-store" });
+    // A bare run, copied unedited from a run's record: its note is the page's, its wording /api/meta's.
+    if (!payload.run && typeof payload.id === "string" && Array.isArray(payload.claims)) {
+      const note = BARE_SAMPLE_NOTES[name];
+      if (!note) throw new ApiError("the file is a bare run that this page has no note for", 0);
+      applyMeta(await api("/api/meta"), { sample: true });
+      state.sampleNote = note;
+      els.formNote.textContent = `Sample mode: ${note} This page does not start runs; open it without ?sample to test a thesis.`;
+      state.runId = payload.id;
+      state.review = null;
+      state.comparison = null;
+      renderRun(payload);
+      return;
+    }
     // A recorded filing comparison ({note, changes}) has no run and needs no wording from /api/meta.
     if (payload.changes && !payload.run) {
       if (str(payload.note)) els.formNote.textContent = `Sample mode: ${payload.note} This page does not look anything up; open it without ?sample to compare a company's filings.`;
@@ -2197,6 +2319,7 @@ async function loadSample(name) {
     applyMeta(payload.meta, { sample: true });
     foldEngineLine(payload.run.engine_detail);
     if (str(payload.note)) els.formNote.textContent = `Sample mode: ${payload.note} This page does not start runs; open it without ?sample to test a thesis.`;
+    state.sampleNote = str(payload.note);
     state.runId = payload.run.id;
     // Sample mode only: the reader's decisions and the comparison are stored in the file.
     const review = payload.review;
@@ -2229,13 +2352,17 @@ function renderRun(run) {
   els.changesView.hidden = true;
   els.breakdownsView.hidden = true;
   els.thesisView.hidden = true;
+  els.inboxView.hidden = true;
   els.runView.hidden = false;
   document.body.classList.add("has-run");
   state.run = run;
 
+  renderCommandBar(run);
   renderBanner(run);
   renderStages(run);
   renderHead(run);
+  renderTape(run);
+  renderTimeline(run);
   renderReviewLine(run);
   renderScorecard(run);
   renderDistinction(run);
@@ -2388,6 +2515,26 @@ function renderBanner(run) {
     if (list(run.coverage_limits).length) {
       parts.push(h("p", { class: "banner-line" }, h("a", { href: "#coverage-limits", onclick: jumpTo("coverage-limits"), text: "Read the coverage limits" })));
     }
+    // One line under the head, the full counts one click away: every count stays in the record's words.
+    const wasOpen = els.banner.querySelector("details.banner-fold")?.open ?? false;
+    const sep = () => h("span", { class: "banner-sep", "aria-hidden": "true", text: " · " });
+    const line = h(
+      "summary",
+      { class: "banner-summary" },
+      h("span", { class: `status-word st-${status}` }, statusMark(run.status), ` ${capitalize(run.status)}`),
+      sep(),
+      h("span", null, cov(c, "sources_read"), " of ", cov(c, "sources_requested"), ` ${unit(c.sources_requested, "source", "sources")}`),
+      sep(),
+      hasProposed
+        ? h("span", null, cov(c, "findings_verified"), " of ", cov(c, "findings_proposed"), ` ${unit(c.findings_proposed, "finding", "findings")} verified`)
+        : h("span", null, cov(c, "findings_verified"), ` ${unit(c.findings_verified, "finding", "findings")} verified`),
+      sep(),
+      h("span", null, cov(c, "findings_withheld"), " withheld"),
+      list(run.coverage_limits).length ? [sep(), h("span", { class: "banner-limits" }, limitGlyph(), " limits")] : "",
+      h("span", { class: "banner-open", text: "all counts" }),
+    );
+    els.banner.replaceChildren(h("details", { class: "banner-fold", open: wasOpen }, line, h("div", { class: "banner-full" }, ...parts)));
+    return;
   }
   els.banner.replaceChildren(...parts);
 }
@@ -2420,16 +2567,76 @@ function renderStages(run) {
   );
 }
 
+/**
+ * The note's title: the company's name large, then its ticker and CIK, as the record names
+ * them. Used by every view that is about one company.
+ */
+function companyTitle(company, fallbackTicker = "") {
+  const ticker = str(company?.ticker) || fallbackTicker;
+  return [
+    h("p", { class: "company-name", text: str(company?.name) || ticker || "Company" }),
+    h(
+      "p",
+      { class: "company-line company" },
+      ticker ? h("strong", { class: "ticker-chip", text: ticker }) : "",
+      Number.isFinite(company?.cik) ? h("span", null, h("abbr", { title: "The SEC's numeric identifier for this company", text: "CIK" }), ` ${company.cik}`) : "",
+    ),
+  ];
+}
+
+/** Where a sample record came from, in the head of the view that shows it. */
+function sampleNoteLine() {
+  if (!state.sample || !state.sampleNote) return "";
+  // Its first sentence in view; the whole note one click away (the same note, not a shorter one).
+  const note = state.sampleNote;
+  const cut = note.indexOf(". ");
+  const first = cut > 0 ? note.slice(0, cut + 1) : note;
+  return h(
+    "div",
+    { class: "sample-note", "data-sample-note": "" },
+    cut > 0
+      ? h("details", { class: "prov-more" }, h("summary", null, h("span", { class: "label", text: "Sample: " }), first), h("p", { class: "prov-full", text: note }))
+      : h("p", null, h("span", { class: "label", text: "Sample: " }), note),
+  );
+}
+
+/**
+ * The command bar's cells for the run on screen: its status, the engine that did the work,
+ * and its as-of line, each the record's own words. Hidden for any other view.
+ */
+function renderCommandBar(run) {
+  if (!els.cmdRun) return;
+  if (!run) {
+    if (els.statusbarRun) els.statusbarRun.textContent = "";
+    els.cmdRun.hidden = true;
+    els.cmdStatus.replaceChildren();
+    els.cmdEngine.replaceChildren();
+    els.cmdAsof.replaceChildren();
+    return;
+  }
+  const status = token(run.status, STATUS_GLYPH);
+  els.cmdRun.hidden = false;
+  els.cmdStatus.replaceChildren(h("span", { class: `status-word st-${status}` }, statusMark(run.status), ` ${capitalize(run.status)}`));
+  // The engine's own detail names the model and where its answers came from (the API or a recording).
+  const reader = str(run.engine_detail) || str(run.engine) || "not recorded";
+  const checker = runMeaningChecked(run) ? str(run.checker_detail) || str(run.checker) : "";
+  els.cmdEngine.replaceChildren(
+    h("span", { class: "cmd-line", "data-cmd-engine": "", title: reader, tabindex: "0" }, h("span", { class: "cmd-key", text: "read " }), reader),
+    checker ? h("span", { class: "cmd-line", "data-cmd-checker": "", title: checker, tabindex: "0" }, h("span", { class: "cmd-key", text: "checked " }), checker) : "",
+  );
+  if (els.statusbarRun) els.statusbarRun.textContent = `${str(run.id)} · ${str(run.status)}`;
+  const line = str(run.as_of?.line);
+  els.cmdAsof.replaceChildren(
+    line
+      ? h("span", { "data-cmd-as-of": "" }, line, " ", h("a", { href: "#events-section", onclick: jumpTo("events-section"), text: "8-Ks" }))
+      : h("span", { class: "muted", text: "Not recorded: this run predates the as-of line." }),
+  );
+}
+
 function renderHead(run) {
   const company = run.company;
   const inputs = run.inputs ?? {};
-  const title = h(
-    "p",
-    { class: "company" },
-    h("strong", { text: company?.ticker ?? inputs.ticker ?? "" }),
-    company ? ` · ${company.name}` : "",
-    company ? h("span", { class: "muted small" }, " · ", h("abbr", { title: "The SEC's numeric identifier for this company", text: "CIK" }), ` ${company.cik}`) : "",
-  );
+  const title = companyTitle(company, str(inputs.ticker));
   const decision = h("p", { class: "decision" }, h("span", { class: "label", text: "Decision: " }), inputs.decision ?? "");
   const engine = str(run.engine);
   const engineLine = h(
@@ -2457,7 +2664,10 @@ function renderHead(run) {
   } else {
     download = h("a", { class: "download", href: briefHref(run.id, false), download: `evidence-desk-${run.id}.md`, text: "Download Markdown brief" });
   }
-  els.runHead.replaceChildren(h("div", { class: "run-head-main" }, title, decision, engineLine, checkerLine, details, asOfLine(run), thesisLine(run)), h("div", { class: "run-head-actions" }, download));
+  els.runHead.replaceChildren(
+    h("div", { class: "run-head-main" }, title, decision, engineLine, checkerLine, details, asOfLine(run), thesisLine(run), sampleNoteLine()),
+    h("div", { class: "run-head-actions" }, download, run.status !== "running" && !state.sample ? h("span", { class: "muted", text: "Print this page for a paper copy of the note." }) : ""),
+  );
 }
 
 /**
@@ -2521,12 +2731,15 @@ function renderScorecard(run) {
   }
   const review = currentReview(run);
   const reviewed = new Map(list(review?.claims).map((entry) => [entry.claim_id, entry]));
+  // One header over the board's columns when there is a review; each row keeps its own labels for screen readers.
+  if (els.boardHead) els.boardHead.hidden = !review;
+  els.scorecard.classList.toggle("has-review", Boolean(review));
   claims.forEach((claim, index) => {
     const verdicts = review
       ? h(
           "span",
           { class: "score-verdicts" },
-          h("span", { class: "verdict-slot slot-engine" }, h("span", { class: "slot-label", text: "Engine" }), verdictPill(claim.verdict)),
+          h("span", { class: "verdict-slot slot-engine" }, h("span", { class: "slot-label visually-hidden", text: "Engine" }), verdictPill(claim.verdict)),
           reviewedSlot(reviewed.get(claim.id)),
         )
       : verdictPill(claim.verdict);
@@ -2552,10 +2765,11 @@ function renderScorecard(run) {
 }
 
 /** The note under the verdicts as index.html writes it: the wording for a run no second model read. */
-const DISTINCTION_DEFAULT = els.distinction.cloneNode(true);
+const DISTINCTION_DEFAULT = els.distinction ? els.distinction.cloneNode(true) : null;
 
 /** The note under the verdicts: what was checked, and by whom, for this run. */
 function renderDistinction(run) {
+  if (!els.distinction) return;
   if (!runMeaningChecked(run)) {
     els.distinction.replaceChildren(...DISTINCTION_DEFAULT.cloneNode(true).childNodes);
     return;
@@ -2641,12 +2855,36 @@ function renderClaims(run, ctx) {
     body.append(h("div", { class: "cc-slot", "data-cc-slot": claim.id }));
     const details = h(
       "details",
-      { class: "claim", id, open: open.has(id) },
-      h("summary", null, verdictPill(claim.verdict), h("span", { class: "claim-id", text: claim.id }), h("span", { class: "claim-text", text: claim.text })),
+      { class: "claim", id, open: open.has(id), "data-docket": claim.id },
+      h(
+        "summary",
+        null,
+        verdictPill(claim.verdict),
+        h("span", { class: "claim-id", text: claim.id }),
+        h("span", { class: "claim-text", text: claim.text }),
+        docketMeta(claim, run),
+      ),
       body,
     );
     els.claimList.append(details);
   });
+}
+
+/**
+ * The line under a claim on its docket: how many findings the record lists for it and how many
+ * passages it considered, then a flag for a caution or an 8-K note the claim carries.
+ */
+function docketMeta(claim, run) {
+  const c = run.coverage ?? {};
+  const parts = [
+    plural(list(claim.finding_ids).length, "finding", "findings"),
+    ` · ${num(claim.passages_considered ?? 0)}`,
+    Number.isFinite(c.passages_indexed) ? ` of ${num(c.passages_indexed)}` : "",
+    " passages considered",
+  ];
+  if (str(claim.caution)) parts.push(" · ", h("span", { class: "docket-flag" }, limitGlyph(), " Caution"));
+  else if (str(claim.event_note)) parts.push(" · ", h("span", { class: "docket-flag", text: "Note on the 8-Ks since the annual report" }));
+  return h("span", { class: "docket-meta" }, ...parts);
 }
 
 // ---------------------------------------------------------------- changed paragraphs, by claim
@@ -2873,9 +3111,11 @@ function renderFinding(finding, ctx, withheld = false) {
   const stance = token(finding.stance, STANCE_MARK);
   const model = modelAssessed(ctx.claims.get(finding.claim_id));
   const badge = meaningRead(finding) ? MODEL_BADGE_READ : MODEL_BADGE;
-  const article = h(
-    "article",
-    { class: `finding s-${stance}${withheld ? " is-withheld" : ""}`, "data-finding-id": finding.id },
+  // The finding in the main column; its quotes in the margin beside it (inline on a narrow note).
+  const main = h("div", { class: "finding-main" });
+  const margin = h("div", { class: "finding-margin" });
+  const article = h("article", { class: `finding s-${stance}${withheld ? " is-withheld" : ""}`, "data-finding-id": finding.id }, main, margin);
+  main.append(
     h(
       "header",
       { class: "finding-head" },
@@ -2894,31 +3134,31 @@ function renderFinding(finding, ctx, withheld = false) {
     ),
   );
   const counted = countedAsLine(finding);
-  if (counted) article.append(counted);
-  for (const mark of list(finding.predated_by)) article.append(predatedLine(mark));
+  if (counted) main.append(counted);
+  for (const mark of list(finding.predated_by)) main.append(predatedLine(mark));
   if (withheld) {
     // A finding the second model rejected keeps that model's own words, tagged for the browser test.
     const reason = str(finding.withheld_reason) || "no quote was found in the filing text.";
     const byMeaning = str(finding.checks?.support) === "failed";
-    article.append(limitLine("p", h("strong", { text: "Withheld: " }), byMeaning ? h("span", { "data-withheld-reason": "", text: reason }) : reason));
+    main.append(limitLine("p", h("strong", { text: "Withheld: " }), byMeaning ? h("span", { "data-withheld-reason": "", text: reason }) : reason));
   }
   if (finding.rationale) {
-    article.append(writtenField("p", `finding:${finding.id}:reason`, model, [h("span", { class: "label", text: "Engine's reason: " }), finding.rationale], badge));
+    main.append(writtenField("p", `finding:${finding.id}:reason`, model, [h("span", { class: "label", text: "Engine's reason: " }), finding.rationale], badge));
   }
   const checks = renderChecks(finding.checks);
-  if (checks) article.append(checks);
+  if (checks) main.append(checks);
   const cited = renderCitedFigures(finding.metric_ids, ctx.metrics);
-  if (cited) article.append(cited);
+  if (cited) main.append(cited);
   for (const evidenceId of list(finding.evidence_ids)) {
     const item = ctx.evidence.get(evidenceId);
     if (!item) {
-      article.append(h("p", { class: "muted", text: `Excerpt ${evidenceId} is listed but missing from the record.` }));
+      margin.append(h("p", { class: "muted", text: `Excerpt ${evidenceId} is listed but missing from the record.` }));
       continue;
     }
-    article.append(renderEvidence(item, ctx.sources.get(item.source_id)));
+    margin.append(renderEvidence(item, ctx.sources.get(item.source_id)));
   }
   if (!withheld && finding.verified !== false) {
-    article.append(h("div", { class: "review-slot", "data-review-finding": finding.id, hidden: true }));
+    main.append(h("div", { class: "review-slot", "data-review-finding": finding.id, hidden: true }));
   }
   return article;
 }
@@ -3129,8 +3369,27 @@ function renderWithheld(run, ctx) {
   };
   const byMeaning = withheld.filter((finding) => str(finding.checks?.support) === "failed");
   const byChecks = withheld.filter((finding) => str(finding.checks?.support) !== "failed");
+  // Collapsed behind one line: the record's count, then the kinds of reason present.
+  const c = run.coverage ?? {};
+  const kinds = [];
+  if (byMeaning.length) kinds.push(Number.isFinite(c.findings_failed_meaning) ? [cov(c, "findings_failed_meaning"), " by the meaning check"] : "by the meaning check");
+  if (byChecks.length) kinds.push(byMeaning.length ? "the others for a quote or a number" : "for a quote or a number");
+  const fold = (...content) =>
+    h(
+      "details",
+      { class: "withheld-fold" },
+      h(
+        "summary",
+        null,
+        Number.isFinite(c.findings_withheld) ? [cov(c, "findings_withheld"), ` ${unit(c.findings_withheld, "finding", "findings")} withheld: `] : "Findings withheld: ",
+        ...kinds.flatMap((kind, i) => (i ? ["; ", kind] : [kind])),
+        h("span", { class: "fold-hint", text: ". None counts toward a verdict." }),
+      ),
+      h("p", { class: "hint", text: "The engine proposed these findings, but each failed a check. They count toward no verdict." }),
+      ...content,
+    );
   if (byMeaning.length === 0) {
-    els.withheld.replaceChildren(h("ul", { class: "withheld-list" }, byChecks.map(item)));
+    els.withheld.replaceChildren(fold(h("ul", { class: "withheld-list" }, byChecks.map(item))));
     return;
   }
   const group = (key, title, hint, findings) =>
@@ -3141,10 +3400,10 @@ function renderWithheld(run, ctx) {
       h("p", { class: "hint", text: hint }),
       h("ul", { class: "withheld-list" }, findings.map(item)),
     );
-  els.withheld.replaceChildren(
+  els.withheld.replaceChildren(fold(
     byChecks.length ? group("checks", "Withheld for a quote or a number", "A quote was not found in the filing, a number did not match, or nothing could be checked.", byChecks) : "",
     group("meaning", "Withheld by the meaning check", "A second model read the quoted evidence and judged that it does not support the statement. That too is a model's reading: read the quote before you dismiss the finding.", byMeaning),
-  );
+  ));
 }
 
 function renderBriefLists(run) {
@@ -3260,12 +3519,15 @@ function renderEvent(event, words) {
     "p",
     { class: "event-head" },
     h("strong", { class: "event-date", text: str(event.filed_label) || str(event.filed_date) }),
-    " · ",
-    externalLink(event.url, `${str(event.form)} ${str(event.accession)}`),
-    " · ",
-    h("span", { class: `event-kind is-${kind}`, "data-event-kind": kind, text: kindLabel }),
-    " · ",
-    h("span", { class: "event-status", "data-event-status": status, text: statusLabel }),
+    h(
+      "span",
+      { class: "event-headline" },
+      externalLink(event.url, `${str(event.form)} ${str(event.accession)}`),
+      " · ",
+      h("span", { class: `event-kind is-${kind}`, "data-event-kind": kind, text: kindLabel }),
+      " · ",
+      h("span", { class: "event-status", "data-event-status": status, text: statusLabel }),
+    ),
   );
   const entry = h("li", { class: `event ev-${kind}`, id: anchor || null, tabindex: anchor ? "-1" : null, "data-event-id": str(event.id) }, head);
   if (str(event.reason)) entry.append(limitLine("p", h("span", { "data-event-reason": "", text: event.reason })));
@@ -3295,6 +3557,299 @@ function renderEvent(event, words) {
   return entry;
 }
 
+// ---------------------------------------------------------------- the tape
+
+/** The figures on the tape, in order: the run's own metrics of these keys, never computed here. */
+const TAPE_KEYS = ["revenue", "revenue_yoy", "gross_margin", "operating_margin", "fcf_margin", "eps_diluted"];
+
+/**
+ * The tape: the newest period's key figures in one dense row under the company's name. Each
+ * cell is a metric the record sends (its label, display string and period label) with the
+ * sparkline of its series; the quarter's metric when the record has one, else the year's.
+ * Selecting a cell opens that figure, with its arithmetic, among the reported figures.
+ */
+function renderTape(run) {
+  if (!els.tape) return;
+  const metrics = list(run.metrics);
+  const series = list(run.series);
+  const pick = (key) => metrics.find((m) => m.key === key && m.period === "quarter") ?? metrics.find((m) => m.key === key && m.period === "annual");
+  const chosen = TAPE_KEYS.map(pick).filter(Boolean);
+  els.tapeSection.hidden = chosen.length === 0;
+  if (chosen.length === 0) {
+    els.tape.replaceChildren();
+    return;
+  }
+  const period = str(chosen[0].period_label);
+  const cells = chosen.map((metric) =>
+    h(
+      "a",
+      { class: "tape-cell", href: `#figures-section`, "data-tape-metric": metric.id, onclick: openFigure(metric.id) },
+      h("span", { class: "tape-label", text: metric.label }),
+      h("span", { class: `tape-value ${valueClass(metric)} dec` }, ...decimalParts(metric.display)),
+      sparkline(metric, series),
+      str(metric.period_label) !== period ? h("span", { class: "tape-period", text: metric.period_label }) : "",
+    ),
+  );
+  els.tape.replaceChildren(h("p", { class: "tape-head" }, h("span", { class: "tape-code", "aria-hidden": "true", text: "FIG" }), period), h("div", { class: "tape-row" }, cells));
+}
+
+/** Open one figure among the reported figures and bring it into view. */
+function openFigure(metricId) {
+  return (event) => {
+    const row = document.querySelector(`#figures details.fig-row[data-metric-id="${CSS.escape(metricId)}"]`);
+    if (!row) return;
+    event.preventDefault();
+    row.open = true;
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    row.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" });
+    row.querySelector("summary")?.focus({ preventScroll: true });
+  };
+}
+
+// ---------------------------------------------------------------- the time line
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const DAY_MS = 86400000;
+
+/** A record date ("YYYY-MM-DD", or an ISO timestamp) as milliseconds at UTC midnight; NaN when it is not one. */
+function dayOf(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(str(value));
+  return match ? Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])) : Number.NaN;
+}
+
+/** "2026-11-12" as "12 Nov 2026", the way the record's own labels write a date. Presentation only. */
+function dateLabel(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(str(value));
+  if (!match) return str(value) || "date not recorded";
+  return `${Number(match[3])} ${MONTHS[Number(match[2]) - 1]} ${match[1]}`;
+}
+
+/**
+ * What the time line draws, read from the run: the annual and quarterly reports it read, the
+ * 8-Ks its record lists, which of those its quotes come from, the run's own date and the
+ * newest filing read. Selection and lookup only.
+ */
+function timelineData(run) {
+  const sources = list(run.sources).filter((x) => x.kind === "sec_filing" && Number.isFinite(dayOf(x.published_date)));
+  const quotedSources = new Set(list(run.evidence).map((e) => e.source_id));
+  const quotedAccessions = new Set(sources.filter((x) => quotedSources.has(x.id)).map((x) => str(x.accession)));
+  const periodic = sources
+    .filter((x) => !str(x.form).toUpperCase().startsWith("8-K"))
+    .map((x) => ({ source: x, day: dayOf(x.published_date), quoted: quotedSources.has(x.id) }));
+  const events = list(run.timeline)
+    .filter((e) => Number.isFinite(dayOf(e.filed_date)))
+    .map((e) => ({ event: e, day: dayOf(e.filed_date), quoted: quotedAccessions.has(str(e.accession)) }));
+  const runDay = dayOf(run.started_at);
+  const newest = dayOf(run.as_of?.newest_filed);
+  return { periodic, events, runDay, newest };
+}
+
+/** The categories of an 8-K's items that the record's wording calls substantive, as labels. */
+function eventCategories(event) {
+  const words = state.meta?.events ?? {};
+  const substantive = new Set(list(words.substantive));
+  const seen = [];
+  for (const item of list(event.items)) {
+    const category = str(item.category);
+    if (event.substantive === true && substantive.size && !substantive.has(category)) continue;
+    const label = str(words.category_labels?.[category]) || category;
+    if (label && !seen.includes(label)) seen.push(label);
+  }
+  return seen;
+}
+
+/** Show the time line for a run whose record has dated filings; hide it otherwise. */
+function renderTimeline(run) {
+  if (!els.timeline) return;
+  const data = timelineData(run);
+  const show = Number.isFinite(data.runDay) && (data.periodic.length > 0 || data.events.length > 0);
+  els.timelineSection.hidden = !show;
+  state.timelineRun = show ? run : null;
+  if (!show) {
+    els.timeline.replaceChildren();
+    return;
+  }
+  drawTimeline(els.timeline, run);
+}
+
+/**
+ * One horizontal date axis in SVG, drawn at the container's own width so its text keeps its
+ * size: reports above the axis, 8-Ks below, the run as a rule, the time between the newest
+ * filing read and the run hatched. Each mark is a link to its filing with a tooltip on hover
+ * or focus.
+ */
+function drawTimeline(container, run) {
+  const data = timelineData(run);
+  const width = Math.max(Math.round(container.clientWidth || 880), 300);
+  const narrow = width < 560;
+  // Without 8-Ks the space below the axis holds only the gap's label and the months.
+  const H = data.events.length ? (narrow ? 186 : 196) : Number.isFinite(data.newest) ? 176 : 132;
+  const axisY = 84;
+  const left = 10;
+  const right = 14;
+  const days = [...data.periodic.map((x) => x.day), ...data.events.map((x) => x.day), data.runDay];
+  if (Number.isFinite(data.newest)) days.push(data.newest);
+  let lo = Math.min(...days);
+  let hi = Math.max(...days);
+  const span = Math.max(hi - lo, 30 * DAY_MS);
+  lo -= span * 0.03;
+  hi += span * 0.04;
+  const xAt = (day) => left + ((day - lo) / (hi - lo)) * (width - left - right);
+
+  const svg = s(
+    "svg",
+    { viewBox: `0 0 ${width} ${H}`, width, height: H, role: "group", "aria-labelledby": "timeline-title", "data-timeline": "" },
+    s("defs", null, s("pattern", { id: "tl-hatch", width: 6, height: 6, patternUnits: "userSpaceOnUse", patternTransform: "rotate(45)" }, s("line", { x1: 0, y1: 0, x2: 0, y2: 6, class: "tl-hatch-line" }))),
+  );
+
+  // The time between the newest filing read and the run: what the record cannot know.
+  if (Number.isFinite(data.newest) && data.runDay > data.newest) {
+    const x0 = xAt(data.newest);
+    const x1 = xAt(data.runDay);
+    const daysWord = Number.isFinite(run.as_of?.days_since_newest) ? plural(run.as_of.days_since_newest, "day", "days") : "";
+    svg.append(
+      s(
+        "g",
+        { "data-tl": "gap" },
+        s("title", { text: `Between the newest filing read (${dateLabel(run.as_of.newest_filed)}) and this run${daysWord ? `: ${daysWord}` : ""}. Nothing filed in this time is in the record.` }),
+        s("rect", { x: x0, y: 18, width: Math.max(x1 - x0, 2), height: axisY + 26 - 18, class: "tl-gap" }),
+      ),
+    );
+    if (daysWord) {
+      // Under the 8-K labels, ending at the run's line: how long the record cannot see.
+      const text = `${daysWord} between the newest filing read and the run`;
+      svg.append(s("text", { x: x1, y: axisY + 72, class: "tl-gap-label", "text-anchor": "end", text }));
+    }
+  }
+
+  // Month ticks along the axis, a year label on each January and on the first tick.
+  const first = new Date(lo);
+  let tick = Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 1);
+  let firstTick = true;
+  const ticks = s("g", { class: "tl-ticks", "aria-hidden": "true" });
+  let lastLabel = -Infinity;
+  while (tick <= hi) {
+    const d = new Date(tick);
+    const x = xAt(tick);
+    ticks.append(s("line", { x1: x, x2: x, y1: axisY, y2: axisY + 5, class: "tl-tick" }));
+    const month = d.getUTCMonth();
+    if (x - lastLabel > (narrow ? 34 : 30)) {
+      const yearLabel = month === 0 || firstTick;
+      ticks.append(s("text", { x: x + 2, y: H - 6, class: yearLabel ? "tl-year" : "tl-tick-label", text: yearLabel ? `${MONTHS[month]} ${d.getUTCFullYear()}` : MONTHS[month] }));
+      lastLabel = x + (yearLabel ? 30 : 0);
+      firstTick = false;
+    }
+    tick = Date.UTC(d.getUTCFullYear(), month + 1, 1);
+  }
+  svg.append(ticks, s("line", { x1: left - 6, x2: width - 4, y1: axisY, y2: axisY, class: "tl-axis" }));
+
+  // The annual and quarterly reports: bars above the axis, a dot on top when quoted.
+  let lastFormX = -Infinity;
+  let formRow = 0;
+  for (const item of data.periodic.sort((a, b) => a.day - b.day)) {
+    const x = xAt(item.day);
+    const source = item.source;
+    const annual = str(source.form).toUpperCase().startsWith("10-K");
+    formRow = x - lastFormX < 46 ? 1 - formRow : 0;
+    lastFormX = x;
+    const tip = [
+      `${str(source.form)} · filed ${dateLabel(source.published_date)}`,
+      source.period_end ? `For the period ended ${dateLabel(source.period_end)}` : "",
+      item.quoted ? "Quoted in this run's findings" : "Read by this run; not quoted in a verified finding",
+    ];
+    const shape = [
+      s("rect", { x: x - 7, y: 22, width: 14, height: axisY - 22, class: "tl-hit" }),
+      s("rect", { x: x - 1.5, y: 40, width: 3, height: axisY - 40, class: `tl-filing ${annual ? "is-annual" : "is-quarterly"}` }),
+      item.quoted ? s("circle", { cx: x, cy: 40, r: 4.5, class: "tl-quoted-dot" }) : "",
+      s("text", { x, y: 33 - formRow * 12, "text-anchor": "middle", class: "tl-label is-form", text: str(source.form) }),
+    ];
+    svg.append(timelineMark("filing", { "data-source-id": source.id, "data-quoted": item.quoted ? "true" : "false" }, source.url, tip, shape, container));
+  }
+
+  // The 8-Ks: below the axis; substantive ones a filled diamond with their category, routine ones a small circle.
+  const labelRows = [-Infinity, -Infinity];
+  for (const item of data.events.sort((a, b) => a.day - b.day)) {
+    const event = item.event;
+    const x = xAt(item.day);
+    const y = axisY + 18;
+    const substantive = event.substantive === true;
+    const categories = eventCategories(event);
+    const words = state.meta?.events ?? {};
+    const kind = substantive ? "substantive" : "routine";
+    const tip = [
+      `${str(event.form)} · filed ${str(event.filed_label) || dateLabel(event.filed_date)} · ${str(words.kind_labels?.[kind]) || kind}`,
+      list(event.items).map((it) => `Item ${str(it.number)}${str(it.title) ? ` ${str(it.title)}` : ""}`).join("; "),
+      str(words.status_labels?.[str(event.status)]) || str(event.status),
+      item.quoted ? "Quoted in this run's findings" : "",
+    ];
+    const shape = [
+      s("rect", { x: x - 8, y: axisY + 4, width: 16, height: 28, class: "tl-hit" }),
+      substantive
+        ? s("path", { d: `M ${x} ${y - 7} L ${x + 6} ${y} L ${x} ${y + 7} L ${x - 6} ${y} Z`, class: "tl-8k is-substantive" })
+        : s("circle", { cx: x, cy: y, r: 3.6, class: "tl-8k is-routine" }),
+      item.quoted ? s("circle", { cx: x, cy: axisY + 6, r: 3, class: "tl-quoted-dot" }) : "",
+    ];
+    if (substantive && categories.length && !narrow) {
+      const row = x - labelRows[0] > 96 ? 0 : x - labelRows[1] > 96 ? 1 : 0;
+      labelRows[row] = x;
+      const labelX = Math.min(Math.max(x, left + 40), width - 50);
+      shape.push(s("text", { x: labelX, y: axisY + 42 + row * 13, "text-anchor": "middle", class: "tl-label is-cat", text: categories.join(", ") }));
+    }
+    svg.append(timelineMark("8k", { "data-event-id": str(event.id), "data-kind": kind, "data-quoted": item.quoted ? "true" : "false" }, event.url, tip, shape, container));
+  }
+
+  // The run itself.
+  const rx = xAt(data.runDay);
+  const runEnd = rx > width - 110;
+  svg.append(
+    s(
+      "g",
+      { "data-tl": "run", class: "tl-run-mark" },
+      s("title", { text: `This run, started ${utc(run.started_at)}` }),
+      s("line", { x1: rx, x2: rx, y1: 12, y2: axisY + 30, class: "tl-run" }),
+      s("path", { d: `M ${rx - 4} 12 L ${rx + 4} 12 L ${rx} 18 Z`, class: "tl-run-head" }),
+      s("text", { x: runEnd ? rx - 7 : rx + 7, y: 16, "text-anchor": runEnd ? "end" : "start", class: "tl-label is-run", text: `Run ${dateLabel(run.started_at)}` }),
+    ),
+  );
+
+  const tipBox = h("div", { class: "tl-tip", role: "tooltip", id: "tl-tip", hidden: true });
+  container.replaceChildren(svg, tipBox);
+  container.dataset.width = String(width);
+}
+
+/** One mark of the time line: a link to its filing (or a focusable group without one), its title and tooltip. */
+function timelineMark(kind, attrs, url, tipLines, shape, container) {
+  const lines = tipLines.filter(Boolean);
+  const href = safeUrl(url);
+  const props = { class: "tl-mark", "data-tl": kind, ...attrs, "aria-label": `${lines.join(". ")}.${href ? " Opens the filing in a new tab." : ""}`, "aria-describedby": "tl-tip" };
+  const node = href ? s("a", { ...props, href, target: "_blank", rel: "noopener noreferrer" }) : s("g", { ...props, tabindex: 0 });
+  node.append(s("title", { text: lines.join("\n") }), ...shape.filter(Boolean));
+  const show = () => {
+    const tip = container.querySelector(".tl-tip");
+    if (!tip) return;
+    tip.replaceChildren(
+      h("p", { class: "tl-tip-head", text: lines[0] ?? "" }),
+      ...lines.slice(1).map((line) => h("p", { class: "tl-tip-items", text: line })),
+      href ? h("p", { class: "tl-tip-open", text: "Select to open the filing ↗" }) : "",
+    );
+    tip.hidden = false;
+    const box = node.getBoundingClientRect();
+    const frame = container.getBoundingClientRect();
+    const x = box.left + box.width / 2 - frame.left;
+    tip.style.left = `${Math.max(0, Math.min(x - 120, frame.width - 260))}px`;
+    tip.style.top = `${box.bottom - frame.top + 6}px`;
+  };
+  const hide = () => {
+    const tip = container.querySelector(".tl-tip");
+    if (tip) tip.hidden = true;
+  };
+  node.addEventListener("mouseenter", show);
+  node.addEventListener("focus", show);
+  node.addEventListener("mouseleave", hide);
+  node.addEventListener("blur", hide);
+  return node;
+}
+
 function renderRunFigures(run) {
   const metrics = list(run.metrics);
   const notes = list(run.metrics_notes);
@@ -3319,6 +3874,8 @@ function latestEnd(metrics, kind) {
 function renderFigures(container, data) {
   const metrics = list(data.metrics);
   const notes = list(data.notes);
+  const series = list(data.series);
+  const row = (metric) => figureRow(metric, series);
   container.replaceChildren();
   if (str(state.meta?.figures_note)) container.append(h("p", { class: "hint", text: state.meta.figures_note }));
   if (metrics.length === 0) {
@@ -3340,11 +3897,11 @@ function renderFigures(container, data) {
           "section",
           { class: "fig-col", "aria-label": `${heading}: ${periodLabel}` },
           h("h4", { class: "fig-head" }, periodLabel, h("span", { class: "muted small", text: ` · ${heading.toLowerCase()}` })),
-          h("ul", { class: "fig-list" }, rows.map(figureRow)),
+          h("ul", { class: "fig-list" }, rows.map(row)),
         ),
       );
     }
-    container.append(grid, h("p", { class: "hint", text: "Open a figure to see its arithmetic and the reported values it used." }));
+    container.append(grid, h("p", { class: "hint", text: "Open a figure to see its arithmetic and the reported values it used. The line beside each value is its series in the record, oldest to newest, with this period circled." }));
     const tagged = metrics.filter(isTagged);
     if (tagged.length) container.append(taggedGroup(tagged));
   }
@@ -3383,11 +3940,67 @@ function taggedGroup(tagged) {
       { class: "fig-tagged-caution", "data-tagged-caution": "" },
       "The row labels are made from tag names, not taken from the company's own tables, and no person has compared them with the printed tables.",
     ),
-    h("ul", { class: "fig-list" }, tagged.map(figureRow)),
+    h("ul", { class: "fig-list" }, tagged.map((metric) => figureRow(metric, []))),
   );
 }
 
-function figureRow(metric) {
+/**
+ * A sparkline of the series the record sends for this figure's key and period: the values
+ * placed in a small box, oldest to newest, the figure's own period circled. Drawing only; the
+ * values and the period are the record's. Nothing when the record has no such series.
+ */
+function sparkline(metric, series) {
+  const match = series.find((x) => x.key === metric.key && x.period === metric.period);
+  const points = list(match?.points);
+  const values = points.map((p) => p.value).filter((v) => Number.isFinite(v));
+  if (values.length < 2) return h("span", { class: "spark-empty", "aria-hidden": "true" });
+  const W = 88;
+  const H = 20;
+  const pad = 2.5;
+  let lo = Math.min(...values);
+  let hi = Math.max(...values);
+  if (!(hi > lo)) {
+    hi += 1;
+    lo -= 1;
+  }
+  const xAt = (i) => pad + (i * (W - 2 * pad)) / Math.max(points.length - 1, 1);
+  const yAt = (v) => pad + ((hi - v) / (hi - lo)) * (H - 2 * pad);
+  let path = "";
+  let pen = false;
+  points.forEach((point, i) => {
+    if (!Number.isFinite(point.value)) {
+      pen = false;
+      return;
+    }
+    path += `${pen ? "L" : "M"}${xAt(i).toFixed(1)} ${yAt(point.value).toFixed(1)} `;
+    pen = true;
+  });
+  const svg = s("svg", { class: "spark", viewBox: `0 0 ${W} ${H}`, "aria-hidden": "true", focusable: "false", "data-spark": metric.key });
+  if (lo < 0 && hi > 0) svg.append(s("line", { x1: 0, x2: W, y1: yAt(0), y2: yAt(0), class: "spark-zero" }));
+  svg.append(s("path", { d: path.trim(), class: "spark-line" }));
+  const here = points.findIndex((p) => p.period_end === metric.period_end);
+  if (here >= 0 && Number.isFinite(points[here].value)) svg.append(s("circle", { cx: xAt(here), cy: yAt(points[here].value), r: 2.6, class: "spark-now" }));
+  return svg;
+}
+
+/** The class of a value cell: missing, negative (by the sign of the record's value) or plain. */
+/**
+ * A display string split at its decimal point, so a column of values lines up on it. The
+ * characters are the record's own, in order; nothing is rounded or reformatted.
+ */
+function decimalParts(display) {
+  const text = str(display);
+  const match = /^(.*?\d)(\.\d.*)$/.exec(text);
+  if (!match) return [h("span", { class: "dec-int", text }), h("span", { class: "dec-frac" })];
+  return [h("span", { class: "dec-int", text: match[1] }), h("span", { class: "dec-frac", text: match[2] })];
+}
+
+function valueClass(metric) {
+  if (metric.value === null || metric.value === undefined) return "fig-value is-missing";
+  return Number.isFinite(metric.value) && metric.value < 0 ? "fig-value is-neg" : "fig-value";
+}
+
+function figureRow(metric, series = []) {
   const body = h("div", { class: "fig-body" });
   body.append(
     h("p", null, h("span", { class: "label", text: "Formula: " }), str(metric.formula) ? h("code", { text: metric.formula }) : "none; the value was read directly from one reported fact."),
@@ -3424,7 +4037,8 @@ function figureRow(metric) {
         "summary",
         null,
         h("span", { class: "fig-label" }, metric.label, metric.period === "instant" ? h("span", { class: "muted small", text: ` · ${metric.period_label}` }) : ""),
-        h("span", { class: metric.value === null ? "fig-value is-missing" : "fig-value", text: metric.display }),
+        sparkline(metric, series),
+        h("span", { class: `${valueClass(metric)} dec` }, ...decimalParts(metric.display)),
       ),
       body,
     ),
@@ -3673,6 +4287,7 @@ function chartTable(title, seriesList) {
 
 /** The run or saved thesis named in the hash: {kind: "run" | "thesis", id}, or null. */
 function hashTarget() {
+  if (location.hash === "#inbox") return { kind: "inbox", id: "" };
   const match = /^#(run|thesis)=(.+)$/.exec(location.hash);
   if (!match) return null;
   try {
@@ -3687,9 +4302,1354 @@ function openHashTarget() {
   if (!target) return;
   if (target.kind === "run" && target.id !== state.runId) watchRun(target.id);
   if (target.kind === "thesis" && target.id !== state.thesisId) openThesis(target.id);
+  if (target.kind === "inbox" && els.inboxView.hidden) openInbox();
+}
+
+// ---------------------------------------------------------------- version 14 components
+//
+// Drawn on the specimen page (specimen.html) from made-up data until the backend sends them.
+// Each takes the record's shape documented in docs/design.md and computes nothing: outcomes,
+// arithmetic, margins, flips, changes and percentiles are all the record's own strings.
+
+/** A compiled test's outcome: its own glyphs (⊨ holds, ⊭ fails, ⊘ cannot compute), never a verdict's. */
+const TEST_MARK = { holds: "⊨", fails: "⊭", cannot_compute: "⊘" };
+const TEST_FALLBACK = { holds: "Holds", fails: "Fails", cannot_compute: "Cannot compute" };
+
+function testOutcome(outcome, label) {
+  const key = token(outcome, TEST_MARK);
+  return h(
+    "span",
+    { class: `ct-outcome o-${key}`, "data-outcome": key },
+    h("span", { class: "glyph", "aria-hidden": "true", text: TEST_MARK[key] ?? "·" }),
+    h("span", { text: str(label) || TEST_FALLBACK[key] || String(outcome) }),
+  );
+}
+
+/**
+ * (1) A compiled test on a claim: the expression in monospace, its outcome, each operand with
+ * the filing and date it comes from, the arithmetic and the margin.
+ */
+function compiledTest(test) {
+  const operands = list(test.operands);
+  return h(
+    "section",
+    { class: "ct", "data-compiled-test": str(test.claim_id) },
+    h("div", { class: "ct-head" }, h("p", { class: "ct-expr" }, h("code", { text: str(test.expression) })), testOutcome(test.outcome, test.outcome_label)),
+    h(
+      "div",
+      { class: "table-wrap", tabindex: "0", role: "region", "aria-label": `Operands of ${str(test.expression)}` },
+      h(
+        "table",
+        { class: "ct-table" },
+        h("thead", null, h("tr", null, ["Operand", "Value", "Period", "Filing", "Filed"].map((t) => h("th", { scope: "col", class: t === "Value" ? "num" : null, text: t })))),
+        h(
+          "tbody",
+          null,
+          operands.map((op) =>
+            h(
+              "tr",
+              null,
+              h("th", { scope: "row" }, h("code", { text: str(op.name) }), str(op.label) ? h("span", { class: "muted", text: ` ${op.label}` }) : ""),
+              h("td", { class: `num${signClass(str(op.display))}`, text: str(op.display) || "—" }),
+              h("td", { text: str(op.period_label) || "—" }),
+              h("td", null, externalLink(op.url, `${str(op.form)} ${str(op.accession)}`.trim() || "filing")),
+              h("td", { text: str(op.filed_label) || str(op.filed) || "—" }),
+            ),
+          ),
+        ),
+      ),
+    ),
+    h(
+      "div",
+      { class: "ct-foot" },
+      h("p", null, h("span", { class: "label", text: "Arithmetic: " }), h("span", { class: "ct-arith", text: str(test.arithmetic) || "none recorded" })),
+      h("p", null, h("span", { class: "label", text: "Margin: " }), h("span", { class: `ct-margin${signClass(str(test.margin_display))}`, text: str(test.margin_display) || "—" }), str(test.note) ? h("span", { class: "muted", text: ` ${test.note}` }) : ""),
+    ),
+  );
+}
+
+/**
+ * (2) The thesis over time: per claim a step line over the filing dates the record tested it
+ * at, holds above, cannot compute between, fails below, the flips the record names ringed and
+ * labelled with their filing.
+ */
+function thesisOverTime(record, width = 880) {
+  const claims = list(record.claims);
+  const labels = { ...TEST_FALLBACK, ...(record.outcome_labels ?? {}) };
+  const level = { holds: 0, cannot_compute: 1, fails: 2 };
+  const days = claims.flatMap((c) => list(c.points).map((p) => dayOf(p.filed))).filter(Number.isFinite);
+  if (days.length === 0) return h("p", { class: "muted", text: "The record tests no claim over time." });
+  const lo = Math.min(...days);
+  const hi = Math.max(...days);
+  const laneH = 64;
+  const top = 8;
+  const labelW = Math.min(250, width * 0.3);
+  const plotL = labelW + 74;
+  const plotR = width - 16;
+  const xAt = (day) => plotL + ((day - lo) / Math.max(hi - lo, DAY_MS)) * (plotR - plotL);
+  const H = top + claims.length * laneH + 24;
+  const svg = s("svg", { viewBox: `0 0 ${width} ${H}`, role: "img", "aria-label": "Each claim's test outcome at each filing date, with the filings where it flipped" });
+  claims.forEach((claim, index) => {
+    const y0 = top + index * laneH;
+    const yAt = (outcome) => y0 + 12 + (level[outcome] ?? 1) * 16;
+    svg.append(s("rect", { x: plotL - 6, y: y0 + 4, width: plotR - plotL + 12, height: laneH - 12, class: "tot-band" }));
+    for (const [outcome, l] of Object.entries(level)) {
+      svg.append(s("text", { x: plotL - 10, y: y0 + 15 + l * 16, "text-anchor": "end", class: "tot-state", text: str(labels[outcome]) }));
+    }
+    const text = str(claim.text);
+    svg.append(s("text", { x: 0, y: y0 + 18, class: "tot-lane-label" }, s("tspan", { class: "claim-id-svg", text: `${str(claim.claim_id)} ` }), text.length > 38 ? `${text.slice(0, 37)}…` : text), s("title", { text }));
+    const points = list(claim.points).filter((p) => Number.isFinite(dayOf(p.filed)));
+    let d = "";
+    points.forEach((p, i) => {
+      const x = xAt(dayOf(p.filed));
+      const y = yAt(p.outcome);
+      d += i === 0 ? `M ${x} ${y}` : ` H ${x} V ${y}`;
+    });
+    svg.append(s("path", { d, class: "tot-step" }));
+    for (const p of points) {
+      const key = token(p.outcome, TEST_MARK);
+      svg.append(
+        s("circle", { cx: xAt(dayOf(p.filed)), cy: yAt(p.outcome), r: 3.4, class: `tot-pt o-${key}` }, s("title", { text: `${str(p.form)} filed ${str(p.filed_label) || dateLabel(p.filed)}: ${str(labels[key])}` })),
+      );
+    }
+    for (const flip of list(claim.flips)) {
+      svg.append(
+        s("circle", { cx: xAt(dayOf(flip.filed)), cy: yAt(flip.to), r: 7, class: "tot-flip", "data-flip": str(flip.filed) }, s("title", { text: `${str(claim.claim_id)}: ${str(flip.label)}` })),
+      );
+    }
+  });
+  const ticks = s("g", { "aria-hidden": "true" });
+  const firstYear = new Date(lo).getUTCFullYear();
+  const lastYear = new Date(hi).getUTCFullYear();
+  for (let year = firstYear; year <= lastYear + 1; year += 1) {
+    const day = Date.UTC(year, 0, 1);
+    if (day < lo || day > hi) continue;
+    ticks.append(s("line", { x1: xAt(day), x2: xAt(day), y1: top, y2: H - 18, class: "tot-grid" }), s("text", { x: xAt(day) + 3, y: H - 6, class: "tot-date", text: String(year) }));
+  }
+  svg.prepend(ticks);
+  // The flips, in the record's words, under the chart rather than crowded into it.
+  const flips = h(
+    "ul",
+    { class: "tot-flips" },
+    claims.flatMap((claim) => list(claim.flips).map((flip) => h("li", null, h("span", { class: "claim-id", text: str(claim.claim_id) }), "Flipped: ", str(flip.label)))),
+  );
+  return h("div", { class: "tot", "data-thesis-over-time": "" }, svg, flips);
+}
+
+/** (3a) The as-of date control for the thesis form: empty means today; the server checks the bounds it states. */
+function asOfControl(spec) {
+  return h(
+    "div",
+    { class: "field asof-control" },
+    h("label", { for: "as_of", text: "As of" }),
+    h("p", { id: "as-of-hint", class: "hint", text: str(spec.hint) || "Read the record as it stood on this date: no filing made after it is read. Leave it empty to read everything filed up to today." }),
+    h(
+      "div",
+      { class: "asof-row" },
+      h("input", { id: "as_of", name: "as_of", type: "date", min: str(spec.min) || null, max: str(spec.max) || null, value: str(spec.value) || null, "aria-describedby": "as-of-hint err-as_of" }),
+      h("button", { type: "button", class: "secondary small", text: "Today" }),
+    ),
+    h("p", { id: "err-as_of", class: "field-error", hidden: true }),
+  );
+}
+
+/** (3b) The banner on a run made as of a past date, in the record's words. */
+function asOfBanner(request) {
+  return h(
+    "div",
+    { class: "asof-banner", role: "note", "data-as-of-request": str(request.date) },
+    h("span", { class: "asof-banner-date", text: str(request.label) || dateLabel(request.date) }),
+    h("p", { class: "label", text: "A run as of a past date" }),
+    h("p", { class: "asof-banner-line", text: str(request.line) }),
+  );
+}
+
+/** (4) The restatement ledger: what a later filing reported differently, both filings named. */
+function restatementLedger(record) {
+  const rows = list(record.rows);
+  const side = (entry, cls) =>
+    h(
+      "td",
+      { class: `num ${cls}` },
+      h("span", { class: `num-val${signClass(str(entry?.display))}`, text: str(entry?.display) || "—" }),
+      h("span", { class: "ledger-filing" }, externalLink(entry?.url, `${str(entry?.form)} ${str(entry?.filed_label)}`.trim() || "filing")),
+    );
+  return h(
+    "div",
+    { class: "table-wrap", tabindex: "0", role: "region", "aria-label": "Restatement ledger" },
+    h(
+      "table",
+      { class: "ledger", "data-ledger": "" },
+      h("thead", null, h("tr", null, ["Metric", "Period", "First reported", "Reported later", "Change"].map((t, i) => h("th", { scope: "col", class: i >= 2 ? "num" : null, text: t })))),
+      h(
+        "tbody",
+        null,
+        rows.map((row) =>
+          h(
+            "tr",
+            null,
+            h("th", { scope: "row", text: str(row.metric_label) }),
+            h("td", { text: str(row.period_label) }),
+            side(row.first, "ledger-first"),
+            side(row.later, "ledger-later"),
+            h("td", { class: `num ledger-change${signClass(str(row.change_display))}` }, str(row.change_display) || "—", str(row.note) ? h("span", { class: "ledger-filing", text: row.note }) : ""),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+/**
+ * (5) The peer strip: the company's value as a dot on its industry's distribution, the
+ * quartile box and median, and the record's own percentile line ("97th percentile of 212").
+ */
+function peerStrip(record) {
+  const rows = list(record.metrics).map((metric) => {
+    const W = 520;
+    const H = 40;
+    const lo = metric.min?.value;
+    const hi = metric.max?.value;
+    const ok = Number.isFinite(lo) && Number.isFinite(hi) && hi > lo;
+    const xAt = (v) => 8 + ((v - lo) / (hi - lo)) * (W - 16);
+    const svg = s("svg", { viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: "none", "aria-hidden": "true", focusable: "false" });
+    if (ok) {
+      for (const v of list(metric.peers)) if (Number.isFinite(v)) svg.append(s("circle", { cx: xAt(v), cy: 14 + ((v * 7919) % 7) - 3, r: 1.6, class: "peer-dot" }));
+      svg.append(s("line", { x1: xAt(lo), x2: xAt(hi), y1: 14, y2: 14, class: "peer-range" }));
+      if (Number.isFinite(metric.q1?.value) && Number.isFinite(metric.q3?.value)) {
+        svg.append(s("rect", { x: xAt(metric.q1.value), y: 8, width: Math.max(xAt(metric.q3.value) - xAt(metric.q1.value), 1), height: 12, class: "peer-iqr" }));
+      }
+      if (Number.isFinite(metric.median?.value)) svg.append(s("line", { x1: xAt(metric.median.value), x2: xAt(metric.median.value), y1: 5, y2: 23, class: "peer-median" }));
+      if (Number.isFinite(metric.company?.value)) svg.append(s("circle", { cx: xAt(metric.company.value), cy: 14, r: 6, class: "peer-you" }));
+      svg.append(
+        s("text", { x: 8, y: H - 2, class: "peer-tick", text: str(metric.min?.display) }),
+        s("text", { x: W - 8, y: H - 2, "text-anchor": "end", class: "peer-tick", text: str(metric.max?.display) }),
+        Number.isFinite(metric.median?.value) ? s("text", { x: xAt(metric.median.value), y: H - 2, "text-anchor": "middle", class: "peer-tick", text: `median ${str(metric.median.display)}` }) : "",
+      );
+    }
+    return h(
+      "div",
+      { class: "peer", "data-peer-metric": str(metric.metric_label) },
+      h("p", { class: "peer-metric" }, str(metric.metric_label), h("span", { class: "muted", text: str(metric.unit_label) })),
+      svg,
+      h("p", { class: "peer-read" }, h("strong", { class: signClass(str(metric.company?.display)).trim() || null, text: `${str(metric.company?.ticker)} ${str(metric.company?.display)}`.trim() }), str(metric.percentile_label)),
+    );
+  });
+  return h("div", { class: "peers", "data-peer-strip": "" }, h("p", { class: "hint", text: str(record.industry_label) }), rows);
+}
+
+// ---------------------------------------------------------------- the specimen page
+
+/** The specimen: the design system on made-up data, every component once, both themes by the toggle. */
+function initSpecimen() {
+  initTheme();
+  document.addEventListener("keydown", onKey);
+  els.keysButton?.addEventListener("click", openKeys);
+  let data;
+  try {
+    data = JSON.parse(document.getElementById("specimen-data")?.textContent ?? "");
+  } catch (error) {
+    document.getElementById("specimen-root")?.replaceChildren(h("p", { class: "alert", text: `The specimen data could not be read: ${error.message}.` }));
+    return;
+  }
+  // The note is the page's own run view, drawn by the same code from the made-up record.
+  // ?only=<part> shows one part of the specimen (a capture is limited in height).
+  const only = new URLSearchParams(location.search).get("only");
+  if (only && /^[a-z0-9]{1,20}$/.test(only)) {
+    for (const part of document.querySelectorAll(".spec-section[data-part]")) part.hidden = part.dataset.part !== only;
+  }
+  state.sample = true;
+  state.sampleName = "specimen";
+  state.meta = data.meta;
+  state.sampleNote = str(data.note);
+  state.runId = data.run.id;
+  state.review = data.review && data.review.run_id === data.run.id ? data.review : null;
+  state.comparison = data.comparison ?? null;
+  renderRun(data.run);
+  // Open the first claims, so the specimen shows findings with their quotes in the margin.
+  for (const docket of [...document.querySelectorAll("#claim-list details.claim")].slice(0, 3)) docket.open = true;
+  watchTimelineWidth();
+
+  const v14 = data.v14;
+  const width = Math.max(Math.round(document.getElementById("spec-tot")?.clientWidth || 880), 320);
+  document.getElementById("spec-compiled")?.replaceChildren(...list(v14.compiled_tests).map(compiledTest));
+  document.getElementById("spec-tot")?.replaceChildren(thesisOverTime(v14.thesis_over_time, width));
+  document.getElementById("spec-asof")?.replaceChildren(asOfControl(v14.as_of_control), h("span", { class: "spec-label", text: "The banner on a run made as of a past date" }), asOfBanner(v14.as_of_request));
+  document.getElementById("spec-ledger")?.replaceChildren(restatementLedger(v14.restatements));
+  document.getElementById("spec-peers")?.replaceChildren(peerStrip(v14.peers));
+
+  const marks = document.getElementById("spec-marks");
+  if (marks) {
+    marks.replaceChildren(
+      h("span", { class: "spec-label", text: "Verdict stamps" }),
+      h("div", { class: "spec-row" }, Object.keys(VERDICT_GLYPH).map(verdictPill), h("span", { class: "pill review-pending", text: "not reviewed yet" })),
+      h("span", { class: "spec-label", text: "Stances, decisions, the second model" }),
+      h("div", { class: "spec-row" }, Object.keys(STANCE_MARK).map(stancePill), ["accepted", "rejected", "undecided"].map(decisionMark), meaningMark("passed"), meaningMark("partly")),
+      h("span", { class: "spec-label", text: "Provenance and limits" }),
+      h("div", { class: "spec-row" }, modelBadge(), ruleMark(), limitLine("span", "A limit of the record"), h("span", { class: "mark-reject" }, rejectGlyph(), " Refused"), h("span", { class: "page-tag", text: "Sample record" })),
+      h("span", { class: "spec-label", text: "What changed between two filings" }),
+      h("div", { class: "spec-row" }, Object.keys(CHANGE_MARK).map(changeMark), h("ins", { class: "seg seg-add", text: "added words" }), h("del", { class: "seg seg-del", text: "removed words" })),
+      h("span", { class: "spec-label", text: "Run status (never a filled tag)" }),
+      h("div", { class: "spec-row" }, ["complete", "running", "partial", "failed"].map((st) => h("span", { class: `status-word st-${st}` }, statusMark(st), ` ${capitalize(st)}`))),
+      h("span", { class: "spec-label", text: "Test outcomes (version 14)" }),
+      h("div", { class: "spec-row" }, Object.keys(TEST_MARK).map((k) => testOutcome(k, ""))),
+      h("span", { class: "spec-label", text: "Numbers" }),
+      h("div", { class: "spec-row" }, h("span", { class: "fig-value", text: "$96.22B" }), h("span", { class: "fig-value is-neg", text: "−$1.40B" }), h("span", { class: "fig-value is-missing", text: "not reported" }), h("code", { text: "0001045810-26-000082" })),
+      h("span", { class: "spec-label", text: "Controls" }),
+      h(
+        "div",
+        { class: "spec-row" },
+        h("button", { type: "button", class: "primary", text: "Test the thesis" }),
+        h("button", { type: "button", class: "secondary", text: "Load example" }),
+        h("button", { type: "button", class: "secondary small", text: "Accept" }),
+        h("button", { type: "button", class: "primary", disabled: true, text: "Disabled" }),
+        h("a", { href: "#spec-marks", text: "A link" }),
+        h("kbd", { text: "j" }),
+      ),
+    );
+  }
+  const swatches = document.getElementById("spec-swatches");
+  if (swatches) {
+    const tokens = ["--bg", "--surface", "--surface-2", "--ink", "--ink-2", "--line", "--accent", "--support", "--challenge", "--neutral", "--limit", "--model", "--reject", "--rule", "--change", "--neg", "--mark-bg"];
+    const paint = () => {
+      const styles = getComputedStyle(document.documentElement);
+      swatches.replaceChildren(
+        ...tokens.map((name) =>
+          h("div", { class: "swatch" }, h("div", { class: "swatch-chip", style: `background: var(${name})` }), h("p", null, h("strong", { text: name })), h("p", { class: "muted", text: styles.getPropertyValue(name).trim() })),
+        ),
+      );
+    };
+    paint();
+    els.themeToggle?.addEventListener("click", () => requestAnimationFrame(paint));
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "t") requestAnimationFrame(paint);
+    });
+  }
+}
+
+// ---------------------------------------------------------------- the standing watch (version 13)
+//
+// Watches, the inbox and the watcher's health, drawn from /api/watch, /api/inbox and
+// /api/watch/health, with the words of /api/watch/meta. Every headline, count, label and
+// reason is the backend's; the page orders nothing (the inbox comes unread first, as the
+// API sends it) and counts nothing but the folded items it draws on one line.
+
+/** The recorded inbox (?sample=inbox): the watch's example payloads, copied unedited by `make sample-inbox`. */
+const INBOX_SAMPLES = { inbox: "sample-inbox.json", "inbox-page-2": "sample-inbox-page-2.json" };
+const INBOX_SAMPLE_NOTE =
+  "The standing watch's example payloads (docs/examples/v13), written by `make watch-examples` from an offline scenario: a made-up EDGAR index of NVIDIA filings, a fake clock that starts at 18 Nov 2026 09:00 UTC, and scripted verdicts (no model, no cassette). They are copied unedited. In sample mode the page sends nothing: no watch changes, no run starts, nothing is marked read.";
+const INBOX_KIND = { not_relevant: "○", waiting: "◇", running: "◌", moved: "◆", nothing_moved: "·", failed: "▲" };
+const WATCH_POLL_MS = 60000;
+
+function kindLabel(kind) {
+  return str(state.watchMeta?.kind_labels?.[kind]) || String(kind ?? "");
+}
+
+function policyLabels() {
+  const labels = state.watchMeta?.policy_labels;
+  return labels && typeof labels === "object" ? labels : { ask: "Ask before running", auto: "Run at once" };
+}
+
+/** A refusal in the server's words: the 422's fields, else its one sentence. */
+function refusal(error) {
+  if (error.status === 422 && error.details.length) {
+    return `${error.message}: ${error.details.map((d) => `${str(d.field) || "request"}: ${str(d.message)}`).join("; ")}`;
+  }
+  return error.message;
+}
+
+function setMessage(node, text, kind = "error") {
+  if (!node) return;
+  node.textContent = text;
+  node.className = `watch-message ${kind === "error" ? "is-error" : "is-ok"}`;
+  node.hidden = !text;
+}
+
+// ---- health
+
+/** The watcher's health, in the bar: alive or not, its last cycle, the queue and the runs waiting. */
+function renderHealth() {
+  const node = els.watchHealth;
+  const health = state.health;
+  if (!node) return;
+  const inboxSample = state.sample && Object.hasOwn(INBOX_SAMPLES, state.sampleName);
+  if (!health || (state.sample && !inboxSample)) {
+    node.hidden = true;
+    return;
+  }
+  const alive = health.alive === true;
+  node.hidden = false;
+  node.className = `watch-health ${alive ? "is-alive" : "is-down"}`;
+  node.dataset.alive = String(alive);
+  node.title = [str(health.note), health.last_cycle_at ? `Last cycle ${utc(health.last_cycle_at)}.` : ""].filter(Boolean).join(" ");
+  node.replaceChildren(
+    h("span", { class: "glyph health-dot", "aria-hidden": "true", text: alive ? "●" : "○" }),
+    h("span", { class: "health-word", text: alive ? "Watch alive" : "Watch not running" }),
+    h(
+      "span",
+      { class: "health-detail" },
+      // The time of day only; the whole date and time are in the title, with the watcher's note.
+      health.last_cycle_at ? ` · last cycle ${utc(health.last_cycle_at).slice(11)}` : "",
+      " · queue ",
+      h("span", { "data-health": "queue_depth", text: num(health.queue_depth) }),
+      " · ",
+      h("span", { "data-health": "waiting_runs", text: num(health.waiting_runs) }),
+      " waiting",
+    ),
+  );
+  renderWatchDown();
+}
+
+/** Near every watch control: when the watcher is not alive, nothing new will be noticed until it runs. */
+function watchDownLine() {
+  const health = state.health;
+  if (!health || health.alive === true) return null;
+  return limitLine(
+    "p",
+    h("strong", { text: "The watcher is not running." }),
+    " No new filing will be noticed, and no watched thesis run, until it runs. ",
+    str(health.note),
+  );
+}
+
+function renderWatchDown() {
+  const line = watchDownLine();
+  if (els.watchDown) {
+    els.watchDown.hidden = !line;
+    els.watchDown.replaceChildren(...(line ? [line] : []));
+  }
+  const card = els.thesisWatch?.querySelector(".watch-down-slot");
+  if (card) card.replaceChildren(...(line ? [line] : []));
+}
+
+// ---- the unread count
+
+function renderInboxCount() {
+  const node = els.inboxCount;
+  if (!node) return;
+  const unread = state.inboxUnread;
+  node.hidden = !Number.isFinite(unread);
+  node.textContent = Number.isFinite(unread) ? num(unread) : "";
+  node.dataset.unread = Number.isFinite(unread) ? String(unread) : "";
+  els.inboxButton?.setAttribute("aria-label", Number.isFinite(unread) ? `Inbox, ${num(unread)} unread` : "Inbox");
+}
+
+/** Health, watches, the words and the unread count, from the server. A 404 means a server without the watch: it stays hidden. */
+async function refreshWatchState() {
+  if (state.sample) return;
+  try {
+    if (!state.watchMeta) state.watchMeta = await api("/api/watch/meta");
+  } catch (error) {
+    if (error.status === 404) {
+      els.inboxButton.hidden = true;
+      return;
+    }
+  }
+  const [health, watches, inbox] = await Promise.allSettled([api("/api/watch/health"), api("/api/watch"), api("/api/inbox?limit=1")]);
+  state.health = health.status === "fulfilled" ? health.value : null;
+  if (watches.status === "fulfilled") {
+    state.watches = new Map(list(watches.value.watches).map((w) => [w.thesis_id, w]));
+    state.watchesLoaded = true;
+  }
+  if (inbox.status === "fulfilled" && Number.isFinite(inbox.value.unread)) state.inboxUnread = inbox.value.unread;
+  renderHealth();
+  renderInboxCount();
+  if (state.theses.size) renderTheses([...state.theses.values()]);
+  if (state.thesisId && !els.thesisView.hidden) renderThesisWatch(state.thesisId);
+}
+
+function startWatchPolling() {
+  refreshWatchState();
+  setInterval(() => {
+    if (!document.hidden) refreshWatchState();
+  }, WATCH_POLL_MS);
+}
+
+// ---- a watch: put on, policy, take off
+
+/**
+ * The watch of one saved thesis: its policy (changeable), the last and next check, the last
+ * errors and its unread items; or, when it is not watched, a control to put it on watch.
+ */
+function watchCard(thesisId, watch, sample = state.sample) {
+  const labels = policyLabels();
+  const current = watch ? str(watch.policy) : str(state.watchMeta?.default_policy) || "ask";
+  const message = h("p", { class: "watch-message", role: "status", hidden: true });
+  const name = `policy-${thesisId}`;
+  const choice = h(
+    "fieldset",
+    { class: "watch-policy" },
+    h("legend", { text: watch ? "When a new filing bears on a claim" : "Put it on watch: when a new filing bears on a claim" }),
+    ...Object.entries(labels).map(([value, label]) =>
+      h(
+        "label",
+        { class: "watch-choice" },
+        h("input", {
+          type: "radio",
+          name,
+          value,
+          checked: value === current,
+          disabled: sample,
+          "data-policy": value,
+          onchange: watch ? () => putWatch(thesisId, value, message) : null,
+        }),
+        ` ${label}`,
+        value === "auto" ? h("span", { class: "hint", text: " (each run uses the model, within the daily cap)" }) : "",
+      ),
+    ),
+  );
+  const parts = [h("div", { class: "watch-down-slot" }, ...(watchDownLine() ? [watchDownLine()] : []))];
+  if (watch) {
+    const check = (iso) => (iso ? utc(iso) : str(watch.next_check_note) || "—");
+    parts.push(
+      h(
+        "p",
+        { class: "watch-state" },
+        h("span", { class: "watch-on", text: "On watch" }),
+        ` since ${utc(watch.watching_since)} · `,
+        h("strong", { "data-watch": "policy_label", text: str(watch.policy_label) || labels[watch.policy] || "" }),
+      ),
+      h(
+        "dl",
+        { class: "watch-facts" },
+        h("div", null, h("dt", { text: "Last check" }), h("dd", { "data-watch": "last_check_at", text: check(watch.last_check_at) })),
+        h("div", null, h("dt", { text: "Next check" }), h("dd", { "data-watch": "next_check_at", text: check(watch.next_check_at) })),
+        h("div", null, h("dt", { text: "Last error" }), h("dd", { "data-watch": "last_error", class: watch.last_error ? "is-error" : null, text: str(watch.last_error) || "None" })),
+        str(watch.last_job_error) ? h("div", null, h("dt", { text: "Last failed job" }), h("dd", { "data-watch": "last_job_error", class: "is-error", text: watch.last_job_error })) : "",
+        h(
+          "div",
+          null,
+          h("dt", { text: "Inbox" }),
+          h(
+            "dd",
+            null,
+            h("span", { "data-watch": "unread", text: num(watch.unread) }),
+            " unread · ",
+            h("span", { "data-watch": "waiting_runs", text: num(watch.waiting_runs) }),
+            ` ${unit(watch.waiting_runs, "run", "runs")} waiting · `,
+            h("a", { href: "#inbox", onclick: (event) => { event.preventDefault(); openInbox({ thesisId }); }, text: "open its inbox" }),
+          ),
+        ),
+      ),
+      choice,
+      h(
+        "div",
+        { class: "watch-actions" },
+        h("button", { type: "button", class: "secondary small", "data-unwatch": thesisId, disabled: sample, onclick: () => deleteWatch(thesisId, message), text: "Take it off watch" }),
+      ),
+    );
+  } else {
+    parts.push(
+      h("p", { class: "watch-state muted", text: "Not on watch. On watch, the watcher reads the company's filing index every few minutes and says here and in the inbox what each new filing means for these claims." }),
+      choice,
+      h(
+        "div",
+        { class: "watch-actions" },
+        h("button", {
+          type: "button",
+          class: "primary small",
+          "data-watch-put": thesisId,
+          disabled: sample,
+          onclick: () => putWatch(thesisId, choice.querySelector("input:checked")?.value ?? current, message),
+          text: "Put it on watch",
+        }),
+      ),
+    );
+  }
+  if (sample) parts.push(h("span", { class: "page-tag inline-tag", text: "sample: nothing is saved" }));
+  parts.push(message);
+  return h("div", { class: watch ? "watch-card is-on" : "watch-card", "data-watch-thesis": thesisId }, ...parts);
+}
+
+/** Put a thesis on watch, or change its policy. 201 or 200 answer with the watch. */
+async function putWatch(thesisId, policy, message) {
+  if (state.sample) return;
+  setMessage(message, "Saving…", "ok");
+  try {
+    const answer = await api(`/api/theses/${encodeURIComponent(thesisId)}/watch`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ policy }),
+    });
+    if (!answer.watch || answer.watch.thesis_id !== thesisId) throw new ApiError("the server did not return this thesis's watch", 0);
+    state.watches.set(thesisId, answer.watch);
+    rerenderWatch(thesisId, answer.created ? `On watch: ${str(answer.watch.policy_label)}.` : `Policy changed: ${str(answer.watch.policy_label)}.`);
+  } catch (error) {
+    const reason =
+      error.status === 404 ? "no saved thesis with that id exists" : error.status === 503 ? `${error.message}. Nothing was saved` : refusal(error);
+    setMessage(message, `The watch could not be saved: ${reason}.`);
+    resetPolicy(thesisId);
+  }
+}
+
+async function deleteWatch(thesisId, message) {
+  if (state.sample) return;
+  try {
+    const answer = await api(`/api/theses/${encodeURIComponent(thesisId)}/watch`, { method: "DELETE" });
+    if (answer.watching !== false) throw new ApiError("the server did not say the watch ended", 0);
+    state.watches.delete(thesisId);
+    rerenderWatch(thesisId, "Taken off watch. Its inbox items stay.");
+  } catch (error) {
+    if (error.status === 409) {
+      // Not watched any more (taken off elsewhere): show it as the server has it.
+      state.watches.delete(thesisId);
+      rerenderWatch(thesisId, `${error.message}.`);
+      return;
+    }
+    setMessage(message, `The watch could not be ended: ${error.status === 404 ? "no saved thesis with that id exists" : refusal(error)}.`);
+  }
+}
+
+/** A refused policy change leaves the radio on the policy the server has. */
+function resetPolicy(thesisId) {
+  const watch = state.watches.get(thesisId);
+  if (!watch) return;
+  for (const card of document.querySelectorAll(`[data-watch-thesis="${CSS.escape(thesisId)}"]`)) {
+    for (const input of card.querySelectorAll("input[data-policy]")) input.checked = input.value === watch.policy;
+  }
+}
+
+/** Draw a thesis's watch again wherever it is on screen, with a message under it. */
+function rerenderWatch(thesisId, note) {
+  if (state.thesisId === thesisId && !els.thesisView.hidden) renderThesisWatch(thesisId, note);
+  if (!els.inboxView.hidden) renderWatches(note, thesisId);
+  if (state.theses.size) renderTheses([...state.theses.values()]);
+  refreshWatchState();
+}
+
+function renderThesisWatch(thesisId, note = "") {
+  if (!els.thesisWatchSection) return;
+  if (!state.watchMeta || !state.watchesLoaded) {
+    els.thesisWatchSection.hidden = true;
+    return;
+  }
+  els.thesisWatchSection.hidden = false;
+  const card = watchCard(thesisId, state.watches.get(thesisId) ?? null);
+  els.thesisWatch.replaceChildren(card);
+  if (note) setMessage(card.querySelector(".watch-message"), note, "ok");
+}
+
+/** Every watch, oldest first as the API lists them, in the inbox view. */
+function renderWatches(note = "", noteThesis = "") {
+  const watches = [...state.watches.values()];
+  // A note about a watch no longer listed (taken off) goes above the list.
+  if (note && noteThesis && !state.watches.has(noteThesis)) setMessage(els.inboxMessage, note, "ok");
+  if (watches.length === 0) {
+    els.watches.replaceChildren(
+      h("p", { class: "muted", "data-empty": "watches", text: "No thesis is on watch. Open a saved thesis and put it on watch; its new filings then arrive here." }),
+    );
+    return;
+  }
+  els.watches.replaceChildren(
+    h(
+      "ul",
+      { class: "watch-list" },
+      watches.map((watch) =>
+        h(
+          "li",
+          { "data-watch-id": watch.thesis_id },
+          h(
+            "p",
+            { class: "watch-name" },
+            h("strong", { text: str(watch.thesis_name) }),
+            " · ",
+            h("span", { class: "ticker-chip", text: str(watch.ticker) }),
+            ` ${str(watch.company_name)}`,
+          ),
+          watchCard(watch.thesis_id, watch),
+        ),
+      ),
+    ),
+  );
+  if (note && noteThesis) {
+    const card = els.watches.querySelector(`[data-watch-thesis="${CSS.escape(noteThesis)}"] .watch-message`);
+    setMessage(card, note, "ok");
+  }
+}
+
+// ---- the inbox
+
+/** Open the inbox view: from the bar, the `i` key, #inbox, or a thesis's "open its inbox". */
+function openInbox({ thesisId = null, offset = 0 } = {}) {
+  closeDrawer(false);
+  if (state.sample) {
+    if (Object.hasOwn(INBOX_SAMPLES, state.sampleName)) {
+      showInboxView();
+      els.inboxItems.querySelector("article")?.focus?.({ preventScroll: true });
+      return;
+    }
+    showInboxView();
+    renderInboxHead(null);
+    els.watchesSection.hidden = true;
+    els.inboxItems.replaceChildren();
+    els.inboxCollapsed.replaceChildren();
+    els.inboxPaging.replaceChildren();
+    setMessage(els.inboxMessage, "", "ok");
+    els.inboxItems.append(
+      h("li", { class: "muted", "data-empty": "sample" }, "This sample holds no inbox. ", h("a", { href: "?sample=inbox", text: "See the recorded inbox of the standing watch" }), "."),
+    );
+    return;
+  }
+  state.inboxThesis = thesisId;
+  state.inboxOffsets = [];
+  loadInbox(offset);
+}
+
+function showInboxView() {
+  stopWatching();
+  state.viewSeq += 1;
+  hideRunView();
+  els.loading.hidden = true;
+  els.inboxView.hidden = false;
+  document.body.classList.add("has-run");
+  els.watchesSection.hidden = false;
+  els.inboxButton?.setAttribute("aria-expanded", "true");
+  if (!state.sample) history.replaceState(null, "", "#inbox");
+}
+
+async function loadInbox(offset) {
+  showInboxView();
+  const seq = ++state.inboxSeq;
+  setMessage(els.inboxMessage, "Loading the inbox…", "ok");
+  const query = new URLSearchParams({ offset: String(offset) });
+  if (state.inboxThesis) query.set("thesis_id", state.inboxThesis);
+  try {
+    if (!state.watchMeta) state.watchMeta = await api("/api/watch/meta");
+    const [page, watches, health] = await Promise.all([api(`/api/inbox?${query}`), api("/api/watch"), api("/api/watch/health").catch(() => null)]);
+    if (seq !== state.inboxSeq) return;
+    state.watches = new Map(list(watches.watches).map((w) => [w.thesis_id, w]));
+    state.watchesLoaded = true;
+    state.health = health;
+    renderHealth();
+    setMessage(els.inboxMessage, "", "ok");
+    renderInbox(page);
+  } catch (error) {
+    if (seq !== state.inboxSeq) return;
+    renderInboxHead(null);
+    els.inboxItems.replaceChildren();
+    els.inboxCollapsed.replaceChildren();
+    els.inboxPaging.replaceChildren(h("button", { type: "button", class: "secondary small", onclick: () => loadInbox(offset), text: "Try again" }));
+    const reason = error.status === 404 ? "this server has no inbox (it is older than version 13)" : refusal(error);
+    setMessage(els.inboxMessage, `The inbox could not be loaded: ${reason}.`);
+  }
+}
+
+function renderInboxHead(page) {
+  const thesis = state.inboxThesis ? state.watches.get(state.inboxThesis) : null;
+  els.inboxHead.replaceChildren(
+    h(
+      "div",
+      { class: "run-head-main" },
+      h("p", { class: "company-name", text: "Inbox" }),
+      h(
+        "p",
+        { class: "run-meta" },
+        page
+          ? [
+              h("span", { class: "count-value", "data-inbox": "unread", text: num(page.unread) }),
+              " unread of ",
+              h("span", { class: "count-value", "data-inbox": "total", text: num(page.total) }),
+              ` ${unit(page.total, "item", "items")}`,
+              thesis ? ` for “${str(thesis.thesis_name)}”` : state.inboxThesis ? " for one thesis" : "",
+              ". Unread first, then newest first.",
+            ]
+          : "The standing watch's new filings, each with what it means for the watched theses.",
+        state.inboxThesis && !state.sample ? [" ", h("a", { href: "#inbox", onclick: (event) => { event.preventDefault(); openInbox(); }, text: "Show every thesis" })] : "",
+      ),
+      sampleNoteLine(),
+    ),
+  );
+}
+
+/** One page of the inbox exactly as the API ordered it; the folded kinds go on one line under it. */
+function renderInbox(page) {
+  if (!page || !Array.isArray(page.items)) throw new ApiError("the inbox page has no items", 0);
+  state.inboxPage = page;
+  if (Number.isFinite(page.unread) && !state.inboxThesis) state.inboxUnread = page.unread;
+  renderInboxCount();
+  renderInboxHead(page);
+  renderWatches();
+  renderWatchDown();
+  const open = page.items.filter((item) => item.collapsed !== true);
+  const folded = page.items.filter((item) => item.collapsed === true);
+  els.inboxItems.replaceChildren(...open.map((item) => h("li", null, inboxItem(item))));
+  if (page.items.length === 0) {
+    els.inboxItems.append(h("li", { class: "muted", "data-empty": "inbox", text: page.offset > 0 ? "No items on this page." : "The inbox is empty: no watched thesis has a new filing yet." }));
+  }
+  renderFolded(folded);
+  renderPaging(page);
+}
+
+/**
+ * The folded items ("seen, not relevant"): one line with how many this page holds, opening to
+ * each one's headline and filing. The count is of the items drawn here, not a figure of the record.
+ */
+function renderFolded(folded) {
+  if (folded.length === 0) {
+    els.inboxCollapsed.replaceChildren();
+    return;
+  }
+  const kinds = [...new Set(folded.map((item) => item.kind))];
+  els.inboxCollapsed.replaceChildren(
+    h(
+      "details",
+      { class: "inbox-folded", "data-folded-count": String(folded.length) },
+      h(
+        "summary",
+        null,
+        h("span", { class: "glyph", "aria-hidden": "true", text: INBOX_KIND.not_relevant }),
+        ` ${kinds.map(kindLabel).join(", ")}: `,
+        h("span", { class: "count-value", "data-folded": "count", text: num(folded.length) }),
+        ` ${unit(folded.length, "filing", "filings")} on this page`,
+        h("span", { class: "fold-hint", text: ". No run was needed." }),
+      ),
+      h("ol", { class: "inbox-items is-folded" }, folded.map((item) => h("li", null, inboxItem(item)))),
+    ),
+  );
+}
+
+function renderPaging(page) {
+  const parts = [];
+  if (state.sample) {
+    if (page.offset > 0) parts.push(h("a", { class: "tool", href: "?sample=inbox", "data-page": "first", text: "First page" }));
+  } else {
+    if (state.inboxOffsets.length) {
+      parts.push(
+        h("button", {
+          type: "button",
+          class: "secondary small",
+          "data-page": "newer",
+          onclick: () => loadInbox(state.inboxOffsets.pop()),
+          text: "Newer items",
+        }),
+      );
+    }
+    if (Number.isInteger(page.next_offset)) {
+      parts.push(
+        h("button", {
+          type: "button",
+          class: "secondary small",
+          "data-page": "older",
+          onclick: () => {
+            state.inboxOffsets.push(page.offset);
+            loadInbox(page.next_offset);
+          },
+          text: "Older items",
+        }),
+      );
+    }
+    const unreadIds = page.items.filter((item) => !item.read_at).map((item) => item.id);
+    if (unreadIds.length) parts.push(h("button", { type: "button", class: "secondary small", "data-mark-page": "", onclick: () => markRead(unreadIds, true), text: "Mark this page read" }));
+  }
+  if (Number.isInteger(page.next_offset)) parts.push(h("span", { class: "hint", "data-next-offset": String(page.next_offset), text: "More items are on the next page." }));
+  els.inboxPaging.replaceChildren(...parts);
+}
+
+/** One inbox item: its kind, headline, the filing, the triage per claim, the run and what moved. */
+function inboxItem(item) {
+  const kind = token(item.kind, INBOX_KIND);
+  const unread = !item.read_at;
+  const message = h("p", { class: "watch-message", role: "status", hidden: true });
+  const node = h(
+    "article",
+    { class: `inbox-item k-${kind}${unread ? " is-unread" : ""}`, "data-item-id": str(item.id), "data-kind": kind, "data-unread": String(unread), tabindex: "-1" },
+    h(
+      "header",
+      { class: "inbox-item-head" },
+      h("span", { class: `kind-tag k-${kind}`, "data-kind-label": "" }, h("span", { class: "glyph", "aria-hidden": "true", text: INBOX_KIND[kind] ?? "·" }), ` ${kindLabel(item.kind)}`),
+      unread ? h("span", { class: "unread-mark", text: "Unread" }) : h("span", { class: "read-mark", text: `Read ${utc(item.read_at)}` }),
+      h("span", { class: "inbox-when", text: `${str(item.ticker)} · ${str(item.thesis_name)} · ${utc(item.updated_at)}` }),
+    ),
+    h("p", { class: "inbox-headline", text: str(item.headline) }),
+    item.collapsed ? "" : inboxFiling(item.filing),
+    item.collapsed ? h("p", { class: "inbox-filing-line" }, externalLink(item.filing?.url, str(item.filing?.label) || "the filing")) : inboxTriage(item.triage),
+    inboxRun(item, message),
+    inboxMoved(item.moved),
+    h(
+      "div",
+      { class: "inbox-actions" },
+      h("button", {
+        type: "button",
+        class: "linklike",
+        "data-mark": unread ? "read" : "unread",
+        disabled: state.sample,
+        onclick: () => markRead([item.id], unread),
+        text: unread ? "Mark read" : "Mark unread",
+      }),
+    ),
+    message,
+  );
+  return node;
+}
+
+/** The filing that arrived: form and accession linked to sec.gov, its dates and, for an 8-K, its items. */
+function inboxFiling(filing) {
+  if (!filing) return "";
+  const items = list(filing.items);
+  return h(
+    "div",
+    { class: "inbox-filing" },
+    h(
+      "p",
+      null,
+      externalLink(filing.url, [h("strong", { text: str(filing.form) }), ` ${str(filing.accession)}`]),
+      ` · filed ${str(filing.filed_date)}`,
+      str(filing.report_date) ? ` · report date ${filing.report_date}` : "",
+    ),
+    items.length
+      ? h(
+          "ul",
+          { class: "inbox-filing-items" },
+          items.map((it) => h("li", { "data-item-number": str(it.number) }, h("strong", { text: `Item ${str(it.number)}` }), ` ${str(it.title)}`, str(it.category) ? h("span", { class: "event-cat", text: ` (${it.category})` }) : "")),
+        )
+      : "",
+  );
+}
+
+/** Does it bear on the thesis, and why: the rules, then each claim with its reasons and paragraphs. */
+function inboxTriage(triage) {
+  if (!triage) return "";
+  const rules = list(triage.rules);
+  const ruleLabels = state.watchMeta?.rule_labels ?? {};
+  return h(
+    "div",
+    { class: "inbox-triage" },
+    h(
+      "p",
+      { class: "triage-summary" },
+      ruleMark("By rule, no model"),
+      " ",
+      str(triage.summary),
+      rules.length ? h("span", { class: "triage-rules" }, " · ", rules.map((r) => str(ruleLabels[r]) || r).join(", ")) : "",
+    ),
+    h(
+      "ul",
+      { class: "triage-claims" },
+      list(triage.claims).map((claim) =>
+        h(
+          "li",
+          { "data-claim-id": str(claim.claim_id), "data-bears": String(claim.bears === true) },
+          h(
+            "p",
+            { class: "triage-claim" },
+            h("span", { class: "claim-id", text: str(claim.claim_id) }),
+            " ",
+            str(claim.claim),
+            h("span", { class: claim.bears ? "bears is-yes" : "bears is-no", text: claim.bears ? " bears on it" : " does not bear on it" }),
+          ),
+          list(claim.reasons).length ? h("ul", { class: "triage-reasons" }, list(claim.reasons).map((r) => h("li", { text: String(r) }))) : "",
+          list(claim.paragraphs).length
+            ? h(
+                "ul",
+                { class: "triage-paragraphs" },
+                list(claim.paragraphs).map((p) =>
+                  h(
+                    "li",
+                    null,
+                    // The record's own kind; "changed" has no mark of its own, so it keeps its word.
+                    Object.hasOwn(CHANGE_MARK, p.kind) ? changeMark(p.kind) : h("span", { class: "chg-mark c-reworded" }, h("span", { class: "chg-label", text: capitalize(str(p.kind)) })),
+                    ` ${str(p.item)}`,
+                    h("blockquote", { class: "triage-paragraph", text: str(p.text) }),
+                    list(p.matched_terms).length ? h("span", { class: "hint", text: `Shared words: ${list(p.matched_terms).join(", ")} · ` }) : "",
+                    externalLink(p.link, "Open in the filing, at this paragraph"),
+                  ),
+                ),
+              )
+            : "",
+        ),
+      ),
+    ),
+    list(triage.notes).length ? h("ul", { class: "triage-notes" }, list(triage.notes).map((n) => h("li", { text: String(n) }))) : "",
+  );
+}
+
+/** The run the filing caused: waiting (with the button), under way, finished or failed. */
+function inboxRun(item, message) {
+  const run = item.run;
+  if (!run) return item.error ? limitLine("p", str(item.error)) : "";
+  const openRun = run.run_id
+    ? h("button", { type: "button", class: "secondary small", "data-open-run": run.run_id, onclick: () => openItemRun(item, message), text: run.state === "running" ? "Open the run under way" : "Open the run in the note" })
+    : "";
+  const parts = [];
+  if (run.state === "waiting") {
+    parts.push(
+      h("p", { class: "waiting-reason", text: str(run.waiting_reason) }),
+      h("button", { type: "button", class: "primary small", "data-run-now": str(item.id), onclick: (event) => runNow(item, event.currentTarget, message), text: "Run now (uses the model)" }),
+    );
+  } else {
+    parts.push(
+      h(
+        "p",
+        { class: "inbox-run-line" },
+        "Run ",
+        h("code", { text: str(run.run_id) || "—" }),
+        run.status ? [" · ", h("span", { class: `status-word st-${token(run.status, STATUS_GLYPH)}` }, statusMark(run.status), ` ${capitalize(run.status)}`)] : run.state === "running" ? " · under way" : "",
+        str(run.started_by) ? ` · started by ${run.started_by === "owner" ? "you, from the inbox" : "the watch"}` : "",
+        " ",
+        openRun,
+      ),
+    );
+  }
+  if (item.error) parts.push(limitLine("p", str(item.error)));
+  return h("div", { class: `inbox-run r-${token(run.state, { waiting: 1, running: 1, finished: 1, failed: 1 })}` }, ...parts);
+}
+
+/** What the run changed: the record's line, the verdicts that moved, new cautions, notes and 8-Ks; the comparison one click away. */
+function inboxMoved(moved) {
+  if (!moved) return "";
+  const parts = [h("p", { class: "moved-line", "data-moved": String(moved.moved === true), text: str(moved.line) })];
+  const verdicts = list(moved.verdicts);
+  if (verdicts.length) {
+    parts.push(h("ul", { class: "moved-verdicts" }, verdicts.map((v) => h("li", null, h("span", { class: "moved-claim", text: str(v.claim) }), " ", verdictPill(v.before), h("span", { class: "moved-arrow", "aria-label": "became", text: " → " }), verdictPill(v.after)))));
+  }
+  for (const caution of list(moved.new_cautions)) parts.push(limitLine("p", h("strong", { text: "New caution: " }), `${str(caution.claim)} `, str(caution.text)));
+  for (const note of list(moved.new_notes)) parts.push(h("p", { class: "moved-note" }, h("strong", { text: "New note on the 8-Ks: " }), `${str(note.claim)} `, str(note.text)));
+  if (list(moved.new_events).length) {
+    parts.push(h("p", { class: "moved-events" }, h("strong", { text: "New on the time line: " }), ...list(moved.new_events).flatMap((e, i) => [i ? "; " : "", externalLink(e.url, str(e.label) || str(e.accession)), list(e.items).length ? ` (Items ${list(e.items).join(", ")})` : ""])));
+  }
+  if (list(moved.claims).length) {
+    const body = h("div", { class: "moved-compare-body" });
+    parts.push(
+      h(
+        "details",
+        { class: "moved-compare", ontoggle: (event) => event.currentTarget.open && !body.childElementCount && renderComparison(body, moved, null) },
+        h("summary", { text: "Compare with the previous run, claim by claim" }),
+        body,
+      ),
+    );
+  }
+  return h("div", { class: "inbox-moved" }, ...parts);
+}
+
+/** Open the run an item made in the note, with its comparison (the item's own) under the head. */
+function openItemRun(item, message) {
+  const runId = item.run?.run_id;
+  if (!runId) return;
+  if (state.sample) {
+    setMessage(message, `Run ${runId} is not part of this sample: the scenario's runs are not recorded beside it.`);
+    return;
+  }
+  state.itemComparison = item.moved && item.moved.later_run_id === runId ? item.moved : null;
+  watchRun(runId);
+}
+
+/** Start a waiting run (it uses the model). 202: the run; 409: nothing waits any more, so the item is read again. */
+async function runNow(item, button, message) {
+  if (state.sample) {
+    setMessage(message, "Sample: nothing is started. On a live inbox this starts the run, which uses the model.");
+    return;
+  }
+  button.disabled = true;
+  setMessage(message, "Starting the run…", "ok");
+  try {
+    const started = await api(`/api/inbox/${encodeURIComponent(item.id)}/run`, { method: "POST" });
+    if (typeof started.id !== "string" || !started.id) throw new ApiError("the server did not return a run id", 0);
+    await reloadItem(item.id, `Run ${started.id} started.`);
+  } catch (error) {
+    if (error.status === 409) {
+      await reloadItem(item.id, `The run was not started: ${error.message}.`, true);
+      return;
+    }
+    button.disabled = false;
+    setMessage(message, `The run could not be started: ${error.status === 404 ? "this inbox item no longer exists" : refusal(error)}.`);
+  }
+}
+
+/** Read one item again (after its run started, or after a 409) and draw it in its place. */
+async function reloadItem(itemId, note, isError = false) {
+  const slot = [...document.querySelectorAll("article.inbox-item")].find((node) => node.dataset.itemId === itemId);
+  try {
+    const fresh = await api(`/api/inbox/${encodeURIComponent(itemId)}`);
+    const node = inboxItem(fresh);
+    slot?.replaceWith(node);
+    setMessage(node.querySelector(".watch-message"), note, isError ? "error" : "ok");
+  } catch (error) {
+    setMessage(slot?.querySelector(".watch-message"), `${note} The item could not be read again: ${refusal(error)}.`);
+  }
+  refreshWatchState();
+}
+
+/** Mark items read (or unread again); the answer carries the inbox's unread count. */
+async function markRead(ids, read) {
+  if (state.sample || ids.length === 0) return;
+  try {
+    const answer = await api("/api/inbox/read", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ids, read }) });
+    if (Number.isFinite(answer.unread)) state.inboxUnread = answer.unread;
+    renderInboxCount();
+    loadInbox(state.inboxPage?.offset ?? 0);
+  } catch (error) {
+    setMessage(els.inboxMessage, `Could not mark ${ids.length === 1 ? "the item" : "the items"} ${read ? "read" : "unread"}: ${refusal(error)}.`);
+  }
+}
+
+/** ?sample=inbox: the example payloads, drawn as a live inbox would be, with nothing sent. */
+async function loadInboxSample(name) {
+  const [page, watches, health, watchMeta] = await Promise.all([
+    api(INBOX_SAMPLES[name], { cache: "no-store" }),
+    api("sample-inbox-watches.json", { cache: "no-store" }),
+    api("sample-inbox-health.json", { cache: "no-store" }),
+    api("sample-inbox-meta.json", { cache: "no-store" }),
+  ]);
+  applyMeta(await api("/api/meta"), { sample: true });
+  state.watchMeta = watchMeta;
+  state.watches = new Map(list(watches.watches).map((w) => [w.thesis_id, w]));
+  state.watchesLoaded = true;
+  state.health = health;
+  state.sampleNote = INBOX_SAMPLE_NOTE;
+  els.formNote.textContent = `Sample mode: ${INBOX_SAMPLE_NOTE}`;
+  showInboxView();
+  renderHealth();
+  renderInbox(page);
+}
+
+// ---------------------------------------------------------------- the first screen, the thesis drawer, the guide
+
+/** Whether the first screen is showing: no run or other record, so the form is the page. */
+function onFirstScreen() {
+  return Boolean(els.empty) && !els.empty.hidden;
+}
+
+/** Lay the page out for the first screen or for a result, when the empty state appears or goes. */
+function syncFirstScreen() {
+  const first = onFirstScreen();
+  document.body.classList.toggle("is-first", first);
+  if (els.thesisButton) els.thesisButton.hidden = first;
+  if (els.howtoButton) els.howtoButton.hidden = first;
+  // On the first screen the guide's opening (what this is, the samples) is the page's lead.
+  if (els.howto) setHowto(first);
+  if (first) closeDrawer(false);
+}
+
+function setHowto(open) {
+  els.howto.hidden = !open;
+  els.howtoButton?.setAttribute("aria-expanded", String(open));
+}
+
+function toggleHowto() {
+  setHowto(els.howto.hidden);
+  if (!els.howto.hidden) els.howto.querySelector("a, button, summary")?.focus({ preventScroll: true });
+}
+
+function drawerOpen() {
+  return document.body.classList.contains("drawer-open");
+}
+
+function openDrawer() {
+  if (onFirstScreen() || !els.formPanel) return;
+  document.body.classList.add("drawer-open");
+  els.thesisButton?.setAttribute("aria-expanded", "true");
+  if (els.drawerScrim) els.drawerScrim.hidden = false;
+  els.decision?.focus({ preventScroll: true });
+}
+
+function closeDrawer(returnFocus = true) {
+  if (!drawerOpen()) return;
+  document.body.classList.remove("drawer-open");
+  els.thesisButton?.setAttribute("aria-expanded", "false");
+  if (els.drawerScrim) els.drawerScrim.hidden = true;
+  if (returnFocus) els.thesisButton?.focus({ preventScroll: true });
+}
+
+function toggleDrawer() {
+  if (drawerOpen()) closeDrawer();
+  else openDrawer();
+}
+
+function initLayout() {
+  if (!els.empty) return;
+  new MutationObserver(syncFirstScreen).observe(els.empty, { attributes: true, attributeFilter: ["hidden"] });
+  syncFirstScreen();
+  els.thesisButton?.addEventListener("click", toggleDrawer);
+  els.drawerClose?.addEventListener("click", () => closeDrawer());
+  els.drawerScrim?.addEventListener("click", () => closeDrawer());
+  els.howtoButton?.addEventListener("click", toggleHowto);
+  els.inboxButton?.addEventListener("click", () => openInbox());
+  els.keysHowto?.addEventListener("click", () => {
+    els.keysDialog?.close?.();
+    if (onFirstScreen()) return;
+    setHowto(true);
+    els.howto.scrollIntoView({ block: "start" });
+  });
+  // A refused field opens the drawer, so the reader sees what to fix.
+  if (els.formErrors) new MutationObserver(() => !els.formErrors.hidden && openDrawer()).observe(els.formErrors, { attributes: true, attributeFilter: ["hidden"] });
+}
+
+// ---------------------------------------------------------------- theme, keys, print
+
+/** The reader's stored theme, or "" when none is stored or the browser refuses storage. */
+function storedTheme() {
+  try {
+    const value = window.localStorage.getItem(THEME_KEY);
+    return THEMES.includes(value) ? value : "";
+  } catch {
+    return "";
+  }
+}
+
+function systemTheme() {
+  return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "terminal" : "paper";
+}
+
+/** ?theme=paper|terminal for this page load only (screenshots, a shared link); never stored. */
+function urlTheme() {
+  const value = new URLSearchParams(location.search).get("theme");
+  return THEMES.includes(value) ? value : "";
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute("data-theme", theme);
+  if (!els.themeToggle) return;
+  const other = theme === "paper" ? "terminal" : "paper";
+  els.themeToggle.setAttribute("aria-label", `Theme: ${THEME_NAMES[theme]}. Switch to ${THEME_NAMES[other]}`);
+  els.themeToggle.dataset.theme = theme;
+  if (state.timelineRun) drawTimeline(els.timeline, state.timelineRun);
+}
+
+/** Switch theme and remember the choice when the browser lets the page store it. */
+function toggleTheme() {
+  const now = document.documentElement.getAttribute("data-theme") === "terminal" ? "terminal" : "paper";
+  const next = now === "paper" ? "terminal" : "paper";
+  try {
+    window.localStorage.setItem(THEME_KEY, next);
+  } catch {
+    // Storage refused (a private window, a sandbox): the switch still holds for this page.
+  }
+  applyTheme(next);
+}
+
+function initTheme() {
+  applyTheme(urlTheme() || storedTheme() || systemTheme());
+  els.themeToggle?.addEventListener("click", toggleTheme);
+  // With no stored choice, follow the system when it changes.
+  window.matchMedia?.("(prefers-color-scheme: dark)").addEventListener?.("change", () => {
+    if (!urlTheme() && !storedTheme()) applyTheme(systemTheme());
+  });
+}
+
+/** Whether a key press belongs to a field the reader is typing in. */
+function typing(target) {
+  if (!(target instanceof Element)) return false;
+  return Boolean(target.closest("input, textarea, select, [contenteditable=''], [contenteditable='true']"));
+}
+
+/** Move the focus to the next (+1) or previous (-1) claim's docket, from the one in focus or in view. */
+function moveClaim(step) {
+  const dockets = [...document.querySelectorAll("#claim-list details.claim")];
+  if (dockets.length === 0) return;
+  const active = document.activeElement?.closest?.("details.claim");
+  let index = dockets.indexOf(active);
+  if (index < 0) {
+    // From the first docket whose top is below the top of the window.
+    const below = dockets.findIndex((d) => d.getBoundingClientRect().top > 8);
+    index = step > 0 ? (below < 0 ? dockets.length - 1 : below - 1) : below < 0 ? dockets.length : below;
+  }
+  const next = dockets[Math.max(0, Math.min(dockets.length - 1, index + step))];
+  const summary = next.querySelector("summary");
+  summary.focus({ preventScroll: true });
+  const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  next.scrollIntoView({ block: "start", behavior: reduce ? "auto" : "smooth" });
+}
+
+function openKeys() {
+  if (!els.keysDialog) return;
+  if (typeof els.keysDialog.showModal === "function") {
+    if (!els.keysDialog.open) els.keysDialog.showModal();
+  } else {
+    els.keysDialog.setAttribute("open", "");
+  }
+}
+
+/** The page's keys: / ticker, j and k claims, t theme, ? the list. Ignored while typing or with a modifier. */
+function onKey(event) {
+  if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
+  if (event.key === "Escape" && drawerOpen()) {
+    event.preventDefault();
+    closeDrawer();
+    return;
+  }
+  if (typing(event.target)) {
+    if (event.key === "Escape" && event.target === els.ticker) els.ticker.blur();
+    return;
+  }
+  if (els.keysDialog?.open && event.key !== "Escape") return;
+  switch (event.key) {
+    case "/":
+      event.preventDefault();
+      els.ticker?.focus();
+      els.ticker?.select();
+      break;
+    case "j":
+      event.preventDefault();
+      moveClaim(1);
+      break;
+    case "k":
+      event.preventDefault();
+      moveClaim(-1);
+      break;
+    case "t":
+      event.preventDefault();
+      toggleTheme();
+      break;
+    case "i":
+      event.preventDefault();
+      openInbox();
+      break;
+    case "e":
+      if (onFirstScreen()) break;
+      event.preventDefault();
+      toggleDrawer();
+      break;
+    case "?":
+      event.preventDefault();
+      openKeys();
+      break;
+    default:
+      break;
+  }
+}
+
+/** Printing opens every closed disclosure so the note prints whole, and closes them after. */
+const printOpened = [];
+function beforePrint() {
+  for (const node of document.querySelectorAll("#result-panel details:not([open])")) {
+    node.open = true;
+    printOpened.push(node);
+  }
+}
+function afterPrint() {
+  while (printOpened.length) printOpened.pop().open = false;
+}
+
+/** Redraw the time line when the note changes width (a resized window, a rotated phone). */
+function watchTimelineWidth() {
+  if (!els.timeline || typeof ResizeObserver !== "function") return;
+  let frame = 0;
+  new ResizeObserver(() => {
+    cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(() => {
+      if (!state.timelineRun || els.timelineSection.hidden) return;
+      const width = Math.round(els.timeline.clientWidth);
+      if (Math.abs(width - Number(els.timeline.dataset.width || 0)) > 4) drawTimeline(els.timeline, state.timelineRun);
+    });
+  }).observe(els.timeline);
+}
+
+function initChrome() {
+  initTheme();
+  initLayout();
+  document.addEventListener("keydown", onKey);
+  els.keysButton?.addEventListener("click", openKeys);
+  window.addEventListener("beforeprint", beforePrint);
+  window.addEventListener("afterprint", afterPrint);
+  watchTimelineWidth();
 }
 
 function init() {
+  if (document.body.dataset.page === "specimen") {
+    initSpecimen();
+    return;
+  }
+  initChrome();
   els.form.addEventListener("submit", onSubmit);
   els.figuresOnly.addEventListener("click", onFiguresOnly);
   els.filingChanges.addEventListener("click", onFilingChanges);
@@ -3722,6 +5682,7 @@ function init() {
   loadMeta();
   refreshRecent();
   refreshTheses();
+  startWatchPolling();
   openHashTarget();
 }
 

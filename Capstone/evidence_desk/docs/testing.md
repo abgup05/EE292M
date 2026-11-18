@@ -257,8 +257,39 @@ The two measurements the referee faulted are commands, not tests (`make bench`, 
 | A route that answers for a bad ticker, or fails on an unreadable 8-K list | `tests/test_api.py`, the five events and meta tests | written after the route; the route removed, all five failed |
 | A page that computes or reorders what it shows, or shows a mark the record does not carry | `uitests/test_events_dom.py` (12 assertions on two sample runs and one record from before version 12) | written after the page code; first run failed on samples made before the wording reached `/api/meta` |
 | A claim rule that drifts | `tests/test_claim_categories_eval.py` pins the table of `make event-categories` | the labels were committed before the rule existed |
+| A time line that drops, adds or misdraws a filing or an 8-K, or shades a gap the record does not have | `uitests/test_run_events_dom.py`, the time-line tests on four sample runs | written after the drawing; the newest 8-K then dropped from it on purpose: the three runs with 8-Ks failed |
+| A live-run sample that is not the run's record, or a page that hides where it came from | `uitests/test_run_events_dom.py::test_the_sample_is_the_live_run_unedited` (skipped where `results/` is not), `::test_the_page_says_where_the_sample_comes_from` | written with the sample |
+| Keys that act while you type, j and k that skip or wrap, a theme that is not remembered | `uitests/test_keys_dom.py`, on what `uitests/keys.html` recorded | written after the code; the guard on typing then removed on purpose: three of its tests failed |
+| A tape that shows a figure other than the record's (the year's where the record has the quarter's, a reformatted value, another order) | `uitests/test_run_events_dom.py::test_the_tape_shows_the_records_own_figures_in_order`, on four sample runs | written after the tape; the page then made to prefer the year's metric on purpose: all four runs failed |
+| A run that does not lead with its answer, a count lost from the status line, the withheld findings or the full counts left open, standing prose back on the reading path | the other second-pass tests of `uitests/test_run_events_dom.py` | written after the page code and not seen failing |
+| The specimen page not served | `tests/test_api.py::test_static_files_are_served[/specimen.html…]` | written first: it failed with 404 before the route was added |
 
 The command-line tools (`tests/test_events_cli.py`, `tests/test_events_probe.py`) were written after their code and were not seen failing.
+
+## The standing watch (version 13)
+
+79 tests in ten files, all offline (`tests/fakes.py`: a fake EDGAR whose index gains filings, a scripted
+engine, a wall clock the test moves). The design and its measurements are in `docs/watch.md`.
+
+| Wrong program | Fails | Seen failing as |
+| --- | --- | --- |
+| Triage that flags the wrong claims, skips a 2.02, lets a vote or an exhibits-only 8-K start a run, or names no changed paragraph under a claim for a new 10-Q | `tests/test_triage.py` (12 tests) | all 12, against a stub with the real signatures |
+| Two workers that take the same job; a filing queued twice for one thesis; a retry before its backoff or after the cap; a job lost when its worker dies; the daily cap counted twice for one job | `tests/test_watch_store.py` (13 tests: two of them race two processes on one file, one loads a record from before version 13) | ImportError first; then a planted select-then-update claim failed both race tests 3 times in 3 (both workers took one job; 62 to 66 claims for 60 jobs) |
+| A backup that leaves out the watch tables, or a restore check that does not compare them | `tests/test_watch_backup.py` (6 tests) | 5 of 6 failed before `backup.py` changed; the sixth, a backup from before version 13, passed from the start, as it should |
+| A report of what moved that misses a verdict, a caution, a note or a new 8-K, or calls a re-dated note new | `tests/test_watch_report.py` (4 tests) | all 4 |
+| An index listing that costs more than one request, or misses 8-K/A | `tests/test_watch_edgar.py` (1 test) | failed before `EdgarClient.recent_filings` existed |
+| The end to end: a 5.02 8-K appears; one job; claim 1 bears and claim 2 does not; the thesis runs; the inbox names the filing, its link and what moved; the next cycle queues nothing | `tests/test_watch_service.py::test_end_to_end_a_new_5_02_8k_runs_the_thesis_and_the_inbox_says_what_moved`, and 9 more on policy, cap, retries, index errors, one request per company, periodic reports, unwatching and re-watching | ImportError first; the end to end failed on a planted comparison with no previous run |
+| A started run whose item still says it waits; a failed run whose item still says it runs | two assertions in `tests/test_watch_service.py` | both, found while writing the example payloads, before their fixes |
+| A waiting run that two requests can both start | `tests/test_watch_api.py::test_a_waiting_run_is_started_once_and_its_item_then_says_what_moved` | failed on a planted start that checked the kind and then changed it in two steps |
+| An example payload that no longer matches its route, or a README that leaves a field unnamed | `tests/test_watch_examples.py` (13 tests) | the README test, on a planted missing field |
+| A page that reorders the inbox, shows a kind, headline, filing, reason or move other than the record's, offers Run now on an item with no waiting run, or shows an unread number other than the API's | `uitests/test_inbox_dom.py`, on the recorded inbox (`?sample=inbox`, `?sample=inbox-page-2`) | written after the page code; the page then made to reverse the API's order on purpose: 3 failed (both orders and the paging) |
+| A page that swallows a refusal of a watch route (202 and 409 on Run now; 422, 503 and 200 on a policy; 409 on taking a watch off), hides an empty inbox or a watcher not running, or pages by anything but the API's offsets | `uitests/test_inbox_dom.py`, on what `uitests/watch.html` recorded | written after the page code and not seen failing; the harness itself stalled once, on controls drawn disabled in sample mode |
+| A recorded inbox that is not the example payloads | `uitests/test_inbox_dom.py::test_the_samples_are_the_example_payloads_unedited` (5) | written with the copies |
+
+Not seen failing, because they were written after their code: the other 10 API tests, the 8 tests of the
+watcher process, its settings and its health (`tests/test_watch_cli.py`), the 12 parse checks of the example
+payloads, and the contention test (`tests/test_watch_contention.py`: a run and watcher cycles writing one record
+from two processes; nothing was planted to make it fail).
 
 ## How long the gate takes
 
@@ -272,7 +303,9 @@ gate on a fresh clone, now with seven page renders and 142 page assertions. At v
 (pytest reports 26.19 s for 1,499 tests) and 38 s for the whole gate, with 156 page assertions.
 At version 11.1: 26 s again (26.03 s for 1,580 tests) and 38 s for the whole gate, with the same
 156 page assertions. At version 12, on 18 November: 29 s (28.85 s for 1,702 tests) and 42 s for the
-whole gate, with 168 page assertions (`docs/evidence/verify-fresh.txt`).
+whole gate, with 168 page assertions (`docs/evidence/verify-fresh.txt`). On the version 13 watch branch,
+18 November, once: pytest reports 32.12 s for 1,781 tests. The smoke test and the page step were not run
+there (port 8766 was held by another checkout's app), so the whole gate was not timed.
 
 ## What no test here can see
 

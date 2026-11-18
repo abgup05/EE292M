@@ -8,9 +8,13 @@ It also shows what a company added, removed and reworded between its two latest 
 
 "Word for word" means a span of the text this tool extracted from the filing, which is not the filing byte for byte: table rows are flattened into lines, zero-width characters are removed, non-breaking and repeated spaces become one space, and a "$" or "%" printed in a cell of its own is joined to its number. A quote is located under the Item and sub-heading the parser found, and it must be whole: one that begins or ends inside a word, or inside a number at a decimal point or a thousands separator, is not accepted, so "46.7" cannot be quoted out of "46.78 billion". In the Markdown brief, every character of an excerpt that Markdown would act on is escaped with a backslash, so a viewer shows the excerpt as text and an excerpt cannot become a link, an image or a heading. A bare web address inside an excerpt can still be made clickable by a viewer that links addresses on its own.
 
-This is version 12 (0.12.0, not tagged) of the capstone. Version 12 dates a run's evidence and reads what the company reported since its annual report: every 8-K filed after it is listed, the ones after the newest quarterly report and those on a substantive subject are read and split into their items, a claim on such a subject is offered the matching sections, and a finding that a later 8-K on its claim's subject postdates is marked so ([`docs/events.md`](docs/events.md)). It was built after a run answered "buy NVDA because Jensen is gone" from an annual report in which he is chief executive. Version 8 listed, under each claim of a run, what changed in the filings ([`docs/claim-changes.md`](docs/claim-changes.md)). Version 9 read revenue by segment, product and geography and customers' shares from each filing's own tagged facts ([`docs/breakdowns.md`](docs/breakdowns.md)). Version 10 lets a finding cite those figures ([`docs/tagged-figures.md`](docs/tagged-figures.md)), answers a third hostile reading ([`docs/referee-3-triage.md`](docs/referee-3-triage.md)), and fixes three faults in the reported figures that testing on few companies had hidden ([`docs/evidence/figures-eight-companies.md`](docs/evidence/figures-eight-companies.md)). Version 11 reports a year a finding names that is nowhere in its evidence, and measures what that check catches ([`docs/period-check.md`](docs/period-check.md)); it also answers a sixth blind review, of the system: a restore check that compares every record, the app and a one-off container writing one record at once, and a live run timed stage by stage. Version 11.1 answers a fourth hostile reading, finding by finding ([`docs/referee-4-triage.md`](docs/referee-4-triage.md)): a quote may no longer begin or end inside a word or a number, the restore check compares every column of the record, the Markdown brief escapes whatever Markdown would act on, and two published speed figures that had been measured wrongly are corrected. The plan and the milestones are in [`../README.md`](../README.md), the design is in [`ARCHITECTURE.md`](ARCHITECTURE.md), and the tests are described in [`docs/testing.md`](docs/testing.md).
+This is version 13 (0.13.0, not tagged) of the capstone. Version 13 adds the standing watch: a saved thesis can be put on watch, a second process reads the company's filing index every 15 minutes, decides by rule which claims a new filing bears on, and either runs the thesis again or leaves the run waiting in an inbox on the page ([`docs/watch.md`](docs/watch.md)). Version 12 dated a run's evidence and reads what the company reported since its annual report: every 8-K filed after it is listed, the ones after the newest quarterly report and those on a substantive subject are read and split into their items, a claim on such a subject is offered the matching sections, and a finding that a later 8-K on its claim's subject postdates is marked so ([`docs/events.md`](docs/events.md)). It was built after a run answered "buy NVDA because Jensen is gone" from an annual report in which he is chief executive. Version 8 listed, under each claim of a run, what changed in the filings ([`docs/claim-changes.md`](docs/claim-changes.md)). Version 9 read revenue by segment, product and geography and customers' shares from each filing's own tagged facts ([`docs/breakdowns.md`](docs/breakdowns.md)). Version 10 lets a finding cite those figures ([`docs/tagged-figures.md`](docs/tagged-figures.md)), answers a third hostile reading ([`docs/referee-3-triage.md`](docs/referee-3-triage.md)), and fixes three faults in the reported figures that testing on few companies had hidden ([`docs/evidence/figures-eight-companies.md`](docs/evidence/figures-eight-companies.md)). Version 11 reports a year a finding names that is nowhere in its evidence, and measures what that check catches ([`docs/period-check.md`](docs/period-check.md)); it also answers a sixth blind review, of the system: a restore check that compares every record, the app and a one-off container writing one record at once, and a live run timed stage by stage. Version 11.1 answers a fourth hostile reading, finding by finding ([`docs/referee-4-triage.md`](docs/referee-4-triage.md)): a quote may no longer begin or end inside a word or a number, the restore check compares every column of the record, the Markdown brief escapes whatever Markdown would act on, and two published speed figures that had been measured wrongly are corrected. The plan and the milestones are in [`../README.md`](../README.md), the design is in [`ARCHITECTURE.md`](ARCHITECTURE.md), and the tests are described in [`docs/testing.md`](docs/testing.md).
 
-![A recorded run: verdicts first, then the summary and the reported figures](docs/screenshots/sample-run.png)
+![A recorded run in the Paper theme: the command bar, the status line, the tape of the newest quarter's figures, the verdicts, the time line of filings and 8-Ks, then the claims](docs/screenshots/sample-run.png)
+
+The page is a research note in two themes over one layout: Paper, as printed, and Terminal, a dense dark screen (the switch in the bar, the `t` key, or your system's setting). `/` focuses the ticker, `e` opens your thesis beside a result, `j` and `k` move between claims, `?` lists the keys, and printing gives a clean copy of the note. `?sample=run-events` shows a live NVIDIA run of 18 November 2026, answered by the Anthropic API, whose first claim an 8-K postdates. The design and every component are described in [`docs/design.md`](docs/design.md); `/specimen.html` shows each one on made-up data.
+
+![The live run of 18 November 2026 in the Terminal theme](docs/screenshots/sample-events-terminal.png)
 
 ## Run it
 
@@ -18,7 +22,7 @@ You need Docker running and Make. From this directory, or from the repository ro
 
 ```sh
 cp .env.example .env   # optional: ANTHROPIC_API_KEY, ANTHROPIC_MODEL, SEC_USER_AGENT
-make up                # http://127.0.0.1:8766
+make up                # http://127.0.0.1:8766, and the watcher beside it
 make down
 ```
 
@@ -45,6 +49,10 @@ make down
 
 ![What changed between NVIDIA's two latest annual reports: counts by Item, then the paragraphs, with changed words marked](docs/screenshots/sample-changes.png)
 
+**The standing watch** (version 13). A saved thesis can be put on watch (`PUT /api/theses/{id}/watch`). The watcher, a second container started by `make up`, reads the company's filing index on EDGAR every 15 minutes; for each new 10-K, 10-Q or 8-K it decides by rule, without a model, which claims it bears on, and either runs the thesis again and says what moved, or leaves the run waiting for you (policy `ask`, the default; `auto` runs at once, at most five times a day). The inbox (`GET /api/inbox`) says what arrived and why it matters or does not. `make watch-status` says whether the watcher is alive; `make watch-once` does one cycle by hand. How it decides, what it costs and where it is wrong: [`docs/watch.md`](docs/watch.md); every payload: [`docs/examples/v13/`](docs/examples/v13/README.md). On the page, a saved thesis has its watch (put on, policy, taken off, with the last and next check and the last error), the bar has the inbox (`i`) with its unread count and the watcher's health, and the inbox gives each new filing its kind, the filing, the reasons per claim, what moved and, for a waiting run, a "Run now (uses the model)" button. <http://127.0.0.1:8766/?sample=inbox> shows the example payloads, copied unedited.
+
+![The recorded inbox in the Paper theme: the watch with its policy and checks, then each new filing with its kind, the reasons per claim, the waiting run and what moved](docs/screenshots/sample-inbox.png)
+
 From the command line, `make run ARGS='example'` runs the same pipeline and writes `results/<run-id>.json` and `.md`; `make changes ARGS="NVDA --form 10-K"` writes the filing comparison. `make probe TICKERS="AAPL COST"` reports how well a company's filings split into their Items, and `make figures TICKERS="COST AMZN"` prints each company's quarters as a run would see them.
 
 ## The system
@@ -57,13 +65,14 @@ flowchart LR
       CODE["Code<br/>src/, tests/, uitests/, docker/"]
       REC["Recorded data, in git<br/>EDGAR fixtures, cassette,<br/>golden records, golden set"]
       ENVF[".env<br/>API key, SEC user agent<br/>gitignored"]
-      RECORD[("data/record/record.sqlite<br/>runs, decisions, saved theses<br/>gitignored; cannot be rebuilt")]
-      CACHE[("data/cache/filings.sqlite<br/>filing text, once per filing<br/>gitignored; disposable")]
+      RECORD[("data/record/record.sqlite<br/>runs, decisions, saved theses,<br/>watches, watch jobs, inbox<br/>gitignored; cannot be rebuilt")]
+      CACHE[("data/cache/filings.sqlite<br/>filing text, once per filing;<br/>the watcher's heartbeat<br/>gitignored; disposable")]
       BACKUPS["backups/<br/>copies of the record<br/>gitignored; same disk"]
       RESULTS["results/<br/>exports and probe reports<br/>gitignored; disposable"]
     end
     subgraph DOCKER["Docker Compose, started only by make"]
       APP["app container, make up<br/>FastAPI routes, pipeline, gate, policy<br/>published on 127.0.0.1:8766 only"]
+      WATCH["watch container, make up<br/>python -m app.watch: polls EDGAR,<br/>triages, runs or queues; no port"]
       ONEOFF["one-off app containers<br/>make test, run, probe, replay,<br/>fixtures, eval, backup"]
       SHOTS["shots<br/>headless Chromium"]
       LOCK["lock (uv) and jscheck (node)"]
@@ -82,6 +91,12 @@ flowchart LR
   REC -->|"fixtures for tests,<br/>recorded answers for replay"| ONEOFF
   APP <--> RECORD
   APP <--> CACHE
+  WATCH <--> RECORD
+  WATCH <--> CACHE
+  CODE -->|"bind mount at /work"| WATCH
+  ENVF -->|"environment variables"| WATCH
+  SEC -->|"HTTPS: one index request<br/>per watched company per cycle"| WATCH
+  WATCH -->|"runs with policy auto"| MODEL
   ONEOFF <--> RECORD
   ONEOFF --> RESULTS
   RECORD -->|"make backup"| BACKUPS
@@ -98,7 +113,7 @@ flowchart LR
   REC <-->|"git over HTTPS"| GITHUB
 ```
 
-**Where each part runs.** Everything runs on one laptop. The served backend is one container. The page's JavaScript runs in the browser, not in the container that serves it. `make test`, `run`, `probe`, `replay`, `fixtures`, `eval` and `backup` each start a separate short-lived container from the same image; these bypass the served app, and the ones that read filings reach EDGAR themselves. Nothing listens beyond `127.0.0.1`.
+**Where each part runs.** Everything runs on one laptop. The served backend is one container; the watcher is a second one, from the same image, sharing the data directory and listening on no port. The page's JavaScript runs in the browser, not in the container that serves it. `make test`, `run`, `probe`, `replay`, `fixtures`, `eval` and `backup` each start a separate short-lived container from the same image; these bypass the served app, and the ones that read filings reach EDGAR themselves. Nothing listens beyond `127.0.0.1`.
 
 **How code reaches it.** The repository is mounted into every container, so the running code is the working tree: the image holds only the dependencies, and a changed file is served without a rebuild (the page's files at once, Python code when the app is next started). `jscheck` mounts the tree read-only. The app, the one-off containers, `lock` and `shots` mount it read-write; `shots` is a third-party image (headless Chromium), and what it writes is the screenshots and the page dumps. Dependencies are installed when the image is built, from PyPI and the container registries, never while it runs. The only other copy of the code is the private GitHub repository, reached by `git push` over HTTPS.
 
@@ -136,6 +151,8 @@ Every number has the command that produced it and its denominator in [`docs/resu
 | 8-Ks split into their items (`make events-probe`, 18 November) | Every 8-K of the last 12 months of eight companies: 190 of 200 listed items found before two fixes (Coca-Cola's "Item 9.01(d).", JPMorgan's "Item 5.02(e)"), 200 of 200 after | [`docs/events.md`](docs/events.md), [`docs/evidence/`](docs/evidence/) |
 | Which claims an 8-K bears on (`make event-categories`) | On 84 claims labelled before the rule existed (39 with no category): precision 0.90 and recall 0.92 on the first score; 0.94 and 1.00 after one tuning pass on the same claims, so fitted. Three false alarms remain | [`docs/events.md`](docs/events.md) |
 | NVIDIA's 8-Ks, live (`make events T=NVDA`, 18 November) | 12 since the annual report of 25 February, 8 read. The 8-K of 12 November, Item 5.02, reports the resignation of Jen-Hsun Huang as President and Chief Executive Officer | [`docs/evidence/events-nvda.txt`](docs/evidence/events-nvda.txt) |
+| The standing watch's triage on a year of NVIDIA's real filings (`make watch-replay`, 18 November, live EDGAR, no model) | 19 filings fed one at a time; triage agreed with labels written before the replay on 12 of 19, and flagged 11 of the 13 labelled as bearing. Five false alarms, all Item 5.02 (a director or another officer, not the chief executive); two misses, both Item 8.01 (a $25 billion note issue, the Hugging Face acquisition). The labels are the building agent's, not a person's | [`docs/watch.md`](docs/watch.md), [`docs/evidence/watch-replay-nvda.md`](docs/evidence/watch-replay-nvda.md) |
+| A run and the watcher writing one record at once (`make watch-contention`, 18 November, offline) | Both always succeed and the file passes its integrity check (a test in the gate). Timed in 6 alternated pairs: median 299 ms alone, 318 ms with a watcher doing about 200 cycles meanwhile; the ranges overlap | [`docs/evidence/watch-contention.txt`](docs/evidence/watch-contention.txt) |
 | The gate from a fresh clone (`make verify-fresh`, 18 November) | 1,702 offline tests, the smoke test, 168 assertions on the rendered page, in 42 s | [`docs/evidence/verify-fresh.txt`](docs/evidence/verify-fresh.txt), [`docs/testing.md`](docs/testing.md) |
 | The running app, end to end, on live filings (`make live-walk`) | Passes: a judged run, decisions, the reviewed brief, a saved thesis run twice, the comparisons, the breakdowns, and a run that asks for the tagged figures and is offered 40 | [`docs/evidence/live-walk.txt`](docs/evidence/live-walk.txt) |
 | The period check (`make eval`) | All 34 years named by the golden set's findings are in their evidence: no false alarm. With a wrong year planted in each of the 25 findings that name one, it flags 21 moved one year back, 24 two back, 25 three back and 23 one forward. With one year of several moved and the others left right, it flags 13 of 18 planted statements | [`docs/period-check.md`](docs/period-check.md) |
@@ -147,11 +164,11 @@ Read all of it with three cautions. **The model answers are recordings made by s
 ## Verification
 
 ```sh
-make verify         # build, lint, 1,702 offline tests, smoke test, browser-level test
+make verify         # build, lint, 1,781 offline tests, smoke test, browser-level test
 make test           # offline tests only (T=tests/test_gate.py for one file)
 make golden-check   # the tripwire: one recorded run, compared stage by stage
 make replay         # the recorded model-backed run, offline
-make uitest         # headless Chromium renders seven pages of six records; 168 assertions on the DOM
+make uitest         # headless Chromium renders eleven pages of nine records, a keyboard check and a check of every answer of the watch routes; 262 assertions on the DOM
 make live-walk      # the running app end to end over HTTP: needs EDGAR, no key
 make eval ARGS="run --variant claim"   # score retrieval on the golden set
 make backup         # copy the record to backups/; make restore-check proves it restores
@@ -167,13 +184,20 @@ make header-cut-check TICKERS="NVDA COST"   # each filing parsed with and withou
 make events T=NVDA  # live: the 8-Ks filed since the annual report, their items, opening sentences and roles
 make events-probe   # live: every 8-K of the last 12 months of the eight probe companies, each listed item found or not
 make event-categories   # offline: precision and recall of the claim-category rule on 84 labelled claims
-make screenshots    # renders the page into docs/screenshots, for a person to look at
+make screenshots    # renders the page, both themes and phone width, and the specimen into docs/screenshots, for a person to look at
+make watch-once     # one watcher cycle: poll each watched company, triage, run or queue
+make watch-status   # is the watcher alive, the queue, and each watch's last and next check
+make watch-examples # offline: the watch's API payloads into docs/examples/v13
+make sample-inbox   # copy them, unedited, into the page's recorded inbox (src/web/sample-inbox*.json)
+make watch-replay   # live, no model: a year of NVIDIA's filings fed to triage, against eval/watch-replay-nvda.json
+make watch-contention   # offline: a run timed alone and with a watcher writing the same record
 ```
 
 [`docs/testing.md`](docs/testing.md) names one test at each of four levels, the wrong programs each new test now fails on, the tripwire and how to read it, and what no test here can see.
 
 ## Known limitations
 
+- **The watch's triage is a category rule, and it is wrong in two known ways.** Every Item 5.02 is flagged for a claim about leadership, whoever comes or goes (five false alarms in a year of NVIDIA's filings), and Item 8.01 ("Other events") is treated as routine, so a large debt issue or an acquisition filed under it is missed (two in the same year). It does not notify; the inbox is read when you look. A watched thesis with policy `auto` and the Claude engine spends model calls without asking, up to the daily cap. [`docs/watch.md`](docs/watch.md) lists the rest.
 - **The link that opens a filing at a passage has not been checked in a browser.** It is built with a text fragment from the excerpt's first and last words. An excerpt that spans lines links by its first line; a table row links to the filing without a passage, and the page says which. A headless browser sent to sec.gov to check one link was refused as an undeclared automated tool. Click one before relying on them.
 - **The Anthropic API path has not been exercised live since version 1** (22 October). The engine and the checker are tested against stub clients and through recorded answers; neither exercises the SDK call.
 - **The meaning check is a second model of the same family.** It reads without the first model's reasoning, but it is not an independent party. On the golden set it withheld 1 of 78 findings and changed no verdict. Shown 152 planted mismatches (real quotes moved under a statement they do not belong to) it rejected 150 and agreed with none; that is the easy kind of mismatch, and a quote on the right topic that does not carry the statement has not been tried.
@@ -193,7 +217,7 @@ make screenshots    # renders the page into docs/screenshots, for a person to lo
 - **Pages a user adds are fetched with the address checked at lookup, not pinned at connection.** A hostile DNS server could change its answer in between. This is a local, single-user tool; pinning is later work.
 - **The record has no copy off this laptop.** `make backup` writes to the same disk, and both the record and `backups/` are ignored files inside the working tree: `git clean -fdx`, deleting the checkout or a failed disk takes the original and every backup together. `make backup-status` says how old the newest backup is and what was made since, and `make up` prints it; nothing makes a copy elsewhere. The smallest useful one is `backups/decisions-<UTC>.jsonl`, a legible file of the decisions alone. Where it goes is mine to decide.
 - **Filings without Item headings over their body** (JPMorgan's 10-Q) are kept and quotable, located by sub-heading only, and a run on one is partial.
-- **The page was checked by eye from screenshots** and by a DOM test, not by a user. Dark mode was not checked.
+- **The page was checked by eye from screenshots** in both themes and at phone width, and by DOM tests, not by a user. The screenshots come from one headless Chromium with fallback fonts (FreeSerif, FreeSans, FreeMono): the page on a Mac, in Safari or Firefox, was not looked at. The colour contrast was computed from the tokens, not measured on screen. The specimen page has no browser test (the API test checks only that it is served). The inbox and the watch controls were tested on the example payloads, and on the answers `uitests/watch.html` stands in for the server with; they were not driven against a live watcher, a real waiting run was not started from the page, and the watch block on a saved thesis was not looked at in a screenshot (it is the same component as the inbox's, which was). The line of folded "seen, not relevant" items counts the items on the page it draws: the API sends no count of them.
 - **The filing comparison's one threshold has been read only by a model.** It was set on NVIDIA's reports. For Apple and Coca-Cola the pairs near it were read by the session that built it (`make changes ARGS="AAPL --form 10-K --review 0.44"` prints them): in risk factors it holds; in Coca-Cola's discussion of results, about three in ten pairs just above it join two different paragraphs built on one template. The other five companies' results are unread. A paragraph rewritten into several reads as one removed and several added. Table rows are counted and never shown, so a figure that moved inside a table is invisible. "An exact span" is a statement about the record: a reworded pair is drawn word by word, with its spacing normalised. What counts as a sub-heading depends on the filing's typography. Where a filing's body does not sit under its Item headings (JPMorgan), the Item named beside a change is not meaningful.
 - **The 8-Ks since the annual report are read by rule, not understood.** An 8-K's category is its item number (an acquisition filed under Item 8.01 is "disclosure"); a claim's category is a lexicon measured on 84 claims a model labelled and tuned on the same claims. At most eight are read per run, and only their own items: the press release attached as an exhibit is not. Nothing is known about an event until its 8-K reaches EDGAR. No recorded model answer has seen an 8-K passage. See [`docs/events.md`](docs/events.md).
 - Only 10-K, 10-Q and 8-K filers. No PDFs, 8-K exhibits, foreign filers (6-K) or transcripts. Runs execute in a worker thread inside the API process; there is no queue and no resume after a restart.

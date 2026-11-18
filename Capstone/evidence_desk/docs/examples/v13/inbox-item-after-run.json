@@ -1,0 +1,159 @@
+{
+  "id": "ib-th-090c6b0da873-0008888888-26-000009",
+  "thesis_id": "th-090c6b0da873",
+  "thesis_name": "Jane Smith is gone",
+  "ticker": "NVDA",
+  "job_id": "wj-th-090c6b0da873-0008888888-26-000009",
+  "kind": "moved",
+  "created_at": "2026-11-18T11:06:00Z",
+  "updated_at": "2026-11-18T11:06:00Z",
+  "read_at": null,
+  "collapsed": false,
+  "headline": "NVDA: 8-K of 17 Nov 2026, Items 2.02 and 9.01. 1 new caution; 4 new 8-Ks on the timeline.",
+  "filing": {
+    "accession": "0008888888-26-000009",
+    "form": "8-K",
+    "filed_date": "2026-11-17",
+    "report_date": "2026-11-17",
+    "url": "https://www.sec.gov/Archives/edgar/data/1045810/000888888826000009/current-9.htm",
+    "items": [
+      {
+        "number": "2.02",
+        "title": "Results of Operations and Financial Condition",
+        "category": "results"
+      },
+      {
+        "number": "9.01",
+        "title": "Financial Statements and Exhibits",
+        "category": "exhibits"
+      }
+    ],
+    "label": "8-K of 17 Nov 2026, Items 2.02 and 9.01"
+  },
+  "triage": {
+    "bears": true,
+    "rules": [
+      "results_announced"
+    ],
+    "summary": "It bears on 2 of 2 claims.",
+    "claims": [
+      {
+        "claim_id": "c1",
+        "claim": "Buy because Jane Smith is gone.",
+        "categories": [
+          "leadership"
+        ],
+        "bears": true,
+        "reasons": [
+          "New results announced (Item 2.02); the figures arrive with the quarterly report."
+        ],
+        "paragraphs": []
+      },
+      {
+        "claim_id": "c2",
+        "claim": "Revenue grew in the quarter as demand for systems rose.",
+        "categories": [],
+        "bears": true,
+        "reasons": [
+          "New results announced (Item 2.02); the figures arrive with the quarterly report."
+        ],
+        "paragraphs": []
+      }
+    ],
+    "notes": []
+  },
+  "run": {
+    "state": "finished",
+    "waiting_reason": "The watch asks before running; start the run when you want it.",
+    "run_id": "run-81cd9021885b",
+    "status": "partial",
+    "started_by": "owner"
+  },
+  "moved": {
+    "earlier_run_id": "run-f2c72ad55e4f",
+    "later_run_id": "run-81cd9021885b",
+    "moved": true,
+    "verdicts": [],
+    "new_cautions": [
+      {
+        "claim": "Buy because Jane Smith is gone.",
+        "text": "The evidence for this verdict was filed before the 8-K of 3 Sep 2026 (Item 5.02), which reports a change of directors or officers. Read that filing before relying on the verdict."
+      }
+    ],
+    "new_notes": [],
+    "new_events": [
+      {
+        "accession": "0008888888-26-000009",
+        "form": "8-K",
+        "filed_date": "2026-11-17",
+        "items": [
+          "2.02",
+          "9.01"
+        ],
+        "url": "https://www.sec.gov/Archives/edgar/data/1045810/000888888826000009/current-9.htm",
+        "label": "8-K of 17 Nov 2026"
+      },
+      {
+        "accession": "0008888888-26-000008",
+        "form": "8-K",
+        "filed_date": "2026-09-03",
+        "items": [
+          "5.02"
+        ],
+        "url": "https://www.sec.gov/Archives/edgar/data/1045810/000888888826000008/current-8.htm",
+        "label": "8-K of 3 Sep 2026"
+      },
+      {
+        "accession": "0008888888-26-000007",
+        "form": "8-K",
+        "filed_date": "2026-08-26",
+        "items": [
+          "2.02",
+          "9.01"
+        ],
+        "url": "https://www.sec.gov/Archives/edgar/data/1045810/000888888826000007/current-7.htm",
+        "label": "8-K of 26 Aug 2026"
+      },
+      {
+        "accession": "0008888888-26-000006",
+        "form": "8-K",
+        "filed_date": "2026-06-30",
+        "items": [
+          "5.07"
+        ],
+        "url": "https://www.sec.gov/Archives/edgar/data/1045810/000888888826000006/current-6.htm",
+        "label": "8-K of 30 Jun 2026"
+      }
+    ],
+    "sources_added": [
+      "NVIDIA CORP 8-K, filed 2026-09-03"
+    ],
+    "line": "1 new caution; 4 new 8-Ks on the timeline.",
+    "claims": [
+      {
+        "claim": "Buy because Jane Smith is gone.",
+        "before": "supported",
+        "after": "supported",
+        "moved": false,
+        "change": "unchanged",
+        "reviewed_before": null,
+        "reviewed_after": null,
+        "excerpts_added": 0,
+        "excerpts_dropped": 0
+      },
+      {
+        "claim": "Revenue grew in the quarter as demand for systems rose.",
+        "before": "not_addressed",
+        "after": "not_addressed",
+        "moved": false,
+        "change": "unchanged",
+        "reviewed_before": null,
+        "reviewed_after": null,
+        "excerpts_added": 0,
+        "excerpts_dropped": 0
+      }
+    ],
+    "comparison_note": "No verdict moved; 1 filing is new: NVIDIA CORP 8-K, filed 2026-09-03."
+  },
+  "error": ""
+}

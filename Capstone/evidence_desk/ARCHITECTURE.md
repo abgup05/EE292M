@@ -1,6 +1,6 @@
 # Architecture
 
-Evidence Desk (version 0.12.0) tests an equity analyst's thesis claims against the company's own SEC filings and shows,
+Evidence Desk (version 0.13.0) tests an equity analyst's thesis claims against the company's own SEC filings and shows,
 per claim, the verbatim passages and figures that support or challenge it. A reviewer can accept or reject each
 finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the brief; `docs/reviews/` the review.
 
@@ -8,6 +8,7 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
 
 - Python 3.14, FastAPI, Pydantic, httpx, BeautifulSoup, SQLite; `anthropic` for the optional model engine. No front-end build.
 - Docker Compose, on `127.0.0.1:8766` only; dependencies install at image build. All through the `Makefile`.
+- Two long-lived processes from one image: the app (`app`) and, since version 13, the watcher (`watch`, no port).
 
 ## Layout (one job per module)
 
@@ -30,7 +31,10 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/core/periods.py     the period check: each year or fiscal label a statement names is in its evidence (reported, never withheld); a company's fiscal calendar from its newest annual report; a planted wrong year, for measuring the check
     src/app/core/meaning.py     the meaning check's pure half: what the checker is shown, and applying its judgements
     src/app/core/events.py      the rules about 8-Ks: SEC's table of items with a category each, an item's opening sentences and the officer roles a 5.02 names, a claim's categories (lexicon and a name-and-leaving pattern), which 8-Ks a run reads, which postdate a finding, a claim's caution and note, the as-of block; event_models.py is its pure data
-    src/app/sources/edgar.py    SEC EDGAR adapter: ticker, filing selection, rate-limited fetch
+    src/app/core/watch_models.py, watch_policy.py   the standing watch's pure data (watch, job, triage, inbox item, what moved) and every number and sentence it uses
+    src/app/core/triage.py      whether a new filing bears on each claim, by rule (8-K item categories, results, periodic reports and their changed paragraphs); the version 14 extension point; pure
+    src/app/core/watch_report.py   what moved between a thesis's previous run and the one a filing caused, from core/compare; pure
+    src/app/sources/edgar.py    SEC EDGAR adapter: ticker, filing selection, rate-limited fetch; recent_filings lists the watched forms in one request
     src/app/sources/filing.py   splits a 10-K/10-Q into Part and Item sections
     src/app/sources/current_report.py   splits an 8-K into one section per "Item N.NN" heading, the signature block and an exhibit index after the last item apart; its own parser version
     src/app/sources/http.py     bounded fetch of a public page, every redirect hop revalidated
@@ -52,6 +56,10 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/services/breakdowns.py   the latest filing of a form, fetched and read into breakdowns
     src/app/services/events.py  a company's 8-Ks after its newest annual report: listed from the index, the ones the rule picks read through the cache and split; a document that cannot be read is a reason on its event, never an error; the item sections offered to a claim
     src/app/services/tagged_figures.py   for a run that asks: the tags of the newest annual and quarterly report it read, as figures; a filing that cannot be read is a reason, never an error
+    src/app/watch/store.py      the watch's tables: WatchStore (watches, seen filings, jobs, inbox, in the record) and WatchStatus (heartbeat and checks, in the cache)
+    src/app/watch/service.py    start and stop watching; the Watcher: a cycle polls each watched company once, queues a job per new (thesis, filing), and works each job (triage, then a run or a waiting run, then the inbox item); EXTRA_TRIAGE_RULES
+    src/app/watch/views.py, routes.py   the watch list and the watcher's health, shared by the API and `make watch-status`; the watch's HTTP routes, added by create_app
+    src/app/watch/__main__.py   the watcher process: `python -m app.watch [run | once | status]`
     src/app/store.py            SQLite: Store (the record) and FilingCache (disposable)
     src/app/backup.py           backs up the record; checks that the newest backup restores
     src/app/wiring.py           composition root: reads the environment, builds collaborators
@@ -66,11 +74,12 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/evaluation/mismatch_eval.py   plants real quotes under statements they do not belong to and scores what the meaning check says
     src/app/evaluation/reading_sheet.py   lays the golden cases out for a person to read (`make golden-sheet`)
     src/app/evaluation/claim_categories.py   scores the claim-category rule on eval/claim-categories.json (`make event-categories`)
-    src/web/                    index.html, app.js, styles.css, sample-run.json, sample-synthetic.json, sample-changes.json, sample-run-changes.json, sample-run-tagged.json, sample-breakdowns.json, sample-breakdowns-gap.json (synthetic)
+    src/web/                    index.html, app.js, styles.css (one layout, two themes: docs/design.md), specimen.html (every component on made-up data, served at /specimen.html), sample-run.json, sample-run-events.json (a live run, copied unedited), sample-synthetic.json, sample-changes.json, sample-run-changes.json, sample-run-tagged.json, sample-breakdowns.json, sample-breakdowns-gap.json (synthetic), sample-inbox.json, sample-inbox-page-2.json, sample-inbox-watches.json, sample-inbox-health.json, sample-inbox-meta.json (the watch's example payloads of docs/examples/v13, copied unedited by `make sample-inbox`)
     eval/                       the golden set, its pinned filings, cache/ and results/; README.md
     tests/                      offline tests, fakes.py (EDGAR, pages, engine, clock), smoke.py; replay_run.py, golden_run.py, speed_run.py
     tests/live_walk.py          the live end-to-end walk over HTTP; tests/golden/ the tripwire and replayed verdicts
-    uitests/                    browser tests: the rendered DOM of the sample runs, the sample filing comparison and breakdowns against their JSON; test_events_dom.py the 8-Ks and the as-of line
+    tests/watch_examples.py, watch_replay.py, watch_contention.py   the watch's example payloads (docs/examples/v13); the live replay of a year of filings against eval/watch-replay-nvda.json; a run timed alone and beside a watcher
+    uitests/                    browser tests: the rendered DOM of the sample runs, the sample filing comparison and breakdowns against their JSON; test_events_dom.py the 8-Ks and the as-of line; test_run_events_dom.py the live-run sample and the time line; keys.html + test_keys_dom.py the keys and the themes; test_inbox_dom.py the recorded inbox, and watch.html (the page's code for every answer of the watch routes, with `fetch` stood in for)
 
 ## Storage: the record and the cache
 
@@ -96,6 +105,12 @@ Two SQLite files under the data directory (`EVIDENCE_DESK_DATA_DIR`; `data/`, gi
   once (`EVIDENCE_DESK_DATA_DIR`, overridden for that target only) and checks its integrity and every row.
 - **Deleting the cache loses no record, and one thing a record points at.** The next run fetches the filings from EDGAR, parses them again and refills it. But the stored text that an old run's excerpts are offsets into lives only in the cache. With it gone, the excerpts are still in the record as text; checking that they are spans of the stored text again needs the same filing fetched and parsed by the parser that produced it.
   Runs in the record are unchanged. A version 3 database at `data/runs/runs.sqlite` is not read.
+- **The standing watch's tables** (version 13, `watch/store.py`, created by `Store.extend` when the app or the watcher
+  first opens the record, so a record from before has none and loads unchanged). In the record: `watches` (one per
+  watched thesis), `watch_seen` (each filing a watch has seen), `watch_jobs` (unique per thesis and accession; queued,
+  running, done or failed, with attempts, a lease and the error) and `inbox`. They are backed up and compared by
+  `restore-check` like the other tables. In the cache, because they change every cycle and are worth nothing
+  tomorrow: `watcher_beats` (the heartbeat) and `watch_checks` (each company's last and next check and error).
 
 ## The pipeline (`services/thesis_run.execute_run`)
 
@@ -177,6 +192,27 @@ one rule; other decisions are ignored; the review is computed per request, not s
 (`core/compare.compare_runs`): two runs of one thesis, claims matched by text: verdict moved or not, excerpts added and
 dropped, filings new or gone.
 
+## The watcher (version 13, `docs/watch.md`)
+
+A second process (`python -m app.watch`, the `watch` service of the compose file, started by `make up`) shares the
+data directory with the app. Each cycle (every `EVIDENCE_DESK_WATCH_INTERVAL_SECONDS`, default 900, floor 300) it:
+
+1. **Polls.** For each watched company, once however many theses watch it, one request lists its 10-K, 10-Q, 8-K and
+   8-K/A filings (`EdgarClient.recent_filings`, same client and rate limit as a run). A filing a watch has not seen is
+   marked seen and a job queued, in one transaction. On the first watch, what is listed is marked seen with no job.
+2. **Settles** jobs whose 900-second lease ran out (their worker died): queued again, or failed after four attempts.
+3. **Works** each ready job, claimed by one atomic `UPDATE ... RETURNING`: `core/triage` decides which claims the filing
+   bears on. None: an inbox item "seen, not relevant", no run. Some: with policy `auto` and a slot under the daily cap,
+   the thesis is run (`services/theses`, `thesis_run.execute_run`, as the run button does) and `core/watch_report`
+   compares it with the previous finished run; otherwise the item holds a run waiting for its owner. A job that
+   raises is retried after 60, 300 and 1,800 seconds, then stays failed with its reason.
+4. **Beats.** The cycle's counts and time go to the cache; `GET /api/watch/health` is alive while the newest beat is
+   at most two intervals and a minute old.
+
+Nothing new is installed: the queue is a SQLite table with an atomic claim and a lease, and the loop is the standard
+library. The app starts a waiting run in its own executor, like any run, and writes what moved into the item when it
+ends.
+
 ## Patterns and interfaces
 
 - **Ports and adapters.** `core/ports.py` declares `FilingSource`, `PageFetcher`, `Analyst` and `Checker`. `sources/edgar.py`
@@ -203,11 +239,15 @@ dropped, filings new or gone.
 - **Two entry points, one use case.** `api.py` (`create_app`, run by uvicorn `--factory`) and `cli.py` (`main`) both
   call `thesis_run.execute_run`; `api.py` holds routes only.
 - **One wording source.** `policy.py` and `limits.py` hold every label, note and number. The page reads them from `GET
-  /api/meta`; the export and the CLI import them (review findings F1, F8).
+  /api/meta`; the export and the CLI import them (review findings F1, F8). The watch keeps its own in
+  `core/watch_policy.py`, served by `GET /api/watch/meta`, so that the contract test of `limits.py` is not widened.
 
 New routes in `api.py`: `GET /api/runs/{id}/review`; `PUT /api/runs/{id}/findings/{fid}/decision` (404 unknown run or
 finding, 409 while running, 422 withheld finding); `GET .../export.md?reviewed=true`; `/api/theses`, `/api/theses/{id}`,
-`POST /api/theses/{id}/runs`, `GET /api/theses/{id}/changes`.
+`POST /api/theses/{id}/runs`, `GET /api/theses/{id}/changes`. Version 13, in `watch/routes.py` (added by one call at
+the end of `create_app`, which takes an injectable `wall_clock`): `PUT` and `DELETE /api/theses/{id}/watch`,
+`GET /api/watch`, `/api/watch/health`, `/api/watch/meta`, `GET /api/inbox`, `/api/inbox/{id}`, `POST /api/inbox/read`,
+`POST /api/inbox/{id}/run`. Payloads and every field: `docs/examples/v13/`.
 
 ## Where a change goes
 
@@ -244,15 +284,25 @@ finding, 409 while running, 422 withheld finding); `GET .../export.md?reviewed=t
   splitter (`sources/current_report.py`) is measured with `make events-probe` on the eight probe companies, before
   and after (`docs/events.md`). An 8-K offered to a claim changes its prompt: if a claim of the example thesis ever
   gains a category, `demo/cassettes/nvda-example*` must be recorded again (`tests/test_events_run.py` pins that none has).
+- **A change to the standing watch.** What bears on a claim: `core/triage.py` with `tests/test_triage.py`; the
+  categories it reads are the 8-K rules above, shared with the run. Measure a change with `make watch-replay` (live,
+  no model) against the labels in `eval/watch-replay-nvda.json`, before and after, and never change a label to fit.
+  A rule for version 14's compiled claims goes in `EXTRA_TRIAGE_RULES` (`watch/service.py`). Numbers and wording:
+  `core/watch_policy.py`. A new watch table: `WATCH_SCHEMA` in `watch/store.py` and `WATCH_KINDS` (so backup and
+  restore-check cover it); `make backup` first, `make restore-check` after. A change to a payload: `make
+  watch-examples`, then `tests/test_watch_examples.py` says whether the README still names every field.
 - **A change to the breakdowns** (another axis, another revenue concept, a new shape of nested members): `core/breakdowns.py`, whose specifications and constants sit at its top, with `tests/test_breakdowns.py`; a number format the reader does not know: `sources/ixbrl.py` with `tests/test_ixbrl.py`. Start from a failing test built on a small excerpt of the real filing, then run `make breakdowns` on the eight probe companies, annual and quarterly, and check that every breakdown still adds up to its tagged total (`docs/breakdowns.md`).
 
 ## The boundary
 
 The backend computes every result: verified excerpts, verdicts, status, every count in `Run.coverage`, the reviewed
 verdicts and the comparison. The frontend collects input and decisions, polls, and draws the record with the wording
-from `/api/meta`; it computes no verdict and no excerpt context. The same holds for the three records that are not
+from `/api/meta`; it computes no verdict and no excerpt context. Placing record dates on the time line, a series' values in
+a sparkline, and setting a negative number in its colour by the sign of the record's value are drawing; the page has two
+themes, Paper and Terminal, over one layout (`docs/design.md`). The same holds for the three records that are not
 part of a run (the comparison of two filings, the changed paragraphs listed under each claim, the tagged breakdowns,
-a company's 8-Ks since its annual report, `GET /api/companies/{ticker}/events`):
+a company's 8-Ks since its annual report, `GET /api/companies/{ticker}/events`, and the watch's list, health and
+inbox, whose headlines, labels, counts and comparisons the backend writes):
 each arrives with its counts, its links and what they open, its column headings, its cells and its changes already
 computed and formatted, and the page only places them. Requests are validated at the API: the schema in
 `core/models`, extra URLs (public, distinct) in `api.py`, the ticker against EDGAR. Refusals are 422 `{"error",
@@ -265,14 +315,20 @@ what counts. Filings come only from `www.sec.gov` and `data.sec.gov` (7 requests
 
 - `make verify`: image build, ruff, `node --check`, the offline tests, `tests/smoke.py` against the live container
   (no internet), and `make uitest` (headless Chromium renders the sample runs, the sample filing comparison and the breakdowns; `uitests/`
-  checks the DOM against their JSON). Offline tests use `tests/fakes.py`; `make fixtures` re-records EDGAR responses.
+  checks the DOM against their JSON; `uitests/keys.html`, loaded from disk with the same-origin rule off for that page
+  only, presses the page's keys in a frame and records what happened; `uitests/watch.html` does the same for the inbox and the watch
+  controls, answering the page's watch requests with the example payloads and the README's refusal shapes). Offline tests use `tests/fakes.py`; `make fixtures` re-records EDGAR responses.
 - `make golden-check` compares the offline example run with `tests/golden/golden.json` and names the first stage that
   moved; `make golden-baseline` rewrites it. `make profile` and `make bench` time the offline run (`docs/testing.md`,
   `docs/speed.md`).
 - `make eval-validate` checks each golden case against its pinned filing; `make eval ARGS='run --variant claim'`
   scores retrieval into `eval/results/`; `ARGS='fetch'` fills `eval/cache`. `make probe TICKERS="AAPL"` checks how a
   filer's filings split.
-- `make up` serves `http://127.0.0.1:8766`; `make up-recorded` replays model answers from
+- `make watch-once` does one watcher cycle and `make watch-status` prints its health and each watch; `make
+  watch-examples`, `watch-replay` and `watch-contention` write the example payloads, replay a year of NVIDIA's filings
+  live and time a run beside a watcher. `tests/test_watch_contention.py`, in the gate, has a run and watcher cycles
+  write one record from two processes at once.
+- `make up` serves `http://127.0.0.1:8766` and starts the watcher; `make up-recorded` replays model answers from
   `demo/cassettes/nvda-example` (EDGAR, no key; compose passes `EVIDENCE_DESK_CASSETTE` through). `make run
   ARGS='example'` runs the CLI; `make demo` runs the example live.
 - `make live-walk`: the app recorded, then `tests/live_walk.py` over HTTP with live EDGAR: a run, decisions, the

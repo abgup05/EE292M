@@ -305,7 +305,7 @@ def test_meta_gives_every_view_its_limits_and_wording(client: TestClient) -> Non
     assert meta["figures_note"] == FIGURES_NOTE
     assert meta["decision_labels"] == DECISION_LABELS
     assert meta["review_note"] == REVIEW_NOTE
-    assert meta["version"] == "0.12.0"
+    assert meta["version"] == "0.13.0"
     assert meta["engine"] == "extractive"
     assert meta["checker"] == {"name": "none", "detail": ""}
     assert meta["support_labels"] == SUPPORT_LABELS
@@ -367,7 +367,7 @@ def test_health(client: TestClient) -> None:
         "engine": "extractive",
         "model": None,
     }
-    assert __version__ == "0.12.0"
+    assert __version__ == "0.13.0"
 
 
 # Static files
@@ -379,6 +379,7 @@ def test_health(client: TestClient) -> None:
         ("/", "text/html", "Evidence Desk"),
         ("/app.js", "text/javascript", "/api/meta"),
         ("/styles.css", "text/css", "{"),
+        ("/specimen.html", "text/html", "Specimen: made-up data"),
         ("/sample-run.json", "application/json", '"run"'),
         ("/sample-changes.json", "application/json", '"changes"'),
     ],

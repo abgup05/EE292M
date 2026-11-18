@@ -43,6 +43,7 @@ from pathlib import Path
 from app import wiring
 from app.core.models import Decision, Finding, Run, Thesis
 from app.store import Store
+from app.watch.store import WATCH_KINDS, WatchStore
 
 DEFAULT_DIRECTORY = Path("backups")
 RECORD_PREFIX = "record-"
@@ -220,6 +221,14 @@ RECORD_KINDS: tuple[tuple[str, str], ...] = (
     ("runs", "run"),
     ("decisions", "the decision on"),
     ("theses", "thesis"),
+    *WATCH_KINDS,  # version 14: watches, seen filings, watch jobs, the inbox
+)
+# The plural each watch table is counted under in the PASS line, in WATCH_KINDS order.
+WATCH_PLURALS: tuple[tuple[str, str], ...] = (
+    ("watches", "watches"),
+    ("watch_seen", "seen filings"),
+    ("watch_jobs", "watch jobs"),
+    ("inbox", "inbox items"),
 )
 MAX_NAMED = 3  # unreadable records named in a failure; the rest are counted
 
@@ -323,8 +332,11 @@ def restore_check(live: Store, directory: Path, now: datetime | None = None) -> 
     try:
         restored = copy.store
         difference = _difference(restored, live)
-        unreadable = restored.unreadable()
+        # Opening the copy as a version 14 record adds the watch tables it may lack (empty).
+        restored_watch = WatchStore(restored)
+        unreadable = restored.unreadable() + restored_watch.unreadable()
         counts = restored.counts()
+        watch_counts = restored_watch.counts()
     finally:
         copy.close()
     if difference:
@@ -337,10 +349,27 @@ def restore_check(live: Store, directory: Path, now: datetime | None = None) -> 
             f"of the app ({named}{more}); a restore would keep them in the file and show none"
         )
     age = age_words(backup_time(database), now or datetime.now(UTC))
+    watched = ""
+    if any(watch_counts.values()):
+        listed = ", ".join(f"{watch_counts[table]} {plural}" for table, plural in WATCH_PLURALS)
+        watched = f", {listed}"
     return (
         f"PASS: {database.name} restores to the live record: {counts['runs']} runs, "
-        f"{counts['decisions']} decisions, {counts['theses']} theses; taken {age} before this check"
+        f"{counts['decisions']} decisions, {counts['theses']} theses{watched}; "
+        f"taken {age} before this check"
     )
+
+
+# Each table of the record, what one row is called and its plural, for the status line.
+STATUS_NOUNS: tuple[tuple[str, str, str], ...] = (
+    ("runs", "run", "runs"),
+    ("decisions", "decision", "decisions"),
+    ("theses", "thesis", "theses"),
+    ("watches", "watch", "watches"),
+    ("watch_seen", "seen filing", "seen filings"),
+    ("watch_jobs", "watch job", "watch jobs"),
+    ("inbox", "inbox item", "inbox items"),
+)
 
 
 def status(live: Store, directory: Path, now: datetime | None = None) -> str:
@@ -357,12 +386,11 @@ def status(live: Store, directory: Path, now: datetime | None = None) -> str:
     copy = _open_copy(database)
     try:
         behind: list[str] = []
-        for table, noun in (("runs", "run"), ("decisions", "decision"), ("theses", "thesis")):
+        for table, noun, plural in STATUS_NOUNS:
             # Every column, as restore-check compares them, so the two never disagree.
             held, current = copy.store.raw_rows(table), live.raw_rows(table)
             count = sum(1 for key, row in current.items() if held.get(key) != row)
             if count:
-                plural = "theses" if noun == "thesis" else f"{noun}s"
                 behind.append(f"{count} {noun}" if count == 1 else f"{count} {plural}")
     finally:
         copy.close()

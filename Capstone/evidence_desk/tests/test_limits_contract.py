@@ -58,6 +58,11 @@ CONTRACT: dict[str, int | float] = {
     "MAX_SUPPORT_REASON_CHARS": 300,
     # Added in version 10: figures from a filing's own tags offered to the engine (opt-in)
     "MAX_TAGGED_FIGURES_OFFERED": 40,
+    # Added in version 12: current reports (8-K) since the annual report: the documents read
+    # per run, the opening sentences kept per item, the item sections offered per claim
+    "MAX_EVENTS_READ": 8,
+    "EVENT_OPENING_SENTENCES": 2,
+    "EVENT_PASSAGES_PER_CLAIM": 2,
 }
 
 

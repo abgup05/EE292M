@@ -480,12 +480,15 @@
   "limits": {
     "CONTEXT_CHARS": 240,
     "DEFAULT_FILINGS": 3,
+    "EVENT_OPENING_SENTENCES": 2,
+    "EVENT_PASSAGES_PER_CLAIM": 2,
     "FIGURE_QUARTERS": 3,
     "FIGURE_YEARS": 2,
     "MAX_CLAIMS": 6,
     "MAX_CLAIM_CHARS": 400,
     "MAX_CONCURRENT_ASSESSMENTS": 3,
     "MAX_DECISION_CHARS": 500,
+    "MAX_EVENTS_READ": 8,
     "MAX_EXCERPT_CHARS": 600,
     "MAX_EXTRA_URLS": 5,
     "MAX_FIGURES_OFFERED": 40,
@@ -723,7 +726,7 @@
     ],
     "passages_indexed": 636
   },
-  "sha256": "a95ce509390cc42a29e02ace2d2255d8c3ddce47a9c6a904a11adb3971304007",
+  "sha256": "0c25aacad54387d8cd167bde35c82b188a87661e72815081392e8f1a29056879",
   "sources": [
     {
       "characters": 151303,

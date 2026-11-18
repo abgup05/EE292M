@@ -25,6 +25,7 @@ never changed here.
 from __future__ import annotations
 
 import logging
+import threading
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
@@ -48,7 +49,7 @@ from app.core.claimtest import ClaimTest
 from app.core.corollaries import COUNTED, FactsAt, corollaries, flag
 from app.core.models import Claim, Finding, Run
 from app.core.persistence import persistence
-from app.core.ports import Analyser, AnalysisBrief, BriefClaim, BriefItem
+from app.core.ports import Analyser, AnalysisBrief, BriefClaim, BriefItem, SourceError
 from app.core.relevance import claim_relevance, headline, part_names, untied_metric_ids
 from app.engines.transport import EngineError
 from app.services.computed import Computed
@@ -71,8 +72,13 @@ READING_ORDER = {
     "history": 0,
     "part_growth": 1,
     "part_pace": 1,
+    "base_rate": 1,
     "bridge": 3,
+    "peer_standing": 3,
     "earnings_quality": 4,
+    "pe": 5,
+    "fcf_yield": 5,
+    "reverse_dcf": 5,
 }
 
 
@@ -90,27 +96,57 @@ def _why(exc: Exception) -> str:
     return str(exc)[:MAX_WHY_CHARS] or exc.__class__.__name__
 
 
-def _provide(
-    run: Run, providers: Sequence[AnalyticsProvider], request: AnalyticsRequest
-) -> tuple[list[Analytic], list[str], list[str]]:
-    """Every provider's analytics, the providers asked and those that failed. A provider is
-    code outside this module, so any failure of one is caught here, logged with its trace,
-    recorded on the run, and the others still run."""
-    analytics: list[Analytic] = []
-    names: list[str] = []
-    failed: list[str] = []
-    for provider in providers:
-        names.append(provider.name)
+def _call(provider: AnalyticsProvider, request: AnalyticsRequest) -> list[Analytic] | str:
+    """The provider's analytics, or why it gave none. A provider with ``budget_seconds`` runs
+    in a thread of its own and is waited for that long: past it the run goes on without it,
+    and the thread is left to finish what it is reading (what it keeps on disk is there for
+    the next run). A provider is code outside this module, so any failure of one is caught
+    here and logged with its trace; a :class:`SourceError` carries a message safe to show."""
+    box: dict[str, list[Analytic] | str] = {}
+
+    def work() -> None:
         try:
-            analytics += provider.provide(request)
+            box["out"] = provider.provide(request)
+        except SourceError as exc:
+            box["out"] = _why(exc)
         except Exception as exc:  # noqa: BLE001 - see the docstring
             log.exception("The analytics provider %s failed", provider.name)
-            failed.append(provider.name)
-            run.errors.append(
-                f"The analytics provider {provider.name} failed ({exc.__class__.__name__}); "
-                "its analytics are missing from the record."
-            )
-    return analytics, names, failed
+            box["out"] = f"it failed ({exc.__class__.__name__})"
+
+    budget = getattr(provider, "budget_seconds", None)
+    if budget is None:
+        work()
+        return box["out"]
+    thread = threading.Thread(target=work, name=f"provider-{provider.name}", daemon=True)
+    thread.start()
+    thread.join(budget)
+    if "out" not in box:
+        return rules.PROVIDER_OUT_OF_TIME.format(seconds=budget)
+    return box["out"]
+
+
+def _provide(
+    run: Run,
+    providers: Sequence[AnalyticsProvider],
+    request: AnalyticsRequest,
+    analysis: Analysis,
+    out_of_time: Callable[[], bool],
+) -> list[Analytic]:
+    """Every provider's analytics. One that gives nothing is named in
+    ``providers_failed`` with its reason, gets a line in ``run.errors``, and the others
+    still run; one with a time budget is not started once the run's own time is up."""
+    analytics: list[Analytic] = []
+    for provider in providers:
+        analysis.providers.append(provider.name)
+        budgeted = getattr(provider, "budget_seconds", None) is not None
+        found = rules.OUT_OF_TIME_WHY if budgeted and out_of_time() else _call(provider, request)
+        if isinstance(found, str):
+            analysis.providers_failed.append(provider.name)
+            analysis.provider_reasons[provider.name] = found
+            run.errors.append(rules.PROVIDER_FAILED_ERROR.format(name=provider.name, why=found))
+        else:
+            analytics += found
+    return analytics
 
 
 def _test_line(claim: Claim) -> str:
@@ -128,7 +164,9 @@ def _test_line(claim: Claim) -> str:
 
 
 def _analytic_text(item: Analytic) -> str:
-    return f"{item.question} {item.reading} [{item.label}: {item.display}]"
+    text = f"{item.question} {item.reading} [{item.label}: {item.display}]"
+    # What a number from outside the company's own facts rests on, and what it is not.
+    return f"{text} Note: {item.note}" if item.note and item.provider != "facts" else text
 
 
 def _finding_text(finding: Finding, quote: str | None) -> str:
@@ -193,7 +231,9 @@ def _brief(
                     else ()
                 ),
                 notes=_claim_notes(claim),
-                not_computed=tuple(f"{i.label}: {i.note}" for i in own if not i.available),
+                not_computed=tuple(
+                    f"{i.label}: {i.reading or i.note}" for i in own if not i.available
+                ),
             )
         )
     tied = {
@@ -226,7 +266,7 @@ def _brief(
         analytics=tuple(
             BriefItem(item.id, _analytic_text(item))
             for item in analytics
-            if item.available and not item.claim_ids
+            if item.available and (item.scope == "company" or not item.claim_ids)
         ),
         figures=figures,
         events=events,
@@ -306,11 +346,16 @@ def analyse_run(
         tests=tests,
         reports=reports,
         error=numbers.error or "",
+        company=run.company,
+        claims={claim.id: claim.text for claim in run.claims},
+        as_of=run.inputs.as_of,
+        today=run.started_at.date(),
+        payload=numbers.payload,
     )
-    analytics, providers_used, failed = _provide(run, providers, request)
+    analytics = _provide(run, providers, request, analysis, out_of_time)
     coverage.analytics_computed = sum(1 for item in analytics if item.available)
     coverage.analytics_unavailable = sum(1 for item in analytics if not item.available)
-    coverage.analytics_providers_failed = len(failed)
+    coverage.analytics_providers_failed = len(analysis.providers_failed)
     measures = Measures(numbers.book, numbers.calendar) if numbers.book is not None else None
     claimed: dict[str, _Claimed] = {}
     for claim in run.claims:
@@ -337,8 +382,6 @@ def analyse_run(
     )
     analysis.untied_metric_ids = untied_metric_ids(run.metrics, relevant)
     analysis.analytics = analytics
-    analysis.providers = providers_used
-    analysis.providers_failed = failed
     if not analysis.headline:
         analysis.headline_note = rules.NO_HEADLINE
     found, argument_claims, thesis = _model_steps(

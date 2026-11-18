@@ -32,6 +32,7 @@ from app.core.view_models import (
     BaseRate,
     MarketView,
     OutsideView,
+    PeerStanding,
     ResultInput,
 )
 
@@ -225,6 +226,12 @@ def outside_analytics(view: OutsideView, claim_ids: Sequence[str]) -> list[Analy
         period = f"CY{peer.now.year}" if peer.now else ""
         found.append(_analytic(peer, OUTSIDE_PROVIDER, claim_ids, measure=key, period=period))
     return found
+
+
+def peer_analytic(peer: PeerStanding, claim_ids: Sequence[str]) -> Analytic:
+    """One peer standing as an analytic (a run's provider chooses which standings it wants)."""
+    period = f"CY{peer.now.year}" if peer.now else ""
+    return _analytic(peer, OUTSIDE_PROVIDER, claim_ids, measure=peer.measure, period=period)
 
 
 def peer_measures(test_measures: Sequence[str]) -> list[str]:

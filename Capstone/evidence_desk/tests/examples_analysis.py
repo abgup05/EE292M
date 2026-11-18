@@ -31,6 +31,7 @@ does.
 
 from __future__ import annotations
 
+import gzip
 import json
 import sys
 import tempfile
@@ -39,6 +40,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from app.core.analytics import AnalyticsProvider
 from app.core.claim_reading import as_reading
 from app.core.claimtest import ClaimTest, compile_claim
 from app.core.models import Run, ThesisRequest
@@ -48,8 +50,11 @@ from app.engines.extractive import ExtractiveAnalyst
 from app.engines.transport import ModelRequest, Transport
 from app.services.export import render_markdown
 from app.services.thesis_run import execute_run, new_run
+from app.services.view_providers import run_providers
+from app.sources.frames import FramesSource
+from app.sources.thirteenf import ThirteenFSource
 from app.store import FilingCache, Store
-from tests.fakes import FakePages, ManualClock
+from tests.fakes import FakeFilings, FakePages, ManualClock
 from tests.golden_run import replay_copy
 from tests.replay_run import DEFAULT_CASSETTE, recorded_filings
 
@@ -63,6 +68,9 @@ FILES = (
 REPLAYED = "replayed-run.json"
 MODEL_FILES = ("run-model-argument.json", "brief-model-argument.md")
 MODEL_CASSETTE = Path("demo/cassettes/analysis-example")
+MARKET_FACTS = Path("tests/fixtures/edgar/companyfacts-market-CIK0001045810.json.gz")
+FRAMES = Path("tests/fixtures/frames")
+THIRTEENF = Path("tests/fixtures/thirteenf")
 STAMP = datetime(2026, 11, 18, 12, 0, tzinfo=UTC)
 CLOCK_FIELDS = ("finished_at", "retrieved_at", "started_at", "recorded_at")
 DECISION = "Whether to buy NVIDIA now"
@@ -194,15 +202,26 @@ class HandBuilt:
         }
 
 
+def providers(filings: FakeFilings) -> tuple[AnalyticsProvider, ...]:
+    """The run's own facts, and the outside and market views over the recorded SEC frames
+    and 13F tables (read from disk only: nothing is fetched)."""
+    return run_providers(filings, FramesSource(None, FRAMES), ThirteenFSource(None, THIRTEENF))
+
+
 def _run(run_id: str, data_dir: Path, analyser: ClaudeAnalyser | None = None) -> Run:
     request = ThesisRequest(ticker="NVDA", decision=DECISION, claims=CLAIMS)
     run = new_run(request).model_copy(update={"id": run_id, "started_at": STAMP})
     store = Store(data_dir / f"{run_id}.sqlite")
+    filings = recorded_filings()
+    # The facts as the market example recorded them: the pruned fixture the other tests read
+    # holds no share count, without which nothing can be valued.
+    filings.facts = json.loads(gzip.decompress(MARKET_FACTS.read_bytes()))
     try:
         return execute_run(
             run,
             store,
-            filings=recorded_filings(),
+            filings=filings,
+            analytics_providers=providers(filings),
             analyst=ExtractiveAnalyst(),
             fetch_page=FakePages({}),
             cache=FilingCache(),

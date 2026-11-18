@@ -28,6 +28,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app import __version__, analysis_routes, wiring
 from app.core import limits, policy, watch_policy
+from app.core.analytics import AnalyticsProvider
 from app.core.breakdown_models import BreakdownReport
 from app.core.change_models import FilingChanges
 from app.core.claim_change_models import RunChanges
@@ -73,6 +74,7 @@ from app.services.filing_changes import FORMS as CHANGE_FORMS
 from app.services.filing_changes import filing_changes
 from app.services.numbers import load_numbers
 from app.services.restatements import company_restatements
+from app.services.view_providers import run_providers
 from app.sources.edgar import EdgarClient
 from app.sources.frames import FramesSource
 from app.sources.http import fetch_page as default_fetch_page
@@ -345,6 +347,18 @@ def create_app(
     async def conflict(_: Request, exc: Conflict) -> JSONResponse:
         return JSONResponse(status_code=409, content={"error": str(exc)})
 
+    # A run's analysis reads the outside and market views when their sources can answer:
+    # through EDGAR, or from the directories a caller gave. Offline with none given, a run
+    # computes from its own facts only.
+    sec_get = filings.get if isinstance(filings, EdgarClient) else None
+    providers: tuple[AnalyticsProvider, ...] | None = None
+    if sec_get is not None or (frames is not None and thirteenf is not None):
+        providers = run_providers(
+            filings,
+            frames or FramesSource(sec_get, wiring.frames_dir()),
+            thirteenf or ThirteenFSource(sec_get, wiring.thirteenf_dir()),
+        )
+
     def execute(run: Run) -> None:
         try:
             thesis_run.execute_run(
@@ -358,6 +372,7 @@ def create_app(
                 facts_store=facts_store,
                 claim_reader=claim_reader,
                 analyser=analyser,
+                analytics_providers=providers,
             )
         except Exception:  # noqa: BLE001 - last resort: a run must never stay "running"
             log.exception("Run %s crashed", run.id)
@@ -708,7 +723,6 @@ def create_app(
         }
 
     # The outside view and the market view: app/analysis_routes.py.
-    sec_get = filings.get if isinstance(filings, EdgarClient) else None
     if frames is None:
         frames = FramesSource(sec_get, wiring.frames_dir())
     if thirteenf is None:

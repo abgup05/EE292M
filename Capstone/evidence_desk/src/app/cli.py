@@ -45,7 +45,11 @@ from app.engines.claude import ClaudeAnalyst
 from app.services.examples import EXAMPLE_THESIS
 from app.services.export import render_markdown
 from app.services.thesis_run import execute_run, new_run
+from app.services.view_providers import run_providers
+from app.sources.edgar import EdgarClient
+from app.sources.frames import FramesSource
 from app.sources.http import fetch_page as default_fetch_page
+from app.sources.thirteenf import ThirteenFSource
 from app.store import FactStore, FilingCache, Store
 
 DEFAULT_OUT = Path("results")
@@ -275,6 +279,15 @@ def main(
         facts_store=facts_store,
         claim_reader=claim_reader,
         analyser=analyser,
+        analytics_providers=(
+            run_providers(
+                filings,
+                FramesSource(filings.get, wiring.frames_dir()),
+                ThirteenFSource(filings.get, wiring.thirteenf_dir()),
+            )
+            if isinstance(filings, EdgarClient)
+            else None
+        ),
     )
 
     cassette = _cassette_of(analyst)

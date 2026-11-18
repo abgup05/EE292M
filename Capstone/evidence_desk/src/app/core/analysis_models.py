@@ -31,7 +31,18 @@ AnalyticUnit = Literal[
     "probability",
     "shares",
 ]
-RefKind = Literal["metric", "fact", "analytic", "computed_test", "external"]
+RefKind = Literal[
+    "metric",
+    "fact",
+    "analytic",
+    "computed_test",
+    "external",
+    "frame",
+    "filing",
+    "price",
+    "computed",
+    "other",
+]
 
 
 class AnalyticInput(BaseModel):
@@ -66,7 +77,10 @@ class Analytic(BaseModel):
     ``question`` is the question about a claim it answers, in plain words: an analytic that
     answers none is not computed. ``claim_ids`` are the claims it bears on (the facts
     provider computes none for the thesis at large; another provider may leave it empty
-    for an analytic about the company as a whole). ``measure`` is the catalogue key it is
+    for an analytic about the company as a whole). ``scope`` is "company" for an analytic
+    about the company and the decision as a whole (a valuation, what the price implies): it
+    is shown for the thesis, and also under any claim in ``claim_ids``. ``measure`` is the
+    catalogue key it is
     about, ``period`` the period in words. ``value`` is unrounded in ``unit`` (a percent as
     12.5; ``points`` are percentage points; ``probability`` is a percent of paths), None
     when it could not be computed, and then ``available`` is False and ``note`` says why.
@@ -80,6 +94,7 @@ class Analytic(BaseModel):
     kind: str
     label: str
     question: str = ""
+    scope: Literal["claim", "company"] = "claim"
     claim_ids: list[str] = Field(default_factory=list)
     measure: str = ""
     period: str = ""
@@ -307,8 +322,10 @@ class Analysis(BaseModel):
     tagged breakdowns the parts were read from, or why none could be. ``analytics`` every
     analytic of the run, from every provider in ``providers``.
 
-    ``providers_failed`` names any provider that raised (its analytics are missing, and
-    ``Run.errors`` says so). ``corollaries_step`` and ``argument_step`` say what became of
+    ``providers_failed`` names any provider that gave nothing (it raised, EDGAR did not
+    answer, or its time budget ran out), with why in ``provider_reasons``; its analytics are
+    missing, and ``Run.errors`` says so. ``corollaries_step`` and ``argument_step`` say what
+    became of
     each model request: "not_asked" (no model, or no time), "failed" (asked, no usable
     answer: an API failure, a malformed answer, or a cassette that holds none) or
     "answered"; the counts in ``Run.coverage`` about a step mean something only when it was
@@ -330,6 +347,7 @@ class Analysis(BaseModel):
     analytics: list[Analytic] = Field(default_factory=list)
     providers: list[str] = Field(default_factory=list)
     providers_failed: list[str] = Field(default_factory=list)
+    provider_reasons: dict[str, str] = Field(default_factory=dict)
     analytics_by: Literal["code"] = "code"
     corollaries_step: StepState = "not_asked"
     argument_step: StepState = "not_asked"

@@ -16,6 +16,16 @@ BALANCE_MATCH_DAYS = 10
 # The length of a quarter when the facts do not give its start (days in a year / 4).
 DEFAULT_QUARTER_DAYS = 91
 
+# The providers that read EDGAR during a run (app.services.view_providers): the most seconds
+# each may take before the run records it as failed and carries on. A run must finish in
+# about four minutes, often with nothing kept on disk yet.
+OUTSIDE_BUDGET_SECONDS = 20.0
+MARKET_BUDGET_SECONDS = 15.0
+PROVIDER_OUT_OF_TIME = "its time budget of {seconds:g} seconds ran out"
+PROVIDER_FAILED_ERROR = (
+    "The analytics provider {name} gave nothing ({why}); its analytics are missing from the record."
+)
+
 # The headline (app.core.relevance): at most this many figures.
 MAX_HEADLINE = 12
 

@@ -40,7 +40,7 @@ import statistics
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import date
-from typing import Literal, Protocol
+from typing import Any, Literal, Protocol
 
 from app.core import analysis_policy as rules
 from app.core.analysis_models import Analytic, AnalyticInput, AnalyticUnit
@@ -50,6 +50,7 @@ from app.core.claim_test_models import ComputedTest, HistoryPoint
 from app.core.claimtest import METRICS, ClaimTest, Number
 from app.core.facts import FactBook, PeriodValue
 from app.core.metrics import MINUS, eps_text, percent_text, usd_text
+from app.core.models import Company
 from app.core.periods import FiscalCalendar
 
 PROVIDER = "facts"
@@ -104,6 +105,9 @@ class AnalyticsRequest:
     parts as 'revenue(segment "Data Center")'. ``tests`` maps a claim id to its compiled
     test and the computed result. ``reports`` are the tagged breakdowns of the newest
     filings the run read. ``error`` says why there are no facts when ``book`` is None.
+    For a provider that reads outside the run's facts: the ``company``, each claim's text
+    (``claims``), the date the run is ``as_of`` (nothing later may be read), ``today`` by
+    the run's clock, and the company-facts ``payload`` the run read (uncut: cut it).
     """
 
     book: FactBook | None
@@ -112,10 +116,19 @@ class AnalyticsRequest:
     tests: dict[str, tuple[ClaimTest, ComputedTest]] = field(default_factory=dict)
     reports: Sequence[BreakdownReport] = ()
     error: str = ""
+    company: Company | None = None
+    claims: dict[str, str] = field(default_factory=dict)
+    as_of: date | None = None
+    today: date | None = None
+    payload: dict[str, Any] | None = None
 
 
 class AnalyticsProvider(Protocol):
-    """Something that computes analytics for a run (``name`` is recorded as ``provider``)."""
+    """Something that computes analytics for a run (``name`` is recorded as ``provider``).
+
+    A provider that reads a network has ``budget_seconds``: the run waits that long and then
+    records it as failed (:func:`app.services.analysis.analyse_run`).
+    """
 
     name: str
 
@@ -1861,8 +1874,9 @@ BEARS_ON: dict[str, tuple[str, ...]] = {
     # The cash walk already gives a cash-flow claim the change in both balances.
     "dso": ("revenue", "receivables"),
     "dio": ("inventory", "gross_margin", "cost_of_revenue"),
-    "sbc_ratio": ("sbc", "sbc_ratio", "free_cash_flow", "fcf_margin", "operating_margin"),
-    "capex_ratio": ("capex", "capex_ratio", "free_cash_flow", "fcf_margin"),
+    # The cash walk already gives a cash-flow claim its stock compensation and capex.
+    "sbc_ratio": ("sbc", "sbc_ratio", "operating_margin"),
+    "capex_ratio": ("capex", "capex_ratio"),
     "deferred_revenue": ("deferred_revenue", "deferred_revenue_current", "revenue"),
     "roe": ("equity", "total_assets", "net_margin"),
 }

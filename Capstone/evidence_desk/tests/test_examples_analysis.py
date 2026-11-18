@@ -37,7 +37,12 @@ def test_the_computed_example_says_who_wrote_what(tmp_path: Path) -> None:
         item["status"] for claim in built["claims"] for item in claim["analysis"]["corollaries"]
     }
     assert {"agreed", "not_agreed", "proposer_only", "not_computable"} <= statuses
-    assert all(item["question"] and item["claim_ids"] for item in analysis["analytics"])
+    assert all(
+        item["question"] and (item["claim_ids"] or item["scope"] == "company")
+        for item in analysis["analytics"]
+    )
+    assert analysis["providers"] == ["facts", "outside_view", "market_view"]
+    assert analysis["providers_failed"] == []
 
 
 def test_the_replayed_example_exists_exactly_when_its_answers_are_recorded() -> None:

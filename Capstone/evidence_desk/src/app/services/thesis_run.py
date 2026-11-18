@@ -19,7 +19,7 @@ import logging
 import threading
 import time
 import uuid
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Sequence
 from concurrent.futures import Future, ThreadPoolExecutor
 from contextlib import contextmanager
 from dataclasses import dataclass, field
@@ -27,6 +27,7 @@ from datetime import UTC, date, datetime
 
 from app.core import events as event_rules
 from app.core import limits, policy
+from app.core.analytics import AnalyticsProvider
 from app.core.documents import Passage
 from app.core.event_models import Event, EventItem
 from app.core.gate import GateResult, RunIds, StoredSource, gate_claim
@@ -68,7 +69,7 @@ from app.engines.fallback import FallbackAnalyst
 from app.retrieval.chunk import chunk_document
 from app.retrieval.search import PassageIndex
 from app.services import events as event_service
-from app.services.analysis import analyse_run
+from app.services.analysis import DEFAULT_PROVIDERS, analyse_run
 from app.services.computed import compute_claims, count_computed
 from app.services.ingest import Ingested, ingest
 from app.services.numbers import NumbersResult, load_numbers, select_figures
@@ -219,6 +220,7 @@ def execute_run(
     facts_store: FactStore | None = None,
     claim_reader: ClaimReaders = None,
     analyser: Analyser | None = None,
+    analytics_providers: Sequence[AnalyticsProvider] | None = None,
 ) -> Run:
     """Execute ``run`` to completion, persisting progress, and return the final record.
 
@@ -233,6 +235,9 @@ def execute_run(
     one (the default) the grammar reads them alone. ``analyser`` proposes each claim's
     corollaries and argues the analysis once the verdicts are final (two requests); without
     one the run records the analysis code computes (:mod:`app.services.analysis`).
+    ``analytics_providers`` compute the analysis's analytics; without them, the run's own
+    facts alone (:data:`~app.services.analysis.DEFAULT_PROVIDERS`), and nothing is read
+    for them from EDGAR.
     """
     if concurrency < 1:
         raise ValueError("concurrency must be at least 1")
@@ -589,6 +594,7 @@ def execute_run(
         numbers,
         computed,
         analyser or NoAnalyser(),
+        providers=analytics_providers or DEFAULT_PROVIDERS,
         read_reports=lambda: (part_reports, part_errors),
         out_of_time=out_of_time,
         on_step=analysing,

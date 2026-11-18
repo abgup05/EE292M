@@ -741,7 +741,9 @@ def _analytic_lines(items: Sequence[Analytic]) -> list[str]:
     ]
     missing = [item for item in items if not item.available]
     if missing:
-        listed = "; ".join(f"{_text(item.label)} ({_text(item.note)})" for item in missing)
+        listed = "; ".join(
+            f"{_text(item.label)} ({_text(item.reading or item.note)})" for item in missing
+        )
         lines.append(f"- Could not be computed: {listed}")
     return lines
 
@@ -844,9 +846,23 @@ def _analysis(run: Run) -> list[str]:
     for claim in run.claims:
         if claim.analysis is not None:
             lines += _claim_analysis(claim, claim.analysis, by_id)
-    company_wide = [item for item in analysis.analytics if not item.claim_ids]
+    company_wide = [
+        item for item in analysis.analytics if item.scope == "company" or not item.claim_ids
+    ]
     if company_wide:
-        lines += ["### About the company as a whole", "", *_analytic_lines(company_wide), ""]
+        lines += ["### The company at its price", "", *_analytic_lines(company_wide), ""]
+        notes = list(dict.fromkeys(item.note for item in company_wide if item.note))
+        lines += [*(f"_{_text(note)}_" for note in notes), ""] if notes else []
+    if analysis.providers_failed:
+        lines += [
+            "Not in this analysis: "
+            + "; ".join(
+                f"{_text(name)} ({_text(analysis.provider_reasons.get(name, 'it failed'))})"
+                for name in analysis.providers_failed
+            )
+            + ".",
+            "",
+        ]
     return lines
 
 

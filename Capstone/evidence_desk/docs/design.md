@@ -10,8 +10,10 @@ two themes:
 
 Every rule in `src/web/styles.css` reads tokens only. The themes differ in their token values and
 in a few rules scoped to `:root[data-theme="terminal"]`. The specimen page,
-`src/web/specimen.html`, shows every component once on made-up data. It is linked from nowhere:
-open it from disk, or see `docs/screenshots/specimen*.png` (`make screenshots`).
+`src/web/specimen.html`, shows every component once on made-up data, except its version 14 parts,
+which are excerpts of `docs/examples/v14`. It is linked from nowhere: open it at `/specimen.html`,
+or see `docs/screenshots/specimen*.png` (`make screenshots`). Its note was empty from version 13
+until version 14: the page's code hid a view the specimen did not have.
 
 ## The boundary still holds
 
@@ -352,35 +354,97 @@ Unread items carry an accent rule at their left edge.
 
 **Recorded inbox** (`?sample=inbox`, `?sample=inbox-page-2`). It is drawn from the five example payloads that `make sample-inbox` copies unedited, and says where they come from. In sample mode nothing is sent, and the controls are disabled or say so.
 
-## Version 14 components (on the specimen only, for now)
+## Computed claims, dates and restatements (version 14)
 
-These draw records the backend does not send yet; each takes the shape below and computes
-nothing. They live in `app.js` as `compiledTest`, `thesisOverTime`, `asOfControl`, `asOfBanner`,
-`restatementLedger` and `peerStrip`.
+Drawn from the backend's own fields: `docs/examples/v14/README.md` is the contract and the
+recorded samples are those payloads copied unedited (`make sample-v14`). The page computes no
+outcome, margin, flip, count or change. It places dates on an axis and maps the outcome tokens
+to glyphs and words. Every field is read defensively: a missing one is left out and an added one
+is ignored, so additive changes to these payloads do not break the page. The functions are in
+`app.js`, in the section "version 14".
 
-1. **Compiled test on a claim.** `{claim_id, expression, outcome: "holds"|"fails"|"cannot_compute",
-   outcome_label, operands: [{name, label, display, period_label, form, accession, filed,
-   filed_label, url}], arithmetic, margin_display, note}`. The expression is in monospace. The
-   outcome has its own glyphs: ⊨ holds, ⊭ fails, ⊘ cannot compute (dashed). They are not verdict
-   glyphs, although holds and fails borrow the support and challenge colours. A table lists the
-   operands with each one's filing and date. The arithmetic and the margin are the backend's
-   strings.
-2. **Thesis over time.** `{outcome_labels, claims: [{claim_id, text, points: [{filed, filed_label,
-   form, accession, url, outcome}], flips: [{filed, to, label}]}]}`. Each claim gets one lane: a
-   step line across the filing dates, with holds on top, cannot compute in the middle and fails
-   at the bottom. The backend names the flips: they are ringed on the line and listed under it in
-   its words.
-3. **As of a date.** The control in the thesis form is a date field, `{min, max, value, hint?}`.
-   The banner on a run made as of a past date, `run.as_of.requested = {date, label, line}`, shows
-   the date large on a hatched ground, in the record's words.
-4. **Restatement ledger.** `{rows: [{metric_label, period_label, first: {display, form,
-   filed_label, url}, later: {…}, change_display, note}]}`. The first value is struck through,
-   both filings are named and linked, and the change is the record's.
-5. **Peer strip.** `{industry_label, metrics: [{metric_label, unit_label, company: {ticker,
-   display, value}, min, q1, median, q3, max: {value, display}, percentile_label, peers:
-   [value]}]}`. The industry's values are faint dots, the box is the middle half, the bar is the
-   median and the company is one larger dot. The percentile is the record's sentence ("97th
-   percentile of 212"); the page never ranks.
+1. **The computed test on a claim** (`computedTest`, from `Claim.computed`). It sits in the
+   claim's docket before the findings, with an olive left rule and the fixed-rule mark ("Computed
+   from the XBRL facts by a fixed rule, no model"). It shows, in order:
+   - the canonical expression in monospace;
+   - the outcome with its own glyphs: ⊨ holds, ⊭ fails, ⊘ cannot be computed (dashed). These
+     are never a verdict's glyphs, although holds and fails borrow the support and challenge
+     colours;
+   - what the verdict rule counted (`counted_as`: "Counted as support", "Counted as a
+     challenge", "Not counted");
+   - the reason it could not be computed;
+   - the bound test, and the date the facts were read up to (`as_of`);
+   - the two sides compared;
+   - a table of the operands: term, label, value, formula, and every fact read with its
+     concept, period, value, filing (form and date, linked to EDGAR's index page of the
+     accession) and its derived or restated flag;
+   - the arithmetic, line by line, then the margin and the backend's note.
+
+   A claim that did not compile shows its `compile_note` quietly instead, behind a dashed rule.
+2. **Which part of a verdict is computed.** On the verdict board each claim keeps the engine's
+   "Assessed by" line (the reading of the filings: a model's or the extractive engine's) and
+   gains a second line: "Computed, no model:" with the outcome and what it counted, or "No
+   computed test: the verdict rests on the findings". The docket's summary line adds "⊨
+   Computed: Holds". The note under the verdicts ("How to read this") adds one sentence on
+   computed tests when the run has one.
+3. **Who read the claim.** The head says who read the claims into tests (`claim_readers`, with
+   `claim_reader_detail`). Each test lists every reading in `Claim.readings` (however many
+   readers there are) and names the readers of the test shown (`read_by`).
+
+   The readings differ when a reader in `readings` is not in the test's `read_by` (or, for a
+   claim that did not compile, when another reader read a test). Then the test, the board and
+   the docket say "Readings differ: not counted" in the limit colour, and the backend's note
+   says what each reader read. The page wants a field for this from the backend rather than
+   working it out.
+4. **The thesis over time** (`drawThesisOverTime`, from each compiled claim's `history`). It is
+   a block of its own, directly under the time line (code `TOT`). Each compiled claim gets a
+   lane:
+   - the claim, its test now, and a step line over the filing dates: holds on top, cannot be
+     computed in the middle, fails at the bottom, one dot per point;
+   - a ring on each point the record marks `flipped`, labelled with its form and date when the
+     note is wide enough;
+   - under the line, the `history_note`, then the flips in words ("Flipped to Holds with the
+     10-K filed 25 Feb 2026", linked, with the bound test and both sides);
+   - every point as a table behind a fold.
+
+   A claim with no history (a share of revenue) shows only its `history_note`. A claim that did
+   not compile is named in one line. The lanes share one date axis and are drawn again when the
+   note changes width.
+5. **As of a date.** The drawer has a date field, "As of a past date" (`as_of`), sent with the
+   run and used by the restatement lookup; the server checks the date and a refusal shows under
+   the field. A run with `as_of.requested` is unmistakable:
+   - a banner opens the note: a double rule on a hatched ground, the date large, and
+     `requested_note`;
+   - the company head gains a double left rule;
+   - the command bar's As-of cell starts "Run as of 1 Mar 2026", and so does the status footer;
+   - the time line ends at the requested date ("As of 1 Mar 2026"), not at the day the run ran.
+
+   The banner and the rule print.
+6. **The restatement ledger** (`restatementLedger`, `GET /api/companies/{ticker}/restatements`).
+   It is a lookup beside the others in the drawer ("Restated values"), as of the drawer's date
+   when one is set. Its view gives:
+   - the company, the date, and "28 of 922 periods ... changed value in a later filing" in the
+     record's two counts;
+   - the metrics compared, the tolerance, the notes;
+   - a table with one row per restated period: the first value struck through with its filing,
+     each later value with its filing and the change in units and percent, "back to an earlier
+     value" (`returns_to_earlier`), "tagged with another concept later" (`concept_changed`), and
+     how many filings reported it.
+7. **Coverage.** The status line's full counts gain "N of M claims compiled to a computed test:
+   ⊨ holds, ⊭ fails, ⊘ cannot be computed", with each count the record's.
+8. **The watch's version 14 fields.** The inbox's folded line uses the backend's `folded` count,
+   of the whole inbox (or of the thesis), and says when this page draws none of them. An item
+   shows `claims_line` and each computed test whose outcome changed (`moved.computed`: the
+   canonical test, before and after). The saved theses list takes each thesis's `watch` from
+   `GET /api/theses`.
+
+The recorded samples are `?sample=computed` (the example run: two tests that hold, one that
+fails, one that cannot be computed, one claim that does not compile), `?sample=as-of` (the same
+claims as of 1 Mar 2026) and `?sample=restatements` (NVIDIA's ledger from the recorded facts).
+All three were made offline with the extractive engine: no model, no cassette.
+
+**Not built: the peer strip.** The backend has no peers route, so the strip is only on the
+specimen, on made-up data, under the heading "Not built". It is not on the page.
 
 ## Keys
 
@@ -413,6 +477,27 @@ live-run sample, the command bar, the caution and the predated mark. For every r
 - the withheld fold and its counts;
 - that the standing prose sits in "How to read this";
 - the way out of a sample and the drawer button in the bar.
+
+`uitests/test_v14_dom.py` checks the version 14 samples against their JSON:
+
+- the copies are byte for byte the examples;
+- each compiled claim's expression, outcome, counted state, bound test, reason, margin and
+  arithmetic, its operands and every fact with its filing and link;
+- the compile note of a claim that did not compile;
+- the board's computed part, and the readings;
+- the computed counts in the status line;
+- the thesis over time under the time line, with each history's points, outcomes and flips;
+- the as-of banner, the bar, the body class and where the time line ends;
+- the ledger's rows, values, changes and flags, and its denominator.
+
+`uitests/v14.html` drives the page for what the examples do not show, and the same file checks
+what it recorded:
+
+- two and three readers, made the way the backend makes them;
+- the ledger lookup's 422, 200 and 503;
+- a run sent with `as_of`, refused and then drawn;
+- an inbox item with `moved.computed`;
+- the theses list with each thesis's `watch`.
 
 `uitests/test_inbox_dom.py` checks the recorded inbox against its JSON:
 

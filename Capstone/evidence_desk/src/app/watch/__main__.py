@@ -120,9 +120,7 @@ def main(argv: list[str] | None = None, *, make: Callable[[], Watcher] = build_w
 
     signal.signal(signal.SIGTERM, on_signal)
     signal.signal(signal.SIGINT, on_signal)
-    log.info(
-        "watching every %d seconds as %s", watcher.settings.interval_seconds, watcher.worker
-    )
+    log.info("watching every %d seconds as %s", watcher.settings.interval_seconds, watcher.worker)
     serve(watcher, stop)
     return 0
 

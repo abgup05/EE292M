@@ -383,8 +383,10 @@ class Watcher:
             try:
                 outcome = self.process(job)
             except Exception as exc:  # noqa: BLE001 - a job's failure is recorded, never lost
-                reason = str(exc) if isinstance(exc, JobFailed | SourceError) else (
-                    thesis_run.safe_message(exc)
+                reason = (
+                    str(exc)
+                    if isinstance(exc, JobFailed | SourceError)
+                    else (thesis_run.safe_message(exc))
                 )
                 if not isinstance(exc, JobFailed | SourceError):
                     log.exception("Watch job %s failed", job.id)
@@ -435,9 +437,7 @@ class Watcher:
         )
         item.kind = InboxKind.failed
         item.updated_at = self.now()
-        item.error = wording.JOB_GAVE_UP.format(
-            attempts=job.attempts, reason=reason.rstrip(".")
-        )
+        item.error = wording.JOB_GAVE_UP.format(attempts=job.attempts, reason=reason.rstrip("."))
         _save(self.watches, item)
 
     def _comparison(
@@ -491,9 +491,7 @@ class Watcher:
             if job.filing.form in wording.PERIODIC_FORMS
             else (None, [])
         )
-        result = triage(
-            claims, job.filing, comparison, notes=notes, extra_rules=self.extra_rules
-        )
+        result = triage(claims, job.filing, comparison, notes=notes, extra_rules=self.extra_rules)
         item = self._item(job, thesis, result)
         if not result.bears:
             _save(self.watches, item)

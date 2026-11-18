@@ -1,4 +1,4 @@
-.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench eval eval-validate backup restore-check up-recorded live-walk changes breakdowns sample-run-changes golden-sheet backup-status figures two-writers header-cut-check time-live events events-probe event-categories facts-load restatements claim-labels claim-results-key examples claim-foreign
+.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench eval eval-validate backup restore-check up-recorded live-walk changes breakdowns sample-run-changes golden-sheet backup-status figures two-writers header-cut-check time-live events events-probe event-categories facts-load restatements claim-labels claim-results-key examples claim-foreign watch-once watch-status watch-examples watch-replay watch-contention sample-inbox
 
 export COMPOSE_PROJECT_NAME := ee292m-evidence-desk
 export LOCAL_UID := $(shell id -u)
@@ -14,8 +14,8 @@ help:
 	@echo "Command line: run ARGS='example' or ARGS='run --ticker NVDA --decision \"...\" --claim \"...\"' (synchronous; writes results/<run-id>.json and .md)"
 	@echo 'Dependencies: lock'
 	@echo 'Demonstration: demo (live NVIDIA example through the HTTP API: real EDGAR, configured engine; writes results/demo-<UTC>.json and .md)'
-	@echo 'Screenshots: screenshots (headless Chromium renders the first screen and the sample record into docs/screenshots)'
-	@echo 'Browser test: uitest (headless Chromium renders both sample records; pytest uitests checks the DOM against the JSON)'
+	@echo 'Screenshots: screenshots (headless Chromium renders the first screen, the samples, the recorded inbox and the specimen page, in the Paper and Terminal themes and at phone width, into docs/screenshots)'
+	@echo 'Browser test: uitest (headless Chromium renders the sample records and the recorded inbox, drives the keys and themes in uitests/keys.html and every answer of the watch routes in uitests/watch.html; pytest uitests checks the DOM against the JSON)'
 	@echo "Replay: replay ARGS='--out demo' (the example thesis on recorded filings with model answers from the cassette; no network, no key)"
 	@echo 'Tripwire: golden-check (the offline example run against tests/golden/golden.json; names the first stage that moved)'
 	@echo 'Tripwire: golden-baseline (rewrite tests/golden/golden.json, and replay.json when the replay has nothing pending; read the diff before committing a new baseline)'
@@ -43,12 +43,14 @@ help:
 	@echo 'Backup: restore-check (restore the newest backup into a temporary directory and compare it with the live record, record by record, and fail on any record this version cannot read; PASS with the backup'"'"'s age, or FAIL)'
 	@echo 'Two writers: two-writers (starts the app on a scratch record under results/ and has it and a one-off container write that record at once; integrity and every row checked)'
 	@echo 'Backup: backup-status (one line: how old the newest backup is and how many runs, decisions and theses were made or changed since)'
+	@echo 'Standing watch: watch-once (one watcher cycle, then exit), watch-status (the watcher'"'"'s health, the queue and each watch); make up starts the watcher beside the app'
+	@echo 'Standing watch: watch-examples (offline: writes the API payloads of a scenario to docs/examples/v13), sample-inbox (copies them, unedited, into the page'"'"'s recorded inbox, ?sample=inbox), watch-replay (live EDGAR, no model: NVIDIA'"'"'s last twelve months of filings fed to triage one at a time, against the labels in eval/watch-replay-nvda.json)'
 
 build:
 	$(COMPOSE) build app
 
 up:
-	$(COMPOSE) up --build --force-recreate -d app
+	$(COMPOSE) up --build --force-recreate -d app watch
 	@-$(COMPOSE) exec -T app python -m app.backup status
 
 up-recorded:
@@ -86,6 +88,10 @@ smoke:
 	$(COMPOSE) up --force-recreate -d app
 	@trap '$(COMPOSE) down' EXIT; $(COMPOSE) exec -T app python tests/smoke.py
 
+# The keyboard and theme check (uitests/keys.html) is a local page that drives the app in a frame
+# and writes what happened into its own DOM. Reading a frame of another origin needs the browser's
+# same-origin rule off: these flags are for that one test page and no other capture.
+KEYS_FLAGS := --disable-web-security --disable-site-isolation-trials --disable-features=IsolateOrigins,site-per-process --allow-file-access-from-files --user-data-dir=/tmp/keys-profile
 uitest:
 	@mkdir -p results
 	$(COMPOSE) up --force-recreate -d app
@@ -97,7 +103,13 @@ uitest:
 	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=breakdowns" > results/dom-breakdowns.html 2> results/dom-breakdowns.log && \
 	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample#claim-c4-changes" > results/dom-sample-claim.html 2> results/dom-sample-claim.log && \
 	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=breakdowns-gap" > results/dom-breakdowns-gap.html 2> results/dom-breakdowns-gap.log && \
-	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=run-tagged" > results/dom-run-tagged.html 2> results/dom-run-tagged.log
+	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=run-tagged" > results/dom-run-tagged.html 2> results/dom-run-tagged.log && \
+	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=run-events" > results/dom-run-events.html 2> results/dom-run-events.log && \
+	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample&theme=terminal" > results/dom-sample-terminal.html 2> results/dom-sample-terminal.log && \
+	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=inbox" > results/dom-inbox.html 2> results/dom-inbox.log && \
+	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=inbox-page-2&theme=terminal" > results/dom-inbox-page-2.html 2> results/dom-inbox-page-2.log && \
+	$(COMPOSE) run --rm -T shots $(KEYS_FLAGS) --dump-dom "file:///work/uitests/keys.html" > results/dom-keys.html 2> results/dom-keys.log && \
+	$(COMPOSE) run --rm -T shots $(KEYS_FLAGS) --dump-dom "file:///work/uitests/watch.html" > results/dom-watch.html 2> results/dom-watch.log
 	$(RUN) pytest -q -p no:cacheprovider uitests
 
 run:
@@ -111,21 +123,43 @@ demo: build
 # so no capture is taller than 3600 px and the target fails unless every file was written anew.
 # It also paints nothing after a scroll, so a deep link into a claim cannot be captured: the page
 # test reads its DOM instead (uitests/test_run_changes_dom.py).
-SHOTS := first-screen sample-run sample-run-phone sample-synthetic sample-changes sample-changes-phone sample-breakdowns tagged-figures
+SHOTS := first-screen sample-run sample-run-phone sample-synthetic sample-changes sample-changes-phone sample-breakdowns tagged-figures \
+	first-screen-terminal sample-run-terminal sample-run-phone-terminal sample-events sample-events-terminal sample-events-phone \
+	sample-synthetic-terminal sample-changes-terminal sample-breakdowns-terminal specimen specimen-terminal specimen-v14 specimen-note specimen-note-terminal specimen-views specimen-phone \
+	sample-inbox sample-inbox-terminal sample-inbox-phone
 screenshots:
 	@mkdir -p docs/screenshots results
 	@touch results/.screenshots-started
 	$(COMPOSE) up --force-recreate -d app
 	@trap '$(COMPOSE) down' EXIT; \
 	$(COMPOSE) exec -T app python uitests/wait_ready.py && \
-	$(COMPOSE) run --rm shots --window-size=1280,720 --screenshot=/work/docs/screenshots/first-screen.png "http://app:8000/" && \
-	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-run.png "http://app:8000/?sample" && \
-	$(COMPOSE) run --rm shots --window-size=390,1400 --screenshot=/work/docs/screenshots/sample-run-phone.png "http://app:8000/?sample" && \
-	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-synthetic.png "http://app:8000/?sample=synthetic" && \
-	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-changes.png "http://app:8000/?sample=changes" && \
-	$(COMPOSE) run --rm shots --window-size=390,2600 --screenshot=/work/docs/screenshots/sample-changes-phone.png "http://app:8000/?sample=changes" && \
-	$(COMPOSE) run --rm shots --window-size=1280,2400 --screenshot=/work/docs/screenshots/sample-breakdowns.png "http://app:8000/?sample=breakdowns" && \
-	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/tagged-figures.png "http://app:8000/?sample=run-tagged"
+	$(COMPOSE) run --rm shots --window-size=1280,1000 --screenshot=/work/docs/screenshots/first-screen.png "http://app:8000/?theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-run.png "http://app:8000/?sample&theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=390,1400 --screenshot=/work/docs/screenshots/sample-run-phone.png "http://app:8000/?sample&theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-synthetic.png "http://app:8000/?sample=synthetic&theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-changes.png "http://app:8000/?sample=changes&theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=390,2600 --screenshot=/work/docs/screenshots/sample-changes-phone.png "http://app:8000/?sample=changes&theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=1280,2400 --screenshot=/work/docs/screenshots/sample-breakdowns.png "http://app:8000/?sample=breakdowns&theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/tagged-figures.png "http://app:8000/?sample=run-tagged&theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=1280,1000 --screenshot=/work/docs/screenshots/first-screen-terminal.png "http://app:8000/?theme=terminal" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-run-terminal.png "http://app:8000/?sample&theme=terminal" && \
+	$(COMPOSE) run --rm shots --window-size=390,1400 --screenshot=/work/docs/screenshots/sample-run-phone-terminal.png "http://app:8000/?sample&theme=terminal" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-events.png "http://app:8000/?sample=run-events&theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-events-terminal.png "http://app:8000/?sample=run-events&theme=terminal" && \
+	$(COMPOSE) run --rm shots --window-size=390,2400 --screenshot=/work/docs/screenshots/sample-events-phone.png "http://app:8000/?sample=run-events&theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-synthetic-terminal.png "http://app:8000/?sample=synthetic&theme=terminal" && \
+	$(COMPOSE) run --rm shots --window-size=1280,2400 --screenshot=/work/docs/screenshots/sample-changes-terminal.png "http://app:8000/?sample=changes&theme=terminal" && \
+	$(COMPOSE) run --rm shots --window-size=1280,2400 --screenshot=/work/docs/screenshots/sample-breakdowns-terminal.png "http://app:8000/?sample=breakdowns&theme=terminal" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/specimen.png "http://app:8000/specimen.html?theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/specimen-terminal.png "http://app:8000/specimen.html?theme=terminal" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/specimen-v14.png "http://app:8000/specimen.html?theme=paper&only=v14" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/specimen-note.png "http://app:8000/specimen.html?theme=paper&only=note" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/specimen-note-terminal.png "http://app:8000/specimen.html?theme=terminal&only=note" && \
+	$(COMPOSE) run --rm shots --window-size=1280,2400 --screenshot=/work/docs/screenshots/specimen-views.png "http://app:8000/specimen.html?theme=paper&only=views" && \
+	$(COMPOSE) run --rm shots --window-size=390,3000 --screenshot=/work/docs/screenshots/specimen-phone.png "http://app:8000/specimen.html?theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-inbox.png "http://app:8000/?sample=inbox&theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-inbox-terminal.png "http://app:8000/?sample=inbox&theme=terminal" && \
+	$(COMPOSE) run --rm shots --window-size=390,3400 --screenshot=/work/docs/screenshots/sample-inbox-phone.png "http://app:8000/?sample=inbox&theme=paper"
 	@for name in $(SHOTS); do \
 		test docs/screenshots/$$name.png -nt results/.screenshots-started \
 		|| { echo "screenshots: docs/screenshots/$$name.png was not written"; exit 1; }; \
@@ -238,3 +272,28 @@ two-writers:
 
 restore-check:
 	$(RUN) python -m app.backup restore-check
+
+# The standing watch (version 13). The watcher itself runs as the `watch` service (make up).
+watch-once:
+	$(RUN) python -m app.watch once
+
+watch-status:
+	@$(RUN) python -m app.watch status
+
+watch-examples:
+	$(RUN) python -m tests.watch_examples
+
+# The page's recorded inbox (?sample=inbox): the payloads watch-examples wrote, copied unedited.
+# Run it after watch-examples; uitests/test_inbox_dom.py fails while a copy differs from its source.
+INBOX_SAMPLES := inbox inbox-page-2 watches health meta
+sample-inbox:
+	@for name in $(INBOX_SAMPLES); do \
+	  case $$name in inbox|inbox-page-2) out=sample-$$name.json ;; *) out=sample-inbox-$$name.json ;; esac; \
+	  cp docs/examples/v13/$$name.json src/web/$$out && echo "src/web/$$out <- docs/examples/v13/$$name.json"; \
+	done
+
+watch-replay:
+	$(RUN) python -m tests.watch_replay $(ARGS)
+
+watch-contention:
+	$(RUN) python -m tests.watch_contention $(if $(PAIRS),--pairs $(PAIRS),)

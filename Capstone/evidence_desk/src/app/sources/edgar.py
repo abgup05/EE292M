@@ -16,7 +16,7 @@ import os
 import re
 import threading
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from datetime import UTC, datetime
 from types import TracebackType
 from typing import Any, Self
@@ -297,6 +297,16 @@ class EdgarClient:
         if last is not None and self._monotonic() - last[0] <= INDEX_REUSE_SECONDS:
             return last[1]
         return self._index_payload(company)
+    def recent_filings(self, company: Company, forms: Sequence[str]) -> list[FilingRef]:
+        """Every filing of exactly one of ``forms`` in EDGAR's recent index, newest first.
+
+        One request (the company's submissions index), for the standing watch
+        (:mod:`app.watch.service`); an 8-K carries the item numbers the index lists.
+        """
+        payload = self._index_payload(company)
+        rows = self._rows(payload["filings"]["recent"], f"the filing index of {company.name}")
+        wanted = set(forms)
+        return [self._ref(company.cik, row) for row in rows if row["form"] in wanted]
 
     def filings_of_form(self, company: Company, form: str, limit: int) -> list[FilingRef]:
         """The newest ``limit`` filings of exactly ``form`` (amendments skipped), newest first.

@@ -610,8 +610,9 @@ def test_legend_includes_the_decision_marks(name: str) -> None:
 
 
 def disclosures(node: Tag) -> list[Tag]:
-    """The <details> around a node inside its finding (a claim's own disclosure is not one)."""
-    return [d for d in node.find_parents("details") if "claim" not in classes(d)]
+    """The <details> around a node inside its finding. A claim's own disclosure is not one, nor is
+    the fold that holds the withheld findings as a group: each opens the whole finding, not its reason."""
+    return [d for d in node.find_parents("details") if "claim" not in classes(d) and "withheld-fold" not in classes(d)]
 
 
 @both

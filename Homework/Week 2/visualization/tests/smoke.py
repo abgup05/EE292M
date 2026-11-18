@@ -59,8 +59,13 @@ assert csv_rows[4][0] == shifts["rows"][0]["id"]
 assert b"Who buys what?" in fetch("/")
 assert b"function drawTrend" in fetch("/app.js")
 assert b".analysis-grid" in fetch("/styles.css")
+assert b"capstone-v1" in fetch("/versions")
+assert b'data-snapshot-version="1"' in fetch("/v1")
+assert b'data-snapshot-version="1"' in fetch("/v1/")
+assert b"window.fetch" in fetch("/v1/snapshot.js")
 print(
-    "Smoke: both directions, time series, shares, empty data, validation, CSV and page assets passed."
+    "Smoke: both directions, time series, shares, empty data, validation, CSV, page assets "
+    "and the capstone snapshots passed."
 )
 print(
     "Example:",

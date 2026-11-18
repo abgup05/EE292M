@@ -1,0 +1,24 @@
+{
+  "exported_from": "http://127.0.0.1:8709",
+  "notes": [
+    "the instance holds no finished run"
+  ],
+  "open_run": null,
+  "page_files": [
+    "app.js",
+    "index.html",
+    "sample-breakdowns.json",
+    "sample-changes.json",
+    "sample-run-changes.json",
+    "sample-run.json",
+    "sample-synthetic.json",
+    "styles.css"
+  ],
+  "routes": {
+    "/api/meta": "api/meta.json",
+    "/api/runs": "api/runs.json",
+    "/api/theses": "api/theses.json"
+  },
+  "tag": "capstone-v9",
+  "version": 9
+}

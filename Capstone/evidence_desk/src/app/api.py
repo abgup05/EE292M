@@ -73,6 +73,7 @@ from app.services.restatements import company_restatements
 from app.sources.http import fetch_page as default_fetch_page
 from app.sources.urls import canonicalize, validate_public_url
 from app.store import FactStore, FilingCache, Store
+from app.watch import routes as watch_routes
 
 WEB_DIR = Path(__file__).resolve().parents[1] / "web"
 RUN_WORKERS = 2
@@ -83,6 +84,8 @@ WITHHELD_MESSAGE = "This finding was withheld, so it cannot be decided"
 STATIC_FILES = {
     "/app.js": ("app.js", "text/javascript"),
     "/styles.css": ("styles.css", "text/css"),
+    # Every component once, on made-up data (docs/design.md); it reads no record.
+    "/specimen.html": ("specimen.html", "text/html"),
 }
 # Sample records the page can load: src/web/sample-<name>.json, served at /sample-<name>.json.
 SAMPLE_NAME = re.compile(r"[a-z0-9-]{1,40}")
@@ -253,6 +256,7 @@ def create_app(
     checker: Checker | None = None,
     facts_store: FactStore | None = None,
     claim_reader: ClaimReader | None = None,
+    wall_clock: Callable[[], datetime] | None = None,
 ) -> FastAPI:
     """Build the application. Collaborators not given are built by :mod:`app.wiring`.
 
@@ -265,6 +269,7 @@ def create_app(
     configured one when the store is, otherwise one in memory for this application.
     ``claim_reader`` is the model parser: the configured one (off by default) when the
     engine is the configured one, otherwise none unless one is given.
+    ``wall_clock`` is the time the standing watch's routes use (injectable for tests).
     """
     if facts_store is None:
         facts_store = wiring.facts_from_env() if store is None else FactStore()
@@ -653,6 +658,17 @@ def create_app(
             "engine": analyst.name,
             "model": model if isinstance(model, str) else None,
         }
+
+    # The standing watch (version 13): app/watch/routes.py.
+    watch_routes.add_routes(
+        app,
+        store=store,
+        cache=cache,
+        filings=filings,
+        execute=execute,
+        background=executor.submit,
+        now=wall_clock or (lambda: datetime.now(UTC)),
+    )
 
     @app.get("/", include_in_schema=False)
     def index() -> FileResponse:

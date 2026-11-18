@@ -15,7 +15,7 @@ import gzip
 import json
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -205,6 +205,7 @@ class FakeFilings:
     current_error: SourceError | None = None
     current_calls: list[str] = field(default_factory=list)
     profile_calls: int = 0
+    index_calls: int = 0
 
     @classmethod
     def nvidia(cls, *refs: FilingRef) -> FakeFilings:
@@ -276,6 +277,21 @@ class FakeFilings:
         until = filed_until or "9999-12-31"
         chosen = [ref for ref in self.current if filed_after < ref.filed_date <= until]
         return sorted(chosen, key=lambda ref: (ref.filed_date, ref.accession), reverse=True)
+
+    def recent_filings(self, company: Company, forms: Sequence[str]) -> list[FilingRef]:
+        """The configured refs and 8-Ks of ``forms``, newest first, or ``index_error``.
+
+        What the standing watch lists each cycle; each call is counted in ``index_calls``.
+        A test makes a filing "appear" by adding it to ``refs`` or ``current``.
+        """
+        self.index_calls += 1
+        if self.index_error is not None:
+            raise self.index_error
+        wanted = set(forms)
+        listed = {ref.accession: ref for ref in [*self.refs, *self.current] if ref.form in wanted}
+        return sorted(
+            listed.values(), key=lambda ref: (ref.filed_date, ref.accession), reverse=True
+        )
 
     def fetch(self, ref: FilingRef) -> FetchedFiling:
         """The configured document for ``ref``, or the configured failure."""
@@ -512,3 +528,18 @@ class ManualClock:
     def advance(self, seconds: float) -> None:
         """Move the clock forward."""
         self.now += seconds
+
+
+class WallClock:
+    """A UTC wall clock a test moves by hand (the watch's ``now``)."""
+
+    def __init__(self, start: datetime) -> None:
+        self.now = start
+
+    def __call__(self) -> datetime:
+        """The current time."""
+        return self.now
+
+    def advance(self, seconds: float) -> None:
+        """Move the clock forward."""
+        self.now += timedelta(seconds=seconds)

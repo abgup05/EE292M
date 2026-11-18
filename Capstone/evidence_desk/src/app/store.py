@@ -74,6 +74,11 @@ RECORD_KEYS: Final = {
     "runs": "id",
     "decisions": "run_id || '/' || finding_id",
     "theses": "id",
+    # Version 13, the standing watch: created by app.watch.store.WatchStore (Store.extend).
+    "watches": "thesis_id",
+    "watch_seen": "thesis_id || '/' || accession",
+    "watch_jobs": "id",
+    "inbox": "id",
 }
 
 CACHE_SCHEMA = """
@@ -216,6 +221,17 @@ class Store:
         """Close the database connection."""
         self._db.close()
 
+    def extend(self, schema: str) -> _Database:
+        """Create a feature's own tables of the record if they are missing; the shared database.
+
+        ``schema`` may only create what is missing (``CREATE ... IF NOT EXISTS``): the
+        record is never dropped or rebuilt. The feature's repository (``app.watch.store``)
+        then reads and writes through the same connection and lock as this store.
+        """
+        with self._db.transaction() as connection:
+            connection.executescript(schema)
+        return self._db
+
     # Runs
 
     def save_run(self, run: Run) -> None:
@@ -335,8 +351,17 @@ class Store:
         """
         if table not in RECORD_KEYS:
             raise ValueError(f"no table {table!r} in the record")
+        if not self._has_table(table):
+            return {}
         rows = self._db.query(f"SELECT {RECORD_KEYS[table]}, record FROM {table}")
         return {key: record for key, record in rows}
+
+    def _has_table(self, table: str) -> bool:
+        """True when the file has ``table``; a record written before a version lacks its tables."""
+        rows = self._db.query(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?", (table,)
+        )
+        return bool(rows)
 
     def raw_rows(self, table: str) -> dict[str, dict[str, object]]:
         """Every row of ``table`` with every one of its columns, by key, without parsing any.
@@ -350,8 +375,10 @@ class Store:
         if table not in RECORD_KEYS:
             raise ValueError(f"no table {table!r} in the record")
         columns = [row[1] for row in self._db.query(f"PRAGMA table_info({table})")]
-        # ``table`` is one of three fixed names; the column names come from the file's own
-        # schema (a backup may be any file), so they are quoted as SQL identifiers.
+        if not columns:  # a record written before the version that added the table
+            return {}
+        # ``table`` is one of the fixed names of RECORD_KEYS; the column names come from the
+        # file's own schema (a backup may be any file), so they are quoted as SQL identifiers.
         selected = ", ".join('"' + column.replace('"', '""') + '"' for column in columns)
         rows = self._db.query(f"SELECT {RECORD_KEYS[table]}, {selected} FROM {table}")
         return {row[0]: dict(zip(columns, row[1:], strict=True)) for row in rows}
@@ -432,6 +459,16 @@ class FilingCache:
     def close(self) -> None:
         """Close the database connection."""
         self._db.close()
+
+    def extend(self, schema: str) -> _Database:
+        """Create a feature's own disposable tables if they are missing; the shared database.
+
+        For state that can be lost without loss (the watcher's heartbeat and the time of
+        each company's last check, ``app.watch.store.WatchStatus``).
+        """
+        with self._db.transaction() as connection:
+            connection.executescript(schema)
+        return self._db
 
     def put_text(self, content_hash: str, text: str) -> None:
         """Keep ``text`` under ``content_hash``, which must be its SHA-256 (else ValueError)."""

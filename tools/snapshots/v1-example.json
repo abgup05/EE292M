@@ -1,0 +1,10 @@
+{
+  "question": "What opportunities and risks should an organization examine before using generative AI in internal workflows?",
+  "decision": "Whether to investigate a limited internal pilot",
+  "scope_notes": "Public evidence; distinguish documented findings from open questions.",
+  "seed_urls": [
+    "https://www.nist.gov/publications/artificial-intelligence-risk-management-framework-ai-rmf-10",
+    "https://www.gao.gov/products/gao-24-106946"
+  ],
+  "source_budget": 10
+}

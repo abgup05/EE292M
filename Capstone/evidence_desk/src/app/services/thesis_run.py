@@ -43,6 +43,7 @@ from app.core.models import (
     Run,
     RunStatus,
     SourceKind,
+    Stance,
     ThesisRequest,
     UnplacedPeriod,
     Verdict,
@@ -624,8 +625,8 @@ def _mark_predated(
     """Mark each verified finding an 8-K postdates, and caution a claim whose verdict rests on one.
 
     A finding's dates are those of every filing it cites: the filing of each excerpt
-    and of each input of each cited figure. Only findings counted toward the verdict
-    carry the claim's caution.
+    and of each input of each cited figure. Only a finding the verdict rule counts as
+    supporting or challenging gives the claim its caution: context decides no verdict.
     """
     if not claim.categories or not run.timeline:
         return
@@ -646,8 +647,9 @@ def _mark_predated(
         finding.predated_by = event_rules.predating(
             [day for day in dates if day], claim.categories, run.timeline
         )
+    decisive = (Stance.supports, Stance.challenges)
     claim.caution = event_rules.claim_caution(
-        [f.predated_by for f in verified if f.counted_as is not None], run.timeline
+        [f.predated_by for f in verified if f.counted_as in decisive], run.timeline
     )
 
 

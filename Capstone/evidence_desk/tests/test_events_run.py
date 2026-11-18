@@ -326,3 +326,18 @@ def test_a_run_from_version_11_renders_with_no_event_section() -> None:
     run = Run.model_validate_json(gzip.decompress(OLD_RUN.read_bytes()))
     brief = render_markdown(run)
     assert EVENTS_HEADING_MD not in brief and "Evidence as of" not in brief
+
+
+def test_a_predated_context_finding_is_marked_but_cautions_no_verdict() -> None:
+    """The caution is for a verdict that rests on a predated finding; context decides none."""
+
+    def as_context(claim: Claim, passages: list[Passage]) -> ClaimDraft:
+        draft = quote_the_annual_report(claim, passages)
+        draft.findings[0].stance = Stance.context
+        return draft
+
+    run = run_with(filings((DEPARTURE_8K, departure_html())), ScriptedAnalyst(as_context))
+    [finding] = run.findings
+    [claim] = run.claims
+    assert [mark.event_id for mark in finding.predated_by] == [f"ev-{DEPARTURE_8K.accession}"]
+    assert (claim.verdict, claim.caution) == (Verdict.unjudged, "")

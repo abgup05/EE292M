@@ -251,11 +251,11 @@ Not a numeric claim this version computes: does not name a measure in the metric
 
 _The figures under each claim, their readings and the odds: computed by code._
 
-No corollaries: no model was asked to propose them (no model is configured: the engine is extractive).
+No corollaries: no model was asked to propose them.
 
-No model's argument: no model is configured: the engine is extractive. The analytics and their readings were written by code.
+No model wrote an argument: this run was given no analysing model (the extractive engine, no key, or a run the watcher started). The figures and their readings are code's.
 
-No part of the business could be read: The tagged figures of the 10-Q for the period ended 2026-07-26 could not be read (its tags were not kept when the filing was cached, and the filing is not fetched again for them (a run after the cache is refreshed reads them)); its segment, product, geography and customer figures were not offered. The tagged figures of the 10-K for the period ended 2026-01-25 could not be read (its tags were not kept when the filing was cached, and the filing is not fetched again for them (a run after the cache is refreshed reads them)); its segment, product, geography and customer figures were not offered.
+Parts are read from the tags of the 10-Q filed 2026-08-26 and the 10-K filed 2026-02-25.
 
 The figures the claims are about:
 
@@ -263,6 +263,9 @@ The figures the claims are about:
 - Revenue growth, fiscal year ended 2026-01-25 on fiscal year ended 2025-01-26: +65.5% (c3)
 - Free cash flow, fiscal year ended 2026-01-25: $96.68B (c4)
 - Net income, fiscal year ended 2026-01-25: $120.07B (c4)
+- Data Center revenue, growth on a year earlier, the quarter ended 2026-07-26: +116.6% (c5)
+- Revenue, Quarter ended 2026-07-26: $96.22B (c5)
+- Revenue growth, year over year, Quarter ended 2026-07-26: +105.9% (c5)
 
 102 reported figures are not tied to a claim: they are on the record (under Reported figures) and not part of the analysis.
 
@@ -280,13 +283,13 @@ Verdict: Supported.
 
 Bears on it: Gross margin (test operand, named in the claim).
 
-- *Which way is gross margin moving on a year earlier?* Gross margin rose 2.6 percentage points on a year earlier: 72.4% in Q2 FY2026, 75.0% in Q2 FY2027. (an:gross_margin:yoy)
-- *Where does gross margin stand against the last two years?* Gross margin is 0.2 percentage points below where it was 8 quarters ago (75.1% in Q2 FY2025, 75.0% in Q2 FY2027); the highest was 75.1% (Q2 FY2025); the lowest was 60.5% (Q1 FY2026). (an:gross_margin:trend8)
 - *How much room does the test have, against how far the figure usually moves?* The test holds in its tightest period, gross\_margin\[Q3 FY2026\] > 70%, with 3.4 percentage points to spare: 73.4% against 70%. Between one reading of this test and the next its left side has typically moved 2.0 percentage points (the median of 19 moves, either way), so the room is 1.69x a typical move. (an:c2:headroom)
 - *How often has this been true before?* Run again as of each 10-K and 10-Q filing date of the last five years, the test gave 20 distinct readings (over 20 filing dates) and held in 6 of them (30.0%); its longest run holding was 4, and its outcome last changed with the filing of 2026-05-20. (an:c2:history)
+- *Which way is gross margin moving on a year earlier?* Gross margin rose 2.6 percentage points on a year earlier: 72.4% in Q2 FY2026, 75.0% in Q2 FY2027. (an:gross_margin:yoy)
+- *Where does gross margin stand against the last two years?* Gross margin is 0.2 percentage points below where it was 8 quarters ago (75.1% in Q2 FY2025, 75.0% in Q2 FY2027); the highest was 75.1% (Q2 FY2025); the lowest was 60.5% (Q1 FY2026). (an:gross_margin:trend8)
 - *Is inventory building ahead of sales?* At the end of Q2 FY2027, inventory of $31.57B stood for 119.3 days of the quarter's cost of revenue ($24.08B over 91 days), against 105.6 days a year before: the balance grew +111.0% while cost of revenue grew +86.8%. (an:eq:dio)
 
-**Odds the test keeps holding** (resampled by code)
+**Odds the test holds in each of the next four quarters** (resampled by code)
 
 In 69% of 10,000 resampled paths the test held in each of the next 4 quarters, drawing from its last 20 quarterly differences in points. This describes the measure's own past quarterly changes, resampled; it knows nothing of trend, seasonality or events, and is not a forecast.
 
@@ -298,9 +301,10 @@ Verdict: Challenged.
 
 Bears on it: Revenue (test operand, named in the claim).
 
+- *How far short did it fall?* To hold, revenue had to reach $260.99B ($130.50B grown by 100%); it reached $215.94B, $45.06B short. (an:c3:needed)
 - *What has revenue done over the last fiscal years?* Revenue by fiscal year: $26.97B in FY2023, $60.92B in FY2024 (+125.9%), $130.50B in FY2025 (+114.2%), $215.94B in FY2026 (+65.5%). Growth slowed in FY2026, by 48.7 percentage points on the year before. (an:revenue:fy2026:path)
 - *What has happened to revenue since that fiscal year ended?* Since FY2026 ended: revenue grew 105.9% on a year earlier: $46.74B in Q2 FY2026, $96.22B in Q2 FY2027. FY2026 as a whole: +65.5%. (an:revenue:fy2026:since)
-- *How far short did it fall?* To hold, revenue had to reach $260.99B ($130.50B grown by 100%); it reached $215.94B, $45.06B short. (an:c3:needed)
+- *Which parts of the business drove the growth?* Revenue grew +65.5% in the fiscal year ended 2026-01-25. Of that growth, each part's contribution: Data Center +60.2 percentage points; Gaming +3.6 percentage points; Professional Visualization +1.0 percentage points; Automotive +0.5 percentage points; OEM and Other +0.2 percentage points (as the 10-K filed 2026-02-25 tags them; the parts shown split the total without overlap). (an:bridge:growth:revenue_by_product:fy)
 - *Is revenue being collected, or building up in receivables?* At the end of Q2 FY2027, accounts receivable of $63.06B stood for 59.6 days of the quarter's revenue ($96.22B over 91 days), against 54.1 days a year before: the balance grew +126.8% while revenue grew +105.9%. (an:eq:dso)
 - Could not be computed: Deferred revenue, change on a year earlier (The facts tag no deferred revenue at this quarter's end.)
 
@@ -323,7 +327,19 @@ Bears on it: Free cash flow (test operand, named in the claim); Net income (test
 
 Verdict: Passages found, not judged.
 
-This claim names no measure the facts report, cites none and compiles to no test: no figure is tied to it.
+**What the figures say** (computed by code)
+
+Bears on it: Revenue, segment Data Center (part named in the claim); Revenue (part named in the claim).
+
+- *Is Data Center growing faster or slower than the company?* Data Center revenue was $89.02B in the quarter ended 2026-07-26, +116.6% on a year earlier ($41.10B); the company's revenue grew +105.9%. It was 92.5% of revenue, against 87.9% a year earlier (as the 10-Q filed 2026-08-26 tags it). (an:part:data_center:q:growth)
+- *Is Data Center growing faster or slower than the company?* Data Center revenue was $193.74B in the fiscal year ended 2026-01-25, +68.2% on a year earlier ($115.19B); the company's revenue grew +65.5%. It was 89.7% of revenue, against 88.3% a year earlier (as the 10-K filed 2026-02-25 tags it). (an:part:data_center:fy:growth)
+- *Is Data Center growth speeding up or slowing?* Data Center revenue grew +68.2% on a year earlier in the fiscal year ended 2026-01-25, against +142.4% in the fiscal year ended 2025-01-26: slowing, by 74.2 percentage points (as the 10-K filed 2026-02-25 tags it). (an:part:data_center:fy:pace)
+- *Which way is revenue moving on a year earlier?* Revenue grew 105.9% on a year earlier: $46.74B in Q2 FY2026, $96.22B in Q2 FY2027. (an:revenue:yoy)
+- *Is revenue growth speeding up or slowing?* Revenue growth on a year earlier was +105.9% in Q2 FY2027 and +85.2% in Q1 FY2027: speeding up, by 20.6 percentage points. Four quarters before, in Q2 FY2026, it was +55.6%. (an:revenue:acceleration)
+- *Where does revenue stand against the last two years?* Revenue went from $30.04B in Q2 FY2025 to $96.22B in Q2 FY2027, a compound +15.7% a quarter; it rose in each of the 8 quarters. (an:revenue:trend8)
+- *Which parts of the business drove the growth?* Revenue grew +105.9% in the quarter ended 2026-07-26. Of that growth, each part's contribution: Data Center +102.5 percentage points; Edge Computing +3.3 percentage points (as the 10-Q filed 2026-08-26 tags them; the parts shown split the total without overlap). (an:bridge:growth:revenue_by_product:q)
+- *Is revenue being collected, or building up in receivables?* At the end of Q2 FY2027, accounts receivable of $63.06B stood for 59.6 days of the quarter's revenue ($96.22B over 91 days), against 54.1 days a year before: the balance grew +126.8% while revenue grew +105.9%. (an:eq:dso)
+- Could not be computed: Deferred revenue, change on a year earlier (The facts tag no deferred revenue at this quarter's end.)
 
 ## Claims
 
@@ -552,7 +568,7 @@ This claim names no measure the facts report, cites none and compiles to no test
 
 ## Errors
 
-- The analysis holds what code computed only, with no model's corollaries or argument: no model is configured: the engine is extractive.
+- The analysis holds what code computed only, with no model's corollaries or argument: this run was given no analysing model (the extractive engine, no key, or a run the watcher started).
 
 ## Provenance
 

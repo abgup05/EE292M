@@ -732,10 +732,10 @@
         ],
         "relevance_note": "",
         "analytic_ids": [
-          "an:gross_margin:yoy",
-          "an:gross_margin:trend8",
           "an:c1:headroom",
           "an:c1:history",
+          "an:gross_margin:yoy",
+          "an:gross_margin:trend8",
           "an:eq:dio"
         ],
         "corollaries": [],
@@ -1306,12 +1306,12 @@
         ],
         "relevance_note": "",
         "analytic_ids": [
-          "an:revenue:yoy",
-          "an:revenue:acceleration",
-          "an:revenue:trend8",
           "an:c2:headroom",
           "an:c2:needed",
           "an:c2:history",
+          "an:revenue:yoy",
+          "an:revenue:acceleration",
+          "an:revenue:trend8",
           "an:eq:dso",
           "an:eq:deferred_revenue"
         ],
@@ -1401,13 +1401,13 @@
         ],
         "relevance_note": "",
         "analytic_ids": [
+          "an:part:data_center:fy:growth",
+          "an:part:data_center:fy:pace",
           "an:revenue:yoy",
           "an:revenue:acceleration",
           "an:revenue:trend8",
           "an:eq:dso",
-          "an:eq:deferred_revenue",
-          "an:part:data_center:fy:growth",
-          "an:part:data_center:fy:pace"
+          "an:eq:deferred_revenue"
         ],
         "corollaries": [],
         "corollary_flag": "",
@@ -1622,14 +1622,14 @@
         ],
         "relevance_note": "",
         "analytic_ids": [
+          "an:c4:history",
+          "an:part:data_center:fy:growth",
+          "an:part:data_center:fy:pace",
           "an:revenue:yoy",
           "an:revenue:acceleration",
           "an:revenue:trend8",
-          "an:c4:history",
           "an:eq:dso",
-          "an:eq:deferred_revenue",
-          "an:part:data_center:fy:growth",
-          "an:part:data_center:fy:pace"
+          "an:eq:deferred_revenue"
         ],
         "corollaries": [],
         "corollary_flag": "",
@@ -2054,9 +2054,9 @@
         "analytic_ids": [
           "an:revenue:fy2008:path",
           "an:revenue:fy2008:since",
+          "an:bridge:growth:revenue_by_product:fy",
           "an:eq:dso",
-          "an:eq:deferred_revenue",
-          "an:bridge:growth:revenue_by_product:fy"
+          "an:eq:deferred_revenue"
         ],
         "corollaries": [],
         "corollary_flag": "",
@@ -2765,7 +2765,7 @@
     "2 of 5 claim(s) have relevant passages but no judged stance."
   ],
   "errors": [
-    "The analysis holds what code computed only, with no model's corollaries or argument: no model is configured: the engine is extractive."
+    "The analysis holds what code computed only, with no model's corollaries or argument: this run was given no analysing model (the extractive engine, no key, or a run the watcher started)."
   ],
   "coverage": {
     "filings_asked": 3,
@@ -13351,12 +13351,12 @@
     "corollaries_step": "not_asked",
     "argument_step": "not_asked",
     "corollaries_by": "",
-    "corollaries_note": "No corollaries: no model was asked to propose them (no model is configured: the engine is extractive).",
+    "corollaries_note": "No corollaries: no model was asked to propose them.",
     "corollary_rule": "A corollary is an implication a model proposed and code computed. Each is read by the grammar and by the typed form the proposing model wrote: two readers, which is weaker than the two-of-three rule the thesis's own claims are read under. A corollary never moves a verdict; when most of a claim's computed corollaries come out against it, the claim is flagged.",
     "persistence_method": "Resampling with replacement: 10,000 paths of 4 quarters, each step drawn from the measure's own last N quarterly changes (differences in points for a percent, growth rates for an amount), from the current value; the share of paths in which the test holds in every one of the 4 quarters. Seed 20261118. It assumes the past changes are exchangeable: it ignores trend, seasonality and anything not in the facts. It describes the history; it is not a forecast.",
     "argument_by": "none",
     "argument_detail": "",
-    "argument_note": "No model's argument: no model is configured: the engine is extractive. The analytics and their readings were written by code.",
+    "argument_note": "No model wrote an argument: this run was given no analysing model (the extractive engine, no key, or a run the watcher started). The figures and their readings are code's.",
     "thesis": null,
     "flags": []
   }

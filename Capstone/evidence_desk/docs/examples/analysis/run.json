@@ -1239,10 +1239,10 @@
         ],
         "relevance_note": "",
         "analytic_ids": [
-          "an:gross_margin:yoy",
-          "an:gross_margin:trend8",
           "an:c2:headroom",
           "an:c2:history",
+          "an:gross_margin:yoy",
+          "an:gross_margin:trend8",
           "an:eq:dio"
         ],
         "corollaries": [],
@@ -1700,15 +1700,17 @@
             "analytic_ids": [
               "an:revenue:fy2026:path",
               "an:revenue:fy2026:since",
-              "an:c3:needed"
+              "an:c3:needed",
+              "an:bridge:growth:revenue_by_product:fy"
             ]
           }
         ],
         "relevance_note": "",
         "analytic_ids": [
+          "an:c3:needed",
           "an:revenue:fy2026:path",
           "an:revenue:fy2026:since",
-          "an:c3:needed",
+          "an:bridge:growth:revenue_by_product:fy",
           "an:eq:dso",
           "an:eq:deferred_revenue"
         ],
@@ -2268,9 +2270,50 @@
         }
       ],
       "analysis": {
-        "relevant": [],
-        "relevance_note": "This claim names no measure the facts report, cites none and compiles to no test: no figure is tied to it.",
-        "analytic_ids": [],
+        "relevant": [
+          {
+            "key": "revenue(segment \"Data Center\")",
+            "label": "Revenue, segment Data Center",
+            "reasons": [
+              "part named in the claim"
+            ],
+            "metric_ids": [],
+            "analytic_ids": [
+              "an:part:data_center:q:growth",
+              "an:part:data_center:fy:growth",
+              "an:part:data_center:fy:pace"
+            ]
+          },
+          {
+            "key": "revenue",
+            "label": "Revenue",
+            "reasons": [
+              "part named in the claim"
+            ],
+            "metric_ids": [
+              "revenue:quarter:2026-07-26",
+              "revenue_yoy:quarter:2026-07-26"
+            ],
+            "analytic_ids": [
+              "an:revenue:yoy",
+              "an:revenue:acceleration",
+              "an:revenue:trend8",
+              "an:bridge:growth:revenue_by_product:q"
+            ]
+          }
+        ],
+        "relevance_note": "",
+        "analytic_ids": [
+          "an:part:data_center:q:growth",
+          "an:part:data_center:fy:growth",
+          "an:part:data_center:fy:pace",
+          "an:revenue:yoy",
+          "an:revenue:acceleration",
+          "an:revenue:trend8",
+          "an:bridge:growth:revenue_by_product:q",
+          "an:eq:dso",
+          "an:eq:deferred_revenue"
+        ],
         "corollaries": [],
         "corollary_flag": "",
         "persistence": {
@@ -3038,7 +3081,7 @@
     "2 of 5 claim(s) have relevant passages but no judged stance."
   ],
   "errors": [
-    "The analysis holds what code computed only, with no model's corollaries or argument: no model is configured: the engine is extractive."
+    "The analysis holds what code computed only, with no model's corollaries or argument: this run was given no analysing model (the extractive engine, no key, or a run the watcher started)."
   ],
   "coverage": {
     "filings_asked": 3,
@@ -3073,7 +3116,7 @@
     "periods_checked": 21,
     "periods_unverified": 0,
     "periods_comparative": 0,
-    "analytics_computed": 14,
+    "analytics_computed": 22,
     "analytics_unavailable": 2,
     "analytics_providers_failed": 0,
     "corollaries_proposed": 0,
@@ -12061,6 +12104,42 @@
         "claim_ids": [
           "c4"
         ]
+      },
+      {
+        "id": "an:part:data_center:q:growth",
+        "source": "analytic",
+        "label": "Data Center revenue, growth on a year earlier",
+        "period_label": "the quarter ended 2026-07-26",
+        "value": 116.6220556745182,
+        "unit": "percent",
+        "display": "+116.6%",
+        "claim_ids": [
+          "c5"
+        ]
+      },
+      {
+        "id": "revenue:quarter:2026-07-26",
+        "source": "metric",
+        "label": "Revenue",
+        "period_label": "Quarter ended 2026-07-26",
+        "value": 96221000000.0,
+        "unit": "USD",
+        "display": "$96.22B",
+        "claim_ids": [
+          "c5"
+        ]
+      },
+      {
+        "id": "revenue_yoy:quarter:2026-07-26",
+        "source": "metric",
+        "label": "Revenue growth, year over year",
+        "period_label": "Quarter ended 2026-07-26",
+        "value": 105.85114348672529,
+        "unit": "percent",
+        "display": "+105.9%",
+        "claim_ids": [
+          "c5"
+        ]
       }
     ],
     "headline_note": "",
@@ -12169,7 +12248,7 @@
       "receivables_yoy:instant:2025-01-26"
     ],
     "untied_note": "Reported figures no claim is tied to: on the record, not part of the analysis.",
-    "breakdowns_note": "No part of the business could be read: The tagged figures of the 10-Q for the period ended 2026-07-26 could not be read (its tags were not kept when the filing was cached, and the filing is not fetched again for them (a run after the cache is refreshed reads them)); its segment, product, geography and customer figures were not offered. The tagged figures of the 10-K for the period ended 2026-01-25 could not be read (its tags were not kept when the filing was cached, and the filing is not fetched again for them (a run after the cache is refreshed reads them)); its segment, product, geography and customer figures were not offered.",
+    "breakdowns_note": "Parts are read from the tags of the 10-Q filed 2026-08-26 and the 10-K filed 2026-02-25.",
     "analytics": [
       {
         "id": "an:gross_margin:yoy",
@@ -12369,6 +12448,165 @@
           }
         ],
         "reading": "Since FY2026 ended: revenue grew 105.9% on a year earlier: $46.74B in Q2 FY2026, $96.22B in Q2 FY2027. FY2026 as a whole: +65.5%.",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:revenue:yoy",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "yoy",
+        "label": "Revenue, change on a year earlier",
+        "question": "Which way is revenue moving on a year earlier?",
+        "claim_ids": [
+          "c5"
+        ],
+        "measure": "revenue",
+        "period": "Q2 FY2027",
+        "value": 105.85114348672529,
+        "unit": "percent",
+        "display": "+105.9%",
+        "formula": "($96.22B − $46.74B) ÷ $46.74B",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "revenue[Q2 FY2027]",
+            "label": "Revenue, Q2 FY2027",
+            "value": 96221000000.0,
+            "display": "$96.22B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "revenue[Q2 FY2026]",
+            "label": "Revenue, Q2 FY2026",
+            "value": 46743000000.0,
+            "display": "$46.74B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          }
+        ],
+        "reading": "Revenue grew 105.9% on a year earlier: $46.74B in Q2 FY2026, $96.22B in Q2 FY2027.",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:revenue:acceleration",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "acceleration",
+        "label": "Revenue, growth on a year earlier now against the quarter before",
+        "question": "Is revenue growth speeding up or slowing?",
+        "claim_ids": [
+          "c5"
+        ],
+        "measure": "revenue",
+        "period": "Q2 FY2027",
+        "value": 20.623509697973077,
+        "unit": "points",
+        "display": "+20.6 percentage points",
+        "formula": "+105.9% − +85.2%",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "revenue[Q2 FY2027]",
+            "label": "Revenue, Q2 FY2027",
+            "value": 96221000000.0,
+            "display": "$96.22B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "revenue[Q2 FY2026]",
+            "label": "Revenue, Q2 FY2026",
+            "value": 46743000000.0,
+            "display": "$46.74B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "revenue[Q1 FY2027]",
+            "label": "Revenue, Q1 FY2027",
+            "value": 81615000000.0,
+            "display": "$81.61B",
+            "accession": "0001045810-26-000052",
+            "form": "10-Q",
+            "filed": "2026-05-20"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "revenue[Q1 FY2026]",
+            "label": "Revenue, Q1 FY2026",
+            "value": 44062000000.0,
+            "display": "$44.06B",
+            "accession": "0001045810-26-000052",
+            "form": "10-Q",
+            "filed": "2026-05-20"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "revenue[Q2 FY2025]",
+            "label": "Revenue, Q2 FY2025",
+            "value": 30040000000.0,
+            "display": "$30.04B",
+            "accession": "0001045810-25-000209",
+            "form": "10-Q",
+            "filed": "2025-08-27"
+          }
+        ],
+        "reading": "Revenue growth on a year earlier was +105.9% in Q2 FY2027 and +85.2% in Q1 FY2027: speeding up, by 20.6 percentage points. Four quarters before, in Q2 FY2026, it was +55.6%.",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:revenue:trend8",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "trend8",
+        "label": "Revenue, compound quarterly growth over the last 8 quarters",
+        "question": "Where does revenue stand against the last two years?",
+        "claim_ids": [
+          "c5"
+        ],
+        "measure": "revenue",
+        "period": "Q2 FY2027",
+        "value": 15.663476621761795,
+        "unit": "percent",
+        "display": "+15.7%",
+        "formula": "($96.22B ÷ $30.04B)^(1/8) − 1",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "revenue[Q2 FY2025]",
+            "label": "Revenue, Q2 FY2025",
+            "value": 30040000000.0,
+            "display": "$30.04B",
+            "accession": "0001045810-25-000209",
+            "form": "10-Q",
+            "filed": "2025-08-27"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "revenue[Q2 FY2027]",
+            "label": "Revenue, Q2 FY2027",
+            "value": 96221000000.0,
+            "display": "$96.22B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          }
+        ],
+        "reading": "Revenue went from $30.04B in Q2 FY2025 to $96.22B in Q2 FY2027, a compound +15.7% a quarter; it rose in each of the 8 quarters.",
         "reading_origin": "code",
         "available": true,
         "note": ""
@@ -13042,7 +13280,8 @@
         "label": "Receivable days: accounts receivable ÷ the quarter's revenue × its days",
         "question": "Is revenue being collected, or building up in receivables?",
         "claim_ids": [
-          "c3"
+          "c3",
+          "c5"
         ],
         "measure": "receivables",
         "period": "Q2 FY2027",
@@ -13373,7 +13612,8 @@
         "label": "Deferred revenue, change on a year earlier",
         "question": "Is revenue billed ahead of delivery growing or shrinking?",
         "claim_ids": [
-          "c3"
+          "c3",
+          "c5"
         ],
         "measure": "deferred_revenue",
         "period": "Q2 FY2027",
@@ -13386,6 +13626,411 @@
         "reading_origin": "code",
         "available": false,
         "note": "The facts tag no deferred revenue at this quarter's end."
+      },
+      {
+        "id": "an:part:data_center:q:growth",
+        "provider": "facts",
+        "data_origin": "sec_tagged_breakdowns",
+        "kind": "part_growth",
+        "label": "Data Center revenue, growth on a year earlier",
+        "question": "Is Data Center growing faster or slower than the company?",
+        "claim_ids": [
+          "c5"
+        ],
+        "measure": "revenue(segment \"Data Center\")",
+        "period": "the quarter ended 2026-07-26",
+        "value": 116.6220556745182,
+        "unit": "percent",
+        "display": "+116.6%",
+        "formula": "($89.02B − $41.10B) ÷ $41.10B",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000075:data_center:2026-04-27..2026-07-26",
+            "label": "Data Center, 2026-04-27 to 2026-07-26",
+            "value": 89023000000.0,
+            "display": "$89.02B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000075:data_center:2025-04-28..2025-07-27",
+            "label": "Data Center, 2025-04-28 to 2025-07-27",
+            "value": 41096000000.0,
+            "display": "$41.10B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000075:total_revenue:2026-04-27..2026-07-26",
+            "label": "Total revenue, 2026-04-27 to 2026-07-26",
+            "value": 96221000000.0,
+            "display": "$96.22B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000075:total_revenue:2025-04-28..2025-07-27",
+            "label": "Total revenue, 2025-04-28 to 2025-07-27",
+            "value": 46743000000.0,
+            "display": "$46.74B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          }
+        ],
+        "reading": "Data Center revenue was $89.02B in the quarter ended 2026-07-26, +116.6% on a year earlier ($41.10B); the company's revenue grew +105.9%. It was 92.5% of revenue, against 87.9% a year earlier (as the 10-Q filed 2026-08-26 tags it).",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:part:data_center:fy:growth",
+        "provider": "facts",
+        "data_origin": "sec_tagged_breakdowns",
+        "kind": "part_growth",
+        "label": "Data Center revenue, growth on a year earlier",
+        "question": "Is Data Center growing faster or slower than the company?",
+        "claim_ids": [
+          "c5"
+        ],
+        "measure": "revenue(segment \"Data Center\")",
+        "period": "the fiscal year ended 2026-01-25",
+        "value": 68.19491952146961,
+        "unit": "percent",
+        "display": "+68.2%",
+        "formula": "($193.74B − $115.19B) ÷ $115.19B",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:data_center:2025-01-27..2026-01-25",
+            "label": "Data Center, 2025-01-27 to 2026-01-25",
+            "value": 193737000000.0,
+            "display": "$193.74B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:data_center:2024-01-29..2025-01-26",
+            "label": "Data Center, 2024-01-29 to 2025-01-26",
+            "value": 115186000000.0,
+            "display": "$115.19B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:total_revenue:2025-01-27..2026-01-25",
+            "label": "Total revenue, 2025-01-27 to 2026-01-25",
+            "value": 215938000000.0,
+            "display": "$215.94B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:total_revenue:2024-01-29..2025-01-26",
+            "label": "Total revenue, 2024-01-29 to 2025-01-26",
+            "value": 130497000000.0,
+            "display": "$130.50B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          }
+        ],
+        "reading": "Data Center revenue was $193.74B in the fiscal year ended 2026-01-25, +68.2% on a year earlier ($115.19B); the company's revenue grew +65.5%. It was 89.7% of revenue, against 88.3% a year earlier (as the 10-K filed 2026-02-25 tags it).",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:part:data_center:fy:pace",
+        "provider": "facts",
+        "data_origin": "sec_tagged_breakdowns",
+        "kind": "part_pace",
+        "label": "Data Center revenue, growth now against growth before",
+        "question": "Is Data Center growth speeding up or slowing?",
+        "claim_ids": [
+          "c5"
+        ],
+        "measure": "revenue(segment \"Data Center\")",
+        "period": "the fiscal year ended 2026-01-25",
+        "value": -74.17435980520057,
+        "unit": "points",
+        "display": "-74.2 percentage points",
+        "formula": "+68.2% − +142.4%",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:data_center:2025-01-27..2026-01-25",
+            "label": "Data Center, 2025-01-27 to 2026-01-25",
+            "value": 193737000000.0,
+            "display": "$193.74B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:data_center:2024-01-29..2025-01-26",
+            "label": "Data Center, 2024-01-29 to 2025-01-26",
+            "value": 115186000000.0,
+            "display": "$115.19B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:data_center:2023-01-30..2024-01-28",
+            "label": "Data Center, 2023-01-30 to 2024-01-28",
+            "value": 47525000000.0,
+            "display": "$47.52B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          }
+        ],
+        "reading": "Data Center revenue grew +68.2% on a year earlier in the fiscal year ended 2026-01-25, against +142.4% in the fiscal year ended 2025-01-26: slowing, by 74.2 percentage points (as the 10-K filed 2026-02-25 tags it).",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:bridge:growth:revenue_by_product:q",
+        "provider": "facts",
+        "data_origin": "sec_tagged_breakdowns",
+        "kind": "bridge",
+        "label": "Revenue by product or service: each part's contribution to growth",
+        "question": "Which parts of the business drove the growth?",
+        "claim_ids": [
+          "c5"
+        ],
+        "measure": "revenue",
+        "period": "the quarter ended 2026-07-26",
+        "value": 102.53299959352202,
+        "unit": "points",
+        "display": "+102.5 percentage points",
+        "formula": "($89.02B − $41.10B) ÷ $46.74B",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000075:total_revenue:2026-04-27..2026-07-26",
+            "label": "Total revenue, 2026-04-27 to 2026-07-26",
+            "value": 96221000000.0,
+            "display": "$96.22B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000075:total_revenue:2025-04-28..2025-07-27",
+            "label": "Total revenue, 2025-04-28 to 2025-07-27",
+            "value": 46743000000.0,
+            "display": "$46.74B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000075:data_center:2026-04-27..2026-07-26",
+            "label": "Data Center, 2026-04-27 to 2026-07-26",
+            "value": 89023000000.0,
+            "display": "$89.02B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000075:data_center:2025-04-28..2025-07-27",
+            "label": "Data Center, 2025-04-28 to 2025-07-27",
+            "value": 41096000000.0,
+            "display": "$41.10B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000075:edge_computing:2026-04-27..2026-07-26",
+            "label": "Edge Computing, 2026-04-27 to 2026-07-26",
+            "value": 7198000000.0,
+            "display": "$7.20B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000075:edge_computing:2025-04-28..2025-07-27",
+            "label": "Edge Computing, 2025-04-28 to 2025-07-27",
+            "value": 5647000000.0,
+            "display": "$5.65B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          }
+        ],
+        "reading": "Revenue grew +105.9% in the quarter ended 2026-07-26. Of that growth, each part's contribution: Data Center +102.5 percentage points; Edge Computing +3.3 percentage points (as the 10-Q filed 2026-08-26 tags them; the parts shown split the total without overlap).",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:bridge:growth:revenue_by_product:fy",
+        "provider": "facts",
+        "data_origin": "sec_tagged_breakdowns",
+        "kind": "bridge",
+        "label": "Revenue by product or service: each part's contribution to growth",
+        "question": "Which parts of the business drove the growth?",
+        "claim_ids": [
+          "c3"
+        ],
+        "measure": "revenue",
+        "period": "the fiscal year ended 2026-01-25",
+        "value": 60.19372092845047,
+        "unit": "points",
+        "display": "+60.2 percentage points",
+        "formula": "($193.74B − $115.19B) ÷ $130.50B",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:total_revenue:2025-01-27..2026-01-25",
+            "label": "Total revenue, 2025-01-27 to 2026-01-25",
+            "value": 215938000000.0,
+            "display": "$215.94B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:total_revenue:2024-01-29..2025-01-26",
+            "label": "Total revenue, 2024-01-29 to 2025-01-26",
+            "value": 130497000000.0,
+            "display": "$130.50B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:data_center:2025-01-27..2026-01-25",
+            "label": "Data Center, 2025-01-27 to 2026-01-25",
+            "value": 193737000000.0,
+            "display": "$193.74B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:data_center:2024-01-29..2025-01-26",
+            "label": "Data Center, 2024-01-29 to 2025-01-26",
+            "value": 115186000000.0,
+            "display": "$115.19B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:gaming:2025-01-27..2026-01-25",
+            "label": "Gaming, 2025-01-27 to 2026-01-25",
+            "value": 16042000000.0,
+            "display": "$16.04B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:gaming:2024-01-29..2025-01-26",
+            "label": "Gaming, 2024-01-29 to 2025-01-26",
+            "value": 11350000000.0,
+            "display": "$11.35B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:professional_visualization:2025-01-27..2026-01-25",
+            "label": "Professional Visualization, 2025-01-27 to 2026-01-25",
+            "value": 3191000000.0,
+            "display": "$3.19B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:professional_visualization:2024-01-29..2025-01-26",
+            "label": "Professional Visualization, 2024-01-29 to 2025-01-26",
+            "value": 1878000000.0,
+            "display": "$1.88B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:automotive:2025-01-27..2026-01-25",
+            "label": "Automotive, 2025-01-27 to 2026-01-25",
+            "value": 2349000000.0,
+            "display": "$2.35B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:automotive:2024-01-29..2025-01-26",
+            "label": "Automotive, 2024-01-29 to 2025-01-26",
+            "value": 1694000000.0,
+            "display": "$1.69B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:oem_and_other:2025-01-27..2026-01-25",
+            "label": "OEM and Other, 2025-01-27 to 2026-01-25",
+            "value": 619000000.0,
+            "display": "$619.0M",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:oem_and_other:2024-01-29..2025-01-26",
+            "label": "OEM and Other, 2024-01-29 to 2025-01-26",
+            "value": 389000000.0,
+            "display": "$389.0M",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          }
+        ],
+        "reading": "Revenue grew +65.5% in the fiscal year ended 2026-01-25. Of that growth, each part's contribution: Data Center +60.2 percentage points; Gaming +3.6 percentage points; Professional Visualization +1.0 percentage points; Automotive +0.5 percentage points; OEM and Other +0.2 percentage points (as the 10-K filed 2026-02-25 tags them; the parts shown split the total without overlap).",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
       }
     ],
     "providers": [
@@ -13396,12 +14041,12 @@
     "corollaries_step": "not_asked",
     "argument_step": "not_asked",
     "corollaries_by": "",
-    "corollaries_note": "No corollaries: no model was asked to propose them (no model is configured: the engine is extractive).",
+    "corollaries_note": "No corollaries: no model was asked to propose them.",
     "corollary_rule": "A corollary is an implication a model proposed and code computed. Each is read by the grammar and by the typed form the proposing model wrote: two readers, which is weaker than the two-of-three rule the thesis's own claims are read under. A corollary never moves a verdict; when most of a claim's computed corollaries come out against it, the claim is flagged.",
     "persistence_method": "Resampling with replacement: 10,000 paths of 4 quarters, each step drawn from the measure's own last N quarterly changes (differences in points for a percent, growth rates for an amount), from the current value; the share of paths in which the test holds in every one of the 4 quarters. Seed 20261118. It assumes the past changes are exchangeable: it ignores trend, seasonality and anything not in the facts. It describes the history; it is not a forecast.",
     "argument_by": "none",
     "argument_detail": "",
-    "argument_note": "No model's argument: no model is configured: the engine is extractive. The analytics and their readings were written by code.",
+    "argument_note": "No model wrote an argument: this run was given no analysing model (the extractive engine, no key, or a run the watcher started). The figures and their readings are code's.",
     "thesis": null,
     "flags": []
   }

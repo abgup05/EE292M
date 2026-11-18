@@ -202,7 +202,7 @@
       "analysis_unverified_no_evidence": 0,
       "analysis_unverified_number": 0,
       "analysis_unverified_unknown_id": 0,
-      "analytics_computed": 9,
+      "analytics_computed": 13,
       "analytics_providers_failed": 0,
       "analytics_unavailable": 1,
       "claims_compiled": 1,
@@ -756,7 +756,7 @@
     ],
     "passages_indexed": 636
   },
-  "sha256": "f6864b25a7be6cc6bdd0a5ec97f988fc530ac3e3b061783c8bcc3498f0d1b1e3",
+  "sha256": "a8f4f999ea3dd76c54273774f772435bc9dc33ef8434193dc6ccc12438d8eecd",
   "sources": [
     {
       "characters": 151303,

@@ -25,7 +25,8 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/core/breakdowns.py  builds revenue by segment, product and geography and customers' shares from one filing's tagged facts; checks members against the tagged total; breakdown_models.py is its pure data
     src/app/core/facts.py       FactBook: values from XBRL company facts, placed by their dates; a quarter is 12 to 17 weeks, and a fiscal year is a year-long period an annual report reported; as of a date it reads only facts filed by then
     src/app/core/restatements.py   the restatement ledger: each metric and period whose value differs between filings, with both filings and the change; fact_models.py is its pure data (and the fact store's)
-    src/app/core/claimtest.py   the claim compiler: claim text to a typed test of eight forms with a canonical printed form, or the reason it is not numeric; pure, no model
+    src/app/core/claimtest.py   the claim compiler: claim text to a typed test of eight forms with a canonical printed form, or the reason it is not numeric; compiles only when the test explains every word; pure, no model
+    src/app/core/claim_reading.py  a typed test as JSON, and the strict validation of a second reader's answer into it; pure
     src/app/core/claim_eval.py  evaluates a compiled claim against a FactBook (as of a date) with its arithmetic, and its history over the 10-K and 10-Q filing dates of five years; claim_test_models.py is its pure data
     src/app/core/tagged_figures.py  turns a filing's tagged breakdowns into figures a finding can cite (ids starting "tagged:") and chooses the ones offered; pure
     src/app/core/metrics.py     computes the metrics report from facts; metric_models.py is its pure data
@@ -43,6 +44,7 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/retrieval/search.py ranks a run's passages for one claim (top 8; at most 5 per source when there are several)
     src/app/engines/claude.py   Claude engine: builds each request and parses each answer
     src/app/engines/checker.py  the meaning checker: a second model judges each verified finding (NoChecker: none)
+    src/app/engines/claim_reader.py  the model parser: a second reader of each claim's test, off by default (step "read")
     src/app/engines/transport.py, cassette.py   the Transport port and its API adapter; answers recorded once, replayed by key
     src/app/engines/extractive.py, fallback.py   deterministic engine, no stance; a primary engine falling back to it
     src/app/services/ingest.py  select, read (cache or EDGAR), parse, deduplicate, record the sources
@@ -75,6 +77,7 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/evaluation/claim_tests.py   scores the claim compiler on eval/claim-tests.json (`make claim-labels`; the held-out set at most twice)
     src/app/evaluation/claim_oracle.py   the expected results of eval/claim-results.json from the raw facts, by a route that never calls the evaluator (`make claim-results-key`)
     src/app/evaluation/compiler_vs_model.py   the compiler and a model given the same figure lines, scored on eval/claim-results.json (`make eval ARGS='compiler-vs-model'`)
+    src/app/evaluation/claim_readers.py   the grammar's and the model parser's reading of each claim of a set, one row per claim for a judge (`make eval ARGS='claim-readers --set FILE'`)
     src/web/                    index.html, app.js, styles.css, sample-run.json, sample-synthetic.json, sample-changes.json, sample-run-changes.json, sample-run-tagged.json, sample-breakdowns.json, sample-breakdowns-gap.json (synthetic)
     eval/                       the golden set, its pinned filings, cache/ and results/; README.md
     tests/                      offline tests, fakes.py (EDGAR, pages, engine, clock), smoke.py; replay_run.py, golden_run.py, speed_run.py; lookahead.py (the no-lookahead checks); examples_v14.py (`make examples`, docs/examples/v14)
@@ -147,8 +150,12 @@ nothing filed later reaches any stage, which `tests/lookahead.py` checks (`docs/
    Then **compute** (`services/computed`): every claim is compiled (`core/claimtest`); a compiled claim is evaluated
    from the run's FactBook with its arithmetic, and given its history as of each 10-K and 10-Q filing date of the
    last five years from the same facts, with no extra request; a share of revenue reads the newest filing's tagged
-   breakdowns from the cache. A claim that does not compile gets `compile_note`. No engine is asked anything
-   (`docs/claim-tests.md`).
+   breakdowns from the cache. A claim that does not compile gets `compile_note`. A claim compiles only when its
+   test explains every content word of the sentence. No engine is asked anything. With the model parser on
+   (`EVIDENCE_DESK_CLAIM_READER=model`, off by default) each claim is also read by a model (`engines/claim_reader`,
+   step `read`, through the engine's transport or cassette), its answer validated into the same type
+   (`core/claim_reading`), and a test counts toward the verdict only when both readers read the same test
+   (`policy.reading_counts`); the run records who read each test (`docs/claim-tests.md`).
 5. **Plan.** The engine writes up to four queries per claim.
 6. **Retrieve.** All passages of the run go into one BM25 index; each claim is searched with its own text and queries.
    8-K sections never enter the index: a claim with a substantive category is also offered up to
@@ -266,7 +273,10 @@ finding, 409 while running, 422 withheld finding); `GET .../export.md?reviewed=t
 - **A change to how reported periods are placed** (the length of a quarter, what is a fiscal year, another revenue concept): `core/facts.py` and `core/metrics.py`. Run `make figures` on the eight probe companies before and after and read which lines moved (`docs/evidence/figures-eight-companies.md`); a change that moves a company's figures invalidates the recorded answers of its golden cases.
 - **A change to what counts as a year, or to what evidence carries one**: `core/periods.py`, with `tests/test_periods.py`. What is a year and what is a quantity is decided once, in `core/numcheck.py`, and the period check reads it from there. Measure before and after with the checked evaluation, which also plants wrong years (`eval/README.md`); a rule that starts withholding findings is a change to `core/policy.py` and to every recorded verdict.
 - **A change to which tagged figures a run offers** (the cap, the order, another breakdown): `core/tagged_figures.py` and `MAX_TAGGED_FIGURES_OFFERED` in `core/limits.py`, with `tests/test_tagged_figures.py`. It changes the prompts of every run that asks for them, so `demo/cassettes/nvda-example-tagged` must be recorded again.
-- **A change to the claim compiler** (a phrase, a form, a metric): `core/claimtest.py` with `tests/test_claimtest.py`.
+- **A change to the claim compiler** (a phrase, a form, a metric): `core/claimtest.py` with `tests/test_claimtest.py`
+  and `tests/test_whole_sentence.py`; a phrase the grammar reads must also be among the words its test explains
+  (`_explaining`), or the whole-sentence rule refuses the claim. A new form or measure also goes into the model
+  parser's validation (`core/claim_reading.py`) and prompt (`engines/claim_reader.py`).
   Score `make claim-labels` before and after on the development labels; the held-out labels have been scored twice
   and may not be scored again. A change to how a test is computed: `core/claim_eval.py`, checked against
   `eval/claim-results.json` (`tests/test_claim_results.py`), whose expected values come from

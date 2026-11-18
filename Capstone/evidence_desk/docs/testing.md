@@ -276,6 +276,9 @@ The command-line tools (`tests/test_events_cli.py`, `tests/test_events_probe.py`
 | A compiler-vs-model harness that calls before it says how many, or above the cap | `tests/test_compiler_vs_model.py` (6 tests, fake transport only) | written first: ImportError |
 | Example payloads that fall behind the code | `tests/test_examples_v14.py` | written first: ImportError |
 | A grammar change that moves a reading of the foreign claims without its being judged, or moves the final numbers | `tests/test_foreign_claims.py` (9 tests) | written after the scorer and the judgements; pins the numbers of `make claim-foreign` |
+| A claim compiled with words its test does not explain (a part read as the whole, an unknown measure, a named period ignored, half a claim) | `tests/test_whole_sentence.py` (31 tests) | 16 sentences and 2 wording tests written first: all 18 failed on the grammar before the rule |
+| A model parser's answer accepted when it does not validate or names something unsupported; a test counted when the two readers differ; the parser on by default, or asking anything when off | `tests/test_claim_reading.py` (37 tests, fake transport only) | written first: ImportError |
+| A claim-readers evaluation that calls before it says how many, or above the cap | `tests/test_claim_readers_eval.py` (6 tests, fake transport only) | written first: ImportError |
 | A rule taken from the foreign development half that does not hold | `tests/test_claimtest.py`, 16 new cases on new sentences | all 16 failed on the grammar before the change |
 
 The tripwire was re-baselined on purpose (commit 62846b1): only the verdicts stage (c4 from unjudged to
@@ -297,7 +300,7 @@ gate on a fresh clone, now with seven page renders and 142 page assertions. At v
 At version 11.1: 26 s again (26.03 s for 1,580 tests) and 38 s for the whole gate, with the same
 156 page assertions. At version 12, on 18 November: 29 s (28.85 s for 1,702 tests) and 42 s for the
 whole gate, with 168 page assertions (`docs/evidence/verify-fresh.txt`). At version 14, on 18 November: 87 s
-(87.35 s for 1,894 tests; 1,919 after the foreign-claims work, 88.29 s), measured once while other projects' containers ran on the same laptop, so not
+(87.35 s for 1,894 tests; 1,919 after the foreign-claims work, 88.29 s; 1,993 after the whole-sentence rule and the second reader, 87.79 s), measured once while other projects' containers ran on the same laptop, so not
 comparable with the figures before it; the whole gate was not run, because another app held port 8766 and
 the smoke and browser tests need it.
 

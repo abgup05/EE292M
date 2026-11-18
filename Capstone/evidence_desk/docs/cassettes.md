@@ -17,7 +17,7 @@ whitespace, UTF-8) of `{step, system, user, schema}`; the output-token limit is 
 A pending file holds `key`, `step`, `system`, `user`, `schema` and `how_to_answer`. A response
 file is this envelope:
 
-    {"key": "<key>", "step": "plan" | "assess" | "check" | "summarize",
+    {"key": "<key>", "step": "plan" | "assess" | "check" | "summarize" | "read",
      "via": "<how it was produced, e.g. the Anthropic API>",
      "model": "<the model that produced it>",
      "recorded_at": "<UTC ISO 8601, e.g. 2026-11-17T12:00:00+00:00>",
@@ -37,6 +37,12 @@ file is this envelope:
    a missing answer is not saved; once all four rounds are answered the run replays end to end.
    A claim's check reads only that claim's assessment, but the summary reads the verdicts the
    checks decide, so the summary waits for every check.
+
+The model parser (`engines/claim_reader.py`, off unless `EVIDENCE_DESK_CLAIM_READER=model`) asks
+one `read` request per claim, from the same cassette as the engine, before the plan. No later step
+depends on its answer, so a pending `read` blocks nothing; the claim is then read by the grammar
+alone for that run, and its test is not counted. With the parser off no `read` request is made and
+every recorded request is unchanged.
 
 The meaning checker (`engines/checker.py`) answers from the same cassette and the same run as
 the engine (`CassetteTransport.sibling`): a pending check blocks the summary, and a new plan

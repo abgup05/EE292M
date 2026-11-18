@@ -13,6 +13,26 @@ share, a valuation, a calendar year, a measure outside the set, a margin it does
 segment's or a geography's growth), then the eight forms. A claim that compiles prints a canonical test with
 unbound periods; one that does not gets a reason, shown on the claim as `compile_note`.
 
+**The whole sentence.** A claim compiles only when its test explains every content word of the sentence. After
+the grammar reads a test, every phrase that test accounts for is struck out of the claim: its measures, its
+comparison and its threshold, the periods it is bound to (and no other period named), its span, and the words of
+its form ("expanding", "more than doubled", "consecutive", "compounded"). What is left must be on a short written
+list of words that carry no meaning for a test (`NO_MEANING`: articles, forms of "be" and "have", "of", "in",
+"than", "the company's", "still", "now", "currently", "total", "reported", "also" and a few more). Any other word
+left refuses the claim, and the refusal names the words: "not compiled: 'plus vendor non-trade' is not
+understood". A measure qualified by a segment, a product or a geography ("Gaming operating income", "Azure
+revenue") is not the company's measure: it is refused, unless the sentence is that part's share of revenue,
+which is read from the newest filing's tags. A test that compares a measure with itself is refused. One form is
+exempt from the word count: a share of revenue is read by one pattern anchored at both ends of the sentence, so
+it has no words left over; its subject is free text, matched later against the filing's tagged members (one
+that matches none cannot be computed, and says so). The rule lives in `unexplained()` and
+`compile_claim()`. `tests/test_whole_sentence.py` started with 16 new sentences, four for each way a claim was
+read wrongly (a part read as the whole, an unknown measure read as a known one, a named period ignored, half a
+claim dropped), and two tests of the refusal's wording: all 18 failed on the grammar before the rule. Two of
+the period sentences ("on a trailing basis", "between fiscal 2023 and fiscal 2024") then became readable and
+moved to the list of sentences that must compile; the three period sentences that replaced them were not run
+against the old grammar.
+
 | Form | Example claim | Canonical test |
 |---|---|---|
 | direction | Gross margin is expanding. | `gross_margin[Q] > gross_margin[Q-4]` |
@@ -106,6 +126,42 @@ Claude Code subagent standing in for the Anthropic API; no model was called for 
 c4 stays mixed: its findings already support and challenge, and a test that holds adds support. The tripwire's
 coverage stage also gained the four new counts (1 compiled, 1 holds).
 
+Each claim also records who read it (`Claim.readings`, `ComputedTest.read_by`, `Run.claim_readers`), and the
+brief prints "Read by" under each test. With the model parser off (the default) that is the grammar alone.
+
+## Two readers: the grammar and a model parser
+
+A second reader can be turned on: `EVIDENCE_DESK_CLAIM_READER=model` (off when empty or `grammar`), with
+`ANTHROPIC_READER_MODEL` (default `claude-haiku-5-5`), both in `.env.example`. The model parser
+(`engines/claim_reader.py`) is given the claim, escaped inside a `<claim>` element, and the measures, forms and
+periods this version computes, and answers the typed test as JSON under a schema (step `read`, one request per
+claim) through the same transport and cassettes as every model step; text it copies back is unescaped. Its
+answer is validated into the grammar's own `ClaimTest` (`core/claim_reading.py`) and refused when it does not
+validate or names anything unsupported: an unknown measure, form, comparison, function, period kind or unit, or
+a shape that does not fit the form (a direction between two measures, a growth threshold in dollars, a share
+without a member). "Not a claim this tool can compute" is a valid answer. Every test the grammar compiles from
+the 210 own labels survives the round trip through that JSON unchanged (`tests/test_claim_reading.py`).
+
+**What counts** (`policy.reading_counts`):
+
+- With the model parser off, a computed test counts toward a verdict only when the grammar compiled the whole
+  sentence, which, under the rule above, is the only way it compiles.
+- With it on, a test counts only when the grammar and the model parser arrive at the same canonical test. When
+  they differ, or only one of them reads a test in the claim, the claim shows both readings, "Readings differ:
+  not counted", the grammar's test (if any) is still computed and shown but counts as nothing, and the verdict
+  rests on the findings alone. A reader that could not be asked reads nothing, and the run's errors say so.
+
+With the model parser off nothing is asked: every recorded request is unchanged, the replay and the tripwire
+match (`make golden-check`), and no `read` request exists in any cassette.
+
+`make eval ARGS='claim-readers --set eval/claim-tests-foreign.json --record --max-calls 120'` reads every claim
+of a set with both readers, through the cassette `eval/cassettes/claim-readers`, and writes
+`eval/results/claim-readers-<set>.csv`: one row per claim with each reader's test (or `none` and why), whether
+they agree, who answered for the model (from the cassette's record of it), and empty columns for a judge. It
+prints the number of calls before making any and refuses `--record` without `--max-calls` or above it. It was
+built and tested with a fake transport only. **No model reading has been recorded, so there is no agreement
+rate.** Without a recording, on set A it says: 120 claims, 0 answered, 120 requests to make.
+
 ## Compiler against a model (evaluation only)
 
 `make eval ARGS='compiler-vs-model --record --max-calls 60'` gives a model, for each of the 52 golden cases, the
@@ -171,8 +227,8 @@ grammar changed. No rule was added or changed because of an even-id claim; each 
 (f006, f052, f084 and f096 are now refused by the each-period rule; f088 now compiles as a share). Nothing but
 this statement shows that the even ids were not used.
 
-**The wrong compiles that remain** are all in the held-out half, and each is a pattern no development claim
-showed:
+**The wrong compiles that remained after c8aca10** were all in the held-out half, and each was a pattern no
+development claim showed:
 
 - a part of the company read as the whole: f050 (a product line's revenue as total revenue), f104 (a segment's
   operating income and revenue as the company's);
@@ -184,18 +240,50 @@ showed:
 - half a claim: f020 (the "more than ten points" of an expansion dropped), f060 ("and has barely moved in three
   years" dropped), f102 ("roughly in line with revenue" read as receivables grew).
 
-They are left because fixing them now would be fitting to the held-out half. Each would be the next thing to fix
-with new development claims.
+They were left then because fixing them would have been fitting to the held-out half.
+
+**Set A after the whole-sentence rule (10425c0).** After that scoring, all 120 claims of this file became
+development material ("set A"); a fresh set B, written later by another model, is to be scored once at the end.
+The four patterns above were not patched one by one: the whole-sentence rule refuses them all. Three readings
+were fixed on purpose with set A open, since it is now development material: "on a trailing basis" is the
+trailing twelve months, growth "between fiscal 2024 and fiscal 2025" is fiscal 2025's, and a share may say "is
+now less than". `make claim-foreign` (record: `eval/results/claim-tests-foreign-whole-sentence.txt`; the 14 new
+readings are judged with stage `whole-sentence`):
+
+| Set A, all 120 (`make claim-foreign`) | Before the rule (c8aca10) | After the rule (10425c0) |
+|---|---|---|
+| Numeric (author's label), 83: compiled and right | 22 | 23 |
+| Numeric: compiled and **wrong** | 11 | **0** |
+| Numeric: refused (metric, form, period, phrasing) | 50 (28, 18, 1, 3) | 60 (33, 21, 2, 4) |
+| Not numeric (author's label), 37: refused | 37 | 37 |
+
+Coverage is 23 of 83 numeric claims (28%), down from 33 compiled, of which 11 were wrong. Two right readings
+were lost to the rule, both claims with a trailing comment the parse does not explain: f012 ("…, which is
+worth watching") and f092 ("…, producing operating leverage"). Gained: f016, f098 (wrong before, right now),
+f018 (refused before). Of the 11 wrong compiles, 9 are now refused, each naming the words it could not explain
+(f050 "wearables home and accessories", "several periods"; f058 "september quarter", "june quarter"; f060
+"barely moved in three years"; f064 "sg&a"; f068 "plus vendor non-trade"; f102 "roughly in line with revenue";
+f106 "marketing expense as a percent"; f020 "more than ten points"; f104 by the part rule, "intelligent cloud").
+**The judge of every reading of set A is still the grammar's author**, and every rule above was written with set
+A open: these numbers say the rule removes the wrong compiles it was designed against, not that it will on
+claims nobody here has read. Set B is that test.
 
 **Own labels.** The 150 development and 60 held-out labels and the 52 golden results still pass unchanged
-(`tests/test_foreign_claims.py::test_the_own_labels_still_compile_exactly`, `tests/test_claim_results.py`). That
+(`tests/test_foreign_claims.py::test_the_own_labels_still_compile_exactly`, `tests/test_claim_results.py`), after
+the whole-sentence rule too: no own label that expected a compile now refuses (`make claim-labels`: 150 of 150;
+the pin: 210 of 210). While the rule was being written, five development labels did refuse (d016, d025, d044,
+d045, d053) until the struck-out phrases were found in the whole claim rather than one after another and the
+anchored share sentence was exempted; no label was changed. That
 pin compiles the 60 own held-out claims a third time, as pass or fail only; the brief required it. No foreign
 claim showed an own label to be wrong.
 
 ## What is not shown
 
-- That the grammar reads analysts' claims well: on 40 held-out numeric claims another model wrote it reads 8
-  rightly and 11 wrongly, by its own author's judgement (above).
+- That the grammar reads analysts' claims well: on 40 held-out numeric claims another model wrote it read 8
+  rightly and 11 wrongly, by its own author's judgement (above); after the whole-sentence rule, with all 120
+  as development material, 23 of 83 rightly and none wrongly, by the same judge. Set B has not been scored.
+- How often a model parser agrees with the grammar, or which of the two is right when they differ: nothing
+  has been recorded.
 - Whether a computed test agrees with what an analyst means: "expanding" is read as against the same quarter a
   year earlier, not the previous quarter. The canonical test is printed beside every outcome so a reader can
   see which comparison was made.

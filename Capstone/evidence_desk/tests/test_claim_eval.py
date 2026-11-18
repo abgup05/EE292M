@@ -117,8 +117,8 @@ def test_growth_above_a_threshold_fails_when_it_is_lower() -> None:
     assert [o.term for o in result.operands] == ["revenue[Q4 FY2025]", "revenue[Q4 FY2024]"]
 
 
-def test_an_amount_threshold_reads_the_latest_fiscal_year() -> None:
-    result = _evaluate("Revenue is over $500 million.", synthetic())
+def test_an_annual_amount_threshold_reads_the_latest_fiscal_year() -> None:
+    result = _evaluate("Annual revenue is over $500 million.", synthetic())
     year = sum(_rev(12 + k) for k in range(4))
     assert result.bound == "revenue[FY2025] > $500M"
     assert result.left is not None and result.left.value == year
@@ -296,7 +296,7 @@ CLAIMS = [
     "Revenue has compounded at over 10% for three years.",
     "Operating income is growing faster than revenue.",
     "Cash and cash equivalents are declining.",
-    "Diluted EPS is above $2.",
+    "Annual diluted EPS is above $2.",
 ]
 
 

@@ -1,0 +1,63 @@
+{
+  "key": "63c77f71c058d0939a283724",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:52:13+00:00",
+  "response": {
+    "computable": true,
+    "reason": "Gross margin in the latest quarter is above the previous quarter's, and this holds in each of the last two quarters.",
+    "tests": [
+      {
+        "form": "direction",
+        "left": {
+          "fn": "value",
+          "subject": "gross_margin",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "op": ">",
+        "right_term": {
+          "fn": "value",
+          "subject": "gross_margin",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "Q",
+            "back": 1,
+            "fiscal_year": 0,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "right_number": {
+          "value": 0,
+          "unit": "percent"
+        },
+        "each": 2,
+        "each_since": 0
+      }
+    ]
+  }
+}

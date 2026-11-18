@@ -1,0 +1,63 @@
+{
+  "key": "62dbc2f9b589e6d673ba3d36",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:52:31+00:00",
+  "response": {
+    "computable": true,
+    "reason": "Revenue's three-year compound annual growth rate to fiscal 2026 is tested against a 90% threshold, and the claim names both the span and the period.",
+    "tests": [
+      {
+        "form": "compound",
+        "left": {
+          "fn": "cagr",
+          "subject": "revenue",
+          "member": "",
+          "axis": "",
+          "years": 3,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 2026,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "op": ">",
+        "right_term": {
+          "fn": "cagr",
+          "subject": "revenue",
+          "member": "",
+          "axis": "",
+          "years": 3,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 2026,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "right_number": {
+          "value": 90,
+          "unit": "percent"
+        },
+        "each": 0,
+        "each_since": 0
+      }
+    ]
+  }
+}

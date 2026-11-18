@@ -398,6 +398,14 @@ PART_BEFORE_REVENUE = re.compile(rf"(?<![\w])(?:{PARTS})(?:'s)?\s+(?:net )?(?:re
 TRAPS: tuple[tuple[re.Pattern[str], str], ...] = (
     (
         re.compile(
+            r"\brun[- ]rate\b|\bannuali[sz]ed\b|"
+            r"\brunning at\b.*\b(?:a year|per year|annual(?:ly)?|yearly)\b"
+        ),
+        "an annualised run rate: this tool reads the amounts a filing reports, not a quarter "
+        "annualised",
+    ),
+    (
+        re.compile(
             r"\b(?:will|would|should|could|might|may|expects?|expected|guidance|forecasts?|"
             r"next (?:year|quarter)|by year[- ]end|likely|implies|projected)\b|^if\b"
         ),
@@ -511,8 +519,11 @@ ANNUAL = re.compile(
     r"\bannual(?:ly)?\b|\bfiscal year\b|\blast (?:fiscal )?year\b|\bper year\b|"
     r"\ba year\b(?! (?:ago|earlier|before))|\byearly\b"
 )
+# "Now running at $40 billion" is the latest quarter's amount; "running at $160 billion a year"
+# is an annualised run rate, refused among the traps.
 QUARTERLY = re.compile(
-    r"\bquarterly\b|\b(?:last|latest|most recent|this) quarter(?:'s)?\b|\ba quarter\b"
+    r"\bquarterly\b|\b(?:last|latest|most recent|this) quarter(?:'s)?\b|\ba quarter\b|"
+    r"\b(?:now |currently )?running at\b"
 )
 STREAK = re.compile(
     rf"\bfor (?P<n1>{_W}) (?:consecutive|straight|successive) (?P<u1>quarters|years)\b|"
@@ -639,7 +650,10 @@ def _base_period(text: str, metric: str, *, amount: bool) -> Period:
     """The period the claim is about: named, trailing, annual, quarterly, else the default.
 
     The default is the latest quarter, except for an amount of money or a per-share
-    amount of a flow, which reads the latest fiscal year.
+    amount of a flow, which reads the latest fiscal year: since rule 3 that default is
+    reached only by the sign of a flow ("free cash flow is positive") and by a comparison
+    of two flows; a flow against any other amount with no period named is refused
+    (:func:`unplaced_amount`).
     """
     named = _named_period(text)
     if named is not None:
@@ -1055,9 +1069,15 @@ def compile_claim(text: str) -> ClaimTest | NotNumeric:
     """
     whole = _compile_one(text)
     if isinstance(whole, ClaimTest):
-        return whole
-    joined = _joined(text)
-    return whole if joined is None else joined
+        result: ClaimTest | NotNumeric = whole
+    else:
+        joined = _joined(text)
+        result = whole if joined is None else joined
+    if isinstance(result, ClaimTest):
+        unplaced = unplaced_amount(text, result)
+        if unplaced is not None:
+            return NotNumeric(unplaced)
+    return result
 
 
 def _compile_one(text: str) -> ClaimTest | NotNumeric:
@@ -1108,9 +1128,43 @@ def _joined(text: str) -> ClaimTest | NotNumeric | None:
     return replace(first, also=second)
 
 
+# Rule 3, made on 18 November 2026 after set C was read and scored (set C's score does not
+# reflect it): a flow compared with an amount of money in a sentence that names no period.
+NO_PERIOD_REASON = "names no period: a quarter's amount or a year's?"
+
+
+def unplaced_amount(claim: str, test: ClaimTest) -> str | None:
+    """:data:`NO_PERIOD_REASON` when ``test`` compares a flow with an amount and ``claim``
+    names no period; None otherwise.
+
+    A flow is an amount over a period (revenue, an expense, a cash flow), a per-share amount
+    of one, or a part's figure; a quarter's and a year's differ about four times over, so
+    whichever period a reader picks, the sentence did not say it. Applies to every reader's
+    test, the grammar's and the models'. A ratio or a balance is not a flow, and the sign of
+    a flow (an amount of zero) is not a size, so neither is refused.
+    """
+    if _names_period(_normalised(claim)):
+        return None
+    for part in test.parts:
+        right = part.right
+        if not isinstance(right, Number) or right.unit == "percent" or right.value == 0:
+            continue
+        if part.form != "threshold" or part.left.fn != "value":
+            continue
+        if part.left.axis or METRICS[part.left.subject][1] in ("flow", "per_share"):
+            return NO_PERIOD_REASON
+    return None
+
+
+# A fiscal year written with two digits ("FY26", "fiscal '25"): the grammar does not read it,
+# but a sentence that says it names its period.
+SHORT_FISCAL_YEAR = re.compile(r"\bfy\s?'?\d{2}\b|\bfiscal (?:year )?'\d{2}\b")
+
+
 def _names_period(claim: str) -> bool:
     """True when the claim names its period (a fiscal year or quarter, the latest year, a span)."""
     patterns = (
+        SHORT_FISCAL_YEAR,
         NAMED_QUARTER,
         NAMED_YEAR,
         TTM,

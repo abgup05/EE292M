@@ -26,7 +26,7 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/core/breakdowns.py  builds revenue by segment, product and geography and customers' shares from one filing's tagged facts; checks members against the tagged total; breakdown_models.py is its pure data
     src/app/core/facts.py       FactBook: values from XBRL company facts, placed by their dates; a quarter is 12 to 17 weeks, and a fiscal year is a year-long period an annual report reported; as of a date it reads only facts filed by then
     src/app/core/restatements.py   the restatement ledger: each metric and period whose value differs between filings, with both filings and the change; fact_models.py is its pure data (and the fact store's)
-    src/app/core/claimtest.py   the claim compiler: claim text to a typed test of nine forms (held in one period or in each of several, alone or two joined by "and") with a canonical printed form, or the reason it is not numeric; compiles only when the test explains every word; pure, no model
+    src/app/core/claimtest.py   the claim compiler: claim text to a typed test of nine forms (held in one period or in each of several, alone or two joined by "and") with a canonical printed form, or the reason it is not numeric; compiles only when the test explains every word, and refuses a flow against an amount in a sentence that names no period (rule 3, applied to every reader's test); pure, no model
     src/app/core/claim_reading.py  a typed test as JSON, and the strict validation of a model reader's answer into it; pure
     src/app/core/measures.py    the measure catalogue: every measure a claim test can name, how a claim names it and how it is computed (a concept group of facts.CLAIM_GROUPS, or a formula), and a part's measures; pure
     src/app/core/claim_normal.py  one normal form for a claim test, so that two readers' writings of one test compare equal; pure
@@ -50,7 +50,7 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/retrieval/search.py ranks a run's passages for one claim (top 8; at most 5 per source when there are several)
     src/app/engines/claude.py   Claude engine: builds each request and parses each answer
     src/app/engines/checker.py  the meaning checker: a second model judges each verified finding (NoChecker: none)
-    src/app/engines/claim_reader.py  the model readers of each claim's test, one or two of different models, off by default (steps "read" and "read_2"); the prompt is built from the catalogue
+    src/app/engines/claim_reader.py  the model readers of each claim's test, one or two of different models, off by default (steps "read" and "read_2"); the prompt is built from the catalogue; a reading that breaks rule 3 is refused whatever period the model wrote
     src/app/engines/transport.py, cassette.py   the Transport port and its API adapter; answers recorded once, replayed by key
     src/app/engines/extractive.py, fallback.py   deterministic engine, no stance; a primary engine falling back to it
     src/app/services/ingest.py  select, read (cache or EDGAR), parse, deduplicate, record the sources
@@ -91,7 +91,7 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/evaluation/claim_readers.py   each reader's normal form of each claim of a set, the agreeing pairs and the counting rule's conclusion, one row per claim for a judge; and the judge's file of the readings that would count (`make eval ARGS='claim-readers --set FILE [--judge]'`)
     src/web/                    index.html, app.js, styles.css (one layout, two themes: docs/design.md), specimen.html (every component on made-up data, served at /specimen.html), sample-run.json, sample-run-events.json (a live run, copied unedited), sample-synthetic.json, sample-changes.json, sample-run-changes.json, sample-run-tagged.json, sample-breakdowns.json, sample-breakdowns-gap.json (synthetic), sample-inbox.json, sample-inbox-page-2.json, sample-inbox-watches.json, sample-inbox-health.json, sample-inbox-meta.json (the watch's example payloads of docs/examples/v13, copied unedited by `make sample-inbox`), sample-computed.json, sample-as-of.json, sample-restatements.json (version 14's example run, as-of run and restatement ledger of docs/examples/v14, copied unedited by `make sample-v14`)
     eval/                       the golden set, its pinned filings, cache/ and results/; README.md
-    tests/                      offline tests, fakes.py (EDGAR, pages, engine, clock), smoke.py; replay_run.py, golden_run.py, speed_run.py; lookahead.py (the no-lookahead checks); examples_v14.py (`make examples`, docs/examples/v14)
+    tests/                      offline tests, fakes.py (EDGAR, pages, engine, clock), smoke.py; replay_run.py, golden_run.py, speed_run.py; lookahead.py (the no-lookahead checks); examples_v14.py (`make examples`, docs/examples/v14; the example with two model readers only once its reads are recorded in eval/cassettes/claim-readers)
     tests/live_walk.py          the live end-to-end walk over HTTP; tests/golden/ the tripwire and replayed verdicts
     tests/watch_examples.py, watch_replay.py, watch_contention.py   the watch's example payloads (docs/examples/v13); the live replay of a year of filings against eval/watch-replay-nvda.json; a run timed alone and beside a watcher
     uitests/                    browser tests: the rendered DOM of the sample runs, the sample filing comparison and breakdowns against their JSON; test_events_dom.py the 8-Ks and the as-of line; test_run_events_dom.py the live-run sample and the time line; keys.html + test_keys_dom.py the keys and the themes; test_inbox_dom.py the recorded inbox, and watch.html (the page's code for every answer of the watch routes, with `fetch` stood in for)
@@ -390,6 +390,9 @@ what counts. Filings come only from `www.sec.gov` and `data.sec.gov` (7 requests
   write one record from two processes at once.
 - `make up` serves `http://127.0.0.1:8766` and starts the watcher; `make up-recorded` replays model answers from
   `demo/cassettes/nvda-example` (EDGAR, no key; compose passes `EVIDENCE_DESK_CASSETTE` through). `make run
-  ARGS='example'` runs the CLI; `make demo` runs the example live.
+  ARGS='example'` runs the CLI; `make demo` runs the example live. `READERS=models` (or `model`, `grammar`) on
+  `make up`, `up-recorded` or `run` adds `docker/readers.yaml`, which sets `EVIDENCE_DESK_CLAIM_READER` for that
+  command (compose's `environment` wins over its `env_file`); without it that file is not loaded and `.env` decides.
+  `make readers-check` tests both, with `docker/readers-check.yaml` and `docker/readers-check.env` standing in for an owner's setting.
 - `make live-walk`: the app recorded, then `tests/live_walk.py` over HTTP with live EDGAR: a run, decisions, the
   reviewed brief, a thesis run twice (the second from the cache) and the comparison.

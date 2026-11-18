@@ -383,8 +383,12 @@ def _term(value: object) -> Term:
     if not isinstance(axis, str) or axis not in ("", *PART_AXES):
         raise Refused(f"a part's axis {axis!r} is not one of {', '.join(PART_AXES)}")
     raw_base = data.get("base")
-    if isinstance(raw_base, dict) and raw_base.get("used") is False:
-        raw_base = None
+    if isinstance(raw_base, dict) and "used" in raw_base:
+        # The shape the API accepts: a base is always written, and used says whether it is.
+        used = raw_base["used"]
+        if not isinstance(used, bool):
+            raise Refused("a base's used is true or false")
+        raw_base = {key: item for key, item in raw_base.items() if key != "used"} if used else None
     base = _period(raw_base) if raw_base is not None else None
     if (fn == "change") != (base is not None):
         raise Refused("a change, and only a change, names the period it is from (base)")

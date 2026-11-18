@@ -1,4 +1,4 @@
-.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench eval eval-validate backup restore-check up-recorded live-walk changes breakdowns sample-run-changes golden-sheet backup-status figures two-writers header-cut-check time-live events events-probe event-categories facts-load restatements claim-labels claim-results-key examples claim-foreign watch-once watch-status watch-examples watch-replay watch-contention sample-inbox sample-v14 measures-probe
+.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench eval eval-validate backup restore-check up-recorded live-walk changes breakdowns sample-run-changes golden-sheet backup-status figures two-writers header-cut-check time-live events events-probe event-categories facts-load restatements claim-labels claim-results-key examples claim-foreign watch-once watch-status watch-examples watch-replay watch-contention sample-inbox sample-v14 measures-probe readers-echo readers-check
 
 export COMPOSE_PROJECT_NAME := ee292m-evidence-desk
 export LOCAL_UID := $(shell id -u)
@@ -6,8 +6,21 @@ export LOCAL_GID := $(shell id -g)
 COMPOSE := docker compose -f docker/compose.yaml
 RUN := $(COMPOSE) run --rm --no-deps app
 
+# The claim readers for one command, without editing .env: `make run READERS=models ARGS=...`,
+# `make up READERS=models` (grammar, model or models). Given, it is passed into the containers
+# through docker/readers.yaml; not given, that file is not loaded and EVIDENCE_DESK_CLAIM_READER
+# in .env stands. READER_FILES is for `make readers-check`, which tests both.
+READERS_VALUES := grammar model models
+ifneq ($(filter-out $(READERS_VALUES),$(READERS)),)
+$(error READERS is one of: $(READERS_VALUES))
+endif
+READER_FILES ?=
+WITH_READERS = $(if $(READERS),EVIDENCE_DESK_CLAIM_READER=$(READERS) )$(COMPOSE) $(READER_FILES) $(if $(READERS),-f docker/readers.yaml)
+READER_ECHO := python -c "import os; print('readers:', os.environ.get('EVIDENCE_DESK_CLAIM_READER', '(unset)'))"
+
 help:
 	@echo 'Everyday: build up down verify clean (verify-fresh: clone the committed branch under results/ and verify it)'
+	@echo 'Claim readers for one command: up, up-recorded or run with READERS=models (or model, grammar); without it .env decides. readers-check tests that inside the containers'
 	@echo 'Recorded demo: up-recorded (the app with model answers replayed from demo/cassettes/nvda-example: Load example, then Test the thesis; needs EDGAR, no key)'
 	@echo 'Live walk: live-walk (the running app over HTTP with live EDGAR and recorded answers: a run, decisions, the reviewed brief, a saved thesis run twice, the comparison)'
 	@echo 'Development: test lint fmt smoke logs shell (test T=tests/test_x.py; lint/fmt FILES="src/app/x.py")'
@@ -51,11 +64,26 @@ build:
 	$(COMPOSE) build app
 
 up:
-	$(COMPOSE) up --build --force-recreate -d app watch
+	$(WITH_READERS) up --build --force-recreate -d app watch
 	@-$(COMPOSE) exec -T app python -m app.backup status
 
 up-recorded:
-	EVIDENCE_DESK_CASSETTE=demo/cassettes/nvda-example $(COMPOSE) up --build --force-recreate -d app
+	EVIDENCE_DESK_CASSETTE=demo/cassettes/nvda-example $(WITH_READERS) up --build --force-recreate -d app
+
+# What the readers setting is inside a container started the way run and up start one.
+readers-echo:
+	@$(WITH_READERS) run --rm --no-deps -T app $(READER_ECHO)
+
+# The compose behaviour READERS relies on, against docker/readers-check.env standing in for an
+# owner's .env that says "model": without READERS it stands; with READERS it gives way.
+readers-check:
+	@out=$$($(MAKE) -s --no-print-directory readers-echo READERS= READER_FILES="-f docker/readers-check.yaml" 2>/dev/null | tail -1); \
+	echo "without READERS: $$out"; test "$$out" = "readers: model"
+	@out=$$($(MAKE) -s --no-print-directory readers-echo READERS=models READER_FILES="-f docker/readers-check.yaml" 2>/dev/null | tail -1); \
+	echo "READERS=models:  $$out"; test "$$out" = "readers: models"
+	@out=$$($(MAKE) -s --no-print-directory readers-echo READERS=grammar READER_FILES="-f docker/readers-check.yaml" 2>/dev/null | tail -1); \
+	echo "READERS=grammar: $$out"; test "$$out" = "readers: grammar"
+	@echo "readers-check: PASS"
 
 live-walk:
 	EVIDENCE_DESK_CASSETTE=demo/cassettes/nvda-example $(COMPOSE) up --build --force-recreate -d app
@@ -118,7 +146,7 @@ uitest:
 	$(RUN) pytest -q -p no:cacheprovider uitests
 
 run:
-	$(RUN) python -m app.cli $(ARGS)
+	$(WITH_READERS) run --rm --no-deps app python -m app.cli $(ARGS)
 
 demo: build
 	$(COMPOSE) up --force-recreate -d app

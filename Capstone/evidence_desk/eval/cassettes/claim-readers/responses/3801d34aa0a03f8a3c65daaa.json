@@ -1,0 +1,12 @@
+{
+  "key": "3801d34aa0a03f8a3c65daaa",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:52:42+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim adds a rank ('outpacing every other market platform') that this tool cannot test, so it is not a single computable numeric test.",
+    "tests": []
+  }
+}

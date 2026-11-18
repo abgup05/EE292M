@@ -1,0 +1,42 @@
+{
+  "about": "Six NVIDIA claims of set C (eval/claim-tests-foreign-c.json, copied unchanged with their ids) for the example run with two model readers, docs/examples/v14/run-readers.json (make examples). The answers are read from eval/cassettes/claim-readers; set C's own recordings were made under the readers' prompt before rule 3 and no longer replay, so these six are recorded again under the current prompt with: make eval ARGS='claim-readers --set eval/claim-tests-example-readers.json --record --max-calls 12'. Chosen to show three readers agreeing (h005, h006), the two models reading a test the grammar refuses (h016, h022, h003) and every reader refusing (h001), as set C was read.",
+  "written_by": "Claude Sonnet 5.5 (the claims, in set C); chosen by the session that wrote the grammar",
+  "claims": [
+    {
+      "id": "h005",
+      "company": "NVDA",
+      "text": "Gross margin widened sequentially in each of the last two quarters.",
+      "kind": "numeric"
+    },
+    {
+      "id": "h006",
+      "company": "NVDA",
+      "text": "The effective tax rate was higher in fiscal 2025 than in fiscal 2024.",
+      "kind": "numeric"
+    },
+    {
+      "id": "h016",
+      "company": "NVDA",
+      "text": "Revenue growth in the second quarter of fiscal 2026 over the first was above 10% sequentially.",
+      "kind": "numeric"
+    },
+    {
+      "id": "h022",
+      "company": "NVDA",
+      "text": "Over the three years to fiscal 2026 revenue compounded at more than 90% a year.",
+      "kind": "numeric"
+    },
+    {
+      "id": "h003",
+      "company": "NVDA",
+      "text": "FCF north of $90B in FY26.",
+      "kind": "numeric"
+    },
+    {
+      "id": "h001",
+      "company": "NVDA",
+      "text": "Data Center revenue grew by more than 60% in fiscal 2026, outpacing every other market platform.",
+      "kind": "numeric"
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "key": "bc5793531342f3322036ba8b",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:52:16+00:00",
+  "response": {
+    "computable": true,
+    "reason": "The claim compares the effective tax rate (a ratio, so no period placement is needed) in fiscal 2025 against fiscal 2024 with 'higher', which is a direction test between two named fiscal years.",
+    "tests": [
+      {
+        "form": "direction",
+        "left": {
+          "fn": "value",
+          "subject": "effective_tax_rate",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 2025,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "op": ">",
+        "right_term": {
+          "fn": "value",
+          "subject": "effective_tax_rate",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 2024,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "right_number": {
+          "value": 0,
+          "unit": "percent"
+        },
+        "each": 0,
+        "each_since": 0
+      }
+    ]
+  }
+}

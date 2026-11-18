@@ -20,8 +20,15 @@ from __future__ import annotations
 import os
 from typing import Any
 
-from app.core.claim_reading import READING_SCHEMA, from_reading
-from app.core.claimtest import FORMS, SHARE_AXES, ClaimTest, NotNumeric
+from app.core.claim_reading import READING_SCHEMA, REFUSED, from_reading
+from app.core.claimtest import (
+    FORMS,
+    NO_PERIOD_REASON,
+    SHARE_AXES,
+    ClaimTest,
+    NotNumeric,
+    unplaced_amount,
+)
 from app.core.limits import MAX_EACH_PERIODS
 from app.core.measures import CATALOGUE, PART_AXES, PART_MEASURES, PART_NOTE
 
@@ -114,7 +121,12 @@ fiscal years earlier). A named fiscal year is kind FY with fiscal_year (FY2026) 
 named quarter is kind Q with fiscal_year and quarter (Q2 FY2027). Year over year growth in a \
 quarter is yoy at Q; growth in a named fiscal year is yoy at that FY. Unless the claim says \
 otherwise, a measure's level and growth are for the latest quarter (Q); "over the last N \
-years" compares FY with FY-N.
+years" compares FY with FY-N. Except: a flow (an amount over a period: revenue, an expense, a \
+cash flow, a per-share amount such as EPS, or a part's figure) against an amount of money \
+needs the claim to name its period ("a year", "annual", "last quarter", "in fiscal 2026", \
+"trailing twelve months"; "now running at" is the latest quarter). When it names none, \
+answer computable false with the reason "{NO_PERIOD_REASON}" A ratio, a balance, or a \
+flow's sign (above or below zero) with no period named stays as above.
 
 Fields: member is empty except for a share's member or a part's; axis is empty except for a \
 part's; years is 0 except for cagr.
@@ -182,12 +194,20 @@ class ModelClaimReader:
 
         Raises :class:`~app.engines.transport.EngineError` when the model could not be
         asked or answered nothing usable; an answer that does not validate is a
-        :class:`~app.core.claimtest.NotNumeric`, not an error.
+        :class:`~app.core.claimtest.NotNumeric`, not an error, and so is a flow against an
+        amount in a claim that names no period (:func:`~app.core.claimtest.unplaced_amount`),
+        whatever period the model wrote.
         """
         answer = self.transport(self.request(claim))
         if not isinstance(answer, dict):
             raise EngineError("The model reader returned a non-object answer")
-        return from_reading(_unescaped(answer))
+        result = from_reading(_unescaped(answer))
+        if isinstance(result, ClaimTest):
+            # Rule 3 holds whatever period the model wrote, so it does not rest on the prompt.
+            unplaced = unplaced_amount(claim, result)
+            if unplaced is not None:
+                return NotNumeric(REFUSED + unplaced)
+        return result
 
 
 def read_request(claim: str, step: str = READ_STEP) -> ModelRequest:

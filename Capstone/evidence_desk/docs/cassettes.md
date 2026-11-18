@@ -17,7 +17,7 @@ whitespace, UTF-8) of `{step, system, user, schema}`; the output-token limit is 
 A pending file holds `key`, `step`, `system`, `user`, `schema` and `how_to_answer`. A response
 file is this envelope:
 
-    {"key": "<key>", "step": "plan" | "assess" | "check" | "summarize" | "read",
+    {"key": "<key>", "step": "plan" | "assess" | "check" | "summarize" | "read" | "read_2",
      "via": "<how it was produced, e.g. the Anthropic API>",
      "model": "<the model that produced it>",
      "recorded_at": "<UTC ISO 8601, e.g. 2026-11-17T12:00:00+00:00>",
@@ -38,11 +38,15 @@ file is this envelope:
    A claim's check reads only that claim's assessment, but the summary reads the verdicts the
    checks decide, so the summary waits for every check.
 
-The model parser (`engines/claim_reader.py`, off unless `EVIDENCE_DESK_CLAIM_READER=model`) asks
-one `read` request per claim, from the same cassette as the engine, before the plan. No later step
-depends on its answer, so a pending `read` blocks nothing; the claim is then read by the grammar
-alone for that run, and its test is not counted. With the parser off no `read` request is made and
-every recorded request is unchanged.
+The model readers (`engines/claim_reader.py`, off unless `EVIDENCE_DESK_CLAIM_READER` is `model`
+or `models`) ask one `read` request per claim (and, with `models`, one `read_2` for the second
+reader), from the same cassette as the engine, before the plan. The request holds only the claim,
+the readers' system prompt and the reading schema, so `make eval ARGS='claim-readers ...'` and a run
+ask the same request for the same claim and share answers. No later step depends on its answer, so
+a pending read blocks nothing; that reader reads nothing for that run. With the readers off no read
+request is made and every recorded request is unchanged. A change to the readers' prompt or to
+`READING_SCHEMA` changes every read key: the answers recorded before it stay in the cassette but are
+no longer replayed.
 
 The meaning checker (`engines/checker.py`) answers from the same cassette and the same run as
 the engine (`CassetteTransport.sibling`): a pending check blocks the summary, and a new plan
@@ -71,6 +75,7 @@ change a verdict; record a new cassette instead. A cassette holds no key and no 
 | `demo/cassettes/nvda-example-tagged` | The example with `tagged_figures` on. The page's `?sample=run-tagged` |
 | `eval/cassettes/golden` | The plans, assessments and meaning checks of the 30-case golden set |
 | `eval/cassettes/mismatch` | The meaning check's answers to planted mismatches |
+| `eval/cassettes/claim-readers` | Set C (`eval/claim-tests-foreign-c.json`) read once by the two model readers through the Anthropic API on 18 November 2026: 240 answers, `read` by `claude-haiku-5-5` and `read_2` by `claude-sonnet-5-5` (each envelope's `model` and `via`), under the prompt and schema of d35b279; the record of set C's score (`docs/claim-tests.md`) |
 
 Each has, or is described in, a README that says who answered and what they were told. `tests/test_replay_tagged.py` replays the second and third.
 

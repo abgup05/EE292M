@@ -226,6 +226,7 @@ def main(
     try:
         thesis = _thesis(args)
         analyst = _analyst(args)
+        claim_reader = wiring.claim_reader_from_env(analyst)
     except ValidationError as exc:
         for error in exc.errors():
             field = ".".join(str(part) for part in error["loc"]) or "thesis"
@@ -258,6 +259,8 @@ def main(
     print(f"{run.id}: testing {len(thesis.claims)} claim(s) on {thesis.ticker} with {engine}")
     if not isinstance(checker, NoChecker):
         print(f"{run.id}: meaning checked by {checker.name} ({checker.detail})")
+    if claim_reader is not None:
+        print(f"{run.id}: claims read by the grammar and the model ({claim_reader.detail})")
     run = execute_run(
         run,
         store,
@@ -267,6 +270,7 @@ def main(
         cache=cache,
         checker=checker,
         facts_store=facts_store,
+        claim_reader=claim_reader,
     )
 
     cassette = _cassette_of(analyst)

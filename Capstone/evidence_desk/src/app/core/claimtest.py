@@ -586,10 +586,16 @@ def _share(text: str) -> ClaimTest | NotNumeric | None:
     if "customer" in subject:
         return NotNumeric("a group of customers: filings tag single customers' shares")
     axis = "geography" if GEOGRAPHIES.match(subject) else "segment"
-    member = subject.removeprefix("the ") if axis == "geography" else subject
-    words = member.split()
-    label = " ".join(word.upper() if word in ("us", "u.s.") else word.title() for word in words)
+    label = member_label(subject, axis)
     return ClaimTest("share", Term("share", axis, Period("filing"), member=label), op, number)
+
+
+def member_label(member: str, axis: str) -> str:
+    """A segment's or a geography's name as a test writes it: "Data Center", "US"."""
+    words = member.casefold().strip()
+    if axis == "geography":
+        words = words.removeprefix("the ")
+    return " ".join(w.upper() if w in ("us", "u.s.") else w.title() for w in words.split())
 
 
 def _compound(text: str, metric: str) -> ClaimTest | NotNumeric:

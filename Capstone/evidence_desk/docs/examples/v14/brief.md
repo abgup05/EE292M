@@ -176,6 +176,7 @@ Each claim compiled to a typed test and computed from the dated XBRL facts, by a
 
 - Test: `gross_margin[Q] > gross_margin[Q-4]`, computed as `gross_margin[Q2 FY2027] > gross_margin[Q2 FY2026]`
 - Outcome: Holds (counts as support), by +2.6 points
+- Read by: grammar
 - Arithmetic:
   - gross\_margin\[Q2 FY2027\] = 72,142 ÷ 96,221; USD millions = 75.0%
   - gross\_margin\[Q2 FY2026\] = 33,853 ÷ 46,743; USD millions = 72.4%
@@ -210,6 +211,7 @@ The outcome as of each of the 20 10-K and 10-Q filing dates in the 5 years to 20
 
 - Test: `yoy(revenue)[Q] > 200%`, computed as `yoy(revenue)[Q2 FY2027] > 200%`
 - Outcome: Fails (counts as a challenge), by -94.1 points
+- Read by: grammar
 - Arithmetic:
   - revenue\[Q2 FY2027\] = $96.22B (Revenues, 10-Q filed 2026-08-26)
   - revenue\[Q2 FY2026\] = $46.74B (Revenues, 10-Q filed 2026-08-26)
@@ -249,6 +251,7 @@ Not a numeric claim this version computes: 'data center' names a part of the com
 
 - Test: `share(segment "Data Center")[filing] > 80%`, computed as `share(segment "Data Center")[10-Q filed 2026-08-26, Quarter ended 2026-07-26] > 80%`
 - Outcome: Holds (counts as support), by +12.5 points
+- Read by: grammar
 - Arithmetic:
   - segment "Data Center"\[10-Q filed 2026-08-26, Quarter ended 2026-07-26\] = $89.02B (us-gaap:Revenues, 10-Q filed 2026-08-26)
   - revenue\[10-Q filed 2026-08-26, Quarter ended 2026-07-26\] = $96.22B (us-gaap:Revenues, 10-Q filed 2026-08-26)
@@ -261,6 +264,7 @@ A share of revenue is read from the newest filing's tagged breakdowns, which hav
 
 - Test: `revenue[FY2008] > revenue[FY2007]`, computed as `revenue[FY2008] > revenue[FY2007]`
 - Outcome: Cannot be computed
+- Read by: grammar
 - Why: The facts hold no FY2007 (no fiscal year labelled so ends in them).
 - Arithmetic:
   - revenue\[FY2008\] = $4.10B (Revenues, 10-K filed 2010-03-18)

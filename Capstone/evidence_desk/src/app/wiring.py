@@ -18,9 +18,10 @@ import logging
 import os
 from pathlib import Path
 
-from app.core.ports import Analyst, Checker
+from app.core.ports import Analyst, Checker, ClaimReader
 from app.engines.cassette import CassetteTransport
 from app.engines.checker import ClaudeChecker, NoChecker, configured_check_model
+from app.engines.claim_reader import ModelClaimReader
 from app.engines.claude import ClaudeAnalyst
 from app.engines.extractive import ExtractiveAnalyst
 from app.engines.transport import AnthropicTransport
@@ -37,6 +38,8 @@ VERSION_3_DATABASE = Path("runs") / "runs.sqlite"
 KEY_VARIABLE = "ANTHROPIC_API_KEY"
 CASSETTE_VARIABLE = "EVIDENCE_DESK_CASSETTE"
 RECORD_VARIABLE = "EVIDENCE_DESK_CASSETTE_RECORD"
+READER_VARIABLE = "EVIDENCE_DESK_CLAIM_READER"
+READER_CHOICES = ("grammar", "model")
 ENGINE_CHOICES = ("auto", "claude", "extractive", "cassette")
 
 
@@ -163,6 +166,38 @@ def checker_named(engine: str, analyst: Analyst) -> Checker:
     if engine == "auto":
         return checker_from_env(analyst)
     return NoChecker()
+
+
+def claim_reader_from_env(analyst: Analyst | None = None) -> ClaimReader | None:
+    """The second reader of each claim's test, or None (the default: the grammar alone).
+
+    ``EVIDENCE_DESK_CLAIM_READER=model`` turns the model parser on, with
+    ``ANTHROPIC_READER_MODEL``. With ``EVIDENCE_DESK_CASSETTE`` set it answers from that
+    cassette (beside ``analyst``'s own when it replays one), recording as the engine does;
+    otherwise over the API, which needs ``ANTHROPIC_API_KEY``. Raises
+    :class:`ConfigurationError` for an unknown value or a model reader with neither.
+    """
+    choice = os.environ.get(READER_VARIABLE, "").strip() or "grammar"
+    if choice not in READER_CHOICES:
+        raise ConfigurationError(
+            f"{READER_VARIABLE} is {choice!r}; choose one of {', '.join(READER_CHOICES)}"
+        )
+    if choice == "grammar":
+        return None
+    reader = ModelClaimReader()
+    cassette = os.environ.get(CASSETTE_VARIABLE, "").strip()
+    if cassette:
+        shared = _cassette_of(analyst)
+        record = model_key_present() and os.environ.get(RECORD_VARIABLE, "").strip() == "1"
+        live = AnthropicTransport(model=reader.model) if record else None
+        if shared is not None:
+            return ModelClaimReader(shared.sibling(live=live), model=reader.model)
+        return ModelClaimReader(CassetteTransport(Path(cassette), live=live), model=reader.model)
+    if not model_key_present():
+        raise ConfigurationError(
+            f"{READER_VARIABLE}=model needs {KEY_VARIABLE} or {CASSETTE_VARIABLE} to be set"
+        )
+    return reader
 
 
 def filings_from_env() -> EdgarClient:

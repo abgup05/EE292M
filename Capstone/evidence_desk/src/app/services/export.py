@@ -357,6 +357,8 @@ def _computed_test(claim: Claim) -> list[str]:
         f"- Test: `{computed.canonical}`, computed as `{computed.bound}`",
         f"- Outcome: {_text(computed.outcome_label)}{counted.get(computed.counted_as, '')}{margin}",
     ]
+    if computed.read_by:
+        lines.append(f"- Read by: {_text(' and '.join(computed.read_by))}")
     if computed.reason:
         lines.append(f"- Why: {_text(computed.reason)}")
     if computed.as_of:

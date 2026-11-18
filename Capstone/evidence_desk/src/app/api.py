@@ -51,6 +51,7 @@ from app.core.models import (
 from app.core.ports import (
     Analyst,
     Checker,
+    ClaimReader,
     FilingSource,
     PageFetcher,
     SourceError,
@@ -251,6 +252,7 @@ def create_app(
     cache: FilingCache | None = None,
     checker: Checker | None = None,
     facts_store: FactStore | None = None,
+    claim_reader: ClaimReader | None = None,
 ) -> FastAPI:
     """Build the application. Collaborators not given are built by :mod:`app.wiring`.
 
@@ -261,6 +263,8 @@ def create_app(
     engine is the configured one, otherwise none unless one is given.
     ``facts_store`` keeps every XBRL fact a run or a company route reads: the
     configured one when the store is, otherwise one in memory for this application.
+    ``claim_reader`` is the model parser: the configured one (off by default) when the
+    engine is the configured one, otherwise none unless one is given.
     """
     if facts_store is None:
         facts_store = wiring.facts_from_env() if store is None else FactStore()
@@ -271,6 +275,7 @@ def create_app(
     if analyst is None:
         analyst = wiring.analyst_from_env()
         checker = checker or wiring.checker_from_env(analyst)
+        claim_reader = claim_reader or wiring.claim_reader_from_env(analyst)
     checker = checker or NoChecker()
     executor = ThreadPoolExecutor(max_workers=RUN_WORKERS, thread_name_prefix="run")
     metrics_cache = MetricsCache(monotonic)
@@ -313,6 +318,7 @@ def create_app(
                 cache=cache,
                 checker=checker,
                 facts_store=facts_store,
+                claim_reader=claim_reader,
             )
         except Exception:  # noqa: BLE001 - last resort: a run must never stay "running"
             log.exception("Run %s crashed", run.id)

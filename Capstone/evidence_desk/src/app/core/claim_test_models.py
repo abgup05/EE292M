@@ -61,6 +61,18 @@ class HistoryPoint(BaseModel):
     reason: str = ""
 
 
+class ClaimReading(BaseModel):
+    """One reader's reading of a claim: the canonical test, or ``none`` and why.
+
+    ``reader`` is "grammar" (:mod:`app.core.claimtest`) or "model" (the model parser,
+    :mod:`app.engines.claim_reader`); ``reason`` says why it read no test.
+    """
+
+    reader: Literal["grammar", "model"]
+    canonical: str
+    reason: str = ""
+
+
 class ComputedTest(BaseModel):
     """A compiled claim evaluated against one company's facts.
 
@@ -75,7 +87,9 @@ class ComputedTest(BaseModel):
     fails, "" when it could not be computed). ``as_of`` is the date the facts were
     read up to ("" for every fact). ``history`` is the outcome as of each 10-K and
     10-Q filing date of the last years, oldest first; ``history_note`` says what it
-    covers or why there is none.
+    covers or why there is none. ``read_by`` names the readers whose reading this test
+    is ("grammar", and "model" when the model parser read the same test); empty before
+    version 14.
     """
 
     canonical: str
@@ -96,3 +110,4 @@ class ComputedTest(BaseModel):
     as_of: str = ""
     history: list[HistoryPoint] = Field(default_factory=list)
     history_note: str = ""
+    read_by: list[str] = Field(default_factory=list)

@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Protocol
 
+from app.core.claimtest import ClaimTest, NotNumeric
 from app.core.documents import FetchedFiling, FilingRef, Passage
 from app.core.fact_models import CompanyProfile
 from app.core.metric_models import Metric
@@ -222,3 +223,20 @@ class Checker(Protocol):
 
 # A page fetcher for the optional extra URLs: URL in, FetchedPage out, FetchError on failure.
 PageFetcher = Callable[[str], "object"]
+
+
+class ClaimReader(Protocol):
+    """A second reader of a claim's typed test, beside the grammar (:mod:`app.core.claimtest`).
+
+    ``name`` and ``detail`` are recorded on the run. ``read`` returns the test the reader
+    finds in the claim, validated into the grammar's own type, or a
+    :class:`~app.core.claimtest.NotNumeric` saying why there is none; it raises when the
+    reader could not be asked, and the run then records that it read nothing.
+    """
+
+    name: str
+    detail: str
+
+    def read(self, claim: str) -> ClaimTest | NotNumeric:
+        """The test in ``claim``, or why there is none."""
+        ...

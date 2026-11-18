@@ -54,6 +54,7 @@ from app.core.ports import (
     Analyst,
     Checker,
     ClaimDraft,
+    ClaimReader,
     FilingSource,
     PageFetcher,
     SourceError,
@@ -208,6 +209,7 @@ def execute_run(
     cache: FilingCache | None = None,
     checker: Checker | None = None,
     facts_store: FactStore | None = None,
+    claim_reader: ClaimReader | None = None,
 ) -> Run:
     """Execute ``run`` to completion, persisting progress, and return the final record.
 
@@ -218,6 +220,8 @@ def execute_run(
     before the verdict, in the worker that assessed the claim; without one (or
     with :class:`~app.engines.checker.NoChecker`) every finding stays unchecked.
     ``facts_store`` keeps every XBRL fact the run reads (none kept without one).
+    ``claim_reader`` is the model parser, a second reader of each claim's test; without
+    one (the default) the grammar reads them alone.
     """
     if concurrency < 1:
         raise ValueError("concurrency must be at least 1")
@@ -340,6 +344,7 @@ def execute_run(
             cache=cache,
             html_by_accession=ingested.filing_html,
         )[:2],
+        claim_reader,
     )
 
     _stage(run, store, "planning")

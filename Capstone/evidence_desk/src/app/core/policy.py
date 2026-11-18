@@ -196,6 +196,38 @@ COMPUTED_HISTORY_NOTE = (
     "{last}, each from the facts filed by that date{capped}; it flipped {flips} time(s)."
 )
 COMPUTED_NOT_NUMERIC = "Not a numeric claim this version computes: {reason}."
+
+# Who read a claim's test, and when a computed test may count toward a verdict. The grammar
+# (app.core.claimtest) compiles a claim only when its test explains every content word of
+# the sentence. With the grammar alone, a computed test counts when the grammar compiled
+# it. With the model parser on as a second reader (app.engines.claim_reader), a computed
+# test counts only when both readers arrive at the same canonical test; when they differ,
+# or only one of them reads a test in the claim, the claim shows both readings, the test
+# counts as nothing and the verdict rests on the findings alone.
+GRAMMAR_READER = "grammar"
+MODEL_READER = "model"
+NO_TEST = "none"
+COMPUTED_READINGS_DIFFER = (
+    "Readings differ: not counted. The grammar read {grammar}; the model read {model}. "
+    "The verdict rests on the findings alone."
+)
+COMPUTED_READER_FAILED = "the model reader could not read the claim: {why}"
+READER_ERROR = "The model reader could not read claim {claim_id}: {why}"
+
+
+def reading_counts(grammar: str, model: str | None) -> bool:
+    """True when a computed test may count toward the claim's verdict.
+
+    ``grammar`` and ``model`` are each reader's canonical test, :data:`NO_TEST` when it
+    read none; ``model`` is None when the model parser is off. With the grammar alone a
+    test counts when the grammar compiled the whole sentence (it compiles nothing less);
+    with both readers, only when they read the same test.
+    """
+    if grammar == NO_TEST:
+        return False
+    return model is None or model == grammar
+
+
 EVENT_COUNTS = (
     "{listed} 8-K(s) filed since the annual report of {annual}: {read} read, {failed} could not "
     "be read, {capped} not read because of the cap of {cap} per run, {index_only} routine 8-K(s) "

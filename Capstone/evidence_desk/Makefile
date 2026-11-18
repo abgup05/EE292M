@@ -1,4 +1,4 @@
-.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench eval eval-validate backup restore-check up-recorded live-walk changes breakdowns sample-run-changes golden-sheet backup-status figures two-writers header-cut-check time-live events events-probe event-categories facts-load restatements claim-labels claim-results-key examples claim-foreign watch-once watch-status watch-examples watch-replay watch-contention sample-inbox sample-v14 look measures-probe readers-echo readers-check market-probe outside-view
+.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench eval eval-validate backup restore-check up-recorded live-walk changes breakdowns sample-run-changes golden-sheet backup-status figures two-writers header-cut-check time-live events events-probe event-categories facts-load restatements claim-labels claim-results-key examples claim-foreign watch-once watch-status watch-examples watch-replay watch-contention sample-inbox sample-v14 look measures-probe readers-echo readers-check market-probe outside-view market-view
 
 export COMPOSE_PROJECT_NAME := ee292m-evidence-desk
 export LOCAL_UID := $(shell id -u)
@@ -383,3 +383,9 @@ market-probe:
 
 outside-view:
 	$(RUN) python -m app.outside $(or $(T),NVDA) --claim "$(CLAIM)" $(ARGS)
+
+# PRICE and PRICE_DATE are required: no single-stock price source was found (docs/market-view.md).
+# PRICES=path/to/closes.csv adds the reactions to the 8-Ks of the claim's categories; INDEX=fred
+# (FRED's S&P 500, read live) or INDEX=path/to/index.csv is the index they are measured against.
+market-view:
+	$(RUN) python -m app.market $(or $(T),NVDA) --price "$(PRICE)" --price-date "$(PRICE_DATE)" --claim "$(CLAIM)" $(if $(PRICES),--prices "$(PRICES)",) $(if $(INDEX),--index "$(INDEX)",) $(ARGS)

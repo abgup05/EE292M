@@ -41,7 +41,7 @@ against the old grammar.
 | direction | Gross margin is expanding. | `gross_margin[Q] > gross_margin[Q-4]` |
 | acceleration | Revenue growth is accelerating. | `yoy(revenue)[Q] > yoy(revenue)[Q-1]` |
 | streak | Revenue has grown for four consecutive quarters. | `streak(revenue)[Q] >= 4` |
-| threshold | Diluted EPS is above $4. | `eps_diluted[FY] > $4` |
+| threshold | Annual diluted EPS is above $4. | `eps_diluted[FY] > $4` |
 | growth_threshold | Revenue grew more than 200% year over year. | `yoy(revenue)[Q] > 200%` |
 | faster_than | Operating income is growing faster than revenue. | `yoy(operating_income)[Q] > yoy(revenue)[Q]` |
 | compound | Revenue has compounded at over 10% for five years. | `cagr(revenue, 5y)[FY] > 10%` |
@@ -273,10 +273,19 @@ claims, so "counted, with one dissenting reading" is countable on its own.
 `--judge` also writes `claim-readers-<set>-for-judge.md`, for a judge who has not seen the grammar:
 the notation in plain words (generated from the catalogue), then every reading the rule would
 count, with its sentence and normal form and an empty verdict column. It does not say which
-readings had a dissent. Built and tested with fake transports only. **No model reading has been
-recorded, so there is no agreement rate and no model reader's accuracy.** Grammar alone (no key),
-the judge's files for sets A and B are `eval/results/claim-readers-claim-tests-foreign-for-judge.md`
-(31 counted readings) and `eval/results/claim-readers-claim-tests-foreign-b-for-judge.md` (20).
+readings had a dissent. Grammar alone (no key), the judge's files for sets A and B are
+`eval/results/claim-readers-claim-tests-foreign-for-judge.md` (31 counted readings) and
+`eval/results/claim-readers-claim-tests-foreign-b-for-judge.md` (20), written before the forms round.
+Set C was read through the API by both model readers (below).
+
+**The notation is built from the grammar.** Set C's judge marked two readings unsure because the
+notation did not explain `each(N):` or `change(m, BASE)`; it also lacked `each(since …):`, the "and"
+join and a part at a named period. Since then the notation is generated from the grammar's own lists
+(`FORMS`, the functions, the period kinds) over a table of explanations (`CONSTRUCT_NOTES`), with one
+example sentence per form that the grammar must read as that form (`FORM_NOTES`), so a construct
+added without an explanation fails to build. `tests/test_judge_notation.py` (failed first) also
+checks every construct of every reading in the recorded CSVs, the own labels and the golden results.
+The judge's files already written are records and were not regenerated.
 
 ## Compiler against a model (evaluation only)
 
@@ -502,6 +511,123 @@ anchored share sentence was exempted; no label was changed. That
 pin compiles the 60 own held-out claims a third time, as pass or fail only; the brief required it. No foreign
 claim showed an own label to be wrong.
 
+## Set C: three readers, read once (18 November 2026)
+
+`eval/claim-tests-foreign-c.json` holds 120 claims by Claude Sonnet 5.5, 40 each for NVIDIA, Apple and
+Microsoft, 80 marked `numeric` and 40 `not_numeric` by their author, written without the repository (sets A
+and B were read only to avoid repeating them) and not seen by the grammar's author before they were read.
+They were read once, by the grammar and both model readers through the Anthropic API:
+
+    make eval ARGS='claim-readers --set eval/claim-tests-foreign-c.json --record --max-calls 250 --judge'
+
+240 calls: 120 by `claude-haiku-5-5` (step `read`) and 120 by `claude-sonnet-5-5` (`read_2`), each answer
+recorded in `eval/cassettes/claim-readers` with its model and "the Anthropic API". Rows:
+`eval/results/claim-readers-claim-tests-foreign-c.csv`.
+
+| Set C, read once (80 numeric claims) | Claims |
+|---|---|
+| A test read by the grammar | 19 |
+| A test read by Haiku 5.5 | 37 |
+| A test read by Sonnet 5.5 | 36 |
+| **Counted**: at least two readers reach the same test | **36** (19 by all three; 17 by the two models, the grammar refusing) |
+| Readings differ, nothing counted | 1 (h092: Haiku compares two of Microsoft's parts, Sonnet refuses, the grammar refuses) |
+| Two agree and the third reads another test (a dissent) | 0 |
+| No reader reads a test | 43 |
+
+None of the 40 claims marked not numeric was read by any reader (0 of 40 each). Every test the grammar read
+was read the same by both models.
+
+**The judge.** Claude Sonnet 5.5, run as a fresh subagent shown only the judge's file
+(`eval/results/claim-readers-claim-tests-foreign-c-for-judge.md`), marked the 36 counted readings
+(`claim-readers-claim-tests-foreign-c-judged.md`): **33 right, 1 wrong, 2 unsure**. The wrong one is h063,
+"R&D spend passed $30 billion", read by both models as `rnd[Q] > $30B`: an annual amount tested on a quarter.
+The two unsure (h065 `each(2): ...`, h066 `change(diluted_shares, FY2021)[FY] < -10%`) are unsure because that
+file did not explain `each(N):` or `change(m, BASE)` (now fixed, above). The orchestrating session (Claude
+Fable 5.2, which wrote neither the grammar nor the claims) read the 36 as well and found the same one wrong and
+the other 35 right. **Limits:** Sonnet 5.5 wrote the claims, is one of the two model readers, and is the judge;
+the second check is another Claude model. No person has judged set C.
+
+**The API refused the forms round's schema twice** (HTTP 400): "Schemas contains too many parameters with union
+types (28 parameters with type arrays or anyOf)", then, with the nullable fields removed but the second test
+still nested in the first, "The compiled grammar is too large". In `core/claim_reading.py` absence is now a
+value (0 for `fiscal_year`, `quarter` and `each_since`; a `base` with `used: false`; `right_term` and
+`right_number` both always written, the form deciding which is read), and `tests` is a list of none, one or two
+in place of a `test` with a nested `and_test`. A reading in the earlier shape, or with nulls, is still read.
+`READ_MAX_TOKENS` went from 1,000 to 2,500 after one Haiku answer was cut off. `tests/test_reading_schema.py`
+pins the union-typed parameters at 0. Reviewed afterwards: a `base` whose `used` is not true or false is now
+refused (it was read as a base); tests added for the earlier shape and for a computable answer with no test.
+
+**Why the other 43 numeric claims got no test**, one main cause each, from the three readers' reasons in the
+CSV (the grammar's, Haiku's and Sonnet's agree on the cause in nearly every row). This is the list of next
+work; nothing in the grammar, the forms or the prompt was changed for set C except rule 3, below.
+
+| Cause | Claims | Ids |
+|---|---|---|
+| An approximate figure or a vague comparison ("about", "roughly", "around", "barely moved", "far faster", "double-digit", "roughly flat") | 16 | h002, h013, h025, h041, h048, h049, h054, h055, h062, h081, h087, h089, h090, h094, h101, h104 |
+| A measure the tool lacks (prepaid supply agreements, current assets and liabilities, days of sales, capex over operating cash flow, deferred revenue over revenue, a segment's gross margin, financing cash flow, taxes on net share settlement) | 9 | h007, h008, h020, h024, h026, h042, h050, h052, h064 |
+| A part over time or against the company (a part's or the largest customer's share year on year, a segment's growth in each quarter or accelerating, a sub-segment against the company's earlier revenue) | 5 | h010, h018, h045, h059, h060 |
+| A clause no test covers (a judgement, a cause or an event added to a computable test: "even after the split", "so the adjusted numbers are not flattering", "on the one-time State Aid charge", "which is nothing for a company this size", "so buybacks mostly offset dilution") | 5 | h004, h012, h053, h086, h096 |
+| A period the tool does not place (calendar quarter names, "so far" in a fiscal year) | 3 | h061, h088, h106 |
+| A form the tool lacks (a multiple of another measure: "ten times inventories"; a change in dollars: "came down by more than $10 billion") | 2 | h051, h047 |
+| A rank ("outpacing every other market platform", "the largest piece") | 2 | h001, h067 |
+| A form the tool has, written the same wrong way by both models and refused by validation: a share of revenue (`share`, subject `segment`, member "Networking") written with a part's fields (axis `segment`, subject `revenue`) | 1 | h009 |
+| **All** | **43** | |
+
+Beside these, h092 (above) is the one numeric claim read by a model but not counted. Four of the five clauses
+no test covers would compute if the clause were dropped; the readers refused them because the rule is that
+every word is accounted for.
+
+## Rule 3: a flow against an amount names its period (made after set C)
+
+**Made on 18 November 2026, after set C was read and judged; set C's score above does not reflect it.**
+"Revenue is over $100 billion" may mean a quarter's revenue or a year's, which differ about four times over. The
+grammar read the latest fiscal year; both model readers read h063 as a quarter. Neither is what the sentence
+says. A flow (revenue, an expense, a cash flow, a per-share amount such as EPS, or a part's revenue) compared
+with an amount of money, in a sentence that names no period, is now refused with "names no period: a
+quarter's amount or a year's?":
+
+- by the grammar (`compile_claim`, `core.claimtest.unplaced_amount`);
+- by the model readers' prompt, which says when to answer so;
+- and by a check on every model reading (`ModelClaimReader.read`), whatever period the model wrote, so the
+  rule does not rest on the prompt.
+
+The period is named by "a year", "annual", "last fiscal year", "last quarter", "quarterly", "in fiscal 2026",
+"Q2 fiscal 2027", "trailing twelve months", "FY26" and the like; "now running at" is the latest quarter; an
+annualised run rate ("running at $160 billion a year", "annualized run rate") is refused rather than read as a
+fiscal year. Ratios and balances keep the latest-quarter default ("Cash on hand is more than $40 billion" is
+`cash[Q] > $40B`); the sign of a flow ("free cash flow is positive", an amount of zero) keeps the latest fiscal
+year; a comparison of two flows with no period keeps the latest fiscal year. Tests:
+`tests/test_rule_unnamed_period.py` (failed first: 16 of 32 with the new names stubbed).
+
+What it takes away, grammar alone (`make claim-foreign`, and with set B's files):
+
+| Re-scored after rule 3 | Set A (83 numeric) | Set B (80 numeric) |
+|---|---|---|
+| Compiled and right, after the forms | 42 | 23 |
+| Compiled and right, after rule 3 | 39 | 22 |
+| Compiled and **wrong** | 0 | 0 |
+| Refused (metric, form, period, phrasing) | 44 (22, 15, 4, 3) | 58 (33, 8, 3, 14) |
+| Readings taken away (each judged right before, as the latest fiscal year) | f048 "Free cash flow exceeded $100 billion.", f091 "R&D expense exceeded $30 billion.", f095 "Microsoft returned over $30 billion to shareholders through buybacks and dividends." | g106 "Income before income taxes surpassed $120 billion." |
+
+Records: `eval/results/claim-tests-foreign-rule3.txt`, `claim-tests-foreign-b-rule3.txt`. The four are judged
+again as refused for their period ("rule 3, 18 November 2026"), appended; f095 and g106 had printed none before
+for a missing measure, so their new entries carry a `revision` and count in place of the earlier ones, which
+stay (`foreign_claims.load_judgements` accepts a second judgement of a reading only with a revision).
+
+Set C, offline: of the 36 readings counted when set C was read, the check on model readings would refuse one,
+h063, the one judged wrong (worked out from the recorded answers, without a call). What the models would
+answer under the new prompt is not known: the prompt is part of every request's key, so none of set C's 240
+recordings replays now.
+
+**Own labels.** Four labels expect the fiscal-year default the rule refuses: d040 "Revenue is over $100
+billion.", d043 "Diluted EPS is above $3.", d121 "The company returned more than $20 billion to
+shareholders." (development) and h050 "The company spent more than $10 billion on buybacks." (held out). The
+answer key was not changed: `make claim-labels` now gives 147 of 150 development labels, and the pin
+(`tests/test_foreign_claims.py::test_the_own_labels_still_compile_exactly`) lists the four and checks each is
+refused for its period. The four golden results whose claim named no period (r07, r09, r35, r40) now say
+"Annual ..." in the claim, which is input; their canonical tests and expected values are unchanged and still
+what the independent route gives.
+
 ## Labels changed when the measure set grew
 
 On 18 November 2026, before the measure catalogue (`core/measures.py`) was written, ten
@@ -538,10 +664,11 @@ outstanding, which the catalogue does not hold; it has the diluted weighted-aver
   rightly and 1 wrongly, by the same judge; no independent judge has marked it yet. After the measure
   catalogue, with both sets as development material, 31 of 83 and 19 of 80 rightly, 0 and 1 wrongly: not a
   held-out score.
-- How often a model parser agrees with the grammar, or which of the two is right when they differ: nothing
-  has been recorded. After the forms round, with both sets as development material, the grammar reads 42 of
-  83 (set A) and 23 of 80 (set B) rightly and none wrongly, by its author's judgement: not a held-out score,
-  and the new forms have not been read by a model through the API here.
+- A held-out score for the model readers after rule 3, or under the current prompt: set C was read once
+  through the API before rule 3 (36 of 80 numeric claims counted; 33 right, 1 wrong, 2 unsure by a judge of
+  the same model family as the claims' author and one of the readers), and none of those recordings replays
+  under the prompt now. After rule 3, with sets A and B as development material, the grammar alone reads 39
+  of 83 and 22 of 80 rightly and none wrongly, by its author's judgement: not a held-out score.
 - Whether a computed test agrees with what an analyst means: "expanding" is read as against the same quarter a
   year earlier, not the previous quarter. The canonical test is printed beside every outcome so a reader can
   see which comparison was made.

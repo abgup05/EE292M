@@ -303,6 +303,34 @@ anchored share sentence was exempted; no label was changed. That
 pin compiles the 60 own held-out claims a third time, as pass or fail only; the brief required it. No foreign
 claim showed an own label to be wrong.
 
+## Labels changed when the measure set grew
+
+On 18 November 2026, before the measure catalogue (`core/measures.py`) was written, ten
+labels of `eval/claim-tests.json` were changed. Each one expected "none" only because the
+claim names a measure outside the set this version computed, and the catalogue now adds
+that measure. They were changed because the tool's measure set grew, not to make a result
+pass: they were changed in a commit of their own, before any code that reads the new
+measures existed. No other label was touched.
+
+| id | claim | was | now |
+| --- | --- | --- | --- |
+| d104 | Share buybacks are increasing. | none (buybacks are not in the metric set) | `share_repurchases[Q] > share_repurchases[Q-4]` |
+| d105 | Dividends are growing. | none (dividends are not in the metric set) | `dividends_paid[Q] > dividends_paid[Q-4]` |
+| d121 | The company returned more than $20 billion to shareholders. | none (not in the metric set) | `shareholder_returns[FY] > $20B` |
+| d122 | Accounts payable are rising. | none (not in the metric set) | `accounts_payable[Q] > accounts_payable[Q-4]` |
+| d124 | Total assets exceed $100 billion. | none (not in the metric set) | `total_assets[Q] > $100B` |
+| d130 | The company has no debt. | none (debt is not in the metric set) | `total_debt[Q] <= $0` |
+| d140 | Taxes are lower than last year. | none (taxes are not in the metric set) | `income_tax[FY] < income_tax[FY-1]` |
+| d142 | Deferred revenue is rising. | none (deferred revenue is not in the metric set) | `deferred_revenue[Q] > deferred_revenue[Q-4]` |
+| h049 | Total debt fell below $10 billion. | none (not in the metric set) | `total_debt[Q] < $10B` |
+| h050 | The company spent more than $10 billion on buybacks. | none (not in the metric set) | `share_repurchases[FY] > $10B` |
+
+Two of them are in the held-out set (h049, h050); changing a label does not score it. Labels
+that stay "none" although they name a measure now in the catalogue, because the claim is
+still not one test: d103 (a judgement), d107 (a judgement), d123 (goodwill as a share of
+assets, a ratio the catalogue does not hold), d139 ("comfortably covers"), h048 (shares
+outstanding, which the catalogue does not hold; it has the diluted weighted-average count).
+
 ## What is not shown
 
 - That the grammar reads analysts' claims well: on 40 held-out numeric claims another model wrote it read 8

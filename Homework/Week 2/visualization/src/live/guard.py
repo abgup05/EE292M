@@ -130,6 +130,21 @@ class Caps:
         return {spec.name: getattr(self, spec.name) for spec in fields(self)}
 
 
+#: ``LIVE_VERSIONS=off`` serves every version's recorded snapshot and runs nothing.
+SWITCH_VARIABLE = "LIVE_VERSIONS"
+
+
+def live_enabled(environ: Mapping[str, str] | None = None) -> bool:
+    """False when the owner has switched the live versions off (``LIVE_VERSIONS=off``)."""
+    value = (
+        (os.environ if environ is None else environ)
+        .get(SWITCH_VARIABLE, "")
+        .strip()
+        .lower()
+    )
+    return value not in ("off", "0", "false", "no")
+
+
 def key_present(environ: Mapping[str, str] | None = None) -> bool:
     """True when a non-blank model key is set. The key itself is never read out."""
     return bool(

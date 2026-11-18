@@ -17,7 +17,8 @@ the source changes; the web files are copied byte for byte.
 ``tests/fixtures``: the recorded EDGAR answers that version's tests read, each with its URL,
 its retrieval time and whether the recording is whole or was trimmed when it was recorded.
 
-``prune`` removes ``OUT/vN`` for every version no longer in the map. Standard library only.
+``prune`` removes ``OUT/vN`` for every version no longer in the map. ``map`` points a version
+at a git ref in the map file (``make site-version``). Standard library only.
 """
 
 from __future__ import annotations
@@ -271,6 +272,36 @@ def prune(out: Path, keep: set[int]) -> list[str]:
     return removed
 
 
+MAP_LINE = re.compile(r"^\s*([0-9]{1,3})\s+(\S+)\s*$")
+REF_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._/-]{0,99}")
+
+
+def set_ref(map_file: Path, version: int, ref: str) -> str:
+    """Point ``version`` at ``ref`` in the map file, adding its line in order; say what changed."""
+    if not REF_NAME.fullmatch(ref) or ".." in ref:
+        raise VendorError(f"{ref!r} is not a tag or branch name")
+    if not 1 <= version <= 999:
+        raise VendorError("a version is a number from 1 to 999")
+    lines = map_file.read_text(encoding="utf-8").splitlines()
+    entry = f"{version:<3} {ref}"
+    last = None  # index of the last version line below ``version``
+    for index, line in enumerate(lines):
+        match = MAP_LINE.match(line)
+        if not match:
+            continue
+        if int(match.group(1)) == version:
+            if match.group(2) == ref:
+                return f"version {version} is already {ref}"
+            lines[index] = entry
+            map_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+            return f"version {version}: {match.group(2)} -> {ref}"
+        if int(match.group(1)) < version:
+            last = index
+    lines.insert(len(lines) if last is None else last + 1, entry)
+    map_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return f"version {version}: added as {ref}"
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     sub = parser.add_subparsers(dest="command", required=True)
@@ -283,8 +314,15 @@ def main(argv: list[str] | None = None) -> int:
     trim = sub.add_parser("prune", help="remove versions no longer in the map")
     trim.add_argument("--out", type=Path, required=True)
     trim.add_argument("keep", type=int, nargs="*")
+    point = sub.add_parser("map", help="point a version at a git ref in the map file")
+    point.add_argument("--map", type=Path, required=True)
+    point.add_argument("number", type=int)
+    point.add_argument("ref")
     args = parser.parse_args(argv)
     try:
+        if args.command == "map":
+            print(set_ref(args.map, args.number, args.ref))
+            return 0
         if args.command == "prune":
             for name in prune(args.out, set(args.keep)):
                 print(f"removed {name}: it is no longer in the map")

@@ -1,4 +1,4 @@
-.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe replay golden-check golden-baseline profile bench eval eval-validate golden-sheet backup restore-check up-recorded live-walk changes breakdowns lock clean data vercel-deps live-imports live-up live-down live-test live-logs live-runs referee versions-up versions-down versions-status versions-logs pr pr-describe pr-merge site-survey site-run-v1 site-export site-index site-scan site-test site-browse site-check site-vendor site-live-up site-live-down site-live-test site-live-shots
+.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe replay golden-check golden-baseline profile bench eval eval-validate golden-sheet backup restore-check up-recorded live-walk changes breakdowns lock clean data vercel-deps live-imports live-up live-down live-test live-logs live-runs referee versions-up versions-down versions-status versions-logs pr pr-describe pr-merge site-survey site-run-v1 site-export site-index site-scan site-test site-browse site-check site-vendor site-live-up site-live-down site-live-test site-live-shots site-version
 
 # make <target> runs the capstone by default; make APP=week2 <target> runs the Week 2 app.
 APP ?= capstone
@@ -127,7 +127,8 @@ site-test:
 	@docker run --rm -v "$(CURDIR):/repo:ro" -w /repo node:24-slim sh -c \
 	  'node --test tools/snapshots/test_shim.mjs tools/live/test_shim.mjs && for f in "$(SITE_DIR)"/v*/snapshot.js; do node --check "$$f" || exit 1; done'
 
-# Each snapshot as a browser renders it, served by the Week 2 app on 127.0.0.1:8765 (started
+# Each recorded snapshot as a browser renders it, served by the Week 2 app on 127.0.0.1:8765
+# with LIVE_VERSIONS=off, which serves the recordings in place of the live versions (started
 # and stopped here): headless Chromium dumps the DOM of /vN/ and, from version 2 on, /vN/?sample,
 # and tools/snapshots/browse_check.py checks the banner, that every call the page made on load
 # was answered, and that the recorded run is shown.
@@ -135,7 +136,7 @@ SITE_CHROME := docker run --rm --add-host=host.docker.internal:host-gateway zeni
 	--headless --no-sandbox --disable-gpu --virtual-time-budget=8000 --dump-dom
 
 site-browse:
-	@$(MAKE) -s APP=week2 up > /dev/null
+	@LIVE_VERSIONS=off $(MAKE) -s APP=week2 up > /dev/null
 	@trap '$(MAKE) -s APP=week2 down > /dev/null 2>&1' EXIT; \
 	curl -s -o /dev/null -m 5 --retry 30 --retry-delay 1 --retry-all-errors http://127.0.0.1:8765/versions || exit 1; \
 	failed=0; for n in $(SITE_VERSIONS); do \
@@ -215,3 +216,18 @@ site-live-shots:
 	  fi; \
 	  echo "v$$n  run $$id  $$(ls '$(LIVE_SHOTS)' | grep -c "^v$$n-.*-$(WIDTH)\.png$$") pictures"; \
 	done
+
+# A new version, or a version moved to a later point release, in one command: it points the
+# version at the ref in $(LIVE_MAP), vendors every version in the map again from git (the
+# others come out byte for byte as they are), imports them all, and runs the new version live
+# under the emulation. What is left is to commit and open the pull request.
+#   make site-version N=15                      capstone-v15
+#   make site-version N=13 REF=capstone-v13.1
+site-version:
+	@test -n '$(N)' || { echo 'Usage: make site-version N=15 [REF=capstone-v15]'; exit 1; }
+	@git rev-parse -q --verify '$(or $(REF),capstone-v$(N))^{commit}' > /dev/null \
+	  || { echo "There is no ref $(or $(REF),capstone-v$(N)) in this repository"; exit 1; }
+	@$(LIVE_PY_STDIN) tools/live/vendor.py map --map '$(LIVE_MAP)' '$(N)' '$(or $(REF),capstone-v$(N))' < /dev/null
+	@$(MAKE) -s site-vendor
+	@$(MAKE) -s site-live-test VERSIONS='$(N)'
+	@echo "Version $(N) runs live under the emulation. Commit $(LIVE_MAP) and $(LIVE_DIR), then open the pull request."

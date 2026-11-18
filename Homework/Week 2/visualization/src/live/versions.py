@@ -191,9 +191,11 @@ class Version:
                 raise RuntimeError(self.error or "not built")
             return self.app
 
-    def state(self) -> dict[str, Any]:
+    def state(self, enabled: bool = True) -> dict[str, Any]:
         """For /live/status: no path, no message, only what is known."""
-        if self.app is not None:
+        if not enabled and self.has_recording:
+            serving = "recorded"
+        elif self.app is not None:
             serving = "live"
         elif self.error is None:
             serving = "not asked yet"

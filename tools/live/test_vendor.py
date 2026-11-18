@@ -96,5 +96,28 @@ class VendorTest(unittest.TestCase):
             vendor.vendor(9, "capstone-v9", "c" * 40, self.archive(files), Path(out))
 
 
+class MapTest(unittest.TestCase):
+    def test_a_version_is_repointed_or_added_in_order_and_comments_are_kept(self):
+        with tempfile.TemporaryDirectory() as out:
+            file = Path(out) / "versions.map"
+            file.write_text("# version  ref\n1   capstone-v1\n13  capstone-v13\n14  capstone-v14\n")
+            self.assertEqual(vendor.set_ref(file, 13, "capstone-v13.1"), "version 13: capstone-v13 -> capstone-v13.1")
+            self.assertEqual(vendor.set_ref(file, 15, "capstone-v15"), "version 15: added as capstone-v15")
+            self.assertEqual(vendor.set_ref(file, 2, "capstone-v2"), "version 2: added as capstone-v2")
+            self.assertEqual(vendor.set_ref(file, 2, "capstone-v2"), "version 2 is already capstone-v2")
+            self.assertEqual(
+                file.read_text(),
+                "# version  ref\n1   capstone-v1\n2   capstone-v2\n13  capstone-v13.1\n14  capstone-v14\n15  capstone-v15\n",
+            )
+
+    def test_a_ref_that_is_not_a_name_is_refused(self):
+        with tempfile.TemporaryDirectory() as out:
+            file = Path(out) / "versions.map"
+            file.write_text("1 capstone-v1\n")
+            for ref in ("--upload-pack=x", "a b", "../x", "v1;rm"):
+                with self.assertRaises(vendor.VendorError):
+                    vendor.set_ref(file, 2, ref)
+
+
 if __name__ == "__main__":
     unittest.main()

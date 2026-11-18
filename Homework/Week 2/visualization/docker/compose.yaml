@@ -8,6 +8,7 @@ services:
     environment:
       PYTHONPATH: /work/src
       HOME: /tmp
+      LIVE_VERSIONS: "${LIVE_VERSIONS:-}"
     volumes:
       - ..:/work
     ports:

@@ -86,7 +86,7 @@ def main(argv: list[str]) -> int:
     states: dict[str, dict] = live.get("versions", {}) if isinstance(live, dict) else {}
     if live:
         what = (
-            f"key_present {live.get('key_present')}, sec_user_agent_present "
+            f"live_versions {live.get('live_versions')}, key_present {live.get('key_present')}, sec_user_agent_present "
             f"{live.get('sec_user_agent_present')}, model_engine {live.get('model_engine')}, "
             f"caps_invalid {live.get('caps_invalid')}, model runs today "
             f"{live.get('counts', {}).get('model_runs_today')} (this instance)"

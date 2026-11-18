@@ -7,7 +7,8 @@
   shim with this version's settings;
 - everything else passes :mod:`live.guard` and then goes to the version's own app, unchanged;
 - a version that cannot be built on this server is answered by its recorded snapshot instead
-  (``snapshots/vN``, read-only, with its own banner), and ``/live/status`` says so;
+  (``snapshots/vN``, read-only, with its own banner), and ``/live/status`` says so; with
+  ``LIVE_VERSIONS=off`` in the environment every version is, and nothing runs;
 - a request that starts a run is held open until the run has finished (or until
   ``LIVE_HOLD_SECONDS``): a serverless instance may be frozen once a response is sent, and the
   next request may reach another instance. With ``x-live-hold: ndjson`` (sent by the shim) the
@@ -43,6 +44,7 @@ from live.guard import (
     client_of,
     costly_read,
     key_present,
+    live_enabled,
     run_start,
     user_agent_present,
 )
@@ -86,13 +88,17 @@ class Site:
 
     async def status(self, imports: bool) -> dict[str, Any]:
         """Booleans and counts only: never the key, the contact string or a client address."""
-        if imports:
+        enabled = live_enabled()
+        if imports and enabled:
             for version in self.versions.values():
                 try:
                     await anyio.to_thread.run_sync(version.load)
                 except RuntimeError:
                     pass  # recorded in the version's state
         return {
+            "live_versions": "on"
+            if enabled
+            else "off: each version's recorded snapshot is served",
             "key_present": key_present(),
             "sec_user_agent_present": user_agent_present(),
             "model_engine": "on" if key_present() else "off",
@@ -101,7 +107,7 @@ class Site:
             "caps_scope": "per server instance: counts are kept in memory and are not shared",
             "counts": self.guard.counts(),
             "seed": self.seed.counts(),
-            "versions": {str(n): v.state() for n, v in self.versions.items()},
+            "versions": {str(n): v.state(enabled) for n, v in self.versions.items()},
         }
 
 
@@ -198,7 +204,8 @@ class LiveVersionApp:
         """
         self.site = site
         self.version = site.versions[number]
-        self.version.has_recording = recorded is not None
+        if recorded is not None:
+            self.version.has_recording = True
         self.recorded = recorded
         self.info = self.version.info
         self.prefix = f"/v{number}"
@@ -336,6 +343,9 @@ class LiveVersionApp:
         )
         method = scope["method"]
         head = method == "HEAD"
+        if not live_enabled() and self.recorded is not None:
+            await self.recorded(scope, receive, send)
+            return
         try:
             app = await anyio.to_thread.run_sync(self.version.load)
         except RuntimeError as exc:

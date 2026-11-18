@@ -369,3 +369,15 @@ def test_without_the_shim_the_answer_is_the_versions_own_once_the_run_has_finish
     assert status == 202
     assert headers["content-type"] == "application/json"
     assert json.loads(body) == {"id": "r1", "status": "running"}
+
+
+def test_the_owner_can_switch_every_version_to_its_recording(monkeypatch):
+    monkeypatch.setenv("LIVE_VERSIONS", "off")
+    page = call("/v3/")[2].decode()
+    assert 'data-snapshot-version="3"' in page and "data-live-version" not in page
+    assert call("/v3/api/runs", "POST", b"{}")[0] == 405
+    report = json.loads(call("/live/status?imports=true")[2])
+    assert report["live_versions"].startswith("off")
+    assert {state["serving"] for state in report["versions"].values()} == {"recorded"}
+    monkeypatch.delenv("LIVE_VERSIONS")
+    assert 'data-live-version="3"' in call("/v3/")[2].decode()

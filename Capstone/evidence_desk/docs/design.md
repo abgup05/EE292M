@@ -1,18 +1,23 @@
 # The page's design
 
-Evidence Desk's page is a research note. It has one layout and one set of components, drawn in
-two themes:
+Evidence Desk's page is a research note read in a workspace: on a wide screen it fills the
+window as a frame of panes (the claims in a rail, the selection under tabs, an inspector for
+whatever is picked) and the page itself does not scroll; on a phone and on paper the same
+markup is one column in reading order. It has one frame and one set of components, drawn in two
+themes:
 
-- **Paper** is the note as printed: warm paper, ink, a serif for prose and claims, hairline rules,
-  and small capitals for labels.
-- **Terminal** is the same note as a dense dark screen: near-black, a monospace for every label,
-  number and control, an amber accent, and tighter rows.
+- **Paper** is a typeset note inside the frame: warm paper, ink, a serif for prose and claims,
+  hairline rules, and small capitals for labels.
+- **Terminal** is the same frame as a market terminal: near-black, a monospace for every label,
+  number and control, an amber accent, a code before every title, and tighter rows.
 
 Every rule in `src/web/styles.css` reads tokens only. The themes differ in their token values and
 in a few rules scoped to `:root[data-theme="terminal"]`. The specimen page,
 `src/web/specimen.html`, shows every component once on made-up data, except its version 14 parts,
 which are excerpts of `docs/examples/v14`. It is linked from nowhere: open it at `/specimen.html`,
-or see `docs/screenshots/specimen*.png` (`make screenshots`). Its note was empty from version 13
+or see `docs/screenshots/specimen*.png` (`make screenshots`). Its note is the run view laid out
+flat, every panel and docket at once as on paper, and its "frame" part draws the centre pane's
+head, the tabs and the inspector with the page's own code. Its note was empty from version 13
 until version 14: the page's code hid a view the specimen did not have.
 
 ## The boundary still holds
@@ -24,6 +29,11 @@ Three things are drawing, not computing:
 - the time line places record dates on an axis;
 - a sparkline places a series' values in a box;
 - a negative number is set in `--neg` from the sign of the record's own value or display string.
+
+And one is navigation, not computing: the rail's selection and the tabs decide which of the
+record's items are on screen (one claim's docket, one claim's lane, one tab's panel), and the
+inspector which item is read at the side; with nothing picked it reads the first item the
+record lists for that tab. No item is ranked, counted or filtered by a value.
 
 Text from filings and from models is inserted as text, never as HTML.
 
@@ -101,133 +111,138 @@ Numbers are `tabular-nums` everywhere. The scale steps by about 1.2: 0.72, 0.812
 1.0625, 1.3125, 1.75 and 2.375 rem. Data is dense; prose has room, with 72 characters at most
 and a line height of 1.6.
 
-## Layout
+## Layout: a workspace, not a document
 
-Two layouts, chosen by whether anything is on screen (`body.is-first` while `#empty-state` shows).
+On a screen at least 641px wide the page fills the window and does not scroll; its panes scroll
+inside themselves. One command bar (one row at 1280px and wider), then the view.
 
-**The first screen: the form is the page.** It has three parts, top to bottom:
-
-- *The lead* (the guide, `#howto`, open): one line of what this is, the takeaway, the configured engine, and the recorded samples as a list, each with what it shows.
-- *The thesis form*, centred in one framed column, with the example loader beside the submit button.
-- *How it works* (the four steps), below the form.
+**A run** is the status line across the top and three panes under it:
 
 ```
-┌ bar ─ § Evidence Desk │ TICKER [NVDA] / │                         Paper|Terminal t │ Keys ? ┐
-│ Test an investment thesis against …      │ RECORDED SAMPLES                               │
-│ takeaway · configured engine             │ See a recorded run — what it shows …           │
-├──────────────────────────────────────────┴───────────────────────────────────────────────┤
-│                   ┌ YOUR THESIS ── decision · claims · Test | Load the example ┐         │
-│                   └ lookups · saved theses · recent runs ──────────────────────┘         │
-│                   HOW IT WORKS 1 2 3 4 · the illustrative record                         │
-└──────────────────────────────────────────────────────────────────────────────────────────┘
+┌ bar ─ § Evidence Desk │ [NVDA] / │ Thesis e │ ▲ Partial  Run r │ As of 17 Nov 2026 (8-K) │ … sample · Inbox i · Guide · Paper t · Keys ? ┐
+│ ▲ Partial · 3 of 3 sources · 17 of 20 findings verified · 3 withheld · ▲ limits                              all counts ▾ │
+├ RAIL ──────────────────┬ CENTRE ───────────────────────────────────────────┬ INSPECTOR ─────────────────┤
+│ NVIDIA CORP  NVDA  CIK │ c2  ✓ SUPPORTED  3 findings · 8 of 636 · ⊨ Holds   │ Computed test of claim c2  │
+│ Decision: Whether …    │ Gross margin has stayed above 70% …                │ ⊨ HOLDS  Counted as support│
+│ VERDICTS BY CLAIM      │ 1 Overview │ 2 Evidence │ 3 Over time │ 4 Events │  │ each(4): gross_margin[Q]>70│
+│ The whole thesis       │ 5 Figures │ 6 Limits                               │ gross_margin[Q2 FY2027] 75%│
+│ c1 ± MIXED    ▲Caution │ ─────────────────────────────────────────────────  │  GrossProfit · … · 10-Q ↗  │
+│ c2 ✓ SUPPORTED  ⊨ HOLDS│ verdict rule · assessed by · commentary            │  Revenues · … · 10-Q ↗     │
+│ c3 ✕ CHALLENGED ⊭ FAILS│ the computed test (expression, outcome, readers,   │ …                          │
+│ c4 ✕ CHALLENGED ⊭ FAILS│ each part) · the findings in short                 │ Every reading              │
+│ c5 ✕ CHALLENGED        │                                                    │                            │
+└ (Terminal) footer: / ticker  e thesis  i inbox  j k claims  1-9 tabs  r run  t theme  ? keys      run-id · status ┘
 ```
 
-**A run or another record: the note takes the whole width.** The form becomes a drawer from the left, opened by the bar's **Thesis** button or `e`. Esc, Close or the scrim closes it, and a refused field opens it. The run reads answer first:
+- **The rail** (`#rail`) lists the claims once: the company and the decision, an entry for the
+  whole thesis, then one row per claim (`#scorecard`): id, verdict stamp, the claim, the computed
+  outcome with what it counted and how many readers agreed, the record's counts, and a caution
+  flag. Selecting a row (a click, or `j` and `k`) drives the other two panes. A run opens on the
+  whole thesis.
+- **The centre pane** (`#centre`) shows the selection under tabs. Its head says what is selected
+  (a claim's id, stamps, counts and flags are the record's). The tabs are a registry, `TABS` in
+  `app.js`: a new tab is one entry there and one `.tabpanel[data-tab]` in `index.html`.
 
-```
-┌ bar ─ § │ TICKER │ Thesis e │ (sample tag · Leave the sample) How to read this │ theme │ Keys ┐
-│ STATUS ▲ Partial │ ENGINE read … / checked … (cut short; hover or focus) │ AS OF …        │
-├──────────────────────────────────────────────────────────────────────────────────────────┤
-│ company head (decision, engines, as of, the sample's provenance in one line)             │
-│ ▲ Partial · 3 of 3 sources · 6 of 8 findings verified · 2 withheld · ▲ limits  all counts│
-│ TAPE  revenue │ growth │ gross margin │ operating margin │ FCF margin │ diluted EPS       │
-│ VRD   engine stamp │ after your review │ claim │ evidence                                │
-│ TL    the time line                                                                      │
-│ MOV · SUM · CLM dockets (quotes in the margin) · WHD (one line, folded) · FIG · EVT ·     │
-│ UNK|NXT · SRC · LIM|ERR · the marks · provenance                                         │
-└ (Terminal) status footer: / ticker  e thesis  j k claims  t theme  ? keys   run-id · status┘
-```
+  | Tab | The whole thesis | One claim |
+  |---|---|---|
+  | Overview | the tape, the summary (and the line code wrote after it), what moved, unknowns and next steps | the verdict rule, who assessed, the caution or 8-K note, the engine's commentary, the computed test, then the findings in short |
+  | Evidence | the sources, the withheld findings (folded), which filings were compared | the findings in full (checks, cited figures, your decision, each quote) and the changed paragraphs |
+  | Over time | the time line and every compiled claim's lane | the time line and that claim's lane |
+  | Events | the as-of line in full, then the 8-K register | the same |
+  | Figures | the reported figures, the tagged figures, the charts | the same |
+  | Limits | coverage limits and errors | the same |
 
-At phone width the bar wraps, the tape is two columns, and a docket's stamp goes under its claim. Widths inside the note respond to the note's own width (container queries), not to the window's.
+- **The inspector** (`#inspector`) reads whatever is picked in the centre pane: a finding's
+  quotes in the text around them with where each sits and the link to the filing; a computed
+  test's operands (each with the facts it was read from), its arithmetic and every reading; an
+  8-K whole (items, roles, opening sentences, link); a figure's formula and the reported values
+  behind it. Pick by selecting the item or its button ("Read the quote in its context"). With
+  nothing picked it reads the first item of the tab on show, and the item being read carries an
+  accent edge on the inspector's side. What the inspector reads is not drawn twice: in the
+  centre pane a quote is its own words cut to three lines, a test is its summary, an 8-K its
+  items. A tab with nothing to read at the side (Limits, the whole thesis's Evidence) gives the
+  inspector's width to the centre pane.
+- **The status line** (`#status-banner`) is one line; its full counts open over the panes and
+  close again.
+- **The Run drawer** (`#run-drawer`, from the right; the status chip or `r`) holds everything
+  about who did the work: the engine, who checked meaning, who read the claims into tests and
+  the counting rule, the run's id and times, the as-of line, the saved thesis, the sample's
+  provenance. Under it: the guide (`#howto`, also opened by **Guide**), the marks (`#legend`) and
+  the terms. The thesis form is the other drawer, from the left (`e`).
+
+`?claim=c2&tab=evidence` opens a run on that claim and tab (read once; the screenshots use it).
+`#claim-c4-changes` and `#claim-c4-test` still select the claim and show the block.
+
+**The first screen** is the same frame with two panes: the thesis form on the left, and on the
+right the guide as the lead (what this is, the takeaway, the configured engine), how it works,
+and the recorded samples in a column of their own.
+
+**Any other view** (a filing comparison, tagged breakdowns, the restatement ledger, the inbox, a
+saved thesis, figures only) is one pane that scrolls inside the frame, set to a measure of 66rem
+and centred.
+
+**Narrower windows.** Below 1100px the rail is a strip across the top (the entry for the whole
+thesis, then the claims side by side, scrolling inside the strip) and the inspector is a sheet
+from the bottom that opens when something is picked and closes with Close or Esc; the bar takes
+a second row. Below 641px the page is one column that scrolls: the rail, the status line, then
+the selection with its tabs stuck to the top of the window; there is no inspector, and what it
+would read (a quote's context, a test's operands, an 8-K's opening sentences) is drawn in place.
+Widths inside a pane respond to the pane's own width (container queries), not to the window's.
+
+One spacing scale (`--s-1` to `--s-6`: 4, 8, 12, 16, 24, 32px) sets every gap and padding of the
+frame, and one chrome every titled part: `.pane-label` for a pane, `.block-title` for a block
+inside one.
 
 ### What left the reading path, and where it lives now
 
 | Was in view on every run | Now |
 |---|---|
-| The intro strip under the bar (takeaway, sample links) | "How to read this" (`#howto`), a panel opened from the bar. It is the lead of the first screen. |
-| "Configured engine …" (`#engine-line`) | "How to read this". The engines that did the work stay in the bar and in the head. |
-| "Each verdict follows by a fixed rule …" (`#distinction`) | "How to read this", under "How to read a run". It still names which model checked the meaning. |
-| The time line's long caption | "How to read this"; the marks keep their tooltips, titles and the legend. |
-| The sample note, shown twice | Once, in the head: its first sentence in view and the whole note one click away. |
-| The coverage box | The status line, with every count one click away in the same element. |
-| The withheld findings, open | One line with the record's count and the kinds of reason; the findings are one click away. |
+| The provenance block under the company's name (engine, checker, readers, the counting rule, run id, times) | The Run drawer, one step from the status chip. The bar keeps the status and an as-of chip. |
+| The engines in the bar's second row | The Run drawer. The bar has one row. |
+| The as-of line in the bar | A chip with the date and form of the newest filing read (`as_of.newest_filed`, `newest_form`); the record's whole line is the chip's title, its text for a screen reader, the first line of the Events tab, and in the Run drawer. |
+| The claims three times (verdict board, thesis over time, dockets) | Once, in the rail. A lane of the thesis over time is named by its claim's id; a docket has no heading of its own on screen. |
+| "How to read this", the legend and the glossary | The Run drawer (**Guide**). The guide is still the lead of the first screen. |
+| "Assessed by" and "Read by …; computed by code:" on every row of the board | Said in full for the selected claim (its Overview and its computed test) and to a screen reader on every row; a row keeps the outcome, what it counted and the count of readers. On paper every row prints them. |
+| A reason's "Model-written" badge under a statement that has one | The statement's badge and the violet rule on both; the reason's own badge is drawn on a phone and on paper. |
 
-The honesty labels stay in view and unshortened in meaning:
-
-- which engine read and which checked (the bar and the head);
-- "Model-written, not checked …" on the summary and on every reason;
-- the sample's provenance;
-- the caution and the 8-K note on each claim;
-- the limit glyph on the status line.
+The honesty labels that stay in view: the status and the limit mark (the bar and the status
+line), "Model-written, not checked …" on the summary and on every finding, the caution flag on
+a claim's row and the caution itself in its Overview, the computed test's own line saying who
+read the claim, and the sample tag.
 
 ## Components, and when to use each
 
-**Command bar.** It holds the ticker (the `/` key focuses it), the theme switch and the keys. Beside a result it also holds:
+**Command bar.** One row: the brand, the ticker (the `/` key), **Thesis** (`e`), then for a run
+the status chip (glyph and word, never filled; it opens the Run drawer) and the as-of chip (it
+opens the Events tab). At the right: the sample tag and **Leave the sample**, the watch's
+health, **Inbox**, **Guide**, the theme switch (it names the theme in use; both names from
+1520px) and **Keys**. The run's chips are hidden on every view that is not a run. The watch's
+detail is what is cut short when the row is full.
 
-- **Thesis**, which opens the form drawer (`e`);
-- **How to read this**;
-- in sample mode, the sample tag and **Leave the sample**.
+**Status line** (`#status-banner`). The status, `sources_read` of `sources_requested`,
+`findings_verified` of `findings_proposed`, `findings_withheld`, and the limit mark when the run
+has coverage limits. It is the summary of a `<details>` whose body is the full strip (the
+status note, every count, the limit lines), which opens over the panes. Every count is a
+`[data-coverage]` node holding the record's number. A partial or failed run gets a limit rule
+at its left edge; a running run's line is dashed and the stages follow it.
 
-On a run it adds a second row with three cells:
+**Tape** (`#tape`). The newest period's key figures, first on the whole thesis's Overview. Each
+cell is a metric from `run.metrics` (the quarter's when the record has one, else the year's):
+its label, its `display` string (split at the decimal point, not reformatted) and its sparkline
+from `run.series`. Selecting a cell reads that figure in the inspector. The row holds as many
+cells as the record has of these figures and wraps to the pane: nothing is built around a count.
 
-- the status: its glyph and word, never filled;
-- the engines as the record names them, read by and checked by. Each is cut short to one line, focusable, and whole on hover or focus, with its full text as the title;
-- `run.as_of.line`, with a link to the 8-K register.
+**Codes.** Every pane and block title carries a short code in `data-code` (VRD, SUM, MOV, FND,
+WHD, FIG, EVT, UNK, NXT, SRC, LIM, ERR, TL, TOT, INS, RUN, GDE). Terminal draws each as an amber
+cell before the title; Paper keeps its small-capital title and hairline and does not show it.
 
-The second row is hidden on every view that is not a run.
+**Terminal, the instrument.** Mono for every label, number and control; amber for what you can
+act on; the tabs as numbered keys with the one in use filled amber; the tape as a black board
+with amber figures; rows that highlight with an amber edge; a footer with the keys and the run
+on screen. Paper is the same frame as a typeset note: the centre pane is the sheet, the rail
+and the inspector sit on the desk beside it, claims and prose are in the serif.
 
-**Status line** (`#status-banner`). One line under the head. It shows:
-
-- the status;
-- `sources_read` of `sources_requested` sources;
-- `findings_verified` of `findings_proposed` findings verified;
-- `findings_withheld` withheld;
-- the limit mark when the run has coverage limits.
-
-It is the summary of a `<details>` whose body is the full strip: the status note, every count and the limit lines. Every count is a `[data-coverage]` node holding the record's number. A partial or failed run gets a limit rule at its left edge, and a running run's line is dashed.
-
-**Tape** (`#tape`). The newest period's key figures in one dense row under the status line:
-
-- revenue;
-- year-over-year growth;
-- gross margin;
-- operating margin;
-- free cash flow margin;
-- diluted EPS.
-
-Each cell is a metric from `run.metrics`: the quarter's when the record has one, else the year's. It shows the metric's label, its `display` string (split at the decimal point, not reformatted) and its sparkline from `run.series`. The period label heads the row. Selecting a cell opens that figure, with its arithmetic, among the reported figures. A key the record lacks has no cell.
-
-**Panel codes.** Every block title carries a short code in `data-code`:
-
-| Code | Block |
-|---|---|
-| VRD | Verdicts |
-| TL | Time line |
-| MOV | What moved |
-| SUM | Summary |
-| CLM | Claims |
-| WHD | Withheld |
-| FIG | Figures |
-| EVT | 8-Ks |
-| UNK | Unknowns |
-| NXT | Next |
-| SRC | Sources |
-| LIM | Limits |
-| ERR | Errors |
-| RUN | Runs |
-
-Terminal draws each code as a solid bar with an amber code cell. Paper keeps its small-capital rule and does not show the code.
-
-**Terminal, the instrument.** On top of the code bars:
-
-- the tape is a tight black board with amber figures;
-- rows of the verdict board, the figures, the sources and the 8-Ks highlight on hover, with an amber edge;
-- figures are mono and set on the decimal;
-- a fixed status footer lists the keys and the run on screen.
-
-Paper keeps the same note calm and typographic: no footer, no bars, and serif claims.
-
-**Time line** (`#timeline`). One SVG date axis, drawn at the note's width and redrawn when that
+**Time line** (`#timeline`). One SVG date axis, drawn at its pane's width and redrawn when that
 changes. Use it on any run whose record has dated filings.
 
 - *Above the axis:* a bar for each 10-K and 10-Q the run read (`data-tl="filing"`), with a yellow
@@ -241,63 +256,73 @@ changes. Use it on any run whose record has dated filings.
 - *Every mark* is a link to its filing, with an SVG `<title>`, an `aria-label` and a tooltip on
   hover or focus.
 
-**Run head** (`#run-head`). The company and the decision, the question the note answers, in the note's prose type. Under them, one small block with a hairline at its left (`.run-provenance`) says how the run was made, in one type size: the engine that read the filings, who checked meaning, who read the claims into tests with the counting rule, the run's id and times, and how old the evidence is. Then the saved thesis, if any, and a sample's note. The answer, the status line and the board, follows directly.
-
-**Verdict board** (`#scorecard`). One row per claim on one baseline grid: the stamp, the claim, then the record's counts at the right. Under the claim, one line (`.score-sub`): who assessed the findings, then the computed part. With a review it has four columns, the engine's stamp, the stamp after your review, the claim and the counts, under one header row (`#board-head`). Each row keeps its own column labels for screen readers, visually hidden.
+**Rail row** (`#scorecard a.score-row`). A claim's id, its verdict stamp and its caution flag
+on one line; the claim; the computed outcome with what it counted and the count of readers; the
+record's finding and passage counts. With a review the row holds two stamps under their own
+labels, the engine's and the one after your review, with the tally. The row selected carries an
+accent rule and the sheet's ground; verdict colours stay in the stamps.
 
 **Verdict stamp** (`.pill.verdict`). Square corners, capitals, a tinted fill. Use it only for a
 claim's verdict. A **stance pill** (`.pill.stance`) is round and is used only for a finding's
 stance.
 
-**Claim docket** (`details.claim`). The claim as a headline, its verdict stamp, and a meta line
-with the record's finding and passage counts, flagged "▲ Caution" when the claim carries one.
-The body holds:
+**Claim docket** (`details.claim`). One per claim, in two parts: why the verdict
+(`[data-part="overview"]`) and the findings (`[data-part="evidence"]`). On screen only the
+selected claim's docket is drawn, without its heading; every other docket is `inert` and off, so
+neither the keyboard nor a screen reader reaches it. On paper every docket prints open under
+its own heading (the verdict stamp, the id, the claim, the counts).
 
-- the caution (limit box) or the note on the 8-Ks;
-- the assessed-by line;
-- the findings.
+Each finding (`article.finding`) has its statement, stance, the "predates the 8-K of …" mark,
+checks, cited figures and review slot, then its quotes and the button that reads them in the
+inspector. A cited figure's link reads that figure in the inspector.
 
-Each finding (`article.finding`) has a main column (`.finding-main`): its statement, stance, the
-"predates the 8-K of …" mark, checks, cited figures and review slot. Its quotes sit in the margin
-(`.finding-margin`), beside it when the note is at least 56rem wide and inline below that.
+**Quote** (`figure.evidence`). In the inspector, on a phone and on paper: the excerpt in the
+serif with the words found highlighted inside their context, then where it sits and a link to
+the filing. In the centre pane: its own words, cut to three lines, and the source.
 
-**Quote** (`figure.evidence`). The excerpt in the serif, with the words found highlighted inside
-their context, then where it sits and a link to the filing.
+**Withheld findings** (`#withheld`). On the whole thesis's Evidence tab, folded behind one line:
+the record's `findings_withheld`, then the kinds of reason present, with
+`findings_failed_meaning` counted when the meaning check withheld any. Inside the fold they are
+grouped by kind, as before.
 
-**Withheld findings** (`#withheld`). Folded behind one line: the record's `findings_withheld`, then the kinds of reason present, with `findings_failed_meaning` counted when the meaning check withheld any. Inside the fold they are grouped by kind, as before.
-
-**Reported figures.** Two dense columns of rows: label, sparkline, value (set on its decimal point). The sparkline is the
-`run.series` entry with the figure's key and period; the figure's own period is circled. A
-negative value is in `--neg`. Opening a row shows the record's arithmetic and inputs.
+**Reported figures.** Dense rows: label, sparkline, value (set on its decimal point). The
+sparkline is the `run.series` entry with the figure's key and period; the figure's own period is
+circled. A negative value is in `--neg`. Selecting a row reads its arithmetic and inputs in the
+inspector; on a phone and on paper the row opens in place.
 
 **8-K register** (`#events`). The date in the left column, then the form and accession, kind and
-status, the items with their categories, and the opening sentences quoted. A substantive 8-K
-carries an ink rule.
+status, and the items with their categories. A substantive 8-K carries an ink rule. The roles a
+5.02 names, the opening sentences and the link to each item are read in the inspector (in place
+on a phone and on paper).
 
 **Tables** (sources, the comparison between runs, breakdowns, the restatement ledger). A heavy
-rule under the heading, hairlines between rows, numbers right-aligned. A wide table scrolls
-inside its own frame.
+rule under the heading, hairlines between rows, numbers right-aligned, dates never broken. A
+table wider than its pane scrolls inside its own frame. In the inspector a table of values
+stacks, one value to a block, each cell named.
 
 **Marks.** The decision mark, the meaning mark, the model badge, the rule mark, the change mark,
 the limit line and the page tag are as before. Each keeps its colour, shape and border style, so
-no two are confused. The legend at the end of the note lists them all.
+no two are confused. The legend in the Run drawer lists them all. One change: the line on a
+computed test saying who read the claim is the fixed rule's olive and its ƒ without the tag's
+dotted box, because it is a sentence.
 
-**Print.** `@media print` forces the Paper colours. It hides the bar, the guide, the drawer, the footer, the controls,
-the review slots and the legend, and puts each quote's link after it. `app.js` opens every closed
-disclosure before printing and closes them after, so a run prints as a whole research note.
+**Print.** `@media print` lays the note out as a document, whatever was selected: the company
+and the decision, the verdicts (each row with "Assessed by" and who read its test), how the run
+was made, the status line with every count, then every tab's panel in order and every claim's
+docket open under its own heading, with each quote in its context, each test's operands and
+each 8-K's opening sentences in place. No bar, tabs, inspector, drawers, buttons or legend.
+`app.js` opens every closed disclosure before printing, moves the Run drawer's block after the
+rail and switches to Paper (the Terminal theme's own rules are not for a printer), and undoes
+all three after.
 
-**Motion.** Two things move:
-
-- the current stage's marker pulses;
-- a claim's chevron turns.
-
-`prefers-reduced-motion` turns both off, and the `j` and `k` scrolling with them.
+**Motion.** Three things move: the current stage's marker pulses, and the two drawers slide.
+`prefers-reduced-motion` turns them off.
 
 ## The standing watch (version 13)
 
 The page draws the routes of `docs/watch.md` with the words of `GET /api/watch/meta`; every payload and field is in `docs/examples/v13/README.md`. It orders nothing: the inbox is drawn unread first, then newest first, as the API sends it. It counts one thing only: the folded items on the page it draws, because the API sends no count of them.
 
-**Health** (`#watch-health`, in the bar). One line from `GET /api/watch/health`:
+**Health** (`#watch-health`, in the bar; its detail is cut short when the bar is full, and whole in its title). One line from `GET /api/watch/health`:
 
 - a filled dot (support colour) and "Watch alive", or a hollow dot (limit colour) and "Watch not running";
 - the last cycle's time of day; the whole time and the watcher's `note` are in the title;
@@ -366,8 +391,12 @@ is ignored, so additive changes to these payloads do not break the page. The fun
 `app.js`, in the section "version 14".
 
 1. **The computed test on a claim** (`computedTest`, from `Claim.computed`). It sits in the
-   claim's docket before the findings, with an olive left rule and the fixed-rule mark saying who
-   read the claim into the test and that the arithmetic is code: "Read into a test by the grammar
+   claim's Overview before the findings, with an olive left rule and a line in the fixed rule's
+   olive saying who read the claim into the test and that the arithmetic is code. On a wide
+   screen the test's summary is in the centre pane (the expression, the outcome, what it counted,
+   the readers, the bound test, the two sides, the margin, and every part of a test of several
+   parts) and its operands, arithmetic and readings are read in the inspector
+   (`computedDetail`); on a phone and on paper all of it is in place. The line reads: "Read into a test by the grammar
    and computed by code from the XBRL facts: no model read the claim" with the grammar alone, or
    "Read into a test by the grammar, Model 1 and Model 2; the arithmetic is done by code from the
    XBRL facts" when a model reader took part (the readers of the test shown, from `read_by`). It
@@ -400,15 +429,17 @@ is ignored, so additive changes to these payloads do not break the page. The fun
 
    A claim that did not compile shows its `compile_note` quietly instead, behind a dashed rule.
    With several readers it also shows each reader's mark and, in the open, each reader's reason.
-2. **Which part of a verdict is computed.** On the verdict board each claim keeps the engine's
+2. **Which part of a verdict is computed.** In the rail each claim's row keeps the engine's
    "Assessed by" line (the reading of the filings: a model's or the extractive engine's) and,
-   on the same line, "Computed by code, no model:" (the grammar alone) or "Read by the grammar,
+   after it (both for a screen reader and on paper; a sighted reader has them in the selected
+   claim's Overview), "Computed by code, no model:" (the grammar alone) or "Read by the grammar,
    Model 1 and Model 2; computed by code:" (a model reader took part), with the outcome, what it
    counted and how many readers
    agreed ("3 of 3 readers", "2 of 3 readers, one dissenting": the length of `read_by` against
    the claim's readings, when `agreement` says they agreed), or "No computed test: the verdict
-   rests on the findings". The docket's summary line adds "⊨ Computed: Holds". The note under the
-   verdicts ("How to read this") adds the computed tests when the run has one: the arithmetic is
+   rests on the findings". The centre pane's head (and on paper the docket's heading) adds
+   "⊨ Computed: Holds". The note under the
+   verdicts (in the guide) adds the computed tests when the run has one: the arithmetic is
    code, and either the grammar alone read the claims (no model) or the reading may be a model's,
    with the run's `claim_readers`.
 
@@ -418,7 +449,7 @@ is ignored, so additive changes to these payloads do not break the page. The fun
    fixed rule's olive with the mark "Written by code after the summary, not by the model".
    Extra decimals in an arithmetic line, a margin or a history point's sides ("74.96% >= 75.00%:
    fails") are drawn as the record writes them; the page rounds nothing.
-3. **Who read the claim.** The head says who read the claims into tests (`claim_readers`, with
+3. **Who read the claim.** The Run drawer says who read the claims into tests (`claim_readers`, with
    `claim_reader_detail`) and the counting rule in words (`claim_reading_rule`), which "How to
    read this" repeats for the run on show. Under each test's outcome, one row:
    - one mark per reading in `Claim.readings`: ● read this test (the reader is in `read_by`),
@@ -436,9 +467,9 @@ is ignored, so additive changes to these payloads do not break the page. The fun
    limit colour, and the backend's note says what each reader read. The page compares no
    readings: the marks come from `read_by` and `dissent`, the conclusion from `agreement`.
 4. **The thesis over time** (`drawThesisOverTime`, from each compiled claim's `history`). It is
-   a block of its own, directly under the time line (code `TOT`). Each compiled claim gets a
-   lane:
-   - the claim, its test now, and a step line over the filing dates: holds on top, cannot be
+   a block of its own on the Over time tab, directly under the time line (code `TOT`). The whole
+   thesis shows every compiled claim's lane; a selected claim shows its own. Each lane has:
+   - the claim's id (its words too on paper), its test now, and a step line over the filing dates: holds on top, cannot be
      computed in the middle, fails at the bottom, one dot per point;
    - a ring on each point the record marks `flipped`, labelled with its form and date when the
      note is wide enough;
@@ -457,10 +488,10 @@ is ignored, so additive changes to these payloads do not break the page. The fun
 5. **As of a date.** The drawer has a date field, "As of a past date" (`as_of`), sent with the
    run and used by the restatement lookup; the server checks the date and a refusal shows under
    the field. A run with `as_of.requested` is unmistakable:
-   - a banner opens the note: a double rule on a hatched ground, the date large, and
-     `requested_note`;
-   - the company head gains a double left rule;
-   - the command bar's As-of cell starts "Run as of 1 Mar 2026", and so does the status footer;
+   - a banner runs across the top of the frame, above the status line: a double rule on a
+     hatched ground, the date, and `requested_note` (on paper and a phone it opens the note);
+   - the rail's head (the company and the decision) gains a double left rule;
+   - the command bar's as-of chip starts "Run as of 1 Mar 2026", and the status footer says so;
    - the time line ends at the requested date ("As of 1 Mar 2026"), not at the day the run ran.
 
    The banner and the rule print.
@@ -474,7 +505,7 @@ is ignored, so additive changes to these payloads do not break the page. The fun
      each later value with its filing and the change in units and percent, "back to an earlier
      value" (`returns_to_earlier`), "tagged with another concept later" (`concept_changed`), and
      how many filings reported it.
-7. **Coverage.** The status line's full counts gain "N of M claims compiled to a computed test:
+7. **Coverage.** The status line's full counts (opened from the line) gain "N of M claims compiled to a computed test:
    ⊨ holds, ⊭ fails, ⊘ cannot be computed", with each count the record's.
 8. **The watch's version 14 fields.** The inbox's folded line uses the backend's `folded` count,
    of the whole inbox (or of the thesis), and says when this page draws none of them. An item
@@ -507,29 +538,58 @@ specimen, on made-up data, under the heading "Not built". It is not on the page.
 | `/` | Put the cursor in the ticker (Esc leaves it) |
 | `e` | Open or close your thesis (the form drawer) beside a result; Esc closes it |
 | `i` | Open the inbox of the standing watch |
-| `j` / `k` | Next or previous claim: the focus goes to the claim's summary and the note scrolls to it |
-| `Enter` | Open or close the claim in focus (the browser's own) |
+| `j` / `k` | Select the next or previous entry of the rail (the whole thesis, then each claim); the focus goes to its row, and it stops at the ends |
+| `1` to `9` | Show that tab of the selection (the arrow keys move between tabs when one has the focus) |
+| `Enter` | On the claim selected in the rail: move the focus to its tabs |
+| `r` | Open or close the Run drawer; Esc closes it |
 | `t` | Switch between Paper and Terminal, and remember the choice |
 | `?` | Show the keys (Esc or Close shuts the list) |
+| `Esc` | Close a drawer, the list of keys, or the inspector when it is a sheet |
 
 The keys do nothing while you type in a field or hold Ctrl, Cmd or Alt. Every control has a
 visible focus ring in `--accent`.
 
 ## Tests
 
+`uitests/test_frame_dom.py` reads what `uitests/frame.html` recorded. That page frames the page
+at 1440x900, 1280x800, 900x800 and 360x740 (a frame's size is its viewport), selects claims,
+switches tabs and picks items, and records the browser's own measures after each step. The
+tests hold the page to:
+
+- no page scroll at 1440x900, 1280x800 and 900x800, each pane inside the window and scrolling
+  inside itself, and the bar one row with every control inside the window;
+- no sideways scroll at 360, one column, the tabs stuck to the top while the page scrolls;
+- the claims listed once: every claim's row in the rail, and a claim's own words drawn a second
+  time only in the centre pane's head while it is selected;
+- the selection driving the panes: the docket, the head, the lanes and the inspector, with the
+  inspector's text checked against the record (a finding's evidence ids, excerpts and links; a
+  test's operands; an 8-K's opening sentences; a figure's label, value and concepts);
+- a docket that is not on show being inert and out of the tab order, at every step;
+- the Run drawer's contents, the first screen, and the strip and sheet below 1100px.
+
+`uitests/test_print_dom.py` reads what `uitests/print.html` recorded: the live run with a claim
+and the Events tab selected in Terminal, then the page's own `beforeprint` and the stylesheet's
+print rules turned on (an emulation on a screen: page breaks and a printer are not checked).
+Every docket is drawn open under its heading, every panel in reading order, no frame, each
+quote's context, each test's operands and each 8-K's opening sentences in place, the theme
+Paper, and how the run was made after the verdicts and back in the drawer afterwards.
+
 `uitests/test_keys_dom.py` reads what `uitests/keys.html` recorded. That page frames the
-live-run sample, presses each key, clicks the theme button and notes the focus, the theme, the
-stored value and the dialog after each step. It ends by opening the drawer with `e` and closing it with Esc.
+live-run sample, presses each key, clicks the theme button and notes the focus, the rail's
+selection, the docket on show, the tab, the theme, the stored value, the dialog and the drawers
+after each step: `j` and `k` through the claims and back to the whole thesis, a digit for a
+tab, `e` and `r` for the two drawers with Esc closing each, Enter on the selected claim.
 
 `uitests/test_run_events_dom.py` checks the time line against each run's filings and 8-Ks:
 every mark, its kind, whether it is quoted, its link, the run and the gap. It also checks the
 live-run sample, the command bar, the caution and the predated mark. For every run sample it also checks:
 
 - the tape: each cell is the record's metric, in order, with its own display string;
-- the reading order: the head, the status line, the tape, the board, the time line, then the rest;
+- the order of the markup (a phone's and paper's reading order): the company and decision, the verdicts, the status line, the tape and summary, the dockets, the time line, the figures; and that a run opens on the whole thesis's Overview;
 - the status line's counts, and that the full strip starts folded;
 - the withheld fold and its counts;
-- that the standing prose sits in "How to read this";
+- that the standing prose sits in the guide, in the Run drawer, which starts closed and inert;
+- that the Run drawer names the engines whole and the bar names none;
 - the way out of a sample and the drawer button in the bar.
 
 `uitests/test_v14_dom.py` checks the version 14 samples against their JSON:
@@ -562,7 +622,7 @@ against their JSON:
 
 - the live sample is byte for byte the run's record (when `results/` holds it), is offered
   first, and says where it came from and who answered;
-- the reading rule in the head and in "How to read this";
+- the reading rule in the Run drawer and in the guide;
 - each reader's mark on each claim, from `read_by` and `dissent`, with its words on hover and
   focus and for a screen reader;
 - each test's agreement, dissent and counted state, and on the board "N of M readers";

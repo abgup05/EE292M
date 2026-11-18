@@ -45,12 +45,18 @@ from __future__ import annotations
 
 import operator
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date
 from typing import Any, Literal
 
 from app.core import limits, policy
-from app.core.breakdown_models import Breakdown, BreakdownReport, BreakdownRow, BreakdownValue
+from app.core.breakdown_models import (
+    Breakdown,
+    BreakdownReport,
+    BreakdownRow,
+    BreakdownValue,
+    PeriodColumn,
+)
 from app.core.claim_normal import Newest
 from app.core.claim_test_models import (
     ComputedOutcome,
@@ -120,6 +126,11 @@ PART_BREAKDOWNS: dict[tuple[str, str], tuple[str, ...]] = {
     ("operating_income", "segment"): ("operating_income_by_segment",),
 }
 CUSTOMER_BREAKDOWNS = ("revenue_concentration_by_customer",)
+# A filing's column is the fiscal year (or the quarter) a test names when its length is a
+# year's (a quarter's) and it ends within a few days of that period's end in the facts.
+YEAR_COLUMN_DAYS = (350, 380)
+QUARTER_COLUMN_DAYS = (80, 100)
+COLUMN_MATCH_DAYS = 10
 
 
 @dataclass(frozen=True)
@@ -585,10 +596,38 @@ def _growth_side(measures: Measures, term: Term) -> Side:
         else measures.period_before(bound, metric)
     )
     label = f"{name}({metric})[{bound.label}]"
-    current = _operand(measures, metric, bound)
     if earlier is None:
+        current = _operand(measures, metric, bound)
         what = "a year earlier" if name == "yoy" else "the quarter before"
         return _missing(label, "percent", f"No {what} than {bound.words} is in the facts.", current)
+    return _growth(measures, label, metric, bound, earlier)
+
+
+def _change_side(measures: Measures, term: Term) -> Side:
+    """Growth from the period ``term.base`` to ``term.period``, over however long a span."""
+    metric = term.subject
+    label = term.text()
+    if term.base is None:
+        return _missing(label, "percent", "A change names the period it is measured from.")
+    bound = measures.bind(term.period, metric)
+    if isinstance(bound, str):
+        return _missing(label, "percent", bound)
+    since = measures.bind(term.base, metric)
+    if isinstance(since, str):
+        return _missing(label, "percent", since)
+    label = f"change({metric}, {since.label})[{bound.label}]"
+    if since.end >= bound.end:
+        return _missing(
+            label,
+            "percent",
+            f"The period it is measured from ({since.label}) is not earlier than {bound.label}.",
+        )
+    return _growth(measures, label, metric, bound, since)
+
+
+def _growth(measures: Measures, label: str, metric: str, bound: Slot, earlier: Slot) -> Side:
+    """The growth of ``metric`` from ``earlier`` to ``bound``, in percent of a positive base."""
+    current = _operand(measures, metric, bound)
     base = _operand(measures, metric, earlier)
     reason = _first_reason(current, base)
     if reason:
@@ -710,7 +749,7 @@ def _streak_side(measures: Measures, term: Term, wanted: float) -> Side:
     return side
 
 
-# Shares of revenue
+# Shares of revenue, and a part's figures
 
 
 def _key(text: str) -> str:
@@ -718,18 +757,48 @@ def _key(text: str) -> str:
     return "".join(ch for ch in text.casefold().replace("&", "and") if ch.isalnum())
 
 
-def _newest(row: BreakdownRow, item: Breakdown) -> BreakdownValue | None:
+def _period_slot(measures: Measures, term: Term) -> Slot | str | None:
+    """The fiscal year or quarter a share or a part names, bound in the facts; None for the
+    newest filing's newest period; or why the facts hold no such period."""
+    if term.period.kind == "filing":
+        return None
+    return measures.bind(term.period, "revenue")
+
+
+def _column(item: Breakdown, slot: Slot | None) -> PeriodColumn | None:
+    """The column of ``item`` for ``slot``: its newest for None, else the one of the same
+    length (a year, or a quarter) that ends within :data:`COLUMN_MATCH_DAYS` of it."""
     if not item.periods:
         return None
-    first = item.periods[0]
+    if slot is None:
+        return item.periods[0]
+    low, high = YEAR_COLUMN_DAYS if slot.kind == "annual" else QUARTER_COLUMN_DAYS
+    for column in item.periods:
+        if column.period_start is None:
+            continue
+        start = date.fromisoformat(column.period_start)
+        end = date.fromisoformat(column.period_end)
+        if low <= (end - start).days <= high and abs((end - slot.end).days) <= COLUMN_MATCH_DAYS:
+            return column
+    return None
+
+
+def _cell(values: Sequence[BreakdownValue], column: PeriodColumn) -> BreakdownValue | None:
     return next(
         (
             v
-            for v in row.values
-            if v.period_end == first.period_end and v.period_start == first.period_start
+            for v in values
+            if v.period_end == column.period_end and v.period_start == column.period_start
         ),
         None,
     )
+
+
+def _rows(item: Breakdown, member: str) -> list[BreakdownRow]:
+    wanted = _key(member)
+    return [r for r in item.rows if _key(r.label) == wanted] or [
+        r for r in item.rows if _key(r.label).startswith(wanted)
+    ]
 
 
 def _share_ref(
@@ -748,7 +817,32 @@ def _share_ref(
     )
 
 
-def _share_side(term: Term, reports: Sequence[BreakdownReport]) -> Side:
+def _not_reported(
+    label: str, unit: OperandUnit, what: str, slot: Slot | None, reports: Sequence[BreakdownReport]
+) -> Side:
+    """Nothing read holds ``what``: say which filings were read, and, for a named period,
+    which periods they report."""
+    if slot is None:
+        filings = ", ".join(f"{r.filing.form} filed {r.filing.filed_date}" for r in reports)
+        return _missing(label, unit, f"The tagged breakdowns read ({filings}) hold {what}.")
+    held = []
+    for report in reports:
+        ends = sorted(
+            {c.period_end for item in report.breakdowns for c in item.periods if c.period_start},
+            reverse=True,
+        )
+        held.append(
+            f"{report.filing.form} filed {report.filing.filed_date}: periods ended "
+            + (", ".join(ends) or "none")
+        )
+    reason = (
+        f"No filing read tags {what} for {slot.label} ({slot.words}); "
+        f"the periods they report: {'; '.join(held)}."
+    )
+    return _missing(label, unit, reason)
+
+
+def _share_side(measures: Measures, term: Term, reports: Sequence[BreakdownReport]) -> Side:
     label = term.text()
     if not reports:
         return _missing(
@@ -756,6 +850,9 @@ def _share_side(term: Term, reports: Sequence[BreakdownReport]) -> Side:
             "percent",
             "No filing's tagged breakdowns were read, so no share of revenue can be computed.",
         )
+    slot = _period_slot(measures, term)
+    if isinstance(slot, str):
+        return _missing(label, "percent", slot)
     ids = {
         "segment": SEGMENT_BREAKDOWNS,
         "geography": GEOGRAPHY_BREAKDOWNS,
@@ -763,47 +860,46 @@ def _share_side(term: Term, reports: Sequence[BreakdownReport]) -> Side:
     }[term.subject]
     for report in reports:
         for item in report.breakdowns:
-            if item.id not in ids or not item.periods:
+            column = _column(item, slot) if item.id in ids else None
+            if column is None:
                 continue
             found = (
-                _largest_customer(term, report, item)
+                _largest_customer(term, report, item, column)
                 if term.fn == "max_share"
-                else _member_share(term, report, item)
+                else _member_share(term, report, item, column)
             )
             if found is not None:
                 return found
-    filings = ", ".join(f"{r.filing.form} filed {r.filing.filed_date}" for r in reports)
     what = (
         "no customer's share of revenue"
         if term.fn == "max_share"
         else f'no {term.subject} "{term.member}"'
     )
-    return _missing(label, "percent", f"The tagged breakdowns read ({filings}) hold {what}.")
+    return _not_reported(label, "percent", what, slot, reports)
 
 
-def _part_side(term: Term, reports: Sequence[BreakdownReport]) -> Side:
-    """A part's revenue (or operating income), or its change, from the newest filing's tags."""
+def _part_side(measures: Measures, term: Term, reports: Sequence[BreakdownReport]) -> Side:
+    """A part's revenue (or operating income), or its change, from a filing's tags."""
     label = term.text()
     unit: OperandUnit = "USD" if term.fn == "value" else "percent"
     ids = PART_BREAKDOWNS.get((term.subject, term.axis), ())
     if not reports:
         return _missing(label, unit, "No filing's tagged breakdowns were read. " + PART_NOTE)
-    wanted = _key(term.member)
+    slot = _period_slot(measures, term)
+    if isinstance(slot, str):
+        return _missing(label, unit, slot)
     for report in reports:
         for item in report.breakdowns:
-            if item.id not in ids or not item.periods:
+            column = _column(item, slot) if item.id in ids else None
+            rows = _rows(item, term.member) if column is not None else []
+            value = _cell(rows[0].values, column) if rows and column is not None else None
+            if value is None or column is None:
                 continue
-            rows = [r for r in item.rows if _key(r.label) == wanted] or [
-                r for r in item.rows if _key(r.label).startswith(wanted)
-            ]
-            value = _newest(rows[0], item) if rows else None
-            if value is None:
-                continue
-            where = _where(report, item)
+            where = _where(report, column)
             what = f"{PART_MEASURES[term.subject]} of {rows[0].label}"
             read = Operand(
                 term=f'{term.subject}({term.axis} "{rows[0].label}")[{where}]',
-                label=f"{what}, {item.periods[0].label} ({report.filing.form})",
+                label=f"{what}, {column.label} ({report.filing.form})",
                 value=value.value,
                 unit="USD",
                 display=usd_text(value.value),
@@ -829,40 +925,28 @@ def _part_side(term: Term, reports: Sequence[BreakdownReport]) -> Side:
                 }
             )
             return Side(change, [read, change], [_read_line(read), _read_line(change)])
-    filings = ", ".join(f"{r.filing.form} filed {r.filing.filed_date}" for r in reports)
-    reason = (
-        f"The tagged breakdowns read ({filings}) hold no {term.subject.replace('_', ' ')} "
-        f'of {term.axis} "{term.member}". {PART_NOTE}'
-    )
-    return _missing(label, unit, reason)
+    what = f'no {term.subject.replace("_", " ")} of {term.axis} "{term.member}"'
+    side = _not_reported(label, unit, what, slot, reports)
+    side.reason = f"{side.reason} {PART_NOTE}"
+    return side
 
 
-def _where(report: BreakdownReport, item: Breakdown) -> str:
-    column = item.periods[0]
+def _where(report: BreakdownReport, column: PeriodColumn) -> str:
     return f"{report.filing.form} filed {report.filing.filed_date}, {column.label}"
 
 
-def _member_share(term: Term, report: BreakdownReport, item: Breakdown) -> Side | None:
-    wanted = _key(term.member)
-    rows = [row for row in item.rows if _key(row.label) == wanted] or [
-        row for row in item.rows if _key(row.label).startswith(wanted)
-    ]
+def _member_share(
+    term: Term, report: BreakdownReport, item: Breakdown, column: PeriodColumn
+) -> Side | None:
+    rows = _rows(item, term.member)
     if not rows:
         return None
     row = rows[0]
-    value = _newest(row, item)
+    value = _cell(row.values, column)
     if value is None:
         return None
-    column = item.periods[0]
-    total = next(
-        (
-            v
-            for v in item.total
-            if v.period_end == column.period_end and v.period_start == column.period_start
-        ),
-        None,
-    )
-    where = _where(report, item)
+    total = _cell(item.total, column)
+    where = _where(report, column)
     label = f'share({term.subject} "{term.member}")[{where}]'
     part = Operand(
         term=f'{term.subject} "{row.label}"[{where}]',
@@ -899,20 +983,22 @@ def _member_share(term: Term, report: BreakdownReport, item: Breakdown) -> Side 
     return Side(operand, [part, whole], [_read_line(part), _read_line(whole), _read_line(operand)])
 
 
-def _largest_customer(term: Term, report: BreakdownReport, item: Breakdown) -> Side | None:
+def _largest_customer(
+    term: Term, report: BreakdownReport, item: Breakdown, column: PeriodColumn
+) -> Side | None:
     shares: list[Operand] = []
-    where = _where(report, item)
+    where = _where(report, column)
     for row in item.rows:
         if "·" in row.label:
             continue  # also tagged with a segment: a share of what, the tags do not say
-        value = _newest(row, item)
+        value = _cell(row.values, column)
         if value is None:
             continue
         percent = value.value * 100 if value.unit == "pure" else value.value
         shares.append(
             Operand(
                 term=f'share(customer "{row.label}")[{where}]',
-                label=f"{row.label}'s share of revenue, {item.periods[0].label}",
+                label=f"{row.label}'s share of revenue, {column.label}",
                 value=percent,
                 unit="percent",
                 display=percent_text(percent),
@@ -943,18 +1029,20 @@ def _side(
     measures: Measures, term: Term, reports: Sequence[BreakdownReport], wanted: float
 ) -> Side:
     if term.axis:
-        return _part_side(term, reports)
+        return _part_side(measures, term, reports)
     match term.fn:
         case "value":
             return _value_side(measures, term)
         case "yoy" | "qoq":
             return _growth_side(measures, term)
+        case "change":
+            return _change_side(measures, term)
         case "cagr":
             return _cagr_side(measures, term)
         case "streak":
             return _streak_side(measures, term, wanted)
         case _:
-            return _share_side(term, reports)
+            return _share_side(measures, term, reports)
 
 
 def _constant(number: Number, unit_like: OperandUnit) -> Operand:
@@ -980,7 +1068,26 @@ def evaluate(
     reports: Sequence[BreakdownReport] = (),
 ) -> ComputedTest:
     """The test computed from ``book`` (only the facts it holds; a book as of a date holds
-    only those filed by then), and from ``reports`` for a share of revenue."""
+    only those filed by then), and from ``reports`` for a share of revenue or a part.
+
+    Two tests joined by "and" hold when both hold and fail when either fails; a test held
+    in each of several periods holds when every period's does and fails when any one
+    fails; otherwise they cannot be computed (:func:`_combined`).
+    """
+    if test.also is not None:
+        parts = [evaluate(part, book, calendar=calendar, reports=reports) for part in test.parts]
+        return _combined(test, parts, "and")
+    if test.each or test.each_since is not None:
+        return _each(test, book, calendar, reports)
+    return _single(test, book, calendar, reports)
+
+
+def _single(
+    test: ClaimTest,
+    book: FactBook,
+    calendar: FiscalCalendar | None,
+    reports: Sequence[BreakdownReport],
+) -> ComputedTest:
     measures = Measures(book, calendar)
     wanted = test.right.value if isinstance(test.right, Number) else 0.0
     left = _side(measures, test.left, reports, wanted)
@@ -1032,6 +1139,114 @@ def evaluate(
         counted_as=policy.COMPUTED_COUNTS.get(outcome, ""),
         note=" ".join(notes),
         as_of=book.as_of.isoformat() if book.as_of else "",
+    )
+
+
+def _shifted(term: Term, steps: int) -> Term:
+    """``term`` with its periods ``steps`` periods earlier (quarters, or fiscal years)."""
+    period, base = term.period, term.base
+    for _ in range(steps):
+        period = period.step_back()
+        base = base.step_back() if base is not None else None
+    return replace(term, period=period, base=base)
+
+
+def _each(
+    test: ClaimTest,
+    book: FactBook,
+    calendar: FiscalCalendar | None,
+    reports: Sequence[BreakdownReport],
+) -> ComputedTest:
+    """The test in each of its periods, newest first: the last ``each``, or every fiscal
+    year after ``each_since`` up to the newest the facts hold."""
+    inner = replace(test, each=0, each_since=None)
+    count = test.each
+    if test.each_since is not None:
+        measures = Measures(book, calendar)
+        newest = measures.bind(Period("FY"), "revenue")
+        if isinstance(newest, str):
+            return _uncomputed(test, book, newest)
+        year = measures.fiscal_year(newest.end)
+        count = year - test.each_since
+        if count < 1:
+            return _uncomputed(
+                test,
+                book,
+                f"FY{year} is the newest fiscal year in the facts: no year after "
+                f"FY{test.each_since} is in them yet.",
+            )
+    if count > limits.MAX_EACH_PERIODS:
+        return _uncomputed(
+            test, book, f"More than {limits.MAX_EACH_PERIODS} periods: this version tests fewer."
+        )
+    parts = []
+    for steps in range(count):
+        right = test.right if isinstance(test.right, Number) else _shifted(test.right, steps)
+        part = replace(inner, left=_shifted(test.left, steps), right=right)
+        parts.append(_single(part, book, calendar, reports))
+    return _combined(test, parts, "each")
+
+
+def _uncomputed(test: ClaimTest, book: FactBook, reason: str) -> ComputedTest:
+    return ComputedTest(
+        canonical=test.canonical,
+        form=test.form,
+        outcome="cannot_compute",
+        outcome_label=policy.COMPUTED_LABELS["cannot_compute"],
+        reason=reason,
+        comparison=test.op,
+        as_of=book.as_of.isoformat() if book.as_of else "",
+        combines="each",
+    )
+
+
+def _combined(test: ClaimTest, parts: list[ComputedTest], combines: str) -> ComputedTest:
+    """Several tests as one: holds when every part holds, fails when any part fails, and
+    otherwise cannot be computed, saying which part could not."""
+    outcomes = [part.outcome for part in parts]
+    outcome: ComputedOutcome
+    if "fails" in outcomes:
+        outcome = "fails"
+    elif outcomes and all(o == "holds" for o in outcomes):
+        outcome = "holds"
+    else:
+        outcome = "cannot_compute"
+    unknown = next((p for p in parts if p.outcome == "cannot_compute"), None)
+    reason = f"{unknown.bound or unknown.canonical}: {unknown.reason}" if unknown else ""
+    operands: list[Operand] = []
+    seen: set[str] = set()
+    for part in parts:
+        for operand in part.operands:
+            if operand.term not in seen:
+                seen.add(operand.term)
+                operands.append(operand)
+    arithmetic = [line for part in parts for line in part.arithmetic]
+    word = "holds" if outcome == "holds" else "fails" if outcome == "fails" else "cannot tell"
+    joined = "each of" if combines == "each" else "both of"
+    arithmetic.append(
+        f"{joined} {len(parts)} tests: {outcomes.count('holds')} hold, "
+        f"{outcomes.count('fails')} fail, {outcomes.count('cannot_compute')} cannot be told: "
+        f"{word}"
+    )
+    notes = list(dict.fromkeys(part.note for part in parts if part.note))
+    first = parts[0] if parts else None
+    return ComputedTest(
+        canonical=test.canonical,
+        form=test.form,
+        bound=" and ".join(f"({part.bound or part.canonical})" for part in parts),
+        outcome=outcome,
+        outcome_label=policy.COMPUTED_LABELS[outcome],
+        reason=reason if outcome == "cannot_compute" else "",
+        comparison=test.op,
+        left=first.left if first else None,
+        right=first.right if first else None,
+        operands=operands,
+        arithmetic=arithmetic,
+        counted_as=policy.COMPUTED_COUNTS.get(outcome, ""),
+        note=" ".join(notes),
+        as_of=first.as_of if first else "",
+        combines=combines,
+        parts=parts,
     )
 
 
@@ -1112,7 +1327,7 @@ def claim_history(
     at most :data:`~app.core.limits.MAX_HISTORY_POINTS` points, the newest kept. A share
     of revenue has no history.
     """
-    if test.left.fn in ("share", "max_share") or test.left.axis:
+    if test.from_filing:
         return [], policy.COMPUTED_NO_HISTORY
     books = books or HistoryBooks(payload)
     filings = [f for f in books.filings() if as_of is None or f[0] <= as_of]

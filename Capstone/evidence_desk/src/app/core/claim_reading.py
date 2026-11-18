@@ -16,6 +16,7 @@ compare on equal terms (their ``canonical`` text).
 from __future__ import annotations
 
 import math
+from dataclasses import replace
 from typing import Any, get_args
 
 from app.core.claimtest import (
@@ -32,6 +33,7 @@ from app.core.claimtest import (
     Term,
     member_label,
 )
+from app.core.limits import MAX_EACH_PERIODS
 from app.core.measures import PART_AXES, PART_MEASURES
 
 FUNCTIONS: tuple[str, ...] = get_args(Function)
@@ -53,21 +55,33 @@ FORM_SHAPES: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
     "acceleration": (("yoy", "qoq"), ("term",)),
     "streak": (("streak",), ("count",)),
     "threshold": (("value",), ("percent", "USD")),
-    "growth_threshold": (("yoy", "qoq"), ("percent",)),
-    "faster_than": (("yoy", "qoq"), ("term",)),
+    "growth_threshold": (("yoy", "qoq", "change"), ("percent",)),
+    "faster_than": (("yoy", "qoq", "change"), ("term",)),
     "compound": (("cagr",), ("percent",)),
     "share": (("share", "max_share"), ("percent",)),
+    "compare": (("value",), ("term",)),
 }
 SAME_SUBJECT = ("direction", "acceleration")
+# The forms a test held in each of several periods may take; "since" a named year only a
+# change on the year before.
+EACH_FORMS = (
+    "direction",
+    "acceleration",
+    "threshold",
+    "growth_threshold",
+    "faster_than",
+    "compare",
+)
 WHAT_IT_COMPARES = {
     "direction": "a direction compares a measure's value",
     "acceleration": "an acceleration compares a measure's growth (yoy or qoq)",
     "streak": "a streak counts rises (streak)",
     "threshold": "a threshold compares a measure's value",
-    "growth_threshold": "a growth threshold compares a measure's growth (yoy or qoq)",
-    "faster_than": "a faster-than compares two measures' growth (yoy or qoq)",
+    "growth_threshold": "a growth threshold compares a measure's growth (yoy, qoq or change)",
+    "faster_than": "a faster-than compares two measures' growth (yoy, qoq or change)",
     "compound": "a compound rate is a cagr",
     "share": "a share is a share or the largest customer's share (max_share)",
+    "compare": "a comparison of two measures compares their values",
 }
 
 _NULLABLE_INT: dict[str, Any] = {"anyOf": [{"type": "integer"}, {"type": "null"}]}
@@ -91,8 +105,9 @@ _TERM: dict[str, Any] = {
         "axis": {"type": "string", "enum": ["", *PART_AXES]},
         "years": {"type": "integer"},
         "period": _PERIOD,
+        "base": {"anyOf": [_PERIOD, {"type": "null"}]},
     },
-    "required": ["fn", "subject", "member", "axis", "years", "period"],
+    "required": ["fn", "subject", "member", "axis", "years", "period", "base"],
     "additionalProperties": False,
 }
 _NUMBER: dict[str, Any] = {
@@ -104,28 +119,33 @@ _NUMBER: dict[str, Any] = {
     "required": ["value", "unit"],
     "additionalProperties": False,
 }
+_TEST_FIELDS: dict[str, Any] = {
+    "form": {"type": "string", "enum": list(FORMS)},
+    "left": _TERM,
+    "op": {"type": "string", "enum": list(OPS)},
+    "right_term": {"anyOf": [_TERM, {"type": "null"}]},
+    "right_number": {"anyOf": [_NUMBER, {"type": "null"}]},
+    "each": {"type": "integer"},
+    "each_since": _NULLABLE_INT,
+}
+_SECOND_TEST: dict[str, Any] = {
+    "type": "object",
+    "properties": _TEST_FIELDS,
+    "required": list(_TEST_FIELDS),
+    "additionalProperties": False,
+}
+_TEST: dict[str, Any] = {
+    "type": "object",
+    "properties": {**_TEST_FIELDS, "and_test": {"anyOf": [_SECOND_TEST, {"type": "null"}]}},
+    "required": [*_TEST_FIELDS, "and_test"],
+    "additionalProperties": False,
+}
 READING_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
         "computable": {"type": "boolean"},
         "reason": {"type": "string"},
-        "test": {
-            "anyOf": [
-                {
-                    "type": "object",
-                    "properties": {
-                        "form": {"type": "string", "enum": list(FORMS)},
-                        "left": _TERM,
-                        "op": {"type": "string", "enum": list(OPS)},
-                        "right_term": {"anyOf": [_TERM, {"type": "null"}]},
-                        "right_number": {"anyOf": [_NUMBER, {"type": "null"}]},
-                    },
-                    "required": ["form", "left", "op", "right_term", "right_number"],
-                    "additionalProperties": False,
-                },
-                {"type": "null"},
-            ]
-        },
+        "test": {"anyOf": [_TEST, {"type": "null"}]},
     },
     "required": ["computable", "reason", "test"],
     "additionalProperties": False,
@@ -140,36 +160,44 @@ def as_reading(result: ClaimTest | NotNumeric) -> dict[str, Any]:
     """``result`` written as a reader answers it under :data:`READING_SCHEMA`."""
     if isinstance(result, NotNumeric):
         return {"computable": False, "reason": result.reason, "test": None}
-    right = result.right
+    test = _test_json(result)
+    test["and_test"] = _test_json(result.also) if result.also is not None else None
+    return {"computable": True, "reason": "", "test": test}
+
+
+def _test_json(test: ClaimTest) -> dict[str, Any]:
+    right = test.right
     return {
-        "computable": True,
-        "reason": "",
-        "test": {
-            "form": result.form,
-            "left": _term_json(result.left),
-            "op": result.op,
-            "right_term": _term_json(right) if isinstance(right, Term) else None,
-            "right_number": (
-                {"value": right.value, "unit": right.unit} if isinstance(right, Number) else None
-            ),
-        },
+        "form": test.form,
+        "left": _term_json(test.left),
+        "op": test.op,
+        "right_term": _term_json(right) if isinstance(right, Term) else None,
+        "right_number": (
+            {"value": right.value, "unit": right.unit} if isinstance(right, Number) else None
+        ),
+        "each": test.each,
+        "each_since": test.each_since,
+    }
+
+
+def _period_json(period: Period) -> dict[str, Any]:
+    return {
+        "kind": period.kind,
+        "back": period.back,
+        "fiscal_year": period.fiscal_year,
+        "quarter": period.quarter,
     }
 
 
 def _term_json(term: Term) -> dict[str, Any]:
-    period = term.period
     return {
         "fn": term.fn,
         "subject": term.subject,
         "member": term.member,
         "axis": term.axis,
         "years": term.years,
-        "period": {
-            "kind": period.kind,
-            "back": period.back,
-            "fiscal_year": period.fiscal_year,
-            "quarter": period.quarter,
-        },
+        "period": _period_json(term.period),
+        "base": _period_json(term.base) if term.base is not None else None,
     }
 
 
@@ -198,6 +226,18 @@ def _validated(answer: object) -> ClaimTest | NotNumeric:
         said = " ".join(reason.split())[:MAX_REASON_CHARS] or "no reason given"
         return NotNumeric(NOT_COMPUTABLE + said)
     test = _object(data.get("test"), "the test")
+    first = _test(test)
+    second = test.get("and_test")
+    if second is None:
+        return first
+    joined = _object(second, "the second test")
+    if joined.get("and_test") is not None:
+        raise Refused("a claim joins at most two tests with 'and'")
+    return replace(first, also=_test(joined))
+
+
+def _test(test: dict[str, Any]) -> ClaimTest:
+    """One test of the answer (the first, or the one joined by "and"), validated."""
     form = _choice(test.get("form"), FORMS, "form")
     op = _choice(test.get("op"), OPS, "comparison")
     functions, rights = FORM_SHAPES[form]
@@ -215,8 +255,12 @@ def _validated(answer: object) -> ClaimTest | NotNumeric:
         same = (right.subject, right.member, right.axis) == (left.subject, left.member, left.axis)
         if form in SAME_SUBJECT and not same:
             raise Refused(f"a {form} compares one measure with itself at another time")
-        if form == "faster_than" and same:
-            raise Refused("a faster-than compares two different measures")
+        if form in ("faster_than", "compare") and same:
+            raise Refused(f"a {form.replace('_', ' ')} compares two different measures")
+        if form == "faster_than" and (left.period, left.base) != (right.period, right.base):
+            raise Refused("a faster-than compares two measures' growth over the same span")
+        if form == "compare":
+            _comparable(left, right)
         if right.text() == left.text():
             raise Refused("the test compares a term with itself")
     else:
@@ -229,7 +273,59 @@ def _validated(answer: object) -> ClaimTest | NotNumeric:
             wanted = "percent" if METRICS[left.subject][1] == "ratio" else "USD"
             if right.unit != wanted:
                 raise Refused(f"the unit of {left.subject} is {wanted}, not {right.unit}")
-    return ClaimTest(form, left, op, right)  # type: ignore[arg-type]
+    each = _integer(test.get("each", 0), "each", 0, MAX_EACH_PERIODS)
+    since = test.get("each_since")
+    if since is not None:
+        since = _integer(since, "each_since", *YEARS)
+    result = ClaimTest(form, left, op, right, each=each, each_since=since)  # type: ignore[arg-type]
+    if each or since is not None:
+        _each(result)
+    return result
+
+
+def _comparable(left: Term, right: Term) -> None:
+    """Two measures compared level with level: one period, one kind of number."""
+    if left.period != right.period:
+        raise Refused("a comparison of two measures reads both in the same period")
+
+    def kind(term: Term) -> str:
+        return "flow" if term.axis else METRICS[term.subject][1]
+
+    if kind(left) != kind(right):
+        raise Refused(
+            f"{left.subject} ({kind(left)}) and {right.subject} ({kind(right)}) are not "
+            "the same kind of number"
+        )
+
+
+def _each(test: ClaimTest) -> None:
+    """A test held in each of several periods, or every fiscal year since a named one."""
+    if test.each and test.each_since is not None:
+        raise Refused("a test is held in each of the last N periods or every year since one")
+    if test.each == 1:
+        raise Refused("'each' counts two periods or more; a test of one period has each 0")
+    if test.form not in EACH_FORMS or test.from_filing:
+        raise Refused(
+            f"a {test.form.replace('_', ' ')} is not tested in each of several periods "
+            "(a share or a part is read from one filing)"
+        )
+    kinds = {term.period.kind for term in test.terms} | {
+        term.base.kind for term in test.terms if term.base is not None
+    }
+    if len(kinds) != 1 or kinds - {"Q", "FY"}:
+        raise Refused("each steps back one quarter (kind Q) or one fiscal year (kind FY)")
+    if test.each_since is None:
+        return
+    rise = (
+        test.form == "direction"
+        and isinstance(test.right, Term)
+        and test.right.period == test.left.period.step_back()
+    ) or (test.form == "growth_threshold" and test.left.fn == "yoy")
+    if test.left.period != Period("FY") or not rise:
+        raise Refused(
+            "every year since a named one is a change on the year before (a direction or a "
+            "yoy growth threshold at FY): whether that year itself counts is unclear for a level"
+        )
 
 
 def _object(value: object, what: str) -> dict[str, Any]:
@@ -262,13 +358,16 @@ def _term(value: object) -> Term:
     axis = data.get("axis", "")
     if not isinstance(axis, str) or axis not in ("", *PART_AXES):
         raise Refused(f"a part's axis {axis!r} is not one of {', '.join(PART_AXES)}")
+    raw_base = data.get("base")
+    base = _period(raw_base) if raw_base is not None else None
+    if (fn == "change") != (base is not None):
+        raise Refused("a change, and only a change, names the period it is from (base)")
     if axis:
         return _part_term(fn, subject, member, axis, period, years)
     if fn in ("share", "max_share"):
         if subject not in SHARE_AXES:
             raise Refused(f"a share's axis {subject!r} is not one of {', '.join(SHARE_AXES)}")
-        if period.kind != "filing":
-            raise Refused("a share is read from the newest filing (period kind 'filing')")
+        _from_a_filing(period, "a share")
         if fn == "max_share" and (subject != "customer" or member):
             raise Refused("the largest share is the largest customer's, with no member")
         if fn == "share":
@@ -288,7 +387,30 @@ def _term(value: object) -> Term:
         years = _integer(years, "a compound rate's years", *CAGR_YEARS)
     elif years != 0:
         raise Refused("only a compound rate (cagr) has years")
-    return Term(fn, subject, period, member=member, years=int(years or 0))
+    if base is not None:
+        _span(subject, period, base)
+    return Term(fn, subject, period, member=member, years=int(years or 0), base=base)
+
+
+def _span(subject: str, period: Period, base: Period) -> None:
+    """A change's span: the same kind of period, the base earlier, a measure with a level."""
+    if METRICS[subject][1] == "ratio":
+        raise Refused("a change in a percentage is ambiguous (points or percent)")
+    if base.kind != period.kind or period.kind not in ("Q", "FY"):
+        raise Refused("a change runs from one fiscal year (or quarter) to another of the kind")
+    if base.named == period.named:
+        since = (base.fiscal_year or 0, base.quarter or 0)
+        until = (period.fiscal_year or 0, period.quarter or 0)
+        earlier = since < until if base.named else base.back > period.back
+        if not earlier:
+            raise Refused("a change's base is earlier than its period")
+
+
+def _from_a_filing(period: Period, what: str) -> None:
+    """A share or a part is read from a filing's tags: its newest period, or a fiscal year
+    or quarter that filing reports; four quarters are not tagged."""
+    if period.kind not in ("filing", "FY", "Q"):
+        raise Refused(f"{what} is read for the newest filing, a fiscal year (FY) or a quarter (Q)")
 
 
 def _part_term(
@@ -302,8 +424,7 @@ def _part_term(
         raise Refused(f"a part's measure {subject!r} is not one of {', '.join(PART_MEASURES)}")
     if subject == "operating_income" and axis != "segment":
         raise Refused("only a segment's operating income is tagged")
-    if period.kind != "filing":
-        raise Refused("a part's measure is read from the newest filing (period kind 'filing')")
+    _from_a_filing(period, "a part's measure")
     if not member.strip() or len(member) > MAX_MEMBER_CHARS:
         raise Refused(f"a part names its member in 1 to {MAX_MEMBER_CHARS} characters")
     if years != 0:

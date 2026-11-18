@@ -71,6 +71,9 @@ CONTRACT: dict[str, int | float | str] = {
     "HISTORY_YEARS": 5,
     "MAX_HISTORY_POINTS": 24,
     "MAX_STREAK_PERIODS": 40,
+    # A test held in each of several periods (the forms round after the counting rule):
+    # at most three years of quarters.
+    "MAX_EACH_PERIODS": 12,
 }
 
 

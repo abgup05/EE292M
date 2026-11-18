@@ -62,10 +62,11 @@ Form = Literal[
     "faster_than",
     "compound",
     "share",
+    "compare",
 ]
 Op = Literal[">", ">=", "<", "<="]
 PeriodKind = Literal["Q", "FY", "TTM", "filing"]
-Function = Literal["value", "yoy", "qoq", "streak", "cagr", "share", "max_share"]
+Function = Literal["value", "yoy", "qoq", "streak", "cagr", "share", "max_share", "change"]
 MetricKind = Literal["flow", "ratio", "per_share", "instant", "shares"]
 
 FORMS: tuple[str, ...] = (
@@ -77,6 +78,7 @@ FORMS: tuple[str, ...] = (
     "faster_than",
     "compound",
     "share",
+    "compare",
 )
 
 # Every measure a test can name, its label and what kind of number it is.
@@ -176,7 +178,10 @@ class Term:
     of revenue along an axis (``subject`` is "segment" or "geography");
     ``max_share`` the largest tagged customer's share. A term with an ``axis`` is a part
     of the company's measure (``subject`` "revenue" or "operating_income" of ``member``
-    along ``axis``), read from the newest filing (:data:`app.core.measures.PART_MEASURES`).
+    along ``axis``), read from a filing's tags (:data:`app.core.measures.PART_MEASURES`):
+    the newest filing's newest period (``filing``), or the fiscal year or quarter named.
+    ``change`` is the growth from the earlier period ``base`` to ``period`` ("between fiscal
+    2023 and fiscal 2025", "tripled over three years").
     """
 
     fn: Function
@@ -185,6 +190,7 @@ class Term:
     member: str = ""
     years: int = 0
     axis: str = ""
+    base: Period | None = None
 
     def text(self) -> str:
         """The canonical form of the term."""
@@ -197,6 +203,9 @@ class Term:
                 return f"{self.subject}{at}"
             case "cagr":
                 return f"cagr({self.subject}, {self.years}y){at}"
+            case "change":
+                since = self.base.text() if self.base is not None else "?"
+                return f"change({self.subject}, {since}){at}"
             case "share":
                 return f'share({self.subject} "{self.member}"){at}'
             case "max_share":
@@ -229,17 +238,56 @@ class Number:
 
 @dataclass(frozen=True)
 class ClaimTest:
-    """A compiled claim: ``left op right``, of one :data:`Form`."""
+    """A compiled claim: ``left op right``, of one :data:`Form`.
+
+    ``each`` > 0 asks that the test hold in each of the last ``each`` periods (its periods
+    stepped back one quarter, or one fiscal year, at a time); ``each_since`` that a change
+    test hold in every fiscal year after the one named. ``also`` is a second test joined
+    by "and": the claim holds only when both do. A test has at most one ``also``, which
+    has none of its own.
+    """
 
     form: Form
     left: Term
     op: Op
     right: Term | Number
+    each: int = 0
+    each_since: int | None = None
+    also: ClaimTest | None = None
 
     @property
     def canonical(self) -> str:
         """The test as the labels write it."""
-        return f"{self.left.text()} {self.op} {self.right.text()}"
+        text = f"{self.left.text()} {self.op} {self.right.text()}"
+        if self.each:
+            text = f"each({self.each}): {text}"
+        elif self.each_since is not None:
+            text = f"each(since FY{self.each_since}): {text}"
+        if self.also is not None:
+            return f"({text}) and ({self.also.canonical})"
+        return text
+
+    @property
+    def parts(self) -> tuple[ClaimTest, ...]:
+        """The tests joined by "and": this one alone, or it and ``also``."""
+        if self.also is None:
+            return (self,)
+        return (replace(self, also=None), *self.also.parts)
+
+    @property
+    def terms(self) -> tuple[Term, ...]:
+        """Every term of every part, left first."""
+        return tuple(
+            term
+            for part in self.parts
+            for term in (part.left, part.right)
+            if isinstance(term, Term)
+        )
+
+    @property
+    def from_filing(self) -> bool:
+        """True when a term is read from a filing's tags (a share or a part), not the facts."""
+        return any(t.fn in ("share", "max_share") or t.axis for t in self.terms)
 
 
 @dataclass(frozen=True)

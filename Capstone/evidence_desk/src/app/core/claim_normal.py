@@ -12,13 +12,20 @@ The equivalences, each with a test in ``tests/test_claim_normal.py``:
   (direction, acceleration, faster-than): the terms are put in one order, the more recent
   period first, and the comparator turned to match.
 - **An explicit period and the default it equals.** A named fiscal year or quarter is
-  written as so many periods back from the newest one, when the newest is known; a share,
-  and a part's figure, are always of the newest filing.
+  written as so many periods back from the newest one, when the newest is known (a
+  share's or a part's too: the newest filing's own period, ``filing``, stays apart, since
+  which filing is newest is not known here).
 - **Equivalent thresholds and spans.** Growth above (or below) zero is a rise (or fall) on
   the same span: ``yoy(m)[P] > 0%`` is ``m[P] > m[P a year earlier]``, ``qoq`` the quarter
   before, ``cagr(m, Ny)[P] > 0%`` against ``N`` years earlier; a compound rate over one
-  year is the growth on a year earlier; a count of rises is a whole number, so ``> 3`` is
-  ``>= 4``; a number is compared to six significant digits (two decimals of a percent).
+  year is the growth on a year earlier; a change over one year (or quarter) is that growth
+  (``change(m, FY-1)[FY]`` is ``yoy(m)[FY]``), and a change above zero a rise on its span; a
+  count of rises is a whole number, so ``> 3`` is ``>= 4``; a number is compared to six
+  significant digits (two decimals of a percent).
+- **Several periods, and two tests.** A test held in each of one period is the test; every
+  year since a named one is so many years when the newest is known; a rise on the period
+  before, held in each of the last N, is a streak of at least N; two tests joined by "and"
+  are put in one order, and a comparison of two measures (compare) either way round.
 - **A member's name** is compared without case, extra spaces, or "&" for "and".
 
 What it does not do: decide that two different measures mean the same (that is the
@@ -32,8 +39,7 @@ from dataclasses import dataclass, replace
 from app.core.claimtest import ClaimTest, Number, Op, Period, Term
 
 FLIP: dict[Op, Op] = {">": "<", "<": ">", ">=": "<=", "<=": ">="}
-TWO_TERMS = ("direction", "acceleration", "faster_than")
-FROM_FILING = ("share", "max_share")
+TWO_TERMS = ("direction", "acceleration", "faster_than", "compare")
 SIGNIFICANT = 6
 PERCENT_DECIMALS = 2
 
@@ -54,15 +60,45 @@ def normal_form(test: ClaimTest, newest: Newest | None = None) -> str:
 def normalize(test: ClaimTest, newest: Newest | None = None) -> ClaimTest:
     """``test`` in its normal form (see the module's docstring)."""
     at = newest or Newest()
+    if test.also is not None:
+        first, second = sorted((normalize(p, newest) for p in test.parts), key=_canonical)
+        return replace(first, also=second)
     left = _term(test.left, at)
     right = _term(test.right, at) if isinstance(test.right, Term) else _number(test.right)
+    each, since = test.each, test.each_since
     test = ClaimTest(test.form, left, test.op, right)
+    test = _as_growth(test)
     test = _as_rise(test)
     test = _whole_count(test)
     if test.form in TWO_TERMS and isinstance(test.right, Term):
         if _order(test.right) < _order(test.left):
             test = ClaimTest(test.form, test.right, FLIP[test.op], test.left)
-    return test
+    if since is not None and at.fiscal_year is not None and at.fiscal_year > since:
+        each, since = at.fiscal_year - since, None
+    if each == 1:
+        each = 0
+    if each and _rise_on_the_period_before(test):
+        streak = Term("streak", test.left.subject, test.left.period)
+        return ClaimTest("streak", streak, ">=", Number(float(each), "count"))
+    return replace(test, each=each, each_since=since)
+
+
+def _canonical(test: ClaimTest) -> str:
+    return test.canonical
+
+
+def _rise_on_the_period_before(test: ClaimTest) -> bool:
+    """``m[P] > m[P before]`` at the newest quarter or fiscal year: one rise of a streak."""
+    left, right = test.left, test.right
+    return (
+        test.form == "direction"
+        and test.op == ">"
+        and isinstance(right, Term)
+        and left.period in (Period("Q"), Period("FY"))
+        and right.period == left.period.step_back()
+        and right.subject == left.subject
+        and not left.axis
+    )
 
 
 # Terms and periods
@@ -73,13 +109,10 @@ def _member(name: str) -> str:
 
 
 def _term(term: Term, newest: Newest) -> Term:
-    period = term.period
-    if term.fn in FROM_FILING or term.axis:
-        period = Period("filing")
-    else:
-        period = _relative(period, newest)
+    period = _relative(term.period, newest)
+    base = _relative(term.base, newest) if term.base is not None else None
     member = _member(term.member) if term.member else ""
-    return replace(term, period=period, member=member)
+    return replace(term, period=period, member=member, base=base)
 
 
 def _relative(period: Period, newest: Newest) -> Period:
@@ -115,6 +148,22 @@ def _number(number: Number) -> Number:
     return Number(float(f"{number.value:.{SIGNIFICANT}g}"), number.unit)
 
 
+def _as_growth(test: ClaimTest) -> ClaimTest:
+    """A change over one year as the growth on a year earlier, over one quarter as qoq."""
+    terms = [test.left] + ([test.right] if isinstance(test.right, Term) else [])
+    rewritten = []
+    for term in terms:
+        if term.fn == "change" and term.base == term.period.years_back(1):
+            term = Term("yoy", term.subject, term.period)
+        elif (
+            term.fn == "change" and term.period.kind == "Q" and term.base == term.period.step_back()
+        ):
+            term = Term("qoq", term.subject, term.period)
+        rewritten.append(term)
+    right = rewritten[1] if len(rewritten) == 2 else test.right
+    return replace(test, left=rewritten[0], right=right)
+
+
 def _as_rise(test: ClaimTest) -> ClaimTest:
     """Growth against zero as a rise or fall; a compound rate over one year as growth."""
     left, right = test.left, test.right
@@ -132,6 +181,8 @@ def _as_rise(test: ClaimTest) -> ClaimTest:
             earlier = left.period.step_back()
         case "cagr":
             earlier = left.period.years_back(left.years)
+        case "change" if left.base is not None:
+            earlier = left.base
         case _:
             return test
     now = Term("value", left.subject, left.period)

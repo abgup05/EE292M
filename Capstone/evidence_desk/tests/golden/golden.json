@@ -494,6 +494,7 @@
     "MAX_CLAIM_CHARS": 400,
     "MAX_CONCURRENT_ASSESSMENTS": 3,
     "MAX_DECISION_CHARS": 500,
+    "MAX_EACH_PERIODS": 12,
     "MAX_EVENTS_READ": 8,
     "MAX_EXCERPT_CHARS": 600,
     "MAX_EXTRA_URLS": 5,
@@ -734,7 +735,7 @@
     ],
     "passages_indexed": 636
   },
-  "sha256": "8dab0837fd6dfa0abbce6fdd3ae74f1c0e36f9b77d03c26daf611672fc549d29",
+  "sha256": "d95de9bd16bf8e5bb03bd9b68af3282e288677f25e6ee2b332e3573e2e5061e4",
   "sources": [
     {
       "characters": 151303,

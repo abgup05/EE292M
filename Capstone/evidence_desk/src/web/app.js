@@ -1,4 +1,4 @@
-// Evidence Desk frontend (version 5).
+// Evidence Desk frontend (the research-note design: docs/design.md).
 //
 // Collects a thesis, starts a run, polls it, and draws the record the API
 // returns; records the reader's decision on each verified finding; saves a
@@ -33,6 +33,12 @@
 //   changes   between two filings (`/api/companies/{ticker}/changes`), cyan, square tags:
 //             # numbers only, ~ reworded, + added, − removed; inside a reworded
 //             paragraph, added words are underlined and removed ones struck through
+//
+// Drawing, not computing: the time line places record dates on an axis, a sparkline places
+// a series' values in a box, and a negative number is set in its colour from the sign of the
+// record's own value. Every date, label, count, outcome and percentile a reader sees is a
+// record field or wording from /api/meta. The theme ("paper" or "terminal") is the reader's
+// setting, kept in localStorage when the browser allows it, else it follows the system.
 
 "use strict";
 
@@ -177,10 +183,25 @@ const state = {
   // The RunChanges of the finished run on screen: {runId, status: "loading" | "ready" | "failed", record, error}.
   claimChanges: null,
   claimChangesOpen: new Set(), // claim ids whose "Changed in the filings" block the reader opened
+  sampleNote: "", // where a sample record came from, said in the run's head
+  timelineRun: null, // the run whose time line is drawn, redrawn when the note changes width
 };
 
 /** Samples that have a recorded RunChanges beside them; any other sample shows no such block and asks for none. */
 const SAMPLE_RUN_CHANGES = { run: "sample-run-changes.json" };
+
+/**
+ * Samples stored as a bare run, copied unedited from a run's own record (results/<run>.json):
+ * they carry no note and no wording, so the note is here and the wording comes from /api/meta.
+ */
+const BARE_SAMPLE_NOTES = {
+  "run-events":
+    "A live run of 18 November 2026 on NVIDIA (run run-39d0b17b5396), answered by the Anthropic API: claude-opus-5-5 read the passages and claude-haiku-5-5 checked their meaning. It is copied unedited from results/run-39d0b17b5396.json. Its first claim is about the chief executive leaving, and the 8-K of 12 Nov 2026 postdates the evidence of one of its findings.",
+};
+
+const THEMES = ["paper", "terminal"];
+const THEME_KEY = "evidence-desk-theme";
+const THEME_NAMES = { paper: "Paper", terminal: "Terminal" };
 
 const $ = (id) => document.getElementById(id);
 
@@ -271,6 +292,15 @@ const els = {
   errors: $("errors"),
   errorsMore: $("errors-more"),
   provenance: $("provenance"),
+  cmdRun: $("cmd-run"),
+  cmdStatus: $("cmd-status"),
+  cmdEngine: $("cmd-engine"),
+  cmdAsof: $("cmd-asof"),
+  themeToggle: $("theme-toggle"),
+  keysButton: $("keys-button"),
+  keysDialog: $("keys-dialog"),
+  timelineSection: $("timeline-section"),
+  timeline: $("timeline"),
 };
 
 // ---------------------------------------------------------------- helpers
@@ -926,6 +956,7 @@ async function onFiguresOnly() {
 }
 
 function renderFiguresOnly(report) {
+  renderCommandBar(null);
   els.loading.hidden = true;
   els.loadError.hidden = true;
   els.empty.hidden = true;
@@ -939,12 +970,7 @@ function renderFiguresOnly(report) {
     h(
       "div",
       { class: "run-head-main" },
-      h(
-        "p",
-        { class: "company" },
-        h("strong", { text: str(report.company) || "Company" }),
-        Number.isFinite(report.cik) ? h("span", { class: "muted small" }, " · ", h("abbr", { title: "The SEC's numeric identifier for this company", text: "CIK" }), ` ${report.cik}`) : "",
-      ),
+      companyTitle({ name: str(report.company), cik: report.cik }, str(report.ticker)),
       h("p", { class: "run-meta", text: "Reported figures read from the company's XBRL data. No run was started and no claim was tested." }),
     ),
   );
@@ -1022,6 +1048,7 @@ function renderChanges(record, sampleNote) {
     showLoadError("The comparison could not be shown: the record names no filings or Items.", null);
     return;
   }
+  renderCommandBar(null);
   els.loading.hidden = true;
   els.loadError.hidden = true;
   els.empty.hidden = true;
@@ -1037,14 +1064,8 @@ function renderChanges(record, sampleNote) {
     h(
       "div",
       { class: "run-head-main" },
-      h(
-        "p",
-        { class: "company" },
-        state.sample ? h("span", { class: "page-tag inline", text: "Sample record" }) : "",
-        h("strong", { text: str(company.ticker) || "Company" }),
-        str(company.name) ? ` · ${company.name}` : "",
-        Number.isFinite(company.cik) ? h("span", { class: "muted small" }, " · ", h("abbr", { title: "The SEC's numeric identifier for this company", text: "CIK" }), ` ${company.cik}`) : "",
-      ),
+      state.sample ? h("span", { class: "page-tag inline", text: "Sample record" }) : "",
+      companyTitle(company),
       h("p", { class: "run-meta", text: "What changed between two of the company's filings, Item by Item. No run was started and no claim was tested." }),
       sampleNote ? h("p", { class: "run-meta", text: `Sample: ${sampleNote}` }) : "",
     ),
@@ -1349,6 +1370,7 @@ function renderBreakdowns(report, sampleNote) {
     showLoadError("The tagged facts could not be shown: the record names no filing or breakdowns.", null);
     return;
   }
+  renderCommandBar(null);
   els.loading.hidden = true;
   els.loadError.hidden = true;
   els.empty.hidden = true;
@@ -1365,14 +1387,8 @@ function renderBreakdowns(report, sampleNote) {
     h(
       "div",
       { class: "run-head-main" },
-      h(
-        "p",
-        { class: "company" },
-        state.sample ? h("span", { class: "page-tag inline", text: "Sample record" }) : "",
-        h("strong", { text: str(company.ticker) || "Company" }),
-        str(company.name) ? ` · ${company.name}` : "",
-        Number.isFinite(company.cik) ? h("span", { class: "muted small" }, " · ", h("abbr", { title: "The SEC's numeric identifier for this company", text: "CIK" }), ` ${company.cik}`) : "",
-      ),
+      state.sample ? h("span", { class: "page-tag inline", text: "Sample record" }) : "",
+      companyTitle(company),
       h("p", { class: "run-meta", text: "The company's latest filing of the form chosen, read when asked for the segments, products, geographies and customers it tags. Not tied to any run: no run was started and no claim was tested." }),
       sampleNote ? h("p", { class: "run-meta", text: `Sample: ${sampleNote}` }) : "",
     ),
@@ -1470,13 +1486,18 @@ function breakdownCell(value, period) {
     changePart = h(
       "details",
       { class: "bd-change" },
-      h("summary", null, change ? h("span", { class: "bd-change-display", text: change }) : h("span", { class: "bd-no-change" }, h("span", { "aria-hidden": "true", text: "—" }), h("span", { class: "visually-hidden", text: "no change stated; open to read why" }))),
+      h("summary", null, change ? h("span", { class: `bd-change-display${signClass(change)}`, text: change }) : h("span", { class: "bd-no-change" }, h("span", { "aria-hidden": "true", text: "—" }), h("span", { class: "visually-hidden", text: "no change stated; open to read why" }))),
       h("span", { class: "bd-formula", text: formula }),
     );
   } else if (change) {
-    changePart = h("span", { class: "bd-change-display", text: change });
+    changePart = h("span", { class: `bd-change-display${signClass(change)}`, text: change });
   }
-  return h("td", { class: "bd-cell", "data-period": key }, h("span", { class: "bd-display", text: str(value.display) }), changePart);
+  return h("td", { class: "bd-cell", "data-period": key }, h("span", { class: `bd-display${signClass(str(value.display))}`, text: str(value.display) }), changePart);
+}
+
+/** " num-neg" for a display string the record writes with a leading minus sign; "" otherwise. Reads the sign, computes nothing. */
+function signClass(display) {
+  return /^\s*[-−(]/.test(str(display)) ? " num-neg" : "";
 }
 
 /** Whether the rows add up to the tagged total: yes, no (a limit) or not checked, each drawn differently. */
@@ -1678,6 +1699,7 @@ async function openThesis(thesisId) {
 }
 
 function renderThesis(thesis, runs) {
+  renderCommandBar(null);
   els.loading.hidden = true;
   els.loadError.hidden = true;
   els.empty.hidden = true;
@@ -1693,7 +1715,8 @@ function renderThesis(thesis, runs) {
     h(
       "div",
       { class: "run-head-main" },
-      h("p", { class: "company" }, h("span", { class: "label", text: "Saved thesis: " }), h("strong", { text: str(thesis.name) })),
+      h("p", { class: "company-name" }, str(thesis.name)),
+      h("p", { class: "company-line company" }, h("span", { class: "label", text: "Saved thesis" }), str(request.ticker) ? h("strong", { class: "ticker-chip", text: str(request.ticker) }) : ""),
       h("p", { class: "decision" }, h("span", { class: "label", text: "Decision: " }), str(request.decision)),
       h("p", { class: "run-meta", text: `${str(request.ticker)} · ${plural(claims.length, "claim", "claims")} · ${plural(request.filings, "filing", "filings")} per run · saved ${utc(thesis.created_at)}` }),
       h("ol", { class: "thesis-claims" }, claims.map((claim) => h("li", { text: String(claim) }))),
@@ -2140,6 +2163,8 @@ function hideRunView() {
   els.loadError.hidden = true;
   els.empty.hidden = true;
   document.body.classList.remove("has-run");
+  renderCommandBar(null);
+  state.timelineRun = null;
 }
 
 function showLoadError(message, retry) {
@@ -2174,6 +2199,7 @@ async function loadSample(name) {
   $("changes-link").hidden = true;
   $("breakdowns-link").hidden = true;
   $("tagged-link").hidden = true;
+  $("events-link").hidden = true;
   hideRunView();
   if (!SAMPLE_NAME.test(name)) {
     showLoadError("That sample name is not valid: use lower-case letters, digits and hyphens.", null);
@@ -2181,6 +2207,19 @@ async function loadSample(name) {
   }
   try {
     const payload = await api(`sample-${name}.json`, { cache: "no-store" });
+    // A bare run, copied unedited from a run's record: its note is the page's, its wording /api/meta's.
+    if (!payload.run && typeof payload.id === "string" && Array.isArray(payload.claims)) {
+      const note = BARE_SAMPLE_NOTES[name];
+      if (!note) throw new ApiError("the file is a bare run that this page has no note for", 0);
+      applyMeta(await api("/api/meta"), { sample: true });
+      state.sampleNote = note;
+      els.formNote.textContent = `Sample mode: ${note} This page does not start runs; open it without ?sample to test a thesis.`;
+      state.runId = payload.id;
+      state.review = null;
+      state.comparison = null;
+      renderRun(payload);
+      return;
+    }
     // A recorded filing comparison ({note, changes}) has no run and needs no wording from /api/meta.
     if (payload.changes && !payload.run) {
       if (str(payload.note)) els.formNote.textContent = `Sample mode: ${payload.note} This page does not look anything up; open it without ?sample to compare a company's filings.`;
@@ -2197,6 +2236,7 @@ async function loadSample(name) {
     applyMeta(payload.meta, { sample: true });
     foldEngineLine(payload.run.engine_detail);
     if (str(payload.note)) els.formNote.textContent = `Sample mode: ${payload.note} This page does not start runs; open it without ?sample to test a thesis.`;
+    state.sampleNote = str(payload.note);
     state.runId = payload.run.id;
     // Sample mode only: the reader's decisions and the comparison are stored in the file.
     const review = payload.review;
@@ -2233,9 +2273,11 @@ function renderRun(run) {
   document.body.classList.add("has-run");
   state.run = run;
 
+  renderCommandBar(run);
   renderBanner(run);
   renderStages(run);
   renderHead(run);
+  renderTimeline(run);
   renderReviewLine(run);
   renderScorecard(run);
   renderDistinction(run);
@@ -2420,16 +2462,64 @@ function renderStages(run) {
   );
 }
 
+/**
+ * The note's title: the company's name large, then its ticker and CIK, as the record names
+ * them. Used by every view that is about one company.
+ */
+function companyTitle(company, fallbackTicker = "") {
+  const ticker = str(company?.ticker) || fallbackTicker;
+  return [
+    h("p", { class: "company-name", text: str(company?.name) || ticker || "Company" }),
+    h(
+      "p",
+      { class: "company-line company" },
+      ticker ? h("strong", { class: "ticker-chip", text: ticker }) : "",
+      Number.isFinite(company?.cik) ? h("span", null, h("abbr", { title: "The SEC's numeric identifier for this company", text: "CIK" }), ` ${company.cik}`) : "",
+    ),
+  ];
+}
+
+/** Where a sample record came from, in the head of the view that shows it. */
+function sampleNoteLine() {
+  if (!state.sample || !state.sampleNote) return "";
+  return h("p", { class: "sample-note", "data-sample-note": "" }, h("span", { class: "label", text: "Where this sample comes from: " }), state.sampleNote);
+}
+
+/**
+ * The command bar's cells for the run on screen: its status, the engine that did the work,
+ * and its as-of line, each the record's own words. Hidden for any other view.
+ */
+function renderCommandBar(run) {
+  if (!els.cmdRun) return;
+  if (!run) {
+    els.cmdRun.hidden = true;
+    els.cmdStatus.replaceChildren();
+    els.cmdEngine.replaceChildren();
+    els.cmdAsof.replaceChildren();
+    return;
+  }
+  const status = token(run.status, STATUS_GLYPH);
+  els.cmdRun.hidden = false;
+  els.cmdStatus.replaceChildren(h("span", { class: `status-word st-${status}` }, statusMark(run.status), ` ${capitalize(run.status)}`));
+  // The engine's own detail names the model and where its answers came from (the API or a recording).
+  const reader = str(run.engine_detail) || str(run.engine) || "not recorded";
+  const checker = runMeaningChecked(run) ? str(run.checker_detail) || str(run.checker) : "";
+  els.cmdEngine.replaceChildren(
+    h("span", { class: "cmd-line", "data-cmd-engine": "", title: reader }, h("span", { class: "cmd-key", text: "read " }), reader),
+    checker ? h("span", { class: "cmd-line", "data-cmd-checker": "", title: checker }, h("span", { class: "cmd-key", text: "checked " }), checker) : "",
+  );
+  const line = str(run.as_of?.line);
+  els.cmdAsof.replaceChildren(
+    line
+      ? h("span", { "data-cmd-as-of": "" }, line, " ", h("a", { href: "#events-section", onclick: jumpTo("events-section"), text: "8-Ks" }))
+      : h("span", { class: "muted", text: "Not recorded: this run predates the as-of line." }),
+  );
+}
+
 function renderHead(run) {
   const company = run.company;
   const inputs = run.inputs ?? {};
-  const title = h(
-    "p",
-    { class: "company" },
-    h("strong", { text: company?.ticker ?? inputs.ticker ?? "" }),
-    company ? ` · ${company.name}` : "",
-    company ? h("span", { class: "muted small" }, " · ", h("abbr", { title: "The SEC's numeric identifier for this company", text: "CIK" }), ` ${company.cik}`) : "",
-  );
+  const title = companyTitle(company, str(inputs.ticker));
   const decision = h("p", { class: "decision" }, h("span", { class: "label", text: "Decision: " }), inputs.decision ?? "");
   const engine = str(run.engine);
   const engineLine = h(
@@ -2457,7 +2547,10 @@ function renderHead(run) {
   } else {
     download = h("a", { class: "download", href: briefHref(run.id, false), download: `evidence-desk-${run.id}.md`, text: "Download Markdown brief" });
   }
-  els.runHead.replaceChildren(h("div", { class: "run-head-main" }, title, decision, engineLine, checkerLine, details, asOfLine(run), thesisLine(run)), h("div", { class: "run-head-actions" }, download));
+  els.runHead.replaceChildren(
+    h("div", { class: "run-head-main" }, title, decision, engineLine, checkerLine, details, asOfLine(run), thesisLine(run), sampleNoteLine()),
+    h("div", { class: "run-head-actions" }, download, run.status !== "running" && !state.sample ? h("span", { class: "muted", text: "Print this page for a paper copy of the note." }) : ""),
+  );
 }
 
 /**
@@ -2552,7 +2645,7 @@ function renderScorecard(run) {
 }
 
 /** The note under the verdicts as index.html writes it: the wording for a run no second model read. */
-const DISTINCTION_DEFAULT = els.distinction.cloneNode(true);
+const DISTINCTION_DEFAULT = els.distinction ? els.distinction.cloneNode(true) : null;
 
 /** The note under the verdicts: what was checked, and by whom, for this run. */
 function renderDistinction(run) {
@@ -2641,12 +2734,36 @@ function renderClaims(run, ctx) {
     body.append(h("div", { class: "cc-slot", "data-cc-slot": claim.id }));
     const details = h(
       "details",
-      { class: "claim", id, open: open.has(id) },
-      h("summary", null, verdictPill(claim.verdict), h("span", { class: "claim-id", text: claim.id }), h("span", { class: "claim-text", text: claim.text })),
+      { class: "claim", id, open: open.has(id), "data-docket": claim.id },
+      h(
+        "summary",
+        null,
+        verdictPill(claim.verdict),
+        h("span", { class: "claim-id", text: claim.id }),
+        h("span", { class: "claim-text", text: claim.text }),
+        docketMeta(claim, run),
+      ),
       body,
     );
     els.claimList.append(details);
   });
+}
+
+/**
+ * The line under a claim on its docket: how many findings the record lists for it and how many
+ * passages it considered, then a flag for a caution or an 8-K note the claim carries.
+ */
+function docketMeta(claim, run) {
+  const c = run.coverage ?? {};
+  const parts = [
+    plural(list(claim.finding_ids).length, "finding", "findings"),
+    ` · ${num(claim.passages_considered ?? 0)}`,
+    Number.isFinite(c.passages_indexed) ? ` of ${num(c.passages_indexed)}` : "",
+    " passages considered",
+  ];
+  if (str(claim.caution)) parts.push(" · ", h("span", { class: "docket-flag" }, limitGlyph(), " Caution"));
+  else if (str(claim.event_note)) parts.push(" · ", h("span", { class: "docket-flag", text: "Note on the 8-Ks since the annual report" }));
+  return h("span", { class: "docket-meta" }, ...parts);
 }
 
 // ---------------------------------------------------------------- changed paragraphs, by claim
@@ -2873,9 +2990,11 @@ function renderFinding(finding, ctx, withheld = false) {
   const stance = token(finding.stance, STANCE_MARK);
   const model = modelAssessed(ctx.claims.get(finding.claim_id));
   const badge = meaningRead(finding) ? MODEL_BADGE_READ : MODEL_BADGE;
-  const article = h(
-    "article",
-    { class: `finding s-${stance}${withheld ? " is-withheld" : ""}`, "data-finding-id": finding.id },
+  // The finding in the main column; its quotes in the margin beside it (inline on a narrow note).
+  const main = h("div", { class: "finding-main" });
+  const margin = h("div", { class: "finding-margin" });
+  const article = h("article", { class: `finding s-${stance}${withheld ? " is-withheld" : ""}`, "data-finding-id": finding.id }, main, margin);
+  main.append(
     h(
       "header",
       { class: "finding-head" },
@@ -2894,31 +3013,31 @@ function renderFinding(finding, ctx, withheld = false) {
     ),
   );
   const counted = countedAsLine(finding);
-  if (counted) article.append(counted);
-  for (const mark of list(finding.predated_by)) article.append(predatedLine(mark));
+  if (counted) main.append(counted);
+  for (const mark of list(finding.predated_by)) main.append(predatedLine(mark));
   if (withheld) {
     // A finding the second model rejected keeps that model's own words, tagged for the browser test.
     const reason = str(finding.withheld_reason) || "no quote was found in the filing text.";
     const byMeaning = str(finding.checks?.support) === "failed";
-    article.append(limitLine("p", h("strong", { text: "Withheld: " }), byMeaning ? h("span", { "data-withheld-reason": "", text: reason }) : reason));
+    main.append(limitLine("p", h("strong", { text: "Withheld: " }), byMeaning ? h("span", { "data-withheld-reason": "", text: reason }) : reason));
   }
   if (finding.rationale) {
-    article.append(writtenField("p", `finding:${finding.id}:reason`, model, [h("span", { class: "label", text: "Engine's reason: " }), finding.rationale], badge));
+    main.append(writtenField("p", `finding:${finding.id}:reason`, model, [h("span", { class: "label", text: "Engine's reason: " }), finding.rationale], badge));
   }
   const checks = renderChecks(finding.checks);
-  if (checks) article.append(checks);
+  if (checks) main.append(checks);
   const cited = renderCitedFigures(finding.metric_ids, ctx.metrics);
-  if (cited) article.append(cited);
+  if (cited) main.append(cited);
   for (const evidenceId of list(finding.evidence_ids)) {
     const item = ctx.evidence.get(evidenceId);
     if (!item) {
-      article.append(h("p", { class: "muted", text: `Excerpt ${evidenceId} is listed but missing from the record.` }));
+      margin.append(h("p", { class: "muted", text: `Excerpt ${evidenceId} is listed but missing from the record.` }));
       continue;
     }
-    article.append(renderEvidence(item, ctx.sources.get(item.source_id)));
+    margin.append(renderEvidence(item, ctx.sources.get(item.source_id)));
   }
   if (!withheld && finding.verified !== false) {
-    article.append(h("div", { class: "review-slot", "data-review-finding": finding.id, hidden: true }));
+    main.append(h("div", { class: "review-slot", "data-review-finding": finding.id, hidden: true }));
   }
   return article;
 }
@@ -3260,12 +3379,15 @@ function renderEvent(event, words) {
     "p",
     { class: "event-head" },
     h("strong", { class: "event-date", text: str(event.filed_label) || str(event.filed_date) }),
-    " · ",
-    externalLink(event.url, `${str(event.form)} ${str(event.accession)}`),
-    " · ",
-    h("span", { class: `event-kind is-${kind}`, "data-event-kind": kind, text: kindLabel }),
-    " · ",
-    h("span", { class: "event-status", "data-event-status": status, text: statusLabel }),
+    h(
+      "span",
+      { class: "event-headline" },
+      externalLink(event.url, `${str(event.form)} ${str(event.accession)}`),
+      " · ",
+      h("span", { class: `event-kind is-${kind}`, "data-event-kind": kind, text: kindLabel }),
+      " · ",
+      h("span", { class: "event-status", "data-event-status": status, text: statusLabel }),
+    ),
   );
   const entry = h("li", { class: `event ev-${kind}`, id: anchor || null, tabindex: anchor ? "-1" : null, "data-event-id": str(event.id) }, head);
   if (str(event.reason)) entry.append(limitLine("p", h("span", { "data-event-reason": "", text: event.reason })));
@@ -3295,6 +3417,258 @@ function renderEvent(event, words) {
   return entry;
 }
 
+// ---------------------------------------------------------------- the time line
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const DAY_MS = 86400000;
+
+/** A record date ("YYYY-MM-DD", or an ISO timestamp) as milliseconds at UTC midnight; NaN when it is not one. */
+function dayOf(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(str(value));
+  return match ? Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])) : Number.NaN;
+}
+
+/** "2026-11-12" as "12 Nov 2026", the way the record's own labels write a date. Presentation only. */
+function dateLabel(value) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(str(value));
+  if (!match) return str(value) || "date not recorded";
+  return `${Number(match[3])} ${MONTHS[Number(match[2]) - 1]} ${match[1]}`;
+}
+
+/**
+ * What the time line draws, read from the run: the annual and quarterly reports it read, the
+ * 8-Ks its record lists, which of those its quotes come from, the run's own date and the
+ * newest filing read. Selection and lookup only.
+ */
+function timelineData(run) {
+  const sources = list(run.sources).filter((x) => x.kind === "sec_filing" && Number.isFinite(dayOf(x.published_date)));
+  const quotedSources = new Set(list(run.evidence).map((e) => e.source_id));
+  const quotedAccessions = new Set(sources.filter((x) => quotedSources.has(x.id)).map((x) => str(x.accession)));
+  const periodic = sources
+    .filter((x) => !str(x.form).toUpperCase().startsWith("8-K"))
+    .map((x) => ({ source: x, day: dayOf(x.published_date), quoted: quotedSources.has(x.id) }));
+  const events = list(run.timeline)
+    .filter((e) => Number.isFinite(dayOf(e.filed_date)))
+    .map((e) => ({ event: e, day: dayOf(e.filed_date), quoted: quotedAccessions.has(str(e.accession)) }));
+  const runDay = dayOf(run.started_at);
+  const newest = dayOf(run.as_of?.newest_filed);
+  return { periodic, events, runDay, newest };
+}
+
+/** The categories of an 8-K's items that the record's wording calls substantive, as labels. */
+function eventCategories(event) {
+  const words = state.meta?.events ?? {};
+  const substantive = new Set(list(words.substantive));
+  const seen = [];
+  for (const item of list(event.items)) {
+    const category = str(item.category);
+    if (event.substantive === true && substantive.size && !substantive.has(category)) continue;
+    const label = str(words.category_labels?.[category]) || category;
+    if (label && !seen.includes(label)) seen.push(label);
+  }
+  return seen;
+}
+
+/** Show the time line for a run whose record has dated filings; hide it otherwise. */
+function renderTimeline(run) {
+  if (!els.timeline) return;
+  const data = timelineData(run);
+  const show = Number.isFinite(data.runDay) && (data.periodic.length > 0 || data.events.length > 0);
+  els.timelineSection.hidden = !show;
+  state.timelineRun = show ? run : null;
+  if (!show) {
+    els.timeline.replaceChildren();
+    return;
+  }
+  drawTimeline(els.timeline, run);
+}
+
+/**
+ * One horizontal date axis in SVG, drawn at the container's own width so its text keeps its
+ * size: reports above the axis, 8-Ks below, the run as a rule, the time between the newest
+ * filing read and the run hatched. Each mark is a link to its filing with a tooltip on hover
+ * or focus.
+ */
+function drawTimeline(container, run) {
+  const data = timelineData(run);
+  const width = Math.max(Math.round(container.clientWidth || 880), 300);
+  const narrow = width < 560;
+  const H = narrow ? 186 : 196;
+  const axisY = 84;
+  const left = 10;
+  const right = 14;
+  const days = [...data.periodic.map((x) => x.day), ...data.events.map((x) => x.day), data.runDay];
+  if (Number.isFinite(data.newest)) days.push(data.newest);
+  let lo = Math.min(...days);
+  let hi = Math.max(...days);
+  const span = Math.max(hi - lo, 30 * DAY_MS);
+  lo -= span * 0.03;
+  hi += span * 0.04;
+  const xAt = (day) => left + ((day - lo) / (hi - lo)) * (width - left - right);
+
+  const svg = s(
+    "svg",
+    { viewBox: `0 0 ${width} ${H}`, width, height: H, role: "group", "aria-labelledby": "timeline-title", "data-timeline": "" },
+    s("defs", null, s("pattern", { id: "tl-hatch", width: 6, height: 6, patternUnits: "userSpaceOnUse", patternTransform: "rotate(45)" }, s("line", { x1: 0, y1: 0, x2: 0, y2: 6, class: "tl-hatch-line" }))),
+  );
+
+  // The time between the newest filing read and the run: what the record cannot know.
+  if (Number.isFinite(data.newest) && data.runDay > data.newest) {
+    const x0 = xAt(data.newest);
+    const x1 = xAt(data.runDay);
+    const daysWord = Number.isFinite(run.as_of?.days_since_newest) ? plural(run.as_of.days_since_newest, "day", "days") : "";
+    svg.append(
+      s(
+        "g",
+        { "data-tl": "gap" },
+        s("title", { text: `Between the newest filing read (${dateLabel(run.as_of.newest_filed)}) and this run${daysWord ? `: ${daysWord}` : ""}. Nothing filed in this time is in the record.` }),
+        s("rect", { x: x0, y: 18, width: Math.max(x1 - x0, 2), height: axisY + 26 - 18, class: "tl-gap" }),
+      ),
+    );
+    if (daysWord) {
+      // Under the 8-K labels, ending at the run's line: how long the record cannot see.
+      const text = `${daysWord} between the newest filing read and the run`;
+      svg.append(s("text", { x: x1, y: axisY + 72, class: "tl-gap-label", "text-anchor": "end", text }));
+    }
+  }
+
+  // Month ticks along the axis, a year label on each January and on the first tick.
+  const first = new Date(lo);
+  let tick = Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 1);
+  let firstTick = true;
+  const ticks = s("g", { class: "tl-ticks", "aria-hidden": "true" });
+  let lastLabel = -Infinity;
+  while (tick <= hi) {
+    const d = new Date(tick);
+    const x = xAt(tick);
+    ticks.append(s("line", { x1: x, x2: x, y1: axisY, y2: axisY + 5, class: "tl-tick" }));
+    const month = d.getUTCMonth();
+    if (x - lastLabel > (narrow ? 34 : 30)) {
+      const yearLabel = month === 0 || firstTick;
+      ticks.append(s("text", { x: x + 2, y: H - 6, class: yearLabel ? "tl-year" : "tl-tick-label", text: yearLabel ? `${MONTHS[month]} ${d.getUTCFullYear()}` : MONTHS[month] }));
+      lastLabel = x + (yearLabel ? 30 : 0);
+      firstTick = false;
+    }
+    tick = Date.UTC(d.getUTCFullYear(), month + 1, 1);
+  }
+  svg.append(ticks, s("line", { x1: left - 6, x2: width - 4, y1: axisY, y2: axisY, class: "tl-axis" }));
+
+  // The annual and quarterly reports: bars above the axis, a dot on top when quoted.
+  let lastFormX = -Infinity;
+  let formRow = 0;
+  for (const item of data.periodic.sort((a, b) => a.day - b.day)) {
+    const x = xAt(item.day);
+    const source = item.source;
+    const annual = str(source.form).toUpperCase().startsWith("10-K");
+    formRow = x - lastFormX < 46 ? 1 - formRow : 0;
+    lastFormX = x;
+    const tip = [
+      `${str(source.form)} · filed ${dateLabel(source.published_date)}`,
+      source.period_end ? `For the period ended ${dateLabel(source.period_end)}` : "",
+      item.quoted ? "Quoted in this run's findings" : "Read by this run; not quoted in a verified finding",
+    ];
+    const shape = [
+      s("rect", { x: x - 7, y: 22, width: 14, height: axisY - 22, class: "tl-hit" }),
+      s("rect", { x: x - 1.5, y: 40, width: 3, height: axisY - 40, class: `tl-filing ${annual ? "is-annual" : "is-quarterly"}` }),
+      item.quoted ? s("circle", { cx: x, cy: 40, r: 4.5, class: "tl-quoted-dot" }) : "",
+      s("text", { x, y: 33 - formRow * 12, "text-anchor": "middle", class: "tl-label is-form", text: str(source.form) }),
+    ];
+    svg.append(timelineMark("filing", { "data-source-id": source.id, "data-quoted": item.quoted ? "true" : "false" }, source.url, tip, shape, container));
+  }
+
+  // The 8-Ks: below the axis; substantive ones a filled diamond with their category, routine ones a small circle.
+  const labelRows = [-Infinity, -Infinity];
+  for (const item of data.events.sort((a, b) => a.day - b.day)) {
+    const event = item.event;
+    const x = xAt(item.day);
+    const y = axisY + 18;
+    const substantive = event.substantive === true;
+    const categories = eventCategories(event);
+    const words = state.meta?.events ?? {};
+    const kind = substantive ? "substantive" : "routine";
+    const tip = [
+      `${str(event.form)} · filed ${str(event.filed_label) || dateLabel(event.filed_date)} · ${str(words.kind_labels?.[kind]) || kind}`,
+      list(event.items).map((it) => `Item ${str(it.number)}${str(it.title) ? ` ${str(it.title)}` : ""}`).join("; "),
+      str(words.status_labels?.[str(event.status)]) || str(event.status),
+      item.quoted ? "Quoted in this run's findings" : "",
+    ];
+    const shape = [
+      s("rect", { x: x - 8, y: axisY + 4, width: 16, height: 28, class: "tl-hit" }),
+      substantive
+        ? s("path", { d: `M ${x} ${y - 7} L ${x + 6} ${y} L ${x} ${y + 7} L ${x - 6} ${y} Z`, class: "tl-8k is-substantive" })
+        : s("circle", { cx: x, cy: y, r: 3.6, class: "tl-8k is-routine" }),
+      item.quoted ? s("circle", { cx: x, cy: axisY + 6, r: 3, class: "tl-quoted-dot" }) : "",
+    ];
+    if (substantive && categories.length && !narrow) {
+      const row = x - labelRows[0] > 96 ? 0 : x - labelRows[1] > 96 ? 1 : 0;
+      labelRows[row] = x;
+      const labelX = Math.min(Math.max(x, left + 40), width - 50);
+      shape.push(s("text", { x: labelX, y: axisY + 42 + row * 13, "text-anchor": "middle", class: "tl-label is-cat", text: categories.join(", ") }));
+    }
+    svg.append(timelineMark("8k", { "data-event-id": str(event.id), "data-kind": kind, "data-quoted": item.quoted ? "true" : "false" }, event.url, tip, shape, container));
+  }
+
+  // The run itself.
+  const rx = xAt(data.runDay);
+  const runEnd = rx > width - 110;
+  svg.append(
+    s(
+      "g",
+      { "data-tl": "run", class: "tl-run-mark" },
+      s("title", { text: `This run, started ${utc(run.started_at)}` }),
+      s("line", { x1: rx, x2: rx, y1: 12, y2: axisY + 30, class: "tl-run" }),
+      s("path", { d: `M ${rx - 4} 12 L ${rx + 4} 12 L ${rx} 18 Z`, class: "tl-run-head" }),
+      s("text", { x: runEnd ? rx - 7 : rx + 7, y: 16, "text-anchor": runEnd ? "end" : "start", class: "tl-label is-run", text: `Run ${dateLabel(run.started_at)}` }),
+    ),
+  );
+
+  const tipBox = h("div", { class: "tl-tip", role: "tooltip", id: "tl-tip", hidden: true });
+  const caption = h(
+    "p",
+    { class: "tl-caption" },
+    "Bars above the line: the annual (10-K) and quarterly (10-Q) reports this run read; a dot on top means a verified quote comes from it. Below the line: the 8-Ks the record lists since the annual report, ",
+    h("strong", { text: "filled diamonds" }),
+    " for those with an item of a substantive category, small circles for routine ones.",
+    Number.isFinite(data.newest) ? [" The hatched band runs from the newest filing read, ", h("strong", { text: dateLabel(run.as_of.newest_filed) }), ", to this run: nothing filed in it is in the record."] : "",
+    " Hover over or focus a mark to read it; select it to open the filing.",
+  );
+  container.replaceChildren(svg, tipBox, caption);
+  container.dataset.width = String(width);
+}
+
+/** One mark of the time line: a link to its filing (or a focusable group without one), its title and tooltip. */
+function timelineMark(kind, attrs, url, tipLines, shape, container) {
+  const lines = tipLines.filter(Boolean);
+  const href = safeUrl(url);
+  const props = { class: "tl-mark", "data-tl": kind, ...attrs, "aria-label": `${lines.join(". ")}.${href ? " Opens the filing in a new tab." : ""}`, "aria-describedby": "tl-tip" };
+  const node = href ? s("a", { ...props, href, target: "_blank", rel: "noopener noreferrer" }) : s("g", { ...props, tabindex: 0 });
+  node.append(s("title", { text: lines.join("\n") }), ...shape.filter(Boolean));
+  const show = () => {
+    const tip = container.querySelector(".tl-tip");
+    if (!tip) return;
+    tip.replaceChildren(
+      h("p", { class: "tl-tip-head", text: lines[0] ?? "" }),
+      ...lines.slice(1).map((line) => h("p", { class: "tl-tip-items", text: line })),
+      href ? h("p", { class: "tl-tip-open", text: "Select to open the filing ↗" }) : "",
+    );
+    tip.hidden = false;
+    const box = node.getBoundingClientRect();
+    const frame = container.getBoundingClientRect();
+    const x = box.left + box.width / 2 - frame.left;
+    tip.style.left = `${Math.max(0, Math.min(x - 120, frame.width - 260))}px`;
+    tip.style.top = `${box.bottom - frame.top + 6}px`;
+  };
+  const hide = () => {
+    const tip = container.querySelector(".tl-tip");
+    if (tip) tip.hidden = true;
+  };
+  node.addEventListener("mouseenter", show);
+  node.addEventListener("focus", show);
+  node.addEventListener("mouseleave", hide);
+  node.addEventListener("blur", hide);
+  return node;
+}
+
 function renderRunFigures(run) {
   const metrics = list(run.metrics);
   const notes = list(run.metrics_notes);
@@ -3319,6 +3693,8 @@ function latestEnd(metrics, kind) {
 function renderFigures(container, data) {
   const metrics = list(data.metrics);
   const notes = list(data.notes);
+  const series = list(data.series);
+  const row = (metric) => figureRow(metric, series);
   container.replaceChildren();
   if (str(state.meta?.figures_note)) container.append(h("p", { class: "hint", text: state.meta.figures_note }));
   if (metrics.length === 0) {
@@ -3340,11 +3716,11 @@ function renderFigures(container, data) {
           "section",
           { class: "fig-col", "aria-label": `${heading}: ${periodLabel}` },
           h("h4", { class: "fig-head" }, periodLabel, h("span", { class: "muted small", text: ` · ${heading.toLowerCase()}` })),
-          h("ul", { class: "fig-list" }, rows.map(figureRow)),
+          h("ul", { class: "fig-list" }, rows.map(row)),
         ),
       );
     }
-    container.append(grid, h("p", { class: "hint", text: "Open a figure to see its arithmetic and the reported values it used." }));
+    container.append(grid, h("p", { class: "hint", text: "Open a figure to see its arithmetic and the reported values it used. The line beside each value is its series in the record, oldest to newest, with this period circled." }));
     const tagged = metrics.filter(isTagged);
     if (tagged.length) container.append(taggedGroup(tagged));
   }
@@ -3383,11 +3759,56 @@ function taggedGroup(tagged) {
       { class: "fig-tagged-caution", "data-tagged-caution": "" },
       "The row labels are made from tag names, not taken from the company's own tables, and no person has compared them with the printed tables.",
     ),
-    h("ul", { class: "fig-list" }, tagged.map(figureRow)),
+    h("ul", { class: "fig-list" }, tagged.map((metric) => figureRow(metric, []))),
   );
 }
 
-function figureRow(metric) {
+/**
+ * A sparkline of the series the record sends for this figure's key and period: the values
+ * placed in a small box, oldest to newest, the figure's own period circled. Drawing only; the
+ * values and the period are the record's. Nothing when the record has no such series.
+ */
+function sparkline(metric, series) {
+  const match = series.find((x) => x.key === metric.key && x.period === metric.period);
+  const points = list(match?.points);
+  const values = points.map((p) => p.value).filter((v) => Number.isFinite(v));
+  if (values.length < 2) return h("span", { class: "spark-empty", "aria-hidden": "true" });
+  const W = 88;
+  const H = 20;
+  const pad = 2.5;
+  let lo = Math.min(...values);
+  let hi = Math.max(...values);
+  if (!(hi > lo)) {
+    hi += 1;
+    lo -= 1;
+  }
+  const xAt = (i) => pad + (i * (W - 2 * pad)) / Math.max(points.length - 1, 1);
+  const yAt = (v) => pad + ((hi - v) / (hi - lo)) * (H - 2 * pad);
+  let path = "";
+  let pen = false;
+  points.forEach((point, i) => {
+    if (!Number.isFinite(point.value)) {
+      pen = false;
+      return;
+    }
+    path += `${pen ? "L" : "M"}${xAt(i).toFixed(1)} ${yAt(point.value).toFixed(1)} `;
+    pen = true;
+  });
+  const svg = s("svg", { class: "spark", viewBox: `0 0 ${W} ${H}`, "aria-hidden": "true", focusable: "false", "data-spark": metric.key });
+  if (lo < 0 && hi > 0) svg.append(s("line", { x1: 0, x2: W, y1: yAt(0), y2: yAt(0), class: "spark-zero" }));
+  svg.append(s("path", { d: path.trim(), class: "spark-line" }));
+  const here = points.findIndex((p) => p.period_end === metric.period_end);
+  if (here >= 0 && Number.isFinite(points[here].value)) svg.append(s("circle", { cx: xAt(here), cy: yAt(points[here].value), r: 2.6, class: "spark-now" }));
+  return svg;
+}
+
+/** The class of a value cell: missing, negative (by the sign of the record's value) or plain. */
+function valueClass(metric) {
+  if (metric.value === null || metric.value === undefined) return "fig-value is-missing";
+  return Number.isFinite(metric.value) && metric.value < 0 ? "fig-value is-neg" : "fig-value";
+}
+
+function figureRow(metric, series = []) {
   const body = h("div", { class: "fig-body" });
   body.append(
     h("p", null, h("span", { class: "label", text: "Formula: " }), str(metric.formula) ? h("code", { text: metric.formula }) : "none; the value was read directly from one reported fact."),
@@ -3424,7 +3845,8 @@ function figureRow(metric) {
         "summary",
         null,
         h("span", { class: "fig-label" }, metric.label, metric.period === "instant" ? h("span", { class: "muted small", text: ` · ${metric.period_label}` }) : ""),
-        h("span", { class: metric.value === null ? "fig-value is-missing" : "fig-value", text: metric.display }),
+        sparkline(metric, series),
+        h("span", { class: valueClass(metric), text: metric.display }),
       ),
       body,
     ),
@@ -3689,7 +4111,482 @@ function openHashTarget() {
   if (target.kind === "thesis" && target.id !== state.thesisId) openThesis(target.id);
 }
 
+// ---------------------------------------------------------------- version 13 components
+//
+// Drawn on the specimen page (specimen.html) from made-up data until the backend sends them.
+// Each takes the record's shape documented in docs/design.md and computes nothing: outcomes,
+// arithmetic, margins, flips, changes and percentiles are all the record's own strings.
+
+/** A compiled test's outcome: its own glyphs (⊨ holds, ⊭ fails, ⊘ cannot compute), never a verdict's. */
+const TEST_MARK = { holds: "⊨", fails: "⊭", cannot_compute: "⊘" };
+const TEST_FALLBACK = { holds: "Holds", fails: "Fails", cannot_compute: "Cannot compute" };
+
+function testOutcome(outcome, label) {
+  const key = token(outcome, TEST_MARK);
+  return h(
+    "span",
+    { class: `ct-outcome o-${key}`, "data-outcome": key },
+    h("span", { class: "glyph", "aria-hidden": "true", text: TEST_MARK[key] ?? "·" }),
+    h("span", { text: str(label) || TEST_FALLBACK[key] || String(outcome) }),
+  );
+}
+
+/**
+ * (1) A compiled test on a claim: the expression in monospace, its outcome, each operand with
+ * the filing and date it comes from, the arithmetic and the margin.
+ */
+function compiledTest(test) {
+  const operands = list(test.operands);
+  return h(
+    "section",
+    { class: "ct", "data-compiled-test": str(test.claim_id) },
+    h("div", { class: "ct-head" }, h("p", { class: "ct-expr" }, h("code", { text: str(test.expression) })), testOutcome(test.outcome, test.outcome_label)),
+    h(
+      "div",
+      { class: "table-wrap", tabindex: "0", role: "region", "aria-label": `Operands of ${str(test.expression)}` },
+      h(
+        "table",
+        { class: "ct-table" },
+        h("thead", null, h("tr", null, ["Operand", "Value", "Period", "Filing", "Filed"].map((t) => h("th", { scope: "col", class: t === "Value" ? "num" : null, text: t })))),
+        h(
+          "tbody",
+          null,
+          operands.map((op) =>
+            h(
+              "tr",
+              null,
+              h("th", { scope: "row" }, h("code", { text: str(op.name) }), str(op.label) ? h("span", { class: "muted", text: ` ${op.label}` }) : ""),
+              h("td", { class: `num${signClass(str(op.display))}`, text: str(op.display) || "—" }),
+              h("td", { text: str(op.period_label) || "—" }),
+              h("td", null, externalLink(op.url, `${str(op.form)} ${str(op.accession)}`.trim() || "filing")),
+              h("td", { text: str(op.filed_label) || str(op.filed) || "—" }),
+            ),
+          ),
+        ),
+      ),
+    ),
+    h(
+      "div",
+      { class: "ct-foot" },
+      h("p", null, h("span", { class: "label", text: "Arithmetic: " }), h("span", { class: "ct-arith", text: str(test.arithmetic) || "none recorded" })),
+      h("p", null, h("span", { class: "label", text: "Margin: " }), h("span", { class: `ct-margin${signClass(str(test.margin_display))}`, text: str(test.margin_display) || "—" }), str(test.note) ? h("span", { class: "muted", text: ` ${test.note}` }) : ""),
+    ),
+  );
+}
+
+/**
+ * (2) The thesis over time: per claim a step line over the filing dates the record tested it
+ * at, holds above, cannot compute between, fails below, the flips the record names ringed and
+ * labelled with their filing.
+ */
+function thesisOverTime(record, width = 880) {
+  const claims = list(record.claims);
+  const labels = { ...TEST_FALLBACK, ...(record.outcome_labels ?? {}) };
+  const level = { holds: 0, cannot_compute: 1, fails: 2 };
+  const days = claims.flatMap((c) => list(c.points).map((p) => dayOf(p.filed))).filter(Number.isFinite);
+  if (days.length === 0) return h("p", { class: "muted", text: "The record tests no claim over time." });
+  const lo = Math.min(...days);
+  const hi = Math.max(...days);
+  const laneH = 64;
+  const top = 8;
+  const labelW = Math.min(250, width * 0.3);
+  const plotL = labelW + 74;
+  const plotR = width - 16;
+  const xAt = (day) => plotL + ((day - lo) / Math.max(hi - lo, DAY_MS)) * (plotR - plotL);
+  const H = top + claims.length * laneH + 24;
+  const svg = s("svg", { viewBox: `0 0 ${width} ${H}`, role: "img", "aria-label": "Each claim's test outcome at each filing date, with the filings where it flipped" });
+  claims.forEach((claim, index) => {
+    const y0 = top + index * laneH;
+    const yAt = (outcome) => y0 + 12 + (level[outcome] ?? 1) * 16;
+    svg.append(s("rect", { x: plotL - 6, y: y0 + 4, width: plotR - plotL + 12, height: laneH - 12, class: "tot-band" }));
+    for (const [outcome, l] of Object.entries(level)) {
+      svg.append(s("text", { x: plotL - 10, y: y0 + 15 + l * 16, "text-anchor": "end", class: "tot-state", text: str(labels[outcome]) }));
+    }
+    const text = str(claim.text);
+    svg.append(s("text", { x: 0, y: y0 + 18, class: "tot-lane-label" }, s("tspan", { class: "claim-id-svg", text: `${str(claim.claim_id)} ` }), text.length > 38 ? `${text.slice(0, 37)}…` : text), s("title", { text }));
+    const points = list(claim.points).filter((p) => Number.isFinite(dayOf(p.filed)));
+    let d = "";
+    points.forEach((p, i) => {
+      const x = xAt(dayOf(p.filed));
+      const y = yAt(p.outcome);
+      d += i === 0 ? `M ${x} ${y}` : ` H ${x} V ${y}`;
+    });
+    svg.append(s("path", { d, class: "tot-step" }));
+    for (const p of points) {
+      const key = token(p.outcome, TEST_MARK);
+      svg.append(
+        s("circle", { cx: xAt(dayOf(p.filed)), cy: yAt(p.outcome), r: 3.4, class: `tot-pt o-${key}` }, s("title", { text: `${str(p.form)} filed ${str(p.filed_label) || dateLabel(p.filed)}: ${str(labels[key])}` })),
+      );
+    }
+    for (const flip of list(claim.flips)) {
+      svg.append(
+        s("circle", { cx: xAt(dayOf(flip.filed)), cy: yAt(flip.to), r: 7, class: "tot-flip", "data-flip": str(flip.filed) }, s("title", { text: `${str(claim.claim_id)}: ${str(flip.label)}` })),
+      );
+    }
+  });
+  const ticks = s("g", { "aria-hidden": "true" });
+  const firstYear = new Date(lo).getUTCFullYear();
+  const lastYear = new Date(hi).getUTCFullYear();
+  for (let year = firstYear; year <= lastYear + 1; year += 1) {
+    const day = Date.UTC(year, 0, 1);
+    if (day < lo || day > hi) continue;
+    ticks.append(s("line", { x1: xAt(day), x2: xAt(day), y1: top, y2: H - 18, class: "tot-grid" }), s("text", { x: xAt(day) + 3, y: H - 6, class: "tot-date", text: String(year) }));
+  }
+  svg.prepend(ticks);
+  // The flips, in the record's words, under the chart rather than crowded into it.
+  const flips = h(
+    "ul",
+    { class: "tot-flips" },
+    claims.flatMap((claim) => list(claim.flips).map((flip) => h("li", null, h("span", { class: "claim-id", text: str(claim.claim_id) }), "Flipped: ", str(flip.label)))),
+  );
+  return h("div", { class: "tot", "data-thesis-over-time": "" }, svg, flips);
+}
+
+/** (3a) The as-of date control for the thesis form: empty means today; the server checks the bounds it states. */
+function asOfControl(spec) {
+  return h(
+    "div",
+    { class: "field asof-control" },
+    h("label", { for: "as_of", text: "As of" }),
+    h("p", { id: "as-of-hint", class: "hint", text: str(spec.hint) || "Read the record as it stood on this date: no filing made after it is read. Leave it empty to read everything filed up to today." }),
+    h(
+      "div",
+      { class: "asof-row" },
+      h("input", { id: "as_of", name: "as_of", type: "date", min: str(spec.min) || null, max: str(spec.max) || null, value: str(spec.value) || null, "aria-describedby": "as-of-hint err-as_of" }),
+      h("button", { type: "button", class: "secondary small", text: "Today" }),
+    ),
+    h("p", { id: "err-as_of", class: "field-error", hidden: true }),
+  );
+}
+
+/** (3b) The banner on a run made as of a past date, in the record's words. */
+function asOfBanner(request) {
+  return h(
+    "div",
+    { class: "asof-banner", role: "note", "data-as-of-request": str(request.date) },
+    h("span", { class: "asof-banner-date", text: str(request.label) || dateLabel(request.date) }),
+    h("p", { class: "label", text: "A run as of a past date" }),
+    h("p", { class: "asof-banner-line", text: str(request.line) }),
+  );
+}
+
+/** (4) The restatement ledger: what a later filing reported differently, both filings named. */
+function restatementLedger(record) {
+  const rows = list(record.rows);
+  const side = (entry, cls) =>
+    h(
+      "td",
+      { class: `num ${cls}` },
+      h("span", { class: `num-val${signClass(str(entry?.display))}`, text: str(entry?.display) || "—" }),
+      h("span", { class: "ledger-filing" }, externalLink(entry?.url, `${str(entry?.form)} ${str(entry?.filed_label)}`.trim() || "filing")),
+    );
+  return h(
+    "div",
+    { class: "table-wrap", tabindex: "0", role: "region", "aria-label": "Restatement ledger" },
+    h(
+      "table",
+      { class: "ledger", "data-ledger": "" },
+      h("thead", null, h("tr", null, ["Metric", "Period", "First reported", "Reported later", "Change"].map((t, i) => h("th", { scope: "col", class: i >= 2 ? "num" : null, text: t })))),
+      h(
+        "tbody",
+        null,
+        rows.map((row) =>
+          h(
+            "tr",
+            null,
+            h("th", { scope: "row", text: str(row.metric_label) }),
+            h("td", { text: str(row.period_label) }),
+            side(row.first, "ledger-first"),
+            side(row.later, "ledger-later"),
+            h("td", { class: `num ledger-change${signClass(str(row.change_display))}` }, str(row.change_display) || "—", str(row.note) ? h("span", { class: "ledger-filing", text: row.note }) : ""),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+/**
+ * (5) The peer strip: the company's value as a dot on its industry's distribution, the
+ * quartile box and median, and the record's own percentile line ("97th percentile of 212").
+ */
+function peerStrip(record) {
+  const rows = list(record.metrics).map((metric) => {
+    const W = 520;
+    const H = 40;
+    const lo = metric.min?.value;
+    const hi = metric.max?.value;
+    const ok = Number.isFinite(lo) && Number.isFinite(hi) && hi > lo;
+    const xAt = (v) => 8 + ((v - lo) / (hi - lo)) * (W - 16);
+    const svg = s("svg", { viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: "none", "aria-hidden": "true", focusable: "false" });
+    if (ok) {
+      for (const v of list(metric.peers)) if (Number.isFinite(v)) svg.append(s("circle", { cx: xAt(v), cy: 14 + ((v * 7919) % 7) - 3, r: 1.6, class: "peer-dot" }));
+      svg.append(s("line", { x1: xAt(lo), x2: xAt(hi), y1: 14, y2: 14, class: "peer-range" }));
+      if (Number.isFinite(metric.q1?.value) && Number.isFinite(metric.q3?.value)) {
+        svg.append(s("rect", { x: xAt(metric.q1.value), y: 8, width: Math.max(xAt(metric.q3.value) - xAt(metric.q1.value), 1), height: 12, class: "peer-iqr" }));
+      }
+      if (Number.isFinite(metric.median?.value)) svg.append(s("line", { x1: xAt(metric.median.value), x2: xAt(metric.median.value), y1: 5, y2: 23, class: "peer-median" }));
+      if (Number.isFinite(metric.company?.value)) svg.append(s("circle", { cx: xAt(metric.company.value), cy: 14, r: 6, class: "peer-you" }));
+      svg.append(
+        s("text", { x: 8, y: H - 2, class: "peer-tick", text: str(metric.min?.display) }),
+        s("text", { x: W - 8, y: H - 2, "text-anchor": "end", class: "peer-tick", text: str(metric.max?.display) }),
+        Number.isFinite(metric.median?.value) ? s("text", { x: xAt(metric.median.value), y: H - 2, "text-anchor": "middle", class: "peer-tick", text: `median ${str(metric.median.display)}` }) : "",
+      );
+    }
+    return h(
+      "div",
+      { class: "peer", "data-peer-metric": str(metric.metric_label) },
+      h("p", { class: "peer-metric" }, str(metric.metric_label), h("span", { class: "muted", text: str(metric.unit_label) })),
+      svg,
+      h("p", { class: "peer-read" }, h("strong", { class: signClass(str(metric.company?.display)).trim() || null, text: `${str(metric.company?.ticker)} ${str(metric.company?.display)}`.trim() }), str(metric.percentile_label)),
+    );
+  });
+  return h("div", { class: "peers", "data-peer-strip": "" }, h("p", { class: "hint", text: str(record.industry_label) }), rows);
+}
+
+// ---------------------------------------------------------------- the specimen page
+
+/** The specimen: the design system on made-up data, every component once, both themes by the toggle. */
+function initSpecimen() {
+  initTheme();
+  document.addEventListener("keydown", onKey);
+  els.keysButton?.addEventListener("click", openKeys);
+  let data;
+  try {
+    data = JSON.parse(document.getElementById("specimen-data")?.textContent ?? "");
+  } catch (error) {
+    document.getElementById("specimen-root")?.replaceChildren(h("p", { class: "alert", text: `The specimen data could not be read: ${error.message}.` }));
+    return;
+  }
+  // The note is the page's own run view, drawn by the same code from the made-up record.
+  state.sample = true;
+  state.sampleName = "specimen";
+  state.meta = data.meta;
+  state.sampleNote = str(data.note);
+  state.runId = data.run.id;
+  state.review = data.review && data.review.run_id === data.run.id ? data.review : null;
+  state.comparison = data.comparison ?? null;
+  renderRun(data.run);
+  watchTimelineWidth();
+
+  const v13 = data.v13;
+  const width = Math.max(Math.round(document.getElementById("spec-tot")?.clientWidth || 880), 320);
+  document.getElementById("spec-compiled")?.replaceChildren(...list(v13.compiled_tests).map(compiledTest));
+  document.getElementById("spec-tot")?.replaceChildren(thesisOverTime(v13.thesis_over_time, width));
+  document.getElementById("spec-asof")?.replaceChildren(asOfControl(v13.as_of_control), h("span", { class: "spec-label", text: "The banner on a run made as of a past date" }), asOfBanner(v13.as_of_request));
+  document.getElementById("spec-ledger")?.replaceChildren(restatementLedger(v13.restatements));
+  document.getElementById("spec-peers")?.replaceChildren(peerStrip(v13.peers));
+
+  const marks = document.getElementById("spec-marks");
+  if (marks) {
+    marks.replaceChildren(
+      h("span", { class: "spec-label", text: "Verdict stamps" }),
+      h("div", { class: "spec-row" }, Object.keys(VERDICT_GLYPH).map(verdictPill), h("span", { class: "pill review-pending", text: "not reviewed yet" })),
+      h("span", { class: "spec-label", text: "Stances, decisions, the second model" }),
+      h("div", { class: "spec-row" }, Object.keys(STANCE_MARK).map(stancePill), ["accepted", "rejected", "undecided"].map(decisionMark), meaningMark("passed"), meaningMark("partly")),
+      h("span", { class: "spec-label", text: "Provenance and limits" }),
+      h("div", { class: "spec-row" }, modelBadge(), ruleMark(), limitLine("span", "A limit of the record"), h("span", { class: "mark-reject" }, rejectGlyph(), " Refused"), h("span", { class: "page-tag", text: "Sample record" })),
+      h("span", { class: "spec-label", text: "What changed between two filings" }),
+      h("div", { class: "spec-row" }, Object.keys(CHANGE_MARK).map(changeMark), h("ins", { class: "seg seg-add", text: "added words" }), h("del", { class: "seg seg-del", text: "removed words" })),
+      h("span", { class: "spec-label", text: "Run status (never a filled tag)" }),
+      h("div", { class: "spec-row" }, ["complete", "running", "partial", "failed"].map((st) => h("span", { class: `status-word st-${st}` }, statusMark(st), ` ${capitalize(st)}`))),
+      h("span", { class: "spec-label", text: "Test outcomes (version 13)" }),
+      h("div", { class: "spec-row" }, Object.keys(TEST_MARK).map((k) => testOutcome(k, ""))),
+      h("span", { class: "spec-label", text: "Numbers" }),
+      h("div", { class: "spec-row" }, h("span", { class: "fig-value", text: "$96.22B" }), h("span", { class: "fig-value is-neg", text: "−$1.40B" }), h("span", { class: "fig-value is-missing", text: "not reported" }), h("code", { text: "0001045810-26-000082" })),
+      h("span", { class: "spec-label", text: "Controls" }),
+      h(
+        "div",
+        { class: "spec-row" },
+        h("button", { type: "button", class: "primary", text: "Test the thesis" }),
+        h("button", { type: "button", class: "secondary", text: "Load example" }),
+        h("button", { type: "button", class: "secondary small", text: "Accept" }),
+        h("button", { type: "button", class: "primary", disabled: true, text: "Disabled" }),
+        h("a", { href: "#spec-marks", text: "A link" }),
+        h("kbd", { text: "j" }),
+      ),
+    );
+  }
+  const swatches = document.getElementById("spec-swatches");
+  if (swatches) {
+    const tokens = ["--bg", "--surface", "--surface-2", "--ink", "--ink-2", "--line", "--accent", "--support", "--challenge", "--neutral", "--limit", "--model", "--reject", "--rule", "--change", "--neg", "--mark-bg"];
+    const paint = () => {
+      const styles = getComputedStyle(document.documentElement);
+      swatches.replaceChildren(
+        ...tokens.map((name) =>
+          h("div", { class: "swatch" }, h("div", { class: "swatch-chip", style: `background: var(${name})` }), h("p", null, h("strong", { text: name })), h("p", { class: "muted", text: styles.getPropertyValue(name).trim() })),
+        ),
+      );
+    };
+    paint();
+    els.themeToggle?.addEventListener("click", () => requestAnimationFrame(paint));
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "t") requestAnimationFrame(paint);
+    });
+  }
+}
+
+// ---------------------------------------------------------------- theme, keys, print
+
+/** The reader's stored theme, or "" when none is stored or the browser refuses storage. */
+function storedTheme() {
+  try {
+    const value = window.localStorage.getItem(THEME_KEY);
+    return THEMES.includes(value) ? value : "";
+  } catch {
+    return "";
+  }
+}
+
+function systemTheme() {
+  return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "terminal" : "paper";
+}
+
+/** ?theme=paper|terminal for this page load only (screenshots, a shared link); never stored. */
+function urlTheme() {
+  const value = new URLSearchParams(location.search).get("theme");
+  return THEMES.includes(value) ? value : "";
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute("data-theme", theme);
+  if (!els.themeToggle) return;
+  const other = theme === "paper" ? "terminal" : "paper";
+  els.themeToggle.setAttribute("aria-label", `Theme: ${THEME_NAMES[theme]}. Switch to ${THEME_NAMES[other]}`);
+  els.themeToggle.dataset.theme = theme;
+  if (state.timelineRun) drawTimeline(els.timeline, state.timelineRun);
+}
+
+/** Switch theme and remember the choice when the browser lets the page store it. */
+function toggleTheme() {
+  const now = document.documentElement.getAttribute("data-theme") === "terminal" ? "terminal" : "paper";
+  const next = now === "paper" ? "terminal" : "paper";
+  try {
+    window.localStorage.setItem(THEME_KEY, next);
+  } catch {
+    // Storage refused (a private window, a sandbox): the switch still holds for this page.
+  }
+  applyTheme(next);
+}
+
+function initTheme() {
+  applyTheme(urlTheme() || storedTheme() || systemTheme());
+  els.themeToggle?.addEventListener("click", toggleTheme);
+  // With no stored choice, follow the system when it changes.
+  window.matchMedia?.("(prefers-color-scheme: dark)").addEventListener?.("change", () => {
+    if (!urlTheme() && !storedTheme()) applyTheme(systemTheme());
+  });
+}
+
+/** Whether a key press belongs to a field the reader is typing in. */
+function typing(target) {
+  if (!(target instanceof Element)) return false;
+  return Boolean(target.closest("input, textarea, select, [contenteditable=''], [contenteditable='true']"));
+}
+
+/** Move the focus to the next (+1) or previous (-1) claim's docket, from the one in focus or in view. */
+function moveClaim(step) {
+  const dockets = [...document.querySelectorAll("#claim-list details.claim")];
+  if (dockets.length === 0) return;
+  const active = document.activeElement?.closest?.("details.claim");
+  let index = dockets.indexOf(active);
+  if (index < 0) {
+    // From the first docket whose top is below the top of the window.
+    const below = dockets.findIndex((d) => d.getBoundingClientRect().top > 8);
+    index = step > 0 ? (below < 0 ? dockets.length - 1 : below - 1) : below < 0 ? dockets.length : below;
+  }
+  const next = dockets[Math.max(0, Math.min(dockets.length - 1, index + step))];
+  const summary = next.querySelector("summary");
+  summary.focus({ preventScroll: true });
+  const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  next.scrollIntoView({ block: "start", behavior: reduce ? "auto" : "smooth" });
+}
+
+function openKeys() {
+  if (!els.keysDialog) return;
+  if (typeof els.keysDialog.showModal === "function") {
+    if (!els.keysDialog.open) els.keysDialog.showModal();
+  } else {
+    els.keysDialog.setAttribute("open", "");
+  }
+}
+
+/** The page's keys: / ticker, j and k claims, t theme, ? the list. Ignored while typing or with a modifier. */
+function onKey(event) {
+  if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
+  if (typing(event.target)) {
+    if (event.key === "Escape" && event.target === els.ticker) els.ticker.blur();
+    return;
+  }
+  if (els.keysDialog?.open && event.key !== "Escape") return;
+  switch (event.key) {
+    case "/":
+      event.preventDefault();
+      els.ticker?.focus();
+      els.ticker?.select();
+      break;
+    case "j":
+      event.preventDefault();
+      moveClaim(1);
+      break;
+    case "k":
+      event.preventDefault();
+      moveClaim(-1);
+      break;
+    case "t":
+      event.preventDefault();
+      toggleTheme();
+      break;
+    case "?":
+      event.preventDefault();
+      openKeys();
+      break;
+    default:
+      break;
+  }
+}
+
+/** Printing opens every closed disclosure so the note prints whole, and closes them after. */
+const printOpened = [];
+function beforePrint() {
+  for (const node of document.querySelectorAll("#result-panel details:not([open])")) {
+    node.open = true;
+    printOpened.push(node);
+  }
+}
+function afterPrint() {
+  while (printOpened.length) printOpened.pop().open = false;
+}
+
+/** Redraw the time line when the note changes width (a resized window, a rotated phone). */
+function watchTimelineWidth() {
+  if (!els.timeline || typeof ResizeObserver !== "function") return;
+  let frame = 0;
+  new ResizeObserver(() => {
+    cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(() => {
+      if (!state.timelineRun || els.timelineSection.hidden) return;
+      const width = Math.round(els.timeline.clientWidth);
+      if (Math.abs(width - Number(els.timeline.dataset.width || 0)) > 4) drawTimeline(els.timeline, state.timelineRun);
+    });
+  }).observe(els.timeline);
+}
+
+function initChrome() {
+  initTheme();
+  document.addEventListener("keydown", onKey);
+  els.keysButton?.addEventListener("click", openKeys);
+  window.addEventListener("beforeprint", beforePrint);
+  window.addEventListener("afterprint", afterPrint);
+  watchTimelineWidth();
+}
+
 function init() {
+  if (document.body.dataset.page === "specimen") {
+    initSpecimen();
+    return;
+  }
+  initChrome();
   els.form.addEventListener("submit", onSubmit);
   els.figuresOnly.addEventListener("click", onFiguresOnly);
   els.filingChanges.addEventListener("click", onFilingChanges);

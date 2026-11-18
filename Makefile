@@ -147,3 +147,13 @@ site-browse:
 site-check:
 	@test -n '$(URL)' || { echo 'Usage: make site-check URL=https://ee292m-visualization.vercel.app'; exit 1; }
 	@$(SITE_PY) tools/snapshots/check.py '$(URL)' '$(SITE_DIR)'
+
+# The live site's two secrets, copied from the capstone's gitignored .env into the Vercel
+# project's environment variables by a throwaway container (tools/live/push_secrets.sh), using
+# the Vercel CLI login saved on this machine. No value is printed.
+#   make site-secrets                    say what is present, change nothing
+#   make site-secrets MODE=push          set them for production
+#   make site-secrets MODE=push REDEPLOY=1   and redeploy production so the site reads them
+.PHONY: site-secrets
+site-secrets:
+	@MODE='$(or $(MODE),check)' REDEPLOY='$(REDEPLOY)' docker compose -p ee292m-site-secrets -f tools/live/secrets.compose.yaml run --rm secrets

@@ -31,17 +31,18 @@
   }
 
   window.fetch = async (input, init = {}) => {
-    const request = new Request(input, init);
-    const url = new URL(request.url);
+    const isRequest = typeof Request !== "undefined" && input instanceof Request;
+    const url = new URL(isRequest ? input.url : String(input), location.href);
     if (url.origin !== location.origin || url.pathname.startsWith(base.pathname)) {
       return realFetch(input, init);
     }
-    if (request.method !== "GET" && request.method !== "HEAD") {
+    const method = String(init.method ?? (isRequest ? input.method : "GET")).toUpperCase();
+    if (method !== "GET" && method !== "HEAD") {
       return refusal(405, STARTS_WORK);
     }
     const file = recorded(url);
     if (!file) return refusal(404, notRecorded(`GET ${url.pathname}${url.search}`));
-    return realFetch(file, { method: request.method, signal: request.signal });
+    return realFetch(file.href, { method, signal: init.signal ?? (isRequest ? input.signal : undefined) });
   };
 
   function note(text) {

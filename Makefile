@@ -1,4 +1,4 @@
-.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe replay golden-check golden-baseline profile bench eval eval-validate golden-sheet backup restore-check up-recorded live-walk changes breakdowns lock clean data vercel-deps referee versions-up versions-down versions-status versions-logs pr pr-describe pr-merge site-survey site-run-v1 site-export site-index site-scan site-test site-check
+.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe replay golden-check golden-baseline profile bench eval eval-validate golden-sheet backup restore-check up-recorded live-walk changes breakdowns lock clean data vercel-deps referee versions-up versions-down versions-status versions-logs pr pr-describe pr-merge site-survey site-run-v1 site-export site-index site-scan site-test site-browse site-check
 
 # make <target> runs the capstone by default; make APP=week2 <target> runs the Week 2 app.
 APP ?= capstone
@@ -91,6 +91,7 @@ SITE_DIR := Homework/Week 2/visualization/snapshots
 SITE_IMAGE := python:3.14-slim
 SITE_TAGS := $(shell git tag -l 'capstone-v*' | sed -n 's/^capstone-v\([0-9][0-9]*\)$$/\1/p' | sort -n)
 SITE_VERSIONS = $(if $(filter command line environment,$(origin VERSIONS)),$(VERSIONS),$(SITE_TAGS))
+SITE_PY_STDIN := docker run --rm -i --user "$$(id -u):$$(id -g)" -v "$(CURDIR):/repo:ro" -w /repo $(SITE_IMAGE) python -B -I
 SITE_PY := docker run --rm --user "$$(id -u):$$(id -g)" -v "$(CURDIR):/repo" -w /repo \
 	--add-host=host.docker.internal:host-gateway $(SITE_IMAGE) python -B -I
 
@@ -122,7 +123,26 @@ site-scan:
 site-test:
 	@$(SITE_PY) -m unittest discover -s tools/snapshots -p 'test_*.py'
 	@docker run --rm -v "$(CURDIR):/repo:ro" -w /repo node:24-slim sh -c \
-	  'node --check tools/snapshots/shim.js && for f in "$(SITE_DIR)"/v*/snapshot.js; do node --check "$$f" || exit 1; done'
+	  'node --test tools/snapshots/test_shim.mjs && for f in "$(SITE_DIR)"/v*/snapshot.js; do node --check "$$f" || exit 1; done'
+
+# Each snapshot as a browser renders it, served by the Week 2 app on 127.0.0.1:8765 (started
+# and stopped here): headless Chromium dumps the DOM of /vN/ and, from version 2 on, /vN/?sample,
+# and tools/snapshots/browse_check.py checks the banner, that every call the page made on load
+# was answered, and that the recorded run is shown.
+SITE_CHROME := docker run --rm --add-host=host.docker.internal:host-gateway zenika/alpine-chrome:124 \
+	--headless --no-sandbox --disable-gpu --virtual-time-budget=8000 --dump-dom
+
+site-browse:
+	@$(MAKE) -s APP=week2 up > /dev/null
+	@trap '$(MAKE) -s APP=week2 down > /dev/null 2>&1' EXIT; \
+	curl -s -o /dev/null -m 5 --retry 30 --retry-delay 1 --retry-all-errors http://127.0.0.1:8765/versions || exit 1; \
+	failed=0; for n in $(SITE_VERSIONS); do \
+	  $(SITE_CHROME) "http://host.docker.internal:8765/v$$n/" 2> /dev/null \
+	    | $(SITE_PY_STDIN) tools/snapshots/browse_check.py "$$n" page '$(SITE_DIR)' || failed=1; \
+	  test -f '$(SITE_DIR)'/v$$n/sample-run.json || continue; \
+	  $(SITE_CHROME) "http://host.docker.internal:8765/v$$n/?sample" 2> /dev/null \
+	    | $(SITE_PY_STDIN) tools/snapshots/browse_check.py "$$n" sample '$(SITE_DIR)' || failed=1; \
+	done; exit $$failed
 
 site-check:
 	@test -n '$(URL)' || { echo 'Usage: make site-check URL=https://ee292m-visualization.vercel.app'; exit 1; }

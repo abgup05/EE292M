@@ -8,7 +8,9 @@ Pure. A measure bears on a claim for one or more stated reasons, in this order:
   (:func:`app.core.claimtest.measures_named`), whether or not they state a test;
 - ``part named in the claim``: a segment, product line or geography the claim's test names,
   or whose name, as a tagged breakdown the run already read labels it, the claim's words
-  contain.
+  contain;
+- ``growth compared with peers in the claim``: revenue, for a claim that compares the
+  company's growth with its peers, competitors or industry and names no measure.
 
 The headline is drawn from the claims, in claim order: the sides of a claim's computed test
 (the figures the claim is about, for the period it is about); for a claim with no test, the
@@ -35,6 +37,20 @@ TEST_OPERAND = "test operand"
 CITED = "cited by a finding"
 NAMED = "named in the claim"
 PART_NAMED = "part named in the claim"
+PEER_GROWTH = "growth compared with peers in the claim"
+PEERS = re.compile(
+    r"\b(?:peers?|competitors?|rivals?|comparable companies|its (?:industry|sector)|"
+    r"the (?:industry|sector)|industry average|other (?:retailers|companies|filers))\b",
+    re.IGNORECASE,
+)
+GROWS = re.compile(r"\b(?:grow(?:s|ing|n|th)?|grew|outgrow\w*|expanding)\b", re.IGNORECASE)
+
+
+def compares_with_peers(text: str) -> bool:
+    """True when a claim's words compare the company with peers, competitors or its industry."""
+    return PEERS.search(text) is not None
+
+
 CHANGE_SUFFIXES = ("_yoy", "_qoq")
 SHORT_LABEL = 3
 
@@ -137,6 +153,9 @@ def claim_relevance(
                 add(base_key(metric.key), CITED)
     for key in measures_named(claim.text):
         add(key, NAMED)
+    # "Growing faster than its peers" names no measure; growth with none named is revenue's.
+    if not reasons and compares_with_peers(claim.text) and GROWS.search(claim.text):
+        add("revenue", PEER_GROWTH)
     lowered = claim.text.casefold()
     for axis, label in parts:
         # A short label ("US") is matched as written, so that the word "us" is not a country.

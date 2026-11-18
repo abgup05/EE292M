@@ -706,14 +706,24 @@ def _who_wrote(run: Run) -> str:
     parts = ["The figures under each claim, their readings and the odds: computed by code."]
     if analysis.corollaries_step == "answered":
         parts.append(
-            f"Corollaries: proposed by {analysis.corollaries_by or 'a model'}, computed by code."
+            f"Corollaries: proposed by a model{_answers(analysis.corollaries_by)}, computed "
+            "by code."
         )
     if analysis.argument_by == "model":
         parts.append(
-            f"The argument: written by {analysis.argument_detail or 'a model'}, every sentence "
-            "audited by code (a sentence that fails is kept and marked)."
+            f"The argument: written by a model{_answers(analysis.argument_detail)}, every "
+            "sentence audited by code (a sentence that fails is kept and marked)."
         )
     return " ".join(parts)
+
+
+def _answers(detail: str) -> str:
+    """Where a model's answers came from, in brackets: "(claude-opus-5-5 via the Anthropic
+    API)", or "(its answers replayed from cassette ...)"."""
+    if not detail:
+        return ""
+    replayed = "replayed from "
+    return f" (its answers {detail})" if detail.startswith(replayed) else f" ({detail})"
 
 
 def _sentence_line(sentence: ArgSentence, indent: str = "") -> str:

@@ -182,3 +182,45 @@ def test_a_condition_may_state_its_own_threshold_and_nothing_else() -> None:
     assert not wrong.verified and "60%" in wrong.problems[0]
     plain = ArgSentence(text="Gross margin below 65% would change it.", cites=["an:x"])
     assert not audit_sentence(plain, KNOWN, set(), AuditCounts()).verified
+
+
+def test_a_bare_year_is_carried_by_a_cited_items_own_date_and_by_nothing_else() -> None:
+    known = {
+        "ev1": Citable("event", True, ("2026-11-10",), years=frozenset({"2026"})),
+        "an:x": KNOWN["an:x"],
+    }
+
+    def audit(text: str, *cites: str) -> ArgSentence:
+        return audit_sentence(
+            ArgSentence(text=text, cites=list(cites)), known, set(), AuditCounts()
+        )
+
+    assert audit("The 2026 8-K names a new chief executive.", "ev1").verified
+    wrong = audit("The 2024 fee increase explains it.", "ev1")
+    assert wrong.problems == ["writes 2024, which nothing it cites carries"]
+    # The year is carried by the item cited, not by any item of the run.
+    assert not audit("The 2026 8-K names a new chief executive.", "an:x").verified
+
+
+def test_a_claim_that_compares_growth_with_peers_is_tied_to_revenue() -> None:
+    from app.core.relevance import compares_with_peers
+
+    peer = Claim(id="c4", text="Costco is growing faster than its retail peers")
+    found = claim_relevance(peer, None, [], METRICS)
+    assert [(m.key, m.reasons) for m in found] == [
+        ("revenue", ["growth compared with peers in the claim"])
+    ]
+    for text in (
+        "Margins are above those of its competitors.",
+        "It is taking share from rivals.",
+        "Returns are better than the industry average.",
+    ):
+        assert compares_with_peers(text), text
+    for text in ("Revenue is growing.", "Management is excellent.", "It appears to be growing."):
+        assert not compares_with_peers(text), text
+        assert (
+            claim_relevance(Claim(id="c", text="Management is excellent."), None, [], METRICS) == []
+        )
+    # A measure the claim names stands; revenue is not added beside it.
+    named = Claim(id="c5", text="Gross margin is above its peers'.")
+    assert [m.key for m in claim_relevance(named, None, [], METRICS)] == ["gross_margin"]

@@ -110,6 +110,17 @@
         "exhibits": "Exhibits",
         "other": "Other"
       },
+      "status_labels": {
+        "read": "read",
+        "failed": "could not be read",
+        "capped": "not read: the cap per run came first",
+        "out_of_time": "not read: the run time limit came first",
+        "index_only": "listed from the index only"
+      },
+      "kind_labels": {
+        "substantive": "substantive",
+        "routine": "routine"
+      },
       "substantive": [
         "accounting",
         "control",
@@ -123,7 +134,7 @@
     }
   },
   "run": {
-    "id": "run-b94fb81cbfbb",
+    "id": "run-0ed7f6c80957",
     "inputs": {
       "ticker": "NVDA",
       "decision": "Whether to keep an overweight position in NVIDIA into the next earnings report",
@@ -143,8 +154,8 @@
     "status": "complete",
     "stage": "done",
     "stage_detail": "",
-    "started_at": "2026-11-18T08:18:40.358649Z",
-    "finished_at": "2026-11-18T08:18:40.804547Z",
+    "started_at": "2026-11-18T08:22:42.078768Z",
+    "finished_at": "2026-11-18T08:22:42.540064Z",
     "company": {
       "cik": 1045810,
       "ticker": "NVDA",
@@ -338,7 +349,7 @@
         "accession": null,
         "period_end": null,
         "published_date": null,
-        "retrieved_at": "2026-11-18T08:18:40.712432Z",
+        "retrieved_at": "2026-11-18T08:22:42.446904Z",
         "content_hash": "f6870031195cd1dc226506fcf891f4096679d400ac6139b9909a117dc9648f9b",
         "extraction_status": "extracted",
         "sections": 0,

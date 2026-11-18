@@ -129,38 +129,124 @@ coverage stage also gained the four new counts (1 compiled, 1 holds).
 Each claim also records who read it (`Claim.readings`, `ComputedTest.read_by`, `Run.claim_readers`), and the
 brief prints "Read by" under each test. With the model parser off (the default) that is the grammar alone.
 
-## Two readers: the grammar and a model parser
+## The measure catalogue (`core/measures.py`)
 
-A second reader can be turned on: `EVIDENCE_DESK_CLAIM_READER=model` (off when empty or `grammar`), with
-`ANTHROPIC_READER_MODEL` (default `claude-haiku-5-5`), both in `.env.example`. The model parser
-(`engines/claim_reader.py`) is given the claim, escaped inside a `<claim>` element, and the measures, forms and
-periods this version computes, and answers the typed test as JSON under a schema (step `read`, one request per
-claim) through the same transport and cassettes as every model step; text it copies back is unescaped. Its
-answer is validated into the grammar's own `ClaimTest` (`core/claim_reading.py`) and refused when it does not
-validate or names anything unsupported: an unknown measure, form, comparison, function, period kind or unit, or
-a shape that does not fit the form (a direction between two measures, a growth threshold in dollars, a share
-without a member). "Not a claim this tool can compute" is a valid answer. Every test the grammar compiles from
-the 210 own labels survives the round trip through that JSON unchanged (`tests/test_claim_reading.py`).
+Every measure a claim test can name, in one place: the metrics panel's 18, as before, and 39
+more taken from the "metric" refusals of sets A and B (below). Each entry has its key, its
+label, its kind (an amount over a period, a balance, a percent, per share, or a share count),
+the words a claim names it by, and how it is computed: a concept group with alternatives
+(`facts.CLAIM_GROUPS`), or a written formula over other measures. Added:
 
-**What counts** (`policy.reading_counts`):
+- **Shareholder returns:** `share_repurchases`, `dividends_paid`, and `shareholder_returns` =
+  repurchases + dividends (a company that pays no dividend counts zero for it, and says so).
+- **Debt and cash:** `long_term_debt` (non-current), `current_debt`, `commercial_paper`,
+  `total_debt` = the three (a part the balance sheet does not report counts zero; leases are left
+  out), `marketable_securities`, `cash_and_securities` = cash + marketable securities, `net_cash`
+  = cash and securities − total debt, `net_debt` the reverse.
+- **Expenses:** `total_operating_expenses` (as reported; else gross profit less operating
+  income), `sga` (as reported; else sales and marketing + G&A), `sales_marketing`,
+  `general_admin`, `sbc`, `d_and_a`, `cost_of_revenue`, `interest_expense`, `interest_income`,
+  `other_income`.
+- **Tax:** `income_tax`, `pretax_income`, `effective_tax_rate` = income tax ÷ pre-tax income.
+- **Ratios to revenue:** `sga_ratio`, `sales_marketing_ratio`, `opex_ratio`, `capex_ratio`,
+  `sbc_ratio`; a four-quarter ratio sums both parts over the four quarters.
+- **Balance sheet:** `total_assets`, `total_liabilities`, `equity`, `goodwill`, `ppe`,
+  `accounts_payable`, `deferred_revenue` (current + non-current, and each part).
+- **The diluted share count:** `diluted_shares` (weighted average; never differenced, so a
+  fourth quarter needs its own fact; no four-quarter total).
 
-- With the model parser off, a computed test counts toward a verdict only when the grammar compiled the whole
-  sentence, which, under the rule above, is the only way it compiles.
-- With it on, a test counts only when the grammar and the model parser arrive at the same canonical test. When
-  they differ, or only one of them reads a test in the claim, the claim shows both readings, "Readings differ:
-  not counted", the grammar's test (if any) is still computed and shown but counts as nothing, and the verdict
-  rests on the findings alone. A reader that could not be asked reads nothing, and the run's errors say so.
+None of these is on the metrics panel, in the restatement ledger or kept by `record_facts`: the
+reported-figures report and the tripwire's figures stage are unchanged, and `make figures` on
+the eight probe companies printed the same output before and after (`docs/evidence/measures-eight-companies.md`).
 
-With the model parser off nothing is asked: every recorded request is unchanged, the replay and the tripwire
-match (`make golden-check`), and no `read` request exists in any cassette.
+**A part of the company** (from a filing's tagged breakdowns, so with no history): a segment's
+or a geography's revenue, `revenue(segment "X")[filing]`; its change on a year earlier when the
+filing tags both years, `yoy(revenue(segment "X"))[filing]`; and a segment's operating income,
+`operating_income(segment "X")[filing]`, read from a breakdown built only for claim tests
+(`breakdowns.CLAIM_SPECS`, kept apart in the cache). A model reader may name a part; **the grammar
+does not**, because its labels say a part's figure is not the company's (d089, d129, h040, h041
+expect none). Those four labels may be outdated now that a part's figure can be computed; they
+were left as they are, for a deliberate relabelling.
 
-`make eval ARGS='claim-readers --set eval/claim-tests-foreign.json --record --max-calls 120'` reads every claim
-of a set with both readers, through the cassette `eval/cassettes/claim-readers`, and writes
-`eval/results/claim-readers-<set>.csv`: one row per claim with each reader's test (or `none` and why), whether
-they agree, who answered for the model (from the cassette's record of it), and empty columns for a judge. It
-prints the number of calls before making any and refuses `--record` without `--max-calls` or above it. It was
-built and tested with a fake transport only. **No model reading has been recorded, so there is no agreement
-rate.** Without a recording, on set A it says: 120 claims, 0 answered, 120 requests to make.
+**Which of the eight have each measure** for the newest fiscal year: `make measures-probe` (live;
+the eight by default) computes each measure as a claim test does and names each miss with its
+reason. Seven of the added measures have a value for all eight; five are reported by four or
+fewer: sales and marketing and its ratio (2 of 8), commercial paper (2), G&A (3), non-current
+deferred revenue (4). A claim about one of them on a company that does not tag it cannot be
+computed, and says which concept was missing. Every one of the eight newest 10-Ks tags a segment's
+revenue for both years; six tag a segment's operating income (not JPM, TSLA). The table and every
+miss: `docs/evidence/measures-eight-companies.md`.
+
+## Readers and the counting rule
+
+The grammar reads every claim. Up to two model readers can read it too:
+`EVIDENCE_DESK_CLAIM_READER=model` (one) or `models` (two), off when empty or `grammar`, with
+`ANTHROPIC_READER_MODEL` (default `claude-haiku-5-5`) and `ANTHROPIC_READER_MODEL_2` (default
+`claude-sonnet-5-5`), all in `.env.example`. A model reader (`engines/claim_reader.py`) is given the
+claim, escaped inside a `<claim>` element, and what this version computes, built from the catalogue
+(each measure, its kind and, where derived, its formula; the forms; the periods; how a part's
+measure is written), and answers the typed test as JSON under a schema, one request per claim,
+through the same transport and cassettes as every model step (step `read`; the second reader
+`read_2`, because a cassette's key holds the step and not the model). Its answer is validated into
+the grammar's own `ClaimTest` (`core/claim_reading.py`) and refused when it does not validate or
+names anything unsupported. "Not a claim this tool can compute" is a valid answer.
+
+**One normal form** (`core/claim_normal.py`, pure). Readers write one test in several ways; each
+reading is put in one form before readings are compared: `a > b` and `b < a` are one (the more
+recent term first); a named fiscal year or quarter is counted back from the newest one the facts
+hold (in a run; the harness, which reads no facts, leaves it named); a share or a part is always of
+the newest filing; growth above or below zero is a rise or fall on the same span (`yoy`, `qoq`,
+`cagr` over N years); a compound rate over one year is the growth; a count of rises is a whole
+number (`> 3` is `>= 4`); numbers to six significant digits; a member's name without case, spacing
+or "&". `>` and `>=` stay different for an amount or a percent. Each equivalence has a test that
+failed first against a stub returning the canonical text (`tests/test_claim_normal.py`).
+
+**What counts** (`policy.reading_agreement`):
+
+- **The grammar alone** (the default): a compiled test counts, as before. This is **one reader**,
+  and the run says so in `Run.claim_reading_rule`: "One reader: the grammar. A computed test
+  counts when the grammar compiles the whole sentence; no second reading checks it."
+- **With model readers:** a test counts when at least two readers reach the same normal form. The
+  test computed is the grammar's writing of it when the grammar is one of them, else the first
+  agreeing model's: so a test can count when the grammar refused it and both models agree.
+- **Three readers, one dissent:** when two agree and the third writes a different test (not a
+  refusal), it counts, the computed test is marked "counted, with one dissenting reading"
+  (`ComputedTest.agreement` `agreed_with_dissent`), and the dissent is shown
+  (`ComputedTest.dissent`, and in its note). A refusal is not a dissent.
+- **No two agree:** every reading is shown ("Readings differ: not counted"), the grammar's test (if
+  it read one) is computed and shown but counts as nothing, and the verdict rests on the findings
+  alone. A reader that could not be asked reads nothing, and the run's errors say so.
+
+Whether a counted reading moves a verdict still depends on its outcome: a test that cannot be
+computed counts as nothing, whoever read it.
+
+The payload fields added for this, all additive: `Run.claim_reading_rule`;
+`ClaimReading.normal_form` and the reader value `model_2`; `ComputedTest.agreement` (`one_reader`,
+`agreed`, `agreed_with_dissent`, `not_agreed`), `agreement_label` and `dissent`. `readings`,
+`read_by` and `claim_readers` keep their shapes (`claim_readers` is "grammar, model and model_2"
+with two models). With no model reader nothing is asked: every recorded request is unchanged and
+the replay and the tripwire match (`make golden-check`).
+
+## The claim-readers harness and the judge's file
+
+`make eval ARGS='claim-readers --set FILE --record --max-calls N'` reads every claim of a set with
+the grammar and the model readers (`--readers models`, the default; `model`; or `grammar`, which asks
+nothing), through the cassette `eval/cassettes/claim-readers`, and writes
+`eval/results/claim-readers-<set>.csv`: one row per claim with each reader's normal form (or `none`
+and why), who answered for each model (from the cassette), which pairs of readers agree, the rule's
+conclusion, the test it would count, the dissent, and three empty judge columns. Before any call it
+prints, for each model, how many requests the cassette already answers and how many it would make;
+it refuses `--record` without `--max-calls` or above it; answers are kept as they arrive, so a run
+stopped part way resumes without asking again. The summary counts each conclusion and names its
+claims, so "counted, with one dissenting reading" is countable on its own.
+
+`--judge` also writes `claim-readers-<set>-for-judge.md`, for a judge who has not seen the grammar:
+the notation in plain words (generated from the catalogue), then every reading the rule would
+count, with its sentence and normal form and an empty verdict column. It does not say which
+readings had a dissent. Built and tested with fake transports only. **No model reading has been
+recorded, so there is no agreement rate and no model reader's accuracy.** Grammar alone (no key),
+the judge's files for sets A and B are `eval/results/claim-readers-claim-tests-foreign-for-judge.md`
+(31 counted readings) and `eval/results/claim-readers-claim-tests-foreign-b-for-judge.md` (20).
 
 ## Compiler against a model (evaluation only)
 
@@ -272,8 +358,8 @@ claims nobody here has read. Set B is that test.
 5.5, 80 marked numeric and 40 not, 40 per company, none shared with set A, written without sight of the grammar
 and committed before the grammar's author read it. The grammar of 10425c0 was run on all 120 and its raw output
 committed (`eval/results/claim-tests-foreign-b-raw.txt`, de0762c) before anyone read the set; the judgements
-followed (`eval/claim-tests-foreign-b-judgements.json`); the grammar has not been changed for anything set B
-shows, and will not be: it is scored once. `make claim-foreign ARGS='--claims eval/claim-tests-foreign-b.json
+followed (`eval/claim-tests-foreign-b-judgements.json`); the grammar was not changed for anything set B
+shows until both sets became development material on 18 November 2026 (below): this result was scored once. `make claim-foreign ARGS='--claims eval/claim-tests-foreign-b.json
 --judgements eval/claim-tests-foreign-b-judgements.json'` (record: `eval/results/claim-tests-foreign-b.txt`):
 
 | Set B, all 120, judged by the grammar's author | Count |
@@ -293,6 +379,22 @@ figures), and 16 are phrasings of something it supports (statement names such as
 activities", "FY25", "outpaced", "higher than", a list of expense lines meaning operating expenses). The judge
 is still the grammar's author. `eval/results/claim-foreign-b-for-judge.md` explains the notation in plain words
 and lists the six compiled claims with an empty verdict column, for a judge who has not seen the grammar.
+
+**Sets A and B after the measure catalogue (both development material).** On 18 November 2026
+both sets became development material: the catalogue's measures and the grammar rules they needed
+were taken from their refusals, so the numbers below are on claims the grammar was changed for,
+not a held-out score. Set B's scored-once result above stands as recorded. New readings were
+judged by the same session that wrote the catalogue, marked "catalogue, 18 November 2026" in the
+judgement files; no earlier judgement was changed. `make claim-foreign` (records:
+`eval/results/claim-tests-foreign-catalogue.txt`, `eval/results/claim-tests-foreign-b-catalogue.txt`):
+
+| Grammar alone, judged by the grammar's author | Set A (83 numeric) | Set B (80 numeric) |
+|---|---|---|
+| Compiled and right, before the catalogue | 23 | 5 |
+| Compiled and right, after | 31 | 19 |
+| Compiled and **wrong**, after | 0 | 1 (g046, as before) |
+| Refused, after (metric, form, period, phrasing) | 52 (26, 21, 2, 3) | 60 (33, 8, 3, 16) |
+| Not numeric, refused | 37 of 37 | 40 of 40 |
 
 **Own labels.** The 150 development and 60 held-out labels and the 52 golden results still pass unchanged
 (`tests/test_foreign_claims.py::test_the_own_labels_still_compile_exactly`, `tests/test_claim_results.py`), after
@@ -336,7 +438,9 @@ outstanding, which the catalogue does not hold; it has the diluted weighted-aver
 - That the grammar reads analysts' claims well: on 40 held-out numeric claims another model wrote it read 8
   rightly and 11 wrongly, by its own author's judgement (above); after the whole-sentence rule, with all 120
   as development material, 23 of 83 rightly and none wrongly, by the same judge. On set B, read once, 5 of 80
-  rightly and 1 wrongly, by the same judge; no independent judge has marked it yet.
+  rightly and 1 wrongly, by the same judge; no independent judge has marked it yet. After the measure
+  catalogue, with both sets as development material, 31 of 83 and 19 of 80 rightly, 0 and 1 wrongly: not a
+  held-out score.
 - How often a model parser agrees with the grammar, or which of the two is right when they differ: nothing
   has been recorded.
 - Whether a computed test agrees with what an analyst means: "expanding" is read as against the same quarter a

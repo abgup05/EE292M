@@ -248,7 +248,7 @@ def _measures_in_words() -> str:
     lines = []
     for key, measure in CATALOGUE.items():
         explained = " ".join(text for text in (measure.definition, measure.note) if text)
-        line = f"- `{key}`: {measure.label.lower()}"
+        line = f"- `{key}`: {measure.label}"
         lines.append(f"{line}. {explained}" if explained else f"{line}.")
     return "\n".join(lines)
 
@@ -302,20 +302,20 @@ quarter's gross margin is higher than the same quarter's a year earlier.
 def judge_file(set_name: str, rows: Sequence[dict[str, str]]) -> str:
     """The judge's file: the notation, then every reading the rule would count, unjudged."""
     counted = [row for row in rows if row["counted"]]
-    head = f"""# Set {set_name}: the readings that would count, for an independent judge
+    head = f"""# The readings that would count, for an independent judge ({set_name})
 
 A program reads each claim an analyst writes about one company and, when it can, turns it into a
-test that can be computed from the company's reported figures. Below are the claims of this set
-whose test it would count ({len(counted)} of {len(rows)}; for the others it would count none). For
-each one, decide whether the test means what the sentence says: **right** if computing the test
-would answer exactly the question the sentence asks, **wrong** if it would answer a different
-question (a different measure, period, comparison or threshold, or only part of the sentence).
-Whether the claim is true is not the question.
+test that can be computed from the company's reported figures. Below are the {len(counted)} claims
+of the {len(rows)} in this set whose test it would count; for the others it would count none.
+For each one, decide whether the test means what the sentence says: **right** if computing the
+test would answer exactly the question the sentence asks, **wrong** if it would answer a
+different question (a different measure, period, comparison or threshold, or only part of the
+sentence). Whether the claim is true is not the question.
 
 """
     notation = NOTATION.format(
         measures=_measures_in_words(),
-        parts=", ".join(f"`{key}` ({label.lower()})" for key, label in PART_MEASURES.items()),
+        parts=", ".join(f"`{key}` ({label})" for key, label in PART_MEASURES.items()),
     )
     table = [
         "## The tests",

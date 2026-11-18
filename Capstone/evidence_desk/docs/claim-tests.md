@@ -170,8 +170,8 @@ were left as they are, for a deliberate relabelling.
 
 **Which of the eight have each measure** for the newest fiscal year: `make measures-probe` (live;
 the eight by default) computes each measure as a claim test does and names each miss with its
-reason. Seven of the added measures have a value for all eight; five are reported by four or
-fewer: sales and marketing and its ratio (2 of 8), commercial paper (2), G&A (3), non-current
+reason. Eight of the 39 added measures have a value for all eight companies; five are reported by
+four or fewer: sales and marketing and its ratio (2 of 8), commercial paper (2), G&A (3), non-current
 deferred revenue (4). A claim about one of them on a company that does not tag it cannot be
 computed, and says which concept was missing. Every one of the eight newest 10-Ks tags a segment's
 revenue for both years; six tag a segment's operating income (not JPM, TSLA). The table and every

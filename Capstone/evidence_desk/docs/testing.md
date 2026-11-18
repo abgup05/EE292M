@@ -257,6 +257,9 @@ The two measurements the referee faulted are commands, not tests (`make bench`, 
 | A route that answers for a bad ticker, or fails on an unreadable 8-K list | `tests/test_api.py`, the five events and meta tests | written after the route; the route removed, all five failed |
 | A page that computes or reorders what it shows, or shows a mark the record does not carry | `uitests/test_events_dom.py` (12 assertions on two sample runs and one record from before version 12) | written after the page code; first run failed on samples made before the wording reached `/api/meta` |
 | A claim rule that drifts | `tests/test_claim_categories_eval.py` pins the table of `make event-categories` | the labels were committed before the rule existed |
+| A time line that drops, adds or misdraws a filing or an 8-K, or shades a gap the record does not have | `uitests/test_run_events_dom.py`, the time-line tests on four sample runs | written after the drawing; the newest 8-K then dropped from it on purpose: the three runs with 8-Ks failed |
+| A live-run sample that is not the run's record, or a page that hides where it came from | `uitests/test_run_events_dom.py::test_the_sample_is_the_live_run_unedited` (skipped where `results/` is not), `::test_the_page_says_where_the_sample_comes_from` | written with the sample |
+| Keys that act while you type, j and k that skip or wrap, a theme that is not remembered | `uitests/test_keys_dom.py`, on what `uitests/keys.html` recorded | written after the code; the guard on typing then removed on purpose: three of its tests failed |
 
 The command-line tools (`tests/test_events_cli.py`, `tests/test_events_probe.py`) were written after their code and were not seen failing.
 

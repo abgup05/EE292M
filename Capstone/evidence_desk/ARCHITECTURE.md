@@ -66,11 +66,11 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/evaluation/mismatch_eval.py   plants real quotes under statements they do not belong to and scores what the meaning check says
     src/app/evaluation/reading_sheet.py   lays the golden cases out for a person to read (`make golden-sheet`)
     src/app/evaluation/claim_categories.py   scores the claim-category rule on eval/claim-categories.json (`make event-categories`)
-    src/web/                    index.html, app.js, styles.css, sample-run.json, sample-synthetic.json, sample-changes.json, sample-run-changes.json, sample-run-tagged.json, sample-breakdowns.json, sample-breakdowns-gap.json (synthetic)
+    src/web/                    index.html, app.js, styles.css (one layout, two themes: docs/design.md), specimen.html (every component on made-up data, opened from disk), sample-run.json, sample-run-events.json (a live run, copied unedited), sample-synthetic.json, sample-changes.json, sample-run-changes.json, sample-run-tagged.json, sample-breakdowns.json, sample-breakdowns-gap.json (synthetic)
     eval/                       the golden set, its pinned filings, cache/ and results/; README.md
     tests/                      offline tests, fakes.py (EDGAR, pages, engine, clock), smoke.py; replay_run.py, golden_run.py, speed_run.py
     tests/live_walk.py          the live end-to-end walk over HTTP; tests/golden/ the tripwire and replayed verdicts
-    uitests/                    browser tests: the rendered DOM of the sample runs, the sample filing comparison and breakdowns against their JSON; test_events_dom.py the 8-Ks and the as-of line
+    uitests/                    browser tests: the rendered DOM of the sample runs, the sample filing comparison and breakdowns against their JSON; test_events_dom.py the 8-Ks and the as-of line; test_run_events_dom.py the live-run sample and the time line; keys.html + test_keys_dom.py the keys and the themes
 
 ## Storage: the record and the cache
 
@@ -250,7 +250,9 @@ finding, 409 while running, 422 withheld finding); `GET .../export.md?reviewed=t
 
 The backend computes every result: verified excerpts, verdicts, status, every count in `Run.coverage`, the reviewed
 verdicts and the comparison. The frontend collects input and decisions, polls, and draws the record with the wording
-from `/api/meta`; it computes no verdict and no excerpt context. The same holds for the three records that are not
+from `/api/meta`; it computes no verdict and no excerpt context. Placing record dates on the time line, a series' values in
+a sparkline, and setting a negative number in its colour by the sign of the record's value are drawing; the page has two
+themes, Paper and Terminal, over one layout (`docs/design.md`). The same holds for the three records that are not
 part of a run (the comparison of two filings, the changed paragraphs listed under each claim, the tagged breakdowns,
 a company's 8-Ks since its annual report, `GET /api/companies/{ticker}/events`):
 each arrives with its counts, its links and what they open, its column headings, its cells and its changes already
@@ -265,7 +267,8 @@ what counts. Filings come only from `www.sec.gov` and `data.sec.gov` (7 requests
 
 - `make verify`: image build, ruff, `node --check`, the offline tests, `tests/smoke.py` against the live container
   (no internet), and `make uitest` (headless Chromium renders the sample runs, the sample filing comparison and the breakdowns; `uitests/`
-  checks the DOM against their JSON). Offline tests use `tests/fakes.py`; `make fixtures` re-records EDGAR responses.
+  checks the DOM against their JSON; `uitests/keys.html`, loaded from disk with the same-origin rule off for that page
+  only, presses the page's keys in a frame and records what happened). Offline tests use `tests/fakes.py`; `make fixtures` re-records EDGAR responses.
 - `make golden-check` compares the offline example run with `tests/golden/golden.json` and names the first stage that
   moved; `make golden-baseline` rewrites it. `make profile` and `make bench` time the offline run (`docs/testing.md`,
   `docs/speed.md`).

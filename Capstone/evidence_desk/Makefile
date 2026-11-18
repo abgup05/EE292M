@@ -165,6 +165,15 @@ sample-run-changes:
 probe:
 	$(RUN) python -m app.probe $(if $(filter 1,$(OUTLINE)),--outline,) $(or $(TICKERS),NVDA)
 
+events:
+	$(RUN) python -m app.events $(or $(T),NVDA) $(ARGS)
+
+events-probe:
+	$(RUN) python -m app.events_probe $(or $(TICKERS),NVDA AAPL MSFT KO JPM TSLA COST AMZN)
+
+event-categories:
+	$(RUN) python -m app.evaluation.claim_categories $(ARGS)
+
 figures:
 	$(RUN) python -m app.figures $(if $(filter 1,$(MISSING)),--missing,) $(or $(TICKERS),NVDA)
 

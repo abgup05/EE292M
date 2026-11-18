@@ -1,0 +1,12 @@
+{
+  "key": "5bf5eba1e2561eb8d7e08750",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:18:34+00:00",
+  "response": {
+    "computable": false,
+    "reason": "This is a qualitative judgement about strategic optionality, not a numeric test on a listed measure.",
+    "tests": []
+  }
+}

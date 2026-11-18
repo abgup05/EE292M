@@ -84,16 +84,26 @@ WHAT_IT_COMPARES = {
     "compare": "a comparison of two measures compares their values",
 }
 
-_NULLABLE_INT: dict[str, Any] = {"anyOf": [{"type": "integer"}, {"type": "null"}]}
+# The API refuses a schema with many nullable or union-typed parameters, so absence is
+# written as a value: 0 for a fiscal year, a quarter or each_since that is not named, a base
+# whose ``used`` is false, and a right_term or right_number that the form does not read.
+# A reading that writes null for any of these is read the same way.
+_INT_OR_ZERO: dict[str, Any] = {"type": "integer"}
 _PERIOD: dict[str, Any] = {
     "type": "object",
     "properties": {
         "kind": {"type": "string", "enum": list(PERIOD_KINDS)},
         "back": {"type": "integer"},
-        "fiscal_year": _NULLABLE_INT,
-        "quarter": _NULLABLE_INT,
+        "fiscal_year": _INT_OR_ZERO,
+        "quarter": _INT_OR_ZERO,
     },
     "required": ["kind", "back", "fiscal_year", "quarter"],
+    "additionalProperties": False,
+}
+_BASE: dict[str, Any] = {
+    "type": "object",
+    "properties": {"used": {"type": "boolean"}, **_PERIOD["properties"]},
+    "required": ["used", *_PERIOD["required"]],
     "additionalProperties": False,
 }
 _TERM: dict[str, Any] = {
@@ -105,7 +115,7 @@ _TERM: dict[str, Any] = {
         "axis": {"type": "string", "enum": ["", *PART_AXES]},
         "years": {"type": "integer"},
         "period": _PERIOD,
-        "base": {"anyOf": [_PERIOD, {"type": "null"}]},
+        "base": _BASE,
     },
     "required": ["fn", "subject", "member", "axis", "years", "period", "base"],
     "additionalProperties": False,
@@ -123,33 +133,31 @@ _TEST_FIELDS: dict[str, Any] = {
     "form": {"type": "string", "enum": list(FORMS)},
     "left": _TERM,
     "op": {"type": "string", "enum": list(OPS)},
-    "right_term": {"anyOf": [_TERM, {"type": "null"}]},
-    "right_number": {"anyOf": [_NUMBER, {"type": "null"}]},
+    "right_term": _TERM,
+    "right_number": _NUMBER,
     "each": {"type": "integer"},
-    "each_since": _NULLABLE_INT,
+    "each_since": _INT_OR_ZERO,
 }
-_SECOND_TEST: dict[str, Any] = {
+_TEST: dict[str, Any] = {
     "type": "object",
     "properties": _TEST_FIELDS,
     "required": list(_TEST_FIELDS),
     "additionalProperties": False,
 }
-_TEST: dict[str, Any] = {
-    "type": "object",
-    "properties": {**_TEST_FIELDS, "and_test": {"anyOf": [_SECOND_TEST, {"type": "null"}]}},
-    "required": [*_TEST_FIELDS, "and_test"],
-    "additionalProperties": False,
-}
+# ``tests`` holds no test (not computable), one, or two joined by "and". A list states the
+# test's shape once: the API also refused a schema that spelled out a second test inside the
+# first ("The compiled grammar is too large").
 READING_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
         "computable": {"type": "boolean"},
         "reason": {"type": "string"},
-        "test": {"anyOf": [_TEST, {"type": "null"}]},
+        "tests": {"type": "array", "items": _TEST},
     },
-    "required": ["computable", "reason", "test"],
+    "required": ["computable", "reason", "tests"],
     "additionalProperties": False,
 }
+MAX_JOINED_TESTS = 2
 
 
 class Refused(ValueError):
@@ -159,10 +167,11 @@ class Refused(ValueError):
 def as_reading(result: ClaimTest | NotNumeric) -> dict[str, Any]:
     """``result`` written as a reader answers it under :data:`READING_SCHEMA`."""
     if isinstance(result, NotNumeric):
-        return {"computable": False, "reason": result.reason, "test": None}
-    test = _test_json(result)
-    test["and_test"] = _test_json(result.also) if result.also is not None else None
-    return {"computable": True, "reason": "", "test": test}
+        return {"computable": False, "reason": result.reason, "tests": []}
+    tests = [_test_json(result)]
+    if result.also is not None:
+        tests.append(_test_json(result.also))
+    return {"computable": True, "reason": "", "tests": tests}
 
 
 def _test_json(test: ClaimTest) -> dict[str, Any]:
@@ -171,12 +180,15 @@ def _test_json(test: ClaimTest) -> dict[str, Any]:
         "form": test.form,
         "left": _term_json(test.left),
         "op": test.op,
-        "right_term": _term_json(right) if isinstance(right, Term) else None,
+        # The one the form does not read is filled in, never null: see the schema's note.
+        "right_term": _term_json(right if isinstance(right, Term) else test.left),
         "right_number": (
-            {"value": right.value, "unit": right.unit} if isinstance(right, Number) else None
+            {"value": right.value, "unit": right.unit}
+            if isinstance(right, Number)
+            else {"value": 0, "unit": UNITS[0]}
         ),
         "each": test.each,
-        "each_since": test.each_since,
+        "each_since": test.each_since or 0,
     }
 
 
@@ -184,9 +196,12 @@ def _period_json(period: Period) -> dict[str, Any]:
     return {
         "kind": period.kind,
         "back": period.back,
-        "fiscal_year": period.fiscal_year,
-        "quarter": period.quarter,
+        "fiscal_year": period.fiscal_year or 0,
+        "quarter": period.quarter or 0,
     }
+
+
+_NO_BASE: dict[str, Any] = {"used": False, "kind": "Q", "back": 0, "fiscal_year": 0, "quarter": 0}
 
 
 def _term_json(term: Term) -> dict[str, Any]:
@@ -197,7 +212,9 @@ def _term_json(term: Term) -> dict[str, Any]:
         "axis": term.axis,
         "years": term.years,
         "period": _period_json(term.period),
-        "base": _period_json(term.base) if term.base is not None else None,
+        "base": (
+            {"used": True, **_period_json(term.base)} if term.base is not None else dict(_NO_BASE)
+        ),
     }
 
 
@@ -225,15 +242,22 @@ def _validated(answer: object) -> ClaimTest | NotNumeric:
     if not computable:
         said = " ".join(reason.split())[:MAX_REASON_CHARS] or "no reason given"
         return NotNumeric(NOT_COMPUTABLE + said)
-    test = _object(data.get("test"), "the test")
-    first = _test(test)
-    second = test.get("and_test")
-    if second is None:
-        return first
-    joined = _object(second, "the second test")
-    if joined.get("and_test") is not None:
+    tests = data.get("tests")
+    if tests is None and data.get("test") is not None:
+        # The earlier shape: one test with its second inside it as and_test.
+        earlier = _object(data.get("test"), "the test")
+        second = earlier.get("and_test")
+        if isinstance(second, dict) and second.get("and_test") is not None:
+            raise Refused("a claim joins at most two tests with 'and'")
+        tests = [earlier] if second is None else [earlier, second]
+    if not isinstance(tests, list) or not tests:
+        raise Refused("a computable answer states a test; there is none")
+    if len(tests) > MAX_JOINED_TESTS:
         raise Refused("a claim joins at most two tests with 'and'")
-    return replace(first, also=_test(joined))
+    first = _test(_object(tests[0], "the test"))
+    if len(tests) == 1:
+        return first
+    return replace(first, also=_test(_object(tests[1], "the second test")))
 
 
 def _test(test: dict[str, Any]) -> ClaimTest:
@@ -274,7 +298,7 @@ def _test(test: dict[str, Any]) -> ClaimTest:
             if right.unit != wanted:
                 raise Refused(f"the unit of {left.subject} is {wanted}, not {right.unit}")
     each = _integer(test.get("each", 0), "each", 0, MAX_EACH_PERIODS)
-    since = test.get("each_since")
+    since = test.get("each_since") or None
     if since is not None:
         since = _integer(since, "each_since", *YEARS)
     result = ClaimTest(form, left, op, right, each=each, each_since=since)  # type: ignore[arg-type]
@@ -359,6 +383,8 @@ def _term(value: object) -> Term:
     if not isinstance(axis, str) or axis not in ("", *PART_AXES):
         raise Refused(f"a part's axis {axis!r} is not one of {', '.join(PART_AXES)}")
     raw_base = data.get("base")
+    if isinstance(raw_base, dict) and raw_base.get("used") is False:
+        raw_base = None
     base = _period(raw_base) if raw_base is not None else None
     if (fn == "change") != (base is not None):
         raise Refused("a change, and only a change, names the period it is from (base)")
@@ -437,7 +463,7 @@ def _period(value: object) -> Period:
     data = _object(value, "a period")
     kind = _choice(data.get("kind"), PERIOD_KINDS, "period kind")
     back = _integer(data.get("back"), "a period's back", 0, MAX_BACK)
-    year, quarter = data.get("fiscal_year"), data.get("quarter")
+    year, quarter = data.get("fiscal_year") or None, data.get("quarter") or None
     if year is not None:
         year = _integer(year, "a fiscal year", *YEARS)
         if back:

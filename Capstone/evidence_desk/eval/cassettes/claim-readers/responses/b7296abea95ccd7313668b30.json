@@ -1,0 +1,12 @@
+{
+  "key": "b7296abea95ccd7313668b30",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:12:52+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a judgement about the credibility of management's order visibility, not a numeric test on a listed measure.",
+    "tests": []
+  }
+}

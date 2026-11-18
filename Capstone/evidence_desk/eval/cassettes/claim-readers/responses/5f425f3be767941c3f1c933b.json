@@ -1,0 +1,12 @@
+{
+  "key": "5f425f3be767941c3f1c933b",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:19:01+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a judgement about customer trust and market perception, with no measurable numeric test that this tool can compute.",
+    "tests": []
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "key": "c2f62aff712941b2754cb105",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:17:16+00:00",
+  "response": {
+    "computable": true,
+    "reason": "The claim compares two named product-line revenues (parts of the company) from the same filing, which the compare form tests directly.",
+    "tests": [
+      {
+        "form": "compare",
+        "left": {
+          "fn": "value",
+          "subject": "revenue",
+          "member": "Xbox content and services",
+          "axis": "segment",
+          "years": 0,
+          "period": {
+            "kind": "filing",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "op": ">",
+        "right_term": {
+          "fn": "value",
+          "subject": "revenue",
+          "member": "Search and news advertising",
+          "axis": "segment",
+          "years": 0,
+          "period": {
+            "kind": "filing",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "right_number": {
+          "value": 0,
+          "unit": "USD"
+        },
+        "each": 0,
+        "each_since": 0
+      }
+    ]
+  }
+}

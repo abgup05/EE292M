@@ -1,0 +1,12 @@
+{
+  "key": "3917fd725dc187f9630adaa4",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:15:42+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a judgement about political goodwill and names an investment pledge, which is not a measure in the tool's list, so no numeric test can be written.",
+    "tests": []
+  }
+}

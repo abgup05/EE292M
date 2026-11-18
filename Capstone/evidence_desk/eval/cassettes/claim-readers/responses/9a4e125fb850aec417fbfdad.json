@@ -1,0 +1,12 @@
+{
+  "key": "9a4e125fb850aec417fbfdad",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:12:44+00:00",
+  "response": {
+    "computable": false,
+    "reason": "This is a forecast about a supplier's future HBM supply, not a numeric test of a listed measure of the company.",
+    "tests": []
+  }
+}

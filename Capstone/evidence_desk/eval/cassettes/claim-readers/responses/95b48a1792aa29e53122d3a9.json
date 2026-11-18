@@ -1,0 +1,12 @@
+{
+  "key": "95b48a1792aa29e53122d3a9",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:12:25+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a valuation judgement comparing against other mega-cap peers, which this tool cannot test.",
+    "tests": []
+  }
+}

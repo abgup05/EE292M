@@ -1,0 +1,12 @@
+{
+  "key": "1fdf9e178cd0a1b9a9d9ea42",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:18:20+00:00",
+  "response": {
+    "computable": false,
+    "reason": "\"Roughly flat\" is an approximate comparison, not a precise numeric threshold or direction this tool can test.",
+    "tests": []
+  }
+}

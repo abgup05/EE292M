@@ -1,0 +1,12 @@
+{
+  "key": "27d8bce7d285ea730c080606",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:16:03+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a causal judgement about device upgrade cycles that does not state a numeric test on any listed measure.",
+    "tests": []
+  }
+}

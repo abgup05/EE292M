@@ -1,0 +1,12 @@
+{
+  "key": "f6614b97d4f3d01b8c0dabbf",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:12:27+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a valuation and a judgement against other companies, not a numeric test on a listed measure.",
+    "tests": []
+  }
+}

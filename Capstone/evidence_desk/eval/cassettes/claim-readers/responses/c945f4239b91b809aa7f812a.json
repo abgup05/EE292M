@@ -1,0 +1,12 @@
+{
+  "key": "c945f4239b91b809aa7f812a",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:15:56+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a judgement about management's behavior on M&A, not a numeric test this tool can compute.",
+    "tests": []
+  }
+}

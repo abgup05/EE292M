@@ -1,0 +1,12 @@
+{
+  "key": "c1e603051c79eb0fa634fcaf",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:16:17+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim states its revenue level only as approximate ('roughly $281 billion'), and the rules treat approximate comparisons as not computable, so the claim cannot be tested exactly.",
+    "tests": []
+  }
+}

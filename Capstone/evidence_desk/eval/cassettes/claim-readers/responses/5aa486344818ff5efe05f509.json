@@ -1,0 +1,12 @@
+{
+  "key": "5aa486344818ff5efe05f509",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:18:38+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a forecast about future pricing dynamics and is not a numeric test this tool can compute.",
+    "tests": []
+  }
+}

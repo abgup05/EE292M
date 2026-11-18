@@ -1,0 +1,12 @@
+{
+  "key": "d3b74ca6102e1f9027ce4c30",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:12:07+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is about the current ratio (current assets versus current liabilities), and neither current assets nor current liabilities is in this tool's list of measures.",
+    "tests": []
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "key": "6f7e2902a979e78b4128c4a2",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:18:52+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a forecast about future Azure growth and a judgement about sustainability, and 'high 30s' is a vague approximate range, so it is not a numeric test of a reported measure.",
+    "tests": []
+  }
+}

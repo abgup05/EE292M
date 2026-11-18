@@ -1,0 +1,63 @@
+{
+  "key": "fb748c7a59aff73cd75437e3",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:15:27+00:00",
+  "response": {
+    "computable": true,
+    "reason": "The claim is one change test: diluted shares over the latest fiscal year against fiscal 2021, which must fall more than 10%, so the change is below -10 percent.",
+    "tests": [
+      {
+        "form": "growth_threshold",
+        "left": {
+          "fn": "change",
+          "subject": "diluted_shares",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          },
+          "base": {
+            "used": true,
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 2021,
+            "quarter": 0
+          }
+        },
+        "op": "<",
+        "right_term": {
+          "fn": "change",
+          "subject": "diluted_shares",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          },
+          "base": {
+            "used": true,
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 2021,
+            "quarter": 0
+          }
+        },
+        "right_number": {
+          "value": -10,
+          "unit": "percent"
+        },
+        "each": 0,
+        "each_since": 0
+      }
+    ]
+  }
+}

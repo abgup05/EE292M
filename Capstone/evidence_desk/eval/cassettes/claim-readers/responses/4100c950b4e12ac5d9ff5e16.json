@@ -1,0 +1,12 @@
+{
+  "key": "4100c950b4e12ac5d9ff5e16",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:13:03+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim states an approximate growth figure ('roughly 6%'), which is a vague comparison this tool does not test.",
+    "tests": []
+  }
+}

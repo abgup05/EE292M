@@ -1,0 +1,12 @@
+{
+  "key": "c462a7f76af21060a5ca2e9d",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:13:06+00:00",
+  "response": {
+    "computable": false,
+    "reason": "Gross margin by segment (Services vs Products) is not a measure the tool can compute for a part, and the claim also contrasts two statements with a vague 'well under 40%'.",
+    "tests": []
+  }
+}

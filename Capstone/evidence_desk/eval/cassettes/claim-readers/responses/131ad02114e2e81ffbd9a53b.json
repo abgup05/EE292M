@@ -1,0 +1,12 @@
+{
+  "key": "131ad02114e2e81ffbd9a53b",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:17:26+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim uses the vague comparison \"roughly flat\", which is an approximate judgement rather than a stated numeric threshold, so it cannot be written as an exact test.",
+    "tests": []
+  }
+}

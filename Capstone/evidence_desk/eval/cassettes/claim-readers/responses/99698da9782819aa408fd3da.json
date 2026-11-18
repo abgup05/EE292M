@@ -1,0 +1,12 @@
+{
+  "key": "99698da9782819aa408fd3da",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:18:51+00:00",
+  "response": {
+    "computable": false,
+    "reason": "This is a forecast about future cost effects of a product, with no numeric measure, threshold or period this tool can test.",
+    "tests": []
+  }
+}

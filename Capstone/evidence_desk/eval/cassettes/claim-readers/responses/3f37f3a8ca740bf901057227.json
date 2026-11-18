@@ -1,0 +1,12 @@
+{
+  "key": "3f37f3a8ca740bf901057227",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:12:48+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim expresses an opinion about insider selling under a 10b5-1 plan, which is a judgement and not a numeric test this tool can compute.",
+    "tests": []
+  }
+}

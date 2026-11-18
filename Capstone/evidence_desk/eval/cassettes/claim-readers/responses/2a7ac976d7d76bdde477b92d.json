@@ -1,0 +1,12 @@
+{
+  "key": "2a7ac976d7d76bdde477b92d",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:16:00+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a forecast about customer behavior and product strategy, not a numeric test of a measure.",
+    "tests": []
+  }
+}

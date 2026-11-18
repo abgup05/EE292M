@@ -1,0 +1,12 @@
+{
+  "key": "7453dc5a9c08ce34c4db03b4",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:17:01+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is about a product line's growth described as \"double-digit,\" which is a vague threshold the tool does not accept, so it cannot be turned into an exact test.",
+    "tests": []
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "key": "e97f5d838948f0acea0ba1f3",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:13:02+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim uses the approximate qualifier \"roughly\", so the threshold is vague and cannot be stated as an exact test.",
+    "tests": []
+  }
+}

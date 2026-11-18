@@ -1,0 +1,12 @@
+{
+  "key": "676350812dd75e66c9d7022e",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:18:50+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a forecast about future inference costs from custom silicon, which this tool cannot test against reported figures.",
+    "tests": []
+  }
+}

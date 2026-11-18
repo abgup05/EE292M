@@ -1,0 +1,12 @@
+{
+  "key": "1341a71d0e15cf402b8e99f8",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:17:38+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim adds a causal interpretation (buybacks mostly offset dilution) beyond the single numeric test, and 'down less than 1%' is a decline bounded in magnitude that the tool cannot express as one clean test with every word accounted for.",
+    "tests": []
+  }
+}

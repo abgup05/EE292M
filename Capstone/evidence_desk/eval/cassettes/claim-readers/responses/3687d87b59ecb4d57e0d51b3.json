@@ -1,0 +1,12 @@
+{
+  "key": "3687d87b59ecb4d57e0d51b3",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:10:54+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim uses vague, approximate wording ('barely moved', 'about the same') rather than a stated numeric threshold, so it cannot be turned into a single exact test.",
+    "tests": []
+  }
+}

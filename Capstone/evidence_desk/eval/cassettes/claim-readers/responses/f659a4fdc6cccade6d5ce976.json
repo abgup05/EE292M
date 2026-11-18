@@ -1,0 +1,63 @@
+{
+  "key": "f659a4fdc6cccade6d5ce976",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:15:17+00:00",
+  "response": {
+    "computable": true,
+    "reason": "Compares the yearly growth of cost of revenue against the yearly growth of revenue, required to hold in each of the last two fiscal years.",
+    "tests": [
+      {
+        "form": "faster_than",
+        "left": {
+          "fn": "yoy",
+          "subject": "cost_of_revenue",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "op": "<",
+        "right_term": {
+          "fn": "yoy",
+          "subject": "revenue",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "right_number": {
+          "value": 0,
+          "unit": "percent"
+        },
+        "each": 2,
+        "each_since": 0
+      }
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "key": "5ce806dacf921b4a15e8d9bd",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:19:08+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is about a price target and return on invested capital versus cost of capital, a valuation judgement and forecast that none of the listed measures or forms can test.",
+    "tests": []
+  }
+}

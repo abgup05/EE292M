@@ -83,7 +83,7 @@ def test_not_a_claim_this_tool_can_compute_is_a_valid_answer() -> None:
 def _with(test: ClaimTest, **changes: Any) -> dict[str, Any]:
     answer = as_reading(test)
     for path, value in changes.items():
-        node = answer["test"]
+        node = answer["tests"][0]
         *parents, leaf = path.split("__")
         for parent in parents:
             node = node[parent]
@@ -131,7 +131,7 @@ def test_a_malformed_answer_is_refused(answer: object) -> None:
 
 def test_the_schema_requires_every_field_and_allows_no_other() -> None:
     assert READING_SCHEMA["additionalProperties"] is False
-    assert set(READING_SCHEMA["required"]) == {"computable", "reason", "test"}
+    assert set(READING_SCHEMA["required"]) == {"computable", "reason", "tests"}
 
 
 # The model reader behind the port

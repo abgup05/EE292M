@@ -1,0 +1,12 @@
+{
+  "key": "56945a439769f57c155182fc",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:09:33+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim joins two statements with \"while\" and uses the vague comparison \"far faster\", which the tool cannot test exactly.",
+    "tests": []
+  }
+}

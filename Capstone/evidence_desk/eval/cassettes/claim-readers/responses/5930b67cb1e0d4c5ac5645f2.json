@@ -1,0 +1,12 @@
+{
+  "key": "5930b67cb1e0d4c5ac5645f2",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:16:55+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim names periods by calendar month (June quarter, March quarter), which this tool does not place, so the comparison cannot be mapped to fiscal quarters.",
+    "tests": []
+  }
+}

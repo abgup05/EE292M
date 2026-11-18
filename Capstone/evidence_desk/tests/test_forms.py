@@ -331,7 +331,8 @@ def test_a_nested_conjunction_is_refused() -> None:
     middle = ClaimTest("threshold", v("net_margin"), ">", pct(10), also=inner)
     outer = ClaimTest("threshold", v("operating_margin"), ">", pct(10))
     reading = as_reading(outer)
-    reading["test"]["and_test"] = as_reading(middle)["test"]
+    reading["tests"] += as_reading(middle)["tests"]  # three tests joined: one too many
+    assert len(reading["tests"]) == 3
     assert isinstance(from_reading(reading), NotNumeric)
 
 
@@ -542,9 +543,10 @@ def test_the_readers_prompt_explains_the_new_forms_and_fields() -> None:
     from app.core.claim_reading import READING_SCHEMA
     from app.engines.claim_reader import READ_SYSTEM
 
-    test = READING_SCHEMA["properties"]["test"]["anyOf"][0]["properties"]
+    test = READING_SCHEMA["properties"]["tests"]["items"]["properties"]
     term = test["left"]["properties"]
-    for field in ("each", "each_since", "and_test"):
+    assert "tests:" in READ_SYSTEM
+    for field in ("each", "each_since"):
         assert field in test and f"{field}:" in READ_SYSTEM, field
     assert "base" in term and "base:" in READ_SYSTEM
     for form in ("compare", "change"):

@@ -1,0 +1,12 @@
+{
+  "key": "e97de53276952835c4c18db6",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:12:36+00:00",
+  "response": {
+    "computable": false,
+    "reason": "This is a qualitative judgement about a long-term competitive threat, not a numeric test on a listed measure.",
+    "tests": []
+  }
+}

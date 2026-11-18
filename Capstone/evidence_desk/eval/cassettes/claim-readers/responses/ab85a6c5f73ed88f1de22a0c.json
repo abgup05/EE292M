@@ -1,0 +1,12 @@
+{
+  "key": "ab85a6c5f73ed88f1de22a0c",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:15:46+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a judgement about structural advantage and is not a numeric test the tool can compute.",
+    "tests": []
+  }
+}

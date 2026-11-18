@@ -1,0 +1,12 @@
+{
+  "key": "4912ba380ca4b29729cf2a6b",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:12:38+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a causal judgement about China market access from a write-down, not a numeric test of a listed measure.",
+    "tests": []
+  }
+}

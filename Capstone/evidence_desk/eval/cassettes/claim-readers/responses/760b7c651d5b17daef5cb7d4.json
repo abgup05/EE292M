@@ -1,0 +1,12 @@
+{
+  "key": "760b7c651d5b17daef5cb7d4",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:18:19+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim uses the vague comparison \"roughly flat\", which the tool cannot test as a numeric threshold.",
+    "tests": []
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "key": "7b8cd73f01dd01d164f45c20",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:18:54+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a forecast about a future PC refresh cycle driven by an external event, which this tool cannot test against reported figures.",
+    "tests": []
+  }
+}

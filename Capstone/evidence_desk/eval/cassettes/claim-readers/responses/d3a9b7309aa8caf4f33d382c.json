@@ -1,0 +1,12 @@
+{
+  "key": "d3a9b7309aa8caf4f33d382c",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:12:24+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a judgement about competitive lead and investor perception, not a numeric test on a listed measure.",
+    "tests": []
+  }
+}

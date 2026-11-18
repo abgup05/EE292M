@@ -1,0 +1,12 @@
+{
+  "key": "b226770f60c547fb35dc5e69",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:15:36+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim ranks non-current marketable securities as the largest component of liquidity, which is a rank, and non-current securities are not a measure this tool carries.",
+    "tests": []
+  }
+}

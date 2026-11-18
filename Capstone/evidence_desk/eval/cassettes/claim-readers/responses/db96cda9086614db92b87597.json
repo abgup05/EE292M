@@ -1,0 +1,12 @@
+{
+  "key": "db96cda9086614db92b87597",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:14:13+00:00",
+  "response": {
+    "computable": false,
+    "reason": "\"Around 47%\" is an approximate comparison, not an exact threshold the tool can test.",
+    "tests": []
+  }
+}

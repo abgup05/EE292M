@@ -1,0 +1,12 @@
+{
+  "key": "80b42309cf45f36a0d41e902",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:10:50+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim's test (SBC under 5% of revenue) is computable, but the clause 'so the adjusted numbers are not flattering by much' is a judgement that the test does not account for, so not every word is covered.",
+    "tests": []
+  }
+}

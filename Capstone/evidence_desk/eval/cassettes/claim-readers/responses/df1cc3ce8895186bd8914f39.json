@@ -1,0 +1,12 @@
+{
+  "key": "df1cc3ce8895186bd8914f39",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:09:48+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim adds a stock-split adjustment ('even after the ten-for-one split') that the diluted_shares threshold test cannot express, and it is vague on which period and which share count (diluted vs. basic) it refers to.",
+    "tests": []
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "key": "47ee316b6fa650b56b211fc3",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:12:33+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim compares revenue with management's guidance (an expectation not in the tool's measures) and adds a forecast that the habit will continue, so it cannot be computed as a single numeric test.",
+    "tests": []
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "key": "55e5abc08b96b19ffa70f8bf",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:14:39+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim tests a segment's year-over-year growth in each of four quarters of fiscal 2025, but the tool cannot test a segment across several periods (each does not apply to a part), and a part's figures come from a single filing.",
+    "tests": []
+  }
+}

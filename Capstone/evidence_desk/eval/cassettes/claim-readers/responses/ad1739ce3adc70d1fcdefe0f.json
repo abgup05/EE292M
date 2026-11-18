@@ -1,0 +1,12 @@
+{
+  "key": "ad1739ce3adc70d1fcdefe0f",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:15:41+00:00",
+  "response": {
+    "computable": false,
+    "reason": "This is a forecast and judgement about a product's commercial success, not a numeric test on a listed financial measure.",
+    "tests": []
+  }
+}

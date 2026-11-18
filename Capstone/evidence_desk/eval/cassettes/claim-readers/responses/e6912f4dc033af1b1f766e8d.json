@@ -1,0 +1,12 @@
+{
+  "key": "e6912f4dc033af1b1f766e8d",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:14:06+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim attributes the rise in income tax to a one-time State Aid charge, which is a causal explanation and 'jumped' is vague, so it is not a single numeric test.",
+    "tests": []
+  }
+}

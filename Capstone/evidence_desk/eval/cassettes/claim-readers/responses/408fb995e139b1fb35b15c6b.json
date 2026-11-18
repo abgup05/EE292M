@@ -1,0 +1,12 @@
+{
+  "key": "408fb995e139b1fb35b15c6b",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:18:37+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a subjective judgement and a peer ranking (best in big tech) rather than a single numeric test on a listed measure.",
+    "tests": []
+  }
+}

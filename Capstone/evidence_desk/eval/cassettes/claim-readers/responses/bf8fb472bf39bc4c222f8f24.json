@@ -1,0 +1,12 @@
+{
+  "key": "bf8fb472bf39bc4c222f8f24",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:16:50+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim adds a judgement ('nothing for a company this size') beyond the numeric threshold, so not every word is accounted for by a single test.",
+    "tests": []
+  }
+}

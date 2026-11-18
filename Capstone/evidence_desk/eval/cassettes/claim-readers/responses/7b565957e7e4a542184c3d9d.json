@@ -1,0 +1,63 @@
+{
+  "key": "7b565957e7e4a542184c3d9d",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:11:13+00:00",
+  "response": {
+    "computable": true,
+    "reason": "The claim is a sequential (quarter-on-quarter) revenue growth test for the named quarter Q2 FY2026, stated as above 10 percent, which maps to a growth_threshold test on qoq.",
+    "tests": [
+      {
+        "form": "growth_threshold",
+        "left": {
+          "fn": "qoq",
+          "subject": "revenue",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 2026,
+            "quarter": 2
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "op": ">",
+        "right_term": {
+          "fn": "qoq",
+          "subject": "revenue",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 2026,
+            "quarter": 2
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "right_number": {
+          "value": 10,
+          "unit": "percent"
+        },
+        "each": 0,
+        "each_since": 0
+      }
+    ]
+  }
+}

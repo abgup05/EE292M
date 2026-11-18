@@ -1,0 +1,12 @@
+{
+  "key": "f31ed012ed3d2b20542652bf",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:15:11+00:00",
+  "response": {
+    "computable": false,
+    "reason": "Net cash used in financing activities is not a measure in this tool's list, and the clause 'almost all of it returned to shareholders' is a vague comparison that the test cannot express.",
+    "tests": []
+  }
+}

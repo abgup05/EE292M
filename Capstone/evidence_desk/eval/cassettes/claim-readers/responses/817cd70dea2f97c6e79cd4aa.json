@@ -1,0 +1,12 @@
+{
+  "key": "817cd70dea2f97c6e79cd4aa",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:12:46+00:00",
+  "response": {
+    "computable": false,
+    "reason": "This is a valuation (DCF fair value) claim, not a numeric test on a reported measure this tool can compute.",
+    "tests": []
+  }
+}

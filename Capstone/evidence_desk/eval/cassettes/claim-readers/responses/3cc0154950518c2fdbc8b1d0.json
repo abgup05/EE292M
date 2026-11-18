@@ -1,0 +1,63 @@
+{
+  "key": "3cc0154950518c2fdbc8b1d0",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:15:32+00:00",
+  "response": {
+    "computable": true,
+    "reason": "Diluted share count change from fiscal 2021 to the latest fiscal year, tested against a decline of more than 10%.",
+    "tests": [
+      {
+        "form": "growth_threshold",
+        "left": {
+          "fn": "change",
+          "subject": "diluted_shares",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          },
+          "base": {
+            "used": true,
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 2021,
+            "quarter": 0
+          }
+        },
+        "op": "<",
+        "right_term": {
+          "fn": "change",
+          "subject": "diluted_shares",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          },
+          "base": {
+            "used": true,
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 2021,
+            "quarter": 0
+          }
+        },
+        "right_number": {
+          "value": -10,
+          "unit": "percent"
+        },
+        "each": 0,
+        "each_since": 0
+      }
+    ]
+  }
+}

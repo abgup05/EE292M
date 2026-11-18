@@ -1,0 +1,63 @@
+{
+  "key": "1b1625b0ffbe3f01cc1d23b1",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:11:56+00:00",
+  "response": {
+    "computable": true,
+    "reason": "Revenue CAGR over three years to FY2026 against 90% is a compound test.",
+    "tests": [
+      {
+        "form": "compound",
+        "left": {
+          "fn": "cagr",
+          "subject": "revenue",
+          "member": "",
+          "axis": "",
+          "years": 3,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 2026,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "op": ">",
+        "right_term": {
+          "fn": "cagr",
+          "subject": "revenue",
+          "member": "",
+          "axis": "",
+          "years": 3,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 2026,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "right_number": {
+          "value": 90,
+          "unit": "percent"
+        },
+        "each": 0,
+        "each_since": 0
+      }
+    ]
+  }
+}

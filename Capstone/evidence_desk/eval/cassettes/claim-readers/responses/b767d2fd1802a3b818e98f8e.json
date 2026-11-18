@@ -1,0 +1,12 @@
+{
+  "key": "b767d2fd1802a3b818e98f8e",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:14:45+00:00",
+  "response": {
+    "computable": false,
+    "reason": "Services is a segment, and a segment's figures come from one filing with no history, so growth in fiscal 2025 against fiscal 2024 cannot be reliably placed by this tool.",
+    "tests": []
+  }
+}

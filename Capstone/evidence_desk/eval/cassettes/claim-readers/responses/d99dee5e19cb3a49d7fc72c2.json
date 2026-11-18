@@ -1,0 +1,12 @@
+{
+  "key": "d99dee5e19cb3a49d7fc72c2",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:12:37+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim draws a causal and judgemental conclusion ('proves China is a closed door') from a write-down, which is not a numeric test this tool can compute.",
+    "tests": []
+  }
+}

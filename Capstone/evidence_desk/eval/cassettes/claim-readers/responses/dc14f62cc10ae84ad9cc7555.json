@@ -1,0 +1,12 @@
+{
+  "key": "dc14f62cc10ae84ad9cc7555",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:10:12+00:00",
+  "response": {
+    "computable": false,
+    "reason": "Prepaid supply and capacity agreements is not a measure this tool has, and the claim adds an interpretation about locking up supply.",
+    "tests": []
+  }
+}

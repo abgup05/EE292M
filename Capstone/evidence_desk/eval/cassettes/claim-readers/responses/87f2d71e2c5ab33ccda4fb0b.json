@@ -1,0 +1,12 @@
+{
+  "key": "87f2d71e2c5ab33ccda4fb0b",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:17:36+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim adds a causal judgement (buybacks offsetting dilution) to the share-count test, and the phrase 'mostly offset' is vague, so the claim is not fully accounted for by one numeric test.",
+    "tests": []
+  }
+}

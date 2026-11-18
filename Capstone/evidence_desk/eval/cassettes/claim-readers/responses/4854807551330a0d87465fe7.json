@@ -1,0 +1,12 @@
+{
+  "key": "4854807551330a0d87465fe7",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:12:32+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim rests on management's own revenue guidance and a forecast that the habit will continue, which the tool cannot compute.",
+    "tests": []
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "key": "1c7795df9003286f8f88efdb",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:12:15+00:00",
+  "response": {
+    "computable": false,
+    "reason": "Days of sales outstanding is not a measure in the tool's list; only receivables as a dollar balance is available, not a days-of-sales ratio.",
+    "tests": []
+  }
+}

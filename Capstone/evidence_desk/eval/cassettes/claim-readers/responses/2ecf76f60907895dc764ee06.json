@@ -1,0 +1,12 @@
+{
+  "key": "2ecf76f60907895dc764ee06",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:14:54+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim names calendar quarters (March, December) without a fiscal year, and this tool cannot map them to a fiscal quarter or confirm the latest quarter is the March one.",
+    "tests": []
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "key": "5409d34612fc57431414fc48",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:11:54+00:00",
+  "response": {
+    "computable": true,
+    "reason": "The claim is a single compound-growth test: revenue's 3-year CAGR to fiscal 2026 against a 90% threshold.",
+    "tests": [
+      {
+        "form": "compound",
+        "left": {
+          "fn": "cagr",
+          "subject": "revenue",
+          "member": "",
+          "axis": "",
+          "years": 3,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 2026,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "op": ">",
+        "right_term": {
+          "fn": "cagr",
+          "subject": "revenue",
+          "member": "",
+          "axis": "",
+          "years": 3,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 2026,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "right_number": {
+          "value": 90,
+          "unit": "percent"
+        },
+        "each": 0,
+        "each_since": 0
+      }
+    ]
+  }
+}

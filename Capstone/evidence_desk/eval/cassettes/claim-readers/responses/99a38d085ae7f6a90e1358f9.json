@@ -1,0 +1,12 @@
+{
+  "key": "99a38d085ae7f6a90e1358f9",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:15:13+00:00",
+  "response": {
+    "computable": false,
+    "reason": "Net cash used in financing activities is not an available measure, and 'almost all of it returned to shareholders' is a vague share claim, so the claim is not one computable test.",
+    "tests": []
+  }
+}

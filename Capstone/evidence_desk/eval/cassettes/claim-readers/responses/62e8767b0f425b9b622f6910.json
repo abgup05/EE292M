@@ -1,0 +1,12 @@
+{
+  "key": "62e8767b0f425b9b622f6910",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:14:51+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim names two quarters only by calendar month (March quarter, December quarter) without a fiscal year, and the tool cannot place those periods reliably, so the comparison is not computable.",
+    "tests": []
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "key": "510b3d263f29457badd8d882",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:14:41+00:00",
+  "response": {
+    "computable": false,
+    "reason": "A segment's figures come from a single filing with no history, so a growth test in each quarter of fiscal 2025 cannot be computed.",
+    "tests": []
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "key": "7b18ca81876380db19840993",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:11:42+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim measures capex as a share of operating cash flow, which is not one of the listed measures; the only capex ratio available is capex as a share of revenue.",
+    "tests": []
+  }
+}

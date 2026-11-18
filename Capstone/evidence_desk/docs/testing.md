@@ -260,6 +260,28 @@ The two measurements the referee faulted are commands, not tests (`make bench`, 
 
 The command-line tools (`tests/test_events_cli.py`, `tests/test_events_probe.py`) were written after their code and were not seen failing.
 
+## The standing watch (version 14)
+
+79 tests in ten files, all offline (`tests/fakes.py`: a fake EDGAR whose index gains filings, a scripted
+engine, a wall clock the test moves). The design and its measurements are in `docs/watch.md`.
+
+| Wrong program | Fails | Seen failing as |
+| --- | --- | --- |
+| Triage that flags the wrong claims, skips a 2.02, lets a vote or an exhibits-only 8-K start a run, or names no changed paragraph under a claim for a new 10-Q | `tests/test_triage.py` (12 tests) | all 12, against a stub with the real signatures |
+| Two workers that take the same job; a filing queued twice for one thesis; a retry before its backoff or after the cap; a job lost when its worker dies; the daily cap counted twice for one job | `tests/test_watch_store.py` (13 tests: two of them race two processes on one file, one loads a record from before version 14) | ImportError first; then a planted select-then-update claim failed both race tests 3 times in 3 (both workers took one job; 62 to 66 claims for 60 jobs) |
+| A backup that leaves out the watch tables, or a restore check that does not compare them | `tests/test_watch_backup.py` (6 tests) | 5 of 6 failed before `backup.py` changed; the sixth, a backup from before version 14, passed from the start, as it should |
+| A report of what moved that misses a verdict, a caution, a note or a new 8-K, or calls a re-dated note new | `tests/test_watch_report.py` (4 tests) | all 4 |
+| An index listing that costs more than one request, or misses 8-K/A | `tests/test_watch_edgar.py` (1 test) | failed before `EdgarClient.recent_filings` existed |
+| The end to end: a 5.02 8-K appears; one job; claim 1 bears and claim 2 does not; the thesis runs; the inbox names the filing, its link and what moved; the next cycle queues nothing | `tests/test_watch_service.py::test_end_to_end_a_new_5_02_8k_runs_the_thesis_and_the_inbox_says_what_moved`, and 9 more on policy, cap, retries, index errors, one request per company, periodic reports, unwatching and re-watching | ImportError first; the end to end failed on a planted comparison with no previous run |
+| A started run whose item still says it waits; a failed run whose item still says it runs | two assertions in `tests/test_watch_service.py` | both, found while writing the example payloads, before their fixes |
+| A waiting run that two requests can both start | `tests/test_watch_api.py::test_a_waiting_run_is_started_once_and_its_item_then_says_what_moved` | failed on a planted start that checked the kind and then changed it in two steps |
+| An example payload that no longer matches its route, or a README that leaves a field unnamed | `tests/test_watch_examples.py` (13 tests) | the README test, on a planted missing field |
+
+Not seen failing, because they were written after their code: the other 10 API tests, the 8 tests of the
+watcher process, its settings and its health (`tests/test_watch_cli.py`), the 12 parse checks of the example
+payloads, and the contention test (`tests/test_watch_contention.py`: a run and watcher cycles writing one record
+from two processes; nothing was planted to make it fail).
+
 ## How long the gate takes
 
 Measured on this laptop on 17 November 2026 at version 8, with the Docker image's layers already

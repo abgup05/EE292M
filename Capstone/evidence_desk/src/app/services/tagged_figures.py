@@ -27,7 +27,7 @@ from typing import Final
 
 from pydantic import ValidationError
 
-from app.core import breakdown_models, breakdowns, policy
+from app.core import breakdown_models, breakdowns, metrics, policy
 from app.core.breakdown_models import BreakdownReport
 from app.core.breakdowns import CLAIM_SPECS, SPECS, BreakdownSpec, build_report
 from app.core.documents import FilingRef
@@ -53,12 +53,14 @@ NO_BREAKDOWN = (
 def reader_version() -> str:
     """Identifies the code that turns a filing's HTML into its breakdowns.
 
-    The SHA-256 of the three source files that do it (the tag reader, the
-    breakdown builder and the record's shape), so that editing any of them makes
-    every kept report a miss, as editing the parser does for kept text.
+    The SHA-256 of the four source files that do it (the tag reader, the
+    breakdown builder, the record's shape, and the metrics module whose number
+    formats and year window a kept report's display strings and change formulas
+    are written with), so that editing any of them makes every kept report a
+    miss, as editing the parser does for kept text.
     """
     digest = hashlib.sha256()
-    for module in (ixbrl, breakdowns, breakdown_models):
+    for module in (ixbrl, breakdowns, breakdown_models, metrics):
         digest.update(Path(module.__file__ or "").read_bytes())
     return digest.hexdigest()[:16]
 

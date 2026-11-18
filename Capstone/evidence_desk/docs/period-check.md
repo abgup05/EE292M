@@ -24,7 +24,9 @@ A calendar year is not enough for a fiscal label, because the two differ: NVIDIA
 
 **The fiscal calendar** of a company comes from the newest annual report in its SEC company facts: the fiscal year that filing says it is for, and the end of its own year. This is the one place the facts' `fy` field is read. Everywhere else in this project it is ignored, because it describes the filing and not the fact; here the filing's own label is what is wanted. A company that names its fiscal year after the calendar year it begins in gets an offset of minus one. When the facts cannot be read, a period end is taken to fall in the fiscal year of its own calendar year or of the next, and the check says so.
 
-## Measured on real findings: no false alarm
+## Measured on real findings: no false alarm on the golden set
+
+The golden set is also where the rules of years (`years_in`, `EVIDENCE_YEARS`) were widened to avoid false alarms, so this is a measure on the check's own development data, not on findings it has not seen.
 
 `make eval ARGS="generate --cassette eval/cassettes/golden --queries eval/queries.json --check"` runs the check on every verified finding of the golden set, and `make replay` on the three recordings of the example (17 November 2026; the model answers are a stand-in's, as everywhere here).
 

@@ -289,6 +289,7 @@ engine, a wall clock the test moves). The design and its measurements are in `do
 | A page that hides readings that differ or counts them, lists only two readers, swallows a refusal of the ledger lookup or of a dated run, drops `as_of` from the request, or ignores `folded`, `claims_line`, `moved.computed` or a thesis's own `watch` | `uitests/test_v14_dom.py`, on what `uitests/v14.html` recorded | written after the page code; the two refusal tests first failed on the refusal mark before the server's words, which the tests had left out |
 | Version 14 samples that are not the example payloads | `uitests/test_v14_dom.py::test_the_samples_are_the_example_payloads_unedited` (4 with the two-model run) | written with the copies |
 | A page that marks a reader as reading the test shown when it dissented or refused, hides a dissent, says the wrong number of agreeing readers, puts the reading rule nowhere, draws only the first part of an "each" or "and" test, shows a combined test's first-part sides as the whole test's, or does not label a combined history's sides | `uitests/test_live_readers_dom.py` on `?sample=run-live` and `?sample=readers` (Terminal), and `uitests/test_v14_dom.py` on what `uitests/v14.html` recorded | written after the page code; the page then made to mark a dissenting reader as reading the test and to give every part the first part's expression, on purpose: 3 failed (the dissent, the "each" parts of the live run, the "and" parts); the live run alone could not catch the dissent, since it has none |
+| A page that says "no model" on a computed test a model read, hides who read it, leaves out or misplaces the line written by code after a model's summary (`verdicts_after_summary`), or rounds the extra decimals of version 14.1's arithmetic, margin or history sides | `uitests/test_live_readers_dom.py`, `uitests/test_v14_dom.py` (the board and docket labels on every sample; the `v141` step of `uitests/v14.html`) | written after the page code; the page then made to say "no model" for every test and to drop the line, on purpose: 13 failed (the board on both reader samples, the harness stopping at the missing line and so every later step) |
 | A live sample that is not the run's record, or does not say where it came from | `uitests/test_live_readers_dom.py` (skipped where `results/run-7fa4a528d428.json` is absent) | written with the copy |
 
 Not seen failing, because they were written after their code: the other 10 API tests, the 8 tests of the
@@ -346,6 +347,43 @@ replay's requests (`tests/golden/replay.json`). `tests/test_thesis_run.py::test_
 failed once on the change, because a claim the time limit skipped took its computed verdict; such a claim now
 keeps none.
 
+## The fifth referee's findings (version 14.1)
+
+Each fix but one began as a test that failed on the code of version 14, run once before the fix
+([`referee-5-triage.md`](referee-5-triage.md)); the failing counts are from that run. The exception is the
+restore check: its fix was written first, and its tests were then run against version 14's `backup.py`, put
+back for the purpose.
+
+- **The comparison a computed test prints** (`tests/test_computed_digits.py`, 5 of 9 failed): a gross margin
+  of 74.96% or 74.996% against "at least 75%" fails and its arithmetic line, read back, compares the same way
+  ("74.96% >= 75.00%: fails", not "75.0% >= 75%: fails"); the margin keeps its sign ("-0.04 points"); an
+  amount of $8,999,999,000 against "at least $9 billion" prints a comparison that fails; a comparison the
+  rounding does not hide prints as before. A tenth test, that a history point's sides compare as the outcome
+  says, was written after the fix and not seen failing.
+- **The summary and the verdict table** (`tests/test_summary_after_computed.py`, 3 of 3 failed): a template
+  summary counts the final verdicts; a model's summary is kept, the summariser is still shown the findings'
+  verdicts alone, and `Brief.verdicts_after_summary` names exactly the three claims the computed tests moved,
+  from what to what; the brief prints the line and a Computed column. Two tests of `tests/test_export.py`
+  changed their expected header and rows for the new column, and nothing else.
+- **Who read a computed test** (`tests/test_computed_readers_note.py`, 3 of 3 failed): the brief's note for
+  the grammar alone, for the grammar and one model, and for the grammar and two models.
+- **Three numbers the number check let through** (`tests/test_numcheck_signs_and_units.py`, 8 of 14 failed):
+  "fell 65.5%" against a cited +65.5% fails; "46.7B", "2.5M", "1.2bn", "10M", "100B" are read and a wrong one
+  fails; "March 15%" is a percentage. The six that passed before are guards that still hold: a rise against the
+  same figure, a decline against a computed decrease, a decline against a quote (still not held to its sign),
+  "3M", "4K", "10K" and "5090Ti" staying names.
+- **A backup that is behind, not broken** (`tests/test_backup.py`, 2 of 24 failed on the old `backup.py`):
+  a run, a decision and a thesis written after the backup give BEHIND and exit code 2; a run the backup lacks
+  that started before it, alone or beside a later one, still fails. One test of `tests/test_watch_backup.py`
+  now expects BEHIND for an inbox item read after the backup (it expected FAIL, which is the behaviour changed
+  on purpose); a new one, written after the fix, keeps a row changed with nothing dated after the backup a FAIL.
+- **The tagged reader's version** (`tests/test_tagged_cache.py`, 1 failed): the version covers
+  `core/metrics.py`, whose formats a kept report's display strings are written with.
+
+The examples, the page's samples and the replays were made again through their targets; every recording
+still replays, and the tripwire (`make golden-check`) did not move: its extractive run has no model summary and
+its summary is not one of its stages.
+
 ## How long the gate takes
 
 Measured on this laptop on 17 November 2026 at version 8, with the Docker image's layers already
@@ -364,7 +402,11 @@ there (port 8766 was held by another checkout's app), so the whole gate was not 
 branch, 18 November, before the watch was merged in: 87 s
 (87.35 s for 1,894 tests; 1,919 after the foreign-claims work, 88.29 s; 1,993 after the whole-sentence rule and the second reader, 87.79 s; 2,079 after version 13 was merged in, 92.96 s), measured once while other projects' containers ran on the same laptop, so not
 comparable with the figures before it; the whole gate was not run, because another app held port 8766 and
-the smoke and browser tests need it.
+the smoke and browser tests need it. Version 14 was run green on a fresh clone before it was tagged (lint, 2,326 offline
+tests, the smoke test, 337 page assertions and 2 skipped), but that output was not kept. At version 14.1, on 18
+November, once, with nothing else running: 112 s (111.84 s for 2,361 tests) and 149 s for the whole gate on a fresh
+clone, with 337 page assertions and 2 skipped (`docs/evidence/verify-fresh.txt`). The two skipped tests compare a
+live-run sample with its source record in `results/`, which a clone does not have.
 
 ## What no test here can see
 

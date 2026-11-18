@@ -2883,8 +2883,16 @@ function renderDistinction(run) {
   const computed = compiledClaims(run).length
     ? [
         " ",
-        h("strong", { text: "Computed, no model:" }),
-        " a claim that compiles to a test (marked ⊨ holds, ⊭ fails, ⊘ cannot be computed) is computed from the company's XBRL facts by a fixed rule; a test that holds counts as one piece of support, one that fails as a challenge, one that cannot be computed as nothing.",
+        h("strong", { text: "Computed by code:" }),
+        " a claim read into a test (marked ⊨ holds, ⊭ fails, ⊘ cannot be computed) is computed from the company's XBRL facts by code, and no model does the arithmetic. ",
+        h(
+          "span",
+          { "data-distinction-readers": runModelReaders(run) ? "models" : "grammar" },
+          runModelReaders(run)
+            ? `The reading may be a model's: this run's claims were read into tests by ${str(run.claim_readers)}, and each test names who read it.`
+            : "This run's claims were read into tests by the grammar alone, a fixed rule: no model read them.",
+        ),
+        " A test that holds counts as one piece of support, one that fails as a challenge, one that cannot be computed as nothing.",
       ]
     : [];
   if (!runMeaningChecked(run)) {
@@ -2925,6 +2933,15 @@ function renderSummary(run) {
       : h("span", { class: "origin-tag", text: `Written by: ${origin || "not stated"}${origin === "template" ? " (fixed wording filled in from the record)" : ""}` }),
   );
   els.summary.textContent = str(brief.summary);
+  // Version 14.1: after a model's summary, a line written by code naming the verdicts the computed tests set or changed.
+  // Outside the model's box, so the model's mark does not cover it.
+  els.summarySection.querySelector("[data-verdicts-after-summary]")?.remove();
+  const after = str(brief.verdicts_after_summary);
+  if (after) {
+    els.summaryBox.after(
+      h("div", { class: "after-summary", "data-verdicts-after-summary": "" }, h("p", { class: "after-kicker" }, ruleMark("Written by code after the summary, not by the model")), h("p", { class: "after-text", text: after })),
+    );
+  }
 }
 
 function renderClaims(run, ctx) {
@@ -4526,6 +4543,35 @@ function readerDetails(run) {
   return out;
 }
 
+/** True when a model reader read this claim (any reading by a reader other than the grammar). */
+function modelRead(claim) {
+  return list(claim?.readings).some((reading) => str(reading?.reader) && reading.reader !== "grammar");
+}
+
+/** True when the run's claim readers include a model (`claim_readers`, "grammar, model and model_2"). */
+function runModelReaders(run) {
+  return str(run?.claim_readers).split(/, | and /).some((name) => name.trim() && name.trim() !== "grammar");
+}
+
+/** The readers of the test shown, in short words: "the grammar", "Model 1 and Model 2". */
+function readByWords(test) {
+  const names = list(test?.read_by).map((reader) => (reader === "grammar" ? "the grammar" : READER_SHORT[reader] ?? str(reader))).filter(Boolean);
+  if (names.length === 0) return "";
+  return names.length === 1 ? names[0] : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+}
+
+/**
+ * Who did what for a computed test, as the record says: the arithmetic is always code; the reading
+ * into a test is the grammar's alone (then no model read the claim) or included a model reader
+ * (then who read the test shown, from `read_by`). Never "no model" when a model read the claim.
+ */
+function computedByWords(claim) {
+  const test = testOf(claim);
+  if (!modelRead(claim)) return { board: "Computed by code, no model: ", kicker: "Read into a test by the grammar and computed by code from the XBRL facts: no model read the claim", model: false };
+  const who = readByWords(test) || "its readers";
+  return { board: `Read by ${who}; computed by code: `, kicker: `Read into a test by ${who}; the arithmetic is done by code from the XBRL facts`, model: true };
+}
+
 /** How one reader's reading stands to the test shown, from the record's own lists (`read_by`, `dissent`). */
 function readingKind(reading, test) {
   const reader = str(reading?.reader);
@@ -4742,7 +4788,7 @@ function computedTest(claim, cik, details = {}) {
     h(
       "div",
       { class: "ct-head" },
-      h("p", { class: "ct-kicker" }, ruleMark("Computed from the XBRL facts by a fixed rule, no model"), str(test.form) ? h("span", { class: "muted", text: ` · form: ${test.form}${combined ? `, ${test.combines}` : ""}` }) : ""),
+      h("p", { class: "ct-kicker", "data-computed-by": computedByWords(claim).model ? "models" : "grammar" }, ruleMark(computedByWords(claim).kicker), str(test.form) ? h("span", { class: "muted", text: ` · form: ${test.form}${combined ? `, ${test.combines}` : ""}` }) : ""),
       h("p", { class: "ct-expr" }, h("code", { "data-canonical": "", text: str(test.canonical) })),
       h("p", { class: "ct-result" }, testOutcome(test.outcome, test.outcome_label), countedTag(claim)),
       readersRow(claim, details),
@@ -4803,7 +4849,7 @@ function boardComputed(claim) {
     return h("span", { class: "score-computed is-none", "data-board-computed": "none", text: "No computed test: the verdict rests on the findings" });
   }
   const readers = boardReaders(claim);
-  return h("span", { class: "score-computed", "data-board-computed": token(test.outcome, TEST_MARK) }, h("span", { class: "label", text: "Computed, no model: " }), testOutcome(test.outcome, test.outcome_label), " ", countedTag(claim), readers ? [" · ", readers] : "");
+  return h("span", { class: "score-computed", "data-board-computed": token(test.outcome, TEST_MARK) }, h("span", { class: "label", "data-computed-by": computedByWords(claim).model ? "models" : "grammar", text: computedByWords(claim).board }), testOutcome(test.outcome, test.outcome_label), " ", countedTag(claim), readers ? [" · ", readers] : "");
 }
 
 // ---- the thesis over time

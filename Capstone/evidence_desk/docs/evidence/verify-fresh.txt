@@ -1,12 +1,13 @@
 # make verify-fresh
-# 2026-11-18T08:29:57Z, a fresh clone of commit f647504 on capstone/evidence-desk, version 0.12.0
-# The commit this file is in differs from f647504 only in this file and in the lines of
-# README.md and docs/testing.md that quote it.
+# 2026-11-18T15:00:51Z, a fresh clone of commit 358b0b0 on capstone/evidence-desk, version 0.14.1
+# The commit this file is in differs from 358b0b0 only in this file, in docs/referee-5-triage.md and in the
+# lines of README.md and docs/testing.md that quote it.
+# The two skipped page tests compare a sample with its source record in results/, which a clone does not have.
 
 All checks passed!
-165 files already formatted
-1702 passed in 28.85s
+237 files already formatted
+2361 passed in 111.84s (0:01:51)
 smoke: ok
-168 passed in 1.98s
+337 passed, 2 skipped in 3.87s
 
-# wall clock for the whole command, with the Docker image's layers cached: 42 s
+# wall clock for the whole command, with the Docker image's layers cached: 149 s

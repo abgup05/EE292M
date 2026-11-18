@@ -140,3 +140,23 @@ def test_html_handed_over_is_used_and_a_filing_without_it_is_fetched() -> None:
     result = load_tagged_figures(NVIDIA, filings, REFS, html_by_accession=html)
     assert len(result.figures) == 40 and result.errors == []
     assert filings.fetched == [FY_2026.url], "only the filing whose HTML was not handed over"
+
+
+def test_the_reader_version_covers_the_code_that_writes_a_kept_report(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """A kept report holds display strings and change formulas written by core/metrics.py
+    (millions_text, percent_text, YEAR_MATCH_DAYS): editing it must make every kept report a
+    miss, as editing the tag reader does (the fifth referee, finding 10)."""
+    from app.core import breakdowns, metrics
+
+    read: list[str] = []
+    original = Path.read_bytes
+
+    def recording(self: Path) -> bytes:
+        read.append(str(self))
+        return original(self)
+
+    monkeypatch.setattr(Path, "read_bytes", recording)
+    reader_version()
+    for name in ("millions_text", "percent_text", "YEAR_MATCH_DAYS"):
+        assert getattr(breakdowns, name) is getattr(metrics, name)
+    assert metrics.__file__ in read

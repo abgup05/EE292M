@@ -5,7 +5,9 @@ answers recorded for them.
 Replaying one makes a model-backed run reproducible: the same filings and thesis give the same
 prompts, the same prompts find the same answers, and the gate and verdict rule run unchanged on
 them. It also gives a way to produce such a run when the Anthropic API cannot be called (this
-project's account has no credit): each prompt is saved in full and can be answered elsewhere.
+project's account had no credit until 18 November): each prompt is saved in full and can be answered
+elsewhere. Which recordings a stand-in answered and which the API answered is listed in
+[`README.md`](../README.md#where-the-model-answers-came-from).
 
 ## Layout
 

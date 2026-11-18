@@ -25,7 +25,7 @@ The rule from the lecture is 3-2-1: three copies, two kinds of storage, one offl
 
 | Key | Where it is kept | What it can reach | Notes |
 | --- | --- | --- | --- |
-| Anthropic API key | `.env`, gitignored, plain text | `api.anthropic.com`, billed to my account | Two keys are in the file; both were refused for lack of credit on 17 November. **One was pasted into an agent conversation in plain text and should be rotated** |
+| Anthropic API key | `.env`, gitignored, plain text | `api.anthropic.com`, billed to my account | Two keys are in the file; both were refused for lack of credit on 17 November; credit was added on 18 November. **One was pasted into an agent conversation in plain text and should be rotated** |
 | GitHub token | macOS keychain, through `gh` (`gh auth status`) | Every repository of mine, public and private, read and write; scopes `repo`, `workflow`, `gist`, `read:org` | Wider than this project needs. Git runs over HTTPS with this token |
 | SSH keys | `~/.ssh` holds no public key (`ls ~/.ssh/*.pub`) | — | Nothing to passphrase; to confirm that no key lives elsewhere |
 | SEC EDGAR | none | public data | The User-Agent is a generic client name; no contact address is sent unless `SEC_USER_AGENT` is set |

@@ -222,14 +222,14 @@ def test_verdict_table_uses_policy_labels_and_counts_verified_findings() -> None
     table = _between(render_markdown(_complete_run()), "## Verdicts", "## Summary")
     rows = [line for line in table.splitlines() if line.startswith("|")]
     assert rows[0].replace(" ", "") == (
-        "|Claim|Verdict|Supporting|Challenging|Context|Filingsquoted|"
+        "|Claim|Verdict|Computed|Supporting|Challenging|Context|Filingsquoted|"
     )
     assert rows[2].replace(" ", "") == (
-        f"|{CLAIMS[0]}|{VERDICT_LABELS[Verdict.mixed]}|1|1|1|1|".replace(" ", "")
+        f"|{CLAIMS[0]}|{VERDICT_LABELS[Verdict.mixed]}|Notest|1|1|1|1|".replace(" ", "")
     )
     # f5 supports c2 but was withheld: it is not counted.
     assert rows[3].replace(" ", "") == (
-        f"|{CLAIMS[1]}|{VERDICT_LABELS[Verdict.unjudged]}|0|0|1|1|".replace(" ", "")
+        f"|{CLAIMS[1]}|{VERDICT_LABELS[Verdict.unjudged]}|Notest|0|0|1|1|".replace(" ", "")
     )
     assert VERDICT_LABELS[Verdict.not_addressed] in rows[4]
     assert rows[4].replace(" ", "").endswith("|0|0|0|0|")
@@ -590,11 +590,11 @@ def test_the_verdict_table_gains_the_reviewed_verdict() -> None:
     table = _between(render_markdown(run, _review_of(run)), "## Verdicts", "## Summary")
     rows = [line for line in table.splitlines() if line.startswith("|")]
     assert rows[0].replace(" ", "") == (
-        "|Claim|Verdict|Afteryourreview|Supporting|Challenging|Context|Filingsquoted|"
+        "|Claim|Verdict|Afteryourreview|Computed|Supporting|Challenging|Context|Filingsquoted|"
     )
     # c1: f1 (supports) accepted and f2 (challenges) rejected, so supported.
     assert rows[2].replace(" ", "") == (
-        f"|{CLAIMS[0]}|{VERDICT_LABELS[Verdict.mixed]}|{VERDICT_LABELS[Verdict.supported]}|1|1|1|1|"
+        f"|{CLAIMS[0]}|{VERDICT_LABELS[Verdict.mixed]}|{VERDICT_LABELS[Verdict.supported]}|Notest|1|1|1|1|"
     ).replace(" ", "")
     # c2 has no decision yet.
     assert f"| {DECISION_LABELS[UNDECIDED]} |" in rows[3]

@@ -130,34 +130,82 @@ After the first pass I asked the session to keep going: another round of buildin
 - **One wrong year beside a right one is caught less often than every year moved**: 13 of 18 against 21 of 25. The five misses are one case: the later of two consecutive years, moved back, lands on the earlier, and the statement names one year twice.
 - **A build session started `python3` on the host again**, by mistake, and stopped it. The other wrote a log to `/tmp` and deleted it. Nothing was installed. The first rule was in its brief; the second, that nothing is written outside the repository, was in neither brief.
 
+**After version 11.1: versions 12, 13 and 14**
+
+Built by Claude Opus 5.5 sessions and merged by an orchestrating session, Claude Fable 5.2, as the commits' co-author lines say. Each version is in `Homework/Week 9/W9L2.md`, sections 12 to 14.
+
+- **Version 12: the 8-Ks since the annual report.** It began with a fault: "buy NVDA because Jensen is gone" was answered from the annual report in which he is chief executive, and the 8-K of 12 November reporting his resignation was never read. Now every 8-K since the annual report is listed, up to eight are read and split into their items, a claim about leadership (or accounting, a deal, financing and a few more) is offered the matching sections, a finding that a later 8-K on its subject postdates is marked, and every run says how old its evidence is. All by rule, no model. Live on NVIDIA (`make events T=NVDA`): 12 8-Ks since the 10-K, 8 read, the 12 November one carrying Item 5.02.
+- **Version 13: the page redesigned, and a standing watch.** The page became a research note in two themes, Paper and Terminal, leading with a status line, a tape of the record's figures, a board of verdicts and a time line of the filings and 8-Ks. A second process, the watcher, reads a watched thesis's company's filing index every fifteen minutes, decides by rule which claims a new filing bears on, and runs the thesis again or leaves the run waiting; an inbox says what came and why it matters or does not. On NVIDIA's 19 filings of the past year (`make watch-replay`), triage agreed with labels written beforehand on 12 of 19 and flagged 11 of the 13 labelled as bearing.
+- **Version 14: dated facts, and claims as computed tests.** Every fact carries the date its filing was filed; a run can be as of a past date and reads only what was filed by then, shown on 414 dates of three companies against a payload with the later facts deleted. A claim such as "gross margin is expanding" compiles to a test computed from those facts, with its arithmetic and its outcome over five years of filings, and counts in the verdict only when the test explains every word of the claim. 28 of NVIDIA's 922 periods reported twice changed value in a later filing.
+- **Three sets of claims written by another model** (Claude Sonnet 5.5), each committed before it was scored. Set A showed 11 wrong readings on its held-out half, which became the whole-sentence rule. Set B, scored once on the grammar alone, gave 5 right and 1 wrong of 80; its refusals became a catalogue of 39 more measures, five new forms, and a second model reader with the rule that two of three readers must agree. Set C was read once through the API by the grammar, Haiku 5.5 and Sonnet 5.5 (240 calls): 36 of 80 numeric claims counted, 33 of them judged right by Sonnet 5.5 shown only the judge's file.
+- **Rule 3, after set C.** A flow against an amount must name its period, or it is not read: h063, "R&D spend passed $30 billion", had been read by both models as a quarter's.
+
+**What went wrong in this part**
+
+- **Real filings broke the 8-K splitter on its first run.** The live probe on eight companies (`make events-probe`) found 190 of 200 listed items: Coca-Cola writes "Item 9.01(d)." with the exhibit index under it, JPMorgan "Item 5.02(e)". NVIDIA's own opening sentences were cut after "Mr.". Each became a failing test, then 200 of 200.
+- **A rule scored on what it was tuned on.** The claim categories scored 0.90 precision and 0.92 recall on 84 labelled claims, then 0.94 and 1.00 after a tuning pass on the same 84. The first is the fair one, and the labels were written by the model that wrote the rule.
+- **A before and after not alternated.** Version 12's speed was measured on the old version and then on the new one, not in turn. The referee later named it, and it is still not measured again.
+- **Triage that cannot tell one officer from another.** On NVIDIA's year, five false alarms were all Item 5.02, an officer who is not the chief executive, and the two misses, a $25 billion note issue and an $11.9 billion acquisition, were filed under Item 8.01. Not fixed: a fix fitted to these seven would be measured on them.
+- **Two faults found by writing the examples, not by the tests.** A started run whose inbox item still said it waited, and a failed run whose item still said it ran. Each became an assertion that failed first.
+- **The specimen page's note was empty from version 13 to version 14**: the page's code hid a view the specimen did not have.
+- **The grammar on claims it had not seen.** On set A's held-out half it first read 15 of 40 numeric claims wrongly; on set B, with the whole-sentence rule, it read 6 of 80 at all. A wrong reading is worse than none, and the first answer to it was to refuse almost everything.
+- **An answer key that was wrong.** The independent route for the golden computed claims gave NVIDIA's fiscal 2008 the wrong year labels; the route was fixed and that one case changed.
+- **The API refused the readers' schema twice**, for 28 union-typed parameters and then for a grammar too large to compile, and one answer was cut off at 1,000 tokens. Found only by calling it.
+- **A rule made after the measurement.** Rule 3 came after set C was read, so set C's score does not include it, four of my own labels now refuse, and none of set C's 240 recordings replays under the new prompt.
+- **The gate's output was not kept** at versions 13 and 14, and twice the whole gate could not be run on a branch because another checkout's app held port 8766.
+
+**After version 14: a fifth referee, and version 14.1**
+
+- **A fifth hostile reading**, of version 14: the referee agent, Claude Sonnet 5.5, read-only, on a checkout without the logs, the hand-ins, the earlier reviews and the triage files. Its brief predated version 12, so it chose what to read. Thirteen findings, unedited in `Capstone/evidence_desk/docs/reviews/referee-5-version-14.md`; the decisions are in `Capstone/evidence_desk/docs/referee-5-triage.md` and in `Homework/Week 9/W9L2.md`, section 15.
+- **Checked before anything was changed.** Each claim was read against the code at the tag. All thirteen held in substance; the first was half true, since the API had answered on 18 November and three older lines of the README said it never had.
+- **Fixed, test first for all but one**: one section of the README on where every model answer came from; a template summary written again from the final verdicts, and a line written by code after a model's summary saying what the computed tests moved; a computed test that prints the comparison it made; who reads a computed test in each configuration; three wrong numbers the number check let through; a restore check that says BEHIND, exit 2, for a backup that is only behind the record.
+- **Nothing recorded moved.** The examples and the page's samples were made again through their targets; every recording replays and the tripwire did not move.
+- **The gate at version 14.1 from a fresh clone**, kept this time: 2,361 offline tests, the smoke test, 337 page assertions and 2 skipped, 149 s. The restore check on the real record: PASS, 43 runs, 20 decisions, 10 theses.
+
+**What went wrong in this part**
+
+- **The worst finding was about the documents.** Three lines of the README written on 17 November said the API had never answered. Credit was added on 18 November, live runs and set C went through the API, and the new results were written beside the old lines without rereading them. Two more sentences about 8-K passages were false the same way.
+- **A choice applied where it had no reason.** The summariser is shown the findings' verdicts alone, so that recorded requests stay as recorded. The template summary followed the same order and needed no recording, and the committed example brief said "Passages found, not judged: 5" above three judged rows.
+- **One fix came before its test.** The restore check's change was written first; its tests were then run against version 14's `backup.py`, put back for the purpose, and 2 of 24 failed. Two more tests, a history point's sides and a watch row changed with nothing dated after the backup, were written after their fixes and not seen failing. `docs/testing.md` says so.
+- **A commit holds more than its message says.** The code of the brief's note on who read a computed test went into the commit for the summary (`2f68aea`), and its test into the next (`29af083`). Left as it is: published history is not rewritten.
+- **The page is behind the backend.** It still labels the computed tests "Computed, no model", which is false when model readers are on. That is the page's to change.
+
 **Status**
 
-Version 11.1. The gate from a fresh clone: 1,580 offline tests, the smoke test, 156 assertions on the rendered page, in 38 s. Twelve tags. What that does not mean:
+Version 14.1. The gate from a fresh clone: 2,361 offline tests, the smoke test, 337 assertions on the rendered page and 2 skipped, in 149 s. Tags `capstone-v1` to `capstone-v14` and `capstone-v11.1`. What that does not mean:
 
-- No person has read the thirty golden cases, the code, a filing comparison, a list of changes under a claim, or a breakdown table against the printed one.
-- The model path has not run through the API since October: both keys were refused again, and every model answer here is a recording made by a stand-in.
+- No person has read the thirty golden cases, the code, a filing comparison, a list of changes under a claim, or a breakdown table against the printed one; nor the 8-K category labels, the watch replay's labels, the 28 restatements or set C's readings. Every judge here is a Claude model.
+- Credit was added on 18 November and the API answers: two live runs and 252 readings went through it. Every other model answer here is still a stand-in's recording of 17 November, and none has been recorded again through the API.
 - A finding can cite the tagged figures, on NVIDIA only and in recordings only. A finding that rests on figures alone is checked for its numbers and read by a second model, and by nothing else.
 - The reported figures are checked against published values for three companies, and were wrong for three of the other five until version 10.
 - The period check reports and withholds nothing, has seen no real error, cannot see the wrong column of a table, and misses one wrong year beside a right one in 5 of 18 planted cases.
 - About 45 ms of every live run is attributed to no stage, an older quarterly report a run read is compared with nothing, and a bare number in a quote still matches an amount a thousand, a million or a billion times its size.
-- The record has no copy off this laptop; `make backup-status` now says so each time the app starts.
+- The record has no copy off this laptop; `make backup-status` now says so each time the app starts, and the restore check tells a backup that is behind from one that is wrong, except for a run finished after the backup, which still fails.
 - No colleague has reviewed this, and my reviews of colleagues are still owed.
 - The link that opens a filing at a passage has never been clicked in a real browser.
+- The 8-Ks are read by rule: an 8-K's category is its item number, the exhibits are not read, and on NVIDIA's year the watch's triage gave five false alarms and two misses. The watcher has not run as a service for days.
+- On claims nobody here wrote, the grammar alone reads 22 of 80 rightly (set B, now development material). With two model readers, 36 of 80 were counted on set C, and one model wrote, read and judged them. When both models read a claim the same wrong way, the wrong test counts.
+- A model's summary can still say what the verdicts do not; the line after it names what moved, and nothing reads the prose.
+- The page still labels the computed tests "Computed, no model".
+- Version 14 is not timed, and no model-backed run has been.
 
 **To the draft, due 30 November**
 
 A proposed order, mine to change. The outline is `Capstone/evidence_desk/docs/draft-outline.md`.
 
 1. Read the thirty golden cases and correct them; re-run `make eval`. Every evaluation number depends on this. `Capstone/evidence_desk/eval/golden-reading.md` lays them out with links into the filings, starting with the four where the tool and the expected stance disagree.
-2. Rotate the API key that was pasted into a conversation; get credit; record the cassettes again through the API.
+2. Credit was added on 18 November and the API answers. Still to do: rotate the API key that was pasted into a conversation (nothing in the repository says it has been), and record the cassettes again through the API, so that the golden set, the mismatches and the example stop resting on a stand-in's answers.
 3. Use the tool on a thesis of my own and write down where it was wrong.
 4. Read five reworded pairs and five added paragraphs for a company other than NVIDIA, and say whether the classes hold.
 5. Read the five changed paragraphs listed under each claim of the example, and say for each whether it bears on the claim. Hold one breakdown table for a company other than NVIDIA against the table the filing prints, and one quarter of `make figures` for Costco, Amazon and JPMorgan against the filing.
 6. Ask a colleague to review it, and review theirs.
 7. Copy the record off this laptop: at least `backups/decisions-<UTC>.jsonl`, and say where.
-8. Decide whether an unverified year should withhold a finding, after reading a second thesis with the check on. Milestone 12 (table rows that keep their column headings) is what the wrong-column case waits on.
+8. Decide whether an unverified year should withhold a finding, after reading a second thesis with the check on. Milestone 15 (table rows that keep their column headings) is what the wrong-column case waits on.
 9. Find what the 45 ms of every run that no stage covers is, or say in the draft that it is not known.
-10. Write the draft from the outline, with the results table as it then stands.
+10. Read set C's 36 counted readings and the 43 claims no reader read, and judge them myself; a model wrote, read and judged them.
+11. Decide whether the 8-K rules should tell the chief executive from other officers and read Item 8.01, and measure any change with `make event-categories` and a replay of a company other than NVIDIA.
+12. Have the page say who read each computed test, as the brief now does.
+13. Write the draft from the outline, with the results table as it then stands.
 
 **Takeaway**
 
@@ -172,3 +220,7 @@ A fourth, from the end of the day. The oldest figures in the tool had been wrong
 And a fifth, about measuring. The period check passed every test written for it and every real finding it was shown. What told its strength and its one fault apart was making true statements wrong on purpose and counting. The same afternoon a restore check that had passed for seven versions turned out unable to fail, and a timing nobody had needed showed two requests too many. In all three the passing check was the less informative one.
 
 And a sixth, about the measurements themselves. Two numbers were written up with twenty pairs, a spread and a repeat, and both were wrong in how they were taken: an order that never changed, a collector nobody had thought about, a request the app does not make. The pairs that showed it were committed beside the summary. Reporting a number carefully is not a check of how it was taken; that took a reader who was told to expect it to be wrong.
+
+And a seventh, from version 14.1. A sentence that is true when written can become false without anyone touching it. The README said the API had never answered, and that was true until credit was added on 18 November; every new result after that was labelled with where its answers came from, and the old sentences beside them were never read again. The rule about where answers come from was kept one result at a time and broken in the whole. A fact that changes, like whether the API answers, belongs in one place that everything else points to.
+
+And with it, a choice made for one reason and applied where the reason did not hold. The model's summary is shown the findings' verdicts alone so that its recordings still match. The template summary followed the same order, needed no recording, and contradicted the verdict table in the committed example. The reason for a choice is worth writing beside it, so that the next place it is copied to can be checked against the reason.

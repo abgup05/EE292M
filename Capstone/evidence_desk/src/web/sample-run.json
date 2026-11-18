@@ -1,7 +1,7 @@
 {
   "note": "A recorded run of the NVIDIA example thesis on three recorded filings and the 8-Ks NVIDIA filed after the annual report, as recorded on 17 November 2026. The model answers are replayed from the cassette demo/cassettes/nvda-example; see its README for how they were produced.",
   "meta": {
-    "version": "0.14.0",
+    "version": "0.14.1",
     "figures_note": "Reported figures are computed by the backend from the XBRL facts the company filed with the SEC; each shows the facts it used and its arithmetic.",
     "limits": {
       "CONTEXT_CHARS": 240,
@@ -16,6 +16,7 @@
       "MAX_CLAIM_CHARS": 400,
       "MAX_CONCURRENT_ASSESSMENTS": 3,
       "MAX_DECISION_CHARS": 500,
+      "MAX_EACH_PERIODS": 12,
       "MAX_EVENTS_READ": 8,
       "MAX_EXCERPT_CHARS": 600,
       "MAX_EXTRA_URLS": 5,
@@ -139,7 +140,7 @@
     }
   },
   "run": {
-    "id": "run-75a7c998e70d",
+    "id": "run-0c07c311340b",
     "inputs": {
       "ticker": "NVDA",
       "decision": "Whether to keep an overweight position in NVIDIA into the next earnings report",
@@ -160,8 +161,8 @@
     "status": "complete",
     "stage": "done",
     "stage_detail": "",
-    "started_at": "2026-11-18T11:14:06.384842Z",
-    "finished_at": "2026-11-18T11:14:07.127258Z",
+    "started_at": "2026-11-18T14:50:16.141582Z",
+    "finished_at": "2026-11-18T14:50:16.878601Z",
     "company": {
       "cik": 1045810,
       "ticker": "NVDA",
@@ -173,6 +174,7 @@
     "checker_detail": "replayed from cassette nvda-example: 12 responses recorded via Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the rules and Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17 with claude-haiku-5-5 and claude-sonnet-5-5, 2026-11-17 to 2026-11-17",
     "claim_readers": "grammar",
     "claim_reader_detail": "",
+    "claim_reading_rule": "One reader: the grammar. A computed test counts when the grammar compiles the whole sentence; no second reading checks it.",
     "claims": [
       {
         "id": "c1",
@@ -201,7 +203,8 @@
           {
             "reader": "grammar",
             "canonical": "none",
-            "reason": "'data center' names a part of the company (a segment, a product or a geography), whose revenue is not the company's: only a part's share of revenue is read, from the newest filing's tags, and it has no history in the facts"
+            "reason": "'data center' names a part of the company (a segment, a product or a geography), whose revenue is not the company's: only a part's share of revenue is read, from the newest filing's tags, and it has no history in the facts",
+            "normal_form": "none"
           }
         ]
       },
@@ -233,7 +236,8 @@
           {
             "reader": "grammar",
             "canonical": "none",
-            "reason": "states no direction, threshold or comparison that can be computed"
+            "reason": "states no direction, threshold or comparison that can be computed",
+            "normal_form": "none"
           }
         ]
       },
@@ -265,7 +269,8 @@
           {
             "reader": "grammar",
             "canonical": "none",
-            "reason": "a cause, not only arithmetic: the facts can test a change, not why it happened"
+            "reason": "a cause, not only arithmetic: the facts can test a change, not why it happened",
+            "normal_form": "none"
           }
         ]
       },
@@ -724,14 +729,20 @@
           "history_note": "The outcome as of each of the 20 10-K and 10-Q filing dates in the 5 years to 2026-08-26, each from the facts filed by that date; it flipped 4 time(s).",
           "read_by": [
             "grammar"
-          ]
+          ],
+          "agreement": "one_reader",
+          "agreement_label": "one reader: the grammar",
+          "dissent": [],
+          "combines": "",
+          "parts": []
         },
         "compile_note": "",
         "readings": [
           {
             "reader": "grammar",
             "canonical": "gross_margin[Q] > gross_margin[Q-4]",
-            "reason": ""
+            "reason": "",
+            "normal_form": "gross_margin[Q] > gross_margin[Q-4]"
           }
         ]
       },
@@ -762,7 +773,8 @@
           {
             "reader": "grammar",
             "canonical": "none",
-            "reason": "does not name a measure in the metric set"
+            "reason": "does not name a measure in the metric set",
+            "normal_form": "none"
           }
         ]
       }
@@ -836,7 +848,7 @@
         "accession": null,
         "period_end": null,
         "published_date": null,
-        "retrieved_at": "2026-11-18T11:14:06.749994Z",
+        "retrieved_at": "2026-11-18T14:50:16.497789Z",
         "content_hash": "f6870031195cd1dc226506fcf891f4096679d400ac6139b9909a117dc9648f9b",
         "extraction_status": "extracted",
         "sections": 0,
@@ -10117,7 +10129,8 @@
       ],
       "coverage_status": "complete",
       "status_note": "Every stage ran on every source that was read: each claim has verified evidence and nothing was withheld. This is not a measure of how much evidence stands behind a verdict.",
-      "provenance_note": "Evidence comes from the company's own filings with the SEC. It shows what the company reported, not whether an outside party agrees."
+      "provenance_note": "Evidence comes from the company's own filings with the SEC. It shows what the company reported, not whether an outside party agrees.",
+      "verdicts_after_summary": ""
     },
     "timeline": [
       {

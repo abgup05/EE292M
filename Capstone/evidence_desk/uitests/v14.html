@@ -22,6 +22,10 @@
     every reader agreeing or refusing, so it shows neither a dissent nor a disagreement;
   - and: c2 of the example made a test of two parts joined by "and" (c1's test and c2's), put
     together the way app.core.claim_eval._combined does it, since no recorded run has one;
+  - v141: the example run with a model's summary followed by `brief.verdicts_after_summary` (a line
+    in app.core.policy's words: no example has one, since the model-summary samples predate it),
+    and c1's arithmetic, margin and one history point's sides written with the extra decimals
+    version 14.1 prints when rounded values would compare otherwise ("74.96% >= 75.00%: fails");
   - the restatement lookup, with sample mode off and a stand-in for `fetch`: a refused date (422),
     the example ledger (200) and EDGAR out of reach (503), each in the README's shape;
   - a run asked for as of a date: the request the form sends, a refused date (422), and the
@@ -235,6 +239,36 @@ async function run() {
     lane: text(doc.querySelector('#tot [data-tot-claim="c2"] [data-history-parts]')),
     laneHead: JSON.stringify([...doc.querySelectorAll('#tot [data-tot-claim="c2"] thead th')].map(text)),
   });
+
+  // Version 14.1: the line after a model's summary, and sides printed with more decimals.
+  const v141 = JSON.parse(JSON.stringify(ex.run));
+  const afterLine = "Written by code: the computed tests were counted after this summary was written, and set or changed 1 verdict: \u201cGross margin is expanding.\u201d from not assessed to supported.";
+  Object.assign(v141.brief, { summary: "A summary a model wrote before the computed tests were counted (made in this harness).", summary_origin: "model", verdicts_after_summary: afterLine });
+  const g = v141.claims.find((claim) => claim.id === "c1").computed;
+  g.arithmetic = [...g.arithmetic.slice(0, -1), "74.96% >= 75.00%: fails"];
+  g.margin_display = "-0.04 points";
+  const point = g.history[g.history.length - 1];
+  Object.assign(point, { left_display: "74.96%", right_display: "75.00%" });
+  win.eval(`renderRun(${JSON.stringify(v141)})`);
+  await until(() => doc.querySelector("[data-verdicts-after-summary]"), "the line after the summary");
+  const afterNode = doc.querySelector("[data-verdicts-after-summary]");
+  const lane = doc.querySelector('#tot [data-tot-claim="c1"]');
+  record("v141", {
+    after: text(afterNode),
+    afterText: text(afterNode.querySelector(".after-text")),
+    afterMark: text(afterNode.querySelector(".rule-mark")),
+    afterPrevious: afterNode.previousElementSibling ? afterNode.previousElementSibling.id : "",
+    afterInModelBox: String(Boolean(afterNode.closest("#summary-box"))),
+    afterCount: String(doc.querySelectorAll("[data-verdicts-after-summary]").length),
+    arithmetic: JSON.stringify([...doc.querySelectorAll('[data-computed-test="c1"] .ct-arith li')].map(text)),
+    margin: text(doc.querySelector('[data-computed-test="c1"] [data-margin]')),
+    lastRow: JSON.stringify([...[...lane.querySelectorAll("tr[data-point]")].pop().querySelectorAll("td")].map(text)),
+    lastDot: (lane.querySelector(`circle.tot-pt[data-point="${point.filed}"] title`) || {}).textContent || "",
+  });
+  // Rendering a run without the line removes it.
+  win.eval(`renderRun(${JSON.stringify(ex.run)})`);
+  await sleep(50);
+  record("v141-none", { afterCount: String(doc.querySelectorAll("[data-verdicts-after-summary]").length) });
 
   // The restatement lookup, sample mode off.
   win.eval("state.sample = false; setFormEnabled(true)");

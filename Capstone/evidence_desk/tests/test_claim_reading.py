@@ -94,7 +94,7 @@ def _with(test: ClaimTest, **changes: Any) -> dict[str, Any]:
 @pytest.mark.parametrize(
     ("changes", "words"),
     [
-        ({"left__subject": "sga"}, "measure 'sga'"),
+        ({"left__subject": "headcount"}, "measure 'headcount'"),
         ({"form": "valuation"}, "form 'valuation'"),
         ({"op": "=="}, "comparison '=='"),
         ({"left__fn": "share"}, "a direction compares a measure's value"),

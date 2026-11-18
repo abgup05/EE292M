@@ -1,5 +1,5 @@
 {
-  "about": "Judgements of the claim compiler's reading of each claim in eval/claim-tests-foreign-b.json (set B), scored once with the grammar of 10425c0 (unchanged at 0f8a25c and after): one entry per claim and canonical test printed ('none' when refused). reading: right, wrong (a test that does not mean what the sentence says), or not_compiled; for a claim its author marked numeric, cause says why it did not compile (metric the tool does not have, form it does not have, period it cannot place, phrasing of something it supports). The raw readings were committed first (eval/results/claim-tests-foreign-b-raw.txt) and the grammar was not changed after reading the set.",
+  "about": "Judgements of the claim compiler's reading of each claim in eval/claim-tests-foreign-b.json (set B), scored once with the grammar of 10425c0 (unchanged at 0f8a25c and after): one entry per claim and canonical test printed ('none' when refused). reading: right, wrong (a test that does not mean what the sentence says), or not_compiled; for a claim its author marked numeric, cause says why it did not compile (metric the tool does not have, form it does not have, period it cannot place, phrasing of something it supports). The raw readings were committed first (eval/results/claim-tests-foreign-b-raw.txt) and the grammar was not changed after reading the set. Readings added on 18 November 2026, after the measure catalogue (app.core.measures) widened the grammar, are judged by the same session that wrote the catalogue and say so ('catalogue, 18 November 2026'); no earlier judgement was changed.",
   "judge": "the grammar's author (Claude Opus 5.5 session), 18 November 2026; an independent judge's file is eval/results/claim-foreign-b-for-judge.md",
   "judgements": [
     {
@@ -795,6 +795,90 @@
       "canonical": "none",
       "reading": "not_compiled",
       "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g009",
+      "canonical": "yoy(equity)[FY2025] > 100%",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: shareholders' equity at the end of fiscal 2025 more than double its value a year earlier"
+    },
+    {
+      "id": "g014",
+      "canonical": "opex_ratio[Q] < 15%",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: operating expenses as a share of revenue in the latest quarter under 15%"
+    },
+    {
+      "id": "g018",
+      "canonical": "effective_tax_rate[FY] > 13%",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: income tax over pre-tax income for the latest fiscal year above 13%"
+    },
+    {
+      "id": "g022",
+      "canonical": "streak(accounts_payable)[Q] >= 4",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: accounts payable higher than the quarter before in each of four quarters in a row"
+    },
+    {
+      "id": "g027",
+      "canonical": "sbc[FY2025] > $4B",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: stock-based compensation in fiscal 2025 above $4 billion"
+    },
+    {
+      "id": "g051",
+      "canonical": "commercial_paper[Q] < commercial_paper[Q-4]",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: commercial paper on the latest balance sheet below a year earlier"
+    },
+    {
+      "id": "g055",
+      "canonical": "equity[Q] < $100B",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: shareholders' equity on the latest balance sheet below $100 billion"
+    },
+    {
+      "id": "g062",
+      "canonical": "effective_tax_rate[FY] > 16%",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: the effective tax rate of the latest fiscal year above 16%; 'rose above' is read as the level reached (the rise itself is not tested)"
+    },
+    {
+      "id": "g063",
+      "canonical": "total_liabilities[Q] > $260B",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: total liabilities on the latest balance sheet above $260 billion"
+    },
+    {
+      "id": "g089",
+      "canonical": "long_term_debt[Q] < long_term_debt[Q-4]",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: long-term debt (non-current) lower than a year earlier"
+    },
+    {
+      "id": "g092",
+      "canonical": "share_repurchases[FY] > $15B",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: repurchases of common stock in the latest fiscal year above $15 billion"
+    },
+    {
+      "id": "g100",
+      "canonical": "total_assets[FY2025] > $500B",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: total assets at the end of fiscal 2025 above $500 billion; 'passed' is read as the level reached"
+    },
+    {
+      "id": "g101",
+      "canonical": "other_income[FY2025] < $0",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: other income and expense, net, of fiscal 2025 below zero"
+    },
+    {
+      "id": "g106",
+      "canonical": "pretax_income[FY] > $120B",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: income before income taxes of the latest fiscal year above $120 billion; no period named, FY is a fair reading of an amount"
     }
   ]
 }

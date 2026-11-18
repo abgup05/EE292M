@@ -260,7 +260,9 @@ def main(
     if not isinstance(checker, NoChecker):
         print(f"{run.id}: meaning checked by {checker.name} ({checker.detail})")
     if claim_reader is not None:
-        print(f"{run.id}: claims read by the grammar and the model ({claim_reader.detail})")
+        models = claim_reader if isinstance(claim_reader, tuple) else (claim_reader,)
+        details = "; ".join(f"{reader.name}: {reader.detail}" for reader in models)
+        print(f"{run.id}: claims read by the grammar and {len(models)} model(s) ({details})")
     run = execute_run(
         run,
         store,

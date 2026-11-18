@@ -63,8 +63,8 @@ NOT_NUMERIC = [
     ("Margins are expanding.", "which margin"),
     ("Revenue will grow 30% next year.", "forecast"),
     ("Gross margin is expanding because of Blackwell.", "cause"),
-    ("Debt is manageable.", "metric set"),
-    ("Deferred revenue is rising.", "metric set"),
+    ("Debt is manageable.", "no direction"),
+    ("Headcount is rising.", "metric set"),
     ("Gross margin is high.", "threshold"),
     ("Revenue grew 2% in 2008.", "calendar year"),
     ("Revenue grew faster than peers.", "peers"),
@@ -191,8 +191,8 @@ FOREIGN_DEVELOPMENT_NOT_NUMERIC = [
     ("Revenue growth fell in each of the last two quarters.", "each of several periods"),
     ("Receivables have grown, but more slowly than revenue.", "contrast"),
     ("Net income rose despite higher costs.", "contrast"),
-    ("Cash and marketable securities exceeded $20 billion.", "not in the metric set"),
-    ("Cash and short-term investments are above $10 billion.", "not in the metric set"),
+    # Refused for a measure outside the set until the catalogue added it (tests/test_measures.py).
+    ("Vendor non-trade receivables exceeded $20 billion.", "not understood"),
 ]
 
 

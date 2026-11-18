@@ -25,9 +25,16 @@ The forms:
 - **share**: a segment, a geography or the largest customer is more than N% of revenue,
   from the newest filing's tagged breakdowns.
 
-Measures are those of :mod:`app.core.metrics` plus the facts behind them (gross
-profit, operating income, net income, R&D) and operating expenses, which this
-version derives as gross profit less operating income (:mod:`app.core.claim_eval`).
+Measures are those of the catalogue (:mod:`app.core.measures`): the panel's own
+(:mod:`app.core.metrics`) plus the facts behind them (gross profit, operating income, net
+income, R&D) and operating expenses, which this version derives as gross profit less
+operating income; and, since the catalogue, buybacks, dividends, debt and its parts, net
+cash, the diluted share count, total operating expenses, SG&A and its parts, stock-based
+compensation, income tax and the effective tax rate, interest, depreciation, deferred
+revenue, cash and marketable securities, total assets, liabilities and equity, and the
+others it lists, each named by the words its ``names`` pattern gives. "Has no debt" is
+a threshold at zero. A part of the company (a segment, a product, a geography) is not read
+by this grammar: the catalogue computes a part's revenue for the model readers.
 
 A claim is *not* numeric when it is a valuation, a cause, a forecast, a judgement,
 about peers or expectations, a measure outside that set, a segment's or a geography's
@@ -43,6 +50,8 @@ from dataclasses import dataclass, replace
 from typing import Literal
 
 from app.core.limits import MAX_CLAIM_CHARS
+from app.core.measures import CATALOGUE
+from app.core.measures import RATIO_OF as CATALOGUE_RATIO_OF
 
 Form = Literal[
     "direction",
@@ -57,7 +66,7 @@ Form = Literal[
 Op = Literal[">", ">=", "<", "<="]
 PeriodKind = Literal["Q", "FY", "TTM", "filing"]
 Function = Literal["value", "yoy", "qoq", "streak", "cagr", "share", "max_share"]
-MetricKind = Literal["flow", "ratio", "per_share", "instant"]
+MetricKind = Literal["flow", "ratio", "per_share", "instant", "shares"]
 
 FORMS: tuple[str, ...] = (
     "direction",
@@ -91,13 +100,20 @@ METRICS: dict[str, tuple[str, MetricKind]] = {
     "inventory": ("Inventory", "instant"),
     "receivables": ("Accounts receivable", "instant"),
 }
+# The catalogue's further measures (app.core.measures), after the panel's.
+METRICS |= {
+    key: (measure.label, measure.kind) for key, measure in CATALOGUE.items() if key not in METRICS
+}
 # A measure "as a share of revenue" is its ratio.
-RATIO_OF: dict[str, str] = {
-    "gross_profit": "gross_margin",
-    "operating_income": "operating_margin",
-    "net_income": "net_margin",
-    "rnd": "rnd_ratio",
-    "free_cash_flow": "fcf_margin",
+RATIO_OF: dict[str, str] = dict(CATALOGUE_RATIO_OF)
+# Each ratio's numerator and denominator, as the claim may name them ("13% of pre-tax income").
+RATIO_PARTS: dict[str, tuple[str, str]] = {
+    **{
+        measure.key: (measure.plus[0], measure.over)
+        for measure in CATALOGUE.values()
+        if measure.computed == "ratio"
+    },
+    **{ratio: (top, "revenue") for top, ratio in RATIO_OF.items()},
 }
 SHARE_AXES = ("segment", "geography", "customer")
 
@@ -158,7 +174,9 @@ class Term:
     and on the previous quarter; ``streak`` the number of periods in a row it rose;
     ``cagr`` its compound annual growth over ``years``; ``share`` one ``member``'s share
     of revenue along an axis (``subject`` is "segment" or "geography");
-    ``max_share`` the largest tagged customer's share.
+    ``max_share`` the largest tagged customer's share. A term with an ``axis`` is a part
+    of the company's measure (``subject`` "revenue" or "operating_income" of ``member``
+    along ``axis``), read from the newest filing (:data:`app.core.measures.PART_MEASURES`).
     """
 
     fn: Function
@@ -166,10 +184,14 @@ class Term:
     period: Period
     member: str = ""
     years: int = 0
+    axis: str = ""
 
     def text(self) -> str:
         """The canonical form of the term."""
         at = f"[{self.period.text()}]"
+        if self.axis:
+            inner = f'{self.subject}({self.axis} "{self.member}")'
+            return f"{inner}{at}" if self.fn == "value" else f"{self.fn}({inner}){at}"
         match self.fn:
             case "value":
                 return f"{self.subject}{at}"
@@ -259,10 +281,12 @@ COMPARATORS: tuple[tuple[str, Op], ...] = (
     ("at most", "<="),
     ("less than", "<"),
     ("fewer than", "<"),
+    ("surpassed", ">"),
     ("exceeded", ">"),
     ("exceeds", ">"),
     ("exceed", ">"),
     ("topped", ">"),
+    ("passed", ">"),
     ("reached", ">="),
     ("hit", ">="),
     ("tops", ">"),
@@ -286,36 +310,10 @@ BARE_PERCENT = re.compile(r"(?<![\w.])-?\d+(?:\.\d+)?\s*(?:%|percent\b)")
 BARE_AMOUNT = re.compile(r"\$\s?\d")
 SCALES = {"billion": 1e9, "bn": 1e9, "b": 1e9, "million": 1e6, "m": 1e6, "thousand": 1e3, "k": 1e3}
 
-# The measures, as a claim names them; longer names first so that they win.
-METRIC_PHRASES: tuple[tuple[str, str], ...] = (
-    (r"free cash flow margins?|fcf margins?", "fcf_margin"),
-    (
-        r"(?:r&d|research and development|research)(?: spending| expenses?)?"
-        r" (?:as a (?:share|percent(?:age)?) of (?:revenues?|sales)|intensity)",
-        "rnd_ratio",
-    ),
-    (r"gross margins?", "gross_margin"),
-    (r"operating margins?", "operating_margin"),
-    (r"net (?:profit )?margins?", "net_margin"),
-    (r"free cash flows?|\bfcf", "free_cash_flow"),
-    (
-        r"operating cash flows?|cash flows? from operations|cash from operations",
-        "operating_cash_flow",
-    ),
-    (r"capital expenditures?|capex|capital spending", "capex"),
-    (r"cash and cash equivalents|cash on hand|cash balances?|cash", "cash"),
-    (r"inventor(?:y|ies)", "inventory"),
-    (r"accounts receivables?|receivables", "receivables"),
-    (r"diluted (?:eps|earnings per share)|eps|earnings per share", "eps_diluted"),
-    (r"gross profits?", "gross_profit"),
-    (r"operating (?:income|profits?)", "operating_income"),
-    (r"operating expenses|opex", "operating_expenses"),
-    (r"net (?:income|profits?|earnings)|earnings|profits", "net_income"),
-    (
-        r"(?:r&d|research and development|research)(?: spending| expenses?)?",
-        "rnd",
-    ),
-    (r"(?:net )?(?:revenues?|sales)", "revenue"),
+# The measures, as a claim names them; longer names first so that they win (the catalogue's
+# order: its added measures, then the panel's, whose names are as they were).
+METRIC_PHRASES: tuple[tuple[str, str], ...] = tuple(
+    (measure.names, key) for key, measure in CATALOGUE.items()
 )
 METRIC_RE = re.compile(
     "|".join(
@@ -368,20 +366,16 @@ TRAPS: tuple[tuple[re.Pattern[str], str], ...] = (
     ),
     (
         re.compile(
-            r"\b(?:debt|dividends?|buybacks?|repurchases?|returned\b.*\bto shareholders|"
-            r"marketable securities|short-term investments|"
-            r"headcount|employees?|shares outstanding|goodwill|total assets|assets|"
-            r"accounts payable|payables|tax(?:es)?|backlog|deferred revenues?|"
+            r"\b(?:headcount|employees?|(?<!diluted )shares outstanding|backlog|"
             r"return on (?:equity|assets|invested capital)|roe|roic|inventory turns|"
-            r"(?:free )?cash flow per share|stock-based compensation|dilut(?:ing|ion)|"
-            r"interest rates?)\b"
+            r"(?:free )?cash flow per share|dilut(?:ing|ion)|interest rates?)\b"
         ),
         "names a measure that is not in the metric set this version computes",
     ),
     (
         re.compile(
             r"\b(?:priced in|valuation|valued|cheap|expensive|p/e|price[- ]to|multiples?|"
-            r"yield|stock|share price)\b"
+            r"yield|stock price|share price)\b"
         ),
         "a valuation: it needs the share price, which is not filed",
     ),
@@ -482,6 +476,21 @@ CUSTOMER_SUBJECT = re.compile(
     r"(?:single )?customer$|^(?:the )?(?:largest|biggest) customer$"
 )
 FRACTIONS = {"half": 50.0, "a half": 50.0, "a quarter": 25.0, "a third": 100 / 3}
+# "The company has no debt": a threshold at zero; "was negative", "is positive" too.
+HAS_NONE = re.compile(r"\b(?:has|have|had|carries|carried|pays|paid) no\b")
+SIGN = re.compile(
+    r"\b(?:is|are|was|were|turned|remained|remains|stayed|stays|became) "
+    r"(?P<sign>negative|positive)\b"
+)
+# A company named before its verb opens a claim ("Apple repurchased ..."): the subject.
+COMPANY_VERB = re.compile(
+    r"\s*([A-Z][\w&.-]*) (?=(?:repurchased|returned|bought|spent|paid|generated|earned|"
+    r"reported|holds|held|carries|carried|has|had)\b)"
+)
+# "fell below $10 billion", "rose above 40%": the verb before a threshold's comparison.
+MOVED = r"(?:fell|dropped|declined|rose|climbed|grew|increased|decreased)"
+MOVED_TO = rf"\b{MOVED}\b(?= (?:{CMP}) )"
+MOVED_BEFORE = re.compile(rf"\b{MOVED}\s+$")
 
 
 # Reading the claim
@@ -672,6 +681,8 @@ def _growth_threshold(text: str, metric: str) -> ClaimTest | NotNumeric | None:
     if doubled is None and rate is None:
         return None
     if METRICS[metric][1] == "ratio":
+        if rate is not None and MOVED_BEFORE.search(text[: rate.start()]):
+            return None  # "rose above 16%": a level, read as a threshold
         return NotNumeric("a change in a percentage is ambiguous (points or percent)")
     fn: Function = "qoq" if SEQUENTIAL.search(text) else "yoy"
     period = _base_period(text, metric, amount=False)
@@ -700,7 +711,12 @@ def _threshold(text: str, metric: str) -> ClaimTest | NotNumeric | None:
         return None
     if rate is not None and (amount is None or rate.start() < amount.start()):
         if kind != "ratio":
-            return NotNumeric("a percent threshold on an amount: say what it is a percent of")
+            ratio = _ratio_named_after(text[rate.end() :], metric)
+            if ratio is None:
+                return NotNumeric("a percent threshold on an amount: say what it is a percent of")
+            period = _base_period(text, ratio, amount=False)
+            number = Number(_percent(rate), "percent")
+            return ClaimTest("threshold", Term("value", ratio, period), OP_OF[rate["cmp"]], number)
         period = _base_period(text, metric, amount=False)
         number = Number(_percent(rate), "percent")
         return ClaimTest("threshold", Term("value", metric, period), OP_OF[rate["cmp"]], number)
@@ -710,6 +726,20 @@ def _threshold(text: str, metric: str) -> ClaimTest | NotNumeric | None:
     period = _base_period(text, metric, amount=True)
     number = Number(_amount(amount), "USD")
     return ClaimTest("threshold", Term("value", metric, period), OP_OF[amount["cmp"]], number)
+
+
+def _ratio_named_after(after: str, metric: str) -> str | None:
+    """The ratio of ``metric`` to the measure named after a percent ("15% of revenue")."""
+    if not re.match(r"\s*of\b", after):
+        return None
+    named = _metrics(after)
+    if not named:
+        return None
+    over = named[0][2]
+    return next(
+        (ratio for ratio, (top, bottom) in RATIO_PARTS.items() if top == metric and bottom == over),
+        None,
+    )
 
 
 def _direction(text: str, metric: str) -> ClaimTest | None:
@@ -803,6 +833,12 @@ def _parse(claim: str) -> ClaimTest | NotNumeric:
             return NotNumeric("does not say growth of what")
         return NotNumeric("does not name a measure in the metric set")
     metric = named[0][2]
+    if METRICS[metric][1] in ("instant", "flow"):
+        sign = SIGN.search(claim)
+        if HAS_NONE.search(claim) or sign:
+            op: Op = "<=" if not sign else "<" if sign["sign"] == "negative" else ">"
+            period = _base_period(claim, metric, amount=True)
+            return ClaimTest("threshold", Term("value", metric, period), op, Number(0.0, "USD"))
     each = EACH_PERIOD.search(claim)
     if each is not None:
         return _each_period(claim, metric, each)
@@ -887,6 +923,7 @@ def _period_words(term: Term, first: bool) -> list[str]:
         return words
     if period.kind == "TTM":
         words.append(TTM.pattern)
+        words.append(r"\b(?:over|in|during|for)\b(?= (?:the )?(?:trailing|last)[- ](?:twelve|12))")
         if period.back:
             words.append(YEAR_ON_YEAR)
         return words
@@ -915,6 +952,15 @@ def _explaining(test: ClaimTest) -> list[str]:
     words: list[str] = _form_words(test)
     for index, term in enumerate(terms):
         words += [pattern for pattern, key in METRIC_PHRASES if key == term.subject]
+        if term.subject in CATALOGUE and CATALOGUE[term.subject].also:
+            words.append(CATALOGUE[term.subject].also)
+        if term.subject in RATIO_PARTS:
+            # "operating expenses were under 15% of revenue": the ratio's two measures.
+            over = RATIO_PARTS[term.subject][1]
+            tops = [top for top, ratio in RATIO_OF.items() if ratio == term.subject]
+            tops.append(RATIO_PARTS[term.subject][0])
+            words += [CATALOGUE[top].names for top in tops]
+            words.append(rf"\bof (?:the )?(?:total |net )?(?:{CATALOGUE[over].names})(?![\w&])")
         words += _period_words(term, index == 0)
         if term.fn in ("yoy", "qoq", "cagr"):
             words.append(GROWTH_NOUNS)
@@ -935,7 +981,9 @@ def _form_words(test: ClaimTest) -> list[str]:
         case "direction":
             words.append(rf"\b(?:{up_or_down})\b")
         case "threshold":
-            words += [PERCENT.pattern, AMOUNT.pattern, LEVEL_VERBS]
+            words += [PERCENT.pattern, AMOUNT.pattern, LEVEL_VERBS, MOVED_TO]
+            if isinstance(test.right, Number) and test.right.value == 0:
+                words.append(HAS_NONE.pattern if test.op == "<=" else SIGN.pattern)
         case "growth_threshold":
             words += [PERCENT.pattern, DOUBLED.pattern, rf"\b(?:{UP}|{DOWN})\b", GROWTH_NOUNS]
         case "faster_than":
@@ -961,6 +1009,9 @@ def unexplained(text: str, test: ClaimTest) -> list[str]:
     subject = re.match(r"\s*([A-Z][\w&.-]*)(?:'s|’s)\b", text)
     if subject is not None:
         claim = re.sub(rf"^{re.escape(subject.group(1).casefold())}'s\b", "¦", claim)
+    company = COMPANY_VERB.match(text)
+    if company is not None:
+        claim = re.sub(rf"^{re.escape(company.group(1).casefold())}\b", "¦", claim)
     covered = [False] * len(claim)
     for pattern in _explaining(test):
         for match in re.finditer(pattern, claim):

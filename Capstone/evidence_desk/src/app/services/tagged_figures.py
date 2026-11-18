@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Final
@@ -29,7 +29,7 @@ from pydantic import ValidationError
 
 from app.core import breakdown_models, breakdowns, policy
 from app.core.breakdown_models import BreakdownReport
-from app.core.breakdowns import build_report
+from app.core.breakdowns import CLAIM_SPECS, SPECS, BreakdownSpec, build_report
 from app.core.documents import FilingRef
 from app.core.metric_models import Metric
 from app.core.models import Company
@@ -64,6 +64,14 @@ def reader_version() -> str:
 
 
 READER_VERSION: Final = reader_version()
+# Reports read for a claim test's part (with app.core.breakdowns.CLAIM_SPECS) are kept
+# under their own version, so a run's own reports are never replaced by them.
+CLAIM_READER_VERSION: Final = f"{READER_VERSION}-claims"
+FOR_CLAIMS: Final = (*SPECS, *CLAIM_SPECS)
+
+
+def _version(specs: Sequence[BreakdownSpec]) -> str:
+    return READER_VERSION if tuple(specs) == tuple(SPECS) else CLAIM_READER_VERSION
 
 
 @dataclass
@@ -88,11 +96,13 @@ def newest_reports(refs: Iterable[FilingRef]) -> list[FilingRef]:
     return sorted(chosen, key=lambda ref: (ref.period_end, ref.filed_date), reverse=True)
 
 
-def _kept(cache: FilingCache | None, ref: FilingRef) -> BreakdownReport | None:
+def _kept(
+    cache: FilingCache | None, ref: FilingRef, version: str = READER_VERSION
+) -> BreakdownReport | None:
     """The breakdowns of ``ref`` as this reader kept them, if it did and they still read."""
     if cache is None:
         return None
-    stored = cache.get_tagged(ref.accession, READER_VERSION)
+    stored = cache.get_tagged(ref.accession, version)
     if stored is None:
         return None
     try:
@@ -118,9 +128,10 @@ def _read(
     ref: FilingRef,
     cache: FilingCache | None,
     at_hand: Mapping[str, str],
+    specs: Sequence[BreakdownSpec] = SPECS,
 ) -> BreakdownReport | str:
     """The breakdowns tagged in ``ref``, or why they could not be read."""
-    kept = _kept(cache, ref)
+    kept = _kept(cache, ref, _version(specs))
     if kept is not None:
         return kept
     html = _html(filings, ref, at_hand)
@@ -133,12 +144,12 @@ def _read(
         facts = read_tagged_facts(html)
         if facts.reason is not None:
             return facts.reason.rstrip(".")
-        report = build_report(facts, company=company, filing=filing_info(ref))
+        report = build_report(facts, company=company, filing=filing_info(ref), specs=specs)
     except Exception as exc:  # noqa: BLE001 - a filing is untrusted text; its tags are optional
         log.exception("Reading the tags of %s failed", ref.url)
         return f"its tags could not be read ({type(exc).__name__})"
     if cache is not None:
-        cache.put_tagged(ref.accession, READER_VERSION, report.model_dump_json())
+        cache.put_tagged(ref.accession, _version(specs), report.model_dump_json())
     return report
 
 
@@ -149,18 +160,21 @@ def read_reports(
     *,
     cache: FilingCache | None = None,
     html_by_accession: Mapping[str, str] | None = None,
+    specs: Sequence[BreakdownSpec] = SPECS,
 ) -> tuple[list[BreakdownReport], list[str], list[str]]:
     """The breakdowns tagged in each of ``refs``, in order: reports, failures and notes.
 
     A filing whose tags cannot be read is a :data:`~app.core.policy.TAGGED_UNAVAILABLE`
     sentence in the failures; one that tags no breakdown is a note. Never raises for
-    EDGAR or for a filing's content. Kept reports are read from ``cache``.
+    EDGAR or for a filing's content. Kept reports are read from ``cache``. ``specs`` are
+    the breakdowns built: a run's own, or :data:`FOR_CLAIMS` for a claim test's part
+    (kept apart, under :data:`CLAIM_READER_VERSION`).
     """
     reports: list[BreakdownReport] = []
     errors: list[str] = []
     notes: list[str] = []
     for ref in refs:
-        read = _read(company, filings, ref, cache, html_by_accession or {})
+        read = _read(company, filings, ref, cache, html_by_accession or {}, specs)
         if isinstance(read, str):
             errors.append(
                 policy.TAGGED_UNAVAILABLE.format(

@@ -52,7 +52,7 @@ from app.core.models import (
 from app.core.ports import (
     Analyst,
     Checker,
-    ClaimReader,
+    ClaimReaders,
     FilingSource,
     PageFetcher,
     SourceError,
@@ -267,7 +267,7 @@ def create_app(
     cache: FilingCache | None = None,
     checker: Checker | None = None,
     facts_store: FactStore | None = None,
-    claim_reader: ClaimReader | None = None,
+    claim_reader: ClaimReaders = None,
     wall_clock: Callable[[], datetime] | None = None,
 ) -> FastAPI:
     """Build the application. Collaborators not given are built by :mod:`app.wiring`.

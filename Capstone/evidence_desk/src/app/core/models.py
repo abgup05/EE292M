@@ -191,8 +191,8 @@ class Claim(BaseModel):
     the verdict (:func:`app.core.policy.claim_verdict`). When the claim does not compile,
     ``computed`` is None and ``compile_note`` says why. Both are empty before version 14.
     ``readings`` is each reader's reading of the claim's test, the grammar's first, then
-    the model parser's when it is on (:func:`app.core.policy.reading_counts`); empty
-    before version 14.
+    the model readers' when they are on (:func:`app.core.policy.reading_agreement`);
+    empty before version 14.
     """
 
     id: str
@@ -535,9 +535,12 @@ class Run(BaseModel):
     # The second model that checked the findings' meaning; "none" when nothing checked them.
     checker: str = "none"
     checker_detail: str = ""
-    # Who read each claim's test: "grammar", or "grammar and model" with the model parser on.
+    # Who read each claim's test: "grammar", or "grammar and model" with the model parser on,
+    # or "grammar, model and model_2" with two model readers; the counting rule in words
+    # ("" before the rule was stated on the run).
     claim_readers: str = ""
     claim_reader_detail: str = ""
+    claim_reading_rule: str = ""
     claims: list[Claim] = Field(default_factory=list)
     sources: list[Source] = Field(default_factory=list)
     evidence: list[Evidence] = Field(default_factory=list)

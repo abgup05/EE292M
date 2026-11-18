@@ -7,7 +7,8 @@ to every view, so the page and the Markdown export cannot disagree.
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
+from dataclasses import dataclass
 
 from app.core.claim_test_models import ComputedTest
 from app.core.models import (
@@ -200,19 +201,108 @@ COMPUTED_NOT_NUMERIC = "Not a numeric claim this version computes: {reason}."
 # Who read a claim's test, and when a computed test may count toward a verdict. The grammar
 # (app.core.claimtest) compiles a claim only when its test explains every content word of
 # the sentence. With the grammar alone, a computed test counts when the grammar compiled
-# it. With the model parser on as a second reader (app.engines.claim_reader), a computed
-# test counts only when both readers arrive at the same canonical test; when they differ,
-# or only one of them reads a test in the claim, the claim shows both readings, the test
-# counts as nothing and the verdict rests on the findings alone.
+# it: one reader, and the run says so. With up to two model readers beside it
+# (app.engines.claim_reader, different models), a computed test counts when at least two
+# readers reach the same normal form (app.core.claim_normal); when the grammar and one
+# model agree and the other model writes a different test, it counts, marked as counted
+# with one dissenting reading, and the dissent is shown (a refusal is not a dissent). When
+# no two readers agree, the claim shows every reading, the test counts as nothing and the
+# verdict rests on the findings alone.
 GRAMMAR_READER = "grammar"
 MODEL_READER = "model"
+SECOND_MODEL_READER = "model_2"
 NO_TEST = "none"
+READER_WORDS = {
+    GRAMMAR_READER: "the grammar",
+    MODEL_READER: "the model",
+    SECOND_MODEL_READER: "the second model",
+}
 COMPUTED_READINGS_DIFFER = (
-    "Readings differ: not counted. The grammar read {grammar}; the model read {model}. "
-    "The verdict rests on the findings alone."
+    "Readings differ: not counted. {readings}. The verdict rests on the findings alone."
 )
+COMPUTED_DISSENT = "Counted, with one dissenting reading: {readings}."
 COMPUTED_READER_FAILED = "the model reader could not read the claim: {why}"
 READER_ERROR = "The model reader could not read claim {claim_id}: {why}"
+READING_RULE_ONE = (
+    "One reader: the grammar. A computed test counts when the grammar compiles the whole "
+    "sentence; no second reading checks it."
+)
+READING_RULE_SEVERAL = (
+    "{count} readers ({readers}): a computed test counts when at least two of them reach the "
+    "same test (in one normal form). A different test from the third is shown as a dissent "
+    "and the test still counts; a refusal is not a dissent. When no two agree, every reading "
+    "is shown and nothing counts."
+)
+READER_COUNT_WORDS = {2: "Two", 3: "Three"}
+
+# What the rule concluded for one claim's readings (ComputedTest.agreement). Whether the
+# test then counts toward the verdict also needs an outcome: a test that cannot be computed
+# counts as nothing, whoever read it.
+ONE_READER = "one_reader"
+AGREED = "agreed"
+AGREED_WITH_DISSENT = "agreed_with_dissent"
+NOT_AGREED = "not_agreed"
+NO_TEST_READ = "no_test"
+AGREEMENT_LABELS = {
+    ONE_READER: "one reader: the grammar",
+    AGREED: "at least two readers agree",
+    AGREED_WITH_DISSENT: "counted, with one dissenting reading",
+    NOT_AGREED: "not counted: no two readers agree",
+    NO_TEST_READ: "no test read",
+}
+
+
+@dataclass(frozen=True)
+class Agreement:
+    """The counting rule's conclusion for one claim.
+
+    ``form`` is the normal form two readers reached ("" when none); ``agreeing`` the
+    readers that reached it, in reading order; ``dissenting`` those that wrote a
+    different test (never one that refused).
+    """
+
+    conclusion: str
+    form: str = ""
+    agreeing: tuple[str, ...] = ()
+    dissenting: tuple[str, ...] = ()
+
+    @property
+    def counts(self) -> bool:
+        """True when the computed test counts toward the claim's verdict."""
+        return self.conclusion in (ONE_READER, AGREED, AGREED_WITH_DISSENT)
+
+
+def reading_agreement(forms: Mapping[str, str]) -> Agreement:
+    """The rule on each reader's normal form (:data:`NO_TEST` for a refusal), by reader.
+
+    The grammar alone: its test counts when it read one. Several readers: a form at least
+    two reached counts; any other test is a dissent; with none, nothing counts.
+    """
+    if len(forms) == 1:
+        [(reader, form)] = forms.items()
+        if form == NO_TEST:
+            return Agreement(NO_TEST_READ)
+        return Agreement(ONE_READER, form, (reader,))
+    tests = {reader: form for reader, form in forms.items() if form != NO_TEST}
+    if not tests:
+        return Agreement(NO_TEST_READ)
+    for form in dict.fromkeys(tests.values()):
+        agreeing = tuple(reader for reader, other in tests.items() if other == form)
+        if len(agreeing) >= 2:
+            dissenting = tuple(reader for reader, other in tests.items() if other != form)
+            conclusion = AGREED_WITH_DISSENT if dissenting else AGREED
+            return Agreement(conclusion, form, agreeing, dissenting)
+    return Agreement(NOT_AGREED)
+
+
+def reading_rule(readers: Sequence[str]) -> str:
+    """The rule in words, for the run record: one reader, or how several are counted."""
+    if len(readers) <= 1:
+        return READING_RULE_ONE
+    names = [*readers[:-1]]
+    listed = f"{', '.join(names)} and {readers[-1]}"
+    count = READER_COUNT_WORDS.get(len(readers), str(len(readers)))
+    return READING_RULE_SEVERAL.format(count=count, readers=listed)
 
 
 def reading_counts(grammar: str, model: str | None) -> bool:

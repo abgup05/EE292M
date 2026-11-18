@@ -33,6 +33,7 @@
   "checker_detail": "",
   "claim_readers": "grammar",
   "claim_reader_detail": "",
+  "claim_reading_rule": "One reader: the grammar. A computed test counts when the grammar compiles the whole sentence; no second reading checks it.",
   "claims": [
     {
       "id": "c1",
@@ -693,14 +694,18 @@
         "history_note": "The outcome as of each of the 20 10-K and 10-Q filing dates in the 5 years to 2026-03-01, each from the facts filed by that date; it flipped 5 time(s).",
         "read_by": [
           "grammar"
-        ]
+        ],
+        "agreement": "one_reader",
+        "agreement_label": "one reader: the grammar",
+        "dissent": []
       },
       "compile_note": "",
       "readings": [
         {
           "reader": "grammar",
           "canonical": "gross_margin[Q] > gross_margin[Q-4]",
-          "reason": ""
+          "reason": "",
+          "normal_form": "gross_margin[Q] > gross_margin[Q-4]"
         }
       ]
     },
@@ -1207,14 +1212,18 @@
         "history_note": "The outcome as of each of the 20 10-K and 10-Q filing dates in the 5 years to 2026-03-01, each from the facts filed by that date; it flipped 2 time(s).",
         "read_by": [
           "grammar"
-        ]
+        ],
+        "agreement": "one_reader",
+        "agreement_label": "one reader: the grammar",
+        "dissent": []
       },
       "compile_note": "",
       "readings": [
         {
           "reader": "grammar",
           "canonical": "yoy(revenue)[Q] > 200%",
-          "reason": ""
+          "reason": "",
+          "normal_form": "yoy(revenue)[Q] > 200%"
         }
       ]
     },
@@ -1242,7 +1251,8 @@
         {
           "reader": "grammar",
           "canonical": "none",
-          "reason": "'data center' names a part of the company (a segment, a product or a geography), whose revenue is not the company's: only a part's share of revenue is read, from the newest filing's tags, and it has no history in the facts"
+          "reason": "'data center' names a part of the company (a segment, a product or a geography), whose revenue is not the company's: only a part's share of revenue is read, from the newest filing's tags, and it has no history in the facts",
+          "normal_form": "none"
         }
       ]
     },
@@ -1384,14 +1394,18 @@
         "history_note": "A share of revenue is read from the newest filing's tagged breakdowns, which have no history in the company facts; no history is drawn.",
         "read_by": [
           "grammar"
-        ]
+        ],
+        "agreement": "one_reader",
+        "agreement_label": "one reader: the grammar",
+        "dissent": []
       },
       "compile_note": "",
       "readings": [
         {
           "reader": "grammar",
           "canonical": "share(segment \"Data Center\")[filing] > 80%",
-          "reason": ""
+          "reason": "",
+          "normal_form": "share(segment \"data center\")[filing] > 80%"
         }
       ]
     },
@@ -1754,14 +1768,18 @@
         "history_note": "The outcome as of each of the 20 10-K and 10-Q filing dates in the 5 years to 2026-03-01, each from the facts filed by that date; it flipped 0 time(s).",
         "read_by": [
           "grammar"
-        ]
+        ],
+        "agreement": "one_reader",
+        "agreement_label": "one reader: the grammar",
+        "dissent": []
       },
       "compile_note": "",
       "readings": [
         {
           "reader": "grammar",
           "canonical": "revenue[FY2008] > revenue[FY2007]",
-          "reason": ""
+          "reason": "",
+          "normal_form": "revenue[FY-18] > revenue[FY-19]"
         }
       ]
     }

@@ -12,10 +12,10 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from app.core.analysis_models import Neighbour, PeerStanding, ResultInput, Standing
 from app.core.base_rates import RefClass, Value, growth_value, percentile, value_text
 from app.core.facts import GROUPS
 from app.core.frames import MEASURES, Panel, frame_source
+from app.core.view_models import Neighbour, PeerStanding, ResultInput, Standing
 
 NEIGHBOURS = 2
 MIN_CLASS = 3

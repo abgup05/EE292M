@@ -13,7 +13,7 @@ year comes out. The rules, each the answer to a quirk of the data:
   ``RevenueFromContractWithCustomerExcludingAssessedTax`` and others. For each filer
   and year the first concept of the group, in the order of :data:`app.core.facts.GROUPS`
   (the order the app's own metrics use), that has a row is taken; the others are only
-  counted (:class:`~app.core.analysis_models.ConceptResolution`): how many filers had
+  counted (:class:`~app.core.view_models.ConceptResolution`): how many filers had
   several, and how many of those differ by more than :data:`DIFFER_TOLERANCE`.
 - **Measures** are built from one or two groups for the same filer and year
   (:data:`MEASURES`): margins over positive revenue, free cash flow as operating cash

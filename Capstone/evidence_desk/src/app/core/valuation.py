@@ -11,9 +11,14 @@ that date, through the same arithmetic the claim tests use (:class:`app.core.cla
   ``us-gaap:CommonStockSharesOutstanding``. The price is one class's; the market value
   prices every class at it, and the result says so when there are several;
 - **market value** = price × shares outstanding;
-- **enterprise value** = market value + total debt − cash and marketable securities, at
-  the newest balance-sheet date (the catalogue's ``total_debt`` and
-  ``cash_and_securities``: leases, preferred stock and minority interests are left out);
+- **enterprise value** = market value + total debt − cash and marketable securities, both
+  **at the newest balance-sheet date** (the newest date the facts give total assets for).
+  Debt is the catalogue's ``total_debt``; when the company does not tag its parts on
+  that balance sheet, the first of :data:`DEBT_TOTALS` that it does tag there. A balance
+  last reported on an older date is never carried forward: the enterprise value is then
+  not computed, and says which balance is missing (a bank tags neither, and an
+  enterprise value means little for one). Leases, preferred stock and minority
+  interests are left out;
 - **multiples** on the trailing four quarters (the catalogue's ``TTM``; the newest fiscal
   year when four quarters cannot be summed): enterprise value ÷ revenue, market value ÷
   net income, market value ÷ free cash flow, and the free-cash-flow yield. A multiple of a
@@ -27,24 +32,37 @@ from dataclasses import dataclass, field
 from datetime import date
 from typing import Any
 
-from app.core.analysis_models import AnalysisResult, ResultInput, ResultUnit
 from app.core.claim_eval import Measures
 from app.core.claimtest import Period
-from app.core.facts import FactBook
+from app.core.facts import CLAIM_GROUPS, FactBook, filed_by
+from app.core.frames import years_apart
 from app.core.metric_models import FactRef
 from app.core.metrics import percent_text, usd_text
+from app.core.view_models import AnalysisResult, ResultInput, ResultUnit
 
+SHARE_JUMP = 1.25
 DEI_SHARES = "EntityCommonStockSharesOutstanding"
 GAAP_SHARES = "CommonStockSharesOutstanding"
 
 
 @dataclass(frozen=True)
 class Price:
-    """A price per share on a day, and where it came from in words."""
+    """A price per share on a day, and where it came from in words.
+
+    ``known`` is the day the source made it public, when that is later than ``day`` (a
+    13F's filing date): a view as of a date may use a price only when it was known by
+    then. ``inputs`` are the numbers the price was computed from, when it was computed;
+    ``confirmed`` is True when a second independent source gave the same price.
+    """
 
     value: float
     day: date
     source: str
+    known: date | None = None
+    url: str = ""
+    note: str = ""
+    inputs: tuple[ResultInput, ...] = ()
+    confirmed: bool = False
 
 
 @dataclass(frozen=True)
@@ -60,9 +78,11 @@ class Shares:
     classes: int
 
 
-def _entries(facts: object, taxonomy: str, concept: str) -> list[dict[str, Any]]:
+def _entries(
+    facts: object, taxonomy: str, concept: str, unit: str = "shares"
+) -> list[dict[str, Any]]:
     try:
-        rows = facts["facts"][taxonomy][concept]["units"]["shares"]  # type: ignore[index]
+        rows = facts["facts"][taxonomy][concept]["units"][unit]  # type: ignore[index]
     except KeyError, TypeError:
         return []
     return [row for row in rows if isinstance(row, dict)] if isinstance(rows, list) else []
@@ -168,11 +188,52 @@ def trailing(measures: Measures, metric: str, label: str) -> Figure:
     return Figure(label=label, value=None, note=" ".join(n for n in notes if n))
 
 
+# Totals of debt a company may tag instead of the parts the catalogue adds, in the order
+# tried; each with what it is, which the result prints. LongTermDebt is last: some filers
+# use it for the non-current part alone.
+DEBT_TOTALS: tuple[tuple[str, str], ...] = (
+    ("DebtLongtermAndShorttermCombinedAmount", "long-term and short-term debt combined"),
+    (
+        "DebtInstrumentCarryingAmount",
+        "the carrying amount of its debt instruments, from the debt note",
+    ),
+    (
+        "LongTermDebtAndCapitalLeaseObligationsIncludingCurrentMaturities",
+        "long-term debt and finance leases with their current maturities; short-term "
+        "borrowings are not in it",
+    ),
+    ("LongTermDebt", "long-term debt; it may leave out the current portion"),
+)
+# Current marketable securities under tags the catalogue's group does not list.
+SECURITIES_FALLBACK: tuple[str, ...] = (
+    "DebtSecuritiesCurrent",
+    "AvailableForSaleSecuritiesCurrent",
+)
+BALANCE_SHEET_ANCHOR = "total_assets"
+
+
+def balance_sheet_date(measures: Measures) -> date | None:
+    """The newest date the facts give total assets for: the newest balance sheet filed."""
+    return max(measures.book.instants(BALANCE_SHEET_ANCHOR), default=None)
+
+
 def balance(measures: Measures, metric: str, label: str) -> Figure:
-    """A balance at the newest balance-sheet date the facts give for it."""
-    slot = measures.bind(Period("Q"), metric)
-    if isinstance(slot, str):
-        return Figure(label=label, value=None, note=slot)
+    """A balance at the newest balance-sheet date; never one carried from an older date."""
+    anchor = balance_sheet_date(measures)
+    if anchor is None:
+        return Figure(label=label, value=None, note="The facts hold no balance sheet.")
+    dates = measures.instants(metric)
+    if anchor not in dates:
+        last = max(dates, default=None)
+        return Figure(
+            label=label,
+            value=None,
+            note=(
+                f"Not reported on the newest balance sheet ({anchor.isoformat()})"
+                + (f"; last reported for {last.isoformat()}." if last else "; never reported.")
+            ),
+        )
+    slot = measures.slot("instant", anchor)
     outcome = measures.outcome(metric, slot)
     if outcome.value is None:
         return Figure(label=label, value=None, note=outcome.note)
@@ -183,6 +244,116 @@ def balance(measures: Measures, metric: str, label: str) -> Figure:
         formula=outcome.formula,
         inputs=[fact_input(label, value.refs[0]) for value in outcome.used],
     )
+
+
+def _raw_at(
+    companyfacts: object, concept: str, anchor: date, as_of: date
+) -> tuple[float, dict[str, Any]] | None:
+    """A us-gaap USD concept's value at ``anchor`` from the newest filing by ``as_of``."""
+    rows = [
+        row
+        for row in _entries(companyfacts, "us-gaap", concept, "USD")
+        if row.get("end") == anchor.isoformat() and "start" not in row and filed_by(row, as_of)
+    ]
+    if not rows:
+        return None
+    row = max(rows, key=lambda r: (str(r.get("filed", "")), str(r.get("accn", ""))))
+    try:
+        return float(row["val"]), row
+    except KeyError, TypeError, ValueError:
+        return None
+
+
+def _raw_input(label: str, concept: str, value: float, row: dict[str, Any]) -> ResultInput:
+    return ResultInput(
+        label=f"{label} ({concept})",
+        value=value,
+        display=usd_text(value),
+        source=f"SEC company facts, {row.get('form', '')} {row.get('accn', '')}",
+        date=str(row.get("end", "")),
+        filed=str(row.get("filed", "")),
+    )
+
+
+def total_debt(measures: Measures, companyfacts: object, as_of: date) -> Figure:
+    """Total debt at the newest balance-sheet date: the catalogue's, else a tagged total."""
+    label = "Total debt"
+    found = balance(measures, "total_debt", label)
+    anchor = balance_sheet_date(measures)
+    if found.value is not None or anchor is None:
+        return found
+    for concept, meaning in DEBT_TOTALS:
+        raw = _raw_at(companyfacts, concept, anchor, as_of)
+        if raw is None:
+            continue
+        value, row = raw
+        return Figure(
+            label=f"{label}, as of {anchor.isoformat()}",
+            value=value,
+            period=anchor.isoformat(),
+            inputs=[_raw_input(label, concept, value, row)],
+            note=(
+                "The company does not tag long-term debt's non-current part on this balance "
+                f"sheet; its tagged {concept} is used instead ({meaning})."
+            ),
+        )
+    return Figure(
+        label=label,
+        value=None,
+        note=(
+            f"{found.note} No total of debt ({', '.join(c for c, _ in DEBT_TOTALS)}) is tagged "
+            "there either. (A bank or an insurer tags its funding otherwise, and an enterprise "
+            "value means little for one.)"
+        ),
+    )
+
+
+def cash_and_securities(measures: Measures, companyfacts: object, as_of: date) -> Figure:
+    """Cash and current marketable securities at the newest balance-sheet date.
+
+    The catalogue counts securities as zero when the company tags none under its
+    concepts; here a value under :data:`SECURITIES_FALLBACK` on that balance sheet is
+    added, and when there is none the result says securities were counted as zero.
+    """
+    label = "Cash and marketable securities"
+    found = balance(measures, "cash_and_securities", label)
+    anchor = balance_sheet_date(measures)
+    if found.value is None or anchor is None:
+        if found.value is None:
+            found.note += (
+                " (A bank or an insurer tags its cash otherwise, and an enterprise value means "
+                "little for one.)"
+            )
+        return found
+    listed = CLAIM_GROUPS["marketable_securities"].concepts
+    if any(concept in i.label for i in found.inputs for concept in listed):
+        return found
+    for concept in SECURITIES_FALLBACK:
+        raw = _raw_at(companyfacts, concept, anchor, as_of)
+        if raw is None:
+            continue
+        value, row = raw
+        cash = found.value
+        found.value = cash + value
+        found.formula = f"{usd_text(cash)} + {usd_text(value)}"
+        found.inputs.append(_raw_input("Marketable securities, current", concept, value, row))
+        found.note = (
+            f"Current marketable securities are read from {concept}: the company tags none "
+            "under the catalogue's concepts on this balance sheet."
+        )
+        return found
+    found.note = (
+        "No current marketable securities are tagged on this balance sheet "
+        f"({', '.join((*listed, *SECURITIES_FALLBACK))}): counted as zero."
+    )
+    return found
+
+
+def money(value: float) -> str:
+    """USD for reading, with trillions: "$5.50T"; under a trillion as the app prints it."""
+    if abs(value) >= 1e12:
+        return f"{'-' if value < 0 else ''}${abs(value) / 1e12:.2f}T"
+    return usd_text(value)
 
 
 # Results
@@ -209,6 +380,8 @@ def _price_input(price: Price) -> ResultInput:
         display=f"${price.value:,.2f}",
         source=price.source,
         date=price.day.isoformat(),
+        filed=price.known.isoformat() if price.known else "",
+        url=price.url,
     )
 
 
@@ -263,10 +436,42 @@ def _multiple(value: float) -> str:
     return f"{value:,.1f}×"
 
 
+def share_count_caution(shares: Shares, later: Shares | str | None) -> str:
+    """A caution when the next cover page's share count is far from the one used.
+
+    ``later`` is the count the newest filing by the view's date reports. A count that
+    moved by more than :data:`SHARE_JUMP` between the two cover pages is a split or a
+    large issue; if it fell between the count's date and the price's, the market value
+    is off by that factor, and the facts cannot say on which side it fell.
+    """
+    if later is None or isinstance(later, str) or later.accession == shares.accession:
+        return ""
+    ratio = later.value / shares.value
+    if 1 / SHARE_JUMP <= ratio <= SHARE_JUMP:
+        return ""
+    return (
+        f"The share count moved by a factor of {ratio:.2f} between the cover page used "
+        f"({shares.day.isoformat()}) and the next ({later.day.isoformat()}): a split or a large "
+        "issue. If it took effect before the price's date, the market value here is off by "
+        "that factor."
+    )
+
+
 def valuation(
-    ticker: str, price: Price, shares: Shares | str, measures: Measures, as_of: str
+    ticker: str,
+    price: Price,
+    shares: Shares | str,
+    measures: Measures,
+    as_of: str,
+    *,
+    companyfacts: object = None,
+    later_shares: Shares | str | None = None,
 ) -> Valuation:
-    """Market value, enterprise value and the multiples, each with its inputs and dates."""
+    """Market value, enterprise value and the multiples, each with its inputs and dates.
+
+    ``companyfacts`` is the raw payload, read only for a tagged total of debt when the
+    catalogue's parts are not on the newest balance sheet (:func:`total_debt`).
+    """
     stamp = f"{ticker}:{price.day.isoformat()}"
     results: list[AnalysisResult] = []
     out = Valuation(results)
@@ -302,17 +507,19 @@ def valuation(
             "Market value",
             market,
             "USD",
-            usd_text(market),
+            money(market),
             f"${price.value:,.2f} × {shares.value:,.0f} shares",
-            [_price_input(price), _shares_input(shares)],
+            [_price_input(price), *price.inputs, _shares_input(shares)],
             f"At ${price.value:,.2f} on {price.day.isoformat()}, the {shares.value:,.0f} shares "
-            f"outstanding on {shares.day.isoformat()} are worth {usd_text(market)}.",
+            f"outstanding on {shares.day.isoformat()} are worth {money(market)}.",
             as_of,
-            note=class_note,
+            note=" ".join(
+                n for n in (price.note, class_note, share_count_caution(shares, later_shares)) if n
+            ),
         )
     )
-    out.debt = balance(measures, "total_debt", "Total debt")
-    out.cash = balance(measures, "cash_and_securities", "Cash and marketable securities")
+    out.debt = total_debt(measures, companyfacts, price.day)
+    out.cash = cash_and_securities(measures, companyfacts, price.day)
     out.equity = balance(measures, "equity", "Shareholders' equity")
     out.revenue = trailing(measures, "revenue", "Revenue")
     out.operating_income = trailing(measures, "operating_income", "Operating income")
@@ -322,7 +529,7 @@ def valuation(
     if not ev_reason:
         assert out.debt.value is not None and out.cash.value is not None
         out.enterprise_value = market + out.debt.value - out.cash.value
-    ev_inputs = [*results[0].inputs]
+    ev_inputs = [_price_input(price), _shares_input(shares)]
     for figure in (out.debt, out.cash):
         ev_inputs += figure.inputs
     results.append(
@@ -332,23 +539,28 @@ def valuation(
             "Enterprise value",
             out.enterprise_value,
             "USD",
-            usd_text(out.enterprise_value or 0),
-            (
-                f"{usd_text(market)} + {usd_text(out.debt.value or 0)} − "
-                f"{usd_text(out.cash.value or 0)}"
-            ),
+            money(out.enterprise_value or 0),
+            (f"{money(market)} + {money(out.debt.value or 0)} − {money(out.cash.value or 0)}"),
             ev_inputs,
             (
-                f"Market value {usd_text(market)} plus total debt {usd_text(out.debt.value or 0)} "
-                f"less cash and marketable securities {usd_text(out.cash.value or 0)} "
-                f"({out.debt.period}) is {usd_text(out.enterprise_value or 0)}."
+                f"Market value {money(market)} plus total debt {money(out.debt.value or 0)} "
+                f"less cash and marketable securities {money(out.cash.value or 0)} "
+                f"({out.debt.period}) is {money(out.enterprise_value or 0)}."
             ),
             as_of,
             reason=ev_reason,
             assumptions=[
                 "Enterprise value = market value + total debt − cash and marketable securities "
-                "(leases, preferred stock and minority interests are left out)."
+                "(leases, preferred stock and minority interests are left out).",
+                "Both balances are of the newest balance sheet filed by the price's date; one "
+                "last reported for an older date is not carried forward.",
+                "Non-current marketable securities are not subtracted: for a company that "
+                "holds a long-dated portfolio the enterprise value here is higher than one "
+                "that counts it.",
             ],
+            note=" ".join(n for n in (out.debt.note, out.cash.note) if n)
+            if out.enterprise_value is not None
+            else "",
         )
     )
     multiples = (
@@ -377,7 +589,7 @@ def _ratio_result(
     elif figure.value is None:
         reason = f"{figure.label} could not be computed: {figure.note}"
     elif figure.value <= 0:
-        reason = f"{figure.label} is not positive ({usd_text(figure.value)}): no multiple."
+        reason = f"{figure.label} is not positive ({money(figure.value)}): no multiple."
     value: float | None = None
     display = formula = reading = ""
     if not reason:
@@ -385,13 +597,19 @@ def _ratio_result(
         if inverse:
             value = figure.value / top * 100
             display = percent_text(value)
-            formula = f"{usd_text(figure.value)} ÷ {usd_text(top)}"
-            reading = f"{figure.label} is {display} of the market value."
+            formula = f"{money(figure.value)} ÷ {money(top)}"
+            reading = (
+                f"{figure.label} of {money(figure.value)} is {display} of the market value of "
+                f"{money(top)}."
+            )
         else:
             value = top / figure.value
             display = _multiple(value)
-            formula = f"{usd_text(top)} ÷ {usd_text(figure.value)}"
-            reading = f"{label} on {figure.label.lower()} is {display}."
+            formula = f"{money(top)} ÷ {money(figure.value)}"
+            reading = (
+                f"{label} is {display}: {money(top)} over {figure.label[0].lower()}"
+                f"{figure.label[1:]} of {money(figure.value)}."
+            )
     return _result(
         f"{key}:{stamp}",
         key,
@@ -439,7 +657,12 @@ def trailing_growth(book: FactBook, *, years: int = 3, as_of: str) -> list[Analy
         now, then = annual[ends[-1]], annual[ends[-1 - span]]
         value = None
         reason = ""
-        if then.value <= 0 or now.value <= 0:
+        if not years_apart(ends[-1], ends[-1 - span], span):
+            reason = (
+                f"The fiscal years in the facts are not consecutive: {ends[-1 - span].isoformat()} "
+                f"is not {span} year(s) before {ends[-1].isoformat()}."
+            )
+        elif then.value <= 0 or now.value <= 0:
             reason = "A revenue that is not positive: no growth rate."
         else:
             value = ((now.value / then.value) ** (1 / span) - 1) * 100

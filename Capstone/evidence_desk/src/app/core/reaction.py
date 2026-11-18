@@ -24,9 +24,9 @@ import math
 from collections.abc import Sequence
 from datetime import date
 
-from app.core.analysis_models import ReactionWindow
 from app.core.metrics import percent_text
 from app.core.price_series import Close, close_on_or_before, closes_until
+from app.core.view_models import ReactionWindow
 
 ESTIMATION_DAYS = 250
 MIN_ESTIMATION_DAYS = 60

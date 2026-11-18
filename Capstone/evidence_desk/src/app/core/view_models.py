@@ -202,6 +202,7 @@ class OutsideView(BaseModel):
     sic_description: str = ""
     as_of: str = ""
     test: str = ""
+    test_measures: list[str] = Field(default_factory=list)
     compile_note: str = ""
     base_rates: list[BaseRate] = Field(default_factory=list)
     peers: list[PeerStanding] = Field(default_factory=list)
@@ -230,12 +231,18 @@ class ReverseDcf(AnalysisResult):
     Arithmetic under stated assumptions, not a forecast. ``grid`` varies the discount
     rate and the margin; ``comparisons`` are the company's own trailing growth and the
     outside view's distribution of ten-year growth for companies of its size.
+    ``scenarios`` solve the same model with one assumption replaced (the margin at the
+    industry's median); ``implied_revenue`` is the revenue the growth reaches in the
+    model's last year.
     """
 
     target: str = ""
     grid: list[GridCell] = Field(default_factory=list)
     comparisons: list[AnalysisResult] = Field(default_factory=list)
+    scenarios: list[AnalysisResult] = Field(default_factory=list)
     distribution: Distribution | None = None
+    implied_revenue: float | None = None
+    implied_revenue_display: str = ""
     label_note: str = ""
 
 
@@ -278,6 +285,10 @@ class MarketView(BaseModel):
     claim: str = ""
     as_of: str = ""
     price_source: str = ""
+    price_provider: str = ""
+    price_day: str = ""
+    price_known: str = ""
+    price_note: str = ""
     valuation: list[AnalysisResult] = Field(default_factory=list)
     reverse_dcf: ReverseDcf | None = None
     reactions: list[EventReaction] = Field(default_factory=list)

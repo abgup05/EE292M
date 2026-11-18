@@ -74,12 +74,12 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/evaluation/mismatch_eval.py   plants real quotes under statements they do not belong to and scores what the meaning check says
     src/app/evaluation/reading_sheet.py   lays the golden cases out for a person to read (`make golden-sheet`)
     src/app/evaluation/claim_categories.py   scores the claim-category rule on eval/claim-categories.json (`make event-categories`)
-    src/web/                    index.html, app.js, styles.css (one layout, two themes: docs/design.md), specimen.html (every component on made-up data, served at /specimen.html), sample-run.json, sample-run-events.json (a live run, copied unedited), sample-synthetic.json, sample-changes.json, sample-run-changes.json, sample-run-tagged.json, sample-breakdowns.json, sample-breakdowns-gap.json (synthetic)
+    src/web/                    index.html, app.js, styles.css (one layout, two themes: docs/design.md), specimen.html (every component on made-up data, served at /specimen.html), sample-run.json, sample-run-events.json (a live run, copied unedited), sample-synthetic.json, sample-changes.json, sample-run-changes.json, sample-run-tagged.json, sample-breakdowns.json, sample-breakdowns-gap.json (synthetic), sample-inbox.json, sample-inbox-page-2.json, sample-inbox-watches.json, sample-inbox-health.json, sample-inbox-meta.json (the watch's example payloads of docs/examples/v13, copied unedited by `make sample-inbox`)
     eval/                       the golden set, its pinned filings, cache/ and results/; README.md
     tests/                      offline tests, fakes.py (EDGAR, pages, engine, clock), smoke.py; replay_run.py, golden_run.py, speed_run.py
     tests/live_walk.py          the live end-to-end walk over HTTP; tests/golden/ the tripwire and replayed verdicts
     tests/watch_examples.py, watch_replay.py, watch_contention.py   the watch's example payloads (docs/examples/v13); the live replay of a year of filings against eval/watch-replay-nvda.json; a run timed alone and beside a watcher
-    uitests/                    browser tests: the rendered DOM of the sample runs, the sample filing comparison and breakdowns against their JSON; test_events_dom.py the 8-Ks and the as-of line; test_run_events_dom.py the live-run sample and the time line; keys.html + test_keys_dom.py the keys and the themes
+    uitests/                    browser tests: the rendered DOM of the sample runs, the sample filing comparison and breakdowns against their JSON; test_events_dom.py the 8-Ks and the as-of line; test_run_events_dom.py the live-run sample and the time line; keys.html + test_keys_dom.py the keys and the themes; test_inbox_dom.py the recorded inbox, and watch.html (the page's code for every answer of the watch routes, with `fetch` stood in for)
 
 ## Storage: the record and the cache
 
@@ -316,7 +316,8 @@ what counts. Filings come only from `www.sec.gov` and `data.sec.gov` (7 requests
 - `make verify`: image build, ruff, `node --check`, the offline tests, `tests/smoke.py` against the live container
   (no internet), and `make uitest` (headless Chromium renders the sample runs, the sample filing comparison and the breakdowns; `uitests/`
   checks the DOM against their JSON; `uitests/keys.html`, loaded from disk with the same-origin rule off for that page
-  only, presses the page's keys in a frame and records what happened). Offline tests use `tests/fakes.py`; `make fixtures` re-records EDGAR responses.
+  only, presses the page's keys in a frame and records what happened; `uitests/watch.html` does the same for the inbox and the watch
+  controls, answering the page's watch requests with the example payloads and the README's refusal shapes). Offline tests use `tests/fakes.py`; `make fixtures` re-records EDGAR responses.
 - `make golden-check` compares the offline example run with `tests/golden/golden.json` and names the first stage that
   moved; `make golden-baseline` rewrites it. `make profile` and `make bench` time the offline run (`docs/testing.md`,
   `docs/speed.md`).

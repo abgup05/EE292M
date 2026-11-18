@@ -282,6 +282,9 @@ engine, a wall clock the test moves). The design and its measurements are in `do
 | A started run whose item still says it waits; a failed run whose item still says it runs | two assertions in `tests/test_watch_service.py` | both, found while writing the example payloads, before their fixes |
 | A waiting run that two requests can both start | `tests/test_watch_api.py::test_a_waiting_run_is_started_once_and_its_item_then_says_what_moved` | failed on a planted start that checked the kind and then changed it in two steps |
 | An example payload that no longer matches its route, or a README that leaves a field unnamed | `tests/test_watch_examples.py` (13 tests) | the README test, on a planted missing field |
+| A page that reorders the inbox, shows a kind, headline, filing, reason or move other than the record's, offers Run now on an item with no waiting run, or shows an unread number other than the API's | `uitests/test_inbox_dom.py`, on the recorded inbox (`?sample=inbox`, `?sample=inbox-page-2`) | written after the page code; the page then made to reverse the API's order on purpose: 3 failed (both orders and the paging) |
+| A page that swallows a refusal of a watch route (202 and 409 on Run now; 422, 503 and 200 on a policy; 409 on taking a watch off), hides an empty inbox or a watcher not running, or pages by anything but the API's offsets | `uitests/test_inbox_dom.py`, on what `uitests/watch.html` recorded | written after the page code and not seen failing; the harness itself stalled once, on controls drawn disabled in sample mode |
+| A recorded inbox that is not the example payloads | `uitests/test_inbox_dom.py::test_the_samples_are_the_example_payloads_unedited` (5) | written with the copies |
 
 Not seen failing, because they were written after their code: the other 10 API tests, the 8 tests of the
 watcher process, its settings and its health (`tests/test_watch_cli.py`), the 12 parse checks of the example

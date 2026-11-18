@@ -289,6 +289,69 @@ disclosure before printing and closes them after, so a run prints as a whole res
 
 `prefers-reduced-motion` turns both off, and the `j` and `k` scrolling with them.
 
+## The standing watch (version 13)
+
+The page draws the routes of `docs/watch.md` with the words of `GET /api/watch/meta`; every payload and field is in `docs/examples/v13/README.md`. It orders nothing: the inbox is drawn unread first, then newest first, as the API sends it. It counts one thing only: the folded items on the page it draws, because the API sends no count of them.
+
+**Health** (`#watch-health`, in the bar). One line from `GET /api/watch/health`:
+
+- a filled dot (support colour) and "Watch alive", or a hollow dot (limit colour) and "Watch not running";
+- the last cycle's time of day; the whole time and the watcher's `note` are in the title;
+- the queue depth and the runs waiting.
+
+At phone width only the dot and the words show. It is read again every minute while the page is visible.
+
+**Not running.** When `alive` is false, a limit line says so near every watch control, in the inbox view and on a saved thesis. It reads "The watcher is not running. No new filing will be noticed, and no watched thesis run, until it runs.", followed by the health's `note`.
+
+**Inbox button** (`#inbox-button`, the `i` key, `#inbox`). It shows the unread count from the last inbox payload, or from a mark-read answer. The count sits on an accent fill, with a quiet outline at zero.
+
+**Watch card** (`.watch-card`). The same card appears on a saved thesis (`#thesis-watch`) and in the inbox's list of watches. When the thesis is on watch, it shows:
+
+- since when, and the policy label;
+- the last check, the next check (or `next_check_note`) and the last error;
+- the last failed job, when there is one;
+- unread items and runs waiting, with a link to that thesis's inbox;
+- the policy as two radios, a change of which is a `PUT`;
+- "Take it off watch", a `DELETE`.
+
+When the thesis is not on watch, the radios start on `default_policy`, and "Put it on watch" sends the `PUT`. Every refusal is said under the card in the server's words:
+
+- a 422 names its fields;
+- a 404 says the thesis is gone;
+- a 503 adds "Nothing was saved";
+- a 409 on a `DELETE` shows the watch as ended.
+
+A refused policy puts the radio back on the server's policy.
+
+**Inbox item** (`article.inbox-item`). Each item shows, in order:
+
+1. The kind tag in the record's words, with a glyph: ◇ waiting (dashed), ◌ running (dotted), ◆ moved (change colour), · nothing moved, ▲ failed (limit colour), ○ not relevant.
+2. Unread or read, then the thesis and the time.
+3. The headline.
+4. The filing: form and accession linked to sec.gov, filed and report dates, and each 8-K item with its title and category.
+5. The triage: a rule mark "By rule, no model", the summary and the rules. Then each claim says whether it bears, gives its reasons and, for a 10-K or 10-Q, its changed paragraphs with their change mark, shared words and link.
+6. The run:
+   - a waiting run shows its reason and **Run now (uses the model)**. A 202 reads the item again and names the run. A 409 says the run was not started, in the server's words, and reads the item again.
+   - otherwise the run's id and status, and who started it, with **Open the run in the note**. The run opens with the item's comparison under its head.
+7. What moved: the record's line, each verdict that moved as two stamps, new cautions (limit lines), new 8-K notes and new 8-Ks.
+8. "Compare with the previous run, claim by claim": the run comparison table, drawn from the item's `moved` (no counts: the payload has none).
+9. Mark read or unread.
+
+Unread items carry an accent rule at their left edge.
+
+**Folded items** (`.inbox-folded`). Items with `collapsed: true` sit on one closed line under the list: "Seen, not relevant: N filings on this page".
+
+**Paging.** "Older items" asks for the page's `next_offset`. "Newer items" goes back to an offset the page came from. "Mark this page read" sends the page's unread ids.
+
+**Empty and failure states.** Each says so plainly:
+
+- no watches;
+- an empty inbox;
+- an inbox route this server lacks (a 404);
+- a server that cannot be reached, with "Try again".
+
+**Recorded inbox** (`?sample=inbox`, `?sample=inbox-page-2`). It is drawn from the five example payloads that `make sample-inbox` copies unedited, and says where they come from. In sample mode nothing is sent, and the controls are disabled or say so.
+
 ## Version 14 components (on the specimen only, for now)
 
 These draw records the backend does not send yet; each takes the shape below and computes
@@ -325,6 +388,7 @@ nothing. They live in `app.js` as `compiledTest`, `thesisOverTime`, `asOfControl
 |---|---|
 | `/` | Put the cursor in the ticker (Esc leaves it) |
 | `e` | Open or close your thesis (the form drawer) beside a result; Esc closes it |
+| `i` | Open the inbox of the standing watch |
 | `j` / `k` | Next or previous claim: the focus goes to the claim's summary and the note scrolls to it |
 | `Enter` | Open or close the claim in focus (the browser's own) |
 | `t` | Switch between Paper and Terminal, and remember the choice |
@@ -349,5 +413,17 @@ live-run sample, the command bar, the caution and the predated mark. For every r
 - the withheld fold and its counts;
 - that the standing prose sits in "How to read this";
 - the way out of a sample and the drawer button in the bar.
+
+`uitests/test_inbox_dom.py` checks the recorded inbox against its JSON:
+
+- the copies are byte for byte the examples;
+- the order of the items, and their kinds and headlines;
+- the folded line's count;
+- the unread number;
+- that only the waiting item has the Run now button;
+- the filings, the reasons per claim and what moved;
+- the watch card's fields and the health.
+
+It also reads what `uitests/watch.html` recorded. That page answers the page's watch requests with the example payloads and the README's refusal shapes: 202 and 409 on Run now, 422, 503 and 200 on a policy, 409 on taking a watch off, an empty inbox beside a watcher that never ran, an unreachable server, paging by offsets, and marking read. It records what the page showed and sent.
 
 The specimen page has no browser test of its own; it is checked by eye in the screenshots. The API serves it at `/specimen.html` (`tests/test_api.py` checks that).

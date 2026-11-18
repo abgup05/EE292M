@@ -37,6 +37,10 @@ data:
   that is consistent: neither period was reported with another value, under
   any concept of the group, between the two filing dates. An input that is not
   the latest report of its period is flagged restated and says so.
+- A book also reads the concept groups only a claim test uses (:data:`CLAIM_GROUPS`:
+  buybacks, dividends, debt, tax and the others of :mod:`app.core.measures`), by the
+  same rules; their malformed facts are listed in :attr:`FactBook.claim_problems`, so
+  :attr:`FactBook.problems` and every report built from it are unchanged.
 - Gross profit is ``GrossProfit`` where reported, otherwise revenue minus cost
   of revenue for the same period, marked derived.
 - As of a date (``FactBook(payload, as_of=day)``), a fact filed after that day
@@ -141,8 +145,144 @@ ALL_CONCEPTS: frozenset[str] = frozenset(
     concept for group in GROUPS.values() for concept in group.concepts
 )
 
-# Keys whose per-share values cannot be differenced (share counts differ by period).
-NOT_DIFFERENCEABLE: frozenset[str] = frozenset({"eps_diluted"})
+
+def _claim_group(key: str, label: str, *concepts: str, instant: bool = False) -> ConceptGroup:
+    unit = "shares" if key == "diluted_shares" else "USD"
+    return ConceptGroup(key, label, concepts, unit, instant)
+
+
+# The concept groups only a claim test reads (the catalogue, app.core.measures), beside
+# GROUPS. A book reads them too, but nothing else does: they are not on the metrics panel,
+# not in the restatements report, not offered as figures, and not kept by record_facts
+# (ALL_CONCEPTS is GROUPS' alone), so every report and recording stays as it was.
+CLAIM_GROUPS: dict[str, ConceptGroup] = {
+    group.key: group
+    for group in (
+        _claim_group(
+            "share_repurchases", "Share repurchases", "PaymentsForRepurchaseOfCommonStock"
+        ),
+        _claim_group(
+            "dividends_paid",
+            "Dividends paid",
+            "PaymentsOfDividends",
+            "PaymentsOfDividendsCommonStock",
+        ),
+        _claim_group(
+            "long_term_debt",
+            "Long-term debt (non-current)",
+            "LongTermDebtNoncurrent",
+            "LongTermDebtAndCapitalLeaseObligations",
+            instant=True,
+        ),
+        _claim_group(
+            "current_debt",
+            "Current portion of long-term debt",
+            "LongTermDebtCurrent",
+            "DebtCurrent",
+            "LongTermDebtAndCapitalLeaseObligationsCurrent",
+            instant=True,
+        ),
+        _claim_group("commercial_paper", "Commercial paper", "CommercialPaper", instant=True),
+        _claim_group(
+            "marketable_securities",
+            "Marketable securities (current)",
+            "MarketableSecuritiesCurrent",
+            "ShortTermInvestments",
+            "AvailableForSaleSecuritiesDebtSecuritiesCurrent",
+            instant=True,
+        ),
+        _claim_group(
+            "diluted_shares",
+            "Diluted weighted-average shares",
+            "WeightedAverageNumberOfDilutedSharesOutstanding",
+        ),
+        _claim_group("reported_operating_expenses", "Operating expenses", "OperatingExpenses"),
+        _claim_group(
+            "reported_sga",
+            "Selling, general and administrative expense",
+            "SellingGeneralAndAdministrativeExpense",
+        ),
+        _claim_group(
+            "sales_marketing", "Sales and marketing expense", "SellingAndMarketingExpense"
+        ),
+        _claim_group(
+            "general_admin", "General and administrative expense", "GeneralAndAdministrativeExpense"
+        ),
+        _claim_group(
+            "sbc",
+            "Stock-based compensation",
+            "ShareBasedCompensation",
+            "AllocatedShareBasedCompensationExpense",
+        ),
+        _claim_group("income_tax", "Income tax expense", "IncomeTaxExpenseBenefit"),
+        _claim_group(
+            "pretax_income",
+            "Income before income taxes",
+            "IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest",
+            "IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments",
+        ),
+        _claim_group(
+            "interest_expense",
+            "Interest expense",
+            "InterestExpense",
+            "InterestExpenseNonoperating",
+            "InterestExpenseDebt",
+        ),
+        _claim_group("interest_income", "Interest income", "InvestmentIncomeInterest"),
+        _claim_group(
+            "other_income",
+            "Other income and expense",
+            "NonoperatingIncomeExpense",
+            "OtherNonoperatingIncomeExpense",
+        ),
+        _claim_group(
+            "d_and_a",
+            "Depreciation and amortization",
+            "DepreciationDepletionAndAmortization",
+            "DepreciationAmortizationAndAccretionNet",
+            "DepreciationAndAmortization",
+        ),
+        _claim_group(
+            "deferred_revenue_current",
+            "Deferred revenue (current)",
+            "ContractWithCustomerLiabilityCurrent",
+            "DeferredRevenueCurrent",
+            instant=True,
+        ),
+        _claim_group(
+            "deferred_revenue_noncurrent",
+            "Deferred revenue (non-current)",
+            "ContractWithCustomerLiabilityNoncurrent",
+            "DeferredRevenueNoncurrent",
+            instant=True,
+        ),
+        _claim_group("total_assets", "Total assets", "Assets", instant=True),
+        _claim_group("total_liabilities", "Total liabilities", "Liabilities", instant=True),
+        _claim_group(
+            "equity",
+            "Shareholders' equity",
+            "StockholdersEquity",
+            "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest",
+            instant=True,
+        ),
+        _claim_group("goodwill", "Goodwill", "Goodwill", instant=True),
+        _claim_group(
+            "ppe", "Property and equipment, net", "PropertyPlantAndEquipmentNet", instant=True
+        ),
+        _claim_group(
+            "accounts_payable",
+            "Accounts payable",
+            "AccountsPayableCurrent",
+            instant=True,
+        ),
+    )
+}
+# Every group a book reads.
+BOOK_GROUPS: dict[str, ConceptGroup] = {**GROUPS, **CLAIM_GROUPS}
+
+# Keys whose values cannot be differenced: per-share values and weighted-average share
+# counts (the share count differs by period).
+NOT_DIFFERENCEABLE: frozenset[str] = frozenset({"eps_diluted", "diluted_shares"})
 
 # Period lengths in days from start to end, inclusive bounds; cumulative order within a
 # fiscal year. The names are the usual ones; the bounds also take the periods of companies
@@ -522,8 +662,10 @@ class FactBook:
         self._durations: dict[str, dict[tuple[date, date], PeriodValue]] = {}
         self._instants: dict[str, dict[date, PeriodValue]] = {}
         self._reports: dict[str, dict[Period, list[Fact]]] = {}
-        for group in GROUPS.values():
-            by_concept = self._group_reports(gaap, group, skipped, as_of)
+        claim_skipped: Counter[str] = Counter()
+        for group in BOOK_GROUPS.values():
+            counter = skipped if group.key in GROUPS else claim_skipped
+            by_concept = self._group_reports(gaap, group, counter, as_of)
             self._reports[group.key] = self._pooled(by_concept)
             selected = {
                 period: PeriodValue(group.key, period[0], period[1], ref.value, (ref,))
@@ -540,6 +682,12 @@ class FactBook:
         self.problems: list[str] = [
             f"Skipped {count} malformed fact(s) of {what}"
             for what, count in sorted(skipped.items())
+        ]
+        # The same for the groups only a claim test reads, kept apart so that the metrics
+        # and restatements reports, which show ``problems``, say exactly what they said.
+        self.claim_problems: list[str] = [
+            f"Skipped {count} malformed fact(s) of {what}"
+            for what, count in sorted(claim_skipped.items())
         ]
 
     @staticmethod

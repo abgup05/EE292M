@@ -95,6 +95,7 @@ def test_a_claim_whose_every_word_is_explained_still_compiles(claim: str, canoni
 
 
 def test_a_test_that_compares_a_measure_with_itself_is_refused() -> None:
-    result = compile_claim("SG&A is growing more slowly than gross profit.")
+    # SG&A was the example until the catalogue added it; licensing income is not a measure.
+    result = compile_claim("Licensing income is growing more slowly than gross profit.")
     assert isinstance(result, NotNumeric)
-    assert "sg&a" in result.reason
+    assert "licensing income" in result.reason

@@ -20,11 +20,15 @@ Rules a reader can check:
   calendar (:func:`app.core.periods.fiscal_calendar`); without one, by the calendar
   year of the period's end, and the test says so. A balance-sheet amount is read at
   its newest date for ``Q``, and at the fiscal year's end for ``FY``.
-- **Measures.** Those of :mod:`app.core.metrics`, computed by its own functions, plus
-  the reported facts behind them. Operating expenses are gross profit less operating
-  income (a house definition, said in the operand's note). Four quarters (``TTM``) are
+- **Measures.** Those of the catalogue (:mod:`app.core.measures`). The panel's own are
+  computed by :mod:`app.core.metrics`'s functions, plus the reported facts behind them;
+  operating expenses are gross profit less operating income (a house definition, said in
+  the operand's note). The catalogue's others are read from their concept group (with its
+  fallback where the group has no value), added and subtracted (a sum), or divided (a
+  ratio), each with its definition in the operand's note. Four quarters (``TTM``) are
   the sum of four consecutive standalone quarters; a ratio over them is the sum of its
-  numerators over the sum of revenue. Earnings per share and balances have no TTM.
+  numerators over the sum of its denominators. Earnings per share, the diluted share
+  count and balances have no TTM.
 - **Growth** needs a positive base. A **streak** counts the periods in a row, ending
   with the bound one, each higher than the period before it (the previous quarter, or
   the previous fiscal year); when the facts run out before the streak is long enough
@@ -56,6 +60,7 @@ from app.core.claim_test_models import (
 )
 from app.core.claimtest import METRICS, RATIO_OF, ClaimTest, Number, Period, Term
 from app.core.facts import GROUPS, FactBook, PeriodValue
+from app.core.measures import CATALOGUE, PART_MEASURES, PART_NOTE, Measure
 from app.core.metric_models import FactRef
 from app.core.metrics import (
     DEFINITIONS,
@@ -99,12 +104,20 @@ UNIT_OF: dict[str, OperandUnit] = {
     "instant": "USD",
     "ratio": "percent",
     "per_share": "USD_per_share",
+    "shares": "shares",
 }
+NO_TTM_KINDS = ("per_share", "shares")
 # A ratio's numerator, for a ratio over four quarters.
 NUMERATOR_OF = {ratio: measure for measure, ratio in RATIO_OF.items()}
 RAW_GROUPS = ("gross_profit", "operating_income", "net_income", "rnd")
 SEGMENT_BREAKDOWNS = ("revenue_by_segment", "revenue_by_product")
 GEOGRAPHY_BREAKDOWNS = ("revenue_by_geography",)
+# A part's measures: the breakdowns each is read from, by (measure, axis).
+PART_BREAKDOWNS: dict[tuple[str, str], tuple[str, ...]] = {
+    ("revenue", "segment"): SEGMENT_BREAKDOWNS,
+    ("revenue", "geography"): GEOGRAPHY_BREAKDOWNS,
+    ("operating_income", "segment"): ("operating_income_by_segment",),
+}
 CUSTOMER_BREAKDOWNS = ("revenue_concentration_by_customer",)
 
 
@@ -140,7 +153,20 @@ def _unit_of(metric: str) -> OperandUnit:
 def _display(value: float | None, unit: OperandUnit, *, signed: bool = False) -> str:
     if unit == "count":
         return "n/a" if value is None else f"{value:g}"
+    if unit == "shares":
+        return "n/a" if value is None else _shares_text(value)
     return display_text(value, unit, signed=signed)
+
+
+def _shares_text(value: float) -> str:
+    """A share count in millions: "24,532M shares"."""
+    return f"{value / 1e6:,.0f}M shares"
+
+
+def _catalogued(metric: str) -> Measure | None:
+    """The catalogue's entry for a measure it computes itself (not the panel's), or None."""
+    measure = CATALOGUE.get(metric)
+    return measure if measure is not None and measure.computed != "metrics" else None
 
 
 def _plain(value: float, unit: OperandUnit) -> str:
@@ -151,6 +177,8 @@ def _plain(value: float, unit: OperandUnit) -> str:
         return eps_text(value)
     if unit == "percent":
         return percent_text(value)
+    if unit == "shares":
+        return f"{value / 1e6:,.0f}"
     return f"{value:g}"
 
 
@@ -161,6 +189,8 @@ def _margin_text(margin: float, unit: OperandUnit) -> str:
         return ("+" if margin >= 0 else "") + usd_text(margin)
     if unit == "USD_per_share":
         return ("+" if margin >= 0 else "") + eps_text(margin)
+    if unit == "shares":
+        return ("+" if margin >= 0 else "−") + _shares_text(abs(margin))
     return f"{margin:+g}"
 
 
@@ -187,13 +217,31 @@ class Measures:
             "annual": {key: book.annuals(key) for key in DURATION_GROUPS},
         }
         self._flows: dict[tuple[str, date], dict[str, Outcome]] = {}
+        self._groups: dict[tuple[str, str], dict[date, PeriodValue]] = {}
+
+    def instants(self, metric: str) -> dict[date, PeriodValue]:
+        """The balance-sheet dates of a balance measure: its group's, or its first part's."""
+        measure = _catalogued(metric)
+        if measure is None:
+            return self.book.instants(metric)
+        if measure.computed == "group":
+            return self.book.instants(measure.group)
+        return self.instants(measure.plus[0])
+
+    def group_values(self, group: str, kind: str) -> dict[date, PeriodValue]:
+        """A concept group's quarters or fiscal years, read once."""
+        key = (group, kind)
+        if key not in self._groups:
+            read = self.book.annuals if kind == "annual" else self.book.quarters
+            self._groups[key] = read(group)
+        return self._groups[key]
 
     # Periods
 
     def series(self, kind: SlotKind, metric: str) -> dict[date, PeriodValue]:
         """The values whose dates anchor a period of ``kind`` for ``metric``."""
         if METRICS[metric][1] == "instant":
-            return self.book.instants(metric)
+            return self.instants(metric)
         values = self._values["annual" if kind == "annual" else "quarter"]
         anchor = values["revenue"]
         if anchor:
@@ -272,7 +320,7 @@ class Measures:
     def _at(self, metric: str, kind: SlotKind, end: date, instant: bool) -> Slot | str:
         if not instant:
             return self.slot(kind, end)
-        balances = self.book.instants(metric)
+        balances = self.instants(metric)
         near = [d for d in balances if abs((d - end).days) <= YEAR_MATCH_DAYS]
         if not near:
             return f"No {METRICS[metric][0].lower()} balance is reported near {end.isoformat()}."
@@ -298,7 +346,7 @@ class Measures:
         """The same kind of period ``years`` years before ``slot``."""
         kind: SlotKind = slot.kind
         if kind == "instant":
-            series = self.book.instants(metric)
+            series = self.instants(metric)
         else:
             series = self.series("annual" if kind == "annual" else "quarter", metric)
         end = self._walk(series, slot.end, years=years)
@@ -308,16 +356,18 @@ class Measures:
         """The period before ``slot``: the previous quarter, or the previous fiscal year."""
         if slot.kind == "annual":
             return self.year_before(slot, metric)
-        series = (
-            self.book.instants(metric) if slot.kind == "instant" else self.series("quarter", metric)
-        )
+        series = self.instants(metric) if slot.kind == "instant" else self.series("quarter", metric)
         end = self._walk(series, slot.end, quarters=1)
         return None if end is None else self.slot(slot.kind, end)
 
     # Values
 
     def outcome(self, metric: str, slot: Slot) -> Outcome:
-        """The value of ``metric`` over ``slot``, by the arithmetic of :mod:`app.core.metrics`."""
+        """The value of ``metric`` over ``slot``, by the arithmetic of :mod:`app.core.metrics`
+        (or, for a measure the catalogue adds, by the catalogue's own)."""
+        measure = _catalogued(metric)
+        if measure is not None and slot.kind != "ttm":
+            return self._catalogue(measure, slot)
         if slot.kind == "instant":
             return direct(self.book.instants(metric).get(slot.end), metric, "instant", slot.end)
         if slot.kind == "ttm":
@@ -344,10 +394,61 @@ class Measures:
             self._flows[key] = flow_outcomes(values, kind, slot.end)
         return self._flows[key][metric]
 
+    def _catalogue(self, measure: Measure, slot: Slot) -> Outcome:
+        """A catalogue measure over one quarter, fiscal year or balance-sheet date."""
+        kind = "annual" if slot.kind == "annual" else slot.kind
+        if measure.computed == "group":
+            if slot.kind == "instant":
+                value = self.book.instants(measure.group).get(slot.end)
+            else:
+                value = self.group_values(measure.group, kind).get(slot.end)
+            found = direct(value, measure.group, kind, slot.end)  # type: ignore[arg-type]
+            if found.value is None and measure.fallback:
+                fallback = self._sum(measure, slot, measure.fallback, (), ())
+                if fallback.value is not None:
+                    return fallback
+            return found
+        if measure.computed == "sum":
+            return self._sum(measure, slot, measure.plus, measure.minus, measure.optional)
+        top = self.outcome(measure.plus[0], slot)
+        bottom = self.outcome(measure.over, slot)
+        return _divided(top, bottom, CATALOGUE[measure.over].label.lower())
+
+    def _sum(
+        self,
+        measure: Measure,
+        slot: Slot,
+        plus: tuple[str, ...],
+        minus: tuple[str, ...],
+        optional: tuple[str, ...],
+    ) -> Outcome:
+        """The parts added and subtracted; a part in ``optional`` not reported counts zero."""
+        total = 0.0
+        terms: list[str] = []
+        used: list[PeriodValue] = []
+        for sign, keys in ((1, plus), (-1, minus)):
+            for key in keys:
+                part = self.outcome(key, slot)
+                used += part.used
+                if part.value is None:
+                    if key in optional:
+                        label = CATALOGUE[key].label.lower()
+                        terms.append(f"{'+' if sign > 0 else MINUS} 0 ({label}: none reported)")
+                        continue
+                    return unavailable(part.note, *used)
+                total += sign * part.value
+                text = millions_text(part.value)
+                text = text if part.value >= 0 else f"({text})"
+                terms.append(f"{'+' if sign > 0 else MINUS} {text}")
+        unit = IN_MILLIONS if measure.kind != "shares" else ""
+        formula = " ".join(terms).removeprefix("+ ") + unit
+        return Outcome(total, formula, tuple(used))
+
     def _ttm(self, metric: str, end: date) -> Outcome:
-        if METRICS[metric][1] == "per_share":
+        if METRICS[metric][1] in NO_TTM_KINDS:
+            what = "Earnings per share" if METRICS[metric][1] == "per_share" else "A share count"
             return unavailable(
-                "Earnings per share over four quarters is not the sum of the quarters: the share "
+                f"{what} over four quarters is not the sum of the quarters: the share "
                 "count differs between them."
             )
         ends = [end]
@@ -360,8 +461,19 @@ class Measures:
                 )
             ends.append(found.end)
         if METRICS[metric][1] == "ratio":
-            top = self._sum(NUMERATOR_OF.get(metric, ""), ends) if metric in NUMERATOR_OF else None
-            bottom = self._sum("revenue", ends)
+            measure = _catalogued(metric)
+            if measure is not None:
+                top = self._sum_quarters(measure.plus[0], ends)
+                bottom = self._sum_quarters(measure.over, ends)
+                assert top is not None and bottom is not None
+                what = f"{CATALOGUE[measure.over].label.lower()} over four quarters"
+                return _divided(top, bottom, what)
+            top = (
+                self._sum_quarters(NUMERATOR_OF.get(metric, ""), ends)
+                if metric in NUMERATOR_OF
+                else None
+            )
+            bottom = self._sum_quarters("revenue", ends)
             if top is None or bottom is None or top.value is None or bottom.value is None:
                 missing = top if top is not None and top.value is None else bottom
                 return unavailable(missing.note if missing else "The four quarters are incomplete.")
@@ -369,11 +481,11 @@ class Measures:
                 return unavailable("Not meaningful: revenue over four quarters is not positive.")
             formula = f"{millions_text(top.value)} ÷ {millions_text(bottom.value)}{IN_MILLIONS}"
             return Outcome(top.value / bottom.value * 100, formula, (*top.used, *bottom.used))
-        total = self._sum(metric, ends)
+        total = self._sum_quarters(metric, ends)
         assert total is not None
         return total
 
-    def _sum(self, metric: str, ends: list[date]) -> Outcome | None:
+    def _sum_quarters(self, metric: str, ends: list[date]) -> Outcome | None:
         parts = [self.outcome(metric, self.slot("quarter", end)) for end in ends]
         missing = next((part for part in parts if part.value is None), None)
         used = tuple(value for part in parts for value in part.used)
@@ -384,6 +496,23 @@ class Measures:
         return Outcome(sum(values), formula, used)
 
 
+def _divided(top: Outcome, bottom: Outcome, what: str) -> Outcome:
+    """``top`` as a percent of ``bottom``, which must be present and positive."""
+    for part in (top, bottom):
+        if part.value is None:
+            return unavailable(part.note, *top.used, *bottom.used)
+    assert top.value is not None and bottom.value is not None
+    if bottom.value <= 0:
+        return unavailable(
+            f"Not meaningful: the {what} is not positive ({millions_text(bottom.value)} USD "
+            "millions).",
+            *top.used,
+            *bottom.used,
+        )
+    formula = f"{millions_text(top.value)} ÷ {millions_text(bottom.value)}{IN_MILLIONS}"
+    return Outcome(top.value / bottom.value * 100, formula, (*top.used, *bottom.used))
+
+
 # The sides of a test
 
 
@@ -391,7 +520,12 @@ def _operand(measures: Measures, metric: str, slot: Slot) -> Operand:
     """One measure over one bound period, as an operand with its facts."""
     outcome = measures.outcome(metric, slot)
     unit = _unit_of(metric)
-    notes = [DEFINITIONS.get(metric, ""), OPEX_NOTE if metric == "operating_expenses" else ""]
+    measure = _catalogued(metric)
+    notes = [
+        DEFINITIONS.get(metric, ""),
+        OPEX_NOTE if metric == "operating_expenses" else "",
+        measure.definition or measure.note if measure else "",
+    ]
     if outcome.value is None:
         notes.append(outcome.note)
     return Operand(
@@ -579,7 +713,8 @@ def _streak_side(measures: Measures, term: Term, wanted: float) -> Side:
 
 
 def _key(text: str) -> str:
-    return "".join(ch for ch in text.casefold() if ch.isalnum())
+    """A member's name to match on: "Compute & Networking" is "Compute And Networking"."""
+    return "".join(ch for ch in text.casefold().replace("&", "and") if ch.isalnum())
 
 
 def _newest(row: BreakdownRow, item: Breakdown) -> BreakdownValue | None:
@@ -643,6 +778,62 @@ def _share_side(term: Term, reports: Sequence[BreakdownReport]) -> Side:
         else f'no {term.subject} "{term.member}"'
     )
     return _missing(label, "percent", f"The tagged breakdowns read ({filings}) hold {what}.")
+
+
+def _part_side(term: Term, reports: Sequence[BreakdownReport]) -> Side:
+    """A part's revenue (or operating income), or its change, from the newest filing's tags."""
+    label = term.text()
+    unit: OperandUnit = "USD" if term.fn == "value" else "percent"
+    ids = PART_BREAKDOWNS.get((term.subject, term.axis), ())
+    if not reports:
+        return _missing(label, unit, "No filing's tagged breakdowns were read. " + PART_NOTE)
+    wanted = _key(term.member)
+    for report in reports:
+        for item in report.breakdowns:
+            if item.id not in ids or not item.periods:
+                continue
+            rows = [r for r in item.rows if _key(r.label) == wanted] or [
+                r for r in item.rows if _key(r.label).startswith(wanted)
+            ]
+            value = _newest(rows[0], item) if rows else None
+            if value is None:
+                continue
+            where = _where(report, item)
+            what = f"{PART_MEASURES[term.subject]} of {rows[0].label}"
+            read = Operand(
+                term=f'{term.subject}({term.axis} "{rows[0].label}")[{where}]',
+                label=f"{what}, {item.periods[0].label} ({report.filing.form})",
+                value=value.value,
+                unit="USD",
+                display=usd_text(value.value),
+                inputs=[_share_ref(report, item, rows[0].member, value)],
+                note=PART_NOTE,
+            )
+            if term.fn == "value":
+                return Side(read, [read], [_read_line(read)])
+            if value.change is None:
+                reason = (
+                    f"The {where} tags no value for the same period a year earlier, so "
+                    f"{what} has no change. {PART_NOTE}"
+                )
+                return _missing(label, unit, reason, read)
+            change = read.model_copy(
+                update={
+                    "term": f"yoy({read.term})",
+                    "label": f"{what}, change on a year earlier ({where})",
+                    "value": value.change,
+                    "unit": "percent",
+                    "display": percent_text(value.change, signed=True),
+                    "formula": value.change_formula,
+                }
+            )
+            return Side(change, [read, change], [_read_line(read), _read_line(change)])
+    filings = ", ".join(f"{r.filing.form} filed {r.filing.filed_date}" for r in reports)
+    reason = (
+        f"The tagged breakdowns read ({filings}) hold no {term.subject.replace('_', ' ')} "
+        f'of {term.axis} "{term.member}". {PART_NOTE}'
+    )
+    return _missing(label, unit, reason)
 
 
 def _where(report: BreakdownReport, item: Breakdown) -> str:
@@ -750,6 +941,8 @@ def _largest_customer(term: Term, report: BreakdownReport, item: Breakdown) -> S
 def _side(
     measures: Measures, term: Term, reports: Sequence[BreakdownReport], wanted: float
 ) -> Side:
+    if term.axis:
+        return _part_side(term, reports)
     match term.fn:
         case "value":
             return _value_side(measures, term)
@@ -797,7 +990,7 @@ def evaluate(
     bound = f"{left.operand.term} {test.op} {right.operand.term}"
     operands = [*left.operands, *right.operands]
     arithmetic = [*left.arithmetic, *right.arithmetic]
-    shares = test.left.fn in ("share", "max_share")
+    shares = test.left.fn in ("share", "max_share") or bool(test.left.axis)
     notes = [NO_CALENDAR_NOTE] if calendar is None and not shares else []
     l_value, r_value = left.operand.value, right.operand.value
     outcome: ComputedOutcome
@@ -901,7 +1094,7 @@ def claim_history(
     at most :data:`~app.core.limits.MAX_HISTORY_POINTS` points, the newest kept. A share
     of revenue has no history.
     """
-    if test.left.fn in ("share", "max_share"):
+    if test.left.fn in ("share", "max_share") or test.left.axis:
         return [], policy.COMPUTED_NO_HISTORY
     books = books or HistoryBooks(payload)
     filings = [f for f in books.filings() if as_of is None or f[0] <= as_of]

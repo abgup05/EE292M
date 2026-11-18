@@ -26,7 +26,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
 
-from app.core.facts import GROUPS, FactBook, PeriodValue
+from app.core.facts import BOOK_GROUPS, GROUPS, FactBook, PeriodValue
 from app.core.metric_models import (
     FactRef,
     Metric,
@@ -188,7 +188,7 @@ def period_text(kind: PeriodKind, end: date) -> str:
 
 def missing_note(group_key: str, kind: PeriodKind, end: date) -> str:
     """Why a value is missing, naming every concept that was looked for."""
-    group = GROUPS[group_key]
+    group = BOOK_GROUPS[group_key]
     looked_for = ", ".join(group.concepts)
     if group_key == "gross_profit":
         cost = ", ".join(GROUPS["cost_of_revenue"].concepts)

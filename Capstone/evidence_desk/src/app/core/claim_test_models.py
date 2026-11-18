@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 from app.core.metric_models import FactRef
 
 ComputedOutcome = Literal["holds", "fails", "cannot_compute"]
-OperandUnit = Literal["USD", "percent", "USD_per_share", "count"]
+OperandUnit = Literal["USD", "percent", "USD_per_share", "count", "shares"]
 
 
 class Operand(BaseModel):

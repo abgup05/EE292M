@@ -1,5 +1,5 @@
 {
-  "about": "Judgements of the claim compiler's reading of each claim in eval/claim-tests-foreign.json, one entry per claim and canonical test printed (\"none\" when nothing compiled). reading: right, wrong (a test that does not mean what the sentence says), or not_compiled; for a claim its author marked numeric, cause says why it did not compile (metric, form, period, phrasing). label_right, on a not_numeric claim that compiled, says whether the author's label was right. The judge is the grammar's author, a Claude Opus 5.5 session: every line is here to be audited. Readings judged before the grammar was changed come first; any added later are marked with the stage they were added at.",
+  "about": "Judgements of the claim compiler's reading of each claim in eval/claim-tests-foreign.json, one entry per claim and canonical test printed (\"none\" when nothing compiled). reading: right, wrong (a test that does not mean what the sentence says), or not_compiled; for a claim its author marked numeric, cause says why it did not compile (metric, form, period, phrasing). label_right, on a not_numeric claim that compiled, says whether the author's label was right. The judge is the grammar's author, a Claude Opus 5.5 session: every line is here to be audited. Readings judged before the grammar was changed come first; any added later are marked with the stage they were added at. Readings added on 18 November 2026, after the measure catalogue (app.core.measures) widened the grammar, are judged by the same session that wrote the catalogue and say so ('catalogue, 18 November 2026'); no earlier judgement was changed.",
   "judge": "the grammar's author (Claude Opus 5.5 session), 18 November 2026",
   "judgements": [
     {
@@ -1110,6 +1110,54 @@
       "why": "sales and marketing expense as a share of revenue is not in the metric set; refused",
       "stage": "whole-sentence",
       "cause": "metric"
+    },
+    {
+      "id": "f008",
+      "canonical": "rnd_ratio[FY2025] < 15%",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: R&D as a share of revenue in fiscal 2025 below 15%; 'fell below' is read as the level reached (the fall itself is not tested), as label h049 reads 'fell below'"
+    },
+    {
+      "id": "f013",
+      "canonical": "cash_and_securities[FY] > $40B",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: cash and current marketable securities at the fiscal year-end above $40 billion"
+    },
+    {
+      "id": "f014",
+      "canonical": "long_term_debt[Q] < $10B",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: long-term debt (the non-current line, as the balance sheet names it) on the latest balance sheet under $10 billion"
+    },
+    {
+      "id": "f015",
+      "canonical": "share_repurchases[TTM] > $20B",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: repurchases over the four latest quarters above $20 billion"
+    },
+    {
+      "id": "f046",
+      "canonical": "share_repurchases[FY] > $90B",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: repurchases of the latest fiscal year above $90 billion; 'of its stock' is what was repurchased"
+    },
+    {
+      "id": "f064",
+      "canonical": "yoy(sga)[Q] < yoy(gross_profit)[Q]",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: SG&A growth below gross profit growth, year over year in the latest quarter"
+    },
+    {
+      "id": "f095",
+      "canonical": "shareholder_returns[FY] > $30B",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: buybacks plus dividends of the latest fiscal year above $30 billion; no period named, FY is a fair reading of an amount"
+    },
+    {
+      "id": "f106",
+      "canonical": "sales_marketing_ratio[Q] < sales_marketing_ratio[Q-4]",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: sales and marketing as a share of revenue lower than a year earlier"
     }
   ]
 }

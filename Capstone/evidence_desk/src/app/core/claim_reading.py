@@ -32,6 +32,7 @@ from app.core.claimtest import (
     Term,
     member_label,
 )
+from app.core.measures import PART_AXES, PART_MEASURES
 
 FUNCTIONS: tuple[str, ...] = get_args(Function)
 OPS: tuple[str, ...] = get_args(Op)
@@ -87,10 +88,11 @@ _TERM: dict[str, Any] = {
         "fn": {"type": "string", "enum": list(FUNCTIONS)},
         "subject": {"type": "string"},
         "member": {"type": "string"},
+        "axis": {"type": "string", "enum": ["", *PART_AXES]},
         "years": {"type": "integer"},
         "period": _PERIOD,
     },
-    "required": ["fn", "subject", "member", "years", "period"],
+    "required": ["fn", "subject", "member", "axis", "years", "period"],
     "additionalProperties": False,
 }
 _NUMBER: dict[str, Any] = {
@@ -160,6 +162,7 @@ def _term_json(term: Term) -> dict[str, Any]:
         "fn": term.fn,
         "subject": term.subject,
         "member": term.member,
+        "axis": term.axis,
         "years": term.years,
         "period": {
             "kind": period.kind,
@@ -209,7 +212,7 @@ def _validated(answer: object) -> ClaimTest | NotNumeric:
         right = _term(test["right_term"])
         if right.fn != left.fn:
             raise Refused(f"the two terms of a {form.replace('_', ' ')} use the same function")
-        same = right.subject == left.subject
+        same = (right.subject, right.member, right.axis) == (left.subject, left.member, left.axis)
         if form in SAME_SUBJECT and not same:
             raise Refused(f"a {form} compares one measure with itself at another time")
         if form == "faster_than" and same:
@@ -256,6 +259,11 @@ def _term(value: object) -> Term:
         raise Refused("a term's subject and member are text")
     period = _period(data.get("period"))
     years = data.get("years")
+    axis = data.get("axis", "")
+    if not isinstance(axis, str) or axis not in ("", *PART_AXES):
+        raise Refused(f"a part's axis {axis!r} is not one of {', '.join(PART_AXES)}")
+    if axis:
+        return _part_term(fn, subject, member, axis, period, years)
     if fn in ("share", "max_share"):
         if subject not in SHARE_AXES:
             raise Refused(f"a share's axis {subject!r} is not one of {', '.join(SHARE_AXES)}")
@@ -281,6 +289,27 @@ def _term(value: object) -> Term:
     elif years != 0:
         raise Refused("only a compound rate (cagr) has years")
     return Term(fn, subject, period, member=member, years=int(years or 0))
+
+
+def _part_term(
+    fn: str, subject: str, member: str, axis: str, period: Period, years: object
+) -> Term:
+    """A part of the company's measure: revenue (or a segment's operating income) of one
+    member, or its change on a year earlier, from the newest filing."""
+    if fn not in ("value", "yoy"):
+        raise Refused("a part's measure is its value or its change on a year earlier (yoy)")
+    if subject not in PART_MEASURES:
+        raise Refused(f"a part's measure {subject!r} is not one of {', '.join(PART_MEASURES)}")
+    if subject == "operating_income" and axis != "segment":
+        raise Refused("only a segment's operating income is tagged")
+    if period.kind != "filing":
+        raise Refused("a part's measure is read from the newest filing (period kind 'filing')")
+    if not member.strip() or len(member) > MAX_MEMBER_CHARS:
+        raise Refused(f"a part names its member in 1 to {MAX_MEMBER_CHARS} characters")
+    if years != 0:
+        raise Refused("only a compound rate (cagr) has years")
+    label = member_label(member, axis)
+    return Term(fn, subject, period, member=label, axis=axis)  # type: ignore[arg-type]
 
 
 def _period(value: object) -> Period:

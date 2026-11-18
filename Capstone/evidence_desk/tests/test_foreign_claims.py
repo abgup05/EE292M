@@ -49,17 +49,30 @@ def _numbers(t: foreign.Tally) -> tuple[int, ...]:
 
 # (numeric, right, wrong, not compiled: metric, form, period, phrasing,
 #  not_numeric, not_numeric compiled wrongly, not_numeric compiled with the label wrong)
+# Set A after the measure catalogue (eval/results/claim-tests-foreign-catalogue.txt); before
+# it, (83, 23, 0, 33, 21, 2, 4, 37, 0, 0) for all.
 FINAL = {
-    "all": (83, 23, 0, 33, 21, 2, 4, 37, 0, 0),
-    "development": (43, 14, 0, 19, 10, 0, 0, 17, 0, 0),
-    "held_out": (40, 9, 0, 14, 11, 2, 4, 20, 0, 0),
+    "all": (83, 31, 0, 26, 21, 2, 3, 37, 0, 0),
+    "development": (43, 17, 0, 16, 10, 0, 0, 17, 0, 0),
+    "held_out": (40, 14, 0, 10, 11, 2, 3, 20, 0, 0),
 }
+# Set B after the measure catalogue (eval/results/claim-tests-foreign-b-catalogue.txt); scored
+# once before it (eval/results/claim-tests-foreign-b.txt): (80, 5, 1, 47, 8, 3, 16, 40, 0, 0).
+FINAL_B = (80, 19, 1, 33, 8, 3, 16, 40, 0, 0)
 
 
 @pytest.mark.parametrize("half", list(FINAL))
 def test_the_final_scoring(judged, half: str) -> None:
     chosen = [j for j in judged if half == "all" or j.claim.half == half]
     assert _numbers(foreign.tally(chosen)) == FINAL[half]
+
+
+def test_the_scoring_of_set_b() -> None:
+    claims = foreign.load_claims(Path("eval/claim-tests-foreign-b.json"))
+    judgements = foreign.load_judgements(Path("eval/claim-tests-foreign-b-judgements.json"))
+    judged = foreign.judge(claims, judgements)
+    assert [j.claim.id for j in judged if j.reading == "unjudged"] == []
+    assert _numbers(foreign.tally(judged)) == FINAL_B
 
 
 def test_the_scoring_before_any_change_is_kept() -> None:

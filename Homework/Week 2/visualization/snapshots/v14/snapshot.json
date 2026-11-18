@@ -1,0 +1,36 @@
+{
+  "exported_from": "http://127.0.0.1:8714",
+  "notes": [
+    "the instance holds no finished run"
+  ],
+  "open_run": null,
+  "page_files": [
+    "app.js",
+    "index.html",
+    "sample-as-of.json",
+    "sample-breakdowns.json",
+    "sample-changes.json",
+    "sample-computed.json",
+    "sample-inbox-health.json",
+    "sample-inbox-meta.json",
+    "sample-inbox-page-2.json",
+    "sample-inbox-watches.json",
+    "sample-inbox.json",
+    "sample-readers.json",
+    "sample-restatements.json",
+    "sample-run-changes.json",
+    "sample-run-events.json",
+    "sample-run-live.json",
+    "sample-run-tagged.json",
+    "sample-run.json",
+    "sample-synthetic.json",
+    "styles.css"
+  ],
+  "routes": {
+    "/api/meta": "api/meta.json",
+    "/api/runs": "api/runs.json",
+    "/api/theses": "api/theses.json"
+  },
+  "tag": "capstone-v14",
+  "version": 14
+}

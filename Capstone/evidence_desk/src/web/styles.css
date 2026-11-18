@@ -1736,6 +1736,11 @@ details.ct-readings > summary { cursor: pointer; font-size: var(--step--1); colo
 .ct-not .ct-readers { margin-top: 0.35rem; }
 .score-readers { color: var(--ink-2); font-family: var(--font-ui); }
 
+/* After a model's summary: the line written by code, in the fixed rule's olive, never the model's violet. */
+.after-summary { margin-top: 0.6rem; padding: 0.4rem 0.75rem; border-left: 3px dotted var(--rule); background: var(--rule-bg, var(--surface-2)); max-width: 80ch; font-size: var(--step--1); }
+.after-summary p { margin: 0; }
+.after-text { margin-top: 0.2rem !important; }
+
 /* A test of several parts: every part drawn, then how they came out together. */
 .ct-parts-block { font-size: var(--step--1); }
 .ct-combine { margin: 0; color: var(--ink-2); max-width: 80ch; }

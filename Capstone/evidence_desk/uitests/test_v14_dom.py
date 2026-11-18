@@ -170,7 +170,9 @@ def test_the_board_says_which_part_of_each_verdict_is_computed(name: str) -> Non
         part = row.select_one("[data-board-computed]")
         if claim.get("computed"):
             assert part["data-board-computed"] == claim["computed"]["outcome"]
-            assert words(part).startswith("Computed, no model:")
+            # One reader, the grammar: no model read the claim, and the page may say so.
+            assert words(part).startswith("Computed by code, no model:")
+            assert part.select_one("[data-computed-by]")["data-computed-by"] == "grammar"
         else:
             assert part["data-board-computed"] == "none"
         # The findings' part stays the engine's, in its own words.
@@ -342,7 +344,7 @@ def drawn(step: str) -> dict[str, dict[str, Any]]:
 
 
 def test_the_harness_ran_every_step_and_made_no_unexpected_call() -> None:
-    assert list(steps()) == ["sample", "readers", "and", "ledger-422", "ledger-200", "ledger-503", "run-422", "run-as-of", "inbox", "theses"]
+    assert list(steps()) == ["sample", "readers", "and", "v141", "v141-none", "ledger-422", "ledger-200", "ledger-503", "run-422", "run-as-of", "inbox", "theses"]
     for step in steps():
         assert recorded(step, "unexpected") == [], step
 
@@ -468,3 +470,21 @@ def test_each_saved_thesis_carries_its_own_watch() -> None:
     assert tags["th-unwatched"] == ""
     watched = next(k for k in tags if k != "th-unwatched")
     assert tags[watched] == "◉ On watch · Ask me first · 3 unread"
+
+
+def test_the_line_after_a_models_summary_is_shown_as_written_by_code() -> None:
+    step = steps()["v141"]
+    assert step["data-after-text"].startswith("Written by code: the computed tests were counted after this summary was written")
+    assert step["data-after-mark"] == "ƒWritten by code after the summary, not by the model"
+    # Directly under the model's summary, outside the box its model mark covers.
+    assert step["data-after-previous"] == "summary-box" and step["data-after-in-model-box"] == "false"
+    assert step["data-after-count"] == "1" and steps()["v141-none"]["data-after-count"] == "0"
+
+
+def test_extra_decimals_are_drawn_as_the_record_writes_them() -> None:
+    step = steps()["v141"]
+    assert json.loads(step["data-arithmetic"])[-1] == "74.96% >= 75.00%: fails"
+    assert step["data-margin"] == "-0.04 points"
+    row = json.loads(step["data-last-row"])
+    assert row[4:6] == ["74.96%", "75.00%"]
+    assert "(74.96% against 75.00%)" in step["data-last-dot"]

@@ -366,8 +366,12 @@ is ignored, so additive changes to these payloads do not break the page. The fun
 `app.js`, in the section "version 14".
 
 1. **The computed test on a claim** (`computedTest`, from `Claim.computed`). It sits in the
-   claim's docket before the findings, with an olive left rule and the fixed-rule mark ("Computed
-   from the XBRL facts by a fixed rule, no model"). It shows, in order:
+   claim's docket before the findings, with an olive left rule and the fixed-rule mark saying who
+   read the claim into the test and that the arithmetic is code: "Read into a test by the grammar
+   and computed by code from the XBRL facts: no model read the claim" with the grammar alone, or
+   "Read into a test by the grammar, Model 1 and Model 2; the arithmetic is done by code from the
+   XBRL facts" when a model reader took part (the readers of the test shown, from `read_by`). It
+   never says "no model" when a model read the claim. It shows, in order:
    - the canonical expression in monospace;
    - the outcome with its own glyphs: ⊨ holds, ⊭ fails, ⊘ cannot be computed (dashed). These
      are never a verdict's glyphs, although holds and fails borrow the support and challenge
@@ -398,11 +402,22 @@ is ignored, so additive changes to these payloads do not break the page. The fun
    With several readers it also shows each reader's mark and, in the open, each reader's reason.
 2. **Which part of a verdict is computed.** On the verdict board each claim keeps the engine's
    "Assessed by" line (the reading of the filings: a model's or the extractive engine's) and,
-   on the same line, "Computed, no model:" with the outcome, what it counted and how many readers
+   on the same line, "Computed by code, no model:" (the grammar alone) or "Read by the grammar,
+   Model 1 and Model 2; computed by code:" (a model reader took part), with the outcome, what it
+   counted and how many readers
    agreed ("3 of 3 readers", "2 of 3 readers, one dissenting": the length of `read_by` against
    the claim's readings, when `agreement` says they agreed), or "No computed test: the verdict
    rests on the findings". The docket's summary line adds "⊨ Computed: Holds". The note under the
-   verdicts ("How to read this") adds one sentence on computed tests when the run has one.
+   verdicts ("How to read this") adds the computed tests when the run has one: the arithmetic is
+   code, and either the grammar alone read the claims (no model) or the reading may be a model's,
+   with the run's `claim_readers`.
+
+   After a model's summary, `brief.verdicts_after_summary` (version 14.1: a line the code writes,
+   naming each claim whose verdict the computed tests set or changed after the summary was
+   written) follows directly under the summary's box, outside the model's violet mark, in the
+   fixed rule's olive with the mark "Written by code after the summary, not by the model".
+   Extra decimals in an arithmetic line, a margin or a history point's sides ("74.96% >= 75.00%:
+   fails") are drawn as the record writes them; the page rounds nothing.
 3. **Who read the claim.** The head says who read the claims into tests (`claim_readers`, with
    `claim_reader_detail`) and the counting rule in words (`claim_reading_rule`), which "How to
    read this" repeats for the run on show. Under each test's outcome, one row:

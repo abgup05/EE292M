@@ -156,7 +156,13 @@ def test_the_board_says_how_many_readers_agreed(name: str) -> None:
             assert readers is None and row.select_one('[data-board-computed="none"]') is not None
             continue
         assert words(readers) == f'{len(test["read_by"])} of {len(claim["readings"])} readers'
-        assert words(row.select_one("[data-board-computed]")).startswith("Computed, no model:")
+        # A model reader took part: the board names who read the test and never says "no model".
+        board = words(row.select_one("[data-board-computed]"))
+        names = [{"grammar": "the grammar", "model": "Model 1", "model_2": "Model 2"}[r] for r in test["read_by"]]
+        who = names[0] if len(names) == 1 else f'{", ".join(names[:-1])} and {names[-1]}'
+        assert board.startswith(f"Read by {who}; computed by code:") and "no model" not in board
+        kicker = words(docket(name, claim["id"]).select_one("[data-computed-test] .ct-kicker"))
+        assert f"Read into a test by {who}; the arithmetic is done by code" in kicker and "no model" not in kicker
 
 
 @each_sample
@@ -251,3 +257,13 @@ def test_every_computed_claim_has_its_history_lane(name: str) -> None:
             continue
         assert lane["data-points"] == str(len(claim["computed"]["history"]))
         assert words(lane.select_one("[data-history-note]")) == claim["computed"]["history_note"]
+
+
+@each_sample
+def test_how_to_read_this_says_the_reading_may_be_a_models(name: str) -> None:
+    node = page(name).select_one("#distinction [data-distinction-readers]")
+    assert node["data-distinction-readers"] == "models"
+    assert words(node) == f'The reading may be a model\'s: this run\'s claims were read into tests by {record(name)["claim_readers"]}, and each test names who read it.'
+    # "No model does the arithmetic" is true; nothing says no model read the claims.
+    distinction = words(page(name).select_one("#distinction"))
+    assert "no model does the arithmetic" in distinction and "no model read" not in distinction

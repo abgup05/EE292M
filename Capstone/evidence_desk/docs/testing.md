@@ -399,7 +399,11 @@ there (port 8766 was held by another checkout's app), so the whole gate was not 
 branch, 18 November, before the watch was merged in: 87 s
 (87.35 s for 1,894 tests; 1,919 after the foreign-claims work, 88.29 s; 1,993 after the whole-sentence rule and the second reader, 87.79 s; 2,079 after version 13 was merged in, 92.96 s), measured once while other projects' containers ran on the same laptop, so not
 comparable with the figures before it; the whole gate was not run, because another app held port 8766 and
-the smoke and browser tests need it.
+the smoke and browser tests need it. Version 14 was run green on a fresh clone before it was tagged (lint, 2,326 offline
+tests, the smoke test, 337 page assertions and 2 skipped), but that output was not kept. At version 14.1, on 18
+November, once, with nothing else running: 112 s (111.84 s for 2,361 tests) and 149 s for the whole gate on a fresh
+clone, with 337 page assertions and 2 skipped (`docs/evidence/verify-fresh.txt`). The two skipped tests compare a
+live-run sample with its source record in `results/`, which a clone does not have.
 
 ## What no test here can see
 

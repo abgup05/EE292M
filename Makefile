@@ -1,4 +1,4 @@
-.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe replay golden-check golden-baseline profile bench eval eval-validate golden-sheet backup restore-check up-recorded live-walk changes breakdowns lock clean data vercel-deps live-imports live-up live-down live-test live-logs referee versions-up versions-down versions-status versions-logs pr pr-describe pr-merge site-survey site-run-v1 site-export site-index site-scan site-test site-browse site-check site-vendor site-live-up site-live-down site-live-test
+.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe replay golden-check golden-baseline profile bench eval eval-validate golden-sheet backup restore-check up-recorded live-walk changes breakdowns lock clean data vercel-deps live-imports live-up live-down live-test live-logs live-runs referee versions-up versions-down versions-status versions-logs pr pr-describe pr-merge site-survey site-run-v1 site-export site-index site-scan site-test site-browse site-check site-vendor site-live-up site-live-down site-live-test site-live-shots
 
 # make <target> runs the capstone by default; make APP=week2 <target> runs the Week 2 app.
 APP ?= capstone
@@ -6,7 +6,7 @@ APP_DIR_capstone := Capstone/evidence_desk
 APP_DIR_week2 := Homework/Week 2/visualization
 APP_DIR := $(APP_DIR_$(APP))
 
-help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe replay golden-check golden-baseline profile bench eval eval-validate golden-sheet backup restore-check up-recorded live-walk changes breakdowns lock clean data vercel-deps live-imports live-up live-down live-test live-logs:
+help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe replay golden-check golden-baseline profile bench eval eval-validate golden-sheet backup restore-check up-recorded live-walk changes breakdowns lock clean data vercel-deps live-imports live-up live-down live-test live-logs live-runs:
 	@test -n '$(APP_DIR)' || { echo "Unknown APP '$(APP)'; use capstone or week2"; exit 1; }
 	@$(MAKE) -C '$(APP_DIR)' $@
 
@@ -86,7 +86,8 @@ pr-merge:
 #   make site-export VERSIONS="13 14"    only these; the others stay as they are
 #   make site-survey                     what each instance holds, without writing anything
 #   make site-scan                       fail on anything that looks like a secret or personal data
-#   make site-check URL=https://...      the deployed site: /, /versions and each /vN/
+#   make site-check URL=https://...      the deployed site: /, /versions, /live/status and each
+#                                        /vN/, reported as live or recorded
 SITE_DIR := Homework/Week 2/visualization/snapshots
 SITE_IMAGE := python:3.14-slim
 SITE_TAGS := $(shell git tag -l 'capstone-v*' | sed -n 's/^capstone-v\([0-9][0-9]*\)$$/\1/p' | sort -n)
@@ -147,7 +148,7 @@ site-browse:
 
 site-check:
 	@test -n '$(URL)' || { echo 'Usage: make site-check URL=https://ee292m-visualization.vercel.app'; exit 1; }
-	@$(SITE_PY) tools/snapshots/check.py '$(URL)' '$(SITE_DIR)'
+	@$(SITE_PY) tools/snapshots/check.py $(if $(ALLOW_RECORDED),--allow-recorded) '$(URL)' '$(SITE_DIR)' '$(LIVE_SITE)/vendored'
 
 # The website runs each capstone version live (docs/site-live.md): tools/live/versions.map names
 # the git ref of each version N; make site-vendor copies that ref's Capstone/evidence_desk/src
@@ -187,3 +188,30 @@ site-live-down:
 
 site-live-test:
 	@$(MAKE) -s APP=week2 live-test VERSIONS='$(if $(filter command line environment,$(origin VERSIONS)),$(VERSIONS),)'
+
+# Each live page as a visitor sees it, for a person (or an agent) to look at: headless Chromium
+# against the emulated function writes PNG files under $(LIVE_SHOTS) (not committed): the page
+# as it opens, its sample from version 2 on, and a finished no-key run of its own example.
+#   make site-live-shots                 every version
+#   make site-live-shots VERSIONS="1 14" WIDTH=390
+LIVE_SHOTS := $(LIVE_SITE)/.live-shots
+WIDTH ?= 1280
+HEIGHT ?= 2000
+LIVE_SHOT = docker run --rm --user "$$(id -u):$$(id -g)" -e HOME=/tmp -v "$(CURDIR)/$(LIVE_SHOTS):/out" \
+	--add-host=host.docker.internal:host-gateway zenika/alpine-chrome:124 \
+	--headless --no-sandbox --disable-gpu --hide-scrollbars --virtual-time-budget=9000 \
+	--window-size=$(WIDTH),$(HEIGHT)
+
+site-live-shots:
+	@$(MAKE) -s site-live-up > /dev/null
+	@mkdir -p '$(LIVE_SHOTS)'
+	@trap '$(MAKE) -s site-live-down > /dev/null 2>&1' EXIT; \
+	$(MAKE) -s APP=week2 live-runs VERSIONS='$(if $(filter command line environment,$(origin VERSIONS)),$(VERSIONS),)' \
+	| while read -r n id; do \
+	  $(LIVE_SHOT) --screenshot="/out/v$$n-page-$(WIDTH).png" "http://host.docker.internal:8790/v$$n/" < /dev/null > /dev/null 2>&1; \
+	  if [ "$$n" -ge 2 ]; then \
+	    $(LIVE_SHOT) --screenshot="/out/v$$n-sample-$(WIDTH).png" "http://host.docker.internal:8790/v$$n/?sample" < /dev/null > /dev/null 2>&1; \
+	    $(LIVE_SHOT) --screenshot="/out/v$$n-run-$(WIDTH).png" "http://host.docker.internal:8790/v$$n/#run=$$id" < /dev/null > /dev/null 2>&1; \
+	  fi; \
+	  echo "v$$n  run $$id  $$(ls '$(LIVE_SHOTS)' | grep -c "^v$$n-.*-$(WIDTH)\.png$$") pictures"; \
+	done

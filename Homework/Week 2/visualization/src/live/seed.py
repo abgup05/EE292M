@@ -107,7 +107,11 @@ class SeedTransport(httpx.BaseTransport):
     def handle_request(self, request: httpx.Request) -> httpx.Response:
         url = str(request.url.copy_with(query=None, fragment=None))
         recording = self.seed.get(url) if request.method == "GET" else None
-        if recording is not None and recording.whole and url.startswith(IMMUTABLE_PREFIX):
+        if (
+            recording is not None
+            and recording.whole
+            and url.startswith(IMMUTABLE_PREFIX)
+        ):
             self.seed.count(instead=False)
             return answer(recording, request)
         try:

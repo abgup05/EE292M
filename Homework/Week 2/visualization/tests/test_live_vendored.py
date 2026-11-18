@@ -9,7 +9,9 @@ and the address its page reads first.
 from __future__ import annotations
 
 import asyncio
+import gzip
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -46,7 +48,15 @@ def test_every_module_imports_under_its_new_name(number, tmp_path):
     info = VERSIONS[number]
     manifest = json.loads((info.directory / "VENDORED.json").read_text())
     result = subprocess.run(
-        [sys.executable, "-B", "-E", "-c", IMPORT_ALL, info.package, str(info.directory)],
+        [
+            sys.executable,
+            "-B",
+            "-E",
+            "-c",
+            IMPORT_ALL,
+            info.package,
+            str(info.directory),
+        ],
         cwd=tmp_path,
         env={"EVIDENCE_DESK_DATA_DIR": str(tmp_path), "HOME": "/tmp"},
         capture_output=True,
@@ -66,7 +76,10 @@ def test_no_import_of_the_old_package_name_is_left(number):
     for path in (info.directory / info.package).rglob("*.py"):
         for line in path.read_text(encoding="utf-8").splitlines():
             stripped = line.strip()
-            assert not stripped.startswith(("from app.", "from app ", "import app")), (path, line)
+            assert not stripped.startswith(("from app.", "from app ", "import app")), (
+                path,
+                line,
+            )
 
 
 @pytest.mark.parametrize("number", sorted(VERSIONS))
@@ -94,5 +107,36 @@ def test_the_website_builds_the_version_and_it_answers(number, tmp_path, monkeyp
         meta = json.loads(asyncio.run(call(app, scope, "GET", "/api/meta"))[2])
         assert meta.get("engine") in (None, "extractive"), meta.get("engine")
     # Its data went where the website put it, and nowhere in the source tree.
-    assert any((tmp_path / f"v{number}").rglob("*.sqlite")), "no database under the data root"
+    assert any((tmp_path / f"v{number}").rglob("*.sqlite")), (
+        "no database under the data root"
+    )
     assert not list(Path(info.directory).rglob("*.sqlite"))
+
+
+PRIVATE = {
+    "an email address": re.compile(
+        r"[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}"
+    ),
+    "a key shape": re.compile(
+        r"sk-ant-[A-Za-z0-9]|ghp_[A-Za-z0-9]{20}|AKIA[0-9A-Z]{16}"
+    ),
+    "a home directory": re.compile(r"/Users/|/home/[a-z]"),
+}
+
+
+def test_nothing_vendored_holds_an_address_a_key_or_a_home_directory():
+    """The vendored versions and the seed are published: no contact, key or local path in them."""
+    found = []
+    for path in sorted(VENDOR_DIR.rglob("*")):
+        if not path.is_file():
+            continue
+        body = path.read_bytes()
+        text = (gzip.decompress(body) if path.suffix == ".gz" else body).decode(
+            "utf-8", "replace"
+        )
+        found += [
+            f"{path.relative_to(VENDOR_DIR)}: {what}"
+            for what, p in PRIVATE.items()
+            if p.search(text)
+        ]
+    assert found == []

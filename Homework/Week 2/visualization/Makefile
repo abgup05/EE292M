@@ -1,4 +1,4 @@
-.PHONY: help build up down verify test lint fmt smoke lock clean logs shell data vercel-deps live-imports live-up live-down live-test live-logs
+.PHONY: help build up down verify test lint fmt smoke lock clean logs shell data vercel-deps live-imports live-up live-down live-test live-logs live-runs
 
 export COMPOSE_PROJECT_NAME := ee292m-week2-radius
 export LOCAL_UID := $(shell id -u)
@@ -79,3 +79,7 @@ live-logs:
 live-test: live-up
 	@trap '$(COMPOSE) rm -sf live live-fresh > /dev/null 2>&1' EXIT; \
 	$(COMPOSE) run --rm --no-deps livetest node tools/live/live_test.mjs http://live:8000 http://live-fresh:8000 $(VERSIONS)
+
+# One finished no-key run of each version's example on the running function: "VERSION RUN_ID".
+live-runs:
+	@$(COMPOSE) run --rm --no-deps livetest node tools/live/start_run.mjs http://live:8000 $(VERSIONS) 2> /dev/null

@@ -201,17 +201,25 @@ def _to_directory(name: str) -> Callable[[], RedirectResponse]:
 for _number in LIVE.versions:
     _name = f"v{_number}"
     app.add_api_route(
-        f"/{_name}", _to_directory(_name), methods=["GET", "HEAD"], include_in_schema=False
+        f"/{_name}",
+        _to_directory(_name),
+        methods=["GET", "HEAD"],
+        include_in_schema=False,
     )
     _recorded = (
         StaticFiles(directory=SNAPSHOT_DIR / _name, html=True)
         if (SNAPSHOT_DIR / _name / "index.html").is_file()
         else None
     )
-    app.mount(f"/{_name}", LiveVersionApp(LIVE, _number, _recorded), name=f"live-{_name}")
+    app.mount(
+        f"/{_name}", LiveVersionApp(LIVE, _number, _recorded), name=f"live-{_name}"
+    )
 for _name in recorded_names():
     app.add_api_route(
-        f"/{_name}", _to_directory(_name), methods=["GET", "HEAD"], include_in_schema=False
+        f"/{_name}",
+        _to_directory(_name),
+        methods=["GET", "HEAD"],
+        include_in_schema=False,
     )
     app.mount(
         f"/{_name}",

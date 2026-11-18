@@ -48,7 +48,9 @@ def call(
     asyncio.run(app(scope, receive, send))
     start = next(m for m in messages if m["type"] == "http.response.start")
     headers = {k.decode().lower(): v.decode() for k, v in start["headers"]}
-    body = b"".join(m.get("body", b"") for m in messages if m["type"] == "http.response.body")
+    body = b"".join(
+        m.get("body", b"") for m in messages if m["type"] == "http.response.body"
+    )
     return start["status"], headers, body
 
 
@@ -98,19 +100,21 @@ def test_live_page_is_the_versions_own_with_a_banner_and_the_shim_first(name):
     page = body.decode()
     number = name[1:]
     assert f'data-live-version="{number}"' in page
-    assert f"Evidence Desk version {number} as tagged" in page
+    assert f"Evidence Desk version {number}</strong> as tagged" in page
     assert "running live on a shared public server" in page
-    assert "Runs and saved items are not kept" in page
+    assert "runs are not kept" in page and "saved items are not kept" in page
     assert "Live runs need the app running locally" not in page
     assert 'href="/versions"' in page
     assert f"https://github.com/abgup05/EE292M/tree/capstone-v{number}" in page
     assert page.index('src="live-shim.js"') < page.index('src="app.js"')
-    assert not re.search(r'(?:href|src)="/(?!versions")', page), "an absolute reference is left"
+    assert not re.search(r'(?:href|src)="/(?!versions")', page), (
+        "an absolute reference is left"
+    )
 
 
 @pytest.mark.parametrize("name", RECORDED)
 def test_recorded_snapshot_page_carries_its_banner_and_shim_before_its_script(name):
-    status, headers, body = call(f"/{name}/")
+    status, _, body = call(f"/{name}/")
     assert status == 200
     page = body.decode()
     assert f'data-snapshot-version="{name[1:]}"' in page
@@ -128,7 +132,9 @@ def test_every_recorded_answer_and_page_file_is_served(name):
         assert body == (SNAPSHOT_DIR / name / file).read_bytes(), file
 
 
-@pytest.mark.parametrize("path", ["/v99/", "/v99", "/v1x/", "/versions/x", "/v1/../main.py"])
+@pytest.mark.parametrize(
+    "path", ["/v99/", "/v99", "/v1x/", "/versions/x", "/v1/../main.py"]
+)
 def test_unknown_paths_are_not_served(path):
     status, _, _ = call(path)
     assert status == 404

@@ -80,7 +80,8 @@ class Site:
         self.guard = Guard(self.caps)
         self.seed = Seed(vendor_dir / "seed")
         self.versions = {
-            number: Version(info, self.seed) for number, info in discover(vendor_dir).items()
+            number: Version(info, self.seed)
+            for number, info in discover(vendor_dir).items()
         }
 
     async def status(self, imports: bool) -> dict[str, Any]:
@@ -105,10 +106,15 @@ class Site:
 
 
 def _headers(scope: Scope) -> dict[str, str]:
-    return {k.decode("latin-1").lower(): v.decode("latin-1") for k, v in scope.get("headers", [])}
+    return {
+        k.decode("latin-1").lower(): v.decode("latin-1")
+        for k, v in scope.get("headers", [])
+    }
 
 
-async def _respond(send: Send, status: int, body: bytes, content_type: str, head: bool = False) -> None:
+async def _respond(
+    send: Send, status: int, body: bytes, content_type: str, head: bool = False
+) -> None:
     await send(
         {
             "type": "http.response.start",
@@ -127,7 +133,9 @@ async def _refuse(send: Send, refusal: Refusal) -> None:
     await _respond(send, refusal.status, refusal.body(), "application/json")
 
 
-async def call(app: Any, scope: Scope, method: str, path: str, body: bytes = b"") -> tuple[int, dict[str, str], bytes]:
+async def call(
+    app: Any, scope: Scope, method: str, path: str, body: bytes = b""
+) -> tuple[int, dict[str, str], bytes]:
     """Send one request to a version's app in this process; return status, headers and body."""
     inner = dict(scope)
     inner.update(
@@ -159,7 +167,10 @@ async def call(app: Any, scope: Scope, method: str, path: str, body: bytes = b""
         nonlocal status, headers
         if message["type"] == "http.response.start":
             status = message["status"]
-            headers = {k.decode("latin-1").lower(): v.decode("latin-1") for k, v in message.get("headers", [])}
+            headers = {
+                k.decode("latin-1").lower(): v.decode("latin-1")
+                for k, v in message.get("headers", [])
+            }
         elif message["type"] == "http.response.body":
             chunks.append(message.get("body", b""))
 
@@ -168,7 +179,7 @@ async def call(app: Any, scope: Scope, method: str, path: str, body: bytes = b""
         async def run() -> None:
             try:
                 await app(inner, receive, collect)
-            except Exception:  # noqa: BLE001 - the version already answered 500; keep holding
+            except Exception:
                 log.exception("version app failed on %s %s", method, path)
             group.cancel_scope.cancel()
 
@@ -195,40 +206,74 @@ class LiveVersionApp:
     # -- the page
 
     def banner(self) -> str:
+        """One line that says what this page is, and the rest behind "What is different here".
+
+        The line names the version and its tag and says the four things a visitor must not
+        be left to guess: it runs live, the server is shared and public, the model engine is
+        on or off, and nothing is kept. The details say each in full.
+        """
         info, caps = self.info, self.site.caps
-        tag = info.ref
+        tag = html.escape(info.ref)
         if key_present():
+            engine_short = "model engine on"
             engine = (
-                "Model engine on: runs use Claude, paid by the site's owner, one at a time, at most "
-                f"{caps.LIVE_MODEL_RUNS_PER_CLIENT_PER_DAY} per visitor and "
-                f"{caps.LIVE_MODEL_RUNS_PER_DAY} in all per day, counted by each server instance "
-                "separately (so not a hard total)."
+                "The model engine is on: a run uses Claude and is paid by the site's owner, so "
+                f"runs go one at a time, at most {caps.LIVE_MODEL_RUNS_PER_CLIENT_PER_DAY} per "
+                f"visitor and {caps.LIVE_MODEL_RUNS_PER_DAY} in all per day. Each server instance "
+                "counts separately, so these are not hard totals."
             )
         else:
-            engine = "The model engine is off on this server: runs use this version's engine without a model."
-        notes = [
-            f"Evidence Desk version {info.number} as tagged ({html.escape(tag)}), running live on a "
-            "shared public server.",
-            html.escape(engine),
-            "Runs and saved items are not kept: they last until this server instance recycles, and "
-            "other visitors may see them meanwhile.",
+            engine_short = "model engine off"
+            engine = (
+                "The model engine is off on this server: a run uses this version's own engine "
+                "without a model, as the version does locally when no key is set."
+            )
+        facts = [
+            "running live on a shared public server",
+            engine_short,
+            "runs are not kept",
         ]
+        kept = (
+            "Runs, decisions and saved items are not kept: they last until this server instance "
+            "recycles, other visitors may see them meanwhile, and a second instance does not "
+            "have them. A run you started stays readable in this browser tab."
+        )
+        limits = (
+            f"Each server instance starts at most {caps.LIVE_RUNS_PER_CLIENT_PER_DAY} runs per "
+            f"visitor and {caps.LIVE_RUNS_PER_DAY} in all per day, and holds a run for at most "
+            f"{caps.LIVE_HOLD_SECONDS} seconds."
+        )
+        notes = [engine, kept, limits]
         if info.era == "research":
-            notes.append("It reads only the two pages of its own example; it fetches no other address.")
-        else:
-            notes.append("Extra web pages are off: it fetches no address a visitor supplies.")
-        if info.watch:
             notes.append(
-                "A watch can be set, but no watcher process runs online, so nothing checks a "
-                "watched thesis for new filings."
+                "It reads only the two pages of its own example (Load seed example); it fetches "
+                "no other address, and has no web search."
             )
+        else:
+            notes.append(
+                "Extra web pages are off: it fetches no address a visitor supplies. Filings come "
+                "from SEC EDGAR, or from a recorded copy when EDGAR does not answer."
+            )
+        if info.watch:
+            facts.append("no watcher runs online")
+            notes.append(
+                "A watch can be set and removed, but no watcher process runs online, so nothing "
+                "checks a watched thesis for new filings and the inbox stays as it is."
+            )
+        notes.append(
+            "Anything else is the version as tagged; to use it in full, run it locally."
+        )
         links = (
             '<a href="/versions">All versions</a> · '
-            f'<a href="{REPOSITORY}/tree/{quote(tag)}">Tag {html.escape(tag)} on GitHub</a>'
+            f'<a href="{REPOSITORY}/tree/{quote(info.ref)}">Tag {tag}</a>'
         )
+        items = "".join(f"<li>{html.escape(note)}</li>" for note in notes)
         return (
             f'<div class="live-banner" role="note" data-live-version="{info.number}" '
-            f'data-live-ref="{html.escape(tag)}">{" ".join(notes)} {links}'
+            f'data-live-ref="{tag}"><div class="live-line"><strong>Evidence Desk version '
+            f"{info.number}</strong> as tagged ({tag}), {html.escape(', '.join(facts))}. "
+            f'<span class="live-links">{links}</span></div>'
+            f"<details><summary>What is different here</summary><ul>{items}</ul></details>"
             '<span class="live-note" hidden></span></div>\n'
         )
 
@@ -240,10 +285,17 @@ class LiveVersionApp:
         body = re.search(r"<body[^>]*>", page)
         if head_end < 0 or body is None or body.start() < head_end:
             raise RuntimeError("the page has no <head> followed by a <body>")
-        page = page[:head_end] + BANNER_STYLE + '<script src="live-shim.js"></script>\n' + page[head_end:]
+        page = (
+            page[:head_end]
+            + BANNER_STYLE
+            + '<script src="live-shim.js"></script>\n'
+            + page[head_end:]
+        )
         body = re.search(r"<body[^>]*>", page)
         assert body is not None
-        return (page[: body.end()] + "\n" + self.banner() + page[body.end() :]).encode("utf-8")
+        return (page[: body.end()] + "\n" + self.banner() + page[body.end() :]).encode(
+            "utf-8"
+        )
 
     def shim(self) -> bytes:
         info = self.info
@@ -257,7 +309,9 @@ class LiveVersionApp:
             "watch": info.watch,
         }
         template = SHIM_FILE.read_text(encoding="utf-8")
-        return template.replace("/*LIVE*/null", json.dumps(config, sort_keys=True)).encode("utf-8")
+        return template.replace(
+            "/*LIVE*/null", json.dumps(config, sort_keys=True)
+        ).encode("utf-8")
 
     # -- requests
 
@@ -268,10 +322,18 @@ class LiveVersionApp:
         if scope["type"] != "http":
             return
         path: str = scope["path"]
-        sub = path[len(self.prefix) :] if path == self.prefix or path.startswith(self.prefix + "/") else path
+        sub = (
+            path[len(self.prefix) :]
+            if path == self.prefix or path.startswith(self.prefix + "/")
+            else path
+        )
         # The version's app is a whole app of its own: it gets no trace of the Week 2 router.
         scope = {k: v for k, v in scope.items() if k not in OUTER_KEYS}
-        scope.update(root_path=self.prefix, path=self.prefix + sub, raw_path=(self.prefix + sub).encode())
+        scope.update(
+            root_path=self.prefix,
+            path=self.prefix + sub,
+            raw_path=(self.prefix + sub).encode(),
+        )
         method = scope["method"]
         head = method == "HEAD"
         try:
@@ -288,7 +350,9 @@ class LiveVersionApp:
             await _respond(send, 200, self.page(), "text/html; charset=utf-8", head)
             return
         if sub == "/live-shim.js" and method in ("GET", "HEAD"):
-            await _respond(send, 200, self.shim(), "text/javascript; charset=utf-8", head)
+            await _respond(
+                send, 200, self.shim(), "text/javascript; charset=utf-8", head
+            )
             return
         era = self.info.era
         caps = self.site.caps
@@ -298,7 +362,12 @@ class LiveVersionApp:
             return
         body, too_long = await _read_body(receive, caps.LIVE_MAX_BODY_BYTES)
         if too_long:
-            await _refuse(send, Refusal(413, f"The request is longer than {caps.LIVE_MAX_BODY_BYTES} bytes."))
+            await _refuse(
+                send,
+                Refusal(
+                    413, f"The request is longer than {caps.LIVE_MAX_BODY_BYTES} bytes."
+                ),
+            )
             return
         refusal = check_body(era, method, sub, body)
         headers = _headers(scope)
@@ -310,7 +379,16 @@ class LiveVersionApp:
             return
         poll = run_start(era, method, sub)
         if poll is not None:
-            await self.hold(app, scope, sub, body, poll, client, headers.get("x-live-hold") == "ndjson", send)
+            await self.hold(
+                app,
+                scope,
+                sub,
+                body,
+                poll,
+                client,
+                headers.get("x-live-hold") == "ndjson",
+                send,
+            )
             return
         await _forward(app, scope, body, receive, send)
 
@@ -334,10 +412,24 @@ class LiveVersionApp:
             status, headers, answer = await call(app, scope, "POST", sub, body)
             run_id = _run_id(answer) if 200 <= status < 300 else None
             if run_id is None:
-                await _respond(send, status, answer, headers.get("content-type", "application/json"))
+                await _respond(
+                    send,
+                    status,
+                    answer,
+                    headers.get("content-type", "application/json"),
+                )
                 return
             ticket.accept()
-            await self._hold(app, scope, status, answer, poll.format(id=quote(run_id, safe="")), run_id, stream, send)
+            await self._hold(
+                app,
+                scope,
+                status,
+                answer,
+                poll.format(id=quote(run_id, safe="")),
+                run_id,
+                stream,
+                send,
+            )
         finally:
             ticket.release()
 
@@ -359,7 +451,9 @@ class LiveVersionApp:
             if not connected:
                 return
             try:
-                await send({"type": "http.response.body", "body": chunk, "more_body": more})
+                await send(
+                    {"type": "http.response.body", "body": chunk, "more_body": more}
+                )
             except Exception:  # noqa: BLE001 - the visitor left; the run still finishes here
                 connected = False
 
@@ -386,13 +480,25 @@ class LiveVersionApp:
             run_status, run_body = await self._run(app, scope, poll_path)
             now = time.monotonic()
             digest = _digest(run_body)
-            if stream and run_body and digest != last_digest and (
-                now - last_progress >= PROGRESS_SECONDS or run_status in FINISHED
+            if (
+                stream
+                and run_body
+                and digest != last_digest
+                and (now - last_progress >= PROGRESS_SECONDS or run_status in FINISHED)
             ):
                 await emit(_line("progress", run=run_body))
                 last_digest, last_progress, last_tick = digest, now, now
             elif now - last_tick >= TICK_SECONDS:
-                await emit(_line("tick", seconds=round(now - (deadline - self.site.caps.LIVE_HOLD_SECONDS))) if stream else b" ")
+                await emit(
+                    _line(
+                        "tick",
+                        seconds=round(
+                            now - (deadline - self.site.caps.LIVE_HOLD_SECONDS)
+                        ),
+                    )
+                    if stream
+                    else b" "
+                )
                 last_tick = now
         if not stream:
             await emit(answer, more=False)
@@ -407,15 +513,21 @@ class LiveVersionApp:
         extras: dict[str, dict[str, str]] = {}
         for template in EXTRAS[self.info.era]:
             path = template.format(id=quote(run_id, safe=""))
-            extra_status, extra_headers, extra_body = await call(app, scope, "GET", path)
+            extra_status, extra_headers, extra_body = await call(
+                app, scope, "GET", path
+            )
             if extra_status == 200:
                 extras[path] = {
-                    "content_type": extra_headers.get("content-type", "application/json"),
+                    "content_type": extra_headers.get(
+                        "content-type", "application/json"
+                    ),
                     "body": extra_body.decode("utf-8", errors="replace"),
                 }
         await emit(_line("finished", run=run_body, extras=extras), more=False)
 
-    async def _run(self, app: Any, scope: Scope, poll_path: str) -> tuple[str | None, bytes | None]:
+    async def _run(
+        self, app: Any, scope: Scope, poll_path: str
+    ) -> tuple[str | None, bytes | None]:
         """The run's status and record as the version answers for it now."""
         status, _, body = await call(app, scope, "GET", poll_path)
         if status != 200:
@@ -451,7 +563,11 @@ def _line(kind: str, **fields: Any) -> bytes:
     parts = [b'{"kind":' + json.dumps(kind).encode()]
     for name, value in fields.items():
         encoded = value if isinstance(value, bytes) else json.dumps(value).encode()
-        parts.append(json.dumps(name).encode() + b":" + (encoded if value is not None else b"null"))
+        parts.append(
+            json.dumps(name).encode()
+            + b":"
+            + (encoded if value is not None else b"null")
+        )
     return b",".join(parts) + b"}\n"
 
 
@@ -472,7 +588,9 @@ async def _read_body(receive: Receive, limit: int) -> tuple[bytes, bool]:
             return b"".join(chunks), False
 
 
-async def _forward(app: Any, scope: Scope, body: bytes, receive: Receive, send: Send) -> None:
+async def _forward(
+    app: Any, scope: Scope, body: bytes, receive: Receive, send: Send
+) -> None:
     """Pass the request to the version's app with its body, and its answer back as it comes."""
     sent = False
 
@@ -486,15 +604,21 @@ async def _forward(app: Any, scope: Scope, body: bytes, receive: Receive, send: 
     await app(scope, replay, send)
 
 
+# Every rule is scoped to the banner and sets its own font, colours and box, so a version's
+# stylesheet does not restyle it and it restyles nothing of the version's page.
 BANNER_STYLE = """<style>
-  .live-banner { font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  .live-banner, .live-banner * { box-sizing: border-box; }
+  .live-banner { all: initial; display: block; font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
     padding: 6px 16px; background: #eef3ea; color: #2f3a2c; border-bottom: 1px solid #cdd8c5; }
   .live-banner a { color: inherit; text-decoration: underline; }
-  .live-banner .live-note { display: block; margin-top: 2px; color: #8a3b12; }
+  .live-banner strong { font-weight: 650; }
+  .live-banner .live-links { white-space: nowrap; }
+  .live-banner details { display: block; margin: 2px 0 0; }
+  .live-banner summary { display: list-item; cursor: pointer; width: fit-content; text-decoration: underline dotted; }
+  .live-banner ul { margin: 4px 0 4px; padding: 0 0 0 18px; max-width: 78ch; list-style: disc; }
+  .live-banner li { display: list-item; margin: 2px 0; }
+  .live-banner .live-note { display: block; margin-top: 2px; color: #8a3b12; font-weight: 600; }
   .live-banner .live-note[hidden] { display: none; }
-  @media (prefers-color-scheme: dark) {
-    .live-banner { background: #1f241d; color: #d3dccd; border-bottom-color: #36402f; }
-    .live-banner .live-note { color: #f0a77c; }
-  }
+  @media print { .live-banner details { display: none; } }
 </style>
 """

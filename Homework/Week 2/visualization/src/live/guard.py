@@ -101,7 +101,9 @@ class Caps:
     LIVE_HOLD_SECONDS: int = 285
 
     @classmethod
-    def from_env(cls, environ: Mapping[str, str] | None = None) -> tuple[Caps, list[str]]:
+    def from_env(
+        cls, environ: Mapping[str, str] | None = None
+    ) -> tuple[Caps, list[str]]:
         """The caps the environment sets, and the names whose value was not a whole number.
 
         A missing variable keeps its default; an unreadable one keeps its default and is named.
@@ -119,7 +121,9 @@ class Caps:
                 continue
             values[spec.name] = int(text)
         if "LIVE_HOLD_SECONDS" in values:
-            values["LIVE_HOLD_SECONDS"] = max(10, min(values["LIVE_HOLD_SECONDS"], MAX_HOLD_SECONDS))
+            values["LIVE_HOLD_SECONDS"] = max(
+                10, min(values["LIVE_HOLD_SECONDS"], MAX_HOLD_SECONDS)
+            )
         return cls(**values), invalid
 
     def as_dict(self) -> dict[str, int]:
@@ -128,12 +132,18 @@ class Caps:
 
 def key_present(environ: Mapping[str, str] | None = None) -> bool:
     """True when a non-blank model key is set. The key itself is never read out."""
-    return bool((os.environ if environ is None else environ).get(KEY_VARIABLE, "").strip())
+    return bool(
+        (os.environ if environ is None else environ).get(KEY_VARIABLE, "").strip()
+    )
 
 
 def user_agent_present(environ: Mapping[str, str] | None = None) -> bool:
     """True when a non-blank SEC contact string is set. The string itself is never read out."""
-    return bool((os.environ if environ is None else environ).get(USER_AGENT_VARIABLE, "").strip())
+    return bool(
+        (os.environ if environ is None else environ)
+        .get(USER_AGENT_VARIABLE, "")
+        .strip()
+    )
 
 
 @dataclass(frozen=True)
@@ -147,7 +157,11 @@ class Refusal:
     def body(self) -> bytes:
         content: dict[str, Any] = {"error": self.message, "detail": self.message}
         if self.details:
-            content = {"error": "Invalid request", "detail": self.message, "details": self.details}
+            content = {
+                "error": "Invalid request",
+                "detail": self.message,
+                "details": self.details,
+            }
         return json.dumps(content).encode()
 
 
@@ -188,13 +202,18 @@ def run_start(era: Era, method: str, path: str) -> str | None:
     return None
 
 
-def check_request(era: Era, method: str, path: str, query: bytes, caps: Caps) -> Refusal | None:
+def check_request(
+    era: Era, method: str, path: str, query: bytes, caps: Caps
+) -> Refusal | None:
     """Refuse a write the page does not make, any DELETE, and an over-long query string."""
     if len(query) > MAX_QUERY_BYTES:
         return Refusal(414, f"The query string is longer than {MAX_QUERY_BYTES} bytes.")
     if method in ("GET", "HEAD"):
         return None
-    if any(method == allowed and pattern.fullmatch(path) for allowed, pattern in WRITES[era]):
+    if any(
+        method == allowed and pattern.fullmatch(path)
+        for allowed, pattern in WRITES[era]
+    ):
         return None
     return Refusal(405, TURNED_OFF)
 
@@ -212,7 +231,11 @@ def check_body(era: Era, method: str, path: str, body: bytes) -> Refusal | None:
     if era == "research":
         urls = payload.get("seed_urls")
         if path == "/api/research" and isinstance(urls, list):
-            bad = [i for i, url in enumerate(urls) if not isinstance(url, str) or url.strip() not in V1_EXAMPLE_URLS]
+            bad = [
+                i
+                for i, url in enumerate(urls)
+                if not isinstance(url, str) or url.strip() not in V1_EXAMPLE_URLS
+            ]
             if bad:
                 details = [{"field": f"seed_urls.{i}", "message": V1_URLS} for i in bad]
                 return Refusal(422, V1_URLS, details)
@@ -224,7 +247,10 @@ def check_body(era: Era, method: str, path: str, body: bytes) -> Refusal | None:
     else:
         return None
     if isinstance(urls, list) and urls:
-        details = [{"field": f"{prefix}extra_urls.{i}", "message": NO_URLS} for i in range(len(urls))]
+        details = [
+            {"field": f"{prefix}extra_urls.{i}", "message": NO_URLS}
+            for i in range(len(urls))
+        ]
         return Refusal(422, NO_URLS, details)
     return None
 
@@ -320,7 +346,10 @@ class Guard:
                         f"This server has started its {caps.LIVE_MODEL_RUNS_PER_DAY} model runs "
                         "for today (UTC). Try again tomorrow, or run the version locally.",
                     )
-                if self._client_model.get(client, 0) >= caps.LIVE_MODEL_RUNS_PER_CLIENT_PER_DAY:
+                if (
+                    self._client_model.get(client, 0)
+                    >= caps.LIVE_MODEL_RUNS_PER_CLIENT_PER_DAY
+                ):
                     return Refusal(
                         429,
                         f"You have started {caps.LIVE_MODEL_RUNS_PER_CLIENT_PER_DAY} model runs on "
@@ -340,10 +369,14 @@ class Guard:
         with self._lock:
             self._roll()
             self.runs_today += 1
-            self._client_runs[ticket.client] = self._client_runs.get(ticket.client, 0) + 1
+            self._client_runs[ticket.client] = (
+                self._client_runs.get(ticket.client, 0) + 1
+            )
             if ticket.model:
                 self.model_runs_today += 1
-                self._client_model[ticket.client] = self._client_model.get(ticket.client, 0) + 1
+                self._client_model[ticket.client] = (
+                    self._client_model.get(ticket.client, 0) + 1
+                )
 
     def _free(self, ticket: Ticket) -> None:
         with self._lock:
@@ -373,5 +406,7 @@ class Guard:
                 "runs_today": self.runs_today,
                 "runs_in_progress": self.held,
                 "model_runs_in_progress": self.model_held,
-                "clients_today": len(self._client_runs.keys() | self._client_reads.keys()),
+                "clients_today": len(
+                    self._client_runs.keys() | self._client_reads.keys()
+                ),
             }

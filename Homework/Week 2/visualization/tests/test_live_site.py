@@ -13,7 +13,15 @@ from test_snapshots import call
 
 import live.site as site_module
 from app.api import LIVE
-from live.guard import Caps, Guard, Refusal, check_body, check_request, client_of, costly_read
+from live.guard import (
+    Caps,
+    Guard,
+    Refusal,
+    check_body,
+    check_request,
+    client_of,
+    costly_read,
+)
 from live.site import LiveVersionApp
 
 
@@ -45,7 +53,12 @@ def test_writes_the_page_does_not_make_are_refused(method, path):
 
 
 def test_visitor_supplied_urls_are_refused_before_the_version_sees_them():
-    request = {"ticker": "NVDA", "decision": "x" * 20, "claims": ["a claim"], "extra_urls": ["http://169.254.169.254/"]}
+    request = {
+        "ticker": "NVDA",
+        "decision": "x" * 20,
+        "claims": ["a claim"],
+        "extra_urls": ["http://169.254.169.254/"],
+    }
     status, _, body = call("/v14/api/runs", "POST", json.dumps(request).encode())
     assert status == 422
     payload = json.loads(body)
@@ -57,23 +70,50 @@ def test_visitor_supplied_urls_are_refused_before_the_version_sees_them():
 
 
 def test_version_1_reads_only_its_examples_pages():
-    request = {"question": "q" * 30, "decision": "d" * 20, "seed_urls": ["http://127.0.0.1:8000/"]}
+    request = {
+        "question": "q" * 30,
+        "decision": "d" * 20,
+        "seed_urls": ["http://127.0.0.1:8000/"],
+    }
     status, _, body = call("/v1/api/research", "POST", json.dumps(request).encode())
     assert status == 422
     assert "two pages of its own example" in json.loads(body)["details"][0]["message"]
-    assert check_body("research", "POST", "/api/research", json.dumps({
-        "seed_urls": ["https://www.gao.gov/products/gao-24-106946"]}).encode()) is None
+    assert (
+        check_body(
+            "research",
+            "POST",
+            "/api/research",
+            json.dumps(
+                {"seed_urls": ["https://www.gao.gov/products/gao-24-106946"]}
+            ).encode(),
+        )
+        is None
+    )
 
 
 def test_a_long_body_and_a_long_query_are_refused():
-    status, _, _ = call("/v14/api/runs", "POST", b"{" + b" " * (LIVE.caps.LIVE_MAX_BODY_BYTES + 1) + b"}")
+    status, _, _ = call(
+        "/v14/api/runs",
+        "POST",
+        b"{" + b" " * (LIVE.caps.LIVE_MAX_BODY_BYTES + 1) + b"}",
+    )
     assert status == 413
-    assert check_request("thesis", "GET", "/api/meta", b"q=" + b"x" * 3000, LIVE.caps).status == 414
+    assert (
+        check_request(
+            "thesis", "GET", "/api/meta", b"q=" + b"x" * 3000, LIVE.caps
+        ).status
+        == 414
+    )
 
 
 def test_caps_come_from_the_environment_and_bad_values_are_named():
-    caps, invalid = Caps.from_env({"LIVE_MODEL_RUNS_PER_DAY": "5", "LIVE_RUNS_AT_ONCE": "two",
-                                   "LIVE_HOLD_SECONDS": "100000"})
+    caps, invalid = Caps.from_env(
+        {
+            "LIVE_MODEL_RUNS_PER_DAY": "5",
+            "LIVE_RUNS_AT_ONCE": "two",
+            "LIVE_HOLD_SECONDS": "100000",
+        }
+    )
     assert caps.LIVE_MODEL_RUNS_PER_DAY == 5
     assert caps.LIVE_RUNS_AT_ONCE == Caps().LIVE_RUNS_AT_ONCE
     assert caps.LIVE_HOLD_SECONDS == 790
@@ -82,13 +122,20 @@ def test_caps_come_from_the_environment_and_bad_values_are_named():
 
 def test_one_model_run_at_a_time_and_a_daily_cap_per_client():
     day = [date(2026, 11, 18)]
-    guard = Guard(Caps(LIVE_MODEL_RUNS_PER_CLIENT_PER_DAY=2), today=lambda: day[0],
-                  environ={"ANTHROPIC_API_KEY": "configured"})
+    guard = Guard(
+        Caps(LIVE_MODEL_RUNS_PER_CLIENT_PER_DAY=2),
+        today=lambda: day[0],
+        environ={"ANTHROPIC_API_KEY": "configured"},
+    )
     first = guard.admit_run("a")
     assert not isinstance(first, Refusal)
     first.accept()
     busy = guard.admit_run("b")
-    assert isinstance(busy, Refusal) and busy.status == 429 and "one at a time" in busy.message
+    assert (
+        isinstance(busy, Refusal)
+        and busy.status == 429
+        and "one at a time" in busy.message
+    )
     first.release()
     second = guard.admit_run("a")
     second.accept()
@@ -116,7 +163,10 @@ def test_the_client_is_the_address_vercel_reports_and_only_on_vercel():
     vercel = {"VERCEL": "1"}
     headers = {"x-vercel-forwarded-for": "203.0.113.9", "x-forwarded-for": "1.2.3.4"}
     assert client_of(headers, "c", vercel) == "203.0.113.9"
-    assert client_of({"x-forwarded-for": "198.51.100.7, 10.0.0.1"}, "c", vercel) == "198.51.100.7"
+    assert (
+        client_of({"x-forwarded-for": "198.51.100.7, 10.0.0.1"}, "c", vercel)
+        == "198.51.100.7"
+    )
     assert client_of({}, "fallback", vercel) == "fallback"
     # Off Vercel nothing stands in front of the process: a header is the visitor's own word.
     assert client_of(headers, "192.0.2.5", {}) == "192.0.2.5"
@@ -126,8 +176,12 @@ def test_a_spoofed_forwarding_header_does_not_buy_more_runs(held, monkeypatch):
     monkeypatch.delenv("VERCEL", raising=False)
     monkeypatch.setattr(LIVE.guard, "caps", Caps(LIVE_RUNS_PER_CLIENT_PER_DAY=1))
     monkeypatch.setattr(LIVE.guard, "_client_runs", {})
-    first = asgi(held, "/v2/api/runs", "POST", b"{}", [(b"x-forwarded-for", b"198.51.100.1")])
-    again = asgi(held, "/v2/api/runs", "POST", b"{}", [(b"x-forwarded-for", b"198.51.100.2")])
+    first = asgi(
+        held, "/v2/api/runs", "POST", b"{}", [(b"x-forwarded-for", b"198.51.100.1")]
+    )
+    again = asgi(
+        held, "/v2/api/runs", "POST", b"{}", [(b"x-forwarded-for", b"198.51.100.2")]
+    )
     assert first[0] == 202
     assert again[0] == 429 and "per visitor" in json.loads(again[2])["error"]
 
@@ -142,9 +196,19 @@ def test_every_run_start_address_passes_the_guard_whoever_calls_it(held, monkeyp
 
 
 def test_removing_a_watch_is_let_through_and_nothing_else_is_deleted():
-    assert check_request("thesis", "DELETE", "/api/theses/t1/watch", b"", LIVE.caps) is None
-    for path in ("/api/theses/t1", "/api/runs/r1", "/api/inbox/i1", "/api/theses/t1/watch/"):
-        assert check_request("thesis", "DELETE", path, b"", LIVE.caps).status == 405, path
+    assert (
+        check_request("thesis", "DELETE", "/api/theses/t1/watch", b"", LIVE.caps)
+        is None
+    )
+    for path in (
+        "/api/theses/t1",
+        "/api/runs/r1",
+        "/api/inbox/i1",
+        "/api/theses/t1/watch/",
+    ):
+        assert check_request("thesis", "DELETE", path, b"", LIVE.caps).status == 405, (
+            path
+        )
 
 
 def test_a_brief_with_its_changes_counts_as_a_costly_read():
@@ -182,17 +246,18 @@ def test_status_reports_booleans_and_counts_never_the_values(monkeypatch):
     assert set(report["versions"]) == {str(n) for n in LIVE.versions}
     assert "per server instance" in report["caps_scope"]
     page = call("/v14/")[2].decode()
-    assert "Model engine on" in page and "not a hard total" in page
+    assert "model engine on" in page and "not hard totals" in page
     monkeypatch.delenv("ANTHROPIC_API_KEY")
     assert "The model engine is off on this server" in call("/v14/")[2].decode()
 
 
 def test_versions_13_and_later_say_no_watcher_runs_online():
-    assert "no watcher process runs online" in call("/v13/")[2].decode()
-    assert "no watcher process runs online" not in call("/v12/")[2].decode()
+    assert "no watcher runs online" in call("/v13/")[2].decode()
+    assert "no watcher runs online" not in call("/v12/")[2].decode()
 
 
 # -- the held run start, against a stand-in for a version's app
+
 
 def stand_in() -> FastAPI:
     """A version-shaped app whose run is running for two reads, then complete."""
@@ -233,11 +298,23 @@ def held(monkeypatch):
     version.app = saved
 
 
-def asgi(app, path: str, method: str, body: bytes, headers: list) -> tuple[int, dict, bytes]:
-    scope = {"type": "http", "asgi": {"version": "3.0"}, "http_version": "1.1", "method": method,
-             "scheme": "http", "path": path, "raw_path": path.encode(), "query_string": b"",
-             "root_path": "", "headers": [(b"host", b"t"), *headers], "client": ("192.0.2.1", 1),
-             "server": ("t", 80)}
+def asgi(
+    app, path: str, method: str, body: bytes, headers: list
+) -> tuple[int, dict, bytes]:
+    scope = {
+        "type": "http",
+        "asgi": {"version": "3.0"},
+        "http_version": "1.1",
+        "method": method,
+        "scheme": "http",
+        "path": path,
+        "raw_path": path.encode(),
+        "query_string": b"",
+        "root_path": "",
+        "headers": [(b"host", b"t"), *headers],
+        "client": ("192.0.2.1", 1),
+        "server": ("t", 80),
+    }
     messages: list[dict] = []
     sent = False
 
@@ -254,26 +331,40 @@ def asgi(app, path: str, method: str, body: bytes, headers: list) -> tuple[int, 
 
     asyncio.run(app(scope, receive, send))
     start = next(m for m in messages if m["type"] == "http.response.start")
-    return (start["status"], {k.decode(): v.decode() for k, v in start["headers"]},
-            b"".join(m.get("body", b"") for m in messages if m["type"] == "http.response.body"))
+    return (
+        start["status"],
+        {k.decode(): v.decode() for k, v in start["headers"]},
+        b"".join(
+            m.get("body", b"") for m in messages if m["type"] == "http.response.body"
+        ),
+    )
 
 
 def test_a_run_start_is_held_until_the_run_has_finished(held):
-    status, headers, body = asgi(held, "/v2/api/runs", "POST", b"{}", [(b"x-live-hold", b"ndjson")])
+    status, headers, body = asgi(
+        held, "/v2/api/runs", "POST", b"{}", [(b"x-live-hold", b"ndjson")]
+    )
     assert status == 200
     assert headers["content-type"] == "application/x-ndjson"
     lines = [json.loads(line) for line in body.decode().splitlines()]
     assert lines[0]["kind"] == "started"
-    assert lines[0]["status"] == 202 and lines[0]["body"] == {"id": "r1", "status": "running"}
+    assert lines[0]["status"] == 202 and lines[0]["body"] == {
+        "id": "r1",
+        "status": "running",
+    }
     assert lines[0]["run"]["status"] == "running"
     assert lines[-1]["kind"] == "finished"
     assert lines[-1]["run"]["status"] == "complete"
-    assert json.loads(lines[-1]["extras"]["/api/runs/r1/review"]["body"])["run_id"] == "r1"
+    assert (
+        json.loads(lines[-1]["extras"]["/api/runs/r1/review"]["body"])["run_id"] == "r1"
+    )
     assert lines[-1]["extras"]["/api/runs/r1/export.md"]["body"] == "# r1"
     assert LIVE.guard.counts()["runs_in_progress"] == 0
 
 
-def test_without_the_shim_the_answer_is_the_versions_own_once_the_run_has_finished(held):
+def test_without_the_shim_the_answer_is_the_versions_own_once_the_run_has_finished(
+    held,
+):
     status, headers, body = asgi(held, "/v2/api/runs", "POST", b"{}", [])
     assert status == 202
     assert headers["content-type"] == "application/json"

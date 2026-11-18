@@ -139,9 +139,13 @@ def build(info: Vendored, seed: Seed) -> Any:
             parameters = inspect.signature(api.create_app).parameters
             if info.era == "research":
                 fetch = importlib.import_module(f"{info.package}.fetch")
-                return api.create_app(fetcher=example_fetcher(fetch, seed), searcher=None)
+                return api.create_app(
+                    fetcher=example_fetcher(fetch, seed), searcher=None
+                )
             if "filings" not in parameters or "fetch_page" not in parameters:
-                raise RuntimeError(f"version {info.number}'s create_app takes neither filings nor fetch_page")
+                raise RuntimeError(
+                    f"version {info.number}'s create_app takes neither filings nor fetch_page"
+                )
             edgar = importlib.import_module(f"{info.package}.sources.edgar")
             pages = importlib.import_module(f"{info.package}.sources.http")
             client = httpx.Client(
@@ -149,8 +153,12 @@ def build(info: Vendored, seed: Seed) -> Any:
                 timeout=getattr(edgar, "TIMEOUT_SECONDS", 30.0),
                 follow_redirects=False,
             )
-            filings = edgar.EdgarClient(client=client, user_agent=os.environ.get(USER_AGENT_VARIABLE))
-            return api.create_app(filings=filings, fetch_page=refusing_fetcher(pages.FetchError))
+            filings = edgar.EdgarClient(
+                client=client, user_agent=os.environ.get(USER_AGENT_VARIABLE)
+            )
+            return api.create_app(
+                filings=filings, fetch_page=refusing_fetcher(pages.FetchError)
+            )
         finally:
             for name, value in saved.items():
                 if value is None:
@@ -176,7 +184,7 @@ class Version:
             if self.app is None and self.error is None:
                 try:
                     self.app = build(self.info, self.seed)
-                except Exception as exc:  # noqa: BLE001 - reported by /live/status, never hidden
+                except Exception as exc:
                     self.error = type(exc).__name__
                     raise RuntimeError(self.error) from exc
             if self.app is None:
@@ -197,6 +205,8 @@ class Version:
             "commit": self.info.commit[:12],
             "mounted": True,
             "imported": self.app is not None or self.error is not None,
-            "import_ok": None if self.app is None and self.error is None else self.error is None,
+            "import_ok": None
+            if self.app is None and self.error is None
+            else self.error is None,
             "import_error": self.error,
         }

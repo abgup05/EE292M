@@ -236,15 +236,21 @@ def _section_spans(document: Document) -> list[tuple[str, int, int]] | None:
     return spans
 
 
-def _remember(cache: FilingCache, ref: FilingRef, document: Document, retrieved: datetime) -> None:
-    """Index a freshly parsed filing in ``cache`` (its text is stored by the caller)."""
+def remember_document(
+    cache: FilingCache, ref: FilingRef, document: Document, retrieved: datetime, version: str
+) -> None:
+    """Index a freshly parsed filing in ``cache`` under ``version`` (the caller stores its text).
+
+    ``version`` names the parser that split it: :data:`PARSER_VERSION` for a periodic
+    report, the 8-K splitter's own for a current report.
+    """
     spans = _section_spans(document)
     if spans is None:
         log.warning("Filing %s: a section is not a substring of its text; not cached", ref.url)
         return
     cache.remember_filing(
         ref.accession,
-        PARSER_VERSION,
+        version,
         content_hash=document.content_hash,
         publisher=document.publisher,
         sections=spans,
@@ -252,9 +258,24 @@ def _remember(cache: FilingCache, ref: FilingRef, document: Document, retrieved:
     )
 
 
+def _remember(cache: FilingCache, ref: FilingRef, document: Document, retrieved: datetime) -> None:
+    """Index a freshly parsed periodic report in ``cache`` (its text is stored by the caller)."""
+    remember_document(cache, ref, document, retrieved, PARSER_VERSION)
+
+
 def _from_cache(cache: FilingCache, ref: FilingRef, title: str) -> tuple[Document, datetime] | None:
-    """The filing as this parser read it before, and when it was fetched; None if not cached."""
-    cached = cache.lookup_filing(ref.accession, PARSER_VERSION)
+    """The periodic report as this parser read it before, and when; None if not cached."""
+    return cached_document(cache, ref, title, PARSER_VERSION)
+
+
+def cached_document(
+    cache: FilingCache, ref: FilingRef, title: str, version: str
+) -> tuple[Document, datetime] | None:
+    """The filing as the parser ``version`` read it before, and when it was fetched.
+
+    None when it is not cached, or when its index entry is but its text is not.
+    """
+    cached = cache.lookup_filing(ref.accession, version)
     if cached is None:
         return None
     text = cache.get_text(cached.content_hash)

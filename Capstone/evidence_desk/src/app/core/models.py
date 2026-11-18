@@ -14,6 +14,7 @@ from enum import StrEnum
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.core import limits
+from app.core.event_models import AsOf, Event, Predating
 from app.core.metric_models import Metric, Series
 
 
@@ -136,7 +137,15 @@ class Company(BaseModel):
 
 
 class Claim(BaseModel):
-    """One testable statement from the thesis and what the run concluded about it."""
+    """One testable statement from the thesis and what the run concluded about it.
+
+    ``categories`` are the 8-K categories the claim bears on, by rule
+    (:func:`app.core.events.claim_categories`). ``caution`` is set when the verdict
+    rests on a finding an 8-K postdates (:func:`app.core.events.claim_caution`);
+    ``event_note`` says what the 8-Ks since the annual report do and do not report on
+    the claim's categories (:func:`app.core.events.events_note`). Neither changes
+    the verdict. All three are empty in runs recorded before version 12.
+    """
 
     id: str
     text: str
@@ -146,6 +155,9 @@ class Claim(BaseModel):
     finding_ids: list[str] = Field(default_factory=list)
     passages_considered: int = 0
     assessed_by: str = ""
+    categories: list[str] = Field(default_factory=list)
+    caution: str = ""
+    event_note: str = ""
 
 
 class Source(BaseModel):
@@ -262,6 +274,9 @@ class Finding(BaseModel):
     withheld_reason: str = ""
     counted_as: Stance | None = None
     count_note: str = ""
+    # 8-Ks filed after every filing this finding cites, on a subject of its claim
+    # (app.core.events.predating). Reported, never withheld; empty before version 12.
+    predated_by: list[Predating] = Field(default_factory=list)
 
 
 class Brief(BaseModel):
@@ -472,3 +487,15 @@ class Run(BaseModel):
     series: list[Series] = Field(default_factory=list)
     metrics_notes: list[str] = Field(default_factory=list)
     brief: Brief | None = None
+    # The 8-Ks filed after the newest annual report the run read, newest first, and how old the
+    # evidence is (app.services.events). Empty and None in runs recorded before version 12.
+    timeline: list[Event] = Field(default_factory=list)
+    as_of: AsOf | None = None
+
+
+class CompanyEvents(BaseModel):
+    """A company's 8-Ks since its newest annual report, outside a run (GET .../events)."""
+
+    company: Company
+    as_of: AsOf
+    timeline: list[Event] = Field(default_factory=list)

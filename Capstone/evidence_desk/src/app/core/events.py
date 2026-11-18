@@ -672,12 +672,15 @@ def build_as_of(
     started: date,
     counts: EventCounts,
     index_error: str,
+    in_run: bool = True,
 ) -> AsOf:
     """The as-of block from every filing read, as (form, filing date, URL).
 
     The newest of any form, the newest periodic report (10-K or 10-Q), and the
-    days from the newest to ``started``.
+    days from the newest to ``started``: the start of the run, or today outside one
+    (``in_run`` False), which the line says.
     """
+    when = policy.AS_OF_RUN if in_run else policy.AS_OF_TODAY
     dated = sorted((filing for filing in filings if filing[1]), key=lambda f: f[1], reverse=True)
     periodic = [filing for filing in dated if filing[0] in PERIODIC_FORMS]
     as_of = AsOf(annual_filed=annual_filed, counts=counts, index_error=index_error)
@@ -697,9 +700,12 @@ def build_as_of(
             date=day_label(filed),
             form=form,
             days=days,
+            when=when,
             periodic_form=as_of.periodic_form,
             periodic_date=day_label(as_of.periodic_filed),
         )
     else:
-        as_of.line = policy.AS_OF_NO_PERIODIC.format(date=day_label(filed), form=form, days=days)
+        as_of.line = policy.AS_OF_NO_PERIODIC.format(
+            date=day_label(filed), form=form, days=days, when=when
+        )
     return as_of

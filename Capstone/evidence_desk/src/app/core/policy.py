@@ -163,10 +163,12 @@ NO_CHECKER_NOTE = "No second model checked the findings' meaning."
 # Current reports (8-K) since the annual report (app.core.events). Reported, never withheld:
 # none of these changes a verdict or the run's status.
 AS_OF_LINE = (
-    "Evidence as of {date} ({form}), {days} before this run. "
+    "Evidence as of {date} ({form}), {days} before {when}. "
     "Newest periodic report: {periodic_form} filed {periodic_date}."
 )
-AS_OF_NO_PERIODIC = "Evidence as of {date} ({form}), {days} before this run."
+AS_OF_NO_PERIODIC = "Evidence as of {date} ({form}), {days} before {when}."
+AS_OF_RUN = "this run"
+AS_OF_TODAY = "today"
 AS_OF_NOTHING_READ = "No filing was read, so the evidence has no date."
 EVENT_COUNTS = (
     "{listed} 8-K(s) filed since the annual report of {annual}: {read} read, {failed} could not "

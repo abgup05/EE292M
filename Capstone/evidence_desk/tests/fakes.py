@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import functools
 import gzip
 import json
@@ -57,6 +58,75 @@ Q1_2027 = _ref("0001045810-26-000052", "10-Q", "2026-04-26", "2026-05-20", "nvda
 FY_2026 = _ref("0001045810-26-000021", "10-K", "2026-01-25", "2026-02-25", "nvda-20260125.htm")
 # Recorded primary documents, by filing URL. Q1_2027 was not recorded.
 RECORDED = {Q2_2027.url: "nvda-10q-20260726.htm.gz", FY_2026.url: "nvda-10k-20260125.htm.gz"}
+CURRENT_FORMS = ("8-K", "8-K/A")
+
+
+@functools.cache
+def _recorded_index() -> dict[str, list[str]]:
+    payload = json.loads((EDGAR / f"submissions-CIK{NVIDIA.cik:010d}.json").read_text())
+    return payload["filings"]["recent"]
+
+
+def recorded_current_reports() -> list[FilingRef]:
+    """NVIDIA's 8-Ks filed after its 10-K, as the recorded index lists them, newest first.
+
+    Each was recorded by ``make fixtures`` as ``nvda-8k-<accession>.htm.gz``.
+    """
+    recent = _recorded_index()
+    rows = zip(
+        recent["form"],
+        recent["filingDate"],
+        recent["reportDate"],
+        recent["accessionNumber"],
+        recent["primaryDocument"],
+        recent["items"],
+        strict=True,
+    )
+    refs = [
+        dataclasses.replace(
+            _ref(accession, form, report, filed, document),
+            items=tuple(part for part in items.split(",") if part),
+        )
+        for form, filed, report, accession, document, items in rows
+        if form in CURRENT_FORMS and filed > FY_2026.filed_date
+    ]
+    return sorted(refs, key=lambda ref: (ref.filed_date, ref.accession), reverse=True)
+
+
+def recorded_current_documents() -> dict[str, str | SourceError]:
+    """The recorded primary document of each of :func:`recorded_current_reports`, by URL."""
+    return {
+        ref.url: recorded_html(f"nvda-8k-{ref.accession}.htm.gz")
+        for ref in recorded_current_reports()
+    }
+
+
+def current_report_ref(
+    number: int, filed: str, *items: str, form: str = "8-K", event_date: str | None = None
+) -> FilingRef:
+    """A made-up NVIDIA 8-K filed on ``filed`` reporting ``items``."""
+    return dataclasses.replace(
+        _ref(
+            f"0008888888-26-{number:06d}",
+            form,
+            event_date or filed,
+            filed,
+            f"current-{number}.htm",
+        ),
+        items=items,
+    )
+
+
+def current_report_html(*items: tuple[str, str, list[str]]) -> str:
+    """A minimal 8-K: for each (number, title, paragraphs), its heading and paragraphs."""
+    body = "".join(
+        f"<p><b>Item {number} {title}</b></p>" + "".join(f"<p>{text}</p>" for text in paragraphs)
+        for number, title, paragraphs in items
+    )
+    return (
+        "<html><body><p>FORM 8-K</p><p>CURRENT REPORT</p>"
+        f"{body}<p>SIGNATURE</p><p>By: /s/ A Signer</p></body></html>"
+    )
 
 
 @functools.cache
@@ -117,6 +187,8 @@ class FakeFilings:
     document. Set ``index_error`` or ``company_error`` to make those calls fail.
     ``company_facts`` serves the recorded NVIDIA XBRL facts (``facts`` replaces
     them; ``facts_error`` makes the call fail) and counts calls in ``facts_calls``.
+    ``current`` are the 8-Ks :meth:`current_reports` lists (none by default);
+    ``current_error`` makes that call fail, and each call is kept in ``current_calls``.
     """
 
     refs: list[FilingRef]
@@ -128,6 +200,9 @@ class FakeFilings:
     facts_error: SourceError | None = None
     fetched: list[str] = field(default_factory=list)
     facts_calls: int = 0
+    current: list[FilingRef] = field(default_factory=list)
+    current_error: SourceError | None = None
+    current_calls: list[str] = field(default_factory=list)
 
     @classmethod
     def nvidia(cls, *refs: FilingRef) -> FakeFilings:
@@ -137,6 +212,14 @@ class FakeFilings:
             ref.url: recorded_html(RECORDED[ref.url]) for ref in chosen if ref.url in RECORDED
         }
         return cls(refs=chosen, documents=documents, companies=recorded_companies())
+
+    @classmethod
+    def nvidia_with_events(cls, *refs: FilingRef) -> FakeFilings:
+        """:meth:`nvidia`, with the 8-Ks NVIDIA filed after its 10-K and their documents."""
+        filings = cls.nvidia(*refs)
+        filings.current = recorded_current_reports()
+        filings.documents.update(recorded_current_documents())
+        return filings
 
     @classmethod
     def synthetic(cls, *htmls: str) -> FakeFilings:
@@ -161,6 +244,14 @@ class FakeFilings:
         if self.index_error is not None:
             raise self.index_error
         return self.refs[:limit]
+
+    def current_reports(self, company: Company, filed_after: str) -> list[FilingRef]:
+        """The configured 8-Ks filed after ``filed_after``, newest first, or the failure."""
+        self.current_calls.append(filed_after)
+        if self.current_error is not None:
+            raise self.current_error
+        chosen = [ref for ref in self.current if ref.filed_date > filed_after]
+        return sorted(chosen, key=lambda ref: (ref.filed_date, ref.accession), reverse=True)
 
     def fetch(self, ref: FilingRef) -> FetchedFiling:
         """The configured document for ``ref``, or the configured failure."""

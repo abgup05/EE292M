@@ -191,6 +191,8 @@ class Distribution(BaseModel):
     at_least_of: float | None = None
     dropped: int = 0
     definition: str = ""
+    band: str = ""
+    window: str = ""
 
 
 class OutsideView(BaseModel):

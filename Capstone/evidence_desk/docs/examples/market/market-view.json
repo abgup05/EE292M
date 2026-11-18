@@ -533,7 +533,7 @@
       "After 10 years, growth of 3% a year forever.",
       "Cash flow = revenue × margin × (1 − tax) − (revenue − last year's revenue) ÷ sales-to-capital; discounted at the end of each year; compared with the enterprise value."
     ],
-    "reading": "At these assumptions the enterprise value of $5.48T needs revenue to grow 13.4% a year for 10 years, from $302.97B to $1.07T. The company's own revenue grew +100.0% a year over its last three fiscal years. The largest revenue any filer reported for 2025 is $716.92B (AMAZON.COM, INC.): the implied year-10 revenue is 1.5 times that. Of 40 ten-year spans of filers that started at its size, 0 grew at least that fast (median 1.3% a year; 4 more could not be followed for ten years). With the operating margin at the industry's median of 4.2% (n = 61, 2025) instead of 65.2%, no growth from −50% to +100% a year reaches the price. With the operating margin at the industry's 90th percentile of 26.6% (n = 61, 2025) instead of 65.2%, the same price needs 28.1% a year. Across the grid (discount rate ±2 points, margin ±5 points) the implied growth runs from 6.5% to 19.7% a year (15 of 15 cells solve).",
+    "reading": "At these assumptions the enterprise value of $5.48T needs revenue to grow 13.4% a year for 10 years, from $302.97B to $1.07T. The company's own revenue grew +100.0% a year over its last three fiscal years. The largest revenue any filer reported for 2025 is $716.92B (AMAZON.COM, INC.): the implied year-10 revenue is 1.5 times that. Of 40 ten-year spans of filers that started at its size (revenue of $151.48B to $605.94B; starts 2009 to 2015), 0 grew at least that fast (median 1.3% a year, 90th percentile 8.0%; 4 more could not be followed for ten years). With the operating margin at the industry's median of 4.2% (n = 61, 2025) instead of 65.2%, no growth from −50% to +100% a year reaches the price. With the operating margin at the industry's 90th percentile of 26.6% (n = 61, 2025) instead of 65.2%, the same price needs 28.1% a year. Across the grid (discount rate ±2 points, margin ±5 points) the implied growth runs from 6.5% to 19.7% a year (15 of 15 cells solve).",
     "data_origin": "market_prices",
     "as_of": "2026-11-18",
     "note": "",
@@ -763,7 +763,9 @@
       "at_least": 0,
       "at_least_of": 13.411142935510725,
       "dropped": 4,
-      "definition": "Compound annual revenue growth over 10 years of filers whose revenue in the start year was $151.48B to $605.94B (starts 2009 to 2015); survivors only."
+      "definition": "Compound annual revenue growth over 10 years of filers whose revenue in the start year was $151.48B to $605.94B (starts 2009 to 2015); survivors only.",
+      "band": "$151.48B to $605.94B",
+      "window": "starts 2009 to 2015"
     },
     "implied_revenue": 1066486753185.3986,
     "implied_revenue_display": "$1.07T",

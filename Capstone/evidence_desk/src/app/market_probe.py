@@ -74,29 +74,10 @@ PROBES: tuple[Probe, ...] = (
         "Date,Open,High,Low,Close",
     ),
     Probe(
-        "Stooq daily CSV, S&P 500 index (^SPX)",
-        "https://stooq.com/q/d/l/?s=%5Espx&i=d",
-        False,
-        "Date,Open,High,Low,Close",
-    ),
-    Probe(
-        "Stooq daily CSV, SPY.US",
-        "https://stooq.com/q/d/l/?s=spy.us&i=d",
-        False,
-        "Date,Open,High,Low,Close",
-    ),
-    Probe(
         "FRED graph CSV, S&P 500 (SP500)",
         "https://fred.stlouisfed.org/graph/fredgraph.csv?id=SP500",
         False,
         "observation_date,SP500",
-    ),
-    Probe(
-        "Nasdaq historical quotes API, AAPL",
-        "https://api.nasdaq.com/api/quote/AAPL/historical?assetclass=stocks"
-        "&fromdate=2025-01-02&todate=2025-01-31&limit=30",
-        False,
-        '{"data"',
     ),
 )
 

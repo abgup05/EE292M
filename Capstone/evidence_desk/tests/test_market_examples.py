@@ -169,6 +169,7 @@ def test_the_price_implied_growth_is_set_beside_what_filers_of_its_size_did(
     dcf = written["market-view.json"]["reverse_dcf"]
     spread = dcf["distribution"]
     assert spread["n"] > 0 and f"Of {spread['n']} ten-year spans" in dcf["reading"]
+    assert spread["band"] in dcf["reading"] and spread["window"] in dcf["reading"]
     assert f"{spread['at_least']} grew at least that fast" in dcf["reading"]
     assert spread["at_least_of"] == dcf["value"]
     kinds = [s["kind"] for s in dcf["scenarios"]]

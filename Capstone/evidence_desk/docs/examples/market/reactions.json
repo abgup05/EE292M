@@ -56,6 +56,7 @@
       ],
       "assumptions": [
         "Start: the last close before the filing day (an 8-K filed after the close moves the next day's price).",
+        "The index gives the filing's day, not its hour: for an 8-K accepted after the close, the filing day is a day of the window on which nothing was known.",
         "Excess return = the stock's return − the index's over the same dates; not adjusted for beta.",
         "Nothing after the as-of date is read."
       ],
@@ -151,6 +152,7 @@
       ],
       "assumptions": [
         "Start: the last close before the filing day (an 8-K filed after the close moves the next day's price).",
+        "The index gives the filing's day, not its hour: for an 8-K accepted after the close, the filing day is a day of the window on which nothing was known.",
         "Excess return = the stock's return − the index's over the same dates; not adjusted for beta.",
         "Nothing after the as-of date is read."
       ],
@@ -244,6 +246,7 @@
       ],
       "assumptions": [
         "Start: the last close before the filing day (an 8-K filed after the close moves the next day's price).",
+        "The index gives the filing's day, not its hour: for an 8-K accepted after the close, the filing day is a day of the window on which nothing was known.",
         "Excess return = the stock's return − the index's over the same dates; not adjusted for beta.",
         "Nothing after the as-of date is read."
       ],

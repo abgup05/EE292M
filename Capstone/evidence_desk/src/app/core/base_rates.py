@@ -652,8 +652,9 @@ def growth_distribution(
         f"Compound annual revenue growth over {span} years of filers whose revenue in the "
         f"start year was {usd_text(low)} to {usd_text(high)} ({window}); survivors only."
     )
+    band = f"{usd_text(low)} to {usd_text(high)}"
     if not rates:
-        return Distribution(dropped=dropped, definition=definition)
+        return Distribution(dropped=dropped, definition=definition, band=band, window=window)
     points = {f"p{p}": percentile(rates, p) for p in PERCENTILES}
     return Distribution(
         n=len(rates),
@@ -663,4 +664,6 @@ def growth_distribution(
         at_least_of=at_least,
         dropped=dropped,
         definition=definition,
+        band=band,
+        window=window,
     )

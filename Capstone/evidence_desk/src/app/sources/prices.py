@@ -1,13 +1,16 @@
-"""Daily closing prices: a bounded, allow-listed fetch and the sources behind one interface.
+"""Prices: the provider interface, the user's own price, and daily closes with a bounded fetch.
 
-A :class:`PriceSource` gives a symbol's daily closes as a
-:class:`~app.core.price_series.PriceSeries`. There are three: :class:`FredSeries` (the
-S&P 500 index level from FRED, read live, the index proxy), :class:`StooqDaily` (kept
-because its CSV is the common shape, but Stooq now answers a script with a browser
-check, so it fails with that reason), and :class:`CsvFilePrices` (a file the user
-downloaded and put in the repository); closes may also be supplied on a request
-(:func:`supplied_series`). No source of single-stock prices was found that answers a
-script without an account and whose terms allow it (``docs/market-view.md``).
+**One price** for a valuation comes from a :class:`PriceProvider`: :class:`SuppliedPrice`
+(the user's, on the request) or :class:`app.sources.thirteenf.QuarterEndPrices` (SEC's
+Form 13F filings).
+
+**Daily closes** for a reaction to an 8-K come as a
+:class:`~app.core.price_series.PriceSeries` from a :class:`PriceSource`:
+:class:`CsvFilePrices` (a file the user downloaded and put in the repository), closes
+supplied on a request (:func:`supplied_series`), or :class:`FredSeries` (the S&P 500
+index level from FRED, read live and only when asked for, as the index proxy). No source
+of daily single-stock prices was found that answers a script without an account and
+whose terms allow it (``make market-probe``, ``docs/market-view.md``).
 
 Only the hosts in :data:`ALLOWED_HOSTS` are contacted, over HTTPS, with a generic
 User-Agent that names the tool and no person; a redirect is followed only to another
@@ -36,7 +39,8 @@ from app.core.models import Company
 from app.core.price_series import Close, PriceSeries, PriceSeriesError, parse_closes
 from app.core.valuation import Price
 
-ALLOWED_HOSTS = frozenset({"stooq.com", "stooq.pl", "fred.stlouisfed.org", "api.nasdaq.com"})
+# stooq.com is contacted only by the probe, which records that it no longer answers a script.
+ALLOWED_HOSTS = frozenset({"stooq.com", "fred.stlouisfed.org"})
 USER_AGENT = "EvidenceDesk/0.14 (research tool; daily closes for one ticker)"
 TIMEOUT_SECONDS = 20.0
 MAX_BYTES = 8 * 1024 * 1024
@@ -136,18 +140,18 @@ def fetch_public_csv(
             client.close()
 
 
-# Price sources: one interface, three ways to get a series.
+# Sources of daily closes: one interface.
 
 SYMBOL_PATTERN = re.compile(r"^\^?[A-Za-z0-9][A-Za-z0-9.-]{0,11}$")
 FRED_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv?id={series}"
 FRED_SERIES = frozenset({"SP500"})
 FRED_TERMS = (
     "FRED's SP500 series is S&P Dow Jones Indices' data; S&P's notice on FRED forbids "
-    "reproducing it without permission, so it is read live for a computation and never "
-    "committed. FRED keeps about ten years of it."
+    "reproducing it without permission. It is read live, only when a request asks for it, "
+    "kept for the day in the disposable cache and never committed; a reaction shows the two "
+    "index closes it used. Whether that use is permitted is the user's to decide: the "
+    "default is no index. FRED keeps about ten years of the series."
 )
-STOOQ_URL = "https://stooq.com/q/d/l/?s={symbol}&i=d"
-BROWSER_CHECK = "answered with a browser check page instead of CSV (it requires JavaScript)"
 
 
 class PriceSource(Protocol):
@@ -207,25 +211,6 @@ class FredSeries:
                 kept.parent.mkdir(parents=True, exist_ok=True)
                 kept.write_bytes(gzip.compress(text.encode("utf-8"), mtime=0))
         return _parsed(text, symbol, f"FRED {symbol} (S&P 500 index level, daily close)", url)
-
-
-class StooqDaily:
-    """Stooq's daily CSV download. Since at least November 2026 it answers a script with a
-    browser check, so every call fails with that reason (``make market-probe``)."""
-
-    name = "Stooq"
-
-    def __init__(self, fetch: Callable[[str], FetchedBody] = fetch_public_csv) -> None:
-        self._fetch = fetch
-
-    def series(self, symbol: str) -> PriceSeries:
-        """The daily closes of ``symbol`` (``aapl.us``, ``^spx``)."""
-        check_symbol(symbol.replace(".", "-") if symbol.count(".") == 1 else symbol)
-        url = STOOQ_URL.format(symbol=symbol.lower().replace("^", "%5E"))
-        body = self._fetch(url).body.decode("utf-8", errors="replace")
-        if body.lstrip().lower().startswith(("<!doctype", "<html")):
-            raise PriceFetchError(f"Stooq {BROWSER_CHECK}")
-        return _parsed(body, symbol, f"Stooq daily CSV ({symbol})", url)
 
 
 class CsvFilePrices:

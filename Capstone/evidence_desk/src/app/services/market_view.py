@@ -246,7 +246,21 @@ def reverse_dcf(
     if solved.growth is None:
         base.outcome = "cannot_compute"
         base.reason = solved.reason
-        base.reading = solved.reason
+        cells = [c for c in base.grid if c.implied_growth is not None]
+        base.reading = (
+            f"With the trailing operating margin of {assumptions.operating_margin:.1f}% held for "
+            f"{assumptions.years} years, no constant revenue growth from −50% to +100% a year is "
+            f"worth the enterprise value of {money(target)}: the price counts on a margin the "
+            f"company does not have now. {len(cells)} of {len(base.grid)} cells of the grid "
+            "(discount rate ±2 points, margin ±5 points) solve"
+            + (
+                f"; at a margin of {max(c.operating_margin for c in cells):.1f}% the growth "
+                f"needed starts at {percent_text(min(c.implied_growth or 0 for c in cells))} a "
+                "year."
+                if cells
+                else "."
+            )
+        )
         return base
     base.value = solved.growth
     base.display = f"{percent_text(solved.growth)} a year for {assumptions.years} years"
@@ -277,8 +291,9 @@ def reverse_dcf(
         dist = base.distribution
         if dist.n:
             sentences.append(
-                f"Of {dist.n} ten-year spans of filers that started at its size, {dist.at_least} "
-                f"grew at least that fast (median {dist.displays['p50']} a year; "
+                f"Of {dist.n} ten-year spans of filers that started at its size (revenue of "
+                f"{dist.band}; {dist.window}), {dist.at_least} grew at least that fast (median "
+                f"{dist.displays['p50']} a year, 90th percentile {dist.displays['p90']}; "
                 f"{dist.dropped} more could not be followed for ten years)."
             )
         else:
@@ -457,6 +472,8 @@ def _reaction(
         assumptions=[
             "Start: the last close before the filing day (an 8-K filed after the close moves "
             "the next day's price).",
+            "The index gives the filing's day, not its hour: for an 8-K accepted after the "
+            "close, the filing day is a day of the window on which nothing was known.",
             "Excess return = the stock's return − the index's over the same dates; not "
             "adjusted for beta.",
             "Nothing after the as-of date is read.",

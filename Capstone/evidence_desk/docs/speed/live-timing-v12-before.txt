@@ -1,0 +1,75 @@
+Live run of the example thesis without a key, version 0.11.1, 2026-11-18T07:49:17Z
+Filings and company facts from SEC EDGAR; the deterministic engine; one process.
+Each stage is timed inside the run. EDGAR requests include the client's rate-limit waits.
+One EDGAR client for every run, its company list loaded before the first timed run,
+as in the running app; the request for that list is therefore in none of these runs.
+
+cold cache: 5 runs, whole run median 1360 ms (range 1007 to   1667 ms); status partial, 3 sources read, 0 tagged figures offered
+  stage                         median  share  calls   range
+  EDGAR requests              815.5 ms  60.0%      5      546 to   1144 ms
+  parse filings               367.8 ms  27.0%      3      313 to    376 ms
+  EDGAR answers: decode        30.5 ms   2.2%      2       18 to     33 ms
+  index (BM25)                 21.7 ms   1.6%      1       21 to     22 ms
+  figures: build               17.7 ms   1.3%      3       15 to     65 ms
+  save_run                     14.4 ms   1.1%     24       14 to     17 ms
+  filing cache: write          10.6 ms   0.8%      3        8 to     11 ms
+  chunk                         3.1 ms   0.2%      3        3 to      3 ms
+  retrieve                      2.4 ms   0.2%      5        2 to      3 ms
+  gate_claim                    2.2 ms   0.2%      5        2 to      2 ms
+  assess                        2.1 ms   0.2%      5        2 to      2 ms
+  filing cache: read back       0.0 ms   0.0%      3        0 to      0 ms
+  plan                          0.0 ms   0.0%      1        0 to      0 ms
+  summary                       0.0 ms   0.0%      1        0 to      0 ms
+  unaccounted, run by run      46.6 ms   3.4%              42 to     51 ms
+
+warm cache: 5 runs, whole run median 421 ms (range 380 to    504 ms); status partial, 3 sources read, 0 tagged figures offered
+  stage                         median  share  calls   range
+  EDGAR requests              279.3 ms  66.4%      2      241 to    359 ms
+  EDGAR answers: decode        33.7 ms   8.0%      2       32 to     35 ms
+  index (BM25)                 22.0 ms   5.2%      1       22 to     22 ms
+  save_run                     15.2 ms   3.6%     24       15 to     16 ms
+  figures: build               14.9 ms   3.5%      3       15 to     18 ms
+  chunk                         3.1 ms   0.7%      3        3 to      3 ms
+  retrieve                      2.5 ms   0.6%      5        2 to      3 ms
+  gate_claim                    2.2 ms   0.5%      5        2 to      2 ms
+  assess                        2.1 ms   0.5%      5        2 to      2 ms
+  filing cache: read back       1.2 ms   0.3%      3        1 to      2 ms
+  plan                          0.0 ms   0.0%      1        0 to      0 ms
+  summary                       0.0 ms   0.0%      1        0 to      0 ms
+  unaccounted, run by run      45.5 ms  10.8%              43 to     47 ms
+
+cold cache, tagged figures: 5 runs, whole run median 1236 ms (range 1004 to   1440 ms); status partial, 3 sources read, 40 tagged figures offered
+  stage                         median  share  calls   range
+  EDGAR requests              686.8 ms  55.5%      5      518 to    892 ms
+  parse filings               370.3 ms  29.9%      3      318 to    379 ms
+  tagged figures: read         31.7 ms   2.6%      6       31 to     32 ms
+  EDGAR answers: decode        22.8 ms   1.8%      2       19 to     25 ms
+  index (BM25)                 21.5 ms   1.7%      1       21 to     22 ms
+  save_run                     17.5 ms   1.4%     24       16 to     18 ms
+  figures: build               16.1 ms   1.3%      3       14 to     17 ms
+  filing cache: write           8.4 ms   0.7%      3        7 to     11 ms
+  chunk                         2.9 ms   0.2%      3        3 to      3 ms
+  retrieve                      2.4 ms   0.2%      5        2 to      3 ms
+  gate_claim                    2.2 ms   0.2%      5        2 to      2 ms
+  assess                        2.1 ms   0.2%      5        2 to      2 ms
+  filing cache: read back       0.0 ms   0.0%      3        0 to      0 ms
+  plan                          0.0 ms   0.0%      1        0 to      0 ms
+  summary                       0.0 ms   0.0%      1        0 to      0 ms
+  unaccounted, run by run      47.7 ms   3.9%              43 to     52 ms
+
+warm cache, tagged figures: 5 runs, whole run median 460 ms (range 333 to   1289 ms); status partial, 3 sources read, 40 tagged figures offered
+  stage                         median  share  calls   range
+  EDGAR requests              312.9 ms  68.0%      2      192 to   1143 ms
+  EDGAR answers: decode        33.5 ms   7.3%      2       27 to     37 ms
+  index (BM25)                 22.4 ms   4.9%      1       22 to     27 ms
+  save_run                     17.5 ms   3.8%     24       14 to     19 ms
+  figures: build               15.0 ms   3.3%      3       15 to     19 ms
+  chunk                         3.3 ms   0.7%      3        3 to      4 ms
+  retrieve                      2.5 ms   0.5%      5        2 to      3 ms
+  gate_claim                    2.2 ms   0.5%      5        2 to      2 ms
+  assess                        2.0 ms   0.4%      5        2 to      2 ms
+  filing cache: read back       1.1 ms   0.2%      3        1 to      2 ms
+  tagged figures: read          0.3 ms   0.1%      2        0 to     55 ms
+  plan                          0.0 ms   0.0%      1        0 to      0 ms
+  summary                       0.0 ms   0.0%      1        0 to      0 ms
+  unaccounted, run by run      46.4 ms  10.1%              46 to     50 ms

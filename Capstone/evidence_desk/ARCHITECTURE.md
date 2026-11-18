@@ -29,8 +29,10 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/core/numcheck.py    the numeric check: each number a statement writes is in what it cites
     src/app/core/periods.py     the period check: each year or fiscal label a statement names is in its evidence (reported, never withheld); a company's fiscal calendar from its newest annual report; a planted wrong year, for measuring the check
     src/app/core/meaning.py     the meaning check's pure half: what the checker is shown, and applying its judgements
+    src/app/core/events.py      the rules about 8-Ks: SEC's table of items with a category each, an item's opening sentences and the officer roles a 5.02 names, a claim's categories (lexicon and a name-and-leaving pattern), which 8-Ks a run reads, which postdate a finding, a claim's caution and note, the as-of block; event_models.py is its pure data
     src/app/sources/edgar.py    SEC EDGAR adapter: ticker, filing selection, rate-limited fetch
     src/app/sources/filing.py   splits a 10-K/10-Q into Part and Item sections
+    src/app/sources/current_report.py   splits an 8-K into one section per "Item N.NN" heading, the signature block and an exhibit index after the last item apart; its own parser version
     src/app/sources/http.py     bounded fetch of a public page, every redirect hop revalidated
     src/app/sources/urls.py, web.py, xbrl.py   public-URL validation; page text; the company-facts URL and body
     src/app/sources/ixbrl.py    reads a filing's own tagged numbers (inline XBRL: contexts, units, ix:nonFraction) with a targeted scan; what it cannot read is counted with its reason
@@ -48,6 +50,7 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/services/filing_changes.py  selects a company's two latest filings of one form, reads them through the cache, compares them
     src/app/services/claim_changes.py   for a run: the filing before the newest annual and the newest quarterly report it read, the two comparisons, the ranking per claim; a comparison that cannot be made is a note, never an error
     src/app/services/breakdowns.py   the latest filing of a form, fetched and read into breakdowns
+    src/app/services/events.py  a company's 8-Ks after its newest annual report: listed from the index, the ones the rule picks read through the cache and split; a document that cannot be read is a reason on its event, never an error; the item sections offered to a claim
     src/app/services/tagged_figures.py   for a run that asks: the tags of the newest annual and quarterly report it read, as figures; a filing that cannot be read is a reason, never an error
     src/app/store.py            SQLite: Store (the record) and FilingCache (disposable)
     src/app/backup.py           backs up the record; checks that the newest backup restores
@@ -55,17 +58,19 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/api.py              HTTP routes and static files
     src/app/cli.py              command line onto the same use case
     src/app/demo.py, probe.py, figures.py, changes.py, breakdowns.py, record_fixtures.py, record_facts.py   live demo; live parser check; live check of the reported figures, company by company; the filing comparison and the tagged breakdowns from the command line; fixture recorders
+    src/app/events.py, events_probe.py   a company's 8-Ks since its annual report as text (`make events`); live check of the 8-K splitter on the eight probe companies (`make events-probe`)
     src/app/evaluation/golden.py, corpus.py   load and validate the golden set; the filings it is measured on, pinned by hash
     src/app/evaluation/retrieval_eval.py  scores where the right passage ranks; the variant registry
     src/app/evaluation/cli.py   `python -m app.evaluation`: validate, run, fetch, pin, show, plan, generate, mismatch
     src/app/evaluation/companies.py, planning.py, generation_eval.py   pinned figures, planned queries, answer scoring
     src/app/evaluation/mismatch_eval.py   plants real quotes under statements they do not belong to and scores what the meaning check says
     src/app/evaluation/reading_sheet.py   lays the golden cases out for a person to read (`make golden-sheet`)
+    src/app/evaluation/claim_categories.py   scores the claim-category rule on eval/claim-categories.json (`make event-categories`)
     src/web/                    index.html, app.js, styles.css, sample-run.json, sample-synthetic.json, sample-changes.json, sample-run-changes.json, sample-run-tagged.json, sample-breakdowns.json, sample-breakdowns-gap.json (synthetic)
     eval/                       the golden set, its pinned filings, cache/ and results/; README.md
     tests/                      offline tests, fakes.py (EDGAR, pages, engine, clock), smoke.py; replay_run.py, golden_run.py, speed_run.py
     tests/live_walk.py          the live end-to-end walk over HTTP; tests/golden/ the tripwire and replayed verdicts
-    uitests/                    browser tests: the rendered DOM of the two sample runs and the sample filing comparison against their JSON
+    uitests/                    browser tests: the rendered DOM of the sample runs, the sample filing comparison and breakdowns against their JSON; test_events_dom.py the 8-Ks and the as-of line
 
 ## Storage: the record and the cache
 
@@ -74,9 +79,13 @@ Two SQLite files under the data directory (`EVIDENCE_DESK_DATA_DIR`; `data/`, gi
 - **The record**, `data/record/record.sqlite`, class `Store`: `runs` (each run as JSON), `decisions` (one per run and
   finding) and `theses` (saved requests and their run ids). Nothing can rebuild it: a later run meets a different
   EDGAR, perhaps a different parser and model, and a decision exists nowhere else. It is the only file backed up.
+  Every field a version adds to the run has a default, so a run recorded before it loads: version 12 added
+  `Run.timeline` and `Run.as_of`, `Claim.categories`, `caution` and `event_note`, and `Finding.predated_by`
+  (`core/event_models.py`); `tests/test_events_run.py` loads a run recorded by 0.11.1.
 - **The cache**, `data/cache/filings.sqlite`, class `FilingCache`: `texts`, each document's text once, keyed by its
   SHA-256; `filings`, an index from (accession, parser version) to that hash, the publisher, section spans and fetch
-  time. The record holds only the hash, never the text.
+  time. An 8-K is indexed under the 8-K splitter's own version (`sources/current_report.parser_version`), so a change
+  to it invalidates cached 8-Ks and no periodic report. The record holds only the hash, never the text.
 - **Backup.** `make backup` copies the record with SQLite's online backup (safe while the app runs) to
   `backups/record-<UTC>.sqlite` with a `.sha256`, and writes `backups/decisions-<UTC>.jsonl`, one line per decision.
   `make restore-check` verifies the newest backup's hash, restores it to a temporary directory and compares it with
@@ -98,19 +107,31 @@ Two SQLite files under the data directory (`EVIDENCE_DESK_DATA_DIR`; `data/`, gi
    text and not fetched. A miss is fetched within EDGAR's limits, parsed into Items and indexed. Extra pages are
    always fetched: a page can change. A failure is recorded on its `Source` and the others continue. Identical content
    is read once. With no readable source the run ends `failed` with no brief.
-3. **Numbers** (`services/numbers`). The company's XBRL facts become a metrics report on the run; the newest quarters
+3. **Events** (`services/events`, rules in `core/events`). Every 8-K and 8-K/A filed after the newest annual report
+   the run read is listed from EDGAR's submissions index (the one `periodic_filings` fetched, reused for 60 seconds,
+   so no extra request). Read through the cache (by accession and the 8-K splitter's own version) and split into
+   items: every 8-K filed after the newest periodic report, and those with an item of a substantive category since
+   the annual report, newest first, at most `MAX_EVENTS_READ` (8). Each one listed is counted as read, failed, capped,
+   out of time or listed from the index only, and a failure is a reason on the event, never an error of the run. The
+   run records the timeline and an as-of block (the newest filing read and its date, the newest periodic report, the
+   days to the run's start, the counts). A claim's categories are set by rule when the claim is made (`docs/events.md`).
+4. **Numbers** (`services/numbers`). The company's XBRL facts become a metrics report on the run; the newest quarters
    and years of a few key metrics are the figures offered to the engine. A failure is a coverage limit, never the end
    of the run, but the run is then partial. The facts are never chunked or quoted. When the request has
    `tagged_figures` (off by default), `services/tagged_figures` also reads the inline XBRL of the newest annual and
    quarterly report the run read and adds up to `MAX_TAGGED_FIGURES_OFFERED` (40) figures after these, with ids
    starting `tagged:`; they are recorded with the run's other metrics, so every later stage treats a citation of one
    like any other. They change the assessment prompts, which is why a run must ask for them (`docs/tagged-figures.md`).
-4. **Plan.** The engine writes up to four queries per claim.
-5. **Retrieve.** All passages of the run go into one BM25 index; each claim is searched with its own text and queries.
-6. **Assess.** One engine call per claim returns findings with stances, quotes and cited figure ids. Up to
+5. **Plan.** The engine writes up to four queries per claim.
+6. **Retrieve.** All passages of the run go into one BM25 index; each claim is searched with its own text and queries.
+   8-K sections never enter the index: a claim with a substantive category is also offered up to
+   `EVENT_PASSAGES_PER_CLAIM` (2) item sections of its categories from 8-Ks read, newest first, as passages marked
+   with their form and filing date; an 8-K becomes a source of the run only when one of its sections is offered. The
+   Claude engine is told about newer filings only in a prompt that carries such a passage.
+7. **Assess.** One engine call per claim returns findings with stances, quotes and cited figure ids. Up to
    `MAX_CONCURRENT_ASSESSMENTS` (3) calls run at once; claims start and pass the gate in claim order, so the record
    (ids included) is the one a sequential run gives. A failed call falls back for that claim only.
-7. **Verify.** `gate.gate_claim` locates each quote inside a passage offered for its claim (the one it names, else
+8. **Verify.** `gate.gate_claim` locates each quote inside a passage offered for its claim (the one it names, else
    another offered passage of the same source, whose locator the excerpt then carries) in the stored text
    (`FilingCache.source_texts`) and keeps the stored span; a quote found only elsewhere in the source, or one that
    includes a heading line the parser wrote, is rejected. A quote must also be whole (`gate.is_whole`): an
@@ -121,7 +142,7 @@ Two SQLite files under the data directory (`EVIDENCE_DESK_DATA_DIR`; `data/`, gi
    the unknowns and the next steps are checked the same way: a reason or commentary with an unmatched number is
    replaced by a note, an unknown or next step is dropped; a model summary with an unmatched number is replaced by
    the template. Every quote is counted as found or rejected (`quotes_found + quotes_rejected == quotes_offered`).
-8. **Check meaning** (when a `Checker` is configured). In the worker that assessed the claim, right after its gate,
+9. **Check meaning** (when a `Checker` is configured). In the worker that assessed the claim, right after its gate,
    one request per claim shows a second model (`ANTHROPIC_CHECK_MODEL`, default `claude-haiku-5-5`) each verified
    finding's statement, stance, excerpts and cited figures, never the engine's rationale or confidence
    (`core/meaning.check_items`). "supported" marks the finding passed, "partly" keeps it marked partly, and
@@ -132,13 +153,18 @@ Two SQLite files under the data directory (`EVIDENCE_DESK_DATA_DIR`; `data/`, gi
    in the finding's excerpts, its cited figures and the period of each filing quoted, with the company's fiscal
    calendar (read with the facts, `NumbersResult.calendar`). The result is recorded on the finding and counted in
    `Run.coverage`. It withholds nothing and changes no verdict or status (`docs/period-check.md`).
-9. **Decide.** `policy.claim_verdict` sets each verdict from verified findings only; a finding that rests on
+10. **Decide.** `policy.claim_verdict` sets each verdict from verified findings only; a finding that rests on
    reported figures alone counts as its stance only when the meaning check passed it, and as context otherwise
    (`Finding.counted_as`, `count_note`). `policy.run_status` sets complete, partial (with each reason and its
    denominator) or failed; a filing mostly outside numbered Items (`Source.item_coverage` below
    `MIN_ITEM_COVERAGE`) or unreadable XBRL facts make a run partial. `policy.provenance_note` writes the run's
    provenance from the sources it read (`Brief.provenance_note`). The 300-second limit is checked before every
-   source and each round of claims; a claim not started in time is reported as not assessed.
+   source and each round of claims; a claim not started in time is reported as not assessed. Then, reported and
+   never withheld, changing no verdict or status: a verified finding gets `predated_by` for each 8-K filed after every
+   filing it cites whose item is of a category of its claim; a claim whose supporting or challenging finding is
+   predated gets a `caution`; a claim of a substantive category gets an `event_note` saying what the 8-Ks since the
+   annual report do and do not report on it ("No 8-K filed since ... reports ...; anything later is not in the
+   record"), never that the claim is false.
 
 Saves: the run is saved at each stage, after each source and after each claim. A save while the status is `running`
 is a progress save, not synced to disk on its own; the final save is synced and carries those before it. A power cut
@@ -211,6 +237,13 @@ finding, 409 while running, 422 withheld finding); `GET .../export.md?reviewed=t
 - **A change to how reported periods are placed** (the length of a quarter, what is a fiscal year, another revenue concept): `core/facts.py` and `core/metrics.py`. Run `make figures` on the eight probe companies before and after and read which lines moved (`docs/evidence/figures-eight-companies.md`); a change that moves a company's figures invalidates the recorded answers of its golden cases.
 - **A change to what counts as a year, or to what evidence carries one**: `core/periods.py`, with `tests/test_periods.py`. What is a year and what is a quantity is decided once, in `core/numcheck.py`, and the period check reads it from there. Measure before and after with the checked evaluation, which also plants wrong years (`eval/README.md`); a rule that starts withholding findings is a change to `core/policy.py` and to every recorded verdict.
 - **A change to which tagged figures a run offers** (the cap, the order, another breakdown): `core/tagged_figures.py` and `MAX_TAGGED_FIGURES_OFFERED` in `core/limits.py`, with `tests/test_tagged_figures.py`. It changes the prompts of every run that asks for them, so `demo/cassettes/nvda-example-tagged` must be recorded again.
+- **A change to the 8-K rules** (an item's category, what counts as substantive, the claim lexicon, how many 8-Ks are
+  read or offered): `core/events.py` and the three `EVENT`/`MAX_EVENTS_READ` limits in `core/limits.py`, with
+  `tests/test_events.py`. A change to the claim lexicon is scored with `make event-categories` on the labels in
+  `eval/claim-categories.json`, before and after; change a label only on purpose and say why. A change to the 8-K
+  splitter (`sources/current_report.py`) is measured with `make events-probe` on the eight probe companies, before
+  and after (`docs/events.md`). An 8-K offered to a claim changes its prompt: if a claim of the example thesis ever
+  gains a category, `demo/cassettes/nvda-example*` must be recorded again (`tests/test_events_run.py` pins that none has).
 - **A change to the breakdowns** (another axis, another revenue concept, a new shape of nested members): `core/breakdowns.py`, whose specifications and constants sit at its top, with `tests/test_breakdowns.py`; a number format the reader does not know: `sources/ixbrl.py` with `tests/test_ixbrl.py`. Start from a failing test built on a small excerpt of the real filing, then run `make breakdowns` on the eight probe companies, annual and quarterly, and check that every breakdown still adds up to its tagged total (`docs/breakdowns.md`).
 
 ## The boundary
@@ -218,7 +251,8 @@ finding, 409 while running, 422 withheld finding); `GET .../export.md?reviewed=t
 The backend computes every result: verified excerpts, verdicts, status, every count in `Run.coverage`, the reviewed
 verdicts and the comparison. The frontend collects input and decisions, polls, and draws the record with the wording
 from `/api/meta`; it computes no verdict and no excerpt context. The same holds for the three records that are not
-part of a run (the comparison of two filings, the changed paragraphs listed under each claim, the tagged breakdowns):
+part of a run (the comparison of two filings, the changed paragraphs listed under each claim, the tagged breakdowns,
+a company's 8-Ks since its annual report, `GET /api/companies/{ticker}/events`):
 each arrives with its counts, its links and what they open, its column headings, its cells and its changes already
 computed and formatted, and the page only places them. Requests are validated at the API: the schema in
 `core/models`, extra URLs (public, distinct) in `api.py`, the ticker against EDGAR. Refusals are 422 `{"error",
@@ -230,7 +264,7 @@ what counts. Filings come only from `www.sec.gov` and `data.sec.gov` (7 requests
 ## Verification and operation
 
 - `make verify`: image build, ruff, `node --check`, the offline tests, `tests/smoke.py` against the live container
-  (no internet), and `make uitest` (headless Chromium renders the two sample runs and the sample filing comparison; `uitests/`
+  (no internet), and `make uitest` (headless Chromium renders the sample runs, the sample filing comparison and the breakdowns; `uitests/`
   checks the DOM against their JSON). Offline tests use `tests/fakes.py`; `make fixtures` re-records EDGAR responses.
 - `make golden-check` compares the offline example run with `tests/golden/golden.json` and names the first stage that
   moved; `make golden-baseline` rewrites it. `make profile` and `make bench` time the offline run (`docs/testing.md`,

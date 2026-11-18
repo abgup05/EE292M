@@ -2,6 +2,19 @@
 
 *Two parts. The first was measured at version 11, on 17 November 2026, in answer to the sixth review ([`reviews/review-6-speed-system.md`](reviews/review-6-speed-system.md)): it found that the numbers below it were six versions old, that the time a live run spends on EDGAR had been inferred and never measured, and that "one change" was two. The second part is the version 4 note, kept as it was measured then.*
 
+## Version 12: what reading the 8-Ks costs a live run
+
+`make time-live RUNS=5`, live, no key, the example thesis, five runs per condition, on 18 November 2026: once at version 0.11.1 (07:49 UTC, [`speed/live-timing-v12-before.txt`](speed/live-timing-v12-before.txt)) and once at 0.12.0 (08:24 UTC, [`speed/live-timing-v12.txt`](speed/live-timing-v12.txt)). The two were run one after the other, not alternated: the old version would have had to run from a second worktree.
+
+| Condition | 0.11.1: median (range), EDGAR requests | 0.12.0: median (range), EDGAR requests |
+| --- | --- | --- |
+| Cold filing cache | 1360 ms (1007 to 1667), 5 | 2108 ms (2019 to 2496), 13 |
+| Warm filing cache | 421 ms (380 to 504), 2 | 384 ms (303 to 463), 2 |
+| Cold, tagged figures | 1236 ms (1004 to 1440), 5 | 2084 ms (2015 to 2489), 13 |
+| Warm, tagged figures | 460 ms (333 to 1289), 2 | 313 ms (305 to 655), 2 |
+
+The request counts are the result: a cold run fetches the eight 8-Ks it reads (NVIDIA had twelve listed that day, eight chosen), and listing them costs nothing because the submissions index fetched for the periodic reports is reused. A warm run reads them from the filing cache. The warm medians moved inside their own spread, and without alternation that difference means nothing. Reading and splitting the 8-Ks is not a stage of its own in the timing; their requests are in "EDGAR requests".
+
 ## Version 11.1: the two measurements the fourth referee faulted, taken again
 
 The fourth referee read two faults out of the committed outputs ([`referee-4-triage.md`](referee-4-triage.md), findings 4 and 5). Both were real, and each changed a number. The sections for version 11 below are kept as they were written. **Where they disagree with this one, this one is right.**

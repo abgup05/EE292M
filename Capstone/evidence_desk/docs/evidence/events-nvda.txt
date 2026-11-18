@@ -1,0 +1,131 @@
+Command: `make events T=NVDA` (live SEC EDGAR, no model), run 2026-11-18 08:24 UTC, version 0.12.0.
+
+8-Ks of NVIDIA CORP (NVDA, CIK 1045810) since its annual report of 2026-02-25
+
+Evidence as of 17 Nov 2026 (8-K), 1 day before today. Newest periodic report: 10-Q filed 26 Aug
+  2026.
+12 8-K(s) filed since the annual report of 25 Feb 2026: 8 read, 0 could not be read, 0 not read
+  because of the cap of 8 per run, 4 routine 8-K(s) filed before the newest periodic report listed
+  from the index only.
+
+Current reports (8-K) the company filed after the annual report this run read, newest first, as
+  EDGAR's index lists them. The opening sentences of each item are quoted from the 8-Ks read;
+  exhibits, such as a press release, are not read.
+
+2026-11-17  8-K  0001045810-26-000088  (routine; read)
+    https://www.sec.gov/Archives/edgar/data/1045810/000104581026000088/nvda-20261117.htm
+    Item 2.02. Results of Operations and Financial Condition [results]
+        "On November 17, 2026, NVIDIA Corporation, or the Company, issued a press release announcing
+          its results for the quarter ended October 25, 2026."
+        "The press release is attached as Exhibit 99.1 and is incorporated herein by reference."
+    Item 9.01. Financial Statements and Exhibits [exhibits]
+
+2026-11-12  8-K  0001045810-26-000082  (substantive; read)
+    https://www.sec.gov/Archives/edgar/data/1045810/000104581026000082/nvda-20261111.htm
+    Event date: 2026-11-11
+    Item 5.02. Departure of Directors or Certain Officers; Election of Directors; Appointment of Certain Officers; Compensatory Arrangements of Certain Officers [leadership]
+        Roles named: President, Chief Executive Officer, Director, Executive Vice President, Chief Financial Officer, Chair
+        "On November 11, 2026, the Board of Directors, or the Board, of NVIDIA Corporation accepted
+          the resignation of Jen-Hsun Huang, as NVIDIA’s President, Chief Executive Officer and
+          member of the Board, effective immediately."
+        "Following Mr. Huang’s resignation, the Board appointed NVIDIA’s Executive Vice President
+          and Chief Financial Officer Colette M. Kress, age 59, to serve as interim Chief Executive
+          Officer, while the Board conducts a search for a new Chief Executive Officer."
+    Item 9.01. Financial Statements and Exhibits [exhibits]
+
+2026-09-03  8-K  0001045810-26-000078  (routine; read)
+    https://www.sec.gov/Archives/edgar/data/1045810/000104581026000078/nvda-20260902.htm
+    Event date: 2026-09-02
+    Item 8.01. Other Events [disclosure]
+        "On September 2, 2026, NVIDIA Corporation (“NVIDIA”) entered into a definitive agreement to
+          acquire Hugging Face, Inc. (“Hugging Face”)."
+        "Hugging Face operates a platform and community for developing, sharing and deploying open-
+          source models, datasets and applications."
+
+2026-08-26  8-K  0001045810-26-000073  (routine; listed from the index only)
+    https://www.sec.gov/Archives/edgar/data/1045810/000104581026000073/nvda-20260826.htm
+    Item 2.02. Results of Operations and Financial Condition [results]
+    Item 9.01. Financial Statements and Exhibits [exhibits]
+
+2026-08-17  8-K  0001045810-26-000069  (substantive; read)
+    https://www.sec.gov/Archives/edgar/data/1045810/000104581026000069/nvda-20260817.htm
+    Item 1.01. Entry into a Material Definitive Agreement [deal]
+        "On August 17, 2026, NVIDIA Corporation (“NVIDIA”) announced a multi-year partnership with
+          SB Energy Corp. (collectively with its affiliates, “SB Energy”) to advance the development
+          of the PORTS Technology Campus, a large-scale AI data center campus in Pike County, Ohio
+          (the “Portsmouth Site”)."
+        "Through the partnership and the credit support described below, NVIDIA has secured land,
+          power, and shell capacity at the Portsmouth Site to host NVIDIA AI compute
+          infrastructure."
+    Item 2.03. Creation of a Direct Financial Obligation or an Obligation under an Off-Balance Sheet Arrangement of a Registrant [financing]
+        "The information set forth in Item 1.01 above is hereby incorporated by reference into this
+          Item 2.03."
+    Item 7.01. Regulation FD Disclosure [disclosure]
+        "On August 17, 2026, NVIDIA issued a press release announcing the partnership with SB
+          Energy."
+        "The press release is attached as Exhibit 99.1 hereto and is incorporated herein by
+          reference."
+
+2026-07-02  8-K  0001045810-26-000060  (substantive; read)
+    https://www.sec.gov/Archives/edgar/data/1045810/000104581026000060/nvda-20260628.htm
+    Event date: 2026-06-28
+    Item 5.02. Departure of Directors or Certain Officers; Election of Directors; Appointment of Certain Officers; Compensatory Arrangements of Certain Officers [leadership]
+        Roles named: Executive Vice President, President, Vice President
+        "On June 28, 2026, Ajay K. Puri, Executive Vice President, Worldwide Field Operations of
+          NVIDIA Corporation, or the Company, notified the Company of his intention to retire from
+          his role effective upon the employment commencement date of his successor."
+        "Mr. Puri, a 21-year executive at NVIDIA, is expected to remain with the Company in a senior
+          advisory role to ensure a seamless transition to his successor."
+
+2026-06-30  8-K  0001045810-26-000056  (routine; listed from the index only)
+    https://www.sec.gov/Archives/edgar/data/1045810/000104581026000056/nvda-20260624.htm
+    Event date: 2026-06-24
+    Item 5.07. Submission of Matters to a Vote of Security Holders [governance]
+
+2026-06-18  8-K  0001193125-26-275783  (routine; listed from the index only)
+    https://www.sec.gov/Archives/edgar/data/1045810/000119312526275783/d48176d8k.htm
+    Event date: 2026-06-15
+    Item 8.01. Other Events [disclosure]
+    Item 9.01. Financial Statements and Exhibits [exhibits]
+
+2026-05-20  8-K  0001045810-26-000051  (routine; listed from the index only)
+    https://www.sec.gov/Archives/edgar/data/1045810/000104581026000051/nvda-20260520.htm
+    Item 2.02. Results of Operations and Financial Condition [results]
+    Item 9.01. Financial Statements and Exhibits [exhibits]
+
+2026-05-08  8-K  0001045810-26-000028  (substantive; read)
+    https://www.sec.gov/Archives/edgar/data/1045810/000104581026000028/nvda-20260507.htm
+    Event date: 2026-05-07
+    Item 5.02. Departure of Directors or Certain Officers; Election of Directors; Appointment of Certain Officers; Compensatory Arrangements of Certain Officers [leadership]
+        Roles named: Director
+        "On May 7, 2026, the Board of Directors, or the Board, of NVIDIA Corporation appointed
+          Suzanne Nora Johnson as a member of the Board and as a member of the Audit Committee of
+          the Board and the number of directors constituting the full Board was increased from ten
+          to eleven, in each case effective July 13, 2026."
+        "Ms. Nora Johnson will join the Board effective July 13, 2026, due to a prior professional
+          commitment."
+
+2026-04-27  8-K  0001045810-26-000026  (substantive; read)
+    https://www.sec.gov/Archives/edgar/data/1045810/000104581026000026/nvda-20260424.htm
+    Event date: 2026-04-24
+    Item 5.02. Departure of Directors or Certain Officers; Election of Directors; Appointment of Certain Officers; Compensatory Arrangements of Certain Officers [leadership]
+        Roles named: Vice President, Chief Accounting Officer, Principal Accounting Officer, Senior Vice President, Controller, Director
+        "On April 24, 2026, Donald Robertson, Vice President, or VP, and Chief Accounting Officer,
+          or CAO, of NVIDIA Corporation, or the Company, notified the Company of his intention to
+          retire from his role as VP and CAO, effective May 4, 2026."
+        "Following such date, he will remain with the Company as VP, Finance to support various
+          projects until July 1, 2026."
+
+2026-03-06  8-K  0001045810-26-000024  (substantive; read)
+    https://www.sec.gov/Archives/edgar/data/1045810/000104581026000024/nvda-20260302.htm
+    Event date: 2026-03-02
+    Item 5.02. Departure of Directors or Certain Officers; Election of Directors; Appointment of Certain Officers; Compensatory Arrangements of Certain Officers [leadership]
+        Roles named: President, Chief Executive Officer, Executive Vice President, Chief Financial Officer, General Counsel, Secretary
+        "On March 2, 2026, the Compensation Committee of the Board of Directors, or the Board, of
+          NVIDIA Corporation, or the Company, adopted the Variable Compensation Plan for Fiscal Year
+          2027, or the 2027 Plan, which provides eligible executive officers the opportunity to earn
+          a variable cash payment based on the level of achievement by the Company of certain
+          corporate performance goals, or the Performance Goals, during fiscal year 2027."
+        "The Company operates on a fiscal year ending on the last Sunday in January and designates
+          its fiscal year by the year in which that fiscal year ends."
+    Item 9.01. Financial Statements and Exhibits [exhibits]

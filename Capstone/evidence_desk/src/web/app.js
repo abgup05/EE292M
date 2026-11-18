@@ -200,6 +200,12 @@ const state = {
   inboxOffsets: [], // the offsets of the pages before this one, to go back by the API's own offsets
   inboxSeq: 0,
   itemComparison: null, // an inbox item's `moved`, shown under the run it made
+  // The workspace (navigation, never a result): what the rail has selected ("" is the whole
+  // thesis, else a claim id), the centre pane's tab, and what the inspector was asked to show.
+  selected: "",
+  tab: "",
+  picked: null, // {kind: "finding" | "test" | "event" | "figure", id}, or null for the tab's own first item
+  ctx: null, // the run on screen, indexed by id (sources, evidence, findings, claims, metrics)
 };
 
 /** Samples that have a recorded RunChanges beside them; any other sample shows no such block and asks for none. */
@@ -320,7 +326,6 @@ const els = {
   provenance: $("provenance"),
   cmdRun: $("cmd-run"),
   cmdStatus: $("cmd-status"),
-  cmdEngine: $("cmd-engine"),
   cmdAsof: $("cmd-asof"),
   themeToggle: $("theme-toggle"),
   keysButton: $("keys-button"),
@@ -361,6 +366,24 @@ const els = {
   totSection: $("tot-section"),
   tot: $("tot"),
   asofBanner: $("asof-banner"),
+  // The workspace: the rail, the centre pane with its tabs, the inspector, and the Run drawer.
+  workspace: $("workspace"),
+  rail: $("rail"),
+  railHead: $("rail-head"),
+  railThesis: $("rail-thesis"),
+  centre: $("centre"),
+  selHead: $("sel-head"),
+  tabs: $("tabs"),
+  centreScroll: $("centre-scroll"),
+  inspector: $("inspector"),
+  inspectBody: $("inspect-body"),
+  inspectClose: $("inspect-close"),
+  runButton: $("run-button"),
+  runDrawer: $("run-drawer"),
+  runDrawerClose: $("run-drawer-close"),
+  runInfo: $("run-info"),
+  guideSlot: $("guide-slot"),
+  leadSlot: $("lead-slot"),
 };
 
 // ---------------------------------------------------------------- helpers
@@ -2026,6 +2049,7 @@ function applyReview(review, force) {
   renderReviewLine(run);
   renderScorecard(run);
   renderReviewSlots(run, force);
+  applySelection();
 }
 
 function renderReviewLine(run) {
@@ -2060,7 +2084,7 @@ function renderReviewLine(run) {
 /** The "After your review" cell of a scorecard row, from the Review's claim entry. */
 function reviewedSlot(entry) {
   const verdict = entry?.reviewed_verdict ?? null;
-  const slot = h("span", { class: "verdict-slot slot-reviewed", "data-reviewed-verdict": verdict ?? "none" }, h("span", { class: "slot-label visually-hidden", text: "After your review" }));
+  const slot = h("span", { class: "verdict-slot slot-reviewed", "data-reviewed-verdict": verdict ?? "none" }, h("span", { class: "slot-label", text: "After your review" }));
   if (!verdict) {
     slot.append(h("span", { class: "pill review-pending", text: "not reviewed yet" }));
     return slot;
@@ -2274,6 +2298,10 @@ function hideRunView() {
   renderCommandBar(null);
   state.timelineRun = null;
   state.totRun = null;
+  state.run = null;
+  state.ctx = null;
+  state.picked = null;
+  if (els.runInfo) els.runInfo.hidden = true;
   document.body.classList.remove("as-of-run");
 }
 
@@ -2400,12 +2428,22 @@ function renderRun(run) {
   els.ledgerView.hidden = true;
   els.runView.hidden = false;
   document.body.classList.add("has-run");
+  // Another run starts on the whole thesis, its first tab, and nothing picked; a redraw of the same run keeps them.
+  if (state.run?.id !== run.id) {
+    state.selected = "";
+    state.tab = "";
+    state.picked = null;
+    readSelectionFromAddress(run);
+  }
   state.run = run;
+  state.ctx = ctx;
+  if (els.runInfo) els.runInfo.hidden = false;
 
   renderAsOfBanner(run);
   renderCommandBar(run);
   renderBanner(run);
   renderStages(run);
+  renderRailHead(run);
   renderHead(run);
   renderTape(run);
   renderTimeline(run);
@@ -2433,6 +2471,7 @@ function renderRun(run) {
   renderErrors(run, finished);
   // The run's own note (it names any page the user added); a record without one uses /api/meta's.
   els.provenance.textContent = str(run.brief?.provenance_note) || str(state.meta?.provenance_note);
+  applySelection();
 }
 
 /** Status, its note from /api/meta, and the coverage counts exactly as the API gives them. */
@@ -2614,12 +2653,17 @@ function renderBanner(run) {
   els.banner.replaceChildren(...parts);
 }
 
+/** A click handler that brings a part of the run into view: its claim and tab first, then its place in the pane. */
 function jumpTo(id) {
   return (event) => {
     event.preventDefault();
     const target = $(id);
     if (!target) return;
-    target.scrollIntoView({ block: "start", behavior: "smooth" });
+    closeRunDrawer(false);
+    reveal(target);
+    // An item that can be read at the side (an 8-K a finding predates) is read there too.
+    const item = workspaceOn() && inspectorOn() ? parsePick(target.dataset.pick) : null;
+    if (item) pick(item);
     target.focus({ preventScroll: true });
   };
 }
@@ -2676,8 +2720,9 @@ function sampleNoteLine() {
 }
 
 /**
- * The command bar's cells for the run on screen: its status, the engine that did the work,
- * and its as-of line, each the record's own words. Hidden for any other view.
+ * The command bar's two chips for the run on screen: its status, which opens the Run drawer
+ * (who did the work: the engine, the checker, the readers, the run's id and times), and its
+ * as-of line, each the record's own words. Hidden for any other view.
  */
 function renderCommandBar(run) {
   if (!els.cmdRun) return;
@@ -2685,37 +2730,56 @@ function renderCommandBar(run) {
     if (els.statusbarRun) els.statusbarRun.textContent = "";
     els.cmdRun.hidden = true;
     els.cmdStatus.replaceChildren();
-    els.cmdEngine.replaceChildren();
     els.cmdAsof.replaceChildren();
+    els.cmdAsof.removeAttribute("title");
     return;
   }
   const status = token(run.status, STATUS_GLYPH);
   els.cmdRun.hidden = false;
   els.cmdStatus.replaceChildren(h("span", { class: `status-word st-${status}` }, statusMark(run.status), ` ${capitalize(run.status)}`));
-  // The engine's own detail names the model and where its answers came from (the API or a recording).
-  const reader = str(run.engine_detail) || str(run.engine) || "not recorded";
-  const checker = runMeaningChecked(run) ? str(run.checker_detail) || str(run.checker) : "";
-  els.cmdEngine.replaceChildren(
-    h("span", { class: "cmd-line", "data-cmd-engine": "", title: reader, tabindex: "0" }, h("span", { class: "cmd-key", text: "read " }), reader),
-    checker ? h("span", { class: "cmd-line", "data-cmd-checker": "", title: checker, tabindex: "0" }, h("span", { class: "cmd-key", text: "checked " }), checker) : "",
-  );
   if (els.statusbarRun) els.statusbarRun.textContent = `${str(run.id)} · ${str(run.status)}`;
-  const line = str(run.as_of?.line);
-  const requested = str(run.as_of?.requested);
-  els.cmdAsof.replaceChildren(
-    requested ? h("strong", { class: "cmd-asof-past", "data-cmd-as-of-requested": requested, text: `Run as of ${dateLabel(requested)} · ` }) : "",
+  // A chip, not a sentence: the date and form of the newest filing read, from the record's as-of
+  // block. The record's whole line is the chip's title and opens the 8-Ks, where it is written out.
+  const asOf = run.as_of ?? {};
+  const line = str(asOf.line);
+  const requested = str(asOf.requested);
+  const newest = str(asOf.newest_filed);
+  els.cmdAsof.onclick = jumpTo("events-section");
+  if (line) els.cmdAsof.title = `${line} Select for the 8-Ks since the annual report.`;
+  else els.cmdAsof.removeAttribute("title");
+  els.cmdAsof.replaceChildren();
+  appendAll(els.cmdAsof, [
+    requested ? h("strong", { class: "cmd-asof-past", "data-cmd-as-of-requested": requested, text: `Run as of ${dateLabel(requested)}` }) : "",
     line
-      ? h("span", { "data-cmd-as-of": "" }, line, " ", h("a", { href: "#events-section", onclick: jumpTo("events-section"), text: "8-Ks" }))
-      : h("span", { class: "muted", text: "Not recorded: this run predates the as-of line." }),
-  );
+      ? h(
+          "span",
+          { class: "cmd-asof-line", "data-cmd-as-of": line },
+          h("span", { class: "cmd-key", text: requested ? "evidence to " : "As of " }),
+          newest ? `${dateLabel(newest)}${str(asOf.newest_form) ? ` (${asOf.newest_form})` : ""}` : line,
+          h("span", { class: "visually-hidden", text: `. ${line}` }),
+        )
+      : h("span", { class: "muted cmd-asof-line", text: "As of: not recorded" }),
+  ]);
   if (els.statusbarRun && requested) els.statusbarRun.textContent = `${str(run.id)} · ${str(run.status)} · as of ${requested}`;
 }
 
-function renderHead(run) {
-  const company = run.company;
+/** The rail's head: the company and the decision the thesis informs, the question the claims below answer. */
+function renderRailHead(run) {
+  if (!els.railHead) return;
   const inputs = run.inputs ?? {};
-  const title = companyTitle(company, str(inputs.ticker));
-  const decision = h("p", { class: "decision" }, h("span", { class: "label", text: "Decision: " }), inputs.decision ?? "");
+  els.railHead.replaceChildren(
+    ...companyTitle(run.company, str(inputs.ticker)),
+    h("p", { class: "decision" }, h("span", { class: "label", text: "Decision: " }), inputs.decision ?? ""),
+  );
+}
+
+/**
+ * How the run was made, in the Run drawer: the engine that read the filings, who checked
+ * meaning, who read the claims into tests and the counting rule, the run's id and times, how old
+ * the evidence is, the saved thesis it belongs to and a sample's provenance.
+ */
+function renderHead(run) {
+  const inputs = run.inputs ?? {};
   const engine = str(run.engine);
   const engineLine = h(
     "p",
@@ -2746,6 +2810,19 @@ function renderHead(run) {
     run.finished_at ? ` · finished ${utc(run.finished_at)}` : "",
     ` · ${plural(inputs.filings, "filing", "filings")} requested`,
   );
+  els.runHead.replaceChildren(
+    h(
+      "div",
+      { class: "run-head-main" },
+      h("div", { class: "run-provenance" }, engineLine, checkerLine, readersLine, details, asOfLine(run)),
+      thesisLine(run),
+      sampleNoteLine(),
+    ),
+  );
+}
+
+/** The Markdown brief of the run, or why there is none yet; shown in the centre pane's head for the whole thesis. */
+function briefActions(run) {
   let download;
   if (state.sample) {
     download = h("span", { class: "muted small", text: "The Markdown brief is not available for the sample record." });
@@ -2754,19 +2831,7 @@ function renderHead(run) {
   } else {
     download = h("a", { class: "download", href: briefHref(run.id, false), download: `evidence-desk-${run.id}.md`, text: "Download Markdown brief" });
   }
-  els.runHead.replaceChildren(
-    h(
-      "div",
-      { class: "run-head-main" },
-      title,
-      decision,
-      // How the run was made, in one small block under the question: the answer follows it.
-      h("div", { class: "run-provenance" }, engineLine, checkerLine, readersLine, details, asOfLine(run)),
-      thesisLine(run),
-      sampleNoteLine(),
-    ),
-    h("div", { class: "run-head-actions" }, download, run.status !== "running" && !state.sample ? h("span", { class: "muted", text: "Print this page for a paper copy of the note." }) : ""),
-  );
+  return h("span", { class: "run-head-actions" }, download, run.status !== "running" && !state.sample ? h("span", { class: "muted", text: "Print this page for a paper copy of the note." }) : "");
 }
 
 /** "How to read this" names the counting rule of the run on show, in the record's words (`claim_reading_rule`). */
@@ -2828,45 +2893,68 @@ function assessedText(claim) {
   return by === EXTRACTIVE ? "Assessed by: extractive (no model)" : `Assessed by: ${by} (a model)`;
 }
 
-/** One row per claim: verdict first, then the claim, then counts the API lists. */
+/** A claim's verdict stamp, or with a review both stamps: the engine's, then the one after the reader's review. */
+function claimStamps(claim, review) {
+  if (!review) return verdictPill(claim.verdict);
+  const entry = list(review.claims).find((item) => item.claim_id === claim.id);
+  return h(
+    "span",
+    { class: "score-verdicts" },
+    h("span", { class: "verdict-slot slot-engine" }, h("span", { class: "slot-label", text: "Engine" }), verdictPill(claim.verdict)),
+    reviewedSlot(entry),
+  );
+}
+
+/** The flags a claim carries beside its verdict: a caution, or a note on the 8-Ks. The record's own fields. */
+function claimFlags(claim) {
+  if (str(claim.caution)) return h("span", { class: "docket-flag score-flag", "data-flag": "caution" }, limitGlyph(), " Caution");
+  if (str(claim.event_note)) return h("span", { class: "docket-flag score-flag", "data-flag": "event-note", title: "Note on the 8-Ks since the annual report", text: "8-K note" });
+  return "";
+}
+
+/**
+ * The rail: the claims, listed once. One row per claim: its id, its verdict (with a review, the
+ * verdict after it too), the claim, the computed part of the verdict, then the counts the API
+ * lists. Selecting a row shows that claim in the centre pane.
+ */
 function renderScorecard(run) {
   const claims = list(run.claims);
   const c = run.coverage ?? {};
   els.scorecard.replaceChildren();
   if (claims.length === 0) {
-    els.scorecard.append(h("li", { class: "muted", text: run.status === "running" ? "Claims appear once the run has planned them." : "This run recorded no claims." }));
+    els.scorecard.append(h("li", { class: "muted score-none", text: run.status === "running" ? "Claims appear once the run has planned them." : "This run recorded no claims." }));
     return;
   }
   const review = currentReview(run);
-  const reviewed = new Map(list(review?.claims).map((entry) => [entry.claim_id, entry]));
-  // One header over the board's columns when there is a review; each row keeps its own labels for screen readers.
-  if (els.boardHead) els.boardHead.hidden = !review;
+  // With a review each row holds two stamps, labelled; the head over them is for the eye only.
+  if (els.boardHead) els.boardHead.hidden = true;
   els.scorecard.classList.toggle("has-review", Boolean(review));
   claims.forEach((claim, index) => {
-    const verdicts = review
-      ? h(
-          "span",
-          { class: "score-verdicts" },
-          h("span", { class: "verdict-slot slot-engine" }, h("span", { class: "slot-label visually-hidden", text: "Engine" }), verdictPill(claim.verdict)),
-          reviewedSlot(reviewed.get(claim.id)),
-        )
-      : verdictPill(claim.verdict);
     const passages = Number.isFinite(c.passages_indexed)
       ? [h("span", { "data-claim-field": "passages_considered", text: num(claim.passages_considered ?? 0) }), " of ", cov(c, "passages_indexed"), " passages considered"]
       : [h("span", { "data-claim-field": "passages_considered", text: num(claim.passages_considered ?? 0) }), " passages considered"];
     const row = h(
       "a",
-      { class: review ? "score-row has-review" : "score-row", href: `#claim-${index}`, onclick: openClaim(index) },
-      verdicts,
-      h(
-        "span",
-        { class: "score-claim" },
-        h("span", { class: "claim-id", text: claim.id }),
-        " ",
-        claim.text,
-        // Who read the findings and what the computed test says, on one line under the claim.
-        h("span", { class: "score-sub" }, assessedText(claim) ? h("span", { class: "assessed", text: assessedText(claim) }) : "", boardComputed(claim)),
-      ),
+      {
+        class: review ? "score-row has-review" : "score-row",
+        href: `#claim-${index}`,
+        "data-select": claim.id,
+        "aria-current": "false",
+        onclick: (event) => {
+          event.preventDefault();
+          select(claim.id);
+        },
+        onkeydown: (event) => {
+          // Enter on the claim already selected goes on to what is shown for it.
+          if (event.key !== "Enter" || state.selected !== claim.id) return;
+          event.preventDefault();
+          focusCentre();
+        },
+      },
+      h("span", { class: "score-top" }, h("span", { class: "claim-id", text: claim.id }), claimStamps(claim, review), claimFlags(claim)),
+      h("span", { class: "score-claim", text: claim.text }),
+      // Who read the findings and what the computed test says, under the claim.
+      h("span", { class: "score-sub" }, assessedText(claim) ? h("span", { class: "assessed", text: assessedText(claim) }) : "", boardComputed(claim)),
       h("span", { class: "score-counts" }, `${plural(list(claim.finding_ids).length, "finding", "findings")} · `, ...passages),
     );
     els.scorecard.append(h("li", { "data-claim-id": claim.id }, row));
@@ -2909,17 +2997,6 @@ function renderDistinction(run) {
   );
 }
 
-function openClaim(index) {
-  return (event) => {
-    event.preventDefault();
-    const section = $(`claim-${index}`);
-    if (!section) return;
-    section.open = true;
-    section.scrollIntoView({ block: "start", behavior: "smooth" });
-    section.querySelector("summary")?.focus({ preventScroll: true });
-  };
-}
-
 function renderSummary(run) {
   const brief = run.brief;
   els.summarySection.hidden = !brief;
@@ -2944,6 +3021,12 @@ function renderSummary(run) {
   }
 }
 
+/**
+ * One docket per claim. Its body has two parts: why the verdict (the rule, who assessed, the
+ * caution, the engine's commentary, the computed test), which the Overview tab shows, and the
+ * findings with their quotes and the changed paragraphs, which the Evidence tab shows in full
+ * and the Overview tab in short. On paper every docket prints whole, under its own heading.
+ */
 function renderClaims(run, ctx) {
   const open = new Set([...els.claimList.querySelectorAll("details[open]")].map((d) => d.id));
   els.claimList.replaceChildren();
@@ -2951,7 +3034,8 @@ function renderClaims(run, ctx) {
   list(run.claims).forEach((claim, position) => {
     const id = `claim-${position}`;
     const model = modelAssessed(claim);
-    const body = h("div", { class: "claim-body" });
+    const body = h("div", { class: "claim-part part-why", "data-part": "overview" });
+    const evidencePart = h("div", { class: "claim-part part-findings", "data-part": "evidence" });
     const note = verdictNote(claim.verdict);
     if (note) body.append(h("p", { class: "verdict-note" }, h("span", { class: "label", text: "Verdict rule: " }), note));
     if (assessedText(claim)) body.append(h("p", { class: "assessed-line", text: assessedText(claim) }));
@@ -2977,24 +3061,26 @@ function renderClaims(run, ctx) {
     // Version 14: the computed part of the verdict, before the findings (the reading of the filings).
     if (claim.computed && typeof claim.computed === "object") body.append(computedTest(claim, run.company?.cik, readers));
     else if (str(claim.compile_note)) body.append(compileNote(claim, readers));
-    if (list(claim.queries).length) {
-      body.append(h("p", { class: "queries" }, h("span", { class: "label", text: "Searched with: " }), claim.queries.join(" · ")));
-    }
     const ids = list(claim.finding_ids);
+    evidencePart.append(h("h4", { class: "block-title part-title", "data-code": "FND", text: "Findings" }));
+    if (list(claim.queries).length) {
+      evidencePart.append(h("p", { class: "queries" }, h("span", { class: "label", text: "Searched with: " }), claim.queries.join(" · ")));
+    }
     if (ids.length === 0) {
-      body.append(h("p", { class: "muted", text: run.status === "running" ? "Findings appear when this claim has been assessed." : "No verified finding is recorded for this claim." }));
+      evidencePart.append(h("p", { class: "muted", text: run.status === "running" ? "Findings appear when this claim has been assessed." : "No verified finding is recorded for this claim." }));
     }
     ids.forEach((findingId) => {
       const finding = ctx.findings.get(findingId);
-      if (!finding) body.append(h("p", { class: "muted", text: `Finding ${findingId} is listed but missing from the record.` }));
-      else if (finding.verified === false) body.append(h("p", { class: "muted", text: `Finding ${findingId} was withheld; it is listed under "Withheld findings" below.` }));
-      else body.append(renderFinding(finding, ctx));
+      if (!finding) evidencePart.append(h("p", { class: "muted", text: `Finding ${findingId} is listed but missing from the record.` }));
+      else if (finding.verified === false) evidencePart.append(h("p", { class: "muted", text: `Finding ${findingId} was withheld; it is listed with the withheld findings, under the whole thesis's evidence.` }));
+      else evidencePart.append(renderFinding(finding, ctx));
     });
     // Filled by drawClaimChanges once the finished run's changed paragraphs have loaded.
-    body.append(h("div", { class: "cc-slot", "data-cc-slot": claim.id }));
+    evidencePart.append(h("div", { class: "cc-slot", "data-cc-slot": claim.id }));
     const details = h(
       "details",
       { class: "claim", id, open: open.has(id), "data-docket": claim.id },
+      // The docket's own heading: on screen the centre pane's head says the same, so this prints only.
       h(
         "summary",
         null,
@@ -3003,7 +3089,7 @@ function renderClaims(run, ctx) {
         h("span", { class: "claim-text", text: claim.text }),
         docketMeta(claim, run),
       ),
-      body,
+      h("div", { class: "claim-body" }, body, evidencePart),
     );
     els.claimList.append(details);
   });
@@ -3133,7 +3219,8 @@ function openClaimChangesFromHash() {
     target.open = true;
     state.claimChangesOpen.add(target.dataset.claimChanges);
   }
-  // After the next frame: the claim and block just opened, and their layout must settle first.
+  // Its claim and its tab first; then, after the next frame, its place in the pane (the layout must settle).
+  reveal(target, { scroll: false });
   requestAnimationFrame(() => target.scrollIntoView({ block: "start" }));
 }
 
@@ -3258,7 +3345,8 @@ function renderFinding(finding, ctx, withheld = false) {
   // The finding in the main column; its quotes in the margin beside it (inline on a narrow note).
   const main = h("div", { class: "finding-main" });
   const margin = h("div", { class: "finding-margin" });
-  const article = h("article", { class: `finding s-${stance}${withheld ? " is-withheld" : ""}`, "data-finding-id": finding.id }, main, margin);
+  const pickable = list(finding.evidence_ids).length > 0 || list(finding.metric_ids).length > 0;
+  const article = h("article", { class: `finding s-${stance}${withheld ? " is-withheld" : ""}`, "data-finding-id": finding.id, "data-pick": pickable ? `finding:${finding.id}` : null }, main, margin);
   main.append(
     h(
       "header",
@@ -3301,6 +3389,7 @@ function renderFinding(finding, ctx, withheld = false) {
     }
     margin.append(renderEvidence(item, ctx.sources.get(item.source_id)));
   }
+  if (pickable) main.append(pickButton(list(finding.evidence_ids).length ? "Read the quote in its context" : "Read the figures it cites"));
   if (!withheld && finding.verified !== false) {
     main.append(h("div", { class: "review-slot", "data-review-finding": finding.id, hidden: true }));
   }
@@ -3415,17 +3504,6 @@ function renderChecks(checks) {
 }
 
 /** The reported figures a finding cites, resolved against `run.metrics`. */
-/** Open a figure's row in the panel and bring it into view, without touching the URL's hash (it holds the run). */
-function openFigure(metricId) {
-  return (event) => {
-    event.preventDefault();
-    const row = document.getElementById(figureDomId(metricId));
-    if (!row) return;
-    row.open = true;
-    row.scrollIntoView({ block: "center", behavior: "smooth" });
-    row.querySelector("summary")?.focus({ preventScroll: true });
-  };
-}
 
 function renderCitedFigures(ids, metrics) {
   const cited = list(ids);
@@ -3446,7 +3524,7 @@ function renderCitedFigures(ids, metrics) {
           { "data-cited-metric": id },
           `${metric.label} · ${metric.period_label} · `,
           h("span", { class: "fig-value", text: metric.display }),
-          row ? [" · ", h("a", { class: "fig-open", href: `#${encodeURIComponent(figureDomId(id))}`, "data-opens-figure": id, onclick: openFigure(id), text: "open it in the figures panel" })] : "",
+          row ? [" · ", h("a", { class: "fig-open", href: `#${encodeURIComponent(figureDomId(id))}`, "data-opens-figure": id, onclick: openFigure(id), text: "see its arithmetic and inputs" })] : "",
         );
       }),
     ),
@@ -3454,7 +3532,7 @@ function renderCitedFigures(ids, metrics) {
 }
 
 /** The verified excerpt in its surrounding text, where it sits, and the filing it came from. */
-function renderEvidence(item, source) {
+function renderEvidence(item, source, inspected = false) {
   const quote = h(
     "blockquote",
     { class: "excerpt" },
@@ -3469,7 +3547,7 @@ function renderEvidence(item, source) {
     h("span", { class: "source-line" }, sourceLine(source, item.source_id)),
     externalLink(item.link || source?.url, evidenceLinkWords(item, source)),
   );
-  return h("figure", { class: "evidence", "data-evidence-id": item.id },h("span", { class: "evidence-id", text: `${item.id} · quote found word for word, highlighted` }), quote, caption);
+  return h("figure", { class: "evidence", [inspected ? "data-inspected-evidence" : "data-evidence-id"]: item.id }, h("span", { class: "evidence-id" }, `${item.id} · quote found word for word`, h("span", { class: "evidence-hl", text: ", highlighted" })), quote, caption);
 }
 
 /** The words on an evidence link: what the record's `link_kind` says the link opens. */
@@ -3638,6 +3716,8 @@ function renderEvents(run) {
   const words = state.meta?.events ?? {};
   els.eventsTitle.textContent = str(words.heading) || "Since the annual report";
   const parts = [];
+  // How old the evidence is, in the record's own line: the bar's chip is this line cut to a date.
+  if (str(asOf.line)) parts.push(h("p", { class: "event-asof", "data-events-as-of": "", text: asOf.line }));
   if (str(words.note)) parts.push(h("p", { class: "hint", text: words.note }));
   const counts = str(asOf.counts?.line);
   if (counts) {
@@ -3649,10 +3729,11 @@ function renderEvents(run) {
   }
   const events = list(run.timeline);
   if (events.length) parts.push(h("ol", { class: "events" }, ...events.map((event) => renderEvent(event, words))));
+  else if (!counts) parts.push(h("p", { class: "muted", text: "The record lists no 8-K since the annual report." }));
   els.events.replaceChildren(...parts);
 }
 
-function renderEvent(event, words) {
+function renderEvent(event, words, inspected = false) {
   const substantive = event.substantive === true;
   const kind = substantive ? "substantive" : "routine";
   const kindLabel = str(words.kind_labels?.[kind]) || kind;
@@ -3673,7 +3754,9 @@ function renderEvent(event, words) {
       h("span", { class: "event-status", "data-event-status": status, text: statusLabel }),
     ),
   );
-  const entry = h("li", { class: `event ev-${kind}`, id: anchor || null, tabindex: anchor ? "-1" : null, "data-event-id": str(event.id) }, head);
+  const entry = inspected
+    ? h("div", { class: `event ev-${kind}`, "data-inspected-event": str(event.id) }, head)
+    : h("li", { class: `event ev-${kind}`, id: anchor || null, tabindex: anchor ? "-1" : null, "data-event-id": str(event.id), "data-pick": `event:${str(event.id)}` }, head);
   if (str(event.reason)) entry.append(limitLine("p", h("span", { "data-event-reason": "", text: event.reason })));
   const items = h("ul", { class: "event-items" });
   for (const item of list(event.items)) {
@@ -3698,6 +3781,7 @@ function renderEvent(event, words) {
     items.append(row);
   }
   entry.append(items);
+  if (!inspected) entry.append(pickButton("Read its items"));
   return entry;
 }
 
@@ -3727,7 +3811,7 @@ function renderTape(run) {
   const cells = chosen.map((metric) =>
     h(
       "a",
-      { class: "tape-cell", href: `#figures-section`, "data-tape-metric": metric.id, onclick: openFigure(metric.id) },
+      { class: "tape-cell", href: `#figures-section`, "data-tape-metric": metric.id, "data-pick": `figure:${metric.id}`, onclick: openFigure(metric.id) },
       h("span", { class: "tape-label", text: metric.label }),
       h("span", { class: `tape-value ${valueClass(metric)} dec` }, ...decimalParts(metric.display)),
       sparkline(metric, series),
@@ -3737,13 +3821,22 @@ function renderTape(run) {
   els.tape.replaceChildren(h("p", { class: "tape-head" }, h("span", { class: "tape-code", "aria-hidden": "true", text: "FIG" }), period), h("div", { class: "tape-row" }, cells));
 }
 
-/** Open one figure among the reported figures and bring it into view. */
+/**
+ * Read one reported figure: in the inspector where there is one (its formula and the values
+ * behind it), else by opening its row among the reported figures and bringing it into view.
+ */
 function openFigure(metricId) {
   return (event) => {
+    if (inspectorOn() && state.ctx?.metrics.has(metricId)) {
+      event.preventDefault();
+      pick({ kind: "figure", id: metricId });
+      return;
+    }
     const row = document.querySelector(`#figures details.fig-row[data-metric-id="${CSS.escape(metricId)}"]`);
     if (!row) return;
     event.preventDefault();
     row.open = true;
+    reveal(row, { scroll: false });
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     row.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" });
     row.querySelector("summary")?.focus({ preventScroll: true });
@@ -4146,7 +4239,8 @@ function valueClass(metric) {
   return Number.isFinite(metric.value) && metric.value < 0 ? "fig-value is-neg" : "fig-value";
 }
 
-function figureRow(metric, series = []) {
+/** What is behind a figure: its formula, its note and every reported value it used. */
+function figureBody(metric) {
   const body = h("div", { class: "fig-body" });
   body.append(
     h("p", null, h("span", { class: "label", text: "Formula: " }), str(metric.formula) ? h("code", { text: metric.formula }) : "none; the value was read directly from one reported fact."),
@@ -4173,15 +4267,30 @@ function figureRow(metric, series = []) {
   } else {
     body.append(h("p", { class: "muted", text: "No reported value was used." }));
   }
+  return body;
+}
+
+/**
+ * One figure: its label, the line of its series and its value. Selecting the row reads the
+ * figure in the inspector; where there is no inspector (a phone, paper) the row opens in place.
+ */
+function figureRow(metric, series = []) {
+  const body = figureBody(metric);
   return h(
     "li",
     null,
     h(
       "details",
-      { class: "fig-row", id: figureDomId(metric.id), "data-metric-id": metric.id },
+      { class: "fig-row", id: figureDomId(metric.id), "data-metric-id": metric.id, "data-pick": `figure:${metric.id}` },
       h(
         "summary",
-        null,
+        {
+          onclick: (event) => {
+            if (!inspectorOn() || !state.ctx?.metrics.has(metric.id)) return;
+            event.preventDefault();
+            pick({ kind: "figure", id: metric.id });
+          },
+        },
         h("span", { class: "fig-label" }, metric.label, metric.period === "instant" ? h("span", { class: "muted small", text: ` · ${metric.period_label}` }) : ""),
         sparkline(metric, series),
         h("span", { class: `${valueClass(metric)} dec` }, ...decimalParts(metric.display)),
@@ -4197,16 +4306,17 @@ function inputRow(ref) {
   if (ref.restated) flags.push("restated");
   const period = ref.start ? `${ref.start} to ${ref.end}` : `as of ${ref.end}`;
   const value = Number.isFinite(ref.value) ? `${ref.value.toLocaleString("en-US", { maximumFractionDigits: 20 })} ${str(ref.unit)}` : "—";
+  // `data-th` names each cell where the table is stacked instead of ruled (the inspector).
   return h(
     "tr",
     null,
-    h("td", null, h("code", { text: ref.concept })),
-    h("td", { text: period }),
-    h("td", { class: "num", text: value }),
-    h("td", { text: ref.form ?? "—" }),
-    h("td", { text: ref.filed ?? "—" }),
-    h("td", null, h("code", { text: ref.accession ?? "—" })),
-    h("td", null, flags.length ? flags.join(", ") : "—", str(ref.note) ? h("span", { class: "muted", text: ` — ${ref.note}` }) : ""),
+    h("td", { "data-th": "Concept" }, h("code", { text: ref.concept })),
+    h("td", { "data-th": "Period", text: period }),
+    h("td", { class: "num", "data-th": "Value as given", text: value }),
+    h("td", { "data-th": "Form", text: ref.form ?? "—" }),
+    h("td", { "data-th": "Filed", text: ref.filed ?? "—" }),
+    h("td", { "data-th": "Accession" }, h("code", { text: ref.accession ?? "—" })),
+    h("td", { "data-th": "Flags" }, flags.length ? flags.join(", ") : "—", str(ref.note) ? h("span", { class: "muted", text: ` — ${ref.note}` }) : ""),
   );
 }
 
@@ -4779,12 +4889,11 @@ function partsBlock(claim, test) {
  */
 function computedTest(claim, cik, details = {}) {
   const test = claim.computed;
-  const operands = list(test.operands);
   const outcome = token(test.outcome, TEST_MARK);
   const combined = isCombined(test);
   return h(
     "section",
-    { class: `ct o-${outcome}${combined ? " is-combined" : ""}`, id: `claim-${claim.id}-test`, "data-computed-test": claim.id, "aria-label": `Computed test of claim ${claim.id}` },
+    { class: `ct o-${outcome}${combined ? " is-combined" : ""}`, id: `claim-${claim.id}-test`, "data-computed-test": claim.id, "data-pick": `test:${claim.id}`, "aria-label": `Computed test of claim ${claim.id}` },
     h(
       "div",
       { class: "ct-head" },
@@ -4797,18 +4906,26 @@ function computedTest(claim, cik, details = {}) {
     h("p", { class: "ct-bound" }, h("span", { class: "label", text: "Computed for: " }), str(test.bound) ? h("code", { "data-bound": "", text: test.bound }) : h("span", { class: "muted", text: "no period could be placed" })),
     str(test.as_of) ? h("p", { class: "ct-asof", "data-test-as-of": test.as_of }, h("span", { class: "label", text: "Facts read up to: " }), dateLabel(test.as_of)) : "",
     combined ? "" : sidesLine(test),
-    operandTable(operands, cik, `Values read for claim ${claim.id}`),
-    combined
-      ? partsBlock(claim, test)
-      : list(test.arithmetic).length
-        ? h("div", { class: "ct-arith-block" }, h("p", { class: "label", text: "The arithmetic" }), arithmeticList(list(test.arithmetic)))
-        : "",
+    // A test of several parts shows every part here: each part's outcome is the substance of the whole.
+    combined ? partsBlock(claim, test) : "",
     combined && !str(test.margin_display)
       ? h("p", { class: "ct-margin-line" }, h("span", { class: "label", text: "Margin: " }), h("span", { class: "ct-margin muted", "data-margin": "", text: "each part has its own" }))
       : h("p", { class: "ct-margin-line" }, h("span", { class: "label", text: "Margin: " }), h("span", { class: `ct-margin${signClass(str(test.margin_display))}`, "data-margin": "", text: str(test.margin_display) || "none: not computed" })),
     str(test.note) ? h("p", { class: "ct-note", "data-test-note": "" }, h("span", { class: "label", text: "Note: " }), test.note) : "",
-    readingsBlock(claim),
+    h("p", { class: "ct-pick" }, pickButton("Read the operands and the arithmetic")),
+    // Every value read, the arithmetic and each reading: beside the test in the inspector; in place on a phone and on paper.
+    h("div", { class: "ct-detail" }, ...computedDetail(claim, cik)),
   );
+}
+
+/** What is behind a computed test: every value it read with its facts, its arithmetic (a test of several parts shows each part's with the part) and every reading. */
+function computedDetail(claim, cik) {
+  const test = claim.computed;
+  return [
+    operandTable(list(test.operands), cik, `Values read for claim ${claim.id}`),
+    !isCombined(test) && list(test.arithmetic).length ? h("div", { class: "ct-arith-block" }, h("p", { class: "label", text: "The arithmetic" }), arithmeticList(list(test.arithmetic))) : "",
+    readingsBlock(claim),
+  ].filter(Boolean);
 }
 
 /**
@@ -6142,7 +6259,376 @@ async function loadInboxSample(name) {
   renderInbox(page);
 }
 
-// ---------------------------------------------------------------- the first screen, the thesis drawer, the guide
+// ---------------------------------------------------------------- the workspace: the rail's selection, the tabs, the inspector
+//
+// A run fills the window: the claims are listed once, in the rail; what the rail has selected
+// (the whole thesis, or one claim) is shown in the centre pane under tabs; and whatever is
+// picked there (a finding, a computed test, an 8-K, a figure) is read in the inspector. All of
+// it is navigation: which of the record's items are on screen. Nothing here computes a result.
+// The specimen page shows every part at once and has no selection.
+
+/**
+ * The centre pane's tabs, in order; the first is where a run opens. A new tab is one entry here
+ * and one `.tabpanel[data-tab]` in index.html (with `data-scope`: "thesis", "claim" or "both").
+ */
+const TABS = [
+  { id: "overview", label: "Overview" },
+  { id: "evidence", label: "Evidence" },
+  { id: "time", label: "Over time" },
+  { id: "events", label: "Events" },
+  { id: "figures", label: "Figures" },
+  { id: "limits", label: "Limits" },
+];
+
+/** The specimen page lays every part out at once: no selection, no tabs, no inspector. */
+const FLAT = document.body.dataset.page === "specimen";
+
+function workspaceOn() {
+  return Boolean(els.workspace) && !FLAT;
+}
+
+/** Whether a picked item is read in the inspector: not at phone width, where it is read in place. */
+function inspectorOn() {
+  return workspaceOn() && Boolean(els.inspector) && Boolean(window.matchMedia?.("(min-width: 641px)").matches);
+}
+
+/** Whether the inspector is a pane of its own (a wide window) and not a sheet over the page. */
+function inspectorDocked() {
+  return Boolean(window.matchMedia?.("(min-width: 1100px)").matches);
+}
+
+function reducedMotion() {
+  return Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches);
+}
+
+/** The claim the rail has selected, or null for the whole thesis. */
+function selectedClaim() {
+  if (!state.selected) return null;
+  return list(state.run?.claims).find((claim) => claim.id === state.selected) ?? null;
+}
+
+/** `?claim=c2&tab=evidence` opens the page on that claim and tab: for a shared link and the screenshots. Read once. */
+function readSelectionFromAddress(run) {
+  if (state.addressRead || FLAT) return;
+  state.addressRead = true;
+  const params = new URLSearchParams(location.search);
+  const claim = params.get("claim");
+  if (claim && list(run.claims).some((item) => item.id === claim)) state.selected = claim;
+  const tab = params.get("tab");
+  if (tab && TABS.some((item) => item.id === tab)) state.tab = tab;
+}
+
+/** Select the whole thesis ("") or a claim in the rail; the centre pane and the inspector follow. */
+function select(claimId, { focus = false } = {}) {
+  if (!workspaceOn() || !state.run) return;
+  const changed = state.selected !== claimId;
+  state.selected = claimId;
+  if (changed) state.picked = null;
+  applySelection();
+  if (changed && els.centreScroll) els.centreScroll.scrollTop = 0;
+  const row = claimId ? els.scorecard.querySelector(`a.score-row[data-select="${CSS.escape(claimId)}"]`) : els.railThesis;
+  if (!row) return;
+  if (focus) row.focus({ preventScroll: true });
+  row.scrollIntoView({ block: "nearest" });
+  // At phone width the rail is above the centre pane: go on to what was selected.
+  if (!focus && changed && !window.matchMedia?.("(min-width: 641px)").matches) els.centre?.scrollIntoView({ block: "start", behavior: reducedMotion() ? "auto" : "smooth" });
+}
+
+/** Show one tab of the selection. */
+function setTab(tabId, { focus = false } = {}) {
+  if (!workspaceOn() || !TABS.some((tab) => tab.id === tabId)) return;
+  const changed = state.tab !== tabId;
+  state.tab = tabId;
+  // The inspector follows the tab: what was picked on another tab is let go.
+  if (changed) state.picked = null;
+  applySelection();
+  if (changed && els.centreScroll) els.centreScroll.scrollTop = 0;
+  if (focus) $(`tab-${tabId}`)?.focus({ preventScroll: true });
+}
+
+/** Move the focus from the rail to what is shown for the selection: its tab, from where Tab goes into the pane. */
+function focusCentre() {
+  $(`tab-${state.tab}`)?.focus({ preventScroll: true });
+}
+
+/**
+ * Draw the selection: the rail's current row, the centre pane's head, the tab and its panels,
+ * the selected claim's docket (every other docket is off and inert, so neither the keyboard nor
+ * a screen reader reaches it), the lanes of the thesis over time, and the inspector.
+ */
+function applySelection() {
+  if (!workspaceOn() || !state.run) return;
+  const run = state.run;
+  if (state.selected && !list(run.claims).some((claim) => claim.id === state.selected)) state.selected = "";
+  if (!TABS.some((tab) => tab.id === state.tab)) state.tab = TABS[0].id;
+  const claim = selectedClaim();
+  const scope = claim ? "claim" : "thesis";
+
+  els.railThesis?.setAttribute("aria-current", String(!claim));
+  for (const row of els.scorecard.querySelectorAll("a.score-row")) row.setAttribute("aria-current", String(Boolean(claim) && row.dataset.select === claim.id));
+  drawSelectionHead(run, claim);
+
+  for (const tab of els.tabs.querySelectorAll('[role="tab"]')) {
+    const on = tab.dataset.tab === state.tab;
+    tab.setAttribute("aria-selected", String(on));
+    tab.tabIndex = on ? 0 : -1;
+  }
+  els.workspace.dataset.tab = state.tab;
+  els.workspace.dataset.scope = scope;
+  for (const panel of els.centreScroll.querySelectorAll(".tabpanel")) {
+    const on = panel.dataset.tab.split(" ").includes(state.tab) && (panel.dataset.scope === "both" || panel.dataset.scope === scope);
+    panel.classList.toggle("is-off", !on);
+    panel.toggleAttribute("inert", !on);
+    if (on) panel.setAttribute("aria-labelledby", `tab-${state.tab}`);
+    else panel.removeAttribute("aria-labelledby");
+  }
+  for (const docket of els.claimList.querySelectorAll("details.claim")) {
+    const on = Boolean(claim) && docket.dataset.docket === claim.id;
+    docket.classList.toggle("is-off", !on);
+    docket.toggleAttribute("inert", !on);
+    if (on) docket.open = true;
+  }
+  // The thesis over time: every lane for the whole thesis, one claim's own lane for that claim.
+  for (const lane of els.tot?.querySelectorAll("[data-tot-claim]") ?? []) {
+    const off = Boolean(claim) && lane.dataset.totClaim !== claim.id;
+    lane.classList.toggle("is-off", off);
+    lane.toggleAttribute("inert", off);
+  }
+  drawInspector();
+}
+
+/** The centre pane's head: what the rail has selected. A claim's id, stamps, counts and flags are the record's. */
+function drawSelectionHead(run, claim) {
+  if (!els.selHead) return;
+  if (!claim) {
+    els.selHead.replaceChildren(
+      h("div", { class: "sel-line" }, h("span", { class: "sel-id", text: "Thesis" }), briefActions(run)),
+      h("h3", { id: "sel-title", class: "sel-title", text: "The whole thesis" }),
+    );
+    return;
+  }
+  els.selHead.replaceChildren(
+    h("div", { class: "sel-line" }, h("span", { class: "claim-id sel-id", text: claim.id }), claimStamps(claim, currentReview(run)), docketMeta(claim, run)),
+    h("h3", { id: "sel-title", class: "sel-title", text: claim.text }),
+  );
+}
+
+/**
+ * Bring a part of the run into view: select the claim whose docket holds it (or the whole
+ * thesis), switch to a tab that shows it, then scroll its pane to it.
+ */
+function reveal(target, { scroll = true } = {}) {
+  if (workspaceOn() && state.run && els.workspace.contains(target)) {
+    const docket = target.closest("details.claim");
+    const panel = target.closest(".tabpanel");
+    if (docket) state.selected = docket.dataset.docket;
+    else if (panel?.dataset.scope === "thesis") state.selected = "";
+    if (panel) {
+      // Inside a docket the findings show in both tabs, the rest of the body in one.
+      const part = docket ? target.closest("[data-part]")?.dataset.part : "";
+      const tabs = part === "overview" ? ["overview"] : part === "evidence" ? ["evidence", "overview"] : panel.dataset.tab.split(" ");
+      if (part === "evidence" && target.closest(".cc-slot")) state.tab = "evidence";
+      else if (!tabs.includes(state.tab)) state.tab = tabs[0];
+    }
+    applySelection();
+  }
+  if (scroll) target.scrollIntoView({ block: "start", behavior: reducedMotion() ? "auto" : "smooth" });
+}
+
+// ---- the inspector
+
+/** A button that reads its item in the inspector: for the keyboard, and for the eye. Selecting the item itself does the same. */
+function pickButton(label) {
+  return h("button", { type: "button", class: "pick", "data-pick-button": "", text: label });
+}
+
+/** "finding:f3" as {kind, id}; ids may hold colons (a tagged figure's does). */
+function parsePick(value) {
+  const text = str(value);
+  const cut = text.indexOf(":");
+  return cut > 0 ? { kind: text.slice(0, cut), id: text.slice(cut + 1) } : null;
+}
+
+/** Read something in the inspector, or with null put it back to the tab's own first item. */
+function pick(target) {
+  if (!workspaceOn()) return;
+  state.picked = target;
+  drawInspector();
+  // A sheet covers part of the page: the focus goes with it, and Close or Esc brings the page back.
+  if (target && inspectorOn() && !inspectorDocked()) els.inspectBody?.focus({ preventScroll: true });
+}
+
+/** A click on a pickable item of the centre pane, or on its button, reads it in the inspector. */
+function onCentreClick(event) {
+  if (!inspectorOn() || !(event.target instanceof Element)) return;
+  const host = event.target.closest("[data-pick]");
+  if (!host || !els.centreScroll.contains(host)) return;
+  const button = event.target.closest("[data-pick-button]");
+  // A link, a control or a disclosure inside the item keeps its own meaning, and so does selecting its text.
+  if (!button && event.target.closest("a, button, input, textarea, select, label, summary, table")) return;
+  if (!button && String(window.getSelection?.() ?? "")) return;
+  const target = parsePick(host.dataset.pick);
+  if (target) pick(target);
+}
+
+/** The first verified finding of a claim that cites a quote or a figure. */
+function firstFinding(claim) {
+  for (const id of list(claim?.finding_ids)) {
+    const finding = state.ctx?.findings.get(id);
+    if (finding && finding.verified !== false && (list(finding.evidence_ids).length || list(finding.metric_ids).length)) return { kind: "finding", id };
+  }
+  return null;
+}
+
+/** With nothing picked, a docked inspector reads the first item of the tab on show, so the pane is not empty. */
+function firstPick(run, claim) {
+  const test = claim && claim.computed && typeof claim.computed === "object" ? { kind: "test", id: claim.id } : null;
+  if (state.tab === "overview") {
+    if (claim) return test ?? firstFinding(claim);
+    const cell = els.tape?.querySelector("[data-tape-metric]");
+    return cell ? { kind: "figure", id: cell.dataset.tapeMetric } : null;
+  }
+  const newestEvent = () => {
+    const first = list(run.timeline)[0];
+    return first && str(first.id) ? { kind: "event", id: str(first.id) } : null;
+  };
+  if (state.tab === "evidence") {
+    if (claim) return firstFinding(claim);
+    // The whole thesis's evidence is its sources and what was withheld: the first withheld finding that cites anything.
+    const withheld = els.withheld?.querySelector(".finding[data-pick]");
+    return withheld ? parsePick(withheld.dataset.pick) : null;
+  }
+  if (state.tab === "time") return test ?? newestEvent();
+  if (state.tab === "events") return newestEvent();
+  if (state.tab === "figures") {
+    const row = els.figures?.querySelector("details.fig-row[data-metric-id]");
+    return row ? { kind: "figure", id: row.dataset.metricId } : null;
+  }
+  return null;
+}
+
+function inspectHead(kind, about, ...marks) {
+  return h("header", { class: "ins-head" }, h("p", { class: "ins-kicker" }, h("span", { class: "ins-kind", text: kind }), about ? h("span", { class: "ins-about", text: about }) : ""), marks.length ? h("p", { class: "ins-marks" }, ...marks) : "");
+}
+
+/** A finding's quotes, each in the text around it, with where it sits and the link to the filing; then the figures it cites. */
+function inspectFinding(id) {
+  const ctx = state.ctx;
+  const finding = ctx.findings.get(id);
+  if (!finding) return null;
+  const quotes = list(finding.evidence_ids).map((evidenceId) => {
+    const item = ctx.evidence.get(evidenceId);
+    return item ? renderEvidence(item, ctx.sources.get(item.source_id), true) : h("p", { class: "muted", text: `Excerpt ${evidenceId} is listed but missing from the record.` });
+  });
+  const figures = list(finding.metric_ids).map((metricId) => ctx.metrics.get(metricId)).filter(Boolean);
+  return [
+    inspectHead(`Finding ${finding.id}`, `of claim ${str(finding.claim_id)}`, stancePill(finding.stance)),
+    quotes.length ? h("div", { class: "ins-quotes" }, quotes) : h("p", { class: "muted", text: "This finding cites no quote: it rests on reported figures only." }),
+    figures.length
+      ? h(
+          "div",
+          { class: "ins-cited" },
+          h("p", { class: "label", text: "Reported figures it cites" }),
+          h(
+            "ul",
+            { class: "ins-list" },
+            figures.map((metric) =>
+              h("li", null, h("button", { type: "button", class: "linklike", onclick: () => pick({ kind: "figure", id: metric.id }), text: `${metric.label} · ${metric.period_label}` }), " ", h("span", { class: valueClass(metric), text: metric.display })),
+            ),
+          ),
+        )
+      : "",
+  ];
+}
+
+/** A computed test's operands, each with the facts it was read from, its arithmetic and every reading. */
+function inspectTest(id) {
+  const claim = state.ctx.claims.get(id);
+  const test = claim && claim.computed && typeof claim.computed === "object" ? claim.computed : null;
+  if (!test) return null;
+  return [
+    inspectHead("Computed test", `of claim ${claim.id}`, testOutcome(test.outcome, test.outcome_label), " ", countedTag(claim)),
+    h("p", { class: "ct-expr" }, h("code", { text: str(test.canonical) })),
+    h("div", { class: "ct-inspected" }, ...computedDetail(claim, state.run.company?.cik)),
+  ];
+}
+
+/** One 8-K whole: its items, the roles a 5.02 names, its opening sentences and the link to it. */
+function inspectEvent(id) {
+  const event = list(state.run.timeline).find((item) => str(item.id) === id);
+  if (!event) return null;
+  return [inspectHead(str(event.form) || "8-K", `filed ${str(event.filed_label) || str(event.filed_date)}`), renderEvent(event, state.meta?.events ?? {}, true)];
+}
+
+/** One reported figure: its value, the line of its series, its formula and the reported values behind it. */
+function inspectFigure(id) {
+  const metric = state.ctx.metrics.get(id);
+  if (!metric) return null;
+  return [
+    inspectHead("Reported figure", str(metric.period_label)),
+    h("p", { class: "ins-figure" }, h("span", { class: "ins-figure-label", text: str(metric.label) }), h("span", { class: `${valueClass(metric)} ins-figure-value`, text: str(metric.display) })),
+    sparkline(metric, list(state.run.series)),
+    figureBody(metric),
+  ];
+}
+
+const INSPECT = { finding: inspectFinding, test: inspectTest, event: inspectEvent, figure: inspectFigure };
+
+/** Fill the inspector from what was picked, else from the tab's first item, and mark that item in the centre pane. */
+function drawInspector() {
+  if (!els.inspectBody || !state.run || !state.ctx) return;
+  const explicit = state.picked;
+  const target = explicit ?? (inspectorDocked() && inspectorOn() ? firstPick(state.run, selectedClaim()) : null);
+  const content = target && inspectorOn() && Object.hasOwn(INSPECT, target.kind) ? INSPECT[target.kind](target.id) : null;
+  const key = content ? `${target.kind}:${target.id}` : "";
+  for (const node of els.centreScroll.querySelectorAll("[data-pick]")) node.classList.toggle("is-picked", Boolean(key) && node.dataset.pick === key);
+  els.inspector.dataset.inspecting = key;
+  els.inspector.classList.toggle("is-sheet-open", Boolean(explicit) && Boolean(content));
+  // A tab with nothing to read at the side gives the inspector's width to the centre pane: no empty pane.
+  els.workspace.classList.toggle("no-inspector", !content);
+  els.inspectBody.replaceChildren(
+    ...(content ?? [
+      h("p", { class: "ins-none muted", text: "Select a finding to read its quote in the text around it, a computed test for its operands and arithmetic, an 8-K, or a figure for the reported values behind it." }),
+    ]),
+  );
+  els.inspectBody.scrollTop = 0;
+}
+
+function onTabKey(event) {
+  const tabs = [...els.tabs.querySelectorAll('[role="tab"]')];
+  const at = tabs.indexOf(document.activeElement);
+  if (at < 0) return;
+  const to = { ArrowRight: at + 1, ArrowLeft: at - 1, Home: 0, End: tabs.length - 1 }[event.key];
+  if (to === undefined) return;
+  event.preventDefault();
+  setTab(tabs[(to + tabs.length) % tabs.length].dataset.tab, { focus: true });
+}
+
+function initWorkspace() {
+  if (!els.tabs || FLAT) return;
+  els.tabs.replaceChildren(
+    ...TABS.map((tab, index) =>
+      h(
+        "button",
+        { type: "button", role: "tab", id: `tab-${tab.id}`, class: "tab", "data-tab": tab.id, "aria-selected": "false", tabindex: "-1", "aria-keyshortcuts": String(index + 1), onclick: () => setTab(tab.id) },
+        h("kbd", { class: "tab-key", "aria-hidden": "true", text: String(index + 1) }),
+        h("span", { class: "tab-label", text: tab.label }),
+      ),
+    ),
+  );
+  for (const panel of els.centreScroll.querySelectorAll(".tabpanel")) panel.setAttribute("role", "tabpanel");
+  els.tabs.addEventListener("keydown", onTabKey);
+  els.railThesis?.addEventListener("click", (event) => {
+    event.preventDefault();
+    select("");
+  });
+  els.centreScroll.addEventListener("click", onCentreClick);
+  els.inspectClose?.addEventListener("click", () => pick(null));
+  // Crossing a width where the inspector docks, becomes a sheet or goes: draw it for the new width.
+  for (const query of ["(min-width: 641px)", "(min-width: 1100px)"]) window.matchMedia?.(query).addEventListener?.("change", () => drawInspector());
+}
+
+// ---------------------------------------------------------------- the first screen, the two drawers, the guide
 
 /** Whether the first screen is showing: no run or other record, so the form is the page. */
 function onFirstScreen() {
@@ -6155,19 +6641,14 @@ function syncFirstScreen() {
   document.body.classList.toggle("is-first", first);
   if (els.thesisButton) els.thesisButton.hidden = first;
   if (els.howtoButton) els.howtoButton.hidden = first;
-  // On the first screen the guide's opening (what this is, the samples) is the page's lead.
-  if (els.howto) setHowto(first);
-  if (first) closeDrawer(false);
-}
-
-function setHowto(open) {
-  els.howto.hidden = !open;
-  els.howtoButton?.setAttribute("aria-expanded", String(open));
-}
-
-function toggleHowto() {
-  setHowto(els.howto.hidden);
-  if (!els.howto.hidden) els.howto.querySelector("a, button, summary")?.focus({ preventScroll: true });
+  // The guide (what this is, the samples, how a run is read) is the first screen's lead; beside a
+  // result it is in the Run drawer, after who did the work.
+  const home = first ? els.leadSlot : els.guideSlot;
+  if (els.howto && home && els.howto.parentElement !== home) home.append(els.howto);
+  if (first) {
+    closeDrawer(false);
+    closeRunDrawer(false);
+  }
 }
 
 function drawerOpen() {
@@ -6176,6 +6657,7 @@ function drawerOpen() {
 
 function openDrawer() {
   if (onFirstScreen() || !els.formPanel) return;
+  closeRunDrawer(false);
   document.body.classList.add("drawer-open");
   els.thesisButton?.setAttribute("aria-expanded", "true");
   if (els.drawerScrim) els.drawerScrim.hidden = false;
@@ -6195,20 +6677,61 @@ function toggleDrawer() {
   else openDrawer();
 }
 
+function runDrawerOpen() {
+  return document.body.classList.contains("run-drawer-open");
+}
+
+/**
+ * The Run drawer, from the right: who did the work on the run on screen (opened by the status
+ * chip or r), then how to read the page, its marks and its terms (opened there by "How to read this").
+ */
+function openRunDrawer(part = "run", opener = null) {
+  if (onFirstScreen() || !els.runDrawer) return;
+  closeDrawer(false);
+  state.drawerOpener = opener ?? (els.cmdRun?.hidden ? els.howtoButton : els.runButton);
+  document.body.classList.add("run-drawer-open");
+  els.runDrawer.removeAttribute("inert");
+  els.runButton?.setAttribute("aria-expanded", "true");
+  els.howtoButton?.setAttribute("aria-expanded", "true");
+  if (els.drawerScrim) els.drawerScrim.hidden = false;
+  els.runDrawer.scrollTop = 0;
+  if (part === "guide" && els.howto && els.runInfo && !els.runInfo.hidden) els.howto.scrollIntoView({ block: "start" });
+  els.runDrawerClose?.focus({ preventScroll: true });
+}
+
+function closeRunDrawer(returnFocus = true) {
+  if (!runDrawerOpen()) return;
+  document.body.classList.remove("run-drawer-open");
+  els.runDrawer.setAttribute("inert", "");
+  els.runButton?.setAttribute("aria-expanded", "false");
+  els.howtoButton?.setAttribute("aria-expanded", "false");
+  if (els.drawerScrim) els.drawerScrim.hidden = true;
+  if (returnFocus) state.drawerOpener?.focus?.({ preventScroll: true });
+}
+
+function toggleRunDrawer(part, opener) {
+  if (runDrawerOpen()) closeRunDrawer();
+  else openRunDrawer(part, opener);
+}
+
 function initLayout() {
   if (!els.empty) return;
   new MutationObserver(syncFirstScreen).observe(els.empty, { attributes: true, attributeFilter: ["hidden"] });
   syncFirstScreen();
   els.thesisButton?.addEventListener("click", toggleDrawer);
   els.drawerClose?.addEventListener("click", () => closeDrawer());
-  els.drawerScrim?.addEventListener("click", () => closeDrawer());
-  els.howtoButton?.addEventListener("click", toggleHowto);
+  els.drawerScrim?.addEventListener("click", () => {
+    closeDrawer();
+    closeRunDrawer();
+  });
+  els.runButton?.addEventListener("click", () => toggleRunDrawer("run", els.runButton));
+  els.runDrawerClose?.addEventListener("click", () => closeRunDrawer());
+  els.howtoButton?.addEventListener("click", () => toggleRunDrawer("guide", els.howtoButton));
   els.inboxButton?.addEventListener("click", () => openInbox());
   els.keysHowto?.addEventListener("click", () => {
     els.keysDialog?.close?.();
     if (onFirstScreen()) return;
-    setHowto(true);
-    els.howto.scrollIntoView({ block: "start" });
+    openRunDrawer("guide", els.keysButton);
   });
   // A refused field opens the drawer, so the reader sees what to fix.
   if (els.formErrors) new MutationObserver(() => !els.formErrors.hidden && openDrawer()).observe(els.formErrors, { attributes: true, attributeFilter: ["hidden"] });
@@ -6272,22 +6795,15 @@ function typing(target) {
   return Boolean(target.closest("input, textarea, select, [contenteditable=''], [contenteditable='true']"));
 }
 
-/** Move the focus to the next (+1) or previous (-1) claim's docket, from the one in focus or in view. */
+/**
+ * Move the rail's selection to the next (+1) or previous (-1) entry: the whole thesis, then each
+ * claim in the record's order. It stops at the ends, and the focus goes to the row selected.
+ */
 function moveClaim(step) {
-  const dockets = [...document.querySelectorAll("#claim-list details.claim")];
-  if (dockets.length === 0) return;
-  const active = document.activeElement?.closest?.("details.claim");
-  let index = dockets.indexOf(active);
-  if (index < 0) {
-    // From the first docket whose top is below the top of the window.
-    const below = dockets.findIndex((d) => d.getBoundingClientRect().top > 8);
-    index = step > 0 ? (below < 0 ? dockets.length - 1 : below - 1) : below < 0 ? dockets.length : below;
-  }
-  const next = dockets[Math.max(0, Math.min(dockets.length - 1, index + step))];
-  const summary = next.querySelector("summary");
-  summary.focus({ preventScroll: true });
-  const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-  next.scrollIntoView({ block: "start", behavior: reduce ? "auto" : "smooth" });
+  if (!workspaceOn() || !state.run || els.runView.hidden) return;
+  const order = ["", ...list(state.run.claims).map((claim) => claim.id)];
+  const at = Math.max(0, order.indexOf(state.selected));
+  select(order[Math.max(0, Math.min(order.length - 1, at + step))], { focus: true });
 }
 
 function openKeys() {
@@ -6299,12 +6815,23 @@ function openKeys() {
   }
 }
 
-/** The page's keys: / ticker, j and k claims, t theme, ? the list. Ignored while typing or with a modifier. */
+/** The page's keys: / ticker, j and k claims, 1 to 9 tabs, e thesis, r run, i inbox, t theme, ? the list. Ignored while typing or with a modifier. */
 function onKey(event) {
   if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
   if (event.key === "Escape" && drawerOpen()) {
     event.preventDefault();
     closeDrawer();
+    return;
+  }
+  if (event.key === "Escape" && runDrawerOpen()) {
+    event.preventDefault();
+    closeRunDrawer();
+    return;
+  }
+  // The inspector as a sheet over the page: Esc puts it away.
+  if (event.key === "Escape" && state.picked && inspectorOn() && !inspectorDocked() && !els.keysDialog?.open) {
+    event.preventDefault();
+    pick(null);
     return;
   }
   if (typing(event.target)) {
@@ -6339,6 +6866,26 @@ function onKey(event) {
       event.preventDefault();
       toggleDrawer();
       break;
+    case "r":
+      if (onFirstScreen()) break;
+      event.preventDefault();
+      toggleRunDrawer("run");
+      break;
+    case "1":
+    case "2":
+    case "3":
+    case "4":
+    case "5":
+    case "6":
+    case "7":
+    case "8":
+    case "9": {
+      const tab = TABS[Number(event.key) - 1];
+      if (!tab || !workspaceOn() || !state.run || els.runView.hidden) break;
+      event.preventDefault();
+      setTab(tab.id);
+      break;
+    }
     case "?":
       event.preventDefault();
       openKeys();
@@ -6348,16 +6895,23 @@ function onKey(event) {
   }
 }
 
-/** Printing opens every closed disclosure so the note prints whole, and closes them after. */
+/**
+ * Printing lays the note out as a document (the stylesheet shows every tab's panel and every
+ * claim's docket, one after another) and opens every closed disclosure so it prints whole; they
+ * are closed again after.
+ */
 const printOpened = [];
 function beforePrint() {
   for (const node of document.querySelectorAll("#result-panel details:not([open])")) {
     node.open = true;
     printOpened.push(node);
   }
+  // How the run was made lives in the Run drawer on screen; on paper it follows the verdicts.
+  if (els.runInfo && els.rail && !els.runInfo.hidden && !els.runView.hidden) els.rail.after(els.runInfo);
 }
 function afterPrint() {
   while (printOpened.length) printOpened.pop().open = false;
+  if (els.runInfo && els.guideSlot && els.runInfo.parentElement !== els.runDrawer) els.guideSlot.before(els.runInfo);
 }
 
 /** Redraw the time line when the note changes width (a resized window, a rotated phone). */
@@ -6386,6 +6940,7 @@ function watchTimelineWidth() {
 
 function initChrome() {
   initTheme();
+  initWorkspace();
   initLayout();
   document.addEventListener("keydown", onKey);
   els.keysButton?.addEventListener("click", openKeys);

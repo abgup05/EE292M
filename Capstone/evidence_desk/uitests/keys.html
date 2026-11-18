@@ -9,8 +9,9 @@
   The keyboard and theme check. `make uitest` loads this file in headless Chromium, with the
   same-origin rule off for this page only (KEYS_FLAGS in the Makefile), and dumps its DOM.
   It loads the live-run sample in a frame, presses the page's keys and clicks its theme
-  button, and writes what it saw after each step into the list below; uitests/test_keys_dom.py
-  judges it. It decides nothing itself: every step records what the page did.
+  button, and writes what it saw after each step into the list below (the focus, the claim the
+  rail has selected, the tab, the theme, the drawers); uitests/test_keys_dom.py judges it. It
+  decides nothing itself: every step records what the page did.
 -->
 <iframe id="app" title="Evidence Desk" src="http://app:8000/?sample=run-events" width="1200" height="900"></iframe>
 <ol id="steps"></ol>
@@ -25,13 +26,21 @@ function record(step, extra) {
   const win = frame.contentWindow;
   const doc = frame.contentDocument;
   const active = doc.activeElement;
-  const docket = active && active.closest ? active.closest("details.claim") : null;
+  const current = doc.querySelector('#rail [data-select][aria-current="true"]');
+  const shown = [...doc.querySelectorAll("#claim-list details.claim:not(.is-off)")].map((d) => d.dataset.docket);
   let stored = "";
   try { stored = win.localStorage.getItem("evidence-desk-theme") || ""; } catch (e) { stored = "refused"; }
   const li = document.createElement("li");
   li.dataset.step = step;
   li.dataset.active = active ? (active.id || active.tagName.toLowerCase()) : "";
-  li.dataset.docket = docket ? docket.dataset.docket || "" : "";
+  // What the rail has selected ("" is the whole thesis), where the focus is in the rail, and which docket is on show.
+  li.dataset.selected = current ? current.dataset.select : "none";
+  li.dataset.activeSelect = active && active.dataset && active.dataset.select !== undefined ? active.dataset.select : "none";
+  li.dataset.shown = shown.join(" ");
+  li.dataset.tab = doc.getElementById("workspace").dataset.tab || "";
+  li.dataset.runDrawer = doc.body.classList.contains("run-drawer-open") ? "open" : "closed";
+  li.dataset.runExpanded = doc.getElementById("run-button").getAttribute("aria-expanded") || "";
+  li.dataset.runDrawerInert = doc.getElementById("run-drawer").hasAttribute("inert") ? "true" : "false";
   li.dataset.theme = doc.documentElement.getAttribute("data-theme") || "";
   li.dataset.stored = stored;
   li.dataset.dialog = doc.getElementById("keys-dialog").open ? "open" : "closed";
@@ -81,6 +90,18 @@ function run() {
   record("e-open");
   press(doc.activeElement, "Escape");
   record("e-close");
+  press(doc.body, "2");
+  record("digit-2");
+  press(doc.body, "r");
+  record("r-open");
+  press(doc.activeElement, "Escape");
+  record("r-close");
+  press(doc.body, "k");
+  press(doc.activeElement, "k");
+  record("k-top");
+  press(doc.activeElement, "j");
+  press(doc.activeElement, "Enter");
+  record("enter");
   press(doc.body, "i");
   record("i", {
     inbox: doc.getElementById("inbox-view").hidden ? "hidden" : "shown",

@@ -99,6 +99,22 @@
   --radius: 2px;
   --row-pad: 0.45rem;
   --gutter: 1.5rem;
+
+  /* One spacing scale; every gap and padding of the frame is a step of it. */
+  --s-1: 0.25rem;
+  --s-2: 0.5rem;
+  --s-3: 0.75rem;
+  --s-4: 1rem;
+  --s-5: 1.5rem;
+  --s-6: 2rem;
+  /* The frame: the bar's height, a pane's padding, the widths of the rail and the inspector. */
+  --bar-h: 2.75rem;
+  --pane-pad: 1rem;
+  --rail-w: 21.5rem;
+  --insp-w: 26rem;
+  /* The centre pane is the sheet; the rail and the inspector sit on the desk beside it. */
+  --pane-main: var(--surface);
+  --pane-side: var(--bg);
   color-scheme: light;
 }
 
@@ -155,6 +171,10 @@
   --radius: 0;
   --row-pad: 0.3rem;
   --gutter: 1.1rem;
+  --bar-h: 2.5rem;
+  --pane-pad: 0.75rem;
+  --pane-main: var(--bg);
+  --pane-side: var(--surface);
   color-scheme: dark;
 }
 
@@ -169,6 +189,7 @@
     --mark-bg: #4d3f00; --mark-ink: #fff4c7; --change: #5ad7e4; --change-bg: #0b2529;
     --rule: #b5cc6a; --rule-bg: #1d230c; --neg: #ff8a65; --chart-ink: #e8e3d4; --chart-bar: #6f7c8a;
     --gap-hatch: #3b3420; --bar-bg: #000000; --bar-rule: #ffad33;
+    --pane-main: var(--bg); --pane-side: var(--surface);
     color-scheme: dark;
   }
 }
@@ -230,7 +251,7 @@ kbd {
 .num-neg { color: var(--neg); }
 
 /* A label in the house style: small capitals on Paper, spaced capitals on Terminal. */
-.block-title, .panel-title, .rail-title, .slot-label, .cmd-label, .cmd-cell dt, .empty-kicker,
+.block-title, .pane-label, .panel-title, .rail-title, .slot-label, .cmd-label, .empty-kicker,
 .fig-head, .chart-title, .tl-label-head, .keys-title, .spec-label {
   font-family: var(--font-label);
   font-variant-caps: var(--label-caps);
@@ -312,31 +333,37 @@ kbd {
 }
 .page-tag.inline { margin-right: 0.5rem; vertical-align: 0.15em; }
 
-/* ------------------------------------------------------------ masthead: the command bar */
+/* ------------------------------------------------------------ the frame
+ *
+ * A wide window is a workspace, not a document: the page does not scroll, its panes do. From
+ * top to bottom: the command bar (one row), then the view. A run's view is the status line,
+ * then three panes: the rail (the claims, once), the centre pane (the selection under tabs)
+ * and the inspector (whatever is picked). The rules for that are under "the workspace" below
+ * and apply to a screen at least 641px wide. Without them (a phone, paper, the specimen page)
+ * the same markup is one column in reading order.
+ *
+ * One spacing scale (--s-1 to --s-6) and one pane chrome (.pane, .pane-label, .block-title). */
 
-.masthead { background: var(--bg); }
+.masthead { background: var(--bg); position: relative; z-index: 20; }
 
 .cmdbar {
-  position: relative;
-  z-index: 20;
   display: flex;
   flex-wrap: wrap;
   align-items: stretch;
   gap: 0;
-  min-height: 3.1rem;
-  padding: 0 var(--gutter);
+  min-height: var(--bar-h);
+  padding: 0 var(--s-3);
   background: var(--bar-bg);
   border-bottom: 2px solid var(--bar-rule);
-  box-shadow: 0 1px 0 var(--line);
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
-  margin: 0 1.25rem 0 0;
+  gap: var(--s-2);
+  margin: 0 var(--s-3) 0 0;
   font-family: var(--font-label);
-  font-size: 1.2rem;
+  font-size: 1.05rem;
   font-weight: 700;
   font-variant-caps: var(--label-caps);
   text-transform: var(--label-transform);
@@ -346,33 +373,34 @@ kbd {
 .brand-mark {
   display: inline-grid;
   place-items: center;
-  width: 1.6rem;
-  height: 1.6rem;
+  width: 1.45rem;
+  height: 1.45rem;
   font-family: var(--font-serif);
   font-variant-caps: normal;
-  font-size: 1.05rem;
+  font-size: 1rem;
   color: var(--bar-bg);
   background: var(--ink);
   border-radius: var(--radius);
 }
-:root[data-theme="terminal"] .brand { font-size: 0.95rem; color: var(--accent); }
+:root[data-theme="terminal"] .brand { font-size: 0.85rem; color: var(--accent); }
 :root[data-theme="terminal"] .brand-mark { color: #000; background: var(--accent); }
 
 .cmd-ticker {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.45rem 1rem;
+  gap: var(--s-2);
+  padding: 0 var(--s-3);
   border-left: 1px solid var(--line);
   border-right: 1px solid var(--line);
 }
-.cmd-label { margin: 0; font-size: var(--label-size); font-weight: 600; color: var(--ink-2); }
+/* The field is named for a screen reader; the eye has its example, its place in the bar and its key. */
+.cmd-label { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .cmd-ticker input {
-  width: 8.5rem;
-  padding: 0.3rem 0.5rem;
+  width: 6.5rem;
+  padding: 0.2rem 0.45rem;
   font-family: var(--font-code);
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -383,73 +411,59 @@ kbd {
 }
 .cmd-ticker input::placeholder { color: var(--ink-2); opacity: 0.55; font-weight: 500; }
 :root[data-theme="terminal"] .cmd-ticker input { color: var(--accent); background: #000; border-color: var(--line-strong); caret-color: var(--accent); }
-.key-hint { font-size: 0.72rem; color: var(--ink-2); }
+.key-hint { font-size: 0.7rem; color: var(--ink-2); }
 .cmd-error {
   position: absolute;
   top: 100%;
-  left: 0.75rem;
+  left: var(--s-3);
   z-index: 25;
   min-width: 16rem;
-  margin: 0.2rem 0 0;
+  margin: var(--s-1) 0 0;
   padding: 0.35rem 0.55rem;
   background: var(--reject-bg);
   border: 1px solid var(--reject);
 }
 
-/* The run's own cells: a second row of the bar, the full width, under the ticker. */
-.cmd-run {
-  order: 5;
-  display: flex;
-  align-items: stretch;
-  flex: 1 1 100%;
-  margin: 0 calc(-1 * var(--gutter));
-  padding: 0 var(--gutter);
-  min-width: 0;
-  border-top: 1px solid var(--line);
-}
-.cmd-cell:first-child { padding-left: 0; }
-.cmd-cell[data-cmd="status"] { flex: 0 0 auto; }
-.cmd-cell[data-cmd="engine"] { flex: 0 1 auto; }
-.cmd-cell {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 0.3rem 1rem;
-  border-right: 1px solid var(--line);
-  min-width: 0;
-}
-.cmd-cell dt { margin: 0; font-size: var(--step--2); font-weight: 600; color: var(--ink-2); line-height: 1.2; }
-.cmd-cell dd { margin: 0; font-family: var(--font-data); font-size: var(--step--1); font-weight: 600; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cmd-cell .cmd-line { display: block; max-width: 28rem; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
-.cmd-cell .cmd-key { color: var(--ink-2); font-weight: 400; }
-.cmd-asof { flex: 1 1 0; min-width: 12rem; border-right: 0 !important; }
-.cmd-asof dd { white-space: normal; font-weight: 500; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-.cmd-asof dd a { font-weight: 600; }
+/* The run on screen: its status (the chip opens the Run drawer) and its as-of line, on one line. */
+.cmd-run { display: flex; align-items: center; gap: var(--s-2); flex: 0 0 auto; padding: 0 var(--s-3); }
+.run-chip { flex: 0 0 auto; }
+.run-chip .status-word { font-family: var(--font-data); font-weight: 700; }
+.chip-word { color: var(--ink-2); font-weight: 500; }
+body.run-drawer-open .run-chip { background: var(--ink); color: var(--bar-bg); }
+body.run-drawer-open .run-chip .chip-word, body.run-drawer-open .run-chip .g-status, body.run-drawer-open .run-chip .g-limit { color: inherit; }
+.cmd-asof { flex: 0 0 auto; font-family: var(--font-data); font-weight: 600; text-decoration: none; }
+.cmd-key { color: var(--ink-2); font-weight: 500; }
+.cmd-asof-past { margin-right: 0.5em; color: var(--ink); font-weight: 700; }
+.cmd-asof-line { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 
-.cmd-tools {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-left: auto;
-  padding: 0.4rem 0 0.4rem 1rem;
-  flex: 0 0 auto;
-}
-button.tool {
+/* The tools give way before the run does: the watch's detail is cut short first. */
+.cmd-tools { display: flex; align-items: center; gap: var(--s-2); margin-left: auto; padding: var(--s-1) 0 var(--s-1) var(--s-3); flex: 0 1 auto; min-width: 0; }
+.cmd-tools > * { flex: 0 0 auto; }
+.cmd-tools > .watch-health { flex: 0 1 auto; min-width: 3rem; }
+.howto-title { margin-bottom: var(--s-3); }
+body.is-first .howto-title { display: none; }
+.tool {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.28rem 0.6rem;
-  font-family: var(--font-ui);
+  padding: 0.2rem 0.55rem;
+  font-family: var(--font-control);
   font-size: var(--step--1);
   font-weight: 600;
+  line-height: 1.5;
   color: var(--ink);
   background: transparent;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius);
+  white-space: nowrap;
 }
-button.tool:hover { border-color: var(--accent); }
+.tool:hover { border-color: var(--accent); }
+.tool.small { padding: 0.05rem 0.45rem; font-size: var(--step--2); }
+.thesis-button { align-self: center; margin-left: var(--s-3); }
+body.drawer-open .thesis-button { background: var(--ink); color: var(--bar-bg); }
+.leave-sample { text-decoration: none; color: var(--accent); border-color: var(--accent); }
 .theme-toggle { gap: 0 !important; padding: 0 0.45rem 0 0 !important; }
-.theme-option { padding: 0.28rem 0.55rem; color: var(--ink-2); }
+.theme-option { padding: 0.2rem 0.5rem; color: var(--ink-2); }
 :root:not([data-theme="terminal"]) .theme-option[data-theme-option="paper"],
 :root[data-theme="terminal"] .theme-option[data-theme-option="terminal"] {
   color: var(--bar-bg);
@@ -459,20 +473,16 @@ button.tool:hover { border-color: var(--accent); }
 .theme-toggle .key-hint { margin-left: 0.4rem; }
 
 /* The guide ("How to read this"): on the first screen it is the page's lead (what this is, the
-   samples); beside a result it is a panel opened from the bar, with how a run is read. */
-.howto { border-bottom: 1px solid var(--line); background: var(--bg); }
-.howto-inner { max-width: 1240px; margin: 0 auto; padding: 1rem var(--gutter) 1rem; display: grid; gap: 1rem 2.5rem; }
+   samples); beside a result it is in the Run drawer, with how a run is read. */
+.howto-inner { display: grid; gap: var(--s-4) var(--s-6); }
 .lede { margin: 0; }
-.intro { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); grid-template-areas: "line samples" "take samples" "rest samples"; grid-template-rows: auto auto 1fr; gap: 0.6rem 3rem; align-items: start; }
-.intro-line { grid-area: line; }
-.takeaway { grid-area: take; }
-.intro-samples { grid-area: samples; }
+.intro { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-3); align-items: start; }
 .intro-line { margin: 0; font-family: var(--font-prose); font-size: var(--step-3); line-height: 1.15; font-weight: 500; letter-spacing: -0.01em; max-width: 24ch; }
 :root[data-theme="terminal"] .intro-line { font-family: var(--font-mono); font-size: var(--step-2); letter-spacing: 0; max-width: 34ch; color: var(--accent); }
 .takeaway { max-width: 62ch; font-family: var(--font-prose); font-size: var(--step-0); line-height: 1.5; color: var(--ink-2); }
-.intro-samples .rail-title { margin-top: 0.2rem; }
+.intro-samples .rail-title { margin-top: var(--s-1); }
 .sample-nav { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); font-size: var(--step--1); }
-.sample-nav > li { display: grid; grid-template-columns: minmax(0, 1fr); padding: 0.35rem 0; border-bottom: 1px solid var(--line); }
+.sample-nav > li { display: grid; grid-template-columns: minmax(0, 1fr); padding: 0.3rem 0; border-bottom: 1px solid var(--line); }
 .sample-nav > li:has(> a[hidden]) { display: none; }
 .sample-button { font-family: var(--font-control); font-weight: 600; }
 .sample-what { color: var(--ink-2); }
@@ -480,12 +490,12 @@ button.tool:hover { border-color: var(--accent); }
 .howto-run .rail-title { margin-top: 0; }
 .howto-run p { margin: 0 0 0.45rem; }
 body.is-first .howto-run { display: none; }
-body:not(.is-first) .howto .intro { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-body:not(.is-first) .intro-line { font-size: var(--step-1); }
-.engine-line { grid-area: rest; margin: 0.2rem 0 0; max-width: 62ch; font-size: var(--step--2); color: var(--ink-2); }
+/* Beside a result the lead is a short reminder, and the samples (hidden inside one) go last. */
+body:not(.is-first) .intro-line { font-size: var(--step-1); max-width: none; }
+.engine-line { margin: 0; max-width: 62ch; font-size: var(--step--2); color: var(--ink-2); }
 .distinction { margin: 0 0 0.45rem; font-size: var(--step--1); color: var(--ink-2); max-width: 88ch; }
 .distinction strong { color: var(--ink); }
-button.linklike { padding: 0; border: 0; background: none; color: var(--accent); font: inherit; text-decoration: underline; cursor: pointer; }
+button.linklike { padding: 0; border: 0; background: none; color: var(--accent); font: inherit; text-decoration: underline; cursor: pointer; text-align: left; }
 .engine-name { font-weight: 600; }
 /* A long provenance note: its first clause in view, the whole note one click away. */
 .prov-more { display: inline; }
@@ -495,61 +505,46 @@ button.linklike { padding: 0; border: 0; background: none; color: var(--accent);
 .prov-more[open] > .prov-full { display: block; margin-top: 0.15rem; }
 .prov-full { color: var(--ink-2); }
 
-/* ------------------------------------------------------------ layout */
+/* ------------------------------------------------------------ layout: one column in reading order
+ * (a phone, paper, the specimen page). A wide screen lays the same parts out as panes: see
+ * "the workspace". */
 
-.layout {
-  max-width: 1240px;
-  margin: 0 auto;
-  padding: 1.25rem var(--gutter) 3rem;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 1.5rem;
-  align-items: start;
-}
-/* The first screen: the form is the page, centred, with how it works below it. */
-body.is-first .layout { grid-template-columns: minmax(0, 44rem); justify-content: center; }
-body.is-first .form-panel { padding: 1.4rem 1.6rem 1.6rem; background: var(--surface); border: 1px solid var(--line-strong); }
-body.is-first .result-panel { background: transparent; border: 0; padding: 0; }
-
+.layout { padding: var(--s-4) var(--gutter) var(--s-6); display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-5); align-items: start; }
 .panel { min-width: 0; }
-.form-panel { padding-top: 0.25rem; }
 
 /* The note itself: one sheet of paper; on Terminal, one framed screen. */
-.result-panel {
-  outline: none;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  padding: 1.6rem 2rem 2rem;
-  container: note / inline-size;
-}
-:root[data-theme="terminal"] .result-panel { padding: 1rem 1.15rem 1.4rem; border-color: var(--line-strong); }
+.result-panel { outline: none; min-width: 0; container: note / inline-size; }
+.panel-title { margin: 0 0 var(--s-2); font-size: var(--label-size); font-weight: 700; color: var(--ink); }
+.recent-title { margin-top: var(--s-5); padding-top: var(--s-2); border-top: 1px solid var(--line); }
 
-.panel-title { margin: 0 0 0.6rem; font-size: var(--label-size); font-weight: 700; color: var(--ink); }
-.recent-title { margin-top: 1.6rem; padding-top: 0.6rem; border-top: 1px solid var(--line); }
+/* The first screen: the form is the first pane, the guide and how it works the second. */
+body.is-first .form-panel { padding: var(--s-4); background: var(--surface); border: 1px solid var(--line-strong); }
+.lead-slot:empty { display: none; }
+.how-block { max-width: 70ch; }
 
-/* Beside a result the form is a drawer from the left, opened by the bar's Thesis button or e. */
-body:not(.is-first) .form-panel {
+/* Beside a result the form is a drawer from the left, opened by the bar's Thesis button or e;
+   the Run drawer comes from the right, opened by the status chip or r. */
+body:not(.is-first) .form-panel, .run-drawer {
   position: fixed;
   z-index: 40;
   top: 0;
   bottom: 0;
-  left: 0;
-  width: min(27rem, 92vw);
   overflow-y: auto;
-  padding: 1rem 1.2rem 2rem;
+  padding: var(--s-4) var(--s-4) var(--s-6);
   background: var(--surface);
-  border-right: 1px solid var(--line-strong);
-  box-shadow: 8px 0 24px rgb(0 0 0 / 0.18);
-  transform: translateX(-105%);
   visibility: hidden;
   transition: transform 0.18s ease, visibility 0s linear 0.18s;
 }
-body.drawer-open:not(.is-first) .form-panel { transform: none; visibility: visible; transition: transform 0.18s ease; }
+body:not(.is-first) .form-panel { left: 0; width: min(27rem, 92vw); border-right: 1px solid var(--line-strong); box-shadow: 8px 0 24px rgb(0 0 0 / 0.18); transform: translateX(-105%); }
+.run-drawer { right: 0; width: min(36rem, 94vw); border-left: 1px solid var(--line-strong); box-shadow: -8px 0 24px rgb(0 0 0 / 0.18); transform: translateX(105%); container: note / inline-size; }
+body.drawer-open:not(.is-first) .form-panel, body.run-drawer-open .run-drawer { transform: none; visibility: visible; transition: transform 0.18s ease; }
 .drawer-scrim { position: fixed; inset: 0; z-index: 35; background: rgb(0 0 0 / 0.3); }
-.drawer-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.drawer-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); margin-bottom: var(--s-3); }
 .drawer-head .panel-title { margin: 0; }
 body.is-first .drawer-close { display: none; }
-.drawer-head { margin-bottom: 0.6rem; }
+.run-info { margin-bottom: var(--s-5); }
+.run-drawer .howto-inner { gap: var(--s-4); }
+.run-drawer .legend, .run-drawer .glossary { margin-top: var(--s-5); }
 
 /* ------------------------------------------------------------ form (the left rail) */
 
@@ -632,7 +627,7 @@ button.secondary:not(:disabled):hover { background: var(--surface-2); }
 .alert p:last-child { margin-bottom: 0; }
 .alert ul { margin: 0.2rem 0 0; padding-left: 1.2rem; }
 .alert-title { font-weight: 700; }
-.page-alert { max-width: 1500px; margin: 0.75rem auto 0; width: calc(100% - 2 * var(--gutter)); }
+.page-alert { margin: var(--s-3) var(--gutter) 0; }
 
 /* ------------------------------------------------------------ recent runs and saved theses */
 
@@ -664,20 +659,20 @@ button.secondary:not(:disabled):hover { background: var(--surface-2); }
 /* The coverage strip: the status, its note, then the record's counts in dense columns. */
 /* The status line under the head: the status and four counts on one line; the full counts open under it. */
 .banner {
-  margin: 0.7rem 0 0;
+  margin: 0;
   padding: 0;
   border: 0;
   border-bottom: 1px solid var(--line);
   font-size: var(--step--1);
 }
-.banner.st-running { border: 1.5px dashed var(--line-strong); padding: 0.45rem 0.7rem; }
+.banner.st-running { border: 1.5px dashed var(--line-strong); padding: var(--s-2) var(--s-3); }
 .banner p { margin: 0; }
 .banner-fold > summary {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0 0.1rem;
-  padding: 0.4rem 0;
+  padding: 0.3rem 0;
   cursor: pointer;
   list-style: none;
   font-family: var(--font-data);
@@ -689,7 +684,7 @@ button.secondary:not(:disabled):hover { background: var(--surface-2); }
 .banner-open { margin-left: auto; color: var(--accent); }
 .banner-open::after { content: " ▾"; }
 .banner-fold[open] .banner-open::after { content: " ▴"; }
-.banner.st-partial .banner-fold > summary, .banner.st-failed .banner-fold > summary { box-shadow: inset 3px 0 0 var(--limit); padding-left: 0.6rem; }
+.banner.st-partial .banner-fold > summary, .banner.st-failed .banner-fold > summary { box-shadow: inset 3px 0 0 var(--limit); padding-left: var(--s-3); }
 .banner-full { padding: 0.5rem 0.7rem 0.7rem; margin-bottom: 0.6rem; background: var(--surface-2); border-left: 3px solid var(--line-strong); }
 .banner.st-partial .banner-full, .banner.st-failed .banner-full { border-left-color: var(--limit); }
 .banner-head { font-size: var(--step-0); }
@@ -743,11 +738,14 @@ button.secondary:not(:disabled):hover { background: var(--surface-2); }
   flex-wrap: wrap;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 0.5rem 1.5rem;
-  padding-bottom: 0.9rem;
+  gap: var(--s-2) var(--s-5);
+  padding-bottom: var(--s-3);
   border-bottom: 3px double var(--ink);
 }
 :root[data-theme="terminal"] .run-head { border-bottom: 1px solid var(--line-strong); }
+/* In the Run drawer the head is only how the run was made: no rule under it, no rule beside it. */
+#run-head { padding-bottom: 0; border-bottom: 0; }
+#run-head .run-provenance { margin-top: 0; padding-left: 0; border-left: 0; gap: var(--s-1); }
 .run-head p { margin: 0; }
 .run-head-main { flex: 1 1 28rem; min-width: 0; }
 .company { font-family: var(--font-prose); font-size: var(--step-1); }
@@ -767,10 +765,10 @@ button.secondary:not(:disabled):hover { background: var(--surface-2); }
 .engine-detail { color: var(--ink-2); }
 .run-meta { font-size: var(--step--1); color: var(--ink-2); overflow-wrap: anywhere; margin-top: 0.15rem !important; }
 .download { font-weight: 600; white-space: nowrap; }
-.run-head-actions .download { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.3rem 0.65rem; border: 1px solid var(--accent); text-decoration: none; }
+.run-head-actions .download { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.1rem 0.55rem; border: 1px solid var(--accent); text-decoration: none; }
 .run-head-actions .download::before { content: "↓"; font-family: var(--font-sans); }
 .run-head-actions .download:hover { background: var(--surface-2); }
-.run-head-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 0.3rem; font-size: var(--step--1); }
+.run-head-actions { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-3); font-size: var(--step--1); }
 .export-link {
   display: inline-flex; align-items: center; gap: 0.35rem;
   padding: 0.3rem 0.6rem; border: 1px solid var(--accent); text-decoration: none; font-weight: 600;
@@ -783,20 +781,24 @@ button.secondary:not(:disabled):hover { background: var(--surface-2); }
 
 /* ------------------------------------------------------------ blocks */
 
-.block { margin-top: 2rem; }
-.block-title {
+/* One chrome for every titled part: a block inside a pane (.block-title) and a pane itself
+   (.pane-label). Paper: small capitals and a hairline. Terminal: a code cell in amber, then the title. */
+.block { margin-top: var(--s-5); }
+.tabpanel > .block:first-child, .tabpanel > .block-pair:first-child > .block, .tabpanel > .tape-block:first-child { margin-top: 0; }
+.block-title, .pane-label {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  margin: 0 0 0.6rem;
+  gap: var(--s-2);
+  margin: 0 0 var(--s-2);
   font-size: var(--label-size);
   font-weight: 700;
   color: var(--ink);
 }
-.block-title::after { content: ""; flex: 1 1 auto; height: 1px; background: var(--line-strong); }
-:root[data-theme="terminal"] .block-title::after { content: none; }
-.block > .hint { margin-top: -0.2rem; margin-bottom: 0.6rem; }
-.block-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: 0 2rem; }
+.block-title::after, .pane-label::after { content: ""; flex: 1 1 auto; height: 1px; background: var(--line-strong); }
+.block > .hint { margin-top: calc(-1 * var(--s-1)); margin-bottom: var(--s-2); }
+.block-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 0 var(--s-6); }
+.panel-none { display: none; margin: 0; }
+.tabpanel:not(:has(> :not([hidden]):not(.panel-none):not(.block-pair), > .block-pair > :not([hidden]))) > .panel-none { display: block; }
 .plain-list { margin: 0; padding-left: 1.2rem; font-family: var(--font-prose); }
 .plain-list li + li { margin-top: 0.3rem; }
 .mark-list { list-style: none; margin: 0; padding: 0; }
@@ -839,52 +841,64 @@ button.secondary:not(:disabled):hover { background: var(--surface-2); }
 .v-not_addressed, .v-unknown { color: var(--neutral); background: transparent; border-style: solid; }
 .stance.s-context, .stance.s-unknown { color: var(--neutral); background: var(--neutral-bg); }
 
-/* ------------------------------------------------------------ the verdict index */
+/* ------------------------------------------------------------ the rail: the claims, listed once
+ * The company and the decision, an entry for the whole thesis, then one row per claim: its id
+ * and verdict stamp (with a review, the stamp after it too), the claim, the computed part of
+ * the verdict, the counts. The row selected carries an accent rule; verdict colours stay in
+ * the stamps. */
 
-.scorecard { list-style: none; margin: 0; padding: 0; border-top: 1.5px solid var(--ink); }
-:root[data-theme="terminal"] .scorecard { border-top-color: var(--line-strong); }
+.rail-head { padding: var(--s-3) var(--pane-pad); border-bottom: 1px solid var(--line); }
+.rail-head p { margin: 0; }
+.rail-head .company-name { font-size: var(--step-2); }
+.rail-head .decision { margin-top: var(--s-2) !important; font-size: var(--step-0); line-height: 1.4; }
+.rail .review-line { margin: 0; padding: var(--s-2) var(--pane-pad); border-bottom: 1px solid var(--line); }
+.rail > .pane-label { margin: 0; padding: var(--s-2) var(--pane-pad) var(--s-1); }
+
+.scorecard { list-style: none; margin: 0; padding: 0; }
 .scorecard > li { border-bottom: 1px solid var(--line); }
+.score-none { padding: var(--s-2) var(--pane-pad); }
 
-.score-row {
+.rail-all, .score-row {
+  position: relative;
   display: grid;
-  grid-template-columns: 11.5rem minmax(0, 1fr) 15rem;
-  gap: 0 1rem;
-  align-items: baseline;
-  padding: var(--row-pad) 0.4rem;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-1);
+  padding: var(--s-2) var(--pane-pad);
   color: var(--ink);
   text-decoration: none;
 }
-.score-row:hover, .score-row:focus-visible { background: var(--surface-2); }
-.score-row:hover .score-claim { text-decoration: underline; text-decoration-color: var(--line-strong); }
-.score-row .pill { justify-self: start; max-width: 100%; white-space: normal; text-align: left; }
-.score-claim { min-width: 0; font-family: var(--font-prose); font-size: var(--step-0); }
-.score-counts { font-family: var(--font-data); font-size: var(--step--1); color: var(--ink-2); text-align: right; }
+.rail-all { grid-template-columns: auto minmax(0, 1fr); align-items: baseline; gap: var(--s-3); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.rail-all-name { font-family: var(--font-prose); font-weight: 600; }
+.rail-all-what { font-size: var(--step--2); color: var(--ink-2); text-align: right; }
+.rail-all:hover, .score-row:hover { background: var(--surface-2); }
+.rail-all[aria-current="true"], .score-row[aria-current="true"] { background: var(--pane-main); box-shadow: inset 3px 0 0 var(--accent); }
+.rail-all:focus-visible, .score-row:focus-visible { outline-offset: -2px; }
+
+.score-top { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-2); }
+.score-top .pill { font-size: var(--step--2); }
+.score-flag { margin-left: auto; font-size: var(--step--2); }
+.score-claim { min-width: 0; font-family: var(--font-prose); font-size: var(--step-0); line-height: 1.35; }
 .claim-id { font-family: var(--font-code); font-size: var(--step--1); font-weight: 700; color: var(--ink-2); }
-.assessed { display: inline; font-family: var(--font-ui); font-size: var(--step--2); color: var(--ink-2); }
-.score-sub { display: flex; flex-wrap: wrap; align-items: center; gap: 0.15rem 0.9rem; margin-top: 0.15rem; }
+.score-sub { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-3); }
 .score-sub:empty { display: none; }
 .score-sub .score-computed { margin-top: 0; }
+.score-counts { font-family: var(--font-data); font-size: var(--step--2); color: var(--ink-2); }
+/* Who assessed the findings and who read the claim into its test are said in full in the centre
+   pane for the claim selected (and to a screen reader here); the row keeps the outcome and the count of readers. */
+.score-row .assessed, .score-row .score-computed > .label {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
+.score-row .score-computed.is-none { font-size: var(--step--2); }
 
-/* With a review: the engine's stamp and the one after your review are two columns of the board. */
-.score-row.has-review { grid-template-columns: 11.5rem 11.5rem minmax(0, 1fr) 15rem; }
-.score-verdicts { display: contents; }
-.verdict-slot { display: flex; flex-direction: column; align-items: flex-start; gap: 0.15rem; min-width: 0; }
+/* With a review: the engine's stamp and the one after your review, each under its own label. */
+.score-verdicts { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--s-1) var(--s-3); }
+.verdict-slot { display: flex; flex-direction: column; align-items: flex-start; gap: 0.1rem; min-width: 0; }
 .slot-label { display: block; font-size: var(--step--2); font-weight: 700; color: var(--ink-2); }
 .review-tally { font-family: var(--font-data); font-size: var(--step--2); color: var(--ink-2); }
-.board-head {
-  display: grid;
-  grid-template-columns: 11.5rem 11.5rem minmax(0, 1fr) 15rem;
-  gap: 0 1rem;
-  padding: 0 0.4rem 0.25rem;
-  font-family: var(--font-label);
-  font-variant-caps: var(--label-caps);
-  text-transform: var(--label-transform);
-  letter-spacing: var(--label-track);
-  font-size: var(--step--2);
-  font-weight: 700;
-  color: var(--ink-2);
-}
-.board-head > span:last-child { text-align: right; }
+.board-head { display: none; }
 .undecided {
   display: inline-block;
   font-size: var(--step--2);
@@ -892,13 +906,6 @@ button.secondary:not(:disabled):hover { background: var(--surface-2); }
   border: 1.5px dashed var(--line-strong);
   border-radius: 1px;
   padding: 0 0.4rem;
-}
-
-@container note (max-width: 46rem) {
-  .score-row, .score-row.has-review { grid-template-columns: auto minmax(0, 1fr); row-gap: 0.25rem; }
-  .score-claim { grid-column: 1 / -1; }
-  .score-counts { grid-column: 1 / -1; text-align: left; }
-  .board-head { display: none; }
 }
 
 /* ------------------------------------------------------------ review */
@@ -1001,7 +1008,7 @@ button.decide[aria-pressed="true"] { background: var(--accent); color: var(--acc
 /* ------------------------------------------------------------ legend */
 
 .legend {
-  margin-top: 2rem;
+  margin-top: var(--s-6);
   border-top: 1.5px solid var(--ink);
   padding: 0.5rem 0 0;
   font-size: var(--step--1);
@@ -1159,13 +1166,15 @@ svg.chart { display: block; width: 100%; height: auto; font-family: var(--font-d
 .chart .direct-label { font-size: 11.5px; fill: var(--chart-ink); }
 .chart .direct-value { font-weight: 700; }
 
-/* ------------------------------------------------------------ claims as dockets */
+/* ------------------------------------------------------------ claims as dockets
+ * One docket per claim. In the workspace only the selected claim's is shown, without its own
+ * heading (the centre pane's head says it); on paper and on the specimen every docket is shown
+ * under its heading. */
 
 .claim {
-  margin: 0 0 0.9rem;
+  margin: 0 0 var(--s-4);
   border-top: 1.5px solid var(--ink);
   background: var(--surface);
-  scroll-margin-top: 4.5rem;
 }
 :root[data-theme="terminal"] .claim { border: 1px solid var(--line); border-top: 2px solid var(--line-strong); }
 .claim > summary {
@@ -1200,16 +1209,18 @@ svg.chart { display: block; width: 100%; height: auto; font-family: var(--font-d
 .claim[open] > summary { border-bottom: 1px solid var(--line); }
 .claim > summary:focus-visible { outline-offset: -2px; }
 
-.claim-body { padding: 0.8rem 0 1rem 3.5rem; }
-:root[data-theme="terminal"] .claim-body { padding: 0.6rem 0.75rem 0.8rem 3.4rem; }
-.claim-body > p { margin: 0 0 0.5rem; }
+.claim-body { padding: var(--s-3) 0 var(--s-4); }
+:root[data-theme="terminal"] .claim-body { padding: var(--s-3); }
+.claim-part > p { margin: 0 0 var(--s-2); }
+.claim-part + .claim-part { margin-top: var(--s-5); }
+.part-title { margin-bottom: var(--s-2); }
 .verdict-note, .assessed-line { font-size: var(--step--1); color: var(--ink-2); }
 .verdict-note .label { color: var(--ink); }
 .queries { font-size: var(--step--1); color: var(--ink-2); }
 
-.claim-body > .mw { margin: 0 0 0.7rem; }
-.claim-body > .mw p { margin: 0; font-family: var(--font-prose); font-size: var(--prose-size); line-height: var(--prose-leading); max-width: 72ch; }
-.claim-body > .mw p.label { font-family: var(--font-ui); font-size: var(--step--1); }
+.claim-part > .mw { margin: 0 0 var(--s-3); }
+.claim-part > .mw p { margin: 0; font-family: var(--font-prose); font-size: var(--prose-size); line-height: var(--prose-leading); max-width: 72ch; }
+.claim-part > .mw p.label { font-family: var(--font-ui); font-size: var(--step--1); }
 
 .claim-caution {
   margin: 0.2rem 0 0.8rem;
@@ -1225,11 +1236,12 @@ svg.chart { display: block; width: 100%; height: auto; font-family: var(--font-d
 /* ------------------------------------------------------------ findings, with quotes in the margin */
 
 .finding {
-  margin-top: 0.9rem;
-  padding: 0.7rem 0 0.8rem 0.9rem;
+  margin-top: var(--s-3);
+  padding: var(--s-3) 0 var(--s-3) var(--s-3);
   border-left: 3px solid var(--neutral);
   border-top: 1px solid var(--line);
 }
+.part-title + .finding, .part-title + .queries + .finding { margin-top: 0; }
 .finding.s-supports { border-left-color: var(--support); }
 .finding.s-challenges { border-left-color: var(--challenge); }
 .finding-main { min-width: 0; }
@@ -1444,7 +1456,7 @@ del.seg-del { text-decoration-line: line-through; text-decoration-color: var(--i
 /* ------------------------------------------------------------ the rest */
 
 .provenance {
-  margin: 1.6rem 0 0;
+  margin: var(--s-4) 0 0;
   padding-top: 0.6rem;
   border-top: 1px solid var(--line);
   font-size: var(--step--1);
@@ -1453,7 +1465,7 @@ del.seg-del { text-decoration-line: line-through; text-decoration-color: var(--i
 }
 
 /* The first screen: an invitation, set as the note's title page. */
-.empty-state { max-width: 70ch; padding: 0.6rem 0 0.4rem; }
+.empty-state { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-5); }
 .empty-kicker { margin: 0 0 0.6rem; font-size: var(--label-size); font-weight: 700; color: var(--ink-2); }
 .empty-lead { margin: 0 0 1.4rem; font-family: var(--font-prose); font-size: var(--step-4); line-height: 1.12; font-weight: 500; letter-spacing: -0.015em; max-width: 22ch; }
 :root[data-theme="terminal"] .empty-lead { font-size: var(--step-3); letter-spacing: 0; max-width: 30ch; }
@@ -1465,8 +1477,7 @@ del.seg-del { text-decoration-line: line-through; text-decoration-color: var(--i
 .loading { margin: 0; color: var(--ink-2); font-family: var(--font-data); }
 .loading::before { content: "⋯ "; }
 
-.footer { max-width: 1500px; margin: 0 auto; padding: 0 var(--gutter) 2rem; font-size: var(--step--1); color: var(--ink-2); }
-.glossary { border-top: 1px solid var(--line); padding-top: 0.6rem; }
+.glossary { border-top: 1px solid var(--line); padding-top: var(--s-2); font-size: var(--step--1); color: var(--ink-2); }
 .glossary > summary { cursor: pointer; font-weight: 600; }
 .glossary dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 0.25rem 1rem; margin: 0.5rem 0 0; }
 .glossary dt { font-weight: 700; color: var(--ink); font-family: var(--font-code); }
@@ -1833,7 +1844,7 @@ details.ct-readings > summary { cursor: pointer; font-size: var(--step--1); colo
 .asof-kicker { grid-area: kicker; font-family: var(--font-label); font-weight: 700; font-variant-caps: var(--label-caps); text-transform: var(--label-transform); letter-spacing: var(--label-track); }
 .asof-date { grid-area: date; font-family: var(--font-data); font-size: var(--step-3); font-weight: 700; line-height: 1.05; white-space: nowrap; }
 .asof-note { grid-area: note; font-family: var(--font-prose); max-width: 70ch; }
-body.as-of-run .run-head { border-left: 6px double var(--ink); padding-left: 0.8rem; }
+body.as-of-run .rail-head { border-left: 6px double var(--ink); }
 .cmd-asof-past { color: var(--ink); font-weight: 700; }
 .asof-legend { font-weight: 700; }
 .asof-control input[type="date"] { width: auto; max-width: 14rem; font-family: var(--font-data); }
@@ -2012,16 +2023,18 @@ body.as-of-run .run-head { border-left: 6px double var(--ink); padding-left: 0.8
 :root[data-theme="terminal"] .inbox-headline { font-family: var(--font-sans); font-size: var(--step-0); font-weight: 600; }
 :root[data-theme="terminal"] .inbox-item.is-unread { box-shadow: inset 3px 0 0 var(--accent); background: rgb(255 173 51 / 0.03); }
 :root[data-theme="terminal"] .inbox-count { color: #000; }
+:root[data-theme="terminal"] .inbox-count[data-unread="0"] { color: var(--ink-2); }
 :root[data-theme="terminal"] .triage-paragraph, :root[data-theme="terminal"] .moved-claim { font-family: var(--font-sans); }
 
 /* ------------------------------------------------------------ the tape: the newest period's key figures
  * One dense row under the company's name. Every value is the record's display string, set on a
  * decimal grid; the line under it is its series. */
 
-.tape-block { margin: 0.9rem 0 0; }
+.tape-block { margin: var(--s-5) 0 0; }
 .tape-head { margin: 0 0 0.3rem; font-family: var(--font-label); font-variant-caps: var(--label-caps); text-transform: var(--label-transform); letter-spacing: var(--label-track); font-size: var(--step--2); font-weight: 700; color: var(--ink-2); }
 .tape-code { display: none; }
-.tape-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); border-top: 1.5px solid var(--ink); border-bottom: 1px solid var(--line); }
+/* As many cells as the record has figures for, as wide as the pane allows: never built around a count. */
+.tape-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(6.4rem, 1fr)); border-top: 1.5px solid var(--ink); border-bottom: 1px solid var(--line); }
 .tape-cell {
   display: grid;
   grid-template-rows: auto auto auto;
@@ -2033,7 +2046,7 @@ body.as-of-run .run-head { border-left: 6px double var(--ink); padding-left: 0.8
 }
 .tape-cell:last-child { border-right: 0; }
 .tape-cell:hover, .tape-cell:focus-visible { background: var(--surface-2); }
-.tape-label { font-size: var(--step--2); color: var(--ink-2); font-family: var(--font-ui); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tape-label { min-height: 2.5em; font-size: var(--step--2); line-height: 1.25; color: var(--ink-2); font-family: var(--font-ui); }
 .tape-value { font-family: var(--font-data); font-size: var(--step-2); font-weight: 700; text-align: left; line-height: 1.15; }
 .tape-cell .spark { width: 100%; height: 1.1rem; }
 .tape-period { font-size: var(--step--2); color: var(--ink-2); }
@@ -2044,52 +2057,297 @@ body.as-of-run .run-head { border-left: 6px double var(--ink); padding-left: 0.8
 .dec-frac { text-align: left; }
 .tape-value.dec { justify-content: start; grid-template-columns: auto auto; }
 
-/* ------------------------------------------------------------ the bar's own controls */
+/* ------------------------------------------------------------ the selection's head and its tabs */
 
-.thesis-button { align-self: center; margin-left: 0.6rem; }
-body.drawer-open .thesis-button { background: var(--ink); color: var(--bar-bg); }
-.leave-sample { text-decoration: none; color: var(--accent); border-color: var(--accent); }
-.cmd-cell .cmd-line:focus-visible, .cmd-cell .cmd-line:hover { white-space: normal; overflow: visible; max-width: 40rem; }
+.sel-head { padding: var(--s-3) 0 var(--s-2); }
+.sel-line { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-3); min-height: 1.6rem; font-size: var(--step--1); }
+.sel-id { font-family: var(--font-code); font-size: var(--step-0); font-weight: 700; color: var(--ink); }
+.sel-line .run-head-actions { margin-left: auto; }
+.sel-title { margin: var(--s-1) 0 0; max-width: 62ch; font-family: var(--font-prose); font-size: var(--step-2); font-weight: 600; line-height: 1.25; letter-spacing: -0.005em; }
+:root[data-theme="terminal"] .sel-title { font-size: var(--step-1); letter-spacing: 0; }
 
-/* The status footer: the keys, and the run on screen. Terminal only; Paper keeps them in the ? list. */
-.statusbar { display: none; }
-
-/* ------------------------------------------------------------ Terminal: the same note as a market terminal */
-
-:root[data-theme="terminal"] .block-title {
-  padding: 0.18rem 0.5rem;
-  color: #000;
-  background: var(--ink-2);
-  border-left: 0;
-  font-size: 0.72rem;
+.tabs { display: flex; gap: 0; border-bottom: 1.5px solid var(--ink); overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: -1.5px;
+  padding: var(--s-2) var(--s-3);
+  border: 0;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink-2);
+  font-family: var(--font-control);
+  font-size: var(--step--1);
+  font-weight: 600;
+  white-space: nowrap;
 }
-:root[data-theme="terminal"] .block-title[data-code]::before {
+.tab:hover { color: var(--ink); background: var(--surface-2); }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
+.tab:focus-visible { outline-offset: -2px; }
+.tab-key { font-size: 0.68rem; }
+
+/* A part of the selection that is not on show. On paper every part prints, so this is for a screen only. */
+@media screen {
+  .is-off { display: none !important; }
+  /* A lane of the thesis over time is named by its claim's id: the claim's words are in the rail, once. */
+  body.app .ws .tot-claim-text { display: none; }
+}
+
+/* ------------------------------------------------------------ the inspector
+ * Reads whatever is picked in the centre pane: a finding's quotes in the text around them, a
+ * computed test's operands and arithmetic, an 8-K, a figure's inputs. A pane beside the centre
+ * on a wide window, a sheet from the bottom on a narrower one; at phone width and on paper
+ * there is none, and those parts are read in place. */
+
+.pick { display: none; }
+.inspector { display: none; }
+.ins-head { margin: 0 0 var(--s-3); padding-bottom: var(--s-2); border-bottom: 1px solid var(--line); }
+.ins-head p { margin: 0; }
+.ins-kind { font-family: var(--font-label); font-variant-caps: var(--label-caps); text-transform: var(--label-transform); letter-spacing: var(--label-track); font-size: var(--label-size); font-weight: 700; }
+.ins-about { margin-left: 0.5em; font-size: var(--step--1); color: var(--ink-2); }
+.ins-marks { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-2); margin-top: var(--s-1) !important; }
+.ins-none { margin: 0; font-size: var(--step--1); max-width: 44ch; }
+.ins-figure { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s-1) var(--s-3); margin: 0 0 var(--s-2); }
+.ins-figure-label { font-family: var(--font-prose); font-size: var(--step-1); font-weight: 600; }
+.ins-figure-value { font-size: var(--step-2); }
+.ins-cited { margin-top: var(--s-4); font-size: var(--step--1); }
+.ins-cited > .label { margin: 0 0 var(--s-1); }
+.ins-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.ins-list > li { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); padding: var(--s-1) 0; border-bottom: 1px solid var(--line); }
+.inspector .spark { width: 100%; height: 3rem; margin-bottom: var(--s-3); }
+.inspector .evidence:first-child { margin-top: 0; }
+.inspector .excerpt { max-width: none; font-size: 0.95rem; }
+.inspector .fig-body { padding: 0; }
+.inspector .ct-expr { margin: 0 0 var(--s-3); }
+.inspector .ct-inspected > * + * { margin-top: var(--s-3); }
+.inspector .ct-inspected p { margin: 0; }
+.inspector .event, .inspector .event > .event-head { display: block; padding: 0; border: 0; box-shadow: none; }
+.inspector .event-head > .event-date { display: none; }
+/* A table of values in the inspector stacks, one value to a block: the pane is narrow. */
+.inspector .table-wrap { overflow: visible; border: 0; }
+.inspector .fig-body .table-wrap .inputs, .inspector .ct-table { min-width: 0; }
+.inspector :is(.inputs, .ct-table) thead { display: none; }
+.inspector :is(.inputs, .ct-table), .inspector :is(.inputs, .ct-table) :is(tbody, tr, th, td) { display: block; width: auto; }
+.inspector :is(.inputs, .ct-table) tr { padding: var(--s-2) 0; border-top: 1px solid var(--line); }
+.inspector :is(.inputs, .ct-table) :is(th, td) { padding: 0.1rem 0; border: 0; text-align: left; white-space: normal; }
+.inspector .inputs td[data-th]::before { content: attr(data-th) ": "; color: var(--ink-2); }
+
+/* ------------------------------------------------------------ the workspace: a screen at least 641px wide
+ * The page fills the window and does not scroll; each pane scrolls inside itself. */
+
+@media screen and (min-width: 641px) {
+  html { height: 100%; }
+  body.app { --pane-pad: 1rem; display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; }
+  :root[data-theme="terminal"] body.app { --pane-pad: 0.75rem; }
+  body.app > .masthead, body.app > .page-alert, body.app > .statusbar { flex: 0 0 auto; }
+  body.app > .layout { flex: 1 1 auto; min-height: 0; padding: 0; gap: 0; grid-template-rows: minmax(0, 1fr); align-items: stretch; }
+
+  /* Any view that is not a run (a lookup, the inbox, a saved thesis): one pane, as wide as it reads well. */
+  /* Each scrolling pane is the containing block of what is inside it, so nothing positioned (a label kept
+     for a screen reader, a tooltip) escapes the pane and makes the page itself taller than the window. */
+  body.app .result-panel, body.app.is-first .form-panel, body.app .rail, body.app .pane-scroll { position: relative; }
+  body.app .result-panel { min-height: 0; overflow-y: auto; padding: var(--s-5) max(var(--s-5), calc((100% - 78rem) / 2)) var(--s-6); background: var(--pane-main); }
+
+  /* The first screen: the form in the first pane, the guide and how it works in the second. */
+  body.app.is-first > .layout { grid-template-columns: minmax(20rem, 27rem) minmax(0, 1fr); }
+  body.app.is-first .form-panel { min-height: 0; overflow-y: auto; padding: var(--s-4) var(--pane-pad) var(--s-6); border: 0; border-right: 1px solid var(--line-strong); background: var(--pane-side); }
+  body.app.is-first .result-panel { padding: var(--s-5) var(--s-6) var(--s-6); }
+  /* One grid for the lead and how it works: what this is and the four steps on the left, the recorded samples on the right. */
+  body.app.is-first .empty-state { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); grid-template-areas: "line samples" "take samples" "rest samples" "how samples"; grid-template-rows: auto auto auto 1fr; gap: var(--s-3) var(--s-6); align-items: start; max-width: 78rem; }
+  body.app.is-first :is(.lead-slot, .howto, .howto-inner, .intro) { display: contents; }
+  body.app.is-first .intro-line { grid-area: line; }
+  body.app.is-first .takeaway { grid-area: take; }
+  body.app.is-first .engine-line { grid-area: rest; }
+  body.app.is-first .intro-samples { grid-area: samples; }
+  body.app.is-first .how-block { grid-area: how; margin-top: var(--s-4); }
+  body.app.is-first .intro-samples .rail-title, body.app.is-first .how-block .rail-title { margin-top: 0; }
+
+  /* A run: the status line across the top, then the rail, the centre pane and the inspector. */
+  body.app .result-panel:has(> #run-view:not([hidden])) { display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+  body.app #run-view:not([hidden]) { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  body.app .ws {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: var(--rail-w) minmax(0, 1fr) var(--insp-w);
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas: "strip strip strip" "rail centre inspector";
+  }
+  body.app .pane { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+
+  body.app .run-strip { grid-area: strip; position: relative; padding: 0 var(--s-3); background: var(--pane-side); border-bottom: 1px solid var(--line-strong); }
+  body.app .run-strip .banner { border-bottom: 0; }
+  body.app .run-strip .banner.st-running { margin: var(--s-2) 0; }
+  body.app .run-strip .stages { margin: 0 0 var(--s-2); }
+  /* The full counts open under the line, over the panes, and close again: the line stays one line. */
+  body.app .run-strip .banner-full {
+    position: absolute;
+    z-index: 15;
+    top: 100%;
+    left: var(--s-3);
+    width: min(62rem, calc(100vw - 2 * var(--s-3)));
+    max-height: 70vh;
+    overflow-y: auto;
+    margin: 0;
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-left-width: 3px;
+    box-shadow: 0 10px 28px rgb(0 0 0 / 0.22);
+  }
+
+  /* A run as of a past date: one line across the top, still unmistakable. */
+  body.app .asof-banner { flex: 0 0 auto; display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-4); margin: 0; padding: 0.3rem var(--s-3); border-width: 0 0 3px; }
+  body.app .asof-banner .asof-date { font-size: var(--step-1); }
+  body.app .asof-banner .asof-note { max-width: none; flex: 1 1 20rem; font-size: var(--step--1); }
+
+  body.app .rail { grid-area: rail; overflow-y: auto; background: var(--pane-side); border-right: 1px solid var(--line-strong); }
+  body.app .centre { grid-area: centre; overflow: hidden; background: var(--pane-main); }
+  body.app .centre > .sel-head { flex: 0 0 auto; padding: var(--s-3) var(--pane-pad) var(--s-2); }
+  body.app .centre > .tabs { flex: 0 0 auto; padding: 0 var(--pane-pad); }
+  body.app .pane-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: var(--s-4) var(--pane-pad) var(--s-6); outline: none; container: note / inline-size; }
+  body.app .inspector { grid-area: inspector; overflow: hidden; background: var(--pane-side); border-left: 1px solid var(--line-strong); }
+  body.app .pane-head { flex: 0 0 auto; display: flex; align-items: center; gap: var(--s-2); padding: var(--s-2) var(--pane-pad) 0; }
+  body.app .pane-head .pane-label { flex: 1 1 auto; margin: 0; }
+  body.app .inspect-close { display: none; }
+  body.app .inspect-body { padding-top: var(--s-3); }
+  /* Nothing to read at the side on this tab: the centre pane takes the width. */
+  body.app .ws.no-inspector { grid-template-columns: var(--rail-w) minmax(0, 1fr); grid-template-areas: "strip strip" "rail centre"; }
+  body.app .ws.no-inspector .inspector { display: none; }
+
+  /* The selected claim's docket, without its own heading: the centre pane's head says it. */
+  body.app .claim { margin: 0; border: 0; background: transparent; }
+  body.app .claim > summary { display: none; }
+  body.app .claim-body { padding: 0; }
+  /* Evidence shows the findings in full; Overview shows why the verdict, then the findings in short. */
+  body.app .ws[data-tab="evidence"] .part-why { display: none; }
+  body.app .ws[data-tab="evidence"] .part-findings { margin-top: 0; }
+  body.app .ws[data-tab="overview"] .part-findings :is(.queries, .finding-meta, .checks, .cited, .review-slot, .finding-margin, .cc-slot) { display: none; }
+
+  /* What can be picked says so, and the item being read in the inspector is marked on the side the inspector is. */
+  body.app .pick { display: inline-block; justify-self: start; margin: var(--s-2) 0 0; padding: 0; border: 0; background: none; color: var(--accent); font-family: var(--font-control); font-size: var(--step--1); font-weight: 600; text-align: left; text-decoration: underline; text-underline-offset: 0.18em; cursor: pointer; }
+  body.app .ct-pick { margin-top: 0 !important; }
+  body.app .ws .centre :is(.finding, .event, .ct)[data-pick]:hover { background: var(--surface-2); }
+  body.app .ws .centre .is-picked { box-shadow: inset -3px 0 0 var(--accent); }
+  body.app .ws .centre :is(.finding, .event).is-picked { background: var(--surface-2); }
+  body.app .ws .centre .event.ev-substantive.is-picked { box-shadow: inset 3px 0 0 var(--ink), inset -3px 0 0 var(--accent); }
+  body.app .ws .centre .tape-cell.is-picked { box-shadow: inset 0 -3px 0 var(--accent); }
+  body.app .ws .centre .fig-row.is-picked > summary { background: var(--surface-2); }
+  body.app .ws .centre .finding { padding-right: var(--s-3); }
+  /* Read in the inspector, so not twice in the centre pane: a test's operands, a quote's context, an 8-K's opening sentences. */
+  body.app .ct-detail { display: none; }
+  body.app .ws .centre .excerpt .context, body.app .ws .centre .evidence-hl { display: none; }
+  body.app .ws .centre .excerpt { margin: var(--s-1) 0; padding-left: var(--s-3); border-left: 2px solid var(--line-strong); font-size: 0.95rem; line-height: 1.55; }
+  body.app .ws .centre .excerpt mark { padding: 0; background: none; color: inherit; }
+  body.app .ws .centre .event :is(.event-opening, .event-link, .event-roles) { display: none; }
+  body.app .ws .centre .fig-row > .fig-body { display: none; }
+  body.app .ws .centre .fig-label::before { content: none; }
+
+
+  :root[data-theme="terminal"] body.app > .statusbar { position: static; }
+}
+
+/* A window too narrow for three panes: the rail is a strip across the top, the inspector a sheet from the bottom. */
+@media screen and (min-width: 641px) and (max-width: 1099px) {
+  body.app .ws { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr); grid-template-areas: "strip" "rail" "centre"; }
+  body.app .rail { display: grid; grid-template-columns: auto minmax(0, 1fr); overflow: hidden; border-right: 0; border-bottom: 1px solid var(--line-strong); }
+  body.app .rail-head, body.app .rail .review-line { grid-column: 1 / -1; }
+  body.app .rail-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-3); padding: var(--s-2) var(--pane-pad); }
+  body.app .rail-head .company-name { font-size: var(--step-1); }
+  body.app .rail-head .decision { margin-top: 0 !important; flex: 1 1 100%; }
+  body.app .rail > .pane-label { display: none; }
+  body.app .rail-all { grid-template-columns: minmax(0, 1fr); align-content: start; width: 9.5rem; border-top: 0; border-bottom: 0; border-right: 1px solid var(--line); }
+  body.app .rail-all-what { text-align: left; }
+  body.app .scorecard { display: flex; overflow-x: auto; }
+  body.app .scorecard > li { flex: 0 0 17rem; border-bottom: 0; border-right: 1px solid var(--line); }
+  body.app .score-row { height: 100%; align-content: start; }
+  body.app .score-claim { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  body.app .score-counts { display: none; }
+  body.app .inspector { position: fixed; z-index: 30; left: 0; right: 0; bottom: 0; height: min(50vh, 28rem); display: none; border-left: 0; border-top: 2px solid var(--bar-rule); box-shadow: 0 -10px 28px rgb(0 0 0 / 0.22); }
+  body.app .inspector.is-sheet-open { display: flex; }
+  body.app .inspect-close { display: inline-flex; }
+  body.app .ws.no-inspector { grid-template-columns: minmax(0, 1fr); grid-template-areas: "strip" "rail" "centre"; }
+  /* The bar takes a second row for its tools. */
+  .cmdbar { flex-wrap: wrap; }
+  .cmd-tools { flex: 1 1 100%; justify-content: flex-end; padding: 0 0 var(--s-1); }
+  .tool .key-hint { display: none; }
+}
+@media screen and (min-width: 1100px) and (max-width: 1339px) {
+  body.app { --rail-w: 18.5rem; --insp-w: 21rem; }
+}
+/* The bar stays one row: below a very wide window the theme switch names only the theme in use,
+   and below a wide one the keys' hints and the chip's word go (the keys are in the footer and the ? list). */
+@media screen and (max-width: 1519px) {
+  :root:not([data-theme="terminal"]) .theme-option[data-theme-option="terminal"], :root[data-theme="terminal"] .theme-option[data-theme-option="paper"] { display: none; }
+}
+@media screen and (max-width: 1339px) {
+  .cmdbar .tool .key-hint, .chip-word { display: none; }
+  .theme-toggle { padding: 0 !important; }
+  .brand { margin-right: var(--s-2); }
+  .cmd-ticker input { width: 5.5rem; }
+}
+
+/* ------------------------------------------------------------ Terminal: the same frame as a market terminal
+ * Mono for every label, number and control; amber for what you can act on; a code in an amber
+ * cell before every title; tabs as numbered keys; a footer with the keys and the run. */
+
+:root[data-theme="terminal"] .block-title, :root[data-theme="terminal"] .pane-label {
+  gap: 0;
+  color: var(--ink-2);
+  font-size: 0.72rem;
+  border-bottom: 1px solid var(--line-strong);
+}
+:root[data-theme="terminal"] .block-title::after, :root[data-theme="terminal"] .pane-label::after { content: none; }
+:root[data-theme="terminal"] :is(.block-title, .pane-label)[data-code]::before {
   content: attr(data-code);
-  display: inline-block;
   min-width: 3.4em;
-  margin: -0.18rem 0.6rem -0.18rem -0.5rem;
-  padding: 0.18rem 0.5rem;
+  margin-right: var(--s-2);
+  padding: 0.1rem 0.4rem;
   color: #000;
   background: var(--accent);
   font-weight: 800;
+  text-align: center;
 }
-:root[data-theme="terminal"] .block-title .g-limit { color: #000; }
-:root[data-theme="terminal"] .tape-code { display: inline-block; margin-right: 0.6rem; padding: 0 0.4rem; color: #000; background: var(--accent); font-weight: 800; }
+:root[data-theme="terminal"] .rail > .pane-label { margin: var(--s-2) var(--pane-pad) 0; padding: 0; }
+:root[data-theme="terminal"] .rail-all { border-top: 0; }
+:root[data-theme="terminal"] .rail-all-name, :root[data-theme="terminal"] .score-claim { font-family: var(--font-sans); }
+:root[data-theme="terminal"] .rail-all:hover, :root[data-theme="terminal"] .score-row:hover { box-shadow: inset 2px 0 0 var(--accent); }
+:root[data-theme="terminal"] .rail-all[aria-current="true"], :root[data-theme="terminal"] .score-row[aria-current="true"] { background: #000; box-shadow: inset 3px 0 0 var(--accent); }
+:root[data-theme="terminal"] .score-row[aria-current="true"] .claim-id, :root[data-theme="terminal"] .rail-all[aria-current="true"] .rail-all-name { color: var(--accent); }
+:root[data-theme="terminal"] .sel-id { color: var(--accent); }
+
+/* Mono is wide: the bar's controls are set a size smaller so the bar stays one row. */
+:root[data-theme="terminal"] .cmdbar .tool { padding: 0.15rem 0.45rem; font-size: 0.75rem; }
+:root[data-theme="terminal"] .cmdbar .page-tag { letter-spacing: 0.04em; }
+:root[data-theme="terminal"] .cmd-tools { gap: 0.4rem; }
+
+:root[data-theme="terminal"] .tabs { border-bottom: 1px solid var(--accent); }
+:root[data-theme="terminal"] .tab { margin-bottom: 0; padding: 0.3rem 0.7rem 0.3rem 0.3rem; border-bottom: 0; border-right: 1px solid var(--line); font-size: 0.72rem; letter-spacing: 0.07em; text-transform: uppercase; }
+:root[data-theme="terminal"] .tab-key { min-width: 1.6em; border: 1px solid var(--line-strong); border-radius: 0; background: #000; color: var(--accent); }
+:root[data-theme="terminal"] .tab[aria-selected="true"] { color: #000; background: var(--accent); }
+:root[data-theme="terminal"] .tab[aria-selected="true"] .tab-key { border-color: #000; }
+
+:root[data-theme="terminal"] .tape-code { display: inline-block; margin-right: var(--s-2); padding: 0 0.4rem; color: #000; background: var(--accent); font-weight: 800; }
 :root[data-theme="terminal"] .tape-row { border: 1px solid var(--line-strong); background: #000; gap: 0; }
 :root[data-theme="terminal"] .tape-cell { border-right: 1px solid var(--line); padding: 0.3rem 0.55rem 0.35rem; }
 :root[data-theme="terminal"] .tape-value { font-size: var(--step-1); color: var(--accent); }
 :root[data-theme="terminal"] .tape-value.is-neg { color: var(--neg); }
 :root[data-theme="terminal"] .tape-label { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.04em; }
 :root[data-theme="terminal"] .tape-cell .spark-line { stroke: var(--ink); }
-:root[data-theme="terminal"] .scorecard > li:nth-child(even), :root[data-theme="terminal"] .fig-list > li:nth-child(even), :root[data-theme="terminal"] .sources tbody tr:nth-child(even) > * { background: rgb(255 255 255 / 0.02); }
-:root[data-theme="terminal"] .score-row:hover, :root[data-theme="terminal"] .fig-row > summary:hover, :root[data-theme="terminal"] .sources tbody tr:hover > *, :root[data-theme="terminal"] .event:hover {
+:root[data-theme="terminal"] .fig-list > li:nth-child(even), :root[data-theme="terminal"] .sources tbody tr:nth-child(even) > * { background: rgb(255 255 255 / 0.02); }
+:root[data-theme="terminal"] .fig-row > summary:hover, :root[data-theme="terminal"] .sources tbody tr:hover > *, :root[data-theme="terminal"] .event:hover {
   background: var(--surface-2);
   box-shadow: inset 2px 0 0 var(--accent);
 }
-:root[data-theme="terminal"] .score-claim { font-family: var(--font-sans); }
 :root[data-theme="terminal"] .banner-fold > summary { font-family: var(--font-mono); }
-:root[data-theme="terminal"] .result-panel { background: var(--bg); }
 :root[data-theme="terminal"] .claim { background: var(--surface); }
+:root[data-theme="terminal"] body.app .claim { background: transparent; border: 0; }
+
+/* The status footer: the keys, and the run on screen. Terminal only; Paper keeps them in the ? list. */
+.statusbar { display: none; }
 :root[data-theme="terminal"] .statusbar {
   position: fixed;
   z-index: 30;
@@ -2098,8 +2356,8 @@ body.drawer-open .thesis-button { background: var(--ink); color: var(--bar-bg); 
   bottom: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 0 1.2rem;
-  padding: 0.2rem var(--gutter);
+  gap: 0 var(--s-4);
+  padding: 0.15rem var(--s-3);
   font-family: var(--font-mono);
   font-size: 0.72rem;
   color: var(--ink-2);
@@ -2108,40 +2366,41 @@ body.drawer-open .thesis-button { background: var(--ink); color: var(--bar-bg); 
 }
 :root[data-theme="terminal"] .statusbar kbd { color: var(--accent); border-color: var(--line-strong); background: #000; margin-right: 0.15rem; }
 :root[data-theme="terminal"] .statusbar-run { margin-left: auto; color: var(--ink); }
-:root[data-theme="terminal"] body { padding-bottom: 1.8rem; }
-:root[data-theme="terminal"] .howto { background: var(--surface); }
 
-/* ------------------------------------------------------------ responsive */
+/* ------------------------------------------------------------ a phone: one column, the tabs stay in view */
 
-@media (max-width: 960px) {
-  .cmd-run { flex-wrap: wrap; }
-  /* Long engine names stay on one line each, cut short; hover or focus shows them whole. */
-  .cmd-cell[data-cmd="engine"] { flex: 1 1 0; min-width: 0; }
-  .cmd-cell .cmd-line { max-width: 100%; white-space: nowrap; }
-  .cmd-cell .cmd-line:focus-visible, .cmd-cell .cmd-line:hover { white-space: normal; max-width: none; }
-}
-
-@media (max-width: 600px) {
+@media screen and (max-width: 640px) {
   :root { --gutter: 0.9rem; }
-  .cmdbar { padding: 0 var(--gutter); }
-  .brand { margin-right: 0.6rem; font-size: 1rem; }
-  .brand-name { display: none; }
-  .cmd-ticker { padding: 0.4rem 0.6rem; border-right: 0; flex: 1 1 auto; }
+  :root[data-theme="terminal"] body { padding-bottom: 1.8rem; }
+  .cmdbar { flex-wrap: wrap; padding: 0 var(--gutter); }
+  .brand { margin-right: var(--s-2); }
+  .brand-name, .key-hint, .health-detail, .chip-word { display: none; }
+  .cmd-ticker { flex: 1 1 7rem; min-width: 0; padding: var(--s-2) var(--s-2); border-right: 0; }
   .cmd-ticker input { width: 100%; min-width: 5rem; }
-  .cmd-ticker .key-hint, .cmd-tools .key-hint, .thesis-button .key-hint { display: none; }
-  .cmd-ticker { flex: 1 1 7rem; min-width: 0; }
-  .cmd-tools { flex: 1 1 100%; flex-wrap: wrap; margin-left: 0; padding: 0 0 0.45rem; gap: 0.3rem; }
-  .theme-option { padding: 0.25rem 0.4rem; }
-  .cmd-cell { padding: 0.25rem 0.6rem; }
-  .cmd-asof { flex-basis: 100%; padding-left: 0; border-top: 1px solid var(--line); }
-  .result-panel { padding: 1rem 0.9rem 1.4rem; }
+  .thesis-button { margin-left: 0; }
+  .cmd-run { order: 5; flex: 1 1 100%; padding: var(--s-1) 0; border-top: 1px solid var(--line); }
+  .cmd-tools { order: 4; flex: 1 1 100%; flex-wrap: wrap; margin-left: 0; padding: 0 0 var(--s-2); gap: var(--s-1); }
+  .theme-option { padding: 0.2rem 0.4rem; }
+  .layout { padding: var(--s-3) var(--gutter) var(--s-6); gap: var(--s-4); }
+  .rail-head { padding-left: 0; padding-right: 0; }
+  .rail-all, .score-row { padding-left: var(--s-2); padding-right: var(--s-2); }
+  .rail { margin-bottom: var(--s-3); }
+  .run-strip { margin-bottom: var(--s-3); }
+  /* The tabs stay at the top of the window while the selection's panel scrolls under them. */
+  .tabs { position: sticky; top: 0; z-index: 10; margin: 0 calc(-1 * var(--gutter)); padding: 0 var(--gutter); background: var(--bg); }
+  .tab { padding: var(--s-2) var(--s-2); }
+  .tab-key { display: none; }
+  .tabpanel { padding-top: var(--s-4); }
+  .claim { border-top: 0; margin: 0; background: transparent; }
+  :root[data-theme="terminal"] .claim { border: 0; }
+  body.app .claim > summary { display: none; }
+  .claim-body, :root[data-theme="terminal"] .claim-body { padding: 0; }
+  .ws[data-tab="evidence"] .part-why { display: none; }
+  .ws[data-tab="overview"] .part-findings :is(.queries, .finding-meta, .checks, .cited, .review-slot, .finding-margin, .cc-slot) { display: none; }
   .takeaway { font-size: var(--step-0); }
   .company-name { font-size: var(--step-2); }
-  .claim > summary { grid-template-columns: 2.1rem minmax(0, 1fr); grid-template-areas: "id text" "id meta" "id stamp"; }
-  .claim > summary > .pill.verdict { justify-self: start; margin-top: 0.35rem; }
-  .claim-body { padding-left: 0.2rem; }
-  .claim-text { font-size: var(--step-1); }
   .empty-lead { font-size: var(--step-3); }
+  .intro-line { font-size: var(--step-2); }
   .glossary dl { grid-template-columns: minmax(0, 1fr); }
   .glossary dd { margin-bottom: 0.35rem; }
   .legend-list { grid-template-columns: minmax(0, 1fr); }
@@ -2150,16 +2409,10 @@ body.drawer-open .thesis-button { background: var(--ink); color: var(--bar-bg); 
   .fig-row > summary { grid-template-columns: minmax(0, 1fr) 4rem auto; gap: 0.5rem; }
   .spark, .spark-empty { width: 4rem; }
   .peer { grid-template-columns: minmax(0, 1fr); }
-  .run-head-actions { align-items: flex-start; }
-  .intro, body:not(.is-first) .howto .intro { grid-template-columns: minmax(0, 1fr); grid-template-areas: "line" "take" "samples" "rest"; grid-template-rows: auto; }
-  .intro-line { font-size: var(--step-2); }
-  body.is-first .form-panel { padding: 1rem 0.9rem 1.2rem; }
-  .thesis-button { margin-left: 0; }
   .tape-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tape-cell:nth-child(2n) { border-right: 0; }
   .tape-cell { border-bottom: 1px solid var(--line); }
   .statusbar > span:not(.statusbar-run) { display: none; }
-  .health-detail { display: none; }
   .inbox-count { margin-left: 0; }
   .watch-choice { display: flex; margin-right: 0; }
 }
@@ -2168,9 +2421,11 @@ body.drawer-open .thesis-button { background: var(--ink); color: var(--bar-bg); 
   *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }
 
-/* ------------------------------------------------------------ print: a clean research note
- * Always the Paper colours, no bar, no form, no controls; app.js opens every claim before
- * printing and closes them after. */
+/* ------------------------------------------------------------ print: the note as a document
+ * Always the Paper colours, no bar, no tabs, no inspector, no controls. Every tab's panel and
+ * every claim's docket prints, one after another, each docket under its own heading; app.js
+ * opens every disclosure before printing, puts how the run was made after the verdicts, and
+ * undoes both after. */
 
 @media print {
   :root, :root[data-theme="terminal"] {
@@ -2180,18 +2435,27 @@ body.drawer-open .thesis-button { background: var(--ink); color: var(--bar-bg); 
     --limit: #7a4e00; --limit-bg: #ffffff; --model: #5a3fb8; --model-bg: #ffffff; --mark-bg: #f3e39a;
     --mark-ink: #000000; --change: #0b6670; --change-bg: #ffffff; --rule: #586112; --rule-bg: #ffffff;
     --neg: #9b3412; --chart-ink: #000000; --chart-bar: #6d6556; --bar-bg: #ffffff; --bar-rule: #000000;
+    --pane-main: #ffffff; --pane-side: #ffffff;
     --font-prose: var(--font-serif); --font-ui: var(--font-sans); --font-label: var(--font-serif); --font-data: var(--font-sans); --font-control: var(--font-sans);
     --label-caps: all-small-caps; --label-transform: none; --label-track: 0.06em; --label-size: 0.95rem;
     color-scheme: light;
   }
   body { font-size: 10pt; background: #fff; }
-  .cmdbar, .howto, .statusbar, .drawer-scrim, .watch-actions, .inbox-actions, .inbox-paging, .watch-policy, .form-panel, .skip-link, .footer, .keys-dialog,
+  .cmdbar, .statusbar, .drawer-scrim, .watch-actions, .inbox-actions, .inbox-paging, .watch-policy, .form-panel, .skip-link, .keys-dialog,
   .review-slot, .decision-controls, .run-head-actions, .tl-tip, #stages-wrap, .chart-table, .prov-more > summary::after,
+  .tabs, .sel-head, .inspector, .rail-all, .pick, .panel-none, .run-drawer,
   #legend, button, .cc-error button { display: none !important; }
   .banner-fold > .banner-full { display: block; }
-  .layout { display: block; padding: 0; max-width: none; }
-  .result-panel { border: 0; padding: 0; }
+  .layout { display: block; padding: 0; }
   .block { break-inside: auto; }
+  .tabpanel + .tabpanel { margin-top: var(--s-5); }
+  .rail-head { padding: 0 0 var(--s-3); border-bottom: 3px double #000; }
+  .rail-head .company-name { font-size: var(--step-3); }
+  .run-info { margin: var(--s-3) 0; }
+  .run-info > .block-title, .run-info > .provenance { display: none; }
+  .rail > .pane-label { padding: var(--s-4) 0 var(--s-1); }
+  .rail-all, .score-row { padding-left: 0; padding-right: 0; }
+  .score-row .assessed, .score-row .score-computed > .label { position: static; width: auto; height: auto; margin: 0; overflow: visible; clip: auto; white-space: normal; }
   .claim { break-inside: auto; border-top: 1.5px solid #000; }
   .finding, .evidence, .event, .fig-row, .chart-block { break-inside: avoid; }
   .block-title { break-after: avoid; }
@@ -2202,7 +2466,6 @@ body.drawer-open .thesis-button { background: var(--ink); color: var(--bar-bg); 
   .table-wrap { overflow: visible; }
   .sources, .changes, .ct-table, .ledger, .tot-table table { min-width: 0; }
   .asof-banner { border: 3px double #000; background: #fff; break-inside: avoid; }
-  body.as-of-run .run-head { border-left: 6px double #000; }
   .ct, .tot-claim { break-inside: avoid; }
   .tot-table { display: none; }
 }

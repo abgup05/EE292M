@@ -29,7 +29,7 @@ help:
 	@echo 'Demonstration: demo (live NVIDIA example through the HTTP API: real EDGAR, configured engine; writes results/demo-<UTC>.json and .md)'
 	@echo 'Screenshots: screenshots (headless Chromium renders the first screen, the samples, the recorded inbox, the computed claims, the as-of run, the restatement ledger and the specimen page, in the Paper and Terminal themes and at phone width, into docs/screenshots)'
 	@echo 'Looking while changing the page: look (captures the pages LOOK names, each name@width,height@query, into results/; nothing committed)'
-	@echo 'Browser test: uitest (headless Chromium renders the sample records, the recorded inbox and the version 14 examples, drives the keys and themes in uitests/keys.html, every answer of the watch routes in uitests/watch.html and the version 14 variants in uitests/v14.html; pytest uitests checks the DOM against the JSON)'
+	@echo 'Browser test: uitest (headless Chromium renders the sample records, the recorded inbox and the version 14 examples, drives the keys and themes in uitests/keys.html, every answer of the watch routes in uitests/watch.html, the version 14 variants in uitests/v14.html and the frame at 1440x900, 1280x800, 900x800 and 360x740 in uitests/frame.html; pytest uitests checks the DOM against the JSON)'
 	@echo "Replay: replay ARGS='--out demo' (the example thesis on recorded filings with model answers from the cassette; no network, no key)"
 	@echo 'Tripwire: golden-check (the offline example run against tests/golden/golden.json; names the first stage that moved)'
 	@echo 'Tripwire: golden-baseline (rewrite tests/golden/golden.json, and replay.json when the replay has nothing pending; read the diff before committing a new baseline)'
@@ -122,6 +122,9 @@ smoke:
 # and writes what happened into its own DOM. Reading a frame of another origin needs the browser's
 # same-origin rule off: these flags are for that one test page and no other capture.
 KEYS_FLAGS := --disable-web-security --disable-site-isolation-trials --disable-features=IsolateOrigins,site-per-process --allow-file-access-from-files --user-data-dir=/tmp/keys-profile
+# The frame check (uitests/frame.html) loads the page ten times at four sizes, so it is given more
+# (virtual) time than one page load, and a window larger than its largest frame.
+FRAME_FLAGS := --virtual-time-budget=60000 --window-size=1600,1000
 uitest:
 	@mkdir -p results
 	$(COMPOSE) up --force-recreate -d app
@@ -145,7 +148,8 @@ uitest:
 	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=restatements" > results/dom-restatements.html 2> results/dom-restatements.log && \
 	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=run-live" > results/dom-run-live.html 2> results/dom-run-live.log && \
 	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=readers&theme=terminal" > results/dom-readers.html 2> results/dom-readers.log && \
-	$(COMPOSE) run --rm -T shots $(KEYS_FLAGS) --dump-dom "file:///work/uitests/v14.html" > results/dom-v14.html 2> results/dom-v14.log
+	$(COMPOSE) run --rm -T shots $(KEYS_FLAGS) --dump-dom "file:///work/uitests/v14.html" > results/dom-v14.html 2> results/dom-v14.log && \
+	$(COMPOSE) run --rm -T shots $(KEYS_FLAGS) $(FRAME_FLAGS) --dump-dom "file:///work/uitests/frame.html" > results/dom-frame.html 2> results/dom-frame.log
 	$(RUN) pytest -q -p no:cacheprovider uitests
 
 run:

@@ -49,7 +49,14 @@ TICKER_CACHE_SECONDS = 24 * 60 * 60
 
 ANNUAL_FORM = "10-K"
 QUARTERLY_FORM = "10-Q"
+# Current reports: an 8-K and its amendment. A foreign filer's 6-K is not read.
+CURRENT_FORMS = frozenset({"8-K", "8-K/A"})
 INDEX_COLUMNS = ("form", "filingDate", "reportDate", "accessionNumber", "primaryDocument")
+# Read when the index has it: the 8-K item numbers of each row ("5.02,9.01"), else "".
+OPTIONAL_INDEX_COLUMNS = ("items",)
+# The filing index fetched for a run's periodic reports is reused for its current reports
+# when it is at most this old, so listing the 8-Ks costs no request of its own.
+INDEX_REUSE_SECONDS = 60.0
 # Older index pages read, newest first, to find the filing before the latest of a form.
 MAX_OLDER_INDEX_PAGES = 12
 
@@ -57,6 +64,11 @@ MAX_OLDER_INDEX_PAGES = 12
 def normalize_ticker(ticker: str) -> str:
     """Upper-case a ticker and write its class suffix as EDGAR does (``BRK.B`` -> ``BRK-B``)."""
     return ticker.strip().upper().replace(".", "-")
+
+
+def split_items(value: str) -> tuple[str, ...]:
+    """The item numbers of an index row's ``items`` cell ("5.02,9.01"), in order, each once."""
+    return tuple(dict.fromkeys(part.strip() for part in value.split(",") if part.strip()))
 
 
 def archive_url(cik: int, accession: str, document: str) -> str:
@@ -101,6 +113,8 @@ class EdgarClient:
         self._tickers_lock = threading.Lock()
         self._tickers: dict[str, Company] | None = None
         self._tickers_loaded_at = 0.0
+        self._index_lock = threading.Lock()
+        self._last_index: dict[int, tuple[float, dict[str, Any]]] = {}
 
     @classmethod
     def from_env(cls) -> EdgarClient:
@@ -140,7 +154,10 @@ class EdgarClient:
         """
         if limit < 1:
             raise ValueError("limit must be at least 1")
-        rows = self._index_rows(company)
+        payload = self._index_payload(company)
+        with self._index_lock:
+            self._last_index[company.cik] = (self._monotonic(), payload)
+        rows = self._rows(payload["filings"]["recent"], f"the filing index of {company.name}")
         annual = next((row for row in rows if row["form"] == ANNUAL_FORM), None)
         if annual is None:
             raise SourceError(
@@ -153,6 +170,30 @@ class EdgarClient:
             if row["form"] == QUARTERLY_FORM and row["filingDate"] > annual["filingDate"]
         ]
         chosen = [*quarterlies[: limit - 1], annual]
+        return [self._ref(company.cik, row) for row in chosen]
+
+    def current_reports(self, company: Company, filed_after: str) -> list[FilingRef]:
+        """The company's 8-K and 8-K/A filings filed after ``filed_after``, newest first.
+
+        ``filed_after`` is a ``YYYY-MM-DD`` date; a filing of that day is not after it.
+        Each reference carries the item numbers the index lists. The rows come from
+        EDGAR's recent index, which holds at least the last year of a company's
+        filings and every filing after the newest 10-K a run reads. The index that
+        :meth:`periodic_filings` fetched for the company is reused when it is at most
+        :data:`INDEX_REUSE_SECONDS` old, so a run lists its 8-Ks without a request of
+        their own; otherwise the index is fetched.
+        """
+        with self._index_lock:
+            last = self._last_index.get(company.cik)
+        if last is not None and self._monotonic() - last[0] <= INDEX_REUSE_SECONDS:
+            payload = last[1]
+        else:
+            payload = self._index_payload(company)
+        rows = self._rows(payload["filings"]["recent"], f"the filing index of {company.name}")
+        chosen = [
+            row for row in rows if row["form"] in CURRENT_FORMS and row["filingDate"] > filed_after
+        ]
+        chosen.sort(key=lambda row: (row["filingDate"], row["accessionNumber"]), reverse=True)
         return [self._ref(company.cik, row) for row in chosen]
 
     def filings_of_form(self, company: Company, form: str, limit: int) -> list[FilingRef]:
@@ -346,11 +387,6 @@ class EdgarClient:
 
     # Filing index
 
-    def _index_rows(self, company: Company) -> list[dict[str, str]]:
-        """``filings.recent`` turned from parallel columns into rows, newest filing first."""
-        what = f"the filing index of {company.name}"
-        return self._rows(self._index_payload(company)["filings"]["recent"], what)
-
     def _index_payload(self, company: Company) -> dict[str, Any]:
         """The company's filing index as EDGAR sends it, with ``filings.recent`` present."""
         what = f"the filing index of {company.name}"
@@ -378,6 +414,16 @@ class EdgarClient:
             ]
         except ValueError as exc:  # the parallel columns differ in length
             raise malformed from exc
+        for name in OPTIONAL_INDEX_COLUMNS:
+            column = table.get(name) if isinstance(table, dict) else None
+            if column is None:
+                cells: list[Any] = [""] * len(rows)
+            elif isinstance(column, list) and len(column) == len(rows):
+                cells = column
+            else:
+                raise malformed
+            for row, cell in zip(rows, cells, strict=True):
+                row[name] = cell
         if not all(isinstance(value, str) for row in rows for value in row.values()):
             raise malformed
         rows.sort(key=lambda row: row["filingDate"], reverse=True)
@@ -414,4 +460,5 @@ class EdgarClient:
             filed_date=row["filingDate"],
             primary_document=row["primaryDocument"],
             url=archive_url(cik, row["accessionNumber"], row["primaryDocument"]),
+            items=split_items(row.get("items", "")) if row["form"] in CURRENT_FORMS else (),
         )

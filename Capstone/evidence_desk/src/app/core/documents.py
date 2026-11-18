@@ -38,7 +38,9 @@ class Passage:
 
     ``text`` is an exact substring of the document text and ``start`` is its
     offset there, so a quote taken from a passage can be verified against the
-    stored source.
+    stored source. ``form`` and ``filed`` are set only on a passage of a current
+    report (8-K) offered to a claim beside the passages retrieved for it
+    (:mod:`app.services.events`); every other passage leaves them empty.
     """
 
     id: str
@@ -46,11 +48,19 @@ class Passage:
     locator: str
     text: str
     start: int
+    form: str = ""
+    filed: str = ""
 
 
 @dataclass(frozen=True)
 class FilingRef:
-    """One periodic report in SEC EDGAR's index."""
+    """One filing in SEC EDGAR's index.
+
+    ``period_end`` is the index's ``reportDate``: the end of a periodic report's
+    period, or the date of the event a current report (8-K) reports. ``items`` are
+    the 8-K item numbers the index lists for a current report ("5.02", "9.01"),
+    in the index's order; empty for every other form.
+    """
 
     cik: int
     accession: str
@@ -59,6 +69,7 @@ class FilingRef:
     filed_date: str
     primary_document: str
     url: str
+    items: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

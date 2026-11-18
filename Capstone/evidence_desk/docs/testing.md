@@ -294,7 +294,9 @@ gate on a fresh clone, now with seven page renders and 142 page assertions. At v
 (pytest reports 26.19 s for 1,499 tests) and 38 s for the whole gate, with 156 page assertions.
 At version 11.1: 26 s again (26.03 s for 1,580 tests) and 38 s for the whole gate, with the same
 156 page assertions. At version 12, on 18 November: 29 s (28.85 s for 1,702 tests) and 42 s for the
-whole gate, with 168 page assertions (`docs/evidence/verify-fresh.txt`).
+whole gate, with 168 page assertions (`docs/evidence/verify-fresh.txt`). On the version 14 watch branch,
+18 November, once: pytest reports 32.12 s for 1,781 tests. The smoke test and the page step were not run
+there (port 8766 was held by another checkout's app), so the whole gate was not timed.
 
 ## What no test here can see
 

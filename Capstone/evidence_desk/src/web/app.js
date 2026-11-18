@@ -43,6 +43,8 @@ const STAGES = [
   ["queued", "Queued"],
   ["company", "Company"],
   ["filings", "Filings"],
+  ["events", "Current reports (8-K)"],
+  ["numbers", "Reported figures"],
   ["planning", "Planning"],
   ["retrieving", "Retrieving passages"],
   ["assessing", "Assessing"],
@@ -253,6 +255,9 @@ const els = {
   summary: $("summary"),
   figuresSection: $("figures-section"),
   figures: $("figures"),
+  eventsSection: $("events-section"),
+  eventsTitle: $("events-title"),
+  events: $("events"),
   claimList: $("claim-list"),
   runFilingChanges: $("run-filing-changes"),
   withheldSection: $("withheld-section"),
@@ -2236,6 +2241,7 @@ function renderRun(run) {
   renderDistinction(run);
   renderRunChanges(run);
   renderSummary(run);
+  renderEvents(run);
   renderRunFigures(run);
   renderClaims(run, ctx);
   renderClaimChanges(run);
@@ -2451,7 +2457,24 @@ function renderHead(run) {
   } else {
     download = h("a", { class: "download", href: briefHref(run.id, false), download: `evidence-desk-${run.id}.md`, text: "Download Markdown brief" });
   }
-  els.runHead.replaceChildren(h("div", { class: "run-head-main" }, title, decision, engineLine, checkerLine, details, thesisLine(run)), h("div", { class: "run-head-actions" }, download));
+  els.runHead.replaceChildren(h("div", { class: "run-head-main" }, title, decision, engineLine, checkerLine, details, asOfLine(run), thesisLine(run)), h("div", { class: "run-head-actions" }, download));
+}
+
+/**
+ * How old the evidence is, as the record's as-of block words it, with a way to the 8-Ks.
+ * Nothing for a run recorded before version 12, which has no as-of block.
+ */
+function asOfLine(run) {
+  const line = str(run.as_of?.line);
+  if (!line) return "";
+  return h(
+    "p",
+    { class: "as-of", "data-as-of": "" },
+    h("span", { class: "label", text: "As of: " }),
+    line,
+    " ",
+    h("a", { href: "#events-section", onclick: jumpTo("events-section"), text: "See the 8-Ks since the annual report" }),
+  );
 }
 
 /**
@@ -2582,6 +2605,12 @@ function renderClaims(run, ctx) {
     const note = verdictNote(claim.verdict);
     if (note) body.append(h("p", { class: "verdict-note" }, h("span", { class: "label", text: "Verdict rule: " }), note));
     if (assessedText(claim)) body.append(h("p", { class: "assessed-line", text: assessedText(claim) }));
+    if (str(claim.caution)) {
+      body.append(h("div", { class: "claim-caution", "data-claim-caution": claim.id }, limitLine("p", h("strong", { text: "Caution: " }), claim.caution)));
+    }
+    if (str(claim.event_note)) {
+      body.append(h("p", { class: "event-note", "data-claim-event-note": claim.id }, h("span", { class: "label", text: "8-Ks since the annual report: " }), claim.event_note));
+    }
     if (claim.rationale) {
       body.append(
         writtenField(
@@ -2866,6 +2895,7 @@ function renderFinding(finding, ctx, withheld = false) {
   );
   const counted = countedAsLine(finding);
   if (counted) article.append(counted);
+  for (const mark of list(finding.predated_by)) article.append(predatedLine(mark));
   if (withheld) {
     // A finding the second model rejected keeps that model's own words, tagged for the browser test.
     const reason = str(finding.withheld_reason) || "no quote was found in the filing text.";
@@ -2891,6 +2921,16 @@ function renderFinding(finding, ctx, withheld = false) {
     article.append(h("div", { class: "review-slot", "data-review-finding": finding.id, hidden: true }));
   }
   return article;
+}
+
+/** "Predates the 8-K of 12 Nov 2026, Item 5.02", the record's words, linking to that 8-K above. */
+function predatedLine(mark) {
+  const target = eventAnchor(str(mark.event_id));
+  const label = str(mark.label) || "Predates a later 8-K";
+  return limitLine(
+    "p",
+    h("span", { class: "predated", "data-predated-by": str(mark.event_id) }, target ? h("a", { href: `#${target}`, onclick: jumpTo(target), text: label }) : label),
+  );
 }
 
 /**
@@ -3169,6 +3209,91 @@ function renderSources(run) {
 }
 
 // ---------------------------------------------------------------- reported figures
+
+// ---------------------------------------------------------------- 8-Ks since the annual report
+
+const EVENT_ID = /^[A-Za-z0-9-]{1,80}$/;
+
+/** The element id of an 8-K in the panel; "" for an id from the record that could not be one. */
+function eventAnchor(eventId) {
+  return EVENT_ID.test(eventId) ? `event-${eventId}` : "";
+}
+
+/**
+ * The 8-Ks the record lists after the annual report the run read, newest first, as the record
+ * orders and words them: each with its date, form, link, kind and what became of it, then each
+ * item with its SEC title, its category and, for an 8-K read, its opening sentences and the
+ * roles a 5.02 names. Nothing for a run recorded before version 12.
+ */
+function renderEvents(run) {
+  const asOf = run.as_of;
+  els.eventsSection.hidden = !asOf;
+  if (!asOf) {
+    els.events.replaceChildren();
+    return;
+  }
+  const words = state.meta?.events ?? {};
+  els.eventsTitle.textContent = str(words.heading) || "Since the annual report";
+  const parts = [];
+  if (str(words.note)) parts.push(h("p", { class: "hint", text: words.note }));
+  const counts = str(asOf.counts?.line);
+  if (counts) {
+    parts.push(
+      str(asOf.index_error)
+        ? limitLine("p", h("span", { class: "event-counts", "data-event-counts": "", text: counts }))
+        : h("p", { class: "event-counts", "data-event-counts": "", text: counts }),
+    );
+  }
+  const events = list(run.timeline);
+  if (events.length) parts.push(h("ol", { class: "events" }, ...events.map((event) => renderEvent(event, words))));
+  els.events.replaceChildren(...parts);
+}
+
+function renderEvent(event, words) {
+  const substantive = event.substantive === true;
+  const kind = substantive ? "substantive" : "routine";
+  const kindLabel = str(words.kind_labels?.[kind]) || kind;
+  const status = str(event.status);
+  const statusLabel = str(words.status_labels?.[status]) || status;
+  const anchor = eventAnchor(str(event.id));
+  const head = h(
+    "p",
+    { class: "event-head" },
+    h("strong", { class: "event-date", text: str(event.filed_label) || str(event.filed_date) }),
+    " · ",
+    externalLink(event.url, `${str(event.form)} ${str(event.accession)}`),
+    " · ",
+    h("span", { class: `event-kind is-${kind}`, "data-event-kind": kind, text: kindLabel }),
+    " · ",
+    h("span", { class: "event-status", "data-event-status": status, text: statusLabel }),
+  );
+  const entry = h("li", { class: `event ev-${kind}`, id: anchor || null, tabindex: anchor ? "-1" : null, "data-event-id": str(event.id) }, head);
+  if (str(event.reason)) entry.append(limitLine("p", h("span", { "data-event-reason": "", text: event.reason })));
+  const items = h("ul", { class: "event-items" });
+  for (const item of list(event.items)) {
+    const number = str(item.number);
+    const category = str(item.category);
+    const row = h(
+      "li",
+      { class: "event-item", "data-item": number },
+      h("span", { class: "event-item-title", text: `Item ${number}. ${str(item.title)}` }),
+      " ",
+      h("span", { class: "event-category", "data-category": category, text: str(words.category_labels?.[category]) || category }),
+    );
+    const roles = list(item.roles);
+    if (roles.length) {
+      row.append(h("p", { class: "event-roles", "data-event-roles": "" }, ruleMark("Found by a fixed rule"), " ", h("span", { class: "label", text: "Roles named: " }), roles.join(", ")));
+    }
+    const opening = list(item.opening);
+    if (opening.length) {
+      row.append(h("blockquote", { class: "event-opening", "data-event-opening": number }, ...opening.map((sentence) => h("p", { text: sentence }))));
+      row.append(h("p", { class: "event-link" }, externalLink(event.url, `Read Item ${number} in the ${str(event.form)}`)));
+    }
+    items.append(row);
+  }
+  entry.append(items);
+  return entry;
+}
 
 function renderRunFigures(run) {
   const metrics = list(run.metrics);

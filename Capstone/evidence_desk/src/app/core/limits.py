@@ -48,6 +48,17 @@ METRICS_CACHE_SECONDS = 900
 # three largest members of each NVIDIA breakdown in both filings (52 are built).
 MAX_TAGGED_FIGURES_OFFERED = 40
 
+# Current reports (8-K) since the annual report (app.core.events, app.services.events).
+# The documents of at most this many 8-Ks are read per run, newest first: every 8-K filed after
+# the newest periodic report read, then those of a substantive category since the annual report.
+# Eight covers every such 8-K NVIDIA filed in the nine months after its 10-K of February 2026
+# (seven) with one to spare; each is one request of about 30 KB.
+MAX_EVENTS_READ = 8
+# The opening sentences of each item of an 8-K kept on the record and shown on the page.
+EVENT_OPENING_SENTENCES = 2
+# Item sections of 8-Ks offered to a claim of the same category, beside its retrieved passages.
+EVENT_PASSAGES_PER_CLAIM = 2
+
 # Review and saved theses
 MAX_NOTE_CHARS = 500
 MAX_THESIS_NAME_CHARS = 80

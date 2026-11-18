@@ -1153,3 +1153,36 @@ p.bd-adds-yes, dt .bd-adds-yes { font-weight: 650; color: var(--ink); }
 .period-caution-title { font-weight: 500; }
 .period-unplaced { margin: 0.1rem 0 0; padding-left: 1.4rem; }
 .period-unplaced > li { display: list-item; }
+
+/* ------------------------------------------------------------ 8-Ks since the annual report (milestone 12)
+ * A substantive 8-K (an item of a category a claim can bear on) carries a solid ink rule and a
+ * bold tag; a routine one (results, exhibits, governance, disclosure) stays plain and muted.
+ * Neither is a verdict, limit, model, rule or change mark. Opening sentences are quoted as
+ * excerpts are. A finding that an 8-K postdates, and a claim's caution, use the amber ▲. */
+.as-of { margin: 0.3rem 0 0; font-size: var(--step--1); overflow-wrap: anywhere; }
+.as-of a { margin-left: 0.2rem; }
+.event-counts { margin: 0 0 0.6rem; font-size: var(--step--1); max-width: 95ch; }
+.events { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.6rem; }
+.event { padding: 0.45rem 0.6rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.event.ev-substantive { border-left: 4px solid var(--ink); }
+.event.ev-routine { color: var(--ink-2); }
+.event:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+.event-head { margin: 0 0 0.2rem; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.35rem; overflow-wrap: anywhere; }
+.event-kind { font-size: var(--step--1); text-transform: uppercase; letter-spacing: 0.03em; }
+.event-kind.is-substantive { font-weight: 700; color: var(--ink); }
+.event-status { font-size: var(--step--1); color: var(--ink-2); }
+.event-items { margin: 0.2rem 0 0; padding-left: 1.1rem; }
+.event-item { margin: 0.15rem 0; }
+.event-item-title { font-weight: 600; }
+.ev-routine .event-item-title { font-weight: 400; }
+.event-category { font-size: var(--step--1); color: var(--ink-2); }
+.event-category::before { content: "("; }
+.event-category::after { content: ")"; }
+.event-roles { margin: 0.15rem 0; font-size: var(--step--1); }
+.event-opening { margin: 0.3rem 0 0.2rem; padding: 0.3rem 0.6rem; border-left: 3px solid var(--line-strong); font-family: var(--font-quote); color: var(--ink); }
+.event-opening p { margin: 0 0 0.2rem; }
+.event-link { margin: 0; font-size: var(--step--1); }
+.claim-caution { margin: 0.3rem 0; padding: 0.2rem 0 0.2rem 0.55rem; border-left: 2px solid var(--limit); }
+.claim-caution p { margin: 0; }
+.event-note { margin: 0.3rem 0; font-size: var(--step--1); max-width: 95ch; }
+.predated { font-size: var(--step--1); }

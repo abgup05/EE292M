@@ -9,6 +9,9 @@ Writes under ``tests/fixtures/edgar/``:
   ``filings.recent`` column trimmed to its first entries (``filings.files`` dropped);
 - the primary documents of one NVIDIA 10-Q, one NVIDIA 10-K and one Costco 10-K,
   gzip-compressed;
+- the primary document of every 8-K and 8-K/A NVIDIA filed after that 10-K, as the
+  recorded index lists them (``nvda-8k-<accession>.htm.gz``), and of the other
+  companies' 8-Ks named in :data:`OTHER_CURRENT_REPORTS`, gzip-compressed;
 - ``manifest.json``: URL, UTC retrieval time, SHA-256 and byte size of each
   original response, before trimming or compression.
 
@@ -48,7 +51,37 @@ DOCUMENTS = (
 # different sector, with "Item 1A—Risk Factors" headings (an em dash, not a full stop).
 LOOKED_UP_DOCUMENTS = (("cost-10k-20260830.htm.gz", "COST", "0000909832-26-000093"),)
 
+# (fixture file, CIK, accession number, primary document) of 8-Ks of other companies, each a
+# layout the 8-K splitter missed in `make events-probe`: Coca-Cola's "Item 9.01(d)." and
+# JPMorgan's "Item 5.02(e) Departure ...", a sub-item letter after the number.
+OTHER_CURRENT_REPORTS: tuple[tuple[str, int, str, str], ...] = (
+    ("ko-8k-0001628280-26-067403.htm.gz", 21344, "0001628280-26-067403", "ko-20261027.htm"),
+    ("jpm-8k-0000019617-26-000052.htm.gz", 19617, "0000019617-26-000052", "jpm-20260120.htm"),
+)
+NVIDIA_ANNUAL_FORM = "10-K"
+CURRENT_FORMS = ("8-K", "8-K/A")
+
 URLSource = str | Callable[[], str]
+
+
+def current_report_fixtures(index_path: Path) -> list[tuple[str, str]]:
+    """(fixture file, URL) of every 8-K in the recorded index filed after its newest 10-K."""
+    recent = json.loads(index_path.read_text())["filings"]["recent"]
+    rows = list(
+        zip(
+            recent["form"],
+            recent["filingDate"],
+            recent["accessionNumber"],
+            recent["primaryDocument"],
+            strict=True,
+        )
+    )
+    annual = max(filed for form, filed, _, _ in rows if form == NVIDIA_ANNUAL_FORM)
+    return [
+        (f"nvda-8k-{accession}.htm.gz", archive_url(NVIDIA_CIK, accession, document))
+        for form, filed, accession, document in rows
+        if form in CURRENT_FORMS and filed > annual
+    ]
 
 
 def lookup_url(client: EdgarClient, ticker: str, accession: str) -> str:
@@ -148,6 +181,13 @@ def main(argv: list[str] | None = None) -> int:
                 (name, partial(lookup_url, client, ticker, accession), gzip_bytes)
                 for name, ticker, accession in LOOKED_UP_DOCUMENTS
             ),
+        ]
+        index_path = FIXTURE_DIR / f"submissions-CIK{NVIDIA_CIK:010d}.json"
+        if index_path.exists():
+            jobs += [(name, url, gzip_bytes) for name, url in current_report_fixtures(index_path)]
+        jobs += [
+            (name, archive_url(cik, accession, document), gzip_bytes)
+            for name, cik, accession, document in OTHER_CURRENT_REPORTS
         ]
         for name, source, transform in jobs:
             try:

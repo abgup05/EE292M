@@ -240,6 +240,26 @@ Three existing tests had cut a quote in the middle of a word by slicing a string
 
 The two measurements the referee faulted are commands, not tests (`make bench`, `make time-live`), and what changed in them is in [`speed.md`](speed.md).
 
+## Events since the annual report (version 12)
+
+| Wrong program | Fails | Seen failing as |
+| --- | --- | --- |
+| A run that never lists the 8-Ks, or lists them with a request of its own | `tests/test_edgar.py`, the seven `current_reports` tests (newest first, filed after the date, 8-K/A included, items read, the index reused within a minute, a malformed items column) | written first: AttributeError against the old client |
+| A splitter that loses an item, joins the signature block to the last one, or opens a section at "Item 1.01 above" | `tests/test_current_report.py` (19 tests, on six recorded 8-Ks of NVIDIA, Coca-Cola and JPMorgan and on made-up ones) | written first: ImportError; two more ("Item 9.01(d).", "Item 5.02(e)") written from the live probe's misses, each failing before its fix |
+| A category, a claim rule, a supersession or a note that is wrong ("margins are gone" as leadership, an 8-K filed the same day as the finding's filing counted as later, a note that reads as "this is not true") | `tests/test_events.py` (53 tests) | written first: ImportError, then two failures on the table's size and an example sentence |
+| An opening sentence cut after "Mr." | `tests/test_events.py::test_an_opening_sentence_is_not_cut_after_a_title_or_a_company_suffix` | seen live in NVIDIA's 8-Ks; written, failed, then fixed |
+| Counts that do not add up, or a failure that ends the run | `tests/test_events_service.py` (13 tests) | written before `services/events.py` was wired in |
+| The motivating case: a 5.02 after the 10-Q and "Buy because Jane Smith is gone" answered from the 10-K with nothing said | `tests/test_events_run.py::test_the_motivating_case_the_8k_is_shown_offered_and_marks_the_older_finding`, and its opposite, `::test_with_no_5_02_since_the_annual_report_the_claim_gets_a_note_not_a_verdict` | 6 of the 7 first whole-run tests failed before the pipeline change (the seventh loads a version-11 run) |
+| A caution on a verdict that a context finding cannot decide | `::test_a_predated_context_finding_is_marked_but_cautions_no_verdict` | written after reading `policy.mark_counted`; failed, then fixed |
+| A prompt that changes when no 8-K is offered, so the recordings stop matching | `::test_the_model_is_told_about_newer_filings_only_when_an_8k_passage_is_offered`, `::test_the_example_thesis_has_no_claim_an_8k_bears_on`; `make replay` with all 12 answers of each cassette matched | failed before the change to `engines/claude.py` |
+| A run from before version 12 that no longer loads | `::test_a_run_recorded_by_version_11_still_loads_with_empty_event_fields`, on a run of 0.11.1 kept in `tests/fixtures/record/` | passed from the start, as it should: every field has a default |
+| A brief that leaves out the events or lets 8-K text act as Markdown | `::test_the_brief_carries_the_as_of_line_the_events_the_caution_and_the_mark`, `::test_8k_text_in_the_brief_is_escaped_as_excerpts_are` | written after the export code; the export change removed, all three brief tests failed |
+| A route that answers for a bad ticker, or fails on an unreadable 8-K list | `tests/test_api.py`, the five events and meta tests | written after the route; the route removed, all five failed |
+| A page that computes or reorders what it shows, or shows a mark the record does not carry | `uitests/test_events_dom.py` (12 assertions on two sample runs and one record from before version 12) | written after the page code; first run failed on samples made before the wording reached `/api/meta` |
+| A claim rule that drifts | `tests/test_claim_categories_eval.py` pins the table of `make event-categories` | the labels were committed before the rule existed |
+
+The command-line tools (`tests/test_events_cli.py`, `tests/test_events_probe.py`) were written after their code and were not seen failing.
+
 ## How long the gate takes
 
 Measured on this laptop on 17 November 2026 at version 8, with the Docker image's layers already
@@ -251,7 +271,8 @@ measurements, once each: 23 s (pytest reports 23.06 s for 1,361 tests) and 34 s 
 gate on a fresh clone, now with seven page renders and 142 page assertions. At version 11: 26 s
 (pytest reports 26.19 s for 1,499 tests) and 38 s for the whole gate, with 156 page assertions.
 At version 11.1: 26 s again (26.03 s for 1,580 tests) and 38 s for the whole gate, with the same
-156 page assertions (`docs/evidence/verify-fresh.txt`).
+156 page assertions. At version 12, on 18 November: 29 s (28.85 s for 1,702 tests) and 42 s for the
+whole gate, with 168 page assertions (`docs/evidence/verify-fresh.txt`).
 
 ## What no test here can see
 

@@ -160,6 +160,56 @@ MEANING_SAME_MODEL = (
 )
 NO_CHECKER_NOTE = "No second model checked the findings' meaning."
 
+# Current reports (8-K) since the annual report (app.core.events). Reported, never withheld:
+# none of these changes a verdict or the run's status.
+AS_OF_LINE = (
+    "Evidence as of {date} ({form}), {days} before {when}. "
+    "Newest periodic report: {periodic_form} filed {periodic_date}."
+)
+AS_OF_NO_PERIODIC = "Evidence as of {date} ({form}), {days} before {when}."
+AS_OF_RUN = "this run"
+AS_OF_TODAY = "today"
+AS_OF_NOTHING_READ = "No filing was read, so the evidence has no date."
+EVENT_COUNTS = (
+    "{listed} 8-K(s) filed since the annual report of {annual}: {read} read, {failed} could not "
+    "be read, {capped} not read because of the cap of {cap} per run, {index_only} routine 8-K(s) "
+    "filed before the newest periodic report listed from the index only."
+)
+EVENT_COUNTS_TIME = " {out_of_time} not read because the run time limit came first."
+EVENT_INDEX_UNREAD_COUNTS = "EDGAR's list of 8-Ks could not be read ({error})."
+PREDATES_LABEL = "Predates the {form} of {date}, {items}"
+EVENT_CAUTION = (
+    "The evidence for this verdict was filed before the {form} of {date} ({items}), which "
+    "reports {words}. Read that filing before relying on the verdict."
+)
+EVENT_ABSENT = (
+    "No 8-K filed since {annual} reports {subjects}. The newest filing read is dated {newest}; "
+    "anything later is not in the record."
+)
+EVENT_NOT_READ = "The {form} of {date} reports {items}, but its text was not read: {reason}."
+EVENT_INDEX_UNREAD = (
+    "EDGAR's list of 8-Ks could not be read ({error}), so whether one filed since {annual} "
+    "reports {subjects} is not known."
+)
+# What became of each 8-K a run listed, keyed by EventStatus value: the page, the brief and
+# `make events` say it in these words.
+EVENT_STATUS_LABELS = {
+    "read": "read",
+    "failed": "could not be read",
+    "capped": "not read: the cap per run came first",
+    "out_of_time": "not read: the run time limit came first",
+    "index_only": "listed from the index only",
+}
+EVENT_KIND_LABELS = {"substantive": "substantive", "routine": "routine"}
+EVENTS_NO_ANNUAL = "No annual report was read, so no 8-K was listed."
+EVENTS_HEADING = "Since the annual report"
+EVENTS_NONE = "EDGAR lists no 8-K filed since the annual report of {annual}."
+EVENTS_NOTE = (
+    "Current reports (8-K) the company filed after the annual report this run read, newest "
+    "first, as EDGAR's index lists them. The opening sentences of each item are quoted from "
+    "the 8-Ks read; exhibits, such as a press release, are not read."
+)
+
 
 def counted_stance(finding: Finding) -> Stance | None:
     """The stance the verdict rule uses for ``finding``; None when it is not verified.

@@ -1,7 +1,7 @@
 {
- "note": "Recorded on 2026-11-17 for the sample run beside it: the newest annual and the newest quarterly report that run read, each compared with the filing of the same form before it (from SEC EDGAR or the filing cache), and every changed paragraph ranked against each claim by keyword overlap. No model is involved.",
+ "note": "Recorded on 2026-11-18 for the sample run beside it: the newest annual and the newest quarterly report that run read, each compared with the filing of the same form before it (from SEC EDGAR or the filing cache), and every changed paragraph ranked against each claim by keyword overlap. No model is involved.",
  "changes": {
-  "run_id": "run-5fd75c24e421",
+  "run_id": "run-0ed7f6c80957",
   "compared": [
    {
     "form": "10-K",

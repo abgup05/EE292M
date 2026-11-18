@@ -36,6 +36,13 @@ class FilingSource(Protocol):
         """The latest 10-K and the 10-Qs filed after it, newest first, at most ``limit``."""
         ...
 
+    def current_reports(self, company: Company, filed_after: str) -> list[FilingRef]:
+        """The 8-K and 8-K/A filings filed after a ``YYYY-MM-DD`` date, newest first.
+
+        Each carries the item numbers EDGAR's index lists. Raises :class:`SourceError`.
+        """
+        ...
+
     def fetch(self, ref: FilingRef) -> FetchedFiling:
         """Retrieve the primary document. Raises :class:`SourceError`."""
         ...

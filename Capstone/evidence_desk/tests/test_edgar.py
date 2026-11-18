@@ -667,6 +667,96 @@ def test_selection_against_the_recorded_nvidia_index() -> None:
     )
 
 
+# Current reports (8-K)
+
+
+def submissions_with_items(rows: list[tuple[str, str, str]]) -> dict:
+    """An index from (form, filingDate, items) rows, with EDGAR's ``items`` column."""
+    payload = submissions([(form, filed) for form, filed, _ in rows])
+    payload["filings"]["recent"]["items"] = [items for _, _, items in rows]
+    return payload
+
+
+def counting_index_client(payload: dict, seen: list[str], clock: FakeClock) -> EdgarClient:
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(str(request.url))
+        return json_response(payload)
+
+    return make_client(handler, clock)
+
+
+CURRENT_ROWS = [
+    ("8-K", "2026-11-12", "5.02,9.01"),
+    ("4", "2026-11-06", ""),
+    ("8-K/A", "2026-09-03", "8.01"),
+    ("10-Q", "2026-08-26", ""),
+    ("8-K", "2026-08-26", "2.02,9.01"),
+    ("6-K", "2026-04-01", ""),
+    ("8-K", "2026-03-06", "5.02"),
+    ("10-K", "2026-02-25", ""),
+    ("8-K", "2026-02-25", "2.02"),
+    ("8-K", "2026-01-10", "1.01"),
+]
+
+
+def test_current_reports_are_the_8ks_and_amendments_filed_after_a_date_newest_first() -> None:
+    seen: list[str] = []
+    client = counting_index_client(submissions_with_items(CURRENT_ROWS), seen, FakeClock())
+    refs = client.current_reports(NVDA, "2026-02-25")
+    assert [(r.form, r.filed_date, r.items) for r in refs] == [
+        ("8-K", "2026-11-12", ("5.02", "9.01")),
+        ("8-K/A", "2026-09-03", ("8.01",)),
+        ("8-K", "2026-08-26", ("2.02", "9.01")),
+        ("8-K", "2026-03-06", ("5.02",)),
+    ]
+    assert refs[0].url.endswith("/000104581026000000/doc0.htm")
+
+
+def test_a_periodic_report_carries_no_items_even_when_the_index_cell_is_filled() -> None:
+    payload = submissions_with_items([("10-K", "2026-02-25", "9.01")])
+    client = counting_index_client(payload, [], FakeClock())
+    assert client.periodic_filings(NVDA, 1)[0].items == ()
+
+
+def test_an_index_without_the_items_column_lists_8ks_with_no_items() -> None:
+    client = counting_index_client(submissions([("8-K", "2026-03-06")]), [], FakeClock())
+    assert [r.items for r in client.current_reports(NVDA, "2026-01-01")] == [()]
+
+
+def test_an_items_column_of_another_length_is_malformed() -> None:
+    payload = submissions_with_items([("8-K", "2026-03-06", "5.02")])
+    payload["filings"]["recent"]["items"] = []
+    with pytest.raises(SourceError, match="malformed"):
+        counting_index_client(payload, [], FakeClock()).current_reports(NVDA, "2026-01-01")
+
+
+def test_listing_8ks_right_after_the_periodic_selection_reuses_its_index() -> None:
+    seen: list[str] = []
+    clock = FakeClock()
+    client = counting_index_client(submissions_with_items(CURRENT_ROWS), seen, clock)
+    client.periodic_filings(NVDA, 3)
+    clock.now += edgar.INDEX_REUSE_SECONDS
+    client.current_reports(NVDA, "2026-02-25")
+    assert len(seen) == 1
+
+
+def test_an_index_older_than_the_reuse_window_is_fetched_again() -> None:
+    seen: list[str] = []
+    clock = FakeClock()
+    client = counting_index_client(submissions_with_items(CURRENT_ROWS), seen, clock)
+    client.periodic_filings(NVDA, 3)
+    clock.now += edgar.INDEX_REUSE_SECONDS + 1
+    client.current_reports(NVDA, "2026-02-25")
+    assert len(seen) == 2
+
+
+def test_listing_8ks_with_no_periodic_selection_before_fetches_the_index() -> None:
+    seen: list[str] = []
+    client = counting_index_client(submissions_with_items(CURRENT_ROWS), seen, FakeClock())
+    client.current_reports(NVDA, "2026-02-25")
+    assert seen == ["https://data.sec.gov/submissions/CIK0001045810.json"]
+
+
 # Company facts (XBRL)
 
 

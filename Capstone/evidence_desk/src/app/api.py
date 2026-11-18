@@ -30,10 +30,12 @@ from app.core import limits, policy
 from app.core.breakdown_models import BreakdownReport
 from app.core.change_models import FilingChanges
 from app.core.claim_change_models import RunChanges
+from app.core.events import CATEGORY_LABELS, SUBSTANTIVE
 from app.core.metric_models import MetricsReport
 from app.core.models import (
     TICKER_PATTERN,
     Company,
+    CompanyEvents,
     Decision,
     DecisionRequest,
     Review,
@@ -54,6 +56,7 @@ from app.core.ports import (
 )
 from app.core.review import build_review
 from app.engines.checker import NoChecker
+from app.services import events as event_service
 from app.services import theses, thesis_run
 from app.services.breakdowns import FORMS as BREAKDOWN_FORMS
 from app.services.breakdowns import filing_breakdowns
@@ -559,6 +562,20 @@ def create_app(
         breakdowns_cache.put((company.cik, form), result)
         return result
 
+    @app.get("/api/companies/{ticker}/events")
+    def company_events(ticker: str) -> CompanyEvents:
+        """The 8-Ks a company filed after its newest annual report, without starting a run.
+
+        Listed from EDGAR's index and read by the rule a run uses (every 8-K after the
+        newest periodic report, and those of a substantive category, newest first, up to
+        the cap), through the shared filing cache. 422 for a malformed or unknown ticker;
+        503 when EDGAR cannot list the company's periodic reports. A failure to list or
+        read the 8-Ks themselves is reported in the result, not as an error.
+        """
+        company = resolve(ticker)
+        timeline, as_of = event_service.company_events(company, filings, cache)
+        return CompanyEvents(company=company, as_of=as_of, timeline=timeline.events)
+
     @app.get("/api/meta")
     def meta() -> dict[str, Any]:
         """The limits and wording every view uses, so the page and the export agree."""
@@ -577,6 +594,14 @@ def create_app(
             "support_labels": policy.SUPPORT_LABELS,
             "no_checker_note": policy.NO_CHECKER_NOTE,
             "example": EXAMPLE_THESIS.model_dump(mode="json"),
+            "events": {
+                "heading": policy.EVENTS_HEADING,
+                "note": policy.EVENTS_NOTE,
+                "category_labels": {c.value: label for c, label in CATEGORY_LABELS.items()},
+                "status_labels": policy.EVENT_STATUS_LABELS,
+                "kind_labels": policy.EVENT_KIND_LABELS,
+                "substantive": sorted(c.value for c in SUBSTANTIVE),
+            },
         }
 
     @app.get("/api/health")

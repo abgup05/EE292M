@@ -113,6 +113,14 @@ the claim, return no findings and say so in the rationale.
 - List in "unknowns" what the passages leave open about the claim.
 Respond with JSON only."""
 
+# Added to the assessment rules only when a current report's passage is offered, so a prompt
+# with no 8-K passage is exactly what it was before version 12 (and its recordings still match).
+CURRENT_REPORT_RULE = """\
+- A <passage> with form="8-K" is from a current report filed on the date its "filed" \
+attribute gives, later than the periodic reports. Where it and an older passage disagree, \
+say so in the finding's statement; do not treat the older passage as settling the claim.
+"""
+
 ASSESS_SYSTEM = _ASSESS_INTRO + _QUOTE_RULE + _STANCE_RULE + _NUMBER_RULE + _ASSESS_OUTRO
 ASSESS_SYSTEM_WITH_FIGURES = (
     _ASSESS_INTRO + _FIGURES_QUOTE_RULE + _STANCE_RULE + _FIGURES_NUMBER_RULE + _ASSESS_OUTRO
@@ -354,11 +362,7 @@ class ClaudeAnalyst:
         prompt carries them after the passages, and the rules let a finding
         rest on a cited figure.
         """
-        blocks = "\n".join(
-            f'<passage id="{_attr(p.id)}" source="{_attr(p.source_id)}" '
-            f'locator="{_attr(p.locator)}">{_text(p.text)}</passage>'
-            for p in passages
-        )
+        blocks = "\n".join(_passage_element(p) for p in passages)
         user = (
             f"{_context_block(request, company)}\n"
             f"<claim>{_text(claim.text)}</claim>\n"
@@ -368,6 +372,8 @@ class ClaudeAnalyst:
         if figures:
             user += f"\n<reported_figures>\n{_figure_lines(figures)}\n</reported_figures>"
             system = ASSESS_SYSTEM_WITH_FIGURES
+        if any(p.form for p in passages):
+            system = _with_current_rule(system)
         data = self._call("assess", system, user, ASSESS_SCHEMA)
         return _parse_assessment(data)
 
@@ -467,3 +473,17 @@ def _parse_assessment(data: dict[str, Any]) -> ClaimDraft:
         rationale=_string(data.get("rationale", ""), "rationale"),
         unknowns=_strings(data.get("unknowns", []), "unknown"),
     )
+
+
+def _passage_element(passage: Passage) -> str:
+    """One escaped ``<passage>``; a current report's also names its form and filing date."""
+    dated = f' form="{_attr(passage.form)}" filed="{_attr(passage.filed)}"' if passage.form else ""
+    return (
+        f'<passage id="{_attr(passage.id)}" source="{_attr(passage.source_id)}" '
+        f'locator="{_attr(passage.locator)}"{dated}>{_text(passage.text)}</passage>'
+    )
+
+
+def _with_current_rule(system: str) -> str:
+    """``system`` with :data:`CURRENT_REPORT_RULE` placed before the closing rules."""
+    return system.replace(_ASSESS_OUTRO, CURRENT_REPORT_RULE + _ASSESS_OUTRO)

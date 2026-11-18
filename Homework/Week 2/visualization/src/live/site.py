@@ -621,7 +621,7 @@ BANNER_STYLE = """<style>
   .live-banner { all: initial; display: block; font: 13px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
     padding: 6px 16px; background: #eef3ea; color: #2f3a2c; border-bottom: 1px solid #cdd8c5; }
   .live-banner a { color: inherit; text-decoration: underline; }
-  .live-banner strong { font-weight: 650; }
+  .live-banner strong { font-weight: 700; }
   .live-banner .live-links { white-space: nowrap; }
   .live-banner details { display: block; margin: 2px 0 0; }
   .live-banner summary { display: list-item; cursor: pointer; width: fit-content; text-decoration: underline dotted; }

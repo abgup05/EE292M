@@ -9,9 +9,11 @@ if any check fails. Run it as ``make site-check URL=https://...``.
 
 from __future__ import annotations
 
+import http.client
 import json
 import re
 import sys
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -29,6 +31,8 @@ def get(url: str) -> tuple[int, str, bytes]:
         return error.code, url, b""
     except urllib.error.URLError as error:
         return 0, f"{url} ({error.reason})", b""
+    except (http.client.HTTPException, OSError) as error:
+        return 0, f"{url} ({type(error).__name__})", b""
 
 
 def versions(snapshot_dir: Path) -> list[int]:
@@ -49,7 +53,12 @@ def main(argv: list[str]) -> int:
         failures += not ok
         print(f"{'ok  ' if ok else 'FAIL'}  HTTP {status:<3}  {path:<28} {what}")
 
-    status, _, body = get(site + "/")
+    # The app validates its workbook before it answers; give a cold start up to 30 seconds.
+    for _ in range(30):
+        status, _, body = get(site + "/")
+        if status:
+            break
+        time.sleep(1)
     report("/", status == 200 and b"Who buys what?" in body, status, "the Week 2 page")
     status, _, body = get(site + "/versions")
     report("/versions", status == 200 and b"capstone-v1" in body, status, "the table of versions")

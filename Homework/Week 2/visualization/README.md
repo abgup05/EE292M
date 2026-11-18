@@ -53,7 +53,7 @@ make data acquires the official workbook only when absent, then inspects it. It 
 - GET /api/flows?mode=buyers&focus=335&year=2025&baseline=2019&sort=share_change
 - GET /api/export with the same selection parameters
 
-The same app also serves the capstone's version history, which is not part of this homework: `/versions`, a table of the Evidence Desk versions, and `/vN/`, a recorded, read-only snapshot of version N's page (`/vN` redirects there). They are static files in `snapshots/`, written by `make site-export` at the repository root (see `docs/versions.md` there); nothing in them is computed by this app, and the routes above are unchanged.
+The same app also serves the capstone's version history, which is not part of this homework: `/versions`, a table of the Evidence Desk versions, and `/vN/`, version N of Evidence Desk running live (`/vN` redirects there). Each version's source is in `vendored/vN/`, copied from its git tag by `make site-vendor` at the repository root with its package renamed; `src/live/` mounts it, guards it and holds its runs open; `GET /live/status` reports what the live versions run with, as booleans and counts. `snapshots/vN/` is a recorded, read-only copy of each version's page, served in its place when a version cannot be built on the server or when `LIVE_VERSIONS=off`. The design, the limits and the environment variables are in [`docs/site-live.md`](../../../docs/site-live.md). The routes above are unchanged, and nothing a version computes is computed by this app.
 
 The backend computes all research results; the frontend handles interaction and chart geometry only. Calculations are covered by independent synthetic examples, full-source reconciliation, known source-cell checks and live endpoint validation. Visual browser checks are not part of make verify.
 
@@ -64,7 +64,7 @@ The app is prepared for Vercel's native FastAPI/Python runtime. Vercel runs the 
 1. Push the committed app to GitHub. The implementation is on `codex/week2-radius-visualization`; deploy that branch, or merge it through a reviewed pull request before deploying `main`.
 2. In [Vercel New Project](https://vercel.com/new), import `abgup05/EE292M`. Select the branch containing these files. If the import screen starts from `main`, use the branch's GitHub URL or create a deployment from the feature branch after import.
 3. Set **Root Directory** to `Homework/Week 2/visualization` (the entire app folder, not `src/web`).
-4. Use the **FastAPI** framework preset. Leave Build Command, Install Command and Output Directory at their framework defaults. No environment variables or API keys are needed for this app.
+4. Use the **FastAPI** framework preset. Leave Build Command, Install Command and Output Directory at their framework defaults. The Week 2 app itself needs no environment variable or key. The capstone's live versions read `ANTHROPIC_API_KEY`, `SEC_USER_AGENT` and the optional `LIVE_*` limits from the project's environment variables; the table is in [`docs/site-live.md`](../../../docs/site-live.md). Set them in Vercel only: no key or contact string belongs in this repository.
 5. Deploy, then check the homepage, switch between both views, change a year, and download a CSV. `/api/catalog` should return the categories and years; `/docs` should show the API.
 6. Paste the working website URL into the Website field in [W2L2.md](../W2L2.md). Check the link in a signed-out browser before submitting it so you know whether your Vercel project's access settings allow your reviewer to open it.
 
@@ -73,9 +73,14 @@ Deployment files:
 - `main.py` exposes the existing app and supplies the source import path that Docker normally provides.
 - `.python-version` selects Python 3.14.
 - `requirements.txt` contains pinned runtime dependencies exported from the existing Docker lock. After changing dependencies, run `make lock` and `make vercel-deps`, and commit both the lock and exported requirements.
-- `vercel.json` selects FastAPI and excludes tests, Docker files and the unused NYSE workbook from the function bundle. `.vercelignore` also excludes those files from CLI uploads.
+- `vercel.json` selects FastAPI, lets the function run for 300 seconds (the Hobby plan's limit; a run-start request of a live capstone version is held open until its run has finished) and excludes tests, Docker files and the unused NYSE workbook from the function bundle. `.vercelignore` also excludes those files from CLI uploads.
+- `vendored/` and `snapshots/` are in the bundle. The project's files in the bundle are 50.9 MB in 1,293 files (every file under this folder but `docker/`, `tests/`, `.live-shots/` and the NYSE workbook, summed with `find` and `stat`), against Vercel's limit of 500 MB for a Python function with its dependencies. The size of the installed dependencies on Vercel was not measured.
 - The official BEA workbook, provenance file and web assets stay in the deployment so the app can read them without a separate storage service.
 
-Local checks validate the entrypoint without Docker's `PYTHONPATH`, source loading, static files and API behavior. A live Vercel build and deployment have not yet been verified.
+Local checks validate the entrypoint without Docker's `PYTHONPATH`, source loading, static files and API behavior. `make site-live-test` at the repository root runs the function as Vercel does (read-only source tree, writable `/tmp` only, no key) on 127.0.0.1:8790 and makes a run with every capstone version; what only a real deployment can show is listed in `docs/site-live.md`.
+
+### A departure from the repository's standards
+
+`AGENTS.md` says the app is published on 127.0.0.1 only. That holds for everything run from this repository: `make up` binds 127.0.0.1:8765 and the emulation 127.0.0.1:8790. The Vercel deployment is the exception, and with the live versions it is a wider one than before: the public site now runs the capstone's code on requests from anyone, with the owner's model key when one is set in Vercel. The owner asked for this ("deploy the website and all subsequent versions with the key online"). What stands between a visitor and the key is `src/live/guard.py` and its limits, which are per server instance and therefore not hard totals; a spend limit on the key itself is the limit that does not depend on this code.
 
 Official references: [FastAPI on Vercel](https://vercel.com/docs/frameworks/backend/fastapi), [Python runtime](https://vercel.com/docs/functions/runtimes/python), and [Git deployments](https://vercel.com/docs/git).

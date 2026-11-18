@@ -60,12 +60,23 @@ assert b"Who buys what?" in fetch("/")
 assert b"function drawTrend" in fetch("/app.js")
 assert b".analysis-grid" in fetch("/styles.css")
 assert b"capstone-v1" in fetch("/versions")
-assert b'data-snapshot-version="1"' in fetch("/v1")
-assert b'data-snapshot-version="1"' in fetch("/v1/")
-assert b"window.fetch" in fetch("/v1/snapshot.js")
+# The capstone's versions run live (src/live): the version's own page with the live banner
+# and the shim, its own API under /vN/, and a status that holds booleans and counts only.
+assert b'data-live-version="1"' in fetch("/v1")
+assert b'data-live-version="1"' in fetch("/v1/")
+assert b"window.fetch" in fetch("/v1/live-shim.js")
+assert json.loads(fetch("/v1/api/research")) == {"runs": []}
+newest = max(int(n) for n in json.loads(fetch("/live/status"))["versions"])
+assert f'data-live-version="{newest}"'.encode() in fetch(f"/v{newest}/")
+assert json.loads(fetch(f"/v{newest}/api/meta"))["example"]["ticker"] == "NVDA"
+status = json.loads(fetch("/live/status"))
+assert status["versions"][str(newest)]["serving"] == "live"
+assert isinstance(status["key_present"], bool) and isinstance(
+    status["sec_user_agent_present"], bool
+)
 print(
     "Smoke: both directions, time series, shares, empty data, validation, CSV, page assets "
-    "and the capstone snapshots passed."
+    "and the capstone's live versions passed."
 )
 print(
     "Example:",

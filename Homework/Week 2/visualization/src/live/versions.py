@@ -10,8 +10,8 @@ chosen here, all through parameters every version already has:
 - versions 2 and later get their own EDGAR client over :class:`live.seed.SeedTransport`,
   identified by ``SEC_USER_AGENT`` as their own client would be, and a page fetcher that
   refuses every address (visitor-supplied ``extra_urls`` are off online);
-- version 1 gets a fetcher that reads only its example's two pages (live, or from the seed when
-  the page cannot be fetched) and no web search.
+- version 1 gets its store in that directory, a fetcher that reads only its example's two
+  pages (live, or from the seed when the page cannot be fetched) and no web search.
 
 The model engine, the checker and the readers are each version's own choice from the
 environment, as they are locally; the cassette variables are blanked while it is built.
@@ -139,8 +139,13 @@ def build(info: Vendored, seed: Seed) -> Any:
             parameters = inspect.signature(api.create_app).parameters
             if info.era == "research":
                 fetch = importlib.import_module(f"{info.package}.fetch")
+                # Version 1 reads its data directory when its module is first imported, so
+                # its store is handed to it: where it writes must not depend on that moment.
+                store = importlib.import_module(f"{info.package}.store").Store(
+                    data_dir / "runs.sqlite"
+                )
                 return api.create_app(
-                    fetcher=example_fetcher(fetch, seed), searcher=None
+                    store=store, fetcher=example_fetcher(fetch, seed), searcher=None
                 )
             if "filings" not in parameters or "fetch_page" not in parameters:
                 raise RuntimeError(

@@ -348,8 +348,10 @@ keeps none.
 
 ## The fifth referee's findings (version 14.1)
 
-Each fix began as a test that failed on the code of version 14, run once before the fix
-([`referee-5-triage.md`](referee-5-triage.md)); the failing counts are from that run.
+Each fix but one began as a test that failed on the code of version 14, run once before the fix
+([`referee-5-triage.md`](referee-5-triage.md)); the failing counts are from that run. The exception is the
+restore check: its fix was written first, and its tests were then run against version 14's `backup.py`, put
+back for the purpose.
 
 - **The comparison a computed test prints** (`tests/test_computed_digits.py`, 5 of 9 failed): a gross margin
   of 74.96% or 74.996% against "at least 75%" fails and its arithmetic line, read back, compares the same way

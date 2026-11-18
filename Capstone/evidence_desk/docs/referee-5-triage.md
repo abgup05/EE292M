@@ -1,6 +1,6 @@
 # The fifth referee, finding by finding (version 14.1)
 
-The referee read version 14 (tag `capstone-v14`, commit `b372c7f`) with read-only tools and ran nothing ([its text, unedited](reviews/referee-5-version-14.md)). Every claim it made about the code was checked against the code at that tag before anything was changed; the file and line given are the tag's. Every fix began as a test that failed ([`testing.md`](testing.md), "The fifth referee's findings"). Version 14.1 is the answer.
+The referee read version 14 (tag `capstone-v14`, commit `b372c7f`) with read-only tools and ran nothing ([its text, unedited](reviews/referee-5-version-14.md)). Every claim it made about the code was checked against the code at that tag before anything was changed; the file and line given are the tag's. Every fix but one began as a test that failed; the restore check's fix (7b) was written before its tests, which were then run against version 14's `backup.py`, put back for the purpose, and 2 of 24 failed ([`testing.md`](testing.md), "The fifth referee's findings"). Version 14.1 is the answer.
 
 Two things the referee could not see bear on several findings. The gate at version 14 had been run green on a fresh clone (lint, 2,326 offline tests, the smoke test, 337 page assertions and 2 skipped), but no output of it was committed. And the Anthropic API runs are real: credit was added on 18 November, and before that every model answer was a stand-in's recording.
 

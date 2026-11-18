@@ -1,4 +1,4 @@
-.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench eval eval-validate backup restore-check up-recorded live-walk changes breakdowns sample-run-changes golden-sheet backup-status figures two-writers header-cut-check time-live events events-probe event-categories
+.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench eval eval-validate backup restore-check up-recorded live-walk changes breakdowns sample-run-changes golden-sheet backup-status figures two-writers header-cut-check time-live events events-probe event-categories watch-once watch-status watch-examples watch-replay
 
 export COMPOSE_PROJECT_NAME := ee292m-evidence-desk
 export LOCAL_UID := $(shell id -u)
@@ -35,12 +35,14 @@ help:
 	@echo 'Backup: restore-check (restore the newest backup into a temporary directory and compare it with the live record, record by record, and fail on any record this version cannot read; PASS with the backup'"'"'s age, or FAIL)'
 	@echo 'Two writers: two-writers (starts the app on a scratch record under results/ and has it and a one-off container write that record at once; integrity and every row checked)'
 	@echo 'Backup: backup-status (one line: how old the newest backup is and how many runs, decisions and theses were made or changed since)'
+	@echo 'Standing watch: watch-once (one watcher cycle, then exit), watch-status (the watcher'"'"'s health, the queue and each watch); make up starts the watcher beside the app'
+	@echo 'Standing watch: watch-examples (offline: writes the API payloads of a scenario to docs/examples/v14), watch-replay (live EDGAR, no model: NVIDIA'"'"'s last twelve months of filings fed to triage one at a time, against the labels in eval/watch-replay-nvda.json)'
 
 build:
 	$(COMPOSE) build app
 
 up:
-	$(COMPOSE) up --build --force-recreate -d app
+	$(COMPOSE) up --build --force-recreate -d app watch
 	@-$(COMPOSE) exec -T app python -m app.backup status
 
 up-recorded:
@@ -212,3 +214,16 @@ two-writers:
 
 restore-check:
 	$(RUN) python -m app.backup restore-check
+
+# The standing watch (version 14). The watcher itself runs as the `watch` service (make up).
+watch-once:
+	$(RUN) python -m app.watch once
+
+watch-status:
+	@$(RUN) python -m app.watch status
+
+watch-examples:
+	$(RUN) python -m tests.watch_examples
+
+watch-replay:
+	$(RUN) python -m tests.watch_replay $(ARGS)

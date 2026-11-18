@@ -131,11 +131,11 @@ def test_a_job_left_running_by_a_crash_is_taken_up_after_its_lease(
     assert crashed is not None
 
     early = T0 + timedelta(seconds=LEASE - 1)
-    assert watches.reap_expired(early) == 0
+    assert watches.reap_expired(early) == []
     assert watches.claim_job("other", early, LEASE) is None
 
     late = T0 + timedelta(seconds=LEASE)
-    assert watches.reap_expired(late) == 1
+    assert [state for _, state in watches.reap_expired(late)] == [JobState.queued]
     taken = watches.claim_job("other", late + timedelta(seconds=wording.BACKOFF_SECONDS[0]), LEASE)
     assert taken is not None and taken.attempts == 2 and taken.worker == "other"
     assert taken.error == wording.LEASE_EXPIRED

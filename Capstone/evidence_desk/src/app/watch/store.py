@@ -310,12 +310,32 @@ class WatchStore:
         rows = self._db.query(f"SELECT {_JOB_COLUMNS} FROM watch_jobs WHERE id = ?", (ident,))
         return _job(rows[0]) if rows else None
 
-    def job_counts(self) -> dict[JobState, int]:
-        """How many jobs are in each state."""
+    def job_counts(self, thesis_id: str | None = None) -> dict[JobState, int]:
+        """How many jobs (of one thesis, when given) are in each state."""
+        where, parameters = ("WHERE thesis_id = ?", (thesis_id,)) if thesis_id else ("", ())
         counts = dict.fromkeys(JobState, 0)
-        for state, count in self._db.query("SELECT state, COUNT(*) FROM watch_jobs GROUP BY state"):
+        for state, count in self._db.query(
+            f"SELECT state, COUNT(*) FROM watch_jobs {where} GROUP BY state", parameters
+        ):
             counts[JobState(state)] = count
         return counts
+
+    def last_job_error(self, thesis_id: str) -> str:
+        """The error of the newest failed job of ``thesis_id``, or ""."""
+        rows = self._db.query(
+            "SELECT error FROM watch_jobs WHERE thesis_id = ? AND state = ? "
+            "ORDER BY updated_at DESC LIMIT 1",
+            (thesis_id, JobState.failed.value),
+        )
+        return rows[0][0] if rows else ""
+
+    def inbox_counts(self, thesis_id: str) -> tuple[int, int]:
+        """(unread items, runs waiting) of ``thesis_id``'s inbox."""
+        unread, waiting = self._db.query(
+            "SELECT COUNT(*) - COUNT(read_at), SUM(kind = ?) FROM inbox WHERE thesis_id = ?",
+            (InboxKind.waiting.value, thesis_id),
+        )[0]
+        return int(unread or 0), int(waiting or 0)  # SUM of no rows is NULL
 
     def claim_job(self, worker: str, now: datetime, lease_seconds: int) -> WatchJob | None:
         """Claim the oldest ready job for ``worker`` and lease it; None when none is ready.
@@ -329,7 +349,7 @@ class WatchStore:
                 "UPDATE watch_jobs SET state = ?, worker = ?, lease_until = ?, "
                 "attempts = attempts + 1, updated_at = ? "
                 "WHERE id = (SELECT id FROM watch_jobs WHERE state = ? AND not_before <= ? "
-                "ORDER BY not_before, created_at, id LIMIT 1) AND state = ? "
+                "ORDER BY not_before, created_at, rowid LIMIT 1) AND state = ? "
                 f"RETURNING {_JOB_COLUMNS}",
                 (
                     JobState.running.value,
@@ -375,17 +395,23 @@ class WatchStore:
         """
         return self._settle(job, reason, now, expired=False)
 
-    def reap_expired(self, now: datetime) -> int:
-        """Treat every job whose lease ran out as failed by a stopped worker; how many."""
+    def reap_expired(self, now: datetime) -> list[tuple[WatchJob, JobState]]:
+        """Treat every job whose lease ran out as failed by a stopped worker.
+
+        Returns each job settled here and its new state: queued again, or failed when that
+        was its last attempt (the caller then writes its inbox item).
+        """
         rows = self._db.query(
             f"SELECT {_JOB_COLUMNS} FROM watch_jobs WHERE state = ? AND lease_until <= ?",
             (JobState.running.value, stamp(now)),
         )
-        return sum(
-            1
-            for row in rows
-            if self._settle(_job(row), wording.LEASE_EXPIRED, now, expired=True) is not None
-        )
+        settled: list[tuple[WatchJob, JobState]] = []
+        for row in rows:
+            job = _job(row)
+            state = self._settle(job, wording.LEASE_EXPIRED, now, expired=True)
+            if state is not None:
+                settled.append((job, state))
+        return settled
 
     def finish_job(self, job: WatchJob, outcome: str, now: datetime) -> bool:
         """Mark ``job`` done with what it did; False when it is no longer this worker's."""

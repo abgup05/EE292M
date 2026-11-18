@@ -19,6 +19,26 @@ services:
       - ..:/work
     ports:
       - "127.0.0.1:8766:8000"
+  watch:
+    # The standing watch (version 14): polls EDGAR for new filings of watched theses, triages
+    # them and runs or queues each run. No port; it shares the data directory with the app.
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: app
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    env_file:
+      - path: ../.env
+        required: false
+    environment:
+      PYTHONPATH: /work/src
+      HOME: /tmp
+      EVIDENCE_DESK_DATA_DIR: ${EVIDENCE_DESK_DATA_DIR:-/work/data}
+      EVIDENCE_DESK_CASSETTE: ${EVIDENCE_DESK_CASSETTE:-}
+    volumes:
+      - ..:/work
+    command: ["python", "-m", "app.watch"]
+    restart: unless-stopped
   lock:
     build:
       context: .

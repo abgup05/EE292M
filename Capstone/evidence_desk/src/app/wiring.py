@@ -17,6 +17,7 @@ import logging
 import os
 from pathlib import Path
 
+from app.core import watch_policy
 from app.core.ports import Analyst, Checker
 from app.engines.cassette import CassetteTransport
 from app.engines.checker import ClaudeChecker, NoChecker, configured_check_model
@@ -25,6 +26,7 @@ from app.engines.extractive import ExtractiveAnalyst
 from app.engines.transport import AnthropicTransport
 from app.sources.edgar import EdgarClient
 from app.store import FilingCache, Store
+from app.watch.service import WatchSettings, clamp_interval
 
 log = logging.getLogger(__name__)
 DATA_DIR_VARIABLE = "EVIDENCE_DESK_DATA_DIR"
@@ -195,3 +197,38 @@ def store_from_env() -> Store:
 def cache_from_env() -> FilingCache:
     """The disposable filing cache at ``data_dir()/cache/filings.sqlite``, created if needed."""
     return FilingCache(data_dir() / CACHE_PATH)
+
+
+# Version 14, the standing watch.
+WATCH_INTERVAL_VARIABLE = "EVIDENCE_DESK_WATCH_INTERVAL_SECONDS"
+WATCH_AUTO_RUNS_VARIABLE = "EVIDENCE_DESK_WATCH_AUTO_RUNS_PER_DAY"
+
+
+def _whole_number(variable: str, default: int) -> int:
+    text = os.environ.get(variable, "").strip()
+    if not text:
+        return default
+    if not text.isdigit():
+        raise ConfigurationError(f"{variable} must be a whole number of 0 or more, not {text!r}")
+    return int(text)
+
+
+def watch_settings_from_env() -> WatchSettings:
+    """How often the watcher polls and the daily cap on automatic runs, from the environment.
+
+    ``EVIDENCE_DESK_WATCH_INTERVAL_SECONDS`` (default 900) is raised to the floor of 300
+    seconds, with a warning, when set below it; ``EVIDENCE_DESK_WATCH_AUTO_RUNS_PER_DAY``
+    (default 5; 0 makes every run wait for its owner). Raises :class:`ConfigurationError`
+    for a value that is not a whole number.
+    """
+    asked = _whole_number(WATCH_INTERVAL_VARIABLE, watch_policy.DEFAULT_INTERVAL_SECONDS)
+    interval = clamp_interval(asked)
+    if interval != asked:
+        log.warning(
+            "%s=%d is below the floor; polling every %d seconds",
+            WATCH_INTERVAL_VARIABLE,
+            asked,
+            interval,
+        )
+    cap = _whole_number(WATCH_AUTO_RUNS_VARIABLE, watch_policy.DEFAULT_AUTO_RUNS_PER_DAY)
+    return WatchSettings(interval_seconds=interval, auto_runs_per_day=cap)

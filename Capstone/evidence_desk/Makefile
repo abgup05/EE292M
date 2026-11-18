@@ -21,6 +21,7 @@ READER_ECHO := python -c "import os; print('readers:', os.environ.get('EVIDENCE_
 help:
 	@echo 'Everyday: build up down verify clean (verify-fresh: clone the committed branch under results/ and verify it)'
 	@echo 'Claim readers for one command: up, up-recorded or run with READERS=models (or model, grammar); without it .env decides. readers-check tests that inside the containers'
+	@echo 'Outside and market views (live EDGAR, no key): outside-view T=NVDA CLAIM="..." [AS_OF=], market-view T=NVDA [PRICE= PRICE_DATE=] [AS_OF=] [PRICES=closes.csv INDEX=fred], market-check (both on the eight probe companies), market-probe (every outside source asked once); fixtures-market (live, on purpose) and market-examples (offline) write docs/examples/market'
 	@echo 'Recorded demo: up-recorded (the app with model answers replayed from demo/cassettes/nvda-example: Load example, then Test the thesis; needs EDGAR, no key)'
 	@echo 'Live walk: live-walk (the running app over HTTP with live EDGAR and recorded answers: a run, decisions, the reviewed brief, a saved thesis run twice, the comparison)'
 	@echo 'Development: test lint fmt smoke logs shell (test T=tests/test_x.py; lint/fmt FILES="src/app/x.py")'

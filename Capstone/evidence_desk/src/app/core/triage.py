@@ -19,8 +19,12 @@ No network, store, clock or model. It reuses the rules of version 12 and milesto
 
 **Extension point.** ``extra_rules`` are further rules, each a function of the claims
 and the filing returning (claim id, reason) pairs; any pair makes that claim bear. The
-watch passes :data:`app.watch.service.EXTRA_TRIAGE_RULES`, empty in version 13; version 14
-adds "a compiled claim's computed outcome flipped" there.
+watch passes :data:`app.watch.service.EXTRA_TRIAGE_RULES`, which is empty. Version 14 did
+not wire "a compiled claim's computed outcome flipped" here: the new filing's facts reach
+the app only through EDGAR's company-facts API, a request triage does not make (it reads
+the filing index and the two filings it compares), and a 10-K or 10-Q bears on every
+claim anyway. The change of outcome is reported once the run has read those facts, in the
+inbox item's ``moved.computed`` (:mod:`app.core.watch_report`).
 """
 
 from __future__ import annotations
@@ -250,7 +254,7 @@ def triage(
     else:
         raise ValueError(f"the watch triages 10-K, 10-Q and 8-K filings, not {filing.form!r}")
 
-    # EXTENSION POINT (version 14): further rules add a reason to a claim and make it bear.
+    # EXTENSION POINT: further rules add a reason to a claim and make it bear (none is wired).
     by_id = {result.claim_id: result for result in claim_results}
     extended = False
     for rule in extra_rules:

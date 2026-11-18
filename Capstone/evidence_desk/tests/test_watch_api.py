@@ -19,7 +19,14 @@ from app.services import theses
 from app.store import FilingCache, Store
 from app.watch.service import Watcher, WatchSettings, run_executor
 from app.watch.store import WatchStatus, WatchStore
-from tests.fakes import FakeFilings, FakePages, ScriptedAnalyst, WallClock
+from tests.fakes import (
+    FakeFilings,
+    FakePages,
+    ScriptedAnalyst,
+    WallClock,
+    current_report_html,
+    current_report_ref,
+)
 from tests.test_events_run import CLAIM, DEPARTURE_8K, departure_html, filings
 from tests.test_watch_service import GROWTH, T0, departure_or_annual
 
@@ -229,3 +236,55 @@ def test_meta_labels_every_inbox_kind_policy_and_rule(api: Api) -> None:
     assert meta["collapsed_kinds"] == ["not_relevant"]
     assert meta["policy_labels"] == {"auto": "Run at once", "ask": "Ask before running"}
     assert meta["limits"]["min_interval_seconds"] == 300
+
+
+# The gaps the page builder reported (version 14)
+
+
+def test_the_inbox_counts_the_folded_items_itself(api: Api) -> None:
+    api.client.put(f"/api/theses/{api.thesis_id}/watch", json={"policy": "ask"})
+    vote = current_report_ref(3, "2026-03-11", "5.07")
+    api.source.current.append(vote)
+    api.source.documents[vote.url] = current_report_html(
+        ("5.07", "Submission of Matters.", ["Votes."])
+    )
+    api.gain_departure()
+    api.watcher.cycle()
+
+    page = api.client.get("/api/inbox?limit=1").json()
+    assert page["total"] == 2 and len(page["items"]) == 1
+    assert page["folded"] == 1  # the vote, seen and not relevant, whatever page is drawn
+    assert api.client.get(f"/api/inbox?thesis_id={api.thesis_id}").json()["folded"] == 1
+
+
+def test_every_404_has_the_apps_error_shape(api: Api) -> None:
+    for method, path in (
+        ("put", "/api/theses/th-000000000000/watch"),
+        ("delete", "/api/theses/th-000000000000/watch"),
+        ("get", "/api/inbox/ib-nothing"),
+        ("post", "/api/inbox/ib-nothing/run"),
+        ("get", "/api/runs/run-000000000000"),
+        ("get", "/api/no-such-route"),
+    ):
+        kwargs = {"json": {}} if method == "put" else {}
+        response = getattr(api.client, method)(path, **kwargs)
+        assert response.status_code == 404, path
+        assert set(response.json()) == {"error"}, path
+        assert response.json()["error"], path
+
+
+def test_the_thesis_list_says_which_theses_are_watched(api: Api) -> None:
+    [before] = api.client.get("/api/theses").json()["theses"]
+    assert before["watch"] is None
+
+    api.client.put(f"/api/theses/{api.thesis_id}/watch", json={"policy": "ask"})
+    api.gain_departure()
+    api.watcher.cycle()
+
+    [after] = api.client.get("/api/theses").json()["theses"]
+    assert after["watch"] == {
+        "policy": "ask",
+        "policy_label": "Ask before running",
+        "unread": 1,
+        "waiting_runs": 1,
+    }

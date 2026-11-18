@@ -36,7 +36,7 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/core/meaning.py     the meaning check's pure half: what the checker is shown, and applying its judgements
     src/app/core/events.py      the rules about 8-Ks: SEC's table of items with a category each, an item's opening sentences and the officer roles a 5.02 names, a claim's categories (lexicon and a name-and-leaving pattern), which 8-Ks a run reads, which postdate a finding, a claim's caution and note, the as-of block; event_models.py is its pure data
     src/app/core/watch_models.py, watch_policy.py   the standing watch's pure data (watch, job, triage, inbox item, what moved) and every number and sentence it uses
-    src/app/core/triage.py      whether a new filing bears on each claim, by rule (8-K item categories, results, periodic reports and their changed paragraphs); the version 14 extension point; pure
+    src/app/core/triage.py      whether a new filing bears on each claim, by rule (8-K item categories, results, periodic reports and their changed paragraphs); an extension point, unwired; pure
     src/app/core/watch_report.py   what moved between a thesis's previous run and the one a filing caused, from core/compare; pure
     src/app/sources/edgar.py    SEC EDGAR adapter: ticker, filing selection, rate-limited fetch; recent_filings lists the watched forms in one request
     src/app/sources/filing.py   splits a 10-K/10-Q into Part and Item sections
@@ -334,7 +334,9 @@ the end of `create_app`, which takes an injectable `wall_clock`): `PUT` and `DEL
 - **A change to the standing watch.** What bears on a claim: `core/triage.py` with `tests/test_triage.py`; the
   categories it reads are the 8-K rules above, shared with the run. Measure a change with `make watch-replay` (live,
   no model) against the labels in `eval/watch-replay-nvda.json`, before and after, and never change a label to fit.
-  A rule for version 14's compiled claims goes in `EXTRA_TRIAGE_RULES` (`watch/service.py`). Numbers and wording:
+  A further triage rule goes in `EXTRA_TRIAGE_RULES` (`watch/service.py`); it is empty, because a compiled claim's
+  change of outcome needs the company facts, which triage does not fetch; that change is reported after the run, in
+  `WhatMoved.computed` (`core/watch_report.py`). Numbers and wording:
   `core/watch_policy.py`. A new watch table: `WATCH_SCHEMA` in `watch/store.py` and `WATCH_KINDS` (so backup and
   restore-check cover it); `make backup` first, `make restore-check` after. A change to a payload: `make
   watch-examples`, then `tests/test_watch_examples.py` says whether the README still names every field.

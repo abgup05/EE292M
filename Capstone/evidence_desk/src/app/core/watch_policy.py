@@ -76,6 +76,8 @@ KIND_LABELS = {
     InboxKind.failed: "Could not be completed",
 }
 COLLAPSED_KINDS = (InboxKind.not_relevant,)
+# How many of a thesis's claims a watch-triggered run moved (app.core.watch_report).
+CLAIMS_MOVED = "{moved} of {total} {noun} moved."
 POLICY_LABELS = {
     WatchPolicy.auto: "Run at once",
     WatchPolicy.ask: "Ask before running",

@@ -288,7 +288,7 @@ def test_unknown_runs_are_404(client: TestClient) -> None:
     for path in ("/api/runs/run-nope", "/api/runs/run-nope/export.md"):
         response = client.get(path)
         assert response.status_code == 404
-        assert response.json() == {"detail": "Run not found"}
+        assert response.json() == {"error": "Run not found"}
 
 
 # Wording and health
@@ -609,7 +609,7 @@ def test_the_review_flow_recomputes_the_verdict_after_each_decision(
     assert refused.status_code == 422 and fields(refused) == ["finding_id"]
 
     unknown = decide(client, run_id, "f99", {"value": "accepted"})
-    assert unknown.status_code == 404 and unknown.json() == {"detail": "Finding not found"}
+    assert unknown.status_code == 404 and unknown.json() == {"error": "Finding not found"}
 
     long_note = {"value": "rejected", "note": "x" * (limits.MAX_NOTE_CHARS + 1)}
     too_long = decide(client, run_id, support, long_note)
@@ -723,6 +723,7 @@ def test_a_saved_thesis_runs_twice_and_says_what_moved(
                 "runs": 0,
                 "last_run_id": None,
                 "last_status": None,
+                "watch": None,
             }
         ]
     }
@@ -806,9 +807,9 @@ def test_unknown_theses_and_review_routes_are_404(thesis_client: TestClient) -> 
     ]:
         response = client.request(method, path)
         assert response.status_code == 404, path
-        assert response.json() == {"detail": detail}
+        assert response.json() == {"error": detail}
     response = decide(client, "run-nope", "f1", {"value": "accepted"})
-    assert response.status_code == 404 and response.json() == {"detail": "Run not found"}
+    assert response.status_code == 404 and response.json() == {"error": "Run not found"}
 
 
 # What changed between a company's two latest filings of one form
@@ -922,7 +923,7 @@ def test_the_brief_carries_the_reading_list_only_when_asked(run_changes_client) 
 def test_the_changes_of_an_unknown_run_are_a_404(run_changes_client) -> None:
     client, _, _ = run_changes_client
     response = client.get("/api/runs/run-does-not-exist/changes")
-    assert response.status_code == 404 and response.json() == {"detail": "Run not found"}
+    assert response.status_code == 404 and response.json() == {"error": "Run not found"}
 
 
 def test_a_source_that_cannot_list_a_form_gives_a_note_and_not_an_error(

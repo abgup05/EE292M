@@ -142,6 +142,7 @@ class InboxPage:
     items: list[InboxItem]
     total: int
     unread: int
+    folded: int = 0
 
 
 _JOB_COLUMNS = (
@@ -488,10 +489,14 @@ class WatchStore:
             "ORDER BY read_at IS NOT NULL, created_at DESC, id DESC LIMIT ? OFFSET ?",
             (*parameters, limit, offset),
         )
-        total, unread = self._db.query(
-            f"SELECT COUNT(*), COUNT(*) - COUNT(read_at) FROM inbox {where}", parameters
+        folded_kinds = [kind.value for kind in wording.COLLAPSED_KINDS]
+        marks = ", ".join("?" for _ in folded_kinds)
+        total, unread, folded = self._db.query(
+            f"SELECT COUNT(*), COUNT(*) - COUNT(read_at), SUM(kind IN ({marks})) "
+            f"FROM inbox {where}",
+            (*folded_kinds, *parameters),
         )[0]
-        return InboxPage([self._item(*row) for row in rows], total, unread)
+        return InboxPage([self._item(*row) for row in rows], total, unread, int(folded or 0))
 
     def mark_read(self, ids: Sequence[str], now: datetime, *, read: bool) -> list[str]:
         """Mark the items ``ids`` read (or unread); the ids that exist."""

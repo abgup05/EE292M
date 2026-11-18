@@ -57,8 +57,10 @@ from app.watch.store import WatchStatus, WatchStore, item_id, stamp
 
 log = logging.getLogger(__name__)
 
-# EXTENSION POINT (version 14): further triage rules, each (claims, filing) -> [(claim id,
-# reason)]. Version 14 adds "a compiled claim's computed outcome flipped" here at the merge.
+# EXTENSION POINT: further triage rules, each (claims, filing) -> [(claim id, reason)]. Left
+# empty in version 14: a compiled claim's change of outcome needs the facts the new filing
+# brings, which come only from EDGAR's company-facts API, a request triage does not make.
+# It is reported after the run instead (WhatMoved.computed, app.core.watch_report).
 EXTRA_TRIAGE_RULES: tuple[ExtraRule, ...] = ()
 
 # How many of a form's filings are listed to find the one before a new 10-K or 10-Q.

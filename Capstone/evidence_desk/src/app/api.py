@@ -24,9 +24,10 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from pydantic import BaseModel
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app import __version__, wiring
-from app.core import limits, policy
+from app.core import limits, policy, watch_policy
 from app.core.breakdown_models import BreakdownReport
 from app.core.change_models import FilingChanges
 from app.core.claim_change_models import RunChanges
@@ -74,6 +75,7 @@ from app.sources.http import fetch_page as default_fetch_page
 from app.sources.urls import canonicalize, validate_public_url
 from app.store import FactStore, FilingCache, Store
 from app.watch import routes as watch_routes
+from app.watch.store import WatchStore
 
 WEB_DIR = Path(__file__).resolve().parents[1] / "web"
 RUN_WORKERS = 2
@@ -131,8 +133,17 @@ class RunList(BaseModel):
     runs: list[RunSummary]
 
 
+class ThesisWatchState(BaseModel):
+    """A watched thesis's watch, as the saved-thesis list shows it: None when not watched."""
+
+    policy: str
+    policy_label: str
+    unread: int
+    waiting_runs: int
+
+
 class ThesisSummary(BaseModel):
-    """One line of the saved-thesis list."""
+    """One line of the saved-thesis list; ``watch`` is None when the thesis is not watched."""
 
     id: str
     name: str
@@ -142,6 +153,7 @@ class ThesisSummary(BaseModel):
     runs: int
     last_run_id: str | None
     last_status: str | None
+    watch: ThesisWatchState | None = None
 
 
 class ThesisList(BaseModel):
@@ -303,6 +315,15 @@ def create_app(
     @app.exception_handler(RequestRefused)
     async def check_refused(_: Request, exc: RequestRefused) -> JSONResponse:
         return _refusal(exc.problems)
+
+    @app.exception_handler(StarletteHTTPException)
+    async def http_refused(_: Request, exc: StarletteHTTPException) -> JSONResponse:
+        # One shape for every refusal: {"error": ...}, as the 409, 422 and 503 answers have.
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"error": str(exc.detail)},
+            headers=getattr(exc, "headers", None),
+        )
 
     @app.exception_handler(SourceError)
     async def source_unavailable(_: Request, exc: SourceError) -> JSONResponse:
@@ -469,9 +490,21 @@ def create_app(
 
     @app.get("/api/theses")
     def list_theses() -> ThesisList:
-        """Saved theses, newest first, each with its run count and latest run."""
+        """Saved theses, newest first, each with its run count, latest run and watch."""
+        watch_store = WatchStore(store)
+        watched = {watch.thesis_id: watch for watch in watch_store.list_watches()}
         summaries = []
         for thesis in store.list_theses():
+            watch = watched.get(thesis.id)
+            state = None
+            if watch is not None:
+                unread, waiting = watch_store.inbox_counts(thesis.id)
+                state = ThesisWatchState(
+                    policy=watch.policy.value,
+                    policy_label=watch_policy.POLICY_LABELS[watch.policy],
+                    unread=unread,
+                    waiting_runs=waiting,
+                )
             last = store.get_run(thesis.run_ids[0]) if thesis.run_ids else None
             summaries.append(
                 ThesisSummary(
@@ -483,6 +516,7 @@ def create_app(
                     runs=len(thesis.run_ids),
                     last_run_id=thesis.run_ids[0] if thesis.run_ids else None,
                     last_status=last.status if last else None,
+                    watch=state,
                 )
             )
         return ThesisList(theses=summaries)

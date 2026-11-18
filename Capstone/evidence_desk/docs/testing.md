@@ -311,6 +311,7 @@ from two processes; nothing was planted to make it fail).
 | A model parser's answer accepted when it does not validate or names something unsupported; a test counted when the two readers differ; the parser on by default, or asking anything when off | `tests/test_claim_reading.py` (37 tests, fake transport only) | written first: ImportError |
 | A claim-readers evaluation that calls before it says how many, or above the cap | `tests/test_claim_readers_eval.py` (6 tests, fake transport only) | written first: ImportError |
 | A rule taken from the foreign development half that does not hold | `tests/test_claimtest.py`, 16 new cases on new sentences | all 16 failed on the grammar before the change |
+| An inbox whose folded count the page must work out, an inbox item that says what moved but not how many of the claims, a computed test's change of outcome left unsaid (or a test read differently called one), a 404 in a shape other than the app's refusals, a thesis list that does not say which theses are watched | `tests/test_watch_api.py` (3 new tests), `tests/test_watch_report.py` (3 new tests) | written first, after the merge with version 13: all 6 failed |
 
 The tripwire was re-baselined on purpose (commit 62846b1): only the verdicts stage (c4 from unjudged to
 supported) and the coverage stage (four new counts) moved; the prompts stage did not, and neither did the

@@ -1,11 +1,11 @@
 {
   "items": [
     {
-      "id": "ib-th-090c6b0da873-0008888888-26-000001",
-      "thesis_id": "th-090c6b0da873",
+      "id": "ib-th-2fecd1db499d-0008888888-26-000001",
+      "thesis_id": "th-2fecd1db499d",
       "thesis_name": "Jane Smith is gone",
       "ticker": "NVDA",
-      "job_id": "wj-th-090c6b0da873-0008888888-26-000001",
+      "job_id": "wj-th-2fecd1db499d-0008888888-26-000001",
       "kind": "moved",
       "created_at": "2026-11-18T09:30:00Z",
       "updated_at": "2026-11-18T09:30:00Z",
@@ -65,13 +65,13 @@
       "run": {
         "state": "finished",
         "waiting_reason": "",
-        "run_id": "run-f2c72ad55e4f",
+        "run_id": "run-b410ee533914",
         "status": "partial",
         "started_by": "watch"
       },
       "moved": {
-        "earlier_run_id": "run-8de953d45baf",
-        "later_run_id": "run-f2c72ad55e4f",
+        "earlier_run_id": "run-b5c7d491d680",
+        "later_run_id": "run-b410ee533914",
         "moved": true,
         "verdicts": [
           {
@@ -98,7 +98,11 @@
         "sources_added": [
           "NVIDIA CORP 8-K, filed 2026-03-10"
         ],
+        "computed": [],
         "line": "1 of 2 verdicts moved; 1 new 8-K on the timeline.",
+        "claims_moved": 1,
+        "claims_total": 2,
+        "claims_line": "1 of 2 claims moved.",
         "claims": [
           {
             "claim": "Buy because Jane Smith is gone.",
@@ -128,11 +132,11 @@
       "error": ""
     },
     {
-      "id": "ib-th-090c6b0da873-0009999999-26-000003",
-      "thesis_id": "th-090c6b0da873",
+      "id": "ib-th-2fecd1db499d-0009999999-26-000003",
+      "thesis_id": "th-2fecd1db499d",
       "thesis_name": "Jane Smith is gone",
       "ticker": "NVDA",
-      "job_id": "wj-th-090c6b0da873-0009999999-26-000003",
+      "job_id": "wj-th-2fecd1db499d-0009999999-26-000003",
       "kind": "nothing_moved",
       "created_at": "2026-11-18T09:15:00Z",
       "updated_at": "2026-11-18T09:15:00Z",
@@ -200,13 +204,13 @@
       "run": {
         "state": "finished",
         "waiting_reason": "",
-        "run_id": "run-8de953d45baf",
+        "run_id": "run-b5c7d491d680",
         "status": "partial",
         "started_by": "watch"
       },
       "moved": {
-        "earlier_run_id": "run-cb3e5bb5afcc",
-        "later_run_id": "run-8de953d45baf",
+        "earlier_run_id": "run-981df0203437",
+        "later_run_id": "run-b5c7d491d680",
         "moved": false,
         "verdicts": [],
         "new_cautions": [],
@@ -215,7 +219,11 @@
         "sources_added": [
           "NVIDIA CORP 10-Q, period ended 2026-03-01"
         ],
+        "computed": [],
         "line": "Nothing moved.",
+        "claims_moved": 0,
+        "claims_total": 2,
+        "claims_line": "0 of 2 claims moved.",
         "claims": [
           {
             "claim": "Buy because Jane Smith is gone.",
@@ -247,6 +255,7 @@
   ],
   "total": 6,
   "unread": 6,
+  "folded": 1,
   "limit": 4,
   "offset": 4,
   "next_offset": null

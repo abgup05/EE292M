@@ -3,7 +3,8 @@
 Validated like the neighbouring routes: a body is a strict schema (an unknown field is
 refused), ids in a path have a fixed shape, paging is bounded; a refusal is 422
 ``{"error", "details": [{"field", "message"}]}`` through the app's own handler. 404 for
-an unknown thesis or inbox item; 409 for a valid request the state forbids (a run that
+an unknown thesis or inbox item, as ``{"error"}`` like every refusal of the app; 409 for a
+valid request the state forbids (a run that
 is not waiting, a thesis not watched); 503 when EDGAR cannot be read to start a watch.
 
     PUT    /api/theses/{id}/watch     {"policy": "ask" | "auto"}: watch (201) or change policy (200)
@@ -89,13 +90,16 @@ class Unwatched(BaseModel):
 class InboxList(BaseModel):
     """One page of the inbox: unread first, then newest first.
 
-    ``total`` and ``unread`` count the whole inbox (of one thesis when asked);
-    ``next_offset`` is the offset of the next page, None on the last.
+    ``total`` and ``unread`` count the whole inbox (of one thesis when asked), and so
+    does ``folded``: the items of the kinds a listing folds (``collapsed_kinds`` in the
+    meta: seen, not relevant), whichever page is drawn. ``next_offset`` is the offset of
+    the next page, None on the last.
     """
 
     items: list[InboxItem]
     total: int
     unread: int
+    folded: int = 0
     limit: int
     offset: int
     next_offset: int | None = None
@@ -236,6 +240,7 @@ def add_routes(
             items=page.items,
             total=page.total,
             unread=page.unread,
+            folded=page.folded,
             limit=limit,
             offset=offset,
             next_offset=following if following < page.total else None,

@@ -136,7 +136,7 @@ Every number has the command that produced it and its denominator in [`docs/resu
 | 8-Ks split into their items (`make events-probe`, 18 November) | Every 8-K of the last 12 months of eight companies: 190 of 200 listed items found before two fixes (Coca-Cola's "Item 9.01(d).", JPMorgan's "Item 5.02(e)"), 200 of 200 after | [`docs/events.md`](docs/events.md), [`docs/evidence/`](docs/evidence/) |
 | Which claims an 8-K bears on (`make event-categories`) | On 84 claims labelled before the rule existed (39 with no category): precision 0.90 and recall 0.92 on the first score; 0.94 and 1.00 after one tuning pass on the same claims, so fitted. Three false alarms remain | [`docs/events.md`](docs/events.md) |
 | NVIDIA's 8-Ks, live (`make events T=NVDA`, 18 November) | 12 since the annual report of 25 February, 8 read. The 8-K of 12 November, Item 5.02, reports the resignation of Jen-Hsun Huang as President and Chief Executive Officer | [`docs/evidence/events-nvda.txt`](docs/evidence/events-nvda.txt) |
-| The gate from a fresh clone (`make verify-fresh`) | 1,580 offline tests, the smoke test, 156 assertions on the rendered page, in 38 s | [`docs/evidence/verify-fresh.txt`](docs/evidence/verify-fresh.txt), [`docs/testing.md`](docs/testing.md) |
+| The gate from a fresh clone (`make verify-fresh`, 18 November) | 1,702 offline tests, the smoke test, 168 assertions on the rendered page, in 42 s | [`docs/evidence/verify-fresh.txt`](docs/evidence/verify-fresh.txt), [`docs/testing.md`](docs/testing.md) |
 | The running app, end to end, on live filings (`make live-walk`) | Passes: a judged run, decisions, the reviewed brief, a saved thesis run twice, the comparisons, the breakdowns, and a run that asks for the tagged figures and is offered 40 | [`docs/evidence/live-walk.txt`](docs/evidence/live-walk.txt) |
 | The period check (`make eval`) | All 34 years named by the golden set's findings are in their evidence: no false alarm. With a wrong year planted in each of the 25 findings that name one, it flags 21 moved one year back, 24 two back, 25 three back and 23 one forward. With one year of several moved and the others left right, it flags 13 of 18 planted statements | [`docs/period-check.md`](docs/period-check.md) |
 | The record (`make restore-check`, `make two-writers`) | The newest backup restores to the live record, compared column by column: 40 runs, 20 decisions, 10 theses, all readable. The app and a one-off container wrote one scratch record at the same time, 2,000 writes each, with no failed write | [`docs/evidence/`](docs/evidence/) |
@@ -147,11 +147,11 @@ Read all of it with three cautions. **The model answers are recordings made by s
 ## Verification
 
 ```sh
-make verify         # build, lint, 1,580 offline tests, smoke test, browser-level test
+make verify         # build, lint, 1,702 offline tests, smoke test, browser-level test
 make test           # offline tests only (T=tests/test_gate.py for one file)
 make golden-check   # the tripwire: one recorded run, compared stage by stage
 make replay         # the recorded model-backed run, offline
-make uitest         # headless Chromium renders seven pages of six records; 156 assertions on the DOM
+make uitest         # headless Chromium renders seven pages of six records; 168 assertions on the DOM
 make live-walk      # the running app end to end over HTTP: needs EDGAR, no key
 make eval ARGS="run --variant claim"   # score retrieval on the golden set
 make backup         # copy the record to backups/; make restore-check proves it restores

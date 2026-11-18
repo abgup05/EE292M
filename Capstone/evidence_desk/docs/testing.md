@@ -271,7 +271,8 @@ measurements, once each: 23 s (pytest reports 23.06 s for 1,361 tests) and 34 s 
 gate on a fresh clone, now with seven page renders and 142 page assertions. At version 11: 26 s
 (pytest reports 26.19 s for 1,499 tests) and 38 s for the whole gate, with 156 page assertions.
 At version 11.1: 26 s again (26.03 s for 1,580 tests) and 38 s for the whole gate, with the same
-156 page assertions (`docs/evidence/verify-fresh.txt`).
+156 page assertions. At version 12, on 18 November: 29 s (28.85 s for 1,702 tests) and 42 s for the
+whole gate, with 168 page assertions (`docs/evidence/verify-fresh.txt`).
 
 ## What no test here can see
 

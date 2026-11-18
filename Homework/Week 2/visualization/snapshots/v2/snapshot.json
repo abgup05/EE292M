@@ -1,0 +1,19 @@
+{
+  "exported_from": "http://127.0.0.1:8702",
+  "notes": [
+    "the instance holds no finished run"
+  ],
+  "open_run": null,
+  "page_files": [
+    "app.js",
+    "index.html",
+    "sample-run.json",
+    "styles.css"
+  ],
+  "routes": {
+    "/api/meta": "api/meta.json",
+    "/api/runs": "api/runs.json"
+  },
+  "tag": "capstone-v2",
+  "version": 2
+}

@@ -31,6 +31,7 @@ The application layout is:
     src/web/               HTML, CSS and JavaScript/SVG rendering
     data/raw/bea/          official workbook and provenance
     tests/                 independent arithmetic tests and live HTTP checks
+    snapshots/             the capstone's version history for the website (below)
 
 ## Computation boundary
 
@@ -47,6 +48,7 @@ The browser draws bar lengths and time-series geometry, chooses which backend-pr
 - GET /api/export: CSV of the same computed ranking and denominator.
 - GET /: page; /app.js and /styles.css: relative assets also usable by the local-file entry page.
 - /docs: generated API documentation.
+- GET /versions and /vN/: the capstone's versions table and version N's recorded snapshot, static files from snapshots/ (see "The website's capstone snapshots" below); /vN redirects to /vN/.
 
 A direct file:// visit displays a link to the running local app instead of leaving an empty or misleading chart.
 
@@ -65,6 +67,15 @@ Vercel's project root is Homework/Week 2/visualization/. Its native Python runti
 The hosted function includes the BEA snapshot and web assets. Bundle/upload exclusions omit the unused NYSE workbook, development tests and Docker files. The application has no writable data store and no runtime secrets. Cold starts validate and cache the workbook inside each function process. Local Docker remains bound to 127.0.0.1; an eventual Vercel deployment serves through Vercel's HTTPS endpoint, as requested by the user.
 
 The entrypoint test imports the app in a subprocess with Python environment overrides ignored, then checks source loading and the HTML file. This verifies independence from Docker's PYTHONPATH; it does not replace a live Vercel deployment check.
+
+## The website's capstone snapshots
+
+The Vercel project of this app is the course's public website, so it also carries the capstone's history: `/vN/` is a recorded, read-only snapshot of Evidence Desk version N, and `/versions` the table of versions. The capstone itself cannot run there: it needs SQLite on disk, live EDGAR access and, for model answers, a paid key, and no secret is deployed.
+
+- `tools/snapshots/export.py` (repository root, run by `make site-export` in a `python:3.14-slim` container, standard library only) reads each version running locally at `127.0.0.1:87NN` and writes `snapshots/vN/`: the page's own files as served (index.html, app.js, styles.css, every `sample-*.json` the page names), the GET answers its page reads on load and when a stored run or thesis is opened (under `api/`, byte for byte), `snapshot.json` (what was recorded, from where) and `snapshot.js`.
+- Only the exported copy is changed: its absolute references become relative, and a banner and `snapshot.js` are added. `snapshot.js` answers the page's `fetch` calls to `/api/...` from the recorded files and answers anything that would start work, or a GET that was not recorded, with an error in the shape the page already shows. It computes nothing.
+- `tools/snapshots/versions_page.py` renders `docs/versions.md` as `snapshots/versions.html`. `scan.py` (`make site-scan`, also run by `make site-export`) fails on anything that looks like a secret or personal data in those files. `check.py` (`make site-check URL=...`) checks a deployed site.
+- The app mounts each `snapshots/vN/` as static files at `/vN/` and serves `/versions`; the existing routes are unchanged. `make site-test` tests the exporter, the scan and the page renderer in Python and the shim in Node; `make site-browse` serves the snapshots with this app on 127.0.0.1:8765 and renders each `/vN/` and `/vN/?sample` in headless Chromium (the image the capstone's page tests use), checking the banner, that every call on load was answered, and that the recorded run is shown; the app's own tests check every snapshot is served whole.
 
 ## Scope
 

@@ -53,6 +53,8 @@ make data acquires the official workbook only when absent, then inspects it. It 
 - GET /api/flows?mode=buyers&focus=335&year=2025&baseline=2019&sort=share_change
 - GET /api/export with the same selection parameters
 
+The same app also serves the capstone's version history, which is not part of this homework: `/versions`, a table of the Evidence Desk versions, and `/vN/`, a recorded, read-only snapshot of version N's page (`/vN` redirects there). They are static files in `snapshots/`, written by `make site-export` at the repository root (see `docs/versions.md` there); nothing in them is computed by this app, and the routes above are unchanged.
+
 The backend computes all research results; the frontend handles interaction and chart geometry only. Calculations are covered by independent synthetic examples, full-source reconciliation, known source-cell checks and live endpoint validation. Visual browser checks are not part of make verify.
 
 ## Deploy on Vercel

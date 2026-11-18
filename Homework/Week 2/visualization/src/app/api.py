@@ -2,18 +2,24 @@
 
 import csv
 import io
+import re
+from collections.abc import Callable
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from app.flow_models import FlowView
 from app.flows import explore, load_dataset
 
 WEB_DIR = Path(__file__).resolve().parents[1] / "web"
+# Recorded, read-only snapshots of the capstone's versions (tools/snapshots/export.py at the
+# repository root): version N at /vN/, and the table of versions at /versions.
+SNAPSHOT_DIR = Path(__file__).resolve().parents[2] / "snapshots"
+SNAPSHOT_NAME = re.compile(r"v[0-9]{1,2}")
 
 
 @asynccontextmanager
@@ -131,4 +137,47 @@ def export(
         headers={
             "Content-Disposition": 'attachment; filename="bea-industry-flows.csv"'
         },
+    )
+
+
+def snapshot_names() -> list[str]:
+    """The snapshot directories present (``v1``, ``v2``, ...), in version order."""
+    if not SNAPSHOT_DIR.is_dir():
+        return []
+    names = [
+        path.name
+        for path in SNAPSHOT_DIR.iterdir()
+        if path.is_dir() and SNAPSHOT_NAME.fullmatch(path.name)
+    ]
+    return sorted(names, key=lambda name: int(name[1:]))
+
+
+@app.get("/versions", include_in_schema=False)
+def versions() -> FileResponse:
+    """The table of the capstone's versions, with a link to each snapshot."""
+    page = SNAPSHOT_DIR / "versions.html"
+    if not page.is_file():
+        raise HTTPException(status_code=404, detail="Not Found")
+    return FileResponse(page, media_type="text/html")
+
+
+def _to_directory(name: str) -> Callable[[], RedirectResponse]:
+    """A handler that sends ``/vN`` to ``/vN/``, where the snapshot's relative links work."""
+
+    def redirect() -> RedirectResponse:
+        return RedirectResponse(f"/{name}/", status_code=307)
+
+    return redirect
+
+
+# Each snapshot is a directory of static files: /vN redirects to /vN/, which serves its
+# index.html. The paths /vN and /vN/... are used by nothing else in this app.
+for _name in snapshot_names():
+    app.add_api_route(
+        f"/{_name}", _to_directory(_name), methods=["GET", "HEAD"], include_in_schema=False
+    )
+    app.mount(
+        f"/{_name}",
+        StaticFiles(directory=SNAPSHOT_DIR / _name, html=True),
+        name=f"snapshot-{_name}",
     )

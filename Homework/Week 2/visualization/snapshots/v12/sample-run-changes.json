@@ -1,0 +1,1238 @@
+{
+ "note": "Recorded on 2026-11-18 for the sample run beside it: the newest annual and the newest quarterly report that run read, each compared with the filing of the same form before it (from SEC EDGAR or the filing cache), and every changed paragraph ranked against each claim by keyword overlap. No model is involved.",
+ "changes": {
+  "run_id": "run-0ed7f6c80957",
+  "compared": [
+   {
+    "form": "10-K",
+    "earlier": {
+     "form": "10-K",
+     "period_end": "2025-01-26",
+     "filed_date": "2025-02-26",
+     "accession": "0001045810-25-000023",
+     "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000023/nvda-20250126.htm",
+     "title": "NVIDIA CORP 10-K, period ended 2025-01-26",
+     "item_coverage": 0.97
+    },
+    "later": {
+     "form": "10-K",
+     "period_end": "2026-01-25",
+     "filed_date": "2026-02-25",
+     "accession": "0001045810-26-000021",
+     "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm",
+     "title": "NVIDIA CORP 10-K, period ended 2026-01-25",
+     "item_coverage": 0.9693
+    },
+    "totals": {
+     "unchanged": 251,
+     "numbers_only": 60,
+     "reworded": 218,
+     "added": 133,
+     "removed": 132,
+     "minor_unchanged": 355,
+     "minor_numbers_only": 357,
+     "minor_added": 150,
+     "minor_removed": 202
+    }
+   },
+   {
+    "form": "10-Q",
+    "earlier": {
+     "form": "10-Q",
+     "period_end": "2026-04-26",
+     "filed_date": "2026-05-20",
+     "accession": "0001045810-26-000052",
+     "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000052/nvda-20260426.htm",
+     "title": "NVIDIA CORP 10-Q, period ended 2026-04-26",
+     "item_coverage": 0.9621
+    },
+    "later": {
+     "form": "10-Q",
+     "period_end": "2026-07-26",
+     "filed_date": "2026-08-26",
+     "accession": "0001045810-26-000075",
+     "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm",
+     "title": "NVIDIA CORP 10-Q, period ended 2026-07-26",
+     "item_coverage": 0.9648
+    },
+    "totals": {
+     "unchanged": 99,
+     "numbers_only": 14,
+     "reworded": 108,
+     "added": 71,
+     "removed": 66,
+     "minor_unchanged": 215,
+     "minor_numbers_only": 168,
+     "minor_added": 239,
+     "minor_removed": 187
+    }
+   }
+  ],
+  "claims": [
+   {
+    "claim_id": "c1",
+    "changes": [
+     {
+      "kind": "removed",
+      "form": "10-Q",
+      "item": "Part I, Item 2. Management’s Discussion and Analysis of Financial Condition and Results of Operations",
+      "paragraph": {
+       "text": "Data Center revenue was $75.2 billion, up 92% from a year ago and up 21% sequentially, driven by the ramp of our Blackwell 300 products and demand for our InfiniBand, Spectrum-X Ethernet, and NVLink solutions. Hyperscaler revenue increased sequentially and remained at approximately 50% of Data Center revenue, while the remaining 50% came from a continued diversification of customers, including AI Clouds, industrial, enterprise, and sovereign customers. No shipments of Data Center Hopper products to China occurred during the quarter, compared with $4.6 billion in the first quarter of fiscal year 2026.",
+       "locator": "Part I, Item 2. Management's Discussion and Analysis of Financial Condition and Results of Operations › First Quarter of Fiscal Year 2027 Summary",
+       "start": 65460,
+       "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000052/nvda-20260426.htm#:~:text=Data%20Center%20revenue%20was%20%2475.2,quarter%20of%20fiscal%20year%202026.",
+       "link_kind": "passage"
+      },
+      "pair": null,
+      "score": 14.5116,
+      "matched_terms": [
+       "center",
+       "compar",
+       "data",
+       "demand",
+       "increas",
+       "product",
+       "revenu",
+       "year"
+      ],
+      "also_under": []
+     },
+     {
+      "kind": "added",
+      "form": "10-Q",
+      "item": "Part I, Item 2. Management’s Discussion and Analysis of Financial Condition and Results of Operations",
+      "paragraph": {
+       "text": "Data Center revenue was $89.0 billion, up 117% from a year ago and up 18% sequentially, driven by the ramp of our Blackwell Ultra infrastructure. Hyperscale revenue more than doubled from a year ago and increased 13% sequentially on the strength of Blackwell Ultra. ACIE revenue increased 138% from a year ago and 25% sequentially driven by end-demand from AI natives, enterprises, and sovereign customers, as well as hyperscalers utilizing AI clouds. Shipments of Data Center Hopper products to China during the second quarter of fiscal year 2027 were less than 1% of Data Center revenue.",
+       "locator": "Part I, Item 2. Management’s Discussion and Analysis of Financial Condition and Results of Operations › Second Quarter of Fiscal Year 2027 Summary",
+       "start": 82000,
+       "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm#:~:text=Data%20Center%20revenue%20was%20%2489.0,1%25%20of%20Data%20Center%20revenue.",
+       "link_kind": "passage"
+      },
+      "pair": null,
+      "score": 12.8696,
+      "matched_terms": [
+       "center",
+       "data",
+       "demand",
+       "increas",
+       "product",
+       "revenu",
+       "year"
+      ],
+      "also_under": []
+     },
+     {
+      "kind": "removed",
+      "form": "10-K",
+      "item": "Item 7. Management's Discussion and Analysis of Financial Condition and Results of Operations",
+      "paragraph": {
+       "text": "Gross margin increased in fiscal year 2025 driven by a higher mix of Data Center revenue.",
+       "locator": "Item 7. Management's Discussion and Analysis of Financial Condition and Results of Operations › Fiscal Year 2025 Summary",
+       "start": 201215,
+       "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000023/nvda-20250126.htm#:~:text=Gross%20margin%20increased%20in%20fiscal,mix%20of%20Data%20Center%20revenue.",
+       "link_kind": "passage"
+      },
+      "pair": null,
+      "score": 12.8486,
+      "matched_terms": [
+       "center",
+       "data",
+       "increas",
+       "revenu",
+       "year"
+      ],
+      "also_under": []
+     },
+     {
+      "kind": "removed",
+      "form": "10-K",
+      "item": "Item 7. Management's Discussion and Analysis of Financial Condition and Results of Operations",
+      "paragraph": {
+       "text": "Gross margins increased to 75.0% in fiscal year 2025 from 72.7% in fiscal year 2024. The year over year increase was primarily driven by a higher mix of Data Center revenue.",
+       "locator": "Item 7. Management's Discussion and Analysis of Financial Condition and Results of Operations › Gross Profit and Gross Margin",
+       "start": 215811,
+       "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000023/nvda-20250126.htm#:~:text=Gross%20margins%20increased%20to%2075.0%25,mix%20of%20Data%20Center%20revenue.",
+       "link_kind": "passage"
+      },
+      "pair": null,
+      "score": 12.5998,
+      "matched_terms": [
+       "center",
+       "data",
+       "increas",
+       "revenu",
+       "year"
+      ],
+      "also_under": []
+     },
+     {
+      "kind": "reworded",
+      "form": "10-K",
+      "item": "Item 7. Management's Discussion and Analysis of Financial Condition and Results of Operations",
+      "paragraph": null,
+      "pair": {
+       "before": {
+        "text": "Cash provided by operating activities increased in fiscal year 2025 compared to fiscal year 2024, due to growth in revenue.",
+        "locator": "Item 7. Management's Discussion and Analysis of Financial Condition and Results of Operations › Liquidity and Capital Resources",
+        "start": 220798,
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000023/nvda-20250126.htm#:~:text=Cash%20provided%20by%20operating%20activities,due%20to%20growth%20in%20revenue.",
+        "link_kind": "passage"
+       },
+       "after": {
+        "text": "Cash provided by operating activities increased in fiscal year 2026 compared to fiscal year 2025, due to higher revenue.",
+        "locator": "Item 7. Management's Discussion and Analysis of Financial Condition and Results of Operations › Liquidity and Capital Resources",
+        "start": 213083,
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=Cash%20provided%20by%20operating%20activities,2025%2C%20due%20to%20higher%20revenue.",
+        "link_kind": "passage"
+       },
+       "similarity": 0.833,
+       "segments": [
+        {
+         "text": "Cash provided by operating activities increased in fiscal year",
+         "kind": "same"
+        },
+        {
+         "text": "2025",
+         "kind": "removed"
+        },
+        {
+         "text": "2026",
+         "kind": "added"
+        },
+        {
+         "text": "compared to fiscal year",
+         "kind": "same"
+        },
+        {
+         "text": "2024,",
+         "kind": "removed"
+        },
+        {
+         "text": "2025,",
+         "kind": "added"
+        },
+        {
+         "text": "due to",
+         "kind": "same"
+        },
+        {
+         "text": "growth in",
+         "kind": "removed"
+        },
+        {
+         "text": "higher",
+         "kind": "added"
+        },
+        {
+         "text": "revenue.",
+         "kind": "same"
+        }
+       ]
+      },
+      "score": 12.3308,
+      "matched_terms": [
+       "compar",
+       "increas",
+       "revenu",
+       "year"
+      ],
+      "also_under": []
+     }
+    ],
+    "considered": 802,
+    "matched": 291,
+    "distinct_matched": 276
+   },
+   {
+    "claim_id": "c2",
+    "changes": [
+     {
+      "kind": "reworded",
+      "form": "10-K",
+      "item": "Item 1A. Risk Factors",
+      "paragraph": null,
+      "pair": {
+       "before": {
+        "text": "several of these partners, we are selling multiple products and systems in our portfolio through their channels. Our operating results depend on sales to our partner network, as well as the ability of these partners to sell products that incorporate our technologies. We have a small number of partners that are involved in system integration with our key customers. As our system design becomes increasingly complex, system integrators may be unable to meet specifications of our key customers. Changes in our partners' or customers' business models or their ownership can reduce the number of partners available to us and harm our ability to sell our advanced data center systems to customers. In the future, these partners may decide to purchase fewer products, not to incorporate our products into their ecosystem, or to alter their purchasing patterns in some other way. Because most of our sales are made on a purchase order basis, our customers can generally cancel, change, or delay product purchase commitments with little notice to us and without penalty. Our partners or customers may develop their own solutions; our customers may purchase products from our competitors; and our partners may discontinue sales or lose market share in the markets for which they purchase our products, all of which may alter partners’ or customers’ purchasing patterns. Many of our indirect customers often do not purchase directly from us but through multiple OEMs, ODMs, system integrators, distributors, and other channel partners. For fiscal year 2025, an indirect customer which primarily purchases our products through system integrators and distributors, including through Customer B, is estimated to represent 10% or more of total revenue, attributable to the Compute & Networking segment. If end demand increases or our finished goods supply availability is concentrated near a quarter end, the system integrators, distributors, and channel partners may have limited ability to increase their credit, which could impact the timing and amount of our revenue. The loss of any of our large customers, a significant reduction in purchases by them, our inability to sell to a customer due to U.S. or other countries’ trade restrictions, or any difficulties in collecting accounts receivable would likely harm our financial condition and results of operations.",
+        "locator": "Item 1A. Risk Factors › Risks Related to Our Global Operating Business",
+        "start": 120049,
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000023/nvda-20250126.htm#:~:text=several%20of%20these%20partners%2C%20we,condition%20and%20results%20of%20operations.",
+        "link_kind": "passage"
+       },
+       "after": {
+        "text": "We have experienced periods where we receive a significant amount of our revenue from a limited number of customers, and this trend may continue. For fiscal year 2026, sales to one direct customer represented 22% of total revenue and sales to another direct customer represented 14% of total revenue, all of which were primarily attributable to the Compute & Networking segment. With several of these partners, we are selling multiple products and systems in our portfolio through their channels. Our operating results depend on sales to our partner network, as well as the ability of these partners to sell products that incorporate our technologies. We have a small number of partners that are involved in system integration with our key customers. As our system design becomes increasingly complex, system integrators may be unable to meet specifications of our key customers. Changes in our partners' or customers' business models or their ownership can reduce the number of partners available to us and harm our ability to sell our advanced data center systems to customers. In the future, these partners may decide to purchase fewer products, not to incorporate our products into their ecosystem, or to alter their purchasing patterns in some other way. Because most of our sales are made on a purchase order basis, our customers can generally cancel, change, or delay product purchase commitments with little notice to us and without penalty. Our partners or customers may develop their own solutions; our customers may purchase products from our competitors; and our partners may discontinue sales or lose market share in the markets for which they purchase our products, all of which may alter partners’ or customers’ purchasing patterns. Many of our indirect customers often do not purchase directly from us but through multiple OEMs, ODMs, system integrators, distributors, and other channel partners. We generate a significant amount of our revenue from a limited number of indirect customers, and we estimate some individually representing 10% or more of our revenue. If end demand increases or our finished goods supply availability is concentrated near a quarter end, the system integrators, distributors, and channel partners may have limited ability to increase their credit, which could impact the timing and amount of our revenue. The loss of any of our large customers, a significant reduction in purchases by them, our inability to sell to a customer due to U.S. or other countries’ trade restrictions, or any difficulties in collecting accounts receivable would likely harm our financial condition and results of operations.",
+        "locator": "Item 1A. Risk Factors › Risks Related to Our Global Operating Business",
+        "start": 115459,
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=We%20have%20experienced%20periods%20where,condition%20and%20results%20of%20operations.",
+        "link_kind": "passage"
+       },
+       "similarity": 0.913,
+       "segments": [
+        {
+         "text": "We have experienced periods where we receive a significant amount of our revenue from a limited number of customers, and this trend may continue. For fiscal year 2026, sales to one direct customer represented 22% of total revenue and sales to another direct customer represented 14% of total revenue, all of which were primarily attributable to the Compute & Networking segment. With",
+         "kind": "added"
+        },
+        {
+         "text": "several of these partners, we are selling multiple products and systems in our portfolio through their channels. Our operating results depend on sales to our partner network, as well as the ability of these partners to sell products that incorporate our technologies. We have a small number of partners that are involved in system integration with our key customers. As our system design becomes increasingly complex, system integrators may be unable to meet specifications of our key customers. Changes in our partners' or customers' business models or their ownership can reduce the number of partners available to us and harm our ability to sell our advanced data center systems to customers. In the future, these partners may decide to purchase fewer products, not to incorporate our products into their ecosystem, or to alter their purchasing patterns in some other way. Because most of our sales are made on a purchase order basis, our customers can generally cancel, change, or delay product purchase commitments with little notice to us and without penalty. Our partners or customers may develop their own solutions; our customers may purchase products from our competitors; and our partners may discontinue sales or lose market share in the markets for which they purchase our products, all of which may alter partners’ or customers’ purchasing patterns. Many of our indirect customers often do not purchase directly from us but through multiple OEMs, ODMs, system integrators, distributors, and other channel partners.",
+         "kind": "same"
+        },
+        {
+         "text": "For fiscal year 2025, an",
+         "kind": "removed"
+        },
+        {
+         "text": "We generate a significant amount of our revenue from a limited number of",
+         "kind": "added"
+        },
+        {
+         "text": "indirect",
+         "kind": "same"
+        },
+        {
+         "text": "customer which primarily purchases our products through system integrators",
+         "kind": "removed"
+        },
+        {
+         "text": "customers,",
+         "kind": "added"
+        },
+        {
+         "text": "and",
+         "kind": "same"
+        },
+        {
+         "text": "distributors, including through Customer B, is estimated to represent",
+         "kind": "removed"
+        },
+        {
+         "text": "we estimate some individually representing",
+         "kind": "added"
+        },
+        {
+         "text": "10% or more of",
+         "kind": "same"
+        },
+        {
+         "text": "total revenue, attributable to the Compute & Networking segment.",
+         "kind": "removed"
+        },
+        {
+         "text": "our revenue.",
+         "kind": "added"
+        },
+        {
+         "text": "If end demand increases or our finished goods supply availability is concentrated near a quarter end, the system integrators, distributors, and channel partners may have limited ability to increase their credit, which could impact the timing and amount of our revenue. The loss of any of our large customers, a significant reduction in purchases by them, our inability to sell to a customer due to U.S. or other countries’ trade restrictions, or any difficulties in collecting accounts receivable would likely harm our financial condition and results of operations.",
+         "kind": "same"
+        }
+       ]
+      },
+      "score": 12.5557,
+      "matched_terms": [
+       "account",
+       "customer",
+       "direct",
+       "key",
+       "larg",
+       "loss",
+       "number",
+       "receivabl",
+       "revenu",
+       "shar",
+       "small"
+      ],
+      "also_under": []
+     },
+     {
+      "kind": "added",
+      "form": "10-K",
+      "item": "Item 7. Management's Discussion and Analysis of Financial Condition and Results of Operations",
+      "paragraph": {
+       "text": "Direct Customers – For fiscal year 2026, sales to one direct customer represented 22% of total revenue and sales to another direct customer represented 14% of total revenue, all of which were primarily attributable to the Compute & Networking segment.",
+       "locator": "Item 7. Management's Discussion and Analysis of Financial Condition and Results of Operations › Concentration of Revenue",
+       "start": 205194,
+       "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=Direct%20Customers%20%E2%80%93%20For%20fiscal,the%20Compute%20%26%20Networking%20segment.",
+       "link_kind": "passage"
+      },
+      "pair": null,
+      "score": 11.7102,
+      "matched_terms": [
+       "customer",
+       "direct",
+       "revenu"
+      ],
+      "also_under": [
+       "Item 15. Exhibits and Financial Statement Schedules"
+      ]
+     },
+     {
+      "kind": "reworded",
+      "form": "10-K",
+      "item": "Item 15. Exhibits and Financial Statement Schedules",
+      "paragraph": null,
+      "pair": {
+       "before": {
+        "text": "We refer to customers who purchase products directly from NVIDIA as direct customers, such as AIBs, distributors, ODMs, OEMs, and system integrators. We have certain customers that may purchase products directly from NVIDIA and may use either internal resources or third-party system integrators to complete their build. Two direct customers accounted for 17% and 16% of our accounts receivable balance as of January 26, 2025. Two direct customers accounted for 24% and 11% of our accounts receivable balance as of January 28, 2024.",
+        "locator": "Item 15. Exhibits and Financial Statement Schedules › Note 9 - Balance Sheet Components",
+        "start": 304824,
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000023/nvda-20250126.htm",
+        "link_kind": "document"
+       },
+       "after": {
+        "text": "We refer to customers who purchase products directly from NVIDIA as direct customers, such as AIBs, distributors, ODMs, OEMs, CSPs, AI model makers, and system integrators. Certain direct customers may use either internal resources or third-party system integrators to complete their build. Three direct customers accounted for 25%, 18%, and 13% of our accounts receivable balance as of January 25, 2026. Two direct customers accounted for 17% and 16% of our accounts receivable balance as of January 26, 2025.",
+        "locator": "Item 15. Exhibits and Financial Statement Schedules › Note 9 - Balance Sheet Components",
+        "start": 294989,
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm",
+        "link_kind": "document"
+       },
+       "similarity": 0.844,
+       "segments": [
+        {
+         "text": "We refer to customers who purchase products directly from NVIDIA as direct customers, such as AIBs, distributors, ODMs, OEMs,",
+         "kind": "same"
+        },
+        {
+         "text": "CSPs, AI model makers,",
+         "kind": "added"
+        },
+        {
+         "text": "and system integrators.",
+         "kind": "same"
+        },
+        {
+         "text": "We have certain",
+         "kind": "removed"
+        },
+        {
+         "text": "Certain direct",
+         "kind": "added"
+        },
+        {
+         "text": "customers",
+         "kind": "same"
+        },
+        {
+         "text": "that may purchase products directly from NVIDIA and",
+         "kind": "removed"
+        },
+        {
+         "text": "may use either internal resources or third-party system integrators to complete their build.",
+         "kind": "same"
+        },
+        {
+         "text": "Three direct customers accounted for 25%, 18%, and 13% of our accounts receivable balance as of January 25, 2026.",
+         "kind": "added"
+        },
+        {
+         "text": "Two direct customers accounted for 17% and 16% of our accounts receivable balance as of January 26, 2025.",
+         "kind": "same"
+        },
+        {
+         "text": "Two direct customers accounted for 24% and 11% of our accounts receivable balance as of January 28, 2024.",
+         "kind": "removed"
+        }
+       ]
+      },
+      "score": 11.4304,
+      "matched_terms": [
+       "account",
+       "customer",
+       "direct",
+       "receivabl"
+      ],
+      "also_under": []
+     },
+     {
+      "kind": "reworded",
+      "form": "10-Q",
+      "item": "Part I, Item 1. Financial Statements (Unaudited)",
+      "paragraph": null,
+      "pair": {
+       "before": {
+        "text": "Revenue by geographic area is based upon the location of the customers’ headquarters. The end customer and shipping location may be different from our customers’ headquarters location.",
+        "locator": "Part I, Item 1. Financial Statements (Unaudited) › Note 13 - Segment Information",
+        "start": 50231,
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000052/nvda-20260426.htm#:~:text=Revenue%20by%20geographic%20area%20is,from%20our%20customers%E2%80%99%20headquarters%20location.",
+        "link_kind": "passage"
+       },
+       "after": {
+        "text": "Revenue by geographic region is designated based on the location of the headquarters of direct customers. The end customer and shipping location may be different from our direct customers’ headquarters location.",
+        "locator": "Part I, Item 1. Financial Statements (Unaudited) › Note 13 - Segment Information",
+        "start": 60150,
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm#:~:text=Revenue%20by%20geographic%20region%20is,our%20direct%20customers%E2%80%99%20headquarters%20location.",
+        "link_kind": "passage"
+       },
+       "similarity": 0.692,
+       "segments": [
+        {
+         "text": "Revenue by geographic",
+         "kind": "same"
+        },
+        {
+         "text": "area",
+         "kind": "removed"
+        },
+        {
+         "text": "region",
+         "kind": "added"
+        },
+        {
+         "text": "is",
+         "kind": "same"
+        },
+        {
+         "text": "designated",
+         "kind": "added"
+        },
+        {
+         "text": "based",
+         "kind": "same"
+        },
+        {
+         "text": "upon",
+         "kind": "removed"
+        },
+        {
+         "text": "on",
+         "kind": "added"
+        },
+        {
+         "text": "the location of the",
+         "kind": "same"
+        },
+        {
+         "text": "customers’ headquarters.",
+         "kind": "removed"
+        },
+        {
+         "text": "headquarters of direct customers.",
+         "kind": "added"
+        },
+        {
+         "text": "The end customer and shipping location may be different from our",
+         "kind": "same"
+        },
+        {
+         "text": "direct",
+         "kind": "added"
+        },
+        {
+         "text": "customers’ headquarters location.",
+         "kind": "same"
+        }
+       ]
+      },
+      "score": 11.0771,
+      "matched_terms": [
+       "customer",
+       "direct",
+       "revenu"
+      ],
+      "also_under": []
+     },
+     {
+      "kind": "added",
+      "form": "10-K",
+      "item": "Item 7. Management's Discussion and Analysis of Financial Condition and Results of Operations",
+      "paragraph": {
+       "text": "For fiscal year 2025, sales to one direct customer represented 12% of total revenue and sales to two direct customers each represented 11% of total revenue, all of which were primarily attributable to the Compute & Networking segment.",
+       "locator": "Item 7. Management's Discussion and Analysis of Financial Condition and Results of Operations › Concentration of Revenue",
+       "start": 205446,
+       "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=For%20fiscal%20year%202025%2C%20sales,the%20Compute%20%26%20Networking%20segment.",
+       "link_kind": "passage"
+      },
+      "pair": null,
+      "score": 10.8692,
+      "matched_terms": [
+       "customer",
+       "direct",
+       "revenu"
+      ],
+      "also_under": [
+       "Item 15. Exhibits and Financial Statement Schedules"
+      ]
+     }
+    ],
+    "considered": 802,
+    "matched": 146,
+    "distinct_matched": 138
+   },
+   {
+    "claim_id": "c3",
+    "changes": [
+     {
+      "kind": "added",
+      "form": "10-K",
+      "item": "Item 7. Management's Discussion and Analysis of Financial Condition and Results of Operations",
+      "paragraph": {
+       "text": "In April 2025, the USG informed us that a license is required for exports of our H20 product into the China market. As a result of these requirements, we incurred a $4.5 billion charge in the first quarter of fiscal year 2026 associated with H20 for excess inventory and purchase obligations, as the demand for H20 diminished. In August 2025, the USG granted licenses that would allow us to ship certain H20 products to certain China-based customers. We generated approximately $60 million in H20 revenue under those licenses.",
+       "locator": "Item 7. Management's Discussion and Analysis of Financial Condition and Results of Operations › Recent Developments, Future Objectives and Challenges",
+       "start": 187551,
+       "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=In%20April%202025%2C%20the%20USG,H20%20revenue%20under%20those%20licenses.",
+       "link_kind": "passage"
+      },
+      "pair": null,
+      "score": 18.1483,
+      "matched_terms": [
+       "china",
+       "export",
+       "h20",
+       "licens",
+       "requirement",
+       "revenu"
+      ],
+      "also_under": []
+     },
+     {
+      "kind": "added",
+      "form": "10-K",
+      "item": "Item 1. Business",
+      "paragraph": {
+       "text": "In August 2025, the USG granted licenses that would allow us to ship certain H20 products to certain China-based customers. We generated approximately $60 million in H20 revenue under those licenses. USG officials expressed an expectation that the USG will receive 15% or more of the revenue generated from licensed sales of our products, but the USG did not publish a regulation codifying such requirement.",
+       "locator": "Item 1. Business › Government Regulations",
+       "start": 45215,
+       "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=In%20August%202025%2C%20the%20USG,a%20regulation%20codifying%20such%20requirement.",
+       "link_kind": "passage"
+      },
+      "pair": null,
+      "score": 17.8564,
+      "matched_terms": [
+       "china",
+       "h20",
+       "licens",
+       "requirement",
+       "revenu",
+       "sal"
+      ],
+      "also_under": [
+       "Item 1A. Risk Factors"
+      ]
+     },
+     {
+      "kind": "added",
+      "form": "10-K",
+      "item": "Item 1A. Risk Factors",
+      "paragraph": {
+       "text": "As a result, export controls have in the past and may in the future negatively impact demand for our products and services not only in China, but also in other markets, such as Europe, Latin America, and Southeast Asia. Export controls increase the risk of investing in U.S. advanced semiconductor products, because by the time a new product is ready for market, it may be subject to new unilateral export controls restricting its sale, resulting in excess inventory and purchase obligations as we recently experienced with the H20. At the same time, such controls may increase investment in foreign competitors, which would be less likely to be restricted by U.S. controls.",
+       "locator": "Item 1A. Risk Factors › Risks Related to Regulatory, Legal, Our Stock and Other Matters",
+       "start": 147027,
+       "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=As%20a%20result%2C%20export%20controls,be%20restricted%20by%20U.S.%20controls.",
+       "link_kind": "passage"
+      },
+      "pair": null,
+      "score": 17.2093,
+      "matched_terms": [
+       "china",
+       "control",
+       "export",
+       "h20",
+       "impact",
+       "restrict",
+       "sal"
+      ],
+      "also_under": []
+     },
+     {
+      "kind": "removed",
+      "form": "10-Q",
+      "item": "Part II, Item 1A. Risk Factors",
+      "paragraph": {
+       "text": "Beginning in August 2025, the USG granted licenses that would allow us to ship certain H20 products to certain China-based customers. USG officials expressed an expectation that the USG will receive 15% or more of the revenue generated from licensed sales of our products, but the USG did not publish a regulation codifying such requirement.",
+       "locator": "Part II, Item 1A. Risk Factors",
+       "start": 118517,
+       "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000052/nvda-20260426.htm#:~:text=Beginning%20in%20August%202025%2C%20the,a%20regulation%20codifying%20such%20requirement.",
+       "link_kind": "passage"
+      },
+      "pair": null,
+      "score": 15.8767,
+      "matched_terms": [
+       "china",
+       "h20",
+       "licens",
+       "requirement",
+       "revenu",
+       "sal"
+      ],
+      "also_under": []
+     },
+     {
+      "kind": "reworded",
+      "form": "10-Q",
+      "item": "Part II, Item 1A. Risk Factors",
+      "paragraph": null,
+      "pair": {
+       "before": {
+        "text": "Export controls have and could in the future disrupt our supply chain and distribution channels, negatively impacting our ability to serve demand, including in markets outside China and for our non-data center products. The possibility of additional export controls has negatively impacted and may in the future negatively impact demand for our products, benefiting competitors that offer alternatives less likely to be restricted by further controls. Repeated changes in the export control rules are likely to impose compliance burdens on our business and our customers, negatively and materially impacting our business.",
+        "locator": "Part II, Item 1A. Risk Factors",
+        "start": 113886,
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000052/nvda-20260426.htm#:~:text=Export%20controls%20have%20and%20could,and%20materially%20impacting%20our%20business.",
+        "link_kind": "passage"
+       },
+       "after": {
+        "text": "Export controls have and could in the future disrupt our supply chain and distribution channels, negatively impacting our ability to serve demand, including in markets outside China and for our non-data center products. The possibility of additional export controls has negatively impacted and may in the future negatively impact demand for our products, benefiting competitors that offer alternatives less likely to be restricted by further controls. Repeated changes in the export control rules are likely to impose compliance burdens on our business and our customers, negatively and materially impacting our business. Complex U.S. export rules have already and are likely in the future to result in inquiries and investigations from foreign governments regarding sales of our products, subjecting our business, employees, and customers to increased burdens, disruption and risk.",
+        "locator": "Part II, Item 1A. Risk Factors",
+        "start": 122591,
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm#:~:text=Export%20controls%20have%20and%20could,increased%20burdens%2C%20disruption%20and%20risk.",
+        "link_kind": "passage"
+       },
+       "similarity": 0.736,
+       "segments": [
+        {
+         "text": "Export controls have and could in the future disrupt our supply chain and distribution channels, negatively impacting our ability to serve demand, including in markets outside China and for our non-data center products. The possibility of additional export controls has negatively impacted and may in the future negatively impact demand for our products, benefiting competitors that offer alternatives less likely to be restricted by further controls. Repeated changes in the export control rules are likely to impose compliance burdens on our business and our customers, negatively and materially impacting our business.",
+         "kind": "same"
+        },
+        {
+         "text": "Complex U.S. export rules have already and are likely in the future to result in inquiries and investigations from foreign governments regarding sales of our products, subjecting our business, employees, and customers to increased burdens, disruption and risk.",
+         "kind": "added"
+        }
+       ]
+      },
+      "score": 13.8452,
+      "matched_terms": [
+       "china",
+       "control",
+       "export",
+       "impact",
+       "restrict",
+       "sal"
+      ],
+      "also_under": []
+     }
+    ],
+    "considered": 802,
+    "matched": 177,
+    "distinct_matched": 160
+   },
+   {
+    "claim_id": "c4",
+    "changes": [
+     {
+      "kind": "added",
+      "form": "10-K",
+      "item": "Item 7. Management's Discussion and Analysis of Financial Condition and Results of Operations",
+      "paragraph": {
+       "text": "Gross margin decreased in fiscal year 2026 as our business model transitioned from offering Hopper HGX systems to Blackwell full-scale datacenter solutions. The gross margin decrease was also impacted by a $4.5 billion charge associated with H20 excess inventory and purchase obligations.",
+       "locator": "Item 7. Management's Discussion and Analysis of Financial Condition and Results of Operations › Fiscal Year 2026 Summary",
+       "start": 192702,
+       "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=Gross%20margin%20decreased%20in%20fiscal,excess%20inventory%20and%20purchase%20obligations.",
+       "link_kind": "passage"
+      },
+      "pair": null,
+      "score": 19.5908,
+      "matched_terms": [
+       "decreas",
+       "gross",
+       "inventory",
+       "margin"
+      ],
+      "also_under": []
+     },
+     {
+      "kind": "removed",
+      "form": "10-Q",
+      "item": "Part I, Item 2. Management’s Discussion and Analysis of Financial Condition and Results of Operations",
+      "paragraph": {
+       "text": "Gross margin increased from a year ago on lower inventory provisions, primarily due to the prior year's $4.5 billion charge associated with H20 excess inventory and purchase obligations. Gross margin was approximately flat sequentially as our Blackwell architecture remains the majority of our revenue.",
+       "locator": "Part I, Item 2. Management's Discussion and Analysis of Financial Condition and Results of Operations › First Quarter of Fiscal Year 2027 Summary",
+       "start": 66348,
+       "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000052/nvda-20260426.htm#:~:text=Gross%20margin%20increased%20from%20a,the%20majority%20of%20our%20revenue.",
+       "link_kind": "passage"
+      },
+      "pair": null,
+      "score": 18.6905,
+      "matched_terms": [
+       "gross",
+       "increas",
+       "inventory",
+       "margin",
+       "provision",
+       "revenu"
+      ],
+      "also_under": []
+     },
+     {
+      "kind": "added",
+      "form": "10-Q",
+      "item": "Part I, Item 2. Management’s Discussion and Analysis of Financial Condition and Results of Operations",
+      "paragraph": {
+       "text": "Gross margin increased from a year ago on improved mix from Blackwell Ultra. Gross margin was approximately flat sequentially as our Blackwell architecture remains the vast majority of our revenue.",
+       "locator": "Part I, Item 2. Management’s Discussion and Analysis of Financial Condition and Results of Operations › Second Quarter of Fiscal Year 2027 Summary",
+       "start": 82851,
+       "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm#:~:text=Gross%20margin%20increased%20from%20a,vast%20majority%20of%20our%20revenue.",
+       "link_kind": "passage"
+      },
+      "pair": null,
+      "score": 14.8931,
+      "matched_terms": [
+       "gross",
+       "increas",
+       "margin",
+       "revenu"
+      ],
+      "also_under": []
+     },
+     {
+      "kind": "added",
+      "form": "10-Q",
+      "item": "Part I, Item 2. Management’s Discussion and Analysis of Financial Condition and Results of Operations",
+      "paragraph": {
+       "text": "Provisions for inventory and excess inventory purchase obligations totaled $985 million and $2.1 billion for the second quarter and first half of fiscal year 2027, respectively. Sales of previously reserved inventory and settlements of excess inventory purchase obligations resulted in a provision release of $177 million and $280 million for the second quarter and first half of fiscal year 2027, respectively. The net effect on our gross margin was an unfavorable impact of 0.8% and 1.0% in the second quarter and first half of fiscal year 2027, respectively.",
+       "locator": "Part I, Item 2. Management’s Discussion and Analysis of Financial Condition and Results of Operations › Gross Profit and Gross Margin",
+       "start": 90689,
+       "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm#:~:text=Provisions%20for%20inventory%20and%20excess,of%20fiscal%20year%202027%2C%20respectively.",
+       "link_kind": "passage"
+      },
+      "pair": null,
+      "score": 14.2115,
+      "matched_terms": [
+       "gross",
+       "inventory",
+       "margin",
+       "provision"
+      ],
+      "also_under": []
+     },
+     {
+      "kind": "reworded",
+      "form": "10-K",
+      "item": "Item 7. Management's Discussion and Analysis of Financial Condition and Results of Operations",
+      "paragraph": null,
+      "pair": {
+       "before": {
+        "text": "Provisions for inventory and excess inventory purchase obligations totaled $3.7 billion and $2.2 billion for fiscal years 2025 and 2024, respectively. Sales of previously reserved inventory and settlements of excess inventory purchase obligations resulted in a provision release of $689 million and $540 million for fiscal years 2025 and 2024, respectively. The net effect on our gross margin was an unfavorable impact of 2.3% and 2.7% in fiscal years 2025 and 2024, respectively.",
+        "locator": "Item 7. Management's Discussion and Analysis of Financial Condition and Results of Operations › Gross Profit and Gross Margin",
+        "start": 215985,
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000023/nvda-20250126.htm#:~:text=Provisions%20for%20inventory%20and%20excess,years%202025%20and%202024%2C%20respectively.",
+        "link_kind": "passage"
+       },
+       "after": {
+        "text": "Provisions for inventory and excess inventory purchase obligations totaled $7.2 billion and $3.7 billion for fiscal years 2026 and 2025, respectively, including $4.5 billion associated with H20 excess inventory and purchase obligations for the first quarter of fiscal year 2026. Sales of previously reserved inventory and settlements of excess inventory purchase obligations resulted in a provision release of $1.5 billion and $689 million for fiscal years 2026 and 2025, respectively. The net effect on our gross margin was an unfavorable impact of 2.6% and 2.3% in fiscal years 2026 and 2025, respectively.",
+        "locator": "Item 7. Management's Discussion and Analysis of Financial Condition and Results of Operations › Gross Profit and Gross Margin",
+        "start": 208050,
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=Provisions%20for%20inventory%20and%20excess,years%202026%20and%202025%2C%20respectively.",
+        "link_kind": "passage"
+       },
+       "similarity": 0.821,
+       "segments": [
+        {
+         "text": "Provisions for inventory and excess inventory purchase obligations totaled",
+         "kind": "same"
+        },
+        {
+         "text": "$3.7",
+         "kind": "removed"
+        },
+        {
+         "text": "$7.2",
+         "kind": "added"
+        },
+        {
+         "text": "billion and",
+         "kind": "same"
+        },
+        {
+         "text": "$2.2",
+         "kind": "removed"
+        },
+        {
+         "text": "$3.7",
+         "kind": "added"
+        },
+        {
+         "text": "billion for fiscal years",
+         "kind": "same"
+        },
+        {
+         "text": "2025",
+         "kind": "removed"
+        },
+        {
+         "text": "2026",
+         "kind": "added"
+        },
+        {
+         "text": "and",
+         "kind": "same"
+        },
+        {
+         "text": "2024, respectively.",
+         "kind": "removed"
+        },
+        {
+         "text": "2025, respectively, including $4.5 billion associated with H20 excess inventory and purchase obligations for the first quarter of fiscal year 2026.",
+         "kind": "added"
+        },
+        {
+         "text": "Sales of previously reserved inventory and settlements of excess inventory purchase obligations resulted in a provision release of",
+         "kind": "same"
+        },
+        {
+         "text": "$1.5 billion and",
+         "kind": "added"
+        },
+        {
+         "text": "$689",
+         "kind": "same"
+        },
+        {
+         "text": "million and $540",
+         "kind": "removed"
+        },
+        {
+         "text": "million for fiscal years",
+         "kind": "same"
+        },
+        {
+         "text": "2025",
+         "kind": "removed"
+        },
+        {
+         "text": "2026",
+         "kind": "added"
+        },
+        {
+         "text": "and",
+         "kind": "same"
+        },
+        {
+         "text": "2024,",
+         "kind": "removed"
+        },
+        {
+         "text": "2025,",
+         "kind": "added"
+        },
+        {
+         "text": "respectively. The net effect on our gross margin was an unfavorable impact of",
+         "kind": "same"
+        },
+        {
+         "text": "2.6% and",
+         "kind": "added"
+        },
+        {
+         "text": "2.3%",
+         "kind": "same"
+        },
+        {
+         "text": "and 2.7%",
+         "kind": "removed"
+        },
+        {
+         "text": "in fiscal years",
+         "kind": "same"
+        },
+        {
+         "text": "2025",
+         "kind": "removed"
+        },
+        {
+         "text": "2026",
+         "kind": "added"
+        },
+        {
+         "text": "and",
+         "kind": "same"
+        },
+        {
+         "text": "2024,",
+         "kind": "removed"
+        },
+        {
+         "text": "2025,",
+         "kind": "added"
+        },
+        {
+         "text": "respectively.",
+         "kind": "same"
+        }
+       ]
+      },
+      "score": 13.7908,
+      "matched_terms": [
+       "gross",
+       "inventory",
+       "margin",
+       "provision"
+      ],
+      "also_under": []
+     }
+    ],
+    "considered": 802,
+    "matched": 129,
+    "distinct_matched": 126
+   },
+   {
+    "claim_id": "c5",
+    "changes": [
+     {
+      "kind": "reworded",
+      "form": "10-K",
+      "item": "Item 1C. Cybersecurity",
+      "paragraph": null,
+      "pair": {
+       "before": {
+        "text": "We also have a vendor risk assessment process consisting of, depending on the nature and sensitivity of the supplier and data they process on our behalf, the distribution and review of supplier questionnaires designed to help us evaluate cybersecurity risks that we may encounter when working with third parties that have access to confidential and other sensitive company information. We take steps designed to ensure that such vendors have implemented data privacy and security controls that help mitigate the cybersecurity risks associated with these vendors, depending on the nature and sensitivity of the supplier and data they process on our behalf. We routinely assess our high-risk suppliers’ conformance to industry standards (e.g., ISO 27001, ISO 28001, and C-TPAT), and we evaluate them for additional information, product, and physical security requirements.",
+        "locator": "Item 1C. Cybersecurity › Risk management and strategy",
+        "start": 177013,
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000023/nvda-20250126.htm#:~:text=We%20also%20have%20a%20vendor,product%2C%20and%20physical%20security%20requirements.",
+        "link_kind": "passage"
+       },
+       "after": {
+        "text": "We also have a vendor risk assessment process consisting of, depending on the nature and sensitivity of the supplier and data they process on our behalf, the distribution and review of supplier questionnaires designed to help us evaluate cybersecurity risks that we may encounter when working with third parties that have access to confidential and other sensitive company information. We take steps to review that such vendors have implemented data privacy and security controls that help mitigate the cybersecurity risks associated with these vendors, depending on the nature and sensitivity of the supplier and data they process on our behalf. We routinely assess our high-risk suppliers’ conformance to industry standards (e.g., ISO 27001, ISO 28001, and C-TPAT), and we evaluate them for additional information, product, and physical security requirements.",
+        "locator": "Item 1C. Cybersecurity › Risk management and strategy",
+        "start": 174437,
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=We%20also%20have%20a%20vendor,product%2C%20and%20physical%20security%20requirements.",
+        "link_kind": "passage"
+       },
+       "similarity": 0.98,
+       "segments": [
+        {
+         "text": "We also have a vendor risk assessment process consisting of, depending on the nature and sensitivity of the supplier and data they process on our behalf, the distribution and review of supplier questionnaires designed to help us evaluate cybersecurity risks that we may encounter when working with third parties that have access to confidential and other sensitive company information. We take steps",
+         "kind": "same"
+        },
+        {
+         "text": "designed",
+         "kind": "removed"
+        },
+        {
+         "text": "to",
+         "kind": "same"
+        },
+        {
+         "text": "ensure",
+         "kind": "removed"
+        },
+        {
+         "text": "review",
+         "kind": "added"
+        },
+        {
+         "text": "that such vendors have implemented data privacy and security controls that help mitigate the cybersecurity risks associated with these vendors, depending on the nature and sensitivity of the supplier and data they process on our behalf. We routinely assess our high-risk suppliers’ conformance to industry standards (e.g., ISO 27001, ISO 28001, and C-TPAT), and we evaluate them for additional information, product, and physical security requirements.",
+         "kind": "same"
+        }
+       ]
+      },
+      "score": 13.1071,
+      "matched_terms": [
+       "company",
+       "depend",
+       "party",
+       "product",
+       "risk",
+       "supplier",
+       "third"
+      ],
+      "also_under": []
+     },
+     {
+      "kind": "removed",
+      "form": "10-Q",
+      "item": "Part II, Item 1A. Risk Factors",
+      "paragraph": {
+       "text": "We continue to increase our supply and capacity purchases with existing and new suppliers to support our demand projections and increasing complexity of our data center products. We have also entered and may continue to enter into prepaid manufacturing and capacity agreements to supply both current and future products. The increased purchase volumes and integration of new suppliers and contract manufacturers into our supply chain creates more complexity in managing multiple suppliers with variations in production planning, execution and logistics. Our expanding product portfolio and varying component compatibility and quality may lead to increased inventory levels. We have incurred and may in the future incur inventory provisions or impairments if our inventory or supply or capacity commitments exceed demand for our products or demand declines. We are increasing our U.S.-based manufacturing and investing in specialized equipment and processes to support domestic production. We may experience delays or difficulties in scaling production as planned. Our ability to increase manufacturing capabilities will depend on the domestic manufacturing ecosystem's capacity to ramp production supply to the required volume timely. Delays or shortfalls could impact our ability to meet demand.",
+       "locator": "Part II, Item 1A. Risk Factors",
+       "start": 98366,
+       "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000052/nvda-20260426.htm#:~:text=We%20continue%20to%20increase%20our,our%20ability%20to%20meet%20demand.",
+       "link_kind": "passage"
+      },
+      "pair": null,
+      "score": 12.2419,
+      "matched_terms": [
+       "depend",
+       "manufactur",
+       "manufacturer",
+       "product",
+       "supplier",
+       "supply"
+      ],
+      "also_under": []
+     },
+     {
+      "kind": "reworded",
+      "form": "10-K",
+      "item": "Item 1. Business",
+      "paragraph": null,
+      "pair": {
+       "before": {
+        "text": "We have expanded our supplier relationships to build redundancy and resilience in our operations to provide long-term manufacturing capacity aligned with growing customer demand. Our supply chain is mainly concentrated in the Asia-Pacific region. We utilize foundries, such as Taiwan Semiconductor Manufacturing Company Limited, or TSMC, and Samsung Electronics Co., Ltd., or Samsung, to produce our semiconductor wafers. We purchase memory from SK Hynix Inc., Micron Technology, Inc., and Samsung. We utilize CoWoS technology for semiconductor packaging. We engage with independent subcontractors and contract manufacturers such as Hon Hai Precision Industry Co., Ltd., Wistron Corporation, and Fabrinet to perform assembly, testing and packaging of our final products.",
+        "locator": "Item 1. Business › Manufacturing",
+        "start": 39204,
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000023/nvda-20250126.htm#:~:text=We%20have%20expanded%20our%20supplier,packaging%20of%20our%20final%20products.",
+        "link_kind": "passage"
+       },
+       "after": {
+        "text": "We have expanded our supplier relationships to build redundancy and resilience in our operations to provide long-term manufacturing capacity aligned with growing customer demand. While currently our supply chain is mainly concentrated in Asia, we are expanding into the U.S. and Latin America. We utilize foundries, such as Taiwan Semiconductor Manufacturing Company Limited, or TSMC, and Samsung Electronics Co., Ltd., or Samsung, to produce our semiconductor wafers. We purchase memory from SK Hynix Inc., Micron Technology, Inc., and Samsung. We utilize CoWoS technology for semiconductor packaging. We engage with independent subcontractors and contract manufacturers such as Hon Hai Precision Industry Co., Ltd., Wistron Corporation, and Fabrinet to perform assembly, testing and packaging of our final products.",
+        "locator": "Item 1. Business › Manufacturing",
+        "start": 37239,
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm#:~:text=We%20have%20expanded%20our%20supplier,packaging%20of%20our%20final%20products.",
+        "link_kind": "passage"
+       },
+       "similarity": 0.923,
+       "segments": [
+        {
+         "text": "We have expanded our supplier relationships to build redundancy and resilience in our operations to provide long-term manufacturing capacity aligned with growing customer demand.",
+         "kind": "same"
+        },
+        {
+         "text": "Our",
+         "kind": "removed"
+        },
+        {
+         "text": "While currently our",
+         "kind": "added"
+        },
+        {
+         "text": "supply chain is mainly concentrated in",
+         "kind": "same"
+        },
+        {
+         "text": "Asia, we are expanding into",
+         "kind": "added"
+        },
+        {
+         "text": "the",
+         "kind": "same"
+        },
+        {
+         "text": "Asia-Pacific region.",
+         "kind": "removed"
+        },
+        {
+         "text": "U.S. and Latin America.",
+         "kind": "added"
+        },
+        {
+         "text": "We utilize foundries, such as Taiwan Semiconductor Manufacturing Company Limited, or TSMC, and Samsung Electronics Co., Ltd., or Samsung, to produce our semiconductor wafers. We purchase memory from SK Hynix Inc., Micron Technology, Inc., and Samsung. We utilize CoWoS technology for semiconductor packaging. We engage with independent subcontractors and contract manufacturers such as Hon Hai Precision Industry Co., Ltd., Wistron Corporation, and Fabrinet to perform assembly, testing and packaging of our final products.",
+         "kind": "same"
+        }
+       ]
+      },
+      "score": 11.6329,
+      "matched_terms": [
+       "company",
+       "foundry",
+       "limit",
+       "manufactur",
+       "manufacturer",
+       "product",
+       "supplier",
+       "supply",
+       "tsmc"
+      ],
+      "also_under": []
+     },
+     {
+      "kind": "removed",
+      "form": "10-K",
+      "item": "Item 1A. Risk Factors",
+      "paragraph": {
+       "text": "The AI Diffusion IFR would reduce the market for U.S.-designed and manufactured computing products and services, by expressly limiting exports, reexports, and transfers of covered products to Tier 2 countries and companies in Tier 1 countries that are either headquartered in Tier 2, or have an ultimate parent headquartered in a Tier 2 country. These restrictions would apply to all covered products, including products sold years ago.",
+       "locator": "Item 1A. Risk Factors › Risks Related to Regulatory, Legal, Our Stock and Other Matters",
+       "start": 143272,
+       "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000023/nvda-20250126.htm#:~:text=The%20AI%20Diffusion%20IFR%20would,including%20products%20sold%20years%20ago.",
+       "link_kind": "passage"
+      },
+      "pair": null,
+      "score": 10.5804,
+      "matched_terms": [
+       "company",
+       "limit",
+       "manufactur",
+       "product"
+      ],
+      "also_under": []
+     },
+     {
+      "kind": "reworded",
+      "form": "10-Q",
+      "item": "Part I, Item 1. Financial Statements (Unaudited)",
+      "paragraph": null,
+      "pair": {
+       "before": {
+        "text": "We refer to customers who purchase products directly from NVIDIA as direct customers, such as add-in board manufacturers, or AIBs, distributors, original design manufacturers, or ODMs, original equipment manufacturers, or OEMs, cloud service providers, or CSPs, AI model makers, and system integrators. Certain direct customers may use either internal resources or third-party system integrators to complete their build. Three direct customers accounted for 30%, 18%, and 16% of our accounts receivable balance as of April 26, 2026. Three direct customers accounted for 25%, 18%, and 13% of our accounts receivable balance as of January 25, 2026.",
+        "locator": "Part I, Item 1. Financial Statements (Unaudited) › Note 7 - Balance Sheet Components",
+        "start": 25676,
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000052/nvda-20260426.htm",
+        "link_kind": "document"
+       },
+       "after": {
+        "text": "We refer to customers who purchase products directly from NVIDIA as direct customers, such as add-in board manufacturers, or AIBs, distributors, original design manufacturers, or ODMs, original equipment manufacturers, or OEMs, cloud service providers, or CSPs, AI model makers, and system integrators. Certain direct customers may use either internal resources or third-party system integrators to complete their build. Five direct customers accounted for 22%, 14%, 13%, 11%, and 10% of our accounts receivable balance as of July 26, 2026. Three direct customers accounted for 25%, 18%, and 13% of our accounts receivable balance as of January 25, 2026.",
+        "locator": "Part I, Item 1. Financial Statements (Unaudited) › Note 7 - Supplemental Financial Statement Information",
+        "start": 27356,
+        "link": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm",
+        "link_kind": "document"
+       },
+       "similarity": 0.93,
+       "segments": [
+        {
+         "text": "We refer to customers who purchase products directly from NVIDIA as direct customers, such as add-in board manufacturers, or AIBs, distributors, original design manufacturers, or ODMs, original equipment manufacturers, or OEMs, cloud service providers, or CSPs, AI model makers, and system integrators. Certain direct customers may use either internal resources or third-party system integrators to complete their build.",
+         "kind": "same"
+        },
+        {
+         "text": "Three",
+         "kind": "removed"
+        },
+        {
+         "text": "Five",
+         "kind": "added"
+        },
+        {
+         "text": "direct customers accounted for",
+         "kind": "same"
+        },
+        {
+         "text": "30%, 18%,",
+         "kind": "removed"
+        },
+        {
+         "text": "22%, 14%, 13%, 11%,",
+         "kind": "added"
+        },
+        {
+         "text": "and",
+         "kind": "same"
+        },
+        {
+         "text": "16%",
+         "kind": "removed"
+        },
+        {
+         "text": "10%",
+         "kind": "added"
+        },
+        {
+         "text": "of our accounts receivable balance as of",
+         "kind": "same"
+        },
+        {
+         "text": "April",
+         "kind": "removed"
+        },
+        {
+         "text": "July",
+         "kind": "added"
+        },
+        {
+         "text": "26, 2026. Three direct customers accounted for 25%, 18%, and 13% of our accounts receivable balance as of January 25, 2026.",
+         "kind": "same"
+        }
+       ]
+      },
+      "score": 9.8895,
+      "matched_terms": [
+       "manufacturer",
+       "party",
+       "product",
+       "third"
+      ],
+      "also_under": []
+     }
+    ],
+    "considered": 802,
+    "matched": 180,
+    "distinct_matched": 173
+   }
+  ],
+  "notes": []
+ }
+}

@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Evidence Desk</title>
+  <link rel="stylesheet" href="styles.css">
+<style>
+  .snapshot-banner { font: 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+    padding: 6px 16px; background: #f3f1ea; color: #3a3a35; border-bottom: 1px solid #d9d5c7; }
+  .snapshot-banner a { color: inherit; text-decoration: underline; }
+  .snapshot-banner .snapshot-note { display: block; margin-top: 2px; color: #8a3b12; }
+  .snapshot-banner .snapshot-note[hidden] { display: none; }
+  @media (prefers-color-scheme: dark) {
+    .snapshot-banner { background: #24231f; color: #d8d5cb; border-bottom-color: #3b3a34; }
+    .snapshot-banner .snapshot-note { color: #f0a77c; }
+  }
+</style>
+<script src="snapshot.js"></script>
+</head>
+<body>
+<div class="snapshot-banner" role="note" data-snapshot-version="11">Recorded snapshot of Evidence Desk version 11. Live runs need the app running locally. <a href="/versions">All versions</a> · <a href="https://github.com/abgup05/EE292M/tree/capstone-v11">Tag capstone-v11 on GitHub</a><span class="snapshot-note" hidden></span></div>
+
+  <a class="skip-link" href="#result-panel">Skip to results</a>
+
+  <header class="masthead">
+    <div class="masthead-inner">
+      <div class="brand">
+        <h1>Evidence Desk</h1>
+        <span id="sample-tag" class="page-tag" hidden>Sample record</span>
+      </div>
+      <div class="takeaway-row">
+        <p id="takeaway" class="lede takeaway">Every verdict opens to the exact filing passages or reported figures it rests on: quotes are checked word for word, and whether a quote supports a claim is a model's reading, checked by a second model and then by you.</p>
+        <p id="sample-nav" class="sample-nav">
+          <a id="sample-link" class="sample-button" href="?sample">See a recorded run</a>
+          <a id="tagged-link" class="sample-button" href="?sample=run-tagged">See the same run with tagged figures offered</a>
+          <a id="changes-link" class="sample-button" href="?sample=changes">See a recorded filing comparison</a>
+          <a id="breakdowns-link" class="sample-button" href="?sample=breakdowns">See recorded segments and customers</a>
+        </p>
+      </div>
+      <p id="engine-line" class="engine-line"></p>
+    </div>
+  </header>
+
+  <div id="meta-error" class="alert page-alert" role="alert" hidden></div>
+
+  <main class="layout">
+    <section id="form-panel" class="panel form-panel" aria-labelledby="form-title">
+      <h2 id="form-title" class="panel-title">Your thesis</h2>
+      <form id="thesis-form" novalidate>
+        <div class="field">
+          <label for="ticker">Ticker</label>
+          <p id="ticker-hint" class="hint">The company's stock symbol, such as NVDA or BRK.B.</p>
+          <input id="ticker" name="ticker" type="text" autocomplete="off" autocapitalize="characters"
+                 spellcheck="false" maxlength="12" aria-describedby="ticker-hint err-ticker" required>
+          <p id="err-ticker" class="field-error" hidden></p>
+        </div>
+
+        <div class="field">
+          <label for="decision">Decision the thesis informs</label>
+          <p id="decision-hint" class="hint">For example, "Keep the position into the next earnings report." <span id="decision-count" class="count"></span></p>
+          <textarea id="decision" name="decision" rows="2" aria-describedby="decision-hint err-decision" required></textarea>
+          <p id="err-decision" class="field-error" hidden></p>
+        </div>
+
+        <div class="field">
+          <label for="claims">Claims to test</label>
+          <p id="claims-hint" class="hint">One claim per line, in plain words. <span id="claims-count" class="count" aria-live="polite"></span></p>
+          <textarea id="claims" name="claims" rows="6" aria-describedby="claims-hint err-claims" required></textarea>
+          <p id="err-claims" class="field-error" hidden></p>
+        </div>
+
+        <details id="advanced" class="advanced">
+          <summary>Advanced</summary>
+          <div class="field">
+            <label for="scope_notes">Scope notes <span class="optional">optional</span></label>
+            <p id="scope-hint" class="hint">Definitions and exclusions the engine should respect.</p>
+            <textarea id="scope_notes" name="scope_notes" rows="3" aria-describedby="scope-hint err-scope_notes"></textarea>
+            <p id="err-scope_notes" class="field-error" hidden></p>
+          </div>
+          <div class="field">
+            <label for="filings">Number of filings</label>
+            <p id="filings-hint" class="hint">The latest annual report (10-K), then the quarterly reports (10-Q) filed after it, newest first.</p>
+            <input id="filings" name="filings" type="number" inputmode="numeric" step="1" aria-describedby="filings-hint err-filings">
+            <p id="err-filings" class="field-error" hidden></p>
+          </div>
+          <div class="field">
+            <label for="extra_urls">Extra public pages <span class="optional">optional</span></label>
+            <p id="urls-hint" class="hint">A press release or investor-relations page, one http(s) address per line.</p>
+            <textarea id="extra_urls" name="extra_urls" rows="2" spellcheck="false" aria-describedby="urls-hint err-extra_urls"></textarea>
+            <p id="err-extra_urls" class="field-error" hidden></p>
+          </div>
+          <div class="field field-check">
+            <input id="tagged_figures" name="tagged_figures" type="checkbox" aria-describedby="tagged-hint err-tagged_figures">
+            <label for="tagged_figures">Also offer the figures tagged in the filings (segments, products, geographies, customers)</label>
+            <p id="tagged-hint" class="hint">Off by default because it changes what the model is shown: a run with it and a run without it did not answer the same prompt.</p>
+            <p id="err-tagged_figures" class="field-error" hidden></p>
+          </div>
+        </details>
+
+        <div id="form-errors" class="alert form-alert" role="alert" hidden></div>
+
+        <div class="actions">
+          <button type="submit" id="submit" class="primary">Test the thesis</button>
+          <button type="button" id="figures-only" class="secondary">Reported figures only</button>
+          <span class="changes-action">
+            <button type="button" id="filing-changes" class="secondary">What changed in the filings</button>
+            <label class="visually-hidden" for="changes_form">Filings to compare</label>
+            <select id="changes_form" name="changes_form" aria-describedby="err-changes_form">
+              <option value="10-K">annual reports (10-K)</option>
+              <option value="10-Q">quarterly reports (10-Q)</option>
+            </select>
+          </span>
+          <span class="changes-action">
+            <button type="button" id="breakdowns" class="secondary">Segments and customers (tagged facts)</button>
+            <label class="visually-hidden" for="breakdowns_form">Filing to read</label>
+            <select id="breakdowns_form" name="breakdowns_form" aria-describedby="err-breakdowns_form">
+              <option value="10-K">latest annual report (10-K)</option>
+              <option value="10-Q">latest quarterly report (10-Q)</option>
+            </select>
+          </span>
+          <button type="button" id="load-example" class="secondary">Load example</button>
+          <button type="button" id="save-thesis" class="secondary" aria-expanded="false" aria-controls="save-panel" hidden>Save this thesis</button>
+        </div>
+        <p id="err-changes_form" class="field-error" hidden></p>
+        <p id="err-breakdowns_form" class="field-error" hidden></p>
+        <p class="hint actions-hint">"Reported figures only", "What changed in the filings" and "Segments and customers" need just the ticker: the first shows the company's reported numbers, the second compares its two latest annual or quarterly reports, paragraph by paragraph, and the third shows the numbers its latest report tags by segment, product, geography and customer. None starts a run.</p>
+        <div id="save-panel" class="save-panel" hidden>
+          <div class="field">
+            <label for="thesis_name">Name for this thesis</label>
+            <p id="thesis-name-hint" class="hint">Saved with the ticker, decision and claims above, so you can run it again when a new filing arrives.</p>
+            <input id="thesis_name" name="thesis_name" type="text" autocomplete="off" aria-describedby="thesis-name-hint err-thesis_name">
+            <p id="err-thesis_name" class="field-error" hidden></p>
+          </div>
+          <div class="actions">
+            <button type="button" id="save-confirm" class="primary">Save</button>
+            <button type="button" id="save-cancel" class="secondary">Cancel</button>
+          </div>
+        </div>
+        <p id="form-note" class="hint form-note" hidden></p>
+      </form>
+
+      <div id="theses-block" hidden>
+        <h2 class="panel-title recent-title">Saved theses</h2>
+        <ul id="theses" class="recent"></ul>
+      </div>
+
+      <h2 class="panel-title recent-title">Recent runs</h2>
+      <ul id="recent" class="recent"></ul>
+    </section>
+
+    <section id="result-panel" class="panel result-panel" aria-labelledby="result-title" tabindex="-1">
+      <h2 id="result-title" class="visually-hidden">Result</h2>
+
+      <div id="empty-state" class="empty-state">
+        <p class="empty-lead">How a run works</p>
+        <ol class="how">
+          <li>Enter a ticker, the decision you face, and the claims your thesis rests on.</li>
+          <li>The backend reads the company's latest annual report (10-K), the quarterly reports (10-Q) filed after it, and the figures the company reported in machine-readable form (XBRL). It finds the passages that bear on each claim.</li>
+          <li>An engine reads those passages and proposes findings, each citing quotes or reported figures. Every quote is checked word for word against the stored filing, and every number in a finding is matched against its quotes and figures. A finding that fails a check is withheld.</li>
+          <li>Each claim's verdict follows by a fixed rule from the findings that passed. Whether a quote supports or challenges the claim is the engine's reading of it, not something the checks prove: open the claim and read the quote in place before you rely on it.</li>
+        </ol>
+        <p class="sample-links">
+          <a id="synthetic-link" href="?sample=synthetic">See an illustrative record with every kind of mark</a>
+        </p>
+      </div>
+
+      <p id="loading" class="loading" hidden></p>
+      <div id="load-error" class="alert" role="alert" hidden></div>
+
+      <div id="figures-view" hidden>
+        <div id="figures-head" class="run-head"></div>
+        <section class="block" aria-labelledby="figures-only-title">
+          <h3 id="figures-only-title" class="block-title">Reported figures</h3>
+          <div id="figures-standalone"></div>
+        </section>
+      </div>
+
+      <div id="changes-view" hidden>
+        <div id="changes-head" class="run-head"></div>
+        <div id="changes-body"></div>
+        <details id="changes-legend" class="legend" open>
+          <summary>How to read this comparison</summary>
+          <dl class="legend-list">
+            <div><dt><span class="chg-mark c-numbers_only"><span class="glyph g-chg" aria-hidden="true">#</span><span class="chg-label">Numbers only</span></span></dt><dd>The same paragraph once numbers, dates and amounts are set aside: only those changed. Its list strikes through the earlier figures and underlines the later ones.</dd></div>
+            <div><dt><span class="chg-mark c-reworded"><span class="glyph g-chg" aria-hidden="true">~</span><span class="chg-label">Reworded</span></span></dt><dd>A paragraph in the later filing that mostly matches one in the earlier filing.</dd></div>
+            <div><dt><span class="chg-mark c-added"><span class="glyph g-chg" aria-hidden="true">+</span><span class="chg-label">Added</span></span></dt><dd>A paragraph in the later filing with no counterpart in the earlier one; under an Item, also a sub-heading found only in the later filing.</dd></div>
+            <div><dt><span class="chg-mark c-removed"><span class="glyph g-chg" aria-hidden="true">−</span><span class="chg-label">Removed</span></span></dt><dd>A paragraph in the earlier filing with no counterpart in the later one; under an Item, also a sub-heading found only in the earlier filing.</dd></div>
+            <div><dt><ins class="seg seg-add">added words</ins></dt><dd>Inside a reworded paragraph: words only the later filing has, underlined.</dd></div>
+            <div><dt><del class="seg seg-del">removed words</del></dt><dd>Inside a reworded paragraph: words only the earlier filing had, struck through where they stood.</dd></div>
+            <div data-legend="rule"><dt><span class="rule-mark"><span class="glyph g-rule" aria-hidden="true">ƒ</span><span class="rule-label">Fixed rule</span></span></dt><dd>Computed by a fixed rule; not checked by a person. Here the classes above come from a word-overlap threshold that no person has checked against these filings: read the paragraphs before you rely on a count.</dd></div>
+            <div><dt><span class="mark-limit"><span class="glyph g-limit" aria-hidden="true">▲</span> Limit</span></dt><dd>Something limits this comparison.</dd></div>
+            <div><dt><span class="legend-link">blue text</span></dt><dd>Something you can click: a link opens the filing it names.</dd></div>
+          </dl>
+        </details>
+      </div>
+
+      <div id="breakdowns-view" hidden>
+        <div id="breakdowns-head" class="run-head"></div>
+        <div id="breakdowns-body"></div>
+        <details id="breakdowns-legend" class="legend" open>
+          <summary>How to read these tables</summary>
+          <dl class="legend-list">
+            <div><dt>What this is</dt><dd>The numbers one filing tags in its inline XBRL, split by a dimension (segment, product, geography, customer): read from the tags, not from the printed tables. Every cell and change is the record's own text; this page computes none of them.</dd></div>
+            <div data-legend="rule"><dt><span class="rule-mark"><span class="glyph g-rule" aria-hidden="true">ƒ</span><span class="rule-label">Fixed rule</span></span></dt><dd>Computed by a fixed rule; not checked by a person. Here: which tags make a table, the row labels (derived from tag names, not the company's own), the changes and whether the rows add up.</dd></div>
+            <div data-legend="adds-up"><dt><span class="bd-adds bd-adds-yes"><span class="glyph g-adds" aria-hidden="true">=</span> Adds up</span></dt><dd>The rows add up to the total the filing tags, in every period checked, within the rounding the tags declare. The table's notes say how (some rows can be parts of others).</dd></div>
+            <div><dt><span class="bd-adds bd-adds-no"><span class="glyph g-limit" aria-hidden="true">▲</span> Does not add up</span></dt><dd>In at least one period the rows do not add up to the tagged total: a limit of the record. Read the filing's table before you use the rows.</dd></div>
+            <div><dt><span class="bd-adds bd-adds-unchecked">Not checked</span></dt><dd>Nothing could be checked: the filing tags no total for these rows (shares of revenue by customer, say), or no period had both.</dd></div>
+            <div><dt>empty cell</dt><dd>The filing tags no value for that row in that period. It is not a zero.</dd></div>
+            <div><dt><span class="legend-link">+68.2%</span></dt><dd>The change from the comparable earlier period, as the record states it. Open it to read the arithmetic, or why there is none.</dd></div>
+            <div><dt><span class="mark-limit"><span class="glyph g-limit" aria-hidden="true">▲</span> Limit</span></dt><dd>Something limits this record.</dd></div>
+          </dl>
+        </details>
+      </div>
+
+      <div id="thesis-view" hidden>
+        <div id="thesis-head" class="run-head"></div>
+        <section class="block" aria-labelledby="thesis-runs-title">
+          <h3 id="thesis-runs-title" class="block-title">Runs of this thesis</h3>
+          <div class="thesis-actions">
+            <button type="button" id="run-again" class="primary">Run again on the latest filings</button>
+            <p id="run-again-message" class="hint" role="status" hidden></p>
+          </div>
+          <ul id="thesis-runs" class="recent thesis-runs"></ul>
+        </section>
+        <section id="thesis-changes-section" class="block" aria-labelledby="thesis-changes-title">
+          <h3 id="thesis-changes-title" class="block-title">What moved</h3>
+          <div id="thesis-changes"></div>
+        </section>
+      </div>
+
+      <div id="run-view" hidden>
+        <div id="status-banner" class="banner" role="status" aria-live="polite"></div>
+        <div id="stages-wrap" hidden>
+          <ol id="stages" class="stages" aria-label="Run progress"></ol>
+        </div>
+
+        <div id="run-head" class="run-head"></div>
+
+        <section class="block" aria-labelledby="scorecard-title">
+          <h3 id="scorecard-title" class="block-title">Verdicts by claim</h3>
+          <div id="review-line" class="review-line" hidden></div>
+          <ol id="scorecard" class="scorecard"></ol>
+          <p id="distinction" class="distinction">Each verdict follows by a fixed rule from the findings that passed their checks. <strong>Checked:</strong> every quote was found word for word in the stored filing, and numbers were matched to quotes and reported figures. <strong>Not checked:</strong> whether a quote supports or challenges the claim is the engine's reading of it. Read the quotes before you rely on a verdict.</p>
+
+          <details id="legend" class="legend" open>
+            <summary>How to read this page</summary>
+            <dl class="legend-list">
+              <div><dt><span class="pill verdict v-supported"><span class="glyph" aria-hidden="true">✓</span><span>Supported</span></span></dt><dd>Verified findings support the claim and none challenge it. On a finding, the same mark means it supports the claim.</dd></div>
+              <div><dt><span class="pill verdict v-challenged"><span class="glyph" aria-hidden="true">✕</span><span>Challenged</span></span></dt><dd>Verified findings challenge the claim and none support it. On a finding: it challenges the claim.</dd></div>
+              <div><dt><span class="pill verdict v-mixed"><span class="glyph" aria-hidden="true">±</span><span>Mixed</span></span></dt><dd>Verified findings point both ways.</dd></div>
+              <div><dt><span class="pill verdict v-unjudged"><span class="glyph" aria-hidden="true">?</span><span>Not judged</span></span></dt><dd>Passages were quoted but no engine judged them.</dd></div>
+              <div><dt><span class="pill verdict v-not_addressed"><span class="glyph" aria-hidden="true">∅</span><span>Not addressed</span></span></dt><dd>No verified quote or figure bears on the claim.</dd></div>
+              <div><dt><span class="pill stance s-context"><span class="glyph" aria-hidden="true">•</span><span>Context</span></span></dt><dd>A finding that informs the claim without taking a side.</dd></div>
+              <div><dt><span class="mark-limit"><span class="glyph g-limit" aria-hidden="true">▲</span> Limit</span></dt><dd>Something limits this record: a partial or failed run, a coverage limit, an error, a source not read, a failed check.</dd></div>
+              <div><dt><span class="badge-model legend-badge"><span class="glyph g-model" aria-hidden="true">✎</span> Model-written</span></dt><dd>Written by a language model and not checked for meaning by a person. A second model's reading has its own marks, next.</dd></div>
+              <div><dt><span class="meaning-mark m-passed"><span class="glyph g-meaning" aria-hidden="true">◎</span><span class="meaning-words">Agrees</span></span></dt><dd>A second model, not shown the first one's reasoning, read the finding's evidence and agrees that it supports the statement and its stance. Still a model's reading, not a person's: its reason is one click away.</dd></div>
+              <div><dt><span class="meaning-mark m-partly"><span class="glyph g-meaning" aria-hidden="true">◐</span><span class="meaning-words">In part</span></span></dt><dd>The second model agrees only in part; its reason is shown under a double violet rule. A result of the check, not a limit of the record: read the quote and decide.</dd></div>
+              <div data-legend="period-caution"><dt><span class="mark-limit period-caution-legend"><span class="glyph g-limit" aria-hidden="true">▲</span> Period not found</span></dt><dd>A year a verified finding names that is not in its quotes, its cited figures or the period of a filing it quotes. It is reported only: it withholds nothing and changes no verdict. A year one below the filing's own is often the comparison year a report prints beside its own; read the quote to see which year it means.</dd></div>
+              <div><dt><span class="mark-reject"><span class="glyph g-reject" aria-hidden="true">!</span> Refused</span></dt><dd>The server refused your input; the message says how to fix it.</dd></div>
+              <div data-legend="dashed"><dt><span class="legend-dashed">dashed border</span></dt><dd>Not final. A dashed border marks one of three things: a claim no engine judged (Not judged); a decision you have still to make (Undecided, not reviewed yet); a run still in progress, with its claims not yet decided.</dd></div>
+              <div data-legend="claim-changes"><dt><span class="rule-mark"><span class="glyph g-rule" aria-hidden="true">ƒ</span><span class="rule-label">Fixed rule</span></span> <span class="chg-mark c-added"><span class="glyph g-chg" aria-hidden="true">+</span><span class="chg-label">Added</span></span> <span class="chg-mark c-removed"><span class="glyph g-chg" aria-hidden="true">−</span><span class="chg-label">Removed</span></span> <span class="chg-mark c-reworded"><span class="glyph g-chg" aria-hidden="true">~</span><span class="chg-label">Reworded</span></span> <span class="chg-mark c-numbers_only"><span class="glyph g-chg" aria-hidden="true">#</span><span class="chg-label">Numbers only</span></span></dt><dd>Under each claim of a finished run: paragraphs that changed since the filing before each one the run read (the earlier filing was fetched for this comparison; the run did not read it), and that share words with the claim or the search queries the run wrote for it. Listed by a fixed rule (ƒ: computed by a fixed rule; not checked by a person); no model chose or judged them, they are not findings, and none counts toward the verdict. In a reworded pair, <del class="seg seg-del">struck through</del> was dropped and <ins class="seg seg-add">underlined</ins> was added.</dd></div>
+              <div data-legend="status"><dt><span class="status-word st-complete"><span class="glyph" aria-hidden="true">◇</span> Complete</span></dt><dd>The run's status, at the top of a result: an open diamond when complete, three dots while running, the limit mark when partial or failed. A status is never a filled tag.</dd></div>
+              <div><dt><span class="page-tag">Sample record</span></dt><dd>A grey tag is a label about the page itself.</dd></div>
+              <div><dt><mark class="legend-mark">highlighted</mark></dt><dd>A quote found word for word in the filing, shown in its surrounding text.</dd></div>
+              <div><dt><span class="legend-link">blue text</span></dt><dd>Something you can click.</dd></div>
+              <div><dt><span class="decision-mark d-accepted"><span class="glyph" aria-hidden="true">▣</span><span>Accepted</span></span></dt><dd>Your decision: you accepted this finding, so it counts toward the verdict after your review. A dark filled tag is always your own decision: nothing the engine, a model or a rule produced is drawn that way.</dd></div>
+              <div><dt><span class="decision-mark d-rejected"><span class="glyph" aria-hidden="true">☒</span><span>Rejected</span></span></dt><dd>Your decision: you rejected this finding, so the verdict after your review leaves it out.</dd></div>
+              <div><dt><span class="decision-mark d-undecided"><span class="glyph" aria-hidden="true">☐</span><span>Undecided</span></span></dt><dd>Your decision is still to make; dashed, because the verdict after your review is provisional until you decide.</dd></div>
+            </dl>
+          </details>
+        </section>
+
+        <section id="changes-section" class="block" aria-labelledby="changes-title" tabindex="-1" hidden>
+          <h3 id="changes-title" class="block-title">What moved since the earlier run</h3>
+          <div id="changes"></div>
+        </section>
+
+        <section id="summary-section" class="block" aria-labelledby="summary-title" hidden>
+          <h3 id="summary-title" class="block-title">Summary</h3>
+          <div id="summary-box" data-mw="summary">
+            <p id="summary-origin" class="origin"></p>
+            <p id="summary" class="summary"></p>
+          </div>
+        </section>
+
+        <section id="figures-section" class="block" aria-labelledby="figures-title" hidden>
+          <h3 id="figures-title" class="block-title">Reported figures</h3>
+          <div id="figures"></div>
+        </section>
+
+        <section class="block" aria-labelledby="claims-title">
+          <h3 id="claims-title" class="block-title">Claims and their evidence</h3>
+          <p class="hint">Open a claim to read each finding, its checks, and the exact passage or figure it rests on.</p>
+          <div id="run-filing-changes" class="cc-compared" aria-live="polite" hidden></div>
+          <div id="claim-list"></div>
+        </section>
+
+        <section id="withheld-section" class="block withheld" aria-labelledby="withheld-title" hidden>
+          <h3 id="withheld-title" class="block-title"><span class="glyph g-limit" aria-hidden="true">▲</span> Withheld findings</h3>
+          <p class="hint">The engine proposed these findings, but each failed a check. They count toward no verdict.</p>
+          <div id="withheld"></div>
+        </section>
+
+        <section id="unknowns-section" class="block" aria-labelledby="unknowns-title" hidden>
+          <h3 id="unknowns-title" class="block-title">Unknowns</h3>
+          <ul id="unknowns" class="plain-list"></ul>
+        </section>
+
+        <section id="next-section" class="block" aria-labelledby="next-title" hidden>
+          <h3 id="next-title" class="block-title">Next steps</h3>
+          <ul id="next-steps" class="plain-list"></ul>
+        </section>
+
+        <section class="block" aria-labelledby="sources-title">
+          <h3 id="sources-title" class="block-title">Sources</h3>
+          <div class="table-wrap" tabindex="0" role="region" aria-labelledby="sources-title">
+            <table id="sources" class="sources">
+              <thead>
+                <tr>
+                  <th scope="col">ID</th>
+                  <th scope="col">Form</th>
+                  <th scope="col">Period end</th>
+                  <th scope="col">Filed</th>
+                  <th scope="col">Retrieved (UTC)</th>
+                  <th scope="col" class="num">Sections</th>
+                  <th scope="col" class="num">Characters</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Link</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="coverage-limits" class="block" aria-labelledby="limits-title" tabindex="-1">
+          <h3 id="limits-title" class="block-title">Coverage limits</h3>
+          <ul id="limits" class="mark-list"></ul>
+        </section>
+
+        <section class="block" aria-labelledby="errors-title">
+          <h3 id="errors-title" class="block-title">Errors</h3>
+          <ul id="errors" class="mark-list"></ul>
+          <div id="errors-more"></div>
+        </section>
+
+        <p id="provenance" class="provenance"></p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <details class="glossary">
+      <summary>Terms used on this page</summary>
+      <dl>
+        <dt>10-K</dt><dd>The annual report a US public company files with the Securities and Exchange Commission (SEC).</dd>
+        <dt>10-Q</dt><dd>The quarterly report, filed for each of the other three quarters.</dd>
+        <dt>XBRL</dt><dd>The machine-readable tags in a filing that state each reported number, its period and its unit. Reported figures on this page are read from them.</dd>
+        <dt>Item</dt><dd>A numbered section of a filing, such as Item 1A, Risk Factors, or Item 7, Management's Discussion and Analysis (MD&amp;A).</dd>
+        <dt>Period end</dt><dd>The last day of the quarter or fiscal year the filing reports on. Fiscal years need not match calendar years.</dd>
+        <dt>Filed</dt><dd>The date the company submitted the filing to the SEC. "Retrieved" is when this run downloaded it, in UTC.</dd>
+        <dt>Accession number</dt><dd>The SEC's identifier for one filing; hover over a form to see it.</dd>
+        <dt>Derived, restated</dt><dd>A derived value was worked out from reported ones (for example a fourth quarter as the year less nine months). A restated value was reported differently by a later filing.</dd>
+        <dt>CIK</dt><dd>The SEC's numeric identifier for a company.</dd>
+        <dt>EDGAR</dt><dd>The SEC's public filing system, where the filings linked on this page are published.</dd>
+      </dl>
+    </details>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

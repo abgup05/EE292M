@@ -20,7 +20,7 @@ Evidence Desk makes the passage the unit of the result. A verdict is computed by
 
 ## Milestones
 
-Each milestone is one prompt and ends in a tagged version that can be opened on its own (`git checkout <tag>`, then `make up` in `Capstone/evidence_desk`).
+Each milestone is one prompt and ends in a tagged version that can be opened on its own (`git checkout <tag>`, then `make up` in `Capstone/evidence_desk`). Which course session each version was built for, the review of each, and a recorded snapshot of each version's page on the website are in [`docs/versions.md`](../docs/versions.md).
 
 | # | Tag | Reviewable result | Exit check | Status |
 | --- | --- | --- | --- | --- |

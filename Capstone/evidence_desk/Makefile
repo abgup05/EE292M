@@ -14,7 +14,7 @@ help:
 	@echo "Command line: run ARGS='example' or ARGS='run --ticker NVDA --decision \"...\" --claim \"...\"' (synchronous; writes results/<run-id>.json and .md)"
 	@echo 'Dependencies: lock'
 	@echo 'Demonstration: demo (live NVIDIA example through the HTTP API: real EDGAR, configured engine; writes results/demo-<UTC>.json and .md)'
-	@echo 'Screenshots: screenshots (headless Chromium renders the first screen and the sample record into docs/screenshots)'
+	@echo 'Screenshots: screenshots (headless Chromium renders the first screen, the samples and the specimen page, in the Paper and Terminal themes and at phone width, into docs/screenshots)'
 	@echo 'Browser test: uitest (headless Chromium renders both sample records; pytest uitests checks the DOM against the JSON)'
 	@echo "Replay: replay ARGS='--out demo' (the example thesis on recorded filings with model answers from the cassette; no network, no key)"
 	@echo 'Tripwire: golden-check (the offline example run against tests/golden/golden.json; names the first stage that moved)'
@@ -78,6 +78,10 @@ smoke:
 	$(COMPOSE) up --force-recreate -d app
 	@trap '$(COMPOSE) down' EXIT; $(COMPOSE) exec -T app python tests/smoke.py
 
+# The keyboard and theme check (uitests/keys.html) is a local page that drives the app in a frame
+# and writes what happened into its own DOM. Reading a frame of another origin needs the browser's
+# same-origin rule off: these flags are for that one test page and no other capture.
+KEYS_FLAGS := --disable-web-security --disable-site-isolation-trials --disable-features=IsolateOrigins,site-per-process --allow-file-access-from-files --user-data-dir=/tmp/keys-profile
 uitest:
 	@mkdir -p results
 	$(COMPOSE) up --force-recreate -d app
@@ -89,7 +93,10 @@ uitest:
 	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=breakdowns" > results/dom-breakdowns.html 2> results/dom-breakdowns.log && \
 	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample#claim-c4-changes" > results/dom-sample-claim.html 2> results/dom-sample-claim.log && \
 	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=breakdowns-gap" > results/dom-breakdowns-gap.html 2> results/dom-breakdowns-gap.log && \
-	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=run-tagged" > results/dom-run-tagged.html 2> results/dom-run-tagged.log
+	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=run-tagged" > results/dom-run-tagged.html 2> results/dom-run-tagged.log && \
+	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=run-events" > results/dom-run-events.html 2> results/dom-run-events.log && \
+	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample&theme=terminal" > results/dom-sample-terminal.html 2> results/dom-sample-terminal.log && \
+	$(COMPOSE) run --rm -T shots $(KEYS_FLAGS) --dump-dom "file:///work/uitests/keys.html" > results/dom-keys.html 2> results/dom-keys.log
 	$(RUN) pytest -q -p no:cacheprovider uitests
 
 run:
@@ -103,21 +110,35 @@ demo: build
 # so no capture is taller than 3600 px and the target fails unless every file was written anew.
 # It also paints nothing after a scroll, so a deep link into a claim cannot be captured: the page
 # test reads its DOM instead (uitests/test_run_changes_dom.py).
-SHOTS := first-screen sample-run sample-run-phone sample-synthetic sample-changes sample-changes-phone sample-breakdowns tagged-figures
+SHOTS := first-screen sample-run sample-run-phone sample-synthetic sample-changes sample-changes-phone sample-breakdowns tagged-figures \
+	first-screen-terminal sample-run-terminal sample-run-phone-terminal sample-events sample-events-terminal sample-events-phone \
+	sample-synthetic-terminal sample-changes-terminal sample-breakdowns-terminal specimen specimen-terminal specimen-phone
 screenshots:
 	@mkdir -p docs/screenshots results
 	@touch results/.screenshots-started
 	$(COMPOSE) up --force-recreate -d app
 	@trap '$(COMPOSE) down' EXIT; \
 	$(COMPOSE) exec -T app python uitests/wait_ready.py && \
-	$(COMPOSE) run --rm shots --window-size=1280,720 --screenshot=/work/docs/screenshots/first-screen.png "http://app:8000/" && \
-	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-run.png "http://app:8000/?sample" && \
-	$(COMPOSE) run --rm shots --window-size=390,1400 --screenshot=/work/docs/screenshots/sample-run-phone.png "http://app:8000/?sample" && \
-	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-synthetic.png "http://app:8000/?sample=synthetic" && \
-	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-changes.png "http://app:8000/?sample=changes" && \
-	$(COMPOSE) run --rm shots --window-size=390,2600 --screenshot=/work/docs/screenshots/sample-changes-phone.png "http://app:8000/?sample=changes" && \
-	$(COMPOSE) run --rm shots --window-size=1280,2400 --screenshot=/work/docs/screenshots/sample-breakdowns.png "http://app:8000/?sample=breakdowns" && \
-	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/tagged-figures.png "http://app:8000/?sample=run-tagged"
+	$(COMPOSE) run --rm shots --window-size=1280,720 --screenshot=/work/docs/screenshots/first-screen.png "http://app:8000/?theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-run.png "http://app:8000/?sample&theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=390,1400 --screenshot=/work/docs/screenshots/sample-run-phone.png "http://app:8000/?sample&theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-synthetic.png "http://app:8000/?sample=synthetic&theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-changes.png "http://app:8000/?sample=changes&theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=390,2600 --screenshot=/work/docs/screenshots/sample-changes-phone.png "http://app:8000/?sample=changes&theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=1280,2400 --screenshot=/work/docs/screenshots/sample-breakdowns.png "http://app:8000/?sample=breakdowns&theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/tagged-figures.png "http://app:8000/?sample=run-tagged&theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=1280,720 --screenshot=/work/docs/screenshots/first-screen-terminal.png "http://app:8000/?theme=terminal" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-run-terminal.png "http://app:8000/?sample&theme=terminal" && \
+	$(COMPOSE) run --rm shots --window-size=390,1400 --screenshot=/work/docs/screenshots/sample-run-phone-terminal.png "http://app:8000/?sample&theme=terminal" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-events.png "http://app:8000/?sample=run-events&theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-events-terminal.png "http://app:8000/?sample=run-events&theme=terminal" && \
+	$(COMPOSE) run --rm shots --window-size=390,2400 --screenshot=/work/docs/screenshots/sample-events-phone.png "http://app:8000/?sample=run-events&theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-synthetic-terminal.png "http://app:8000/?sample=synthetic&theme=terminal" && \
+	$(COMPOSE) run --rm shots --window-size=1280,2400 --screenshot=/work/docs/screenshots/sample-changes-terminal.png "http://app:8000/?sample=changes&theme=terminal" && \
+	$(COMPOSE) run --rm shots --window-size=1280,2400 --screenshot=/work/docs/screenshots/sample-breakdowns-terminal.png "http://app:8000/?sample=breakdowns&theme=terminal" && \
+	$(COMPOSE) run --rm shots --allow-file-access-from-files --window-size=1280,3600 --screenshot=/work/docs/screenshots/specimen.png "file:///work/src/web/specimen.html?theme=paper" && \
+	$(COMPOSE) run --rm shots --allow-file-access-from-files --window-size=1280,3600 --screenshot=/work/docs/screenshots/specimen-terminal.png "file:///work/src/web/specimen.html?theme=terminal" && \
+	$(COMPOSE) run --rm shots --allow-file-access-from-files --window-size=390,3000 --screenshot=/work/docs/screenshots/specimen-phone.png "file:///work/src/web/specimen.html?theme=paper"
 	@for name in $(SHOTS); do \
 		test docs/screenshots/$$name.png -nt results/.screenshots-started \
 		|| { echo "screenshots: docs/screenshots/$$name.png was not written"; exit 1; }; \

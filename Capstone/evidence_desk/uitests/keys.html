@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Keys and theme check</title>
+</head>
+<body>
+<!--
+  The keyboard and theme check. `make uitest` loads this file in headless Chromium, with the
+  same-origin rule off for this page only (KEYS_FLAGS in the Makefile), and dumps its DOM.
+  It loads the live-run sample in a frame, presses the page's keys and clicks its theme
+  button, and writes what it saw after each step into the list below; uitests/test_keys_dom.py
+  judges it. It decides nothing itself: every step records what the page did.
+-->
+<iframe id="app" title="Evidence Desk" src="http://app:8000/?sample=run-events" width="1200" height="900"></iframe>
+<ol id="steps"></ol>
+<p id="done" data-done="false">running</p>
+<script>
+"use strict";
+const frame = document.getElementById("app");
+const steps = document.getElementById("steps");
+const done = document.getElementById("done");
+
+function record(step, extra) {
+  const win = frame.contentWindow;
+  const doc = frame.contentDocument;
+  const active = doc.activeElement;
+  const docket = active && active.closest ? active.closest("details.claim") : null;
+  let stored = "";
+  try { stored = win.localStorage.getItem("evidence-desk-theme") || ""; } catch (e) { stored = "refused"; }
+  const li = document.createElement("li");
+  li.dataset.step = step;
+  li.dataset.active = active ? (active.id || active.tagName.toLowerCase()) : "";
+  li.dataset.docket = docket ? docket.dataset.docket || "" : "";
+  li.dataset.theme = doc.documentElement.getAttribute("data-theme") || "";
+  li.dataset.stored = stored;
+  li.dataset.dialog = doc.getElementById("keys-dialog").open ? "open" : "closed";
+  li.dataset.toggleLabel = doc.getElementById("theme-toggle").getAttribute("aria-label") || "";
+  Object.assign(li.dataset, extra || {});
+  li.textContent = step;
+  steps.append(li);
+}
+
+function press(target, key, modifiers) {
+  const win = frame.contentWindow;
+  const event = new win.KeyboardEvent("keydown", Object.assign({ key, bubbles: true, cancelable: true }, modifiers || {}));
+  target.dispatchEvent(event);
+}
+
+function run() {
+  const doc = frame.contentDocument;
+  const body = doc.body;
+  record("loaded", { claims: String(doc.querySelectorAll("#claim-list details.claim").length) });
+  press(body, "/");
+  record("slash");
+  press(doc.getElementById("ticker"), "j");
+  record("j-while-typing");
+  press(doc.getElementById("ticker"), "Escape");
+  record("escape-ticker");
+  press(body, "j");
+  record("j1");
+  press(doc.activeElement, "j");
+  record("j2");
+  press(doc.activeElement, "j");
+  record("j3");
+  press(doc.activeElement, "k");
+  record("k1");
+  press(doc.activeElement, "j", { ctrlKey: true });
+  record("ctrl-j");
+  press(doc.activeElement, "t");
+  record("t");
+  doc.getElementById("theme-toggle").click();
+  record("toggle-click");
+  press(body, "?");
+  record("question");
+  doc.getElementById("keys-close").click();
+  record("close");
+  done.dataset.done = "true";
+  done.textContent = "done";
+}
+
+function waitForRun(tries) {
+  let ready = false;
+  try {
+    const doc = frame.contentDocument;
+    const view = doc && doc.getElementById("run-view");
+    ready = Boolean(view && !view.hidden && doc.querySelector("#claim-list details.claim"));
+  } catch (e) {
+    done.textContent = `the frame could not be read: ${e.message}`;
+    return;
+  }
+  if (ready) {
+    run();
+    return;
+  }
+  if (tries <= 0) {
+    done.textContent = "the run never rendered in the frame";
+    return;
+  }
+  setTimeout(() => waitForRun(tries - 1), 100);
+}
+
+frame.addEventListener("load", () => waitForRun(60));
+</script>
+</body>
+</html>

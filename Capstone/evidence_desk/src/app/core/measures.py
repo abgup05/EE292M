@@ -23,9 +23,10 @@ and every recording stay as they were. ``definition`` writes a derived measure's
 out in words, as the panel writes free cash flow's; it is shown in the operand's note.
 
 A part of the company (a segment, a product, a geography) has measures too, read from the
-newest filing's tagged breakdowns (:data:`PART_MEASURES`): its revenue, that revenue's
-change on a year earlier when the filing tags both years, and a segment's operating income.
-They have no history: one filing tags them, and the company facts do not.
+newest 10-Q's or 10-K's tagged breakdowns (:data:`PART_MEASURES`), for the newest period or
+the fiscal year or quarter a claim names: its revenue, that revenue's change on a year
+earlier when the filing tags both years, and a segment's operating income. They have no
+history: one filing tags them, and the company facts do not.
 """
 
 from __future__ import annotations
@@ -573,6 +574,7 @@ PART_MEASURES: dict[str, str] = {
     "operating_income": "Operating income",
 }
 PART_NOTE = (
-    "A part's figures come from the newest filing's tagged breakdowns: one filing, so they "
+    "A part's figures come from one filing's tagged breakdowns (the newest 10-Q or 10-K, for "
+    "its newest period or the fiscal year or quarter the claim names): one filing, so they "
     "have no history, and a change is on a year earlier only when that filing tags both years."
 )

@@ -1,5 +1,5 @@
 {
-  "about": "Judgements of the claim compiler's reading of each claim in eval/claim-tests-foreign-b.json (set B), scored once with the grammar of 10425c0 (unchanged at 0f8a25c and after): one entry per claim and canonical test printed ('none' when refused). reading: right, wrong (a test that does not mean what the sentence says), or not_compiled; for a claim its author marked numeric, cause says why it did not compile (metric the tool does not have, form it does not have, period it cannot place, phrasing of something it supports). The raw readings were committed first (eval/results/claim-tests-foreign-b-raw.txt) and the grammar was not changed after reading the set. Readings added on 18 November 2026, after the measure catalogue (app.core.measures) widened the grammar, are judged by the same session that wrote the catalogue and say so ('catalogue, 18 November 2026'); no earlier judgement was changed.",
+  "about": "Judgements of the claim compiler's reading of each claim in eval/claim-tests-foreign-b.json (set B), scored once with the grammar of 10425c0 (unchanged at 0f8a25c and after): one entry per claim and canonical test printed ('none' when refused). reading: right, wrong (a test that does not mean what the sentence says), or not_compiled; for a claim its author marked numeric, cause says why it did not compile (metric the tool does not have, form it does not have, period it cannot place, phrasing of something it supports). The raw readings were committed first (eval/results/claim-tests-foreign-b-raw.txt) and the grammar was not changed after reading the set. Readings added on 18 November 2026, after the measure catalogue (app.core.measures) widened the grammar, are judged by the same session that wrote the catalogue and say so ('catalogue, 18 November 2026'); no earlier judgement was changed. Readings added on 18 November 2026 by the forms round (a test held in each of several periods, a change over a span, two measures compared, two tests joined by 'and', a share for a named period) are judged by the same session that wrote those forms and say so ('forms, 18 November 2026'); no earlier judgement was changed.",
   "judge": "the grammar's author (Claude Opus 5.5 session), 18 November 2026; an independent judge's file is eval/results/claim-foreign-b-for-judge.md",
   "judgements": [
     {
@@ -879,6 +879,37 @@
       "canonical": "pretax_income[FY] > $120B",
       "reading": "right",
       "why": "catalogue, 18 November 2026: income before income taxes of the latest fiscal year above $120 billion; no period named, FY is a fair reading of an amount"
+    },
+    {
+      "id": "g015",
+      "canonical": "each(2): yoy(net_income)[FY] > yoy(revenue)[FY]",
+      "reading": "right",
+      "why": "forms, 18 November 2026: net income growth above revenue growth in each of the latest two fiscal years"
+    },
+    {
+      "id": "g041",
+      "canonical": "each(2): revenue[FY2025] > revenue[FY2024]",
+      "reading": "right",
+      "why": "forms, 18 November 2026: net sales higher than the year before in fiscal 2025 and in fiscal 2024; 'second' also implies fiscal 2023 was no rise, which the test does not check (it is the two rises the claim asserts)"
+    },
+    {
+      "id": "g044",
+      "canonical": "share(segment \"Services\")[FY] > 25%",
+      "reading": "right",
+      "why": "forms, 18 November 2026: Services' share of net sales in the latest fiscal year above 25%; 'last year' is the latest fiscal year, and a product line is read on the segment axis"
+    },
+    {
+      "id": "g067",
+      "canonical": "cagr(revenue, 3y)[FY2025] < 3%",
+      "reading": "right",
+      "why": "forms, 18 November 2026: compound annual growth of net sales from fiscal 2022 to fiscal 2025 (three years) below 3%"
+    },
+    {
+      "id": "g046",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "form",
+      "why": "forms, 18 November 2026: refused by a rule, not a patch: a share whose subject says 'together', 'combined' or 'collectively', or joins names with 'and' before 'are', is a sum of several parts, which no filing tags; the earlier wrong reading stays judged above"
     }
   ]
 }

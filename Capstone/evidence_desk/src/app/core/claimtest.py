@@ -49,7 +49,7 @@ import re
 from dataclasses import dataclass, replace
 from typing import Literal
 
-from app.core.limits import MAX_CLAIM_CHARS
+from app.core.limits import MAX_CLAIM_CHARS, MAX_EACH_PERIODS
 from app.core.measures import CATALOGUE
 from app.core.measures import RATIO_OF as CATALOGUE_RATIO_OF
 
@@ -62,10 +62,11 @@ Form = Literal[
     "faster_than",
     "compound",
     "share",
+    "compare",
 ]
 Op = Literal[">", ">=", "<", "<="]
 PeriodKind = Literal["Q", "FY", "TTM", "filing"]
-Function = Literal["value", "yoy", "qoq", "streak", "cagr", "share", "max_share"]
+Function = Literal["value", "yoy", "qoq", "streak", "cagr", "share", "max_share", "change"]
 MetricKind = Literal["flow", "ratio", "per_share", "instant", "shares"]
 
 FORMS: tuple[str, ...] = (
@@ -77,6 +78,16 @@ FORMS: tuple[str, ...] = (
     "faster_than",
     "compound",
     "share",
+    "compare",
+)
+# The forms a test held in each of several periods may take.
+EACH_FORMS: tuple[str, ...] = (
+    "direction",
+    "acceleration",
+    "threshold",
+    "growth_threshold",
+    "faster_than",
+    "compare",
 )
 
 # Every measure a test can name, its label and what kind of number it is.
@@ -176,7 +187,10 @@ class Term:
     of revenue along an axis (``subject`` is "segment" or "geography");
     ``max_share`` the largest tagged customer's share. A term with an ``axis`` is a part
     of the company's measure (``subject`` "revenue" or "operating_income" of ``member``
-    along ``axis``), read from the newest filing (:data:`app.core.measures.PART_MEASURES`).
+    along ``axis``), read from a filing's tags (:data:`app.core.measures.PART_MEASURES`):
+    the newest filing's newest period (``filing``), or the fiscal year or quarter named.
+    ``change`` is the growth from the earlier period ``base`` to ``period`` ("between fiscal
+    2023 and fiscal 2025", "tripled over three years").
     """
 
     fn: Function
@@ -185,6 +199,7 @@ class Term:
     member: str = ""
     years: int = 0
     axis: str = ""
+    base: Period | None = None
 
     def text(self) -> str:
         """The canonical form of the term."""
@@ -197,6 +212,9 @@ class Term:
                 return f"{self.subject}{at}"
             case "cagr":
                 return f"cagr({self.subject}, {self.years}y){at}"
+            case "change":
+                since = self.base.text() if self.base is not None else "?"
+                return f"change({self.subject}, {since}){at}"
             case "share":
                 return f'share({self.subject} "{self.member}"){at}'
             case "max_share":
@@ -229,17 +247,56 @@ class Number:
 
 @dataclass(frozen=True)
 class ClaimTest:
-    """A compiled claim: ``left op right``, of one :data:`Form`."""
+    """A compiled claim: ``left op right``, of one :data:`Form`.
+
+    ``each`` > 0 asks that the test hold in each of the last ``each`` periods (its periods
+    stepped back one quarter, or one fiscal year, at a time); ``each_since`` that a change
+    test hold in every fiscal year after the one named. ``also`` is a second test joined
+    by "and": the claim holds only when both do. A test has at most one ``also``, which
+    has none of its own.
+    """
 
     form: Form
     left: Term
     op: Op
     right: Term | Number
+    each: int = 0
+    each_since: int | None = None
+    also: ClaimTest | None = None
 
     @property
     def canonical(self) -> str:
         """The test as the labels write it."""
-        return f"{self.left.text()} {self.op} {self.right.text()}"
+        text = f"{self.left.text()} {self.op} {self.right.text()}"
+        if self.each:
+            text = f"each({self.each}): {text}"
+        elif self.each_since is not None:
+            text = f"each(since FY{self.each_since}): {text}"
+        if self.also is not None:
+            return f"({text}) and ({self.also.canonical})"
+        return text
+
+    @property
+    def parts(self) -> tuple[ClaimTest, ...]:
+        """The tests joined by "and": this one alone, or it and ``also``."""
+        if self.also is None:
+            return (self,)
+        return (replace(self, also=None), *self.also.parts)
+
+    @property
+    def terms(self) -> tuple[Term, ...]:
+        """Every term of every part, left first."""
+        return tuple(
+            term
+            for part in self.parts
+            for term in (part.left, part.right)
+            if isinstance(term, Term)
+        )
+
+    @property
+    def from_filing(self) -> bool:
+        """True when a term is read from a filing's tags (a share or a part), not the facts."""
+        return any(t.fn in ("share", "max_share") or t.axis for t in self.terms)
 
 
 @dataclass(frozen=True)
@@ -391,10 +448,10 @@ UNNAMED_MARGIN = re.compile(
 
 UP = (
     r"grow(?:ing|s|n)?|grew|ris(?:ing|en|es)|rose|increas(?:ing|ed|es)|expand(?:ing|ed|s)?|"
-    r"improv(?:ing|ed|es)|widen(?:ing|ed|s)?|up|higher|climb(?:ing|ed|s)?"
+    r"improv(?:ing|ed|es)|widen(?:ing|ed|s)?|gone up|up|higher|climb(?:ing|ed|s)?"
 )
 DOWN = (
-    r"shrink(?:ing|s)?|shrank|declin(?:ing|ed|es)|fall(?:ing|en|s)?|fell|"
+    r"shrink(?:ing|s)?|shrank|shrunk|declin(?:ing|ed|es)|fall(?:ing|en|s)?|fell|gone down|"
     r"contract(?:ing|ed|s)?|deteriorat(?:ing|ed|es)|slipp(?:ing|ed)|slips?|lower|down|"
     r"drop(?:ping|ped|s)?|decreas(?:ing|ed|es)|weaken(?:ing|ed|s)?|compress(?:ing|ed|es)?"
 )
@@ -416,6 +473,31 @@ NAMED_QUARTER = re.compile(
     r"(?:fiscal(?: year)?\s*|fy\s?)(?P<year>\d{4})\b"
 )
 NAMED_YEAR = re.compile(r"\b(?:fiscal(?: year)?\s*|fy\s?)(?P<year>\d{4})\b")
+_FISCAL = r"(?:fiscal(?: year)?\s*|fy\s?)"
+# A span of fiscal years: "between fiscal 2023 and fiscal 2025", "over fiscal 2023 to 2025";
+# "since fiscal 2023" runs to the latest fiscal year.
+SPAN = re.compile(
+    rf"\b(?:between|from|over|across) {_FISCAL}(?P<a>\d{{4}}) (?:and|to|through) "
+    rf"{_FISCAL}?(?P<b>\d{{4}})\b"
+)
+SINCE_YEAR = re.compile(rf"\bsince {_FISCAL}(?P<year>\d{{4}})\b")
+# "more than three times its fiscal 2023 level": a change from that year, (N - 1) x 100%.
+TIMES_LEVEL = re.compile(
+    rf"\b(?:(?P<more>more than )|at least )?(?P<n>two|three|four|five|\d+) times (?:its|the) "
+    rf"{_FISCAL}(?P<year>\d{{4}}) (?:level|figure|amount)\b"
+)
+# A test held in each of several periods, besides EACH_PERIOD's "in each of the last N".
+EACH_SINCE = re.compile(
+    rf"\b(?:in )?(?:every|each) (?:fiscal )?year since {_FISCAL}(?P<year>\d{{4}})\b"
+)
+EACH_ORDINAL = re.compile(
+    r"\bfor (?:the|a) (?P<ord>second|third|fourth|fifth|sixth) "
+    r"(?:consecutive|straight|successive) (?:fiscal )?(?P<unit>year|quarter)\b"
+)
+EACH_QUARTER_OF = re.compile(
+    rf"\b(?:in )?(?:each|every) (?:fiscal )?quarter of {_FISCAL}(?P<year>\d{{4}})\b"
+)
+ORDINAL_COUNTS = {"second": 2, "third": 3, "fourth": 4, "fifth": 5, "sixth": 6}
 # "between fiscal 2024 and fiscal 2025", "from fiscal 2024 to fiscal 2025": the later year,
 # against the one before it.
 BETWEEN_YEARS = re.compile(
@@ -450,13 +532,23 @@ COMPOUND_YEARS = re.compile(
     rf"\b(?P<a>{_W})[- ]year\b|\bfor (?P<b>{_W}) years\b|"
     rf"\b(?:over|in|during) the (?:last|past|previous) (?P<c>{_W}) (?:fiscal )?years\b"
 )
-DOUBLED = re.compile(r"\b(?:(?P<more>more than )|at least )?(?P<times>doubled|tripled)\b")
+DOUBLED = re.compile(
+    r"\b(?:(?P<more>more than )|at least )?(?P<times>doubled|tripled|quadrupled)\b"
+)
+MULTIPLE = {"doubled": 100.0, "tripled": 200.0, "quadrupled": 300.0}
 SHARE = re.compile(
     rf"^(?:the )?(?P<subject>.+?) (?:is|are|was|were|accounts? for|accounted for|"
     rf"represents?|represented|makes? up|made up|comprises?|comprised) (?:now |still )?"
     rf"(?P<cmp>{CMP}) (?P<num>-?\d+(?:\.\d+)?\s*(?:%|percent)|half|a half|a quarter|a third)"
-    r" of (?:(?:total |the company's |its |all |net )?(?:net )?(?:revenues?|sales)|the total)$"
+    r" of (?:(?:total |the company's |its |all |net )?(?:net )?(?:revenues?|sales)|the total)"
+    # The fiscal year or quarter, when it names one the filings report.
+    rf"(?P<when>,? (?:last (?:fiscal )?year|last quarter|"
+    rf"in (?:the )?(?:latest|last|most recent) (?:fiscal year|quarter)|"
+    rf"(?:in |for )?{_FISCAL}\d{{4}}|"
+    rf"in (?:q[1-4]|the (?:first|second|third|fourth) quarter of) {_FISCAL}\d{{4}}))?$"
 )
+# "Japan and Rest of Asia Pacific together": a sum of several parts, which no tag gives.
+SUM_OF_PARTS = re.compile(r"\b(?:together|combined|collectively)\b")
 # "iPad sales", "revenue from the United States": the part, without the revenue words.
 SHARE_SUBJECT_REVENUE = re.compile(
     r"^(?:(?:net )?(?:revenues?|sales) (?:from|in) (?P<before>.+)|(?P<after>.+?)(?:'s)?"
@@ -471,6 +563,19 @@ EACH_PERIOD = re.compile(
 )
 # Two statements joined by a contrast: one test would be half the claim.
 CONTRAST = re.compile(r"(?:,| )but\b|\b(?:although|though|despite|whereas)\b")
+# Two tests joined by "and" (read only when each part is a whole test on its own).
+AND_SPLIT = re.compile(r",?\s+and\s+", re.IGNORECASE)
+# The levels of two measures compared ("operating cash flow was above net income").
+LEVEL_COMPARATORS: tuple[tuple[str, Op], ...] = (
+    ("higher than", ">"),
+    ("larger than", ">"),
+    ("bigger than", ">"),
+    ("lower than", "<"),
+    ("smaller than", "<"),
+)
+COMPARE_RE = re.compile(
+    r"\b(?:" + "|".join(re.escape(w) for w, _ in (*LEVEL_COMPARATORS, *COMPARATORS)) + r")\b"
+)
 CUSTOMER_SUBJECT = re.compile(
     r"^(?P<neg>no|not one)? ?(?:a |one |any |the largest |the biggest |a single |single )?"
     r"(?:single )?customer$|^(?:the )?(?:largest|biggest) customer$"
@@ -568,6 +673,15 @@ def _share(text: str) -> ClaimTest | NotNumeric | None:
     if match is None:
         return None
     subject = match["subject"].strip()
+    plural = re.search(r" (?:are|were) ", text[: match.end("subject") + 6]) is not None
+    if SUM_OF_PARTS.search(subject) or (plural and " and " in subject):
+        return NotNumeric(
+            "a sum of several parts: a filing tags each part's revenue, not their sum"
+        )
+    when = match["when"] or ""
+    period = Period("filing")
+    if when:
+        period = _named_period(when) or Period("Q" if "quarter" in when else "FY")
     revenue_of = SHARE_SUBJECT_REVENUE.match(subject)
     if revenue_of is not None and not _metrics(revenue_of["before"] or revenue_of["after"]):
         subject = (revenue_of["before"] or revenue_of["after"]).strip()
@@ -588,7 +702,7 @@ def _share(text: str) -> ClaimTest | NotNumeric | None:
         negated = bool(customer["neg"])
         return ClaimTest(
             "share",
-            Term("max_share", "customer", Period("filing")),
+            Term("max_share", "customer", period),
             NEGATED[op] if negated else op,
             number,
         )
@@ -596,7 +710,7 @@ def _share(text: str) -> ClaimTest | NotNumeric | None:
         return NotNumeric("a group of customers: filings tag single customers' shares")
     axis = "geography" if GEOGRAPHIES.match(subject) else "segment"
     label = member_label(subject, axis)
-    return ClaimTest("share", Term("share", axis, Period("filing"), member=label), op, number)
+    return ClaimTest("share", Term("share", axis, period, member=label), op, number)
 
 
 def member_label(member: str, axis: str) -> str:
@@ -609,15 +723,23 @@ def member_label(member: str, axis: str) -> str:
 
 def _compound(text: str, metric: str) -> ClaimTest | NotNumeric:
     years = COMPOUND_YEARS.search(text)
+    span = SPAN.search(text)
     rate = PERCENT.search(text)
-    if years is None:
+    if years is None and span is None:
         return NotNumeric("a compound rate needs a number of years")
     if rate is None:
         return NotNumeric("a compound rate needs a threshold (more than, at least, under N%)")
-    count = _count(years["a"] or years["b"] or years["c"])
+    period = Period("FY")
+    if span is not None and years is None:
+        # "from fiscal 2022 to fiscal 2025": three years, to fiscal 2025.
+        count = int(span["b"]) - int(span["a"])
+        period = Period("FY", fiscal_year=int(span["b"]))
+    else:
+        assert years is not None
+        count = _count(years["a"] or years["b"] or years["c"])
     if count < 1:
         return NotNumeric("a compound rate needs at least one year")
-    term = Term("cagr", metric, Period("FY"), years=count)
+    term = Term("cagr", metric, period, years=count)
     return ClaimTest("compound", term, OP_OF[rate["cmp"]], Number(_percent(rate), "percent"))
 
 
@@ -630,24 +752,92 @@ def _streak(text: str, metric: str, match: re.Match[str]) -> ClaimTest | NotNume
     return ClaimTest("streak", Term("streak", metric, period), ">=", Number(count, "count"))
 
 
-def _each_period(text: str, metric: str, match: re.Match[str]) -> ClaimTest | NotNumeric:
-    """A rise in each of the last N periods is a streak; any other condition held over
-    several periods is not a form this version computes."""
-    held = NotNumeric(
-        "a condition held in each of several periods: this version tests one period, "
-        "or rises in a row (the streak form)"
-    )
-    count = match["n"] or match["n2"]
-    unit = (match["unit"] or match["unit2"]).rstrip("s")
+def _each_period(text: str, metric: str) -> ClaimTest | NotNumeric:
+    """A test held in each of several periods: "in each of the last three fiscal years",
+    "for the last four quarters", "every year since fiscal 2023", "for the second
+    consecutive year", "in each quarter of fiscal 2026".
+
+    The phrase is taken out and the rest read as a test of one period (the latest quarter
+    or fiscal year, or the period it names), which then holds in each period stepped back
+    from it. A rise in each of the last N periods stays a streak. Refused when the periods
+    and the test disagree (quarters and years), when "grew in each quarter" does not say
+    on what, and when "since" a year is said of a level, not of a change.
+    """
+    since = EACH_SINCE.search(text)
+    ordinal = EACH_ORDINAL.search(text)
+    quarter_of = EACH_QUARTER_OF.search(text)
+    if since is not None:
+        unit, count, spans = "year", 0, [since.span()]
+    elif ordinal is not None:
+        unit, count, spans = ordinal["unit"], ORDINAL_COUNTS[ordinal["ord"]], [ordinal.span()]
+    elif quarter_of is not None:
+        unit, count, spans = "quarter", 4, [quarter_of.span()]
+    else:
+        matches = list(EACH_PERIOD.finditer(text))
+        units = {(m["unit"] or m["unit2"]).rstrip("s") for m in matches}
+        counts = {_count(m["n"] or m["n2"]) for m in matches if m["n"] or m["n2"]}
+        if len(units) != 1 or len(counts) != 1:
+            return NotNumeric(
+                "a condition held in each of several periods needs one number of quarters or "
+                "years ('in each of the last three fiscal years')"
+            )
+        unit, count, spans = units.pop(), counts.pop(), [m.span() for m in matches]
+        streak = _rises_in_a_row(text, metric, unit, count)
+        if streak is not None:
+            return streak
+    if not 2 <= count <= MAX_EACH_PERIODS and since is None:
+        return NotNumeric(f"each of 2 to {MAX_EACH_PERIODS} periods is what this version tests")
+    rest = text
+    for start, end in sorted(spans, reverse=True):
+        rest = f"{rest[:start]} {rest[end:]}"
+    if quarter_of is not None:
+        rest += f" in the fourth quarter of fiscal {quarter_of['year']}"
+    elif _named_period(rest) is None:
+        rest += " in the latest fiscal year" if unit == "year" else " in the latest quarter"
+    inner = _parse(_normalised(rest))
+    if isinstance(inner, NotNumeric):
+        return inner
+    kind = "Q" if unit == "quarter" else "FY"
+    kinds = {t.period.kind for t in inner.terms} | {t.base.kind for t in inner.terms if t.base}
+    if inner.each or inner.each_since is not None or inner.also is not None:
+        return NotNumeric("one test held in each of several periods, not several")
+    if inner.form not in EACH_FORMS or inner.from_filing or kinds != {kind}:
+        return NotNumeric(
+            f"a {inner.form.replace('_', ' ')} of {', '.join(sorted(kinds))} held in each of "
+            f"several {unit}s is not a test this version computes"
+        )
+    said = SEQUENTIAL.search(text) or re.search(YEAR_ON_YEAR, text)
+    if inner.form == "direction" and unit == "quarter" and not said:
+        return NotNumeric(
+            "a rise or fall in each of several quarters: on the quarter before, or on a year "
+            "earlier? Say 'sequentially' or 'year over year'"
+        )
+    if since is not None:
+        rise = inner.form == "direction" and inner.right == replace(
+            inner.left, period=inner.left.period.step_back()
+        )
+        growth = inner.form == "growth_threshold" and inner.left.fn == "yoy"
+        if inner.left.period != Period("FY") or not (rise or growth):
+            return NotNumeric(
+                "every year since a named one, said of a level: whether that year itself "
+                "counts is unclear; say 'in each of the last N fiscal years'"
+            )
+        return replace(inner, each_since=int(since["year"]))
+    return replace(inner, each=count)
+
+
+def _rises_in_a_row(text: str, metric: str, unit: str, count: int) -> ClaimTest | None:
+    """A plain rise in each of the last N periods: the streak form (sequential quarters)."""
     rises = UP_RE.search(text) and not DOWN_RE.search(text)
     stated = PERCENT.search(text) or AMOUNT.search(text) or BARE_PERCENT.search(text)
-    if count is None or not rises or stated or FASTER.search(text) or ACCELERATION.search(text):
-        return held
+    if not rises or stated or FASTER.search(text) or ACCELERATION.search(text):
+        return None
+    if _comparing_two(text) is not None:
+        return None
     if unit == "quarter" and not SEQUENTIAL.search(text):
-        # "grew in each of the last six quarters" could be year over year or sequential.
-        return held
+        return None
     period = Period("Q" if unit == "quarter" else "FY")
-    return ClaimTest("streak", Term("streak", metric, period), ">=", Number(_count(count), "count"))
+    return ClaimTest("streak", Term("streak", metric, period), ">=", Number(count, "count"))
 
 
 def _faster(text: str, first: str, match: re.Match[str]) -> ClaimTest | NotNumeric:
@@ -675,33 +865,80 @@ def _acceleration(text: str, metric: str, match: re.Match[str]) -> ClaimTest | N
     return ClaimTest("acceleration", left, op, Term("yoy", metric, period.step_back()))
 
 
-def _growth_threshold(text: str, metric: str) -> ClaimTest | NotNumeric | None:
+def _span(text: str) -> tuple[Period, Period] | NotNumeric | None:
+    """(period, base) of a change over more than one fiscal year: "between fiscal 2023 and
+    fiscal 2025", "since fiscal 2023", "over the past three fiscal years", "three times its
+    fiscal 2023 level"; None for none (or for one year, which is a year-over-year change)."""
+    times = TIMES_LEVEL.search(text)
+    if times is not None:
+        rest = text[: times.start()] + text[times.end() :]
+        return _named_period(rest) or Period("FY"), Period("FY", fiscal_year=int(times["year"]))
+    span = SPAN.search(text)
+    if span is not None:
+        first, last = int(span["a"]), int(span["b"])
+        if last <= first:
+            return NotNumeric("names a span of fiscal years that ends before it starts")
+        if last == first + 1:
+            return None
+        return Period("FY", fiscal_year=last), Period("FY", fiscal_year=first)
+    since = SINCE_YEAR.search(text)
+    if since is not None:
+        return Period("FY"), Period("FY", fiscal_year=int(since["year"]))
+    years = OVER_YEARS.search(text)
+    if years is not None and _count(years["n"]) > 1:
+        return Period("FY"), Period("FY", _count(years["n"]))
+    return None
+
+
+def _multiple(text: str) -> tuple[Op, float] | None:
+    """The growth a multiple states: "more than doubled" is > 100%, "tripled" >= 200%."""
+    times = TIMES_LEVEL.search(text)
+    if times is not None:
+        return (">" if times["more"] else ">="), (_count(times["n"]) - 1) * 100.0
     doubled = DOUBLED.search(text)
+    if doubled is not None:
+        return (">" if doubled["more"] else ">="), MULTIPLE[doubled["times"]]
+    return None
+
+
+def _growth_threshold(text: str, metric: str) -> ClaimTest | NotNumeric | None:
+    multiple = _multiple(text)
     rate = PERCENT.search(text)
-    if doubled is None and rate is None:
+    if multiple is None and rate is None:
         return None
     if METRICS[metric][1] == "ratio":
         if rate is not None and MOVED_BEFORE.search(text[: rate.start()]):
             return None  # "rose above 16%": a level, read as a threshold
         return NotNumeric("a change in a percentage is ambiguous (points or percent)")
+    span = _span(text)
+    if isinstance(span, NotNumeric):
+        return span
+    if span is not None:
+        if SEQUENTIAL.search(text):
+            return NotNumeric("sequential growth is a quarter's: it names a span of years")
+        period, base = span
+        op, value = multiple or _rate(text, rate)
+        term = Term("change", metric, period, base=base)
+        return ClaimTest("growth_threshold", term, op, Number(value, "percent"))
     fn: Function = "qoq" if SEQUENTIAL.search(text) else "yoy"
     period = _base_period(text, metric, amount=False)
     if period.kind == "TTM":
         period = Period("Q")
     if fn == "qoq" and period.kind != "Q":
         return NotNumeric("sequential growth is a quarter's: it names a fiscal year")
-    if doubled is not None:
-        value = 100.0 if doubled["times"] == "doubled" else 200.0
-        op: Op = ">" if doubled["more"] else ">="
-        return ClaimTest("growth_threshold", Term(fn, metric, period), op, Number(value, "percent"))
+    op, value = multiple or _rate(text, rate)
+    return ClaimTest("growth_threshold", Term(fn, metric, period), op, Number(value, "percent"))
+
+
+def _rate(text: str, rate: re.Match[str] | None) -> tuple[Op, float]:
+    """A growth rate's comparison and value; "declined more than 10%" is below -10%."""
     assert rate is not None
     op = OP_OF[rate["cmp"]]
     value = _percent(rate)
     before = text[: rate.start()]
     if DOWN_RE.search(before) and not UP_RE.search(before) and value > 0:
-        # "declined more than 10%": the growth is below -10%.
         op, value = FLIPPED[op], -value
-    return ClaimTest("growth_threshold", Term(fn, metric, period), op, Number(value, "percent"))
+    return op, value
 
 
 def _threshold(text: str, metric: str) -> ClaimTest | NotNumeric | None:
@@ -742,11 +979,48 @@ def _ratio_named_after(after: str, metric: str) -> str | None:
     )
 
 
+def _comparing_two(text: str) -> tuple[str, str, re.Match[str]] | None:
+    """Two different measures with a comparison word between them: (first, second, word)."""
+    named = _metrics(text)
+    keys = list(dict.fromkeys(key for _, _, key in named))
+    if len(keys) != 2:
+        return None
+    first = named[0]
+    second = next(n for n in named if n[2] != first[2])
+    word = COMPARE_RE.search(text, first[1], second[0])
+    return (first[2], second[2], word) if word is not None else None
+
+
+def _compare(text: str) -> ClaimTest | NotNumeric | None:
+    """The levels of two measures in one period: "operating cash flow was above net income"."""
+    found = _comparing_two(text)
+    if found is None:
+        return None
+    first, second, word = found
+    rest = text[: word.start()] + " " + text[word.end() :]
+    stated = (PERCENT, AMOUNT, BARE_PERCENT, BARE_AMOUNT, DOUBLED, TIMES_LEVEL, GROWTH_WORD)
+    if any(pattern.search(rest) for pattern in stated):
+        return None
+    if METRICS[first][1] != METRICS[second][1]:
+        return NotNumeric(
+            f"compares {METRICS[first][0].lower()} with {METRICS[second][0].lower()}, "
+            "which are not the same kind of number"
+        )
+    op = dict(LEVEL_COMPARATORS).get(word.group(0)) or OP_OF[word.group(0)]
+    period = _base_period(text, first, amount=True)
+    return ClaimTest("compare", Term("value", first, period), op, Term("value", second, period))
+
+
 def _direction(text: str, metric: str) -> ClaimTest | None:
     up, down = UP_RE.search(text), DOWN_RE.search(text)
     if bool(up) == bool(down):
         return None
     op: Op = ">" if up else "<"
+    span = _span(text)
+    if isinstance(span, tuple) and not TIMES_LEVEL.search(text):
+        period, base = span
+        now, then = Term("value", metric, period), Term("value", metric, base)
+        return ClaimTest("direction", now, op, then)
     years = OVER_YEARS.search(text)
     named = _named_period(text)
     if named is not None:
@@ -776,8 +1050,17 @@ def compile_claim(text: str) -> ClaimTest | NotNumeric:
     """The typed test a claim states, or why it is not a numeric claim this version computes.
 
     A claim compiles only when the test explains every content word of it
-    (:func:`unexplained`); otherwise it is refused, naming the words left over.
+    (:func:`unexplained`); otherwise it is refused, naming the words left over. A claim
+    refused whole may be two tests joined by "and" (:func:`_joined`).
     """
+    whole = _compile_one(text)
+    if isinstance(whole, ClaimTest):
+        return whole
+    joined = _joined(text)
+    return whole if joined is None else joined
+
+
+def _compile_one(text: str) -> ClaimTest | NotNumeric:
     claim = _normalised(text)
     result = _parse(claim)
     if isinstance(result, NotNumeric) or SHARE.match(claim):
@@ -790,6 +1073,58 @@ def compile_claim(text: str) -> ClaimTest | NotNumeric:
     if left_over:
         return NotNumeric(_not_understood(left_over))
     return result
+
+
+def _joined(text: str) -> ClaimTest | NotNumeric | None:
+    """Two tests joined by "and", each a whole claim by itself; None when it is not that.
+
+    Not tried when a contrast, a trap or a judgement is anywhere in the claim. Refused when
+    a period is named in one part only (it may be meant for both), and when the claim
+    splits into two tests at more than one "and".
+    """
+    claim = _normalised(text)
+    if CONTRAST.search(claim) or JUDGEMENT.search(claim):
+        return None
+    if any(pattern.search(claim) for pattern, _ in TRAPS):
+        return None
+    found = []
+    for match in AND_SPLIT.finditer(text):
+        first = _compile_one(text[: match.start()])
+        second = _compile_one(text[match.end() :])
+        if isinstance(first, ClaimTest) and isinstance(second, ClaimTest):
+            found.append((match, first, second))
+    if not found:
+        return None
+    if len(found) > 1:
+        return NotNumeric("reads as two tests joined by 'and' in more than one way")
+    match, first, second = found[0]
+    if _names_period(_normalised(text[: match.start()])) != _names_period(
+        _normalised(text[match.end() :])
+    ):
+        return NotNumeric(
+            "two tests joined by 'and', with a period named in one of them only: it may be "
+            "meant for both; name it in each"
+        )
+    return replace(first, also=second)
+
+
+def _names_period(claim: str) -> bool:
+    """True when the claim names its period (a fiscal year or quarter, the latest year, a span)."""
+    patterns = (
+        NAMED_QUARTER,
+        NAMED_YEAR,
+        TTM,
+        ANNUAL,
+        QUARTERLY,
+        OVER_YEARS,
+        SPAN,
+        SINCE_YEAR,
+        EACH_PERIOD,
+        EACH_SINCE,
+        EACH_ORDINAL,
+        EACH_QUARTER_OF,
+    )
+    return any(pattern.search(claim) for pattern in patterns)
 
 
 def _parse(claim: str) -> ClaimTest | NotNumeric:
@@ -839,9 +1174,8 @@ def _parse(claim: str) -> ClaimTest | NotNumeric:
             op: Op = "<=" if not sign else "<" if sign["sign"] == "negative" else ">"
             period = _base_period(claim, metric, amount=True)
             return ClaimTest("threshold", Term("value", metric, period), op, Number(0.0, "USD"))
-    each = EACH_PERIOD.search(claim)
-    if each is not None:
-        return _each_period(claim, metric, each)
+    if any(p.search(claim) for p in (EACH_SINCE, EACH_ORDINAL, EACH_QUARTER_OF, EACH_PERIOD)):
+        return _each_period(claim, metric)
     faster = FASTER.search(claim)
     if faster is not None:
         return _faster(claim, metric, faster)
@@ -853,7 +1187,10 @@ def _parse(claim: str) -> ClaimTest | NotNumeric:
     acceleration = ACCELERATION.search(claim)
     if acceleration is not None:
         return _acceleration(claim, metric, acceleration)
-    if GROWTH_WORD.search(claim) or DOUBLED.search(claim):
+    compare = _compare(claim)
+    if compare is not None:
+        return compare
+    if GROWTH_WORD.search(claim) or DOUBLED.search(claim) or TIMES_LEVEL.search(claim):
         growth = _growth_threshold(claim, metric)
         if growth is not None:
             return growth
@@ -918,9 +1255,14 @@ def _period_words(term: Term, first: bool) -> list[str]:
         if term.fn == "yoy":
             # Growth in a fiscal year is against the year before, which may be named too.
             words.append(rf"\b(?:between|from) {fiscal}{year - 1} (?:and|to) {fiscal}?{year}\b")
+        if term.fn == "cagr":
+            # "from fiscal 2022 to fiscal 2025": the span of a compound rate to a named year.
+            words.append(rf"\b(?:between|from|over) {fiscal}{year - term.years}\b")
+            words.append(r"\b(?:to|through)\b")
         if not first:
-            words.append(rf"\b(?:between|from) {fiscal}{year}\b")
-        return words
+            words.append(rf"\b(?:between|from|over|across|since) {fiscal}{year}\b")
+            words.append(r"\bthrough\b")
+        return words + _base_words(term)
     if period.kind == "TTM":
         words.append(TTM.pattern)
         words.append(r"\b(?:over|in|during|for)\b(?= (?:the )?(?:trailing|last)[- ](?:twelve|12))")
@@ -934,7 +1276,7 @@ def _period_words(term: Term, first: bool) -> list[str]:
         else:
             prior = r"\b(?:the )?(?:prior|previous) (?:fiscal )?year\b"
             words += [OVER_YEARS.pattern, YEAR_ON_YEAR, prior]
-        return words
+        return words + _base_words(term)
     if period.kind == "Q":
         words.append(QUARTERLY.pattern)
         if period.back == 0:
@@ -944,6 +1286,23 @@ def _period_words(term: Term, first: bool) -> list[str]:
         elif period.back == 4:
             words.append(YEAR_ON_YEAR)
     return words
+
+
+def _base_words(term: Term) -> list[str]:
+    """The words naming where a change runs from: "since fiscal 2023", "over the past three
+    fiscal years", "between fiscal 2023 and fiscal 2025", "its fiscal 2023 level"."""
+    base = term.base
+    if base is None:
+        return []
+    if base.fiscal_year is None:
+        return [OVER_YEARS.pattern]
+    fiscal = r"(?:fiscal(?: year)?\s*|fy\s?)"
+    year = base.fiscal_year
+    return [
+        rf"\b(?:between|from|over|across|since) {fiscal}{year}\b",
+        rf"\b(?:its|the) {fiscal}{year} (?:level|figure|amount)\b",
+        r"\b(?:to|through)\b",
+    ]
 
 
 def _explaining(test: ClaimTest) -> list[str]:
@@ -976,6 +1335,9 @@ def _explaining(test: ClaimTest) -> list[str]:
 def _form_words(test: ClaimTest) -> list[str]:
     """The words of the test's form, longest phrases first, so they are struck out whole."""
     words: list[str] = []
+    if test.each or test.each_since is not None:
+        each = (EACH_PERIOD, EACH_SINCE, EACH_ORDINAL, EACH_QUARTER_OF)
+        words += [pattern.pattern for pattern in each]
     up_or_down = UP if test.op in (">", ">=") else DOWN
     match test.form:
         case "direction":
@@ -986,6 +1348,7 @@ def _form_words(test: ClaimTest) -> list[str]:
                 words.append(HAS_NONE.pattern if test.op == "<=" else SIGN.pattern)
         case "growth_threshold":
             words += [PERCENT.pattern, DOUBLED.pattern, rf"\b(?:{UP}|{DOWN})\b", GROWTH_NOUNS]
+            words.append(TIMES_LEVEL.pattern)
         case "faster_than":
             words += [FASTER.pattern.split(" than ")[0] + " than", GROWTH_NOUNS]
         case "acceleration":
@@ -994,6 +1357,8 @@ def _form_words(test: ClaimTest) -> list[str]:
             words += [COMPOUND.pattern, COMPOUND_YEARS.pattern, PERCENT.pattern, COMPOUND_WORDS]
         case "streak":
             words += [STREAK.pattern, EACH_PERIOD.pattern, rf"\b(?:{UP})\b", QUARTER_ON_QUARTER]
+        case "compare":
+            words += [COMPARE_RE.pattern, LEVEL_VERBS]
     return words
 
 

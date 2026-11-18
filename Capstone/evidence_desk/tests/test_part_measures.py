@@ -155,7 +155,8 @@ def test_a_model_reading_can_name_a_part_and_the_grammar_still_does_not() -> Non
     assert isinstance(compile_claim("Data Center revenue grew more than 50%."), NotNumeric)
     for wrong in (
         part("rnd", "Data Center"),
-        Term("value", "revenue", Period("Q"), member="Data Center", axis="segment"),
+        # A part is read for the newest filing, a fiscal year or a quarter; not four quarters.
+        Term("value", "revenue", Period("TTM"), member="Data Center", axis="segment"),
         part("revenue", "Data Center", axis="customer"),
     ):
         bad = ClaimTest("threshold", wrong, ">", Number(1, "USD"))

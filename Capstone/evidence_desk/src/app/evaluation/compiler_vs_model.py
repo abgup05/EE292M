@@ -1,6 +1,6 @@
 """Compiler against model on the golden computed claims (evaluation only, never in a run).
 
-``make eval ARGS='compiler-vs-model --record --max-calls 60'`` gives a model, for each
+``make eval ARGS='compiler-vs-model --record --max-calls 70'`` gives a model, for each
 case of ``eval/claim-results.json``, the reported-figure lines a run would offer for
 that company as of the case's date (the same lines an assessment prompt shows, plus
 the filing's tagged figures for a share of revenue) and the claim, and asks through
@@ -33,7 +33,12 @@ from app.core.tagged_figures import select_tagged, tagged_units
 from app.engines.cassette import RESPONSES, Cassette, CassetteMiss, CassetteTransport, request_key
 from app.engines.claude import figure_lines
 from app.engines.transport import AnthropicTransport, EngineError, ModelRequest, Transport
-from app.evaluation.claim_oracle import CIKS, load_payload, recorded_report
+from app.evaluation.claim_oracle import (
+    CIKS,
+    load_payload,
+    recorded_annual_report,
+    recorded_report,
+)
 from app.services.numbers import select_figures
 
 KEY = Path("eval/claim-results.json")
@@ -63,21 +68,21 @@ NAMES = {"NVDA": "NVIDIA CORP", "AAPL": "Apple Inc.", "MSFT": "MICROSOFT CORP"}
 
 
 def _shares(test: ClaimTest) -> bool:
-    return test.left.fn in ("share", "max_share")
+    return test.from_filing
 
 
 def build_requests(cases: Sequence[dict[str, Any]]) -> list[tuple[dict[str, Any], ModelRequest]]:
     """One request per case: the company's figures as of the case's date, and the claim."""
     payloads = {ticker: load_payload(ticker) for ticker in {c["ticker"] for c in cases}}
-    report = None
+    reports: list[Any] = []
     requests = []
     for case in cases:
         day = date.fromisoformat(case["as_of"])
         figures = select_figures(build_report(FactBook(payloads[case["ticker"]], as_of=day)))
         test = compile_claim(case["claim"])
         if isinstance(test, ClaimTest) and _shares(test):
-            report = report or recorded_report()
-            units, _ = tagged_units([report])
+            reports = reports or _recorded_reports()
+            units, _ = tagged_units(reports)
             figures = [*figures, *select_tagged(units)[0]]
         user = (
             f"<company>{NAMES[case['ticker']]} ({case['ticker']}, CIK {CIKS[case['ticker']]})"
@@ -99,9 +104,14 @@ def compiler_outcome(case: dict[str, Any]) -> str:
         test,
         FactBook(payload, as_of=day),
         calendar=fiscal_calendar(payload, as_of=day),
-        reports=[recorded_report()] if _shares(test) else [],
+        reports=_recorded_reports() if _shares(test) else [],
     )
     return result.outcome
+
+
+def _recorded_reports() -> list[Any]:
+    """NVIDIA's recorded 10-Q and 10-K tags, as a run reads the newest of each."""
+    return [recorded_report(), recorded_annual_report()]
 
 
 def _score(rows: list[dict[str, Any]], field: str) -> dict[str, Any]:

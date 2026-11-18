@@ -19,7 +19,12 @@ from app.core.claim_eval import evaluate
 from app.core.claimtest import ClaimTest, compile_claim
 from app.core.facts import FactBook
 from app.core.periods import fiscal_calendar
-from app.evaluation.claim_oracle import compute_all, load_payload, recorded_report
+from app.evaluation.claim_oracle import (
+    compute_all,
+    load_payload,
+    recorded_annual_report,
+    recorded_report,
+)
 from tests.lookahead import late_refs
 
 KEY = Path("eval/claim-results.json")
@@ -49,12 +54,12 @@ def test_the_evaluator_agrees_with_the_key(case: dict[str, Any], payloads) -> No
     assert test.canonical == case["canonical"]
     day = date.fromisoformat(case["as_of"])
     payload = payloads[case["ticker"]]
-    shares = test.left.fn in ("share", "max_share")
+    shares = test.from_filing
     result = evaluate(
         test,
         FactBook(payload, as_of=day),
         calendar=fiscal_calendar(payload, as_of=day),
-        reports=[recorded_report()] if shares else [],
+        reports=[recorded_report(), recorded_annual_report()] if shares else [],
     )
     expected = case["expected"]
     assert result.outcome == expected["outcome"], result.reason

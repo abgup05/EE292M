@@ -1,5 +1,5 @@
 {
-  "about": "Judgements of the claim compiler's reading of each claim in eval/claim-tests-foreign.json, one entry per claim and canonical test printed (\"none\" when nothing compiled). reading: right, wrong (a test that does not mean what the sentence says), or not_compiled; for a claim its author marked numeric, cause says why it did not compile (metric, form, period, phrasing). label_right, on a not_numeric claim that compiled, says whether the author's label was right. The judge is the grammar's author, a Claude Opus 5.5 session: every line is here to be audited. Readings judged before the grammar was changed come first; any added later are marked with the stage they were added at. Readings added on 18 November 2026, after the measure catalogue (app.core.measures) widened the grammar, are judged by the same session that wrote the catalogue and say so ('catalogue, 18 November 2026'); no earlier judgement was changed.",
+  "about": "Judgements of the claim compiler's reading of each claim in eval/claim-tests-foreign.json, one entry per claim and canonical test printed (\"none\" when nothing compiled). reading: right, wrong (a test that does not mean what the sentence says), or not_compiled; for a claim its author marked numeric, cause says why it did not compile (metric, form, period, phrasing). label_right, on a not_numeric claim that compiled, says whether the author's label was right. The judge is the grammar's author, a Claude Opus 5.5 session: every line is here to be audited. Readings judged before the grammar was changed come first; any added later are marked with the stage they were added at. Readings added on 18 November 2026, after the measure catalogue (app.core.measures) widened the grammar, are judged by the same session that wrote the catalogue and say so ('catalogue, 18 November 2026'); no earlier judgement was changed. Readings added on 18 November 2026 by the forms round (a test held in each of several periods, a change over a span, two measures compared, two tests joined by 'and', a share for a named period) are judged by the same session that wrote those forms and say so ('forms, 18 November 2026'); no earlier judgement was changed.",
   "judge": "the grammar's author (Claude Opus 5.5 session), 18 November 2026",
   "judgements": [
     {
@@ -1158,6 +1158,72 @@
       "canonical": "sales_marketing_ratio[Q] < sales_marketing_ratio[Q-4]",
       "reading": "right",
       "why": "catalogue, 18 November 2026: sales and marketing as a share of revenue lower than a year earlier"
+    },
+    {
+      "id": "f002",
+      "canonical": "share(segment \"Data Center\")[FY] > 80%",
+      "reading": "right",
+      "why": "forms, 18 November 2026: Data Center's share of revenue in the latest fiscal year (the 10-K's column for it) above 80%; 'last fiscal year' is the latest fiscal year"
+    },
+    {
+      "id": "f003",
+      "canonical": "each(4): gross_margin[Q] > 70%",
+      "reading": "right",
+      "why": "forms, 18 November 2026: gross margin above 70% in each of the latest four quarters"
+    },
+    {
+      "id": "f006",
+      "canonical": "each(since FY2023): free_cash_flow[FY] > free_cash_flow[FY-1]",
+      "reading": "right",
+      "why": "forms, 18 November 2026: free cash flow higher than the year before in every fiscal year after fiscal 2023, to the latest"
+    },
+    {
+      "id": "f009",
+      "canonical": "change(eps_diluted, FY2023)[FY] > 200%",
+      "reading": "right",
+      "why": "forms, 18 November 2026: more than three times the fiscal 2023 level is growth above 200% from fiscal 2023; 'was' with no year is read as the latest fiscal year"
+    },
+    {
+      "id": "f021",
+      "canonical": "operating_cash_flow[FY] > net_income[FY]",
+      "reading": "right",
+      "why": "forms, 18 November 2026: operating cash flow above net income, both for the latest fiscal year"
+    },
+    {
+      "id": "f027",
+      "canonical": "change(total_assets, FY-3)[FY] > 200%",
+      "reading": "right",
+      "why": "forms, 18 November 2026: more than tripled is growth above 200%, from the balance three fiscal year-ends earlier to the latest"
+    },
+    {
+      "id": "f047",
+      "canonical": "each(5): diluted_shares[FY] < diluted_shares[FY-1]",
+      "reading": "right",
+      "why": "forms, 18 November 2026: the diluted share count lower than the year before in each of the latest five fiscal years"
+    },
+    {
+      "id": "f052",
+      "canonical": "each(3): operating_margin[FY] > 30%",
+      "reading": "right",
+      "why": "forms, 18 November 2026: operating margin above 30% in each of the latest three fiscal years"
+    },
+    {
+      "id": "f066",
+      "canonical": "each(since FY2021): dividends_paid[FY] > dividends_paid[FY-1]",
+      "reading": "right",
+      "why": "forms, 18 November 2026: dividends paid higher than the year before in every fiscal year after fiscal 2021, to the latest"
+    },
+    {
+      "id": "f084",
+      "canonical": "each(2): yoy(capex)[FY] >= 50%",
+      "reading": "right",
+      "why": "forms, 18 November 2026: capital expenditure growth of at least 50% on the year before, in each of the latest two fiscal years"
+    },
+    {
+      "id": "f093",
+      "canonical": "cash_and_securities[Q] > total_debt[Q]",
+      "reading": "right",
+      "why": "forms, 18 November 2026: cash plus current marketable securities (short-term investments) above total debt at the latest balance sheet date"
     }
   ]
 }

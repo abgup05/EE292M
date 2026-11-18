@@ -26,7 +26,7 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/core/breakdowns.py  builds revenue by segment, product and geography and customers' shares from one filing's tagged facts; checks members against the tagged total; breakdown_models.py is its pure data
     src/app/core/facts.py       FactBook: values from XBRL company facts, placed by their dates; a quarter is 12 to 17 weeks, and a fiscal year is a year-long period an annual report reported; as of a date it reads only facts filed by then
     src/app/core/restatements.py   the restatement ledger: each metric and period whose value differs between filings, with both filings and the change; fact_models.py is its pure data (and the fact store's)
-    src/app/core/claimtest.py   the claim compiler: claim text to a typed test of eight forms with a canonical printed form, or the reason it is not numeric; compiles only when the test explains every word; pure, no model
+    src/app/core/claimtest.py   the claim compiler: claim text to a typed test of nine forms (held in one period or in each of several, alone or two joined by "and") with a canonical printed form, or the reason it is not numeric; compiles only when the test explains every word; pure, no model
     src/app/core/claim_reading.py  a typed test as JSON, and the strict validation of a model reader's answer into it; pure
     src/app/core/measures.py    the measure catalogue: every measure a claim test can name, how a claim names it and how it is computed (a concept group of facts.CLAIM_GROUPS, or a formula), and a part's measures; pure
     src/app/core/claim_normal.py  one normal form for a claim test, so that two readers' writings of one test compare equal; pure
@@ -167,8 +167,9 @@ nothing filed later reaches any stage, which `tests/lookahead.py` checks (`docs/
    like any other. They change the assessment prompts, which is why a run must ask for them (`docs/tagged-figures.md`).
    Then **compute** (`services/computed`): every claim is compiled (`core/claimtest`); a compiled claim is evaluated
    from the run's FactBook with its arithmetic, and given its history as of each 10-K and 10-Q filing date of the
-   last five years from the same facts, with no extra request; a share of revenue reads the newest filing's tagged
-   breakdowns from the cache. A claim that does not compile gets `compile_note`. A claim compiles only when its
+   last five years from the same facts, with no extra request; a share of revenue reads the newest filings' tagged
+   breakdowns from the cache, for the newest period or the fiscal year or quarter the claim names. A test held in
+   each of several periods, or two joined by "and", is computed part by part and holds only when every part does. A claim that does not compile gets `compile_note`. A claim compiles only when its
    test explains every content word of the sentence. No engine is asked anything. A claim test may name any
    measure of the catalogue (`core/measures`), not only the panel's; a part's figure (a segment's revenue or
    operating income) reads the newest filings with the claim-only breakdowns, cached apart. With model readers
@@ -323,7 +324,9 @@ the end of `create_app`, which takes an injectable `wall_clock`): `PUT` and `DEL
 - **A change to the claim compiler** (a phrase, a form, a metric): `core/claimtest.py` with `tests/test_claimtest.py`
   and `tests/test_whole_sentence.py`; a phrase the grammar reads must also be among the words its test explains
   (`_explaining`), or the whole-sentence rule refuses the claim. A new form or measure also goes into the model
-  parser's validation (`core/claim_reading.py`) and prompt (`engines/claim_reader.py`).
+  parser's validation (`core/claim_reading.py`) and prompt (`engines/claim_reader.py`), the normal form
+  (`core/claim_normal.py`), and golden cases worked out by the oracle (`evaluation/claim_oracle.py`);
+  `tests/test_forms.py` shows the pattern.
   Score `make claim-labels` before and after on the development labels; the held-out labels have been scored twice
   and may not be scored again. A change to how a test is computed: `core/claim_eval.py`, checked against
   `eval/claim-results.json` (`tests/test_claim_results.py`), whose expected values come from

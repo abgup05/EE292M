@@ -96,7 +96,11 @@ class ComputedTest(BaseModel):
     version 14. ``agreement`` is the counting rule's conclusion
     (:data:`app.core.policy.AGREEMENT_LABELS`, with ``agreement_label`` in words) and
     ``dissent`` the readings of a different test by a reader outside the agreement;
-    both empty before the counting rule had several readers.
+    both empty before the counting rule had several readers. ``combines`` is "each" for a
+    test held in each of several periods and "and" for two tests joined by "and", with
+    ``parts`` the tests it combines, each computed on its own (newest period first);
+    ``left`` and ``right`` are then the first part's, and ``margin`` is None. Both are
+    empty for a single test, and in runs recorded before these forms.
     """
 
     canonical: str
@@ -121,3 +125,5 @@ class ComputedTest(BaseModel):
     agreement: str = ""
     agreement_label: str = ""
     dissent: list[ClaimReading] = Field(default_factory=list)
+    combines: str = ""
+    parts: list[ComputedTest] = Field(default_factory=list)

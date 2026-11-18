@@ -69,6 +69,8 @@ HISTORY_YEARS = 5
 MAX_HISTORY_POINTS = 24
 # Periods a streak ("has grown for N consecutive quarters") walks back at most.
 MAX_STREAK_PERIODS = 40
+# The most periods a test held in each of several periods is computed for.
+MAX_EACH_PERIODS = 12
 
 # Review and saved theses
 MAX_NOTE_CHARS = 500

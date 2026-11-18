@@ -84,12 +84,17 @@ def test_a_named_quarter_is_counted_back_from_the_newest() -> None:
     assert normal_form(before, newest) == "gross_margin[Q-2] > 70%"
 
 
-def test_a_share_is_always_of_the_newest_filing() -> None:
-    a = ClaimTest("share", Term("share", "segment", Q, member="Data Center"), ">", pct(80))
-    b = ClaimTest(
-        "share", Term("share", "segment", Period("filing"), member="Data Center"), ">", pct(80)
+def test_a_share_of_a_named_year_is_the_latest_year_and_not_the_newest_filing() -> None:
+    def share(period: Period) -> ClaimTest:
+        term = Term("share", "segment", period, member="Data Center")
+        return ClaimTest("share", term, ">", pct(80))
+
+    newest = Newest(fiscal_year=2026, quarter=(2027, 2))
+    assert normal_form(share(Period("FY", fiscal_year=2026)), newest) == normal_form(
+        share(Period("FY")), newest
     )
-    assert same(a, b)
+    # The newest filing may be a 10-K or a 10-Q: its period is not known here.
+    assert normal_form(share(Q), newest) != normal_form(share(Period("filing")), newest)
 
 
 # Equivalent thresholds and spans

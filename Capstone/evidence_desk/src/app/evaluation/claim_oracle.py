@@ -16,7 +16,14 @@ imports :mod:`app.core.claim_eval`. Its own rules are deliberately narrow:
 - a period's fiscal label ("Q2 FY2027", "FY2026") is the ``fy`` and ``fp`` of the
   first filing that reported it, which is that period's own report;
 - a share of revenue is the row over the total of the newest period of a breakdown
-  of the recorded filing, read with :mod:`app.core.breakdowns`.
+  of the recorded filing, read with :mod:`app.core.breakdowns`; a share for a fiscal year
+  is the column of the recorded 10-K whose end is exactly that year's end in the facts;
+- ``change(m, BASE)[P]`` is ``(m[P] - m[BASE]) / m[BASE]``, base positive;
+- ``each(N): T`` is T with every period token moved back 0 to N - 1 steps (a quarter for
+  ``Q`` tokens, a year for ``FY`` tokens); ``each(since FYyyyy): T`` takes N as the newest
+  fiscal year's label less yyyy; ``(A) and (B)`` is A and B. Each holds when every part
+  holds and fails when any part fails; its bound is the parts' bounds, each in brackets,
+  joined by " and ", and its two sides are the first part's.
 
 Without ``--write`` it prints each case's expected result; with it, it writes them into
 the file. ``tests/test_claim_results.py`` checks that the file is what this route
@@ -65,12 +72,15 @@ RATIOS = {
 INSTANTS = ("cash", "inventory", "receivables")
 TERM = re.compile(
     r"^(?:(?P<fn>yoy|qoq|streak)\((?P<m1>\w+)\)|cagr\((?P<m2>\w+), (?P<years>\d+)y\)|"
+    r"change\((?P<m4>\w+), (?P<base>[^)]+)\)|"
     r"(?P<m3>\w+))\[(?P<period>[^\]]+)\]$"
 )
 SHARE_TERM = re.compile(
     r'^(?:share\((?P<axis>segment|geography) "(?P<member>[^"]+)"\)|'
-    r"max\(share\(customer\)\))\[filing\]$"
+    r"max\(share\(customer\)\))\[(?P<period>filing|FY(?:\d{4})?)\]$"
 )
+EACH = re.compile(r"^each\((?:(?P<n>\d+)|since FY(?P<since>\d{4}))\): (?P<inner>.+)$")
+TOKEN = re.compile(r"\b(?P<kind>Q|FY)(?:-(?P<back>\d+)|(?P<year>\d{4}))?\b")
 TEST = re.compile(r"^(?P<left>.+?) (?P<op>>=|<=|>|<) (?P<right>.+)$")
 
 
@@ -285,6 +295,18 @@ class Oracle:
             if now is None or then is None or then <= 0:
                 return None, bound
             return (now - then) / then * 100, bound
+        if match["m4"]:
+            metric = match["m4"]
+            here = self.period(token, metric)
+            there = self.period(match["base"], metric)
+            if here is None or there is None:
+                return None, text
+            bound = f"change({metric}, {there[2]})[{here[2]}]"
+            now = self.measure(metric, here[0], here[1])
+            then = self.measure(metric, there[0], there[1])
+            if now is None or then is None or then <= 0 or there[1] >= here[1]:
+                return None, bound
+            return (now - then) / then * 100, bound
         if match["m2"]:
             metric, years = match["m2"], int(match["years"])
             here = self.period(token, metric)
@@ -336,18 +358,31 @@ def _number(text: str) -> float:
     return float(text)
 
 
-def _share(case: dict[str, Any], report: Any) -> dict[str, Any]:
+def _share(
+    case: dict[str, Any], report: Any, annual: Any = None, payload: dict[str, Any] | None = None
+) -> dict[str, Any]:
     match = TEST.match(case["canonical"])
     assert match is not None
     share = SHARE_TERM.match(match["left"])
     assert share is not None
     right = _number(match["right"])
+    end = None
+    if share["period"] != "filing":
+        assert payload is not None and annual is not None
+        oracle = Oracle(Facts(payload), date.fromisoformat(case["as_of"]))
+        year = oracle.period(share["period"], "revenue")
+        if year is None:
+            return _expected(None, match["op"], right, None, [])
+        report, end = annual, year[1].isoformat()
     if share["axis"]:
         wanted = "".join(ch for ch in share["member"].casefold() if ch.isalnum())
         for item in report.breakdowns:
             if item.id not in ("revenue_by_segment", "revenue_by_product"):
                 continue
-            column = item.periods[0]
+            columns = [c for c in item.periods if end is None or c.period_end == end]
+            if not columns:
+                continue
+            column = columns[0]
             for row in item.rows:
                 if "".join(ch for ch in row.label.casefold() if ch.isalnum()) != wanted:
                     continue
@@ -369,7 +404,10 @@ def _share(case: dict[str, Any], report: Any) -> dict[str, Any]:
     for item in report.breakdowns:
         if item.id != "revenue_concentration_by_customer":
             continue
-        column = item.periods[0]
+        columns = [c for c in item.periods if end is None or c.period_end == end]
+        if not columns:
+            continue
+        column = columns[0]
         for row in item.rows:
             if "·" in row.label:
                 continue
@@ -394,14 +432,37 @@ def _expected(
 
 
 def expected_for(
-    case: dict[str, Any], payload: dict[str, Any], report: Any = None
+    case: dict[str, Any], payload: dict[str, Any], report: Any = None, annual: Any = None
 ) -> dict[str, Any]:
-    """The expected result of one case, from the raw facts (and the recorded filing's tags)."""
-    if case["canonical"].startswith(("share(", "max(share(")):
-        return _share(case, report)
-    match = TEST.match(case["canonical"])
+    """The expected result of one case, from the raw facts (and the recorded filings' tags)."""
+    canonical = case["canonical"]
+    if canonical.startswith("(") and ") and (" in canonical:
+        first, second = canonical[1:-1].split(") and (", 1)
+        parts = [
+            expected_for({**case, "canonical": text}, payload, report, annual)
+            for text in (first, second)
+        ]
+        return _combined(parts)
+    each = EACH.match(canonical)
+    if each is not None:
+        count = int(each["n"]) if each["n"] else 0
+        if each["since"]:
+            oracle = Oracle(Facts(payload), date.fromisoformat(case["as_of"]))
+            newest = oracle.period("FY", "revenue")
+            assert newest is not None
+            count = int(newest[2][2:]) - int(each["since"])
+            if count < 1:
+                return _expected(None, ">", None, None, [])
+        parts = [
+            expected_for({**case, "canonical": _shifted(each["inner"], k)}, payload, report, annual)
+            for k in range(count)
+        ]
+        return _combined(parts)
+    if canonical.startswith(("share(", "max(share(")):
+        return _share(case, report, annual, payload)
+    match = TEST.match(canonical)
     if match is None:
-        raise ValueError(f"cannot read {case['canonical']}")
+        raise ValueError(f"cannot read {canonical}")
     oracle = Oracle(Facts(payload), date.fromisoformat(case["as_of"]))
     left, left_bound = oracle.term(match["left"])
     right_text = match["right"]
@@ -411,6 +472,38 @@ def expected_for(
         right, right_bound = _number(right_text), right_text
     bound = f"{left_bound} {match['op']} {right_bound}"
     return _expected(left, match["op"], right, bound, oracle.used)
+
+
+def _shifted(test: str, steps: int) -> str:
+    """``test`` with each period token ``steps`` steps earlier: Q-1 -> Q-3, FY2025 -> FY2023."""
+
+    def back(token: re.Match[str]) -> str:
+        if token["year"]:
+            return f"FY{int(token['year']) - steps}"
+        moved = int(token["back"] or 0) + steps
+        return token["kind"] + (f"-{moved}" if moved else "")
+
+    return TOKEN.sub(back, test)
+
+
+def _combined(parts: list[dict[str, Any]]) -> dict[str, Any]:
+    outcomes = [part["outcome"] for part in parts]
+    outcome = (
+        "fails"
+        if "fails" in outcomes
+        else "holds"
+        if all(o == "holds" for o in outcomes)
+        else "cannot_compute"
+    )
+    bounds = [part["bound"] for part in parts]
+    facts = list(dict.fromkeys(f for part in parts for f in part["facts"]))
+    return {
+        "outcome": outcome,
+        "bound": None if None in bounds else " and ".join(f"({b})" for b in bounds),
+        "left": parts[0]["left"],
+        "right": parts[0]["right"],
+        "facts": facts,
+    }
 
 
 def load_payload(ticker: str) -> dict[str, Any]:
@@ -440,16 +533,36 @@ def recorded_report() -> Any:
     )
 
 
+def recorded_annual_report() -> Any:
+    """The breakdowns tagged in NVIDIA's recorded 10-K for the fiscal year ended 2026-01-25."""
+    from app.core.breakdown_models import FilingInfo
+    from app.core.breakdowns import build_report
+    from app.core.models import Company
+    from app.sources.ixbrl import read_tagged_facts
+
+    html = gzip.decompress((FIXTURES / "nvda-10k-20260125.htm.gz").read_bytes()).decode("utf-8")
+    return build_report(
+        read_tagged_facts(html),
+        company=Company(cik=CIKS["NVDA"], ticker="NVDA", name="NVIDIA CORP"),
+        filing=FilingInfo(
+            form="10-K",
+            period_end="2026-01-25",
+            filed_date="2026-02-25",
+            accession="0001045810-26-000021",
+            url="",
+        ),
+    )
+
+
 def compute_all(cases: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
     """Every case's expected result, in order."""
     payloads = {ticker: load_payload(ticker) for ticker in {c["ticker"] for c in cases}}
-    report = None
+    report = annual = None
     results = []
     for case in cases:
-        needs_report = case["canonical"].startswith(("share(", "max(share("))
-        if needs_report and report is None:
-            report = recorded_report()
-        results.append(expected_for(case, payloads[case["ticker"]], report))
+        if "share(" in case["canonical"] and report is None:
+            report, annual = recorded_report(), recorded_annual_report()
+        results.append(expected_for(case, payloads[case["ticker"]], report, annual))
     return results
 
 

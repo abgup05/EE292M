@@ -1,5 +1,5 @@
 {
-  "about": "Golden computed claims: (claim, company, as-of date) cases over the recorded NVIDIA, Apple and Microsoft company facts, each with the canonical test written by hand and the expected result written by app.evaluation.claim_oracle, a route that reads the raw facts and never calls the evaluator (make claim-results-key). Never change an expected value to make a result pass: find out which of the two routes is wrong. The two share-of-revenue cases read NVIDIA's recorded 10-Q for the quarter ended 2026-07-26.",
+  "about": "Golden computed claims: (claim, company, as-of date) cases over the recorded NVIDIA, Apple and Microsoft company facts, each with the canonical test written by hand and the expected result written by app.evaluation.claim_oracle, a route that reads the raw facts and never calls the evaluator (make claim-results-key). Never change an expected value to make a result pass: find out which of the two routes is wrong. A share of revenue of the newest filing reads NVIDIA's recorded 10-Q for the quarter ended 2026-07-26; a share for a fiscal year reads the recorded 10-K for the year ended 2026-01-25. Cases r53 to r69 (the forms round, 18 November 2026) test a test held in each of several periods, a change over a span, two measures compared, two tests joined by 'and' and a share for a fiscal year.",
   "cases": [
     {
       "id": "r01",
@@ -908,6 +908,314 @@
         "facts": [
           "RevenueFromContractWithCustomerExcludingAssessedTax 2017-07-01..2018-06-30 = 1.1036e+11 (10-K 0001564590-18-019062)",
           "RevenueFromContractWithCustomerExcludingAssessedTax 2016-07-01..2017-06-30 = 9.6571e+10 (10-K 0001564590-18-019062)"
+        ]
+      }
+    },
+    {
+      "id": "r53",
+      "ticker": "NVDA",
+      "as_of": "2026-09-01",
+      "claim": "Operating margin has been above 50% in each of the last three fiscal years.",
+      "canonical": "each(3): operating_margin[FY] > 50%",
+      "expected": {
+        "outcome": "holds",
+        "bound": "(operating_margin[FY2026] > 50%) and (operating_margin[FY2025] > 50%) and (operating_margin[FY2024] > 50%)",
+        "left": 60.38168363141272,
+        "right": 50.0,
+        "facts": [
+          "OperatingIncomeLoss 2025-01-27..2026-01-25 = 1.30387e+11 (10-K 0001045810-26-000021)",
+          "Revenues 2025-01-27..2026-01-25 = 2.15938e+11 (10-K 0001045810-26-000021)",
+          "OperatingIncomeLoss 2024-01-29..2025-01-26 = 8.1453e+10 (10-K 0001045810-26-000021)",
+          "Revenues 2024-01-29..2025-01-26 = 1.30497e+11 (10-K 0001045810-26-000021)",
+          "OperatingIncomeLoss 2023-01-30..2024-01-28 = 3.2972e+10 (10-K 0001045810-26-000021)",
+          "Revenues 2023-01-30..2024-01-28 = 6.0922e+10 (10-K 0001045810-26-000021)"
+        ]
+      }
+    },
+    {
+      "id": "r54",
+      "ticker": "NVDA",
+      "as_of": "2026-09-01",
+      "claim": "Gross margin has stayed above 70% for the last two quarters.",
+      "canonical": "each(2): gross_margin[Q] > 70%",
+      "expected": {
+        "outcome": "holds",
+        "bound": "(gross_margin[Q2 FY2027] > 70%) and (gross_margin[Q1 FY2027] > 70%)",
+        "left": 74.97531723844068,
+        "right": 70.0,
+        "facts": [
+          "GrossProfit 2026-04-27..2026-07-26 = 7.2142e+10 (10-Q 0001045810-26-000075)",
+          "Revenues 2026-04-27..2026-07-26 = 9.6221e+10 (10-Q 0001045810-26-000075)",
+          "GrossProfit 2026-01-26..2026-04-26 = 6.1157e+10 (10-Q 0001045810-26-000052)",
+          "Revenues 2026-01-26..2026-04-26 = 8.1615e+10 (10-Q 0001045810-26-000052)"
+        ]
+      }
+    },
+    {
+      "id": "r55",
+      "ticker": "NVDA",
+      "as_of": "2026-09-01",
+      "claim": "Revenue has risen every year since fiscal 2022.",
+      "canonical": "each(since FY2022): revenue[FY] > revenue[FY-1]",
+      "expected": {
+        "outcome": "holds",
+        "bound": "(revenue[FY2026] > revenue[FY2025]) and (revenue[FY2025] > revenue[FY2024]) and (revenue[FY2024] > revenue[FY2023]) and (revenue[FY2023] > revenue[FY2022])",
+        "left": 215938000000.0,
+        "right": 130497000000.0,
+        "facts": [
+          "Revenues 2025-01-27..2026-01-25 = 2.15938e+11 (10-K 0001045810-26-000021)",
+          "Revenues 2024-01-29..2025-01-26 = 1.30497e+11 (10-K 0001045810-26-000021)",
+          "Revenues 2023-01-30..2024-01-28 = 6.0922e+10 (10-K 0001045810-26-000021)",
+          "Revenues 2022-01-31..2023-01-29 = 2.6974e+10 (10-K 0001045810-25-000023)",
+          "RevenueFromContractWithCustomerExcludingAssessedTax 2021-02-01..2022-01-30 = 2.6914e+10 (10-K 0001045810-22-000036)"
+        ]
+      }
+    },
+    {
+      "id": "r56",
+      "ticker": "NVDA",
+      "as_of": "2026-09-01",
+      "claim": "Net income has risen every year since fiscal 2021.",
+      "canonical": "each(since FY2021): net_income[FY] > net_income[FY-1]",
+      "expected": {
+        "outcome": "fails",
+        "bound": "(net_income[FY2026] > net_income[FY2025]) and (net_income[FY2025] > net_income[FY2024]) and (net_income[FY2024] > net_income[FY2023]) and (net_income[FY2023] > net_income[FY2022]) and (net_income[FY2022] > net_income[FY2021])",
+        "left": 120067000000.0,
+        "right": 72880000000.0,
+        "facts": [
+          "NetIncomeLoss 2025-01-27..2026-01-25 = 1.20067e+11 (DEF 14A 0001045810-26-000036)",
+          "NetIncomeLoss 2024-01-29..2025-01-26 = 7.288e+10 (DEF 14A 0001045810-26-000036)",
+          "NetIncomeLoss 2023-01-30..2024-01-28 = 2.976e+10 (DEF 14A 0001045810-26-000036)",
+          "NetIncomeLoss 2022-01-31..2023-01-29 = 4.368e+09 (DEF 14A 0001045810-26-000036)",
+          "NetIncomeLoss 2021-02-01..2022-01-30 = 9.752e+09 (DEF 14A 0001045810-26-000036)",
+          "NetIncomeLoss 2020-01-27..2021-01-31 = 4.332e+09 (10-K 0001045810-23-000017)"
+        ]
+      }
+    },
+    {
+      "id": "r57",
+      "ticker": "NVDA",
+      "as_of": "2026-09-01",
+      "claim": "Revenue has grown by at least 50% in each of the last two fiscal years.",
+      "canonical": "each(2): yoy(revenue)[FY] >= 50%",
+      "expected": {
+        "outcome": "holds",
+        "bound": "(yoy(revenue)[FY2026] >= 50%) and (yoy(revenue)[FY2025] >= 50%)",
+        "left": 65.4735357900948,
+        "right": 50.0,
+        "facts": [
+          "Revenues 2025-01-27..2026-01-25 = 2.15938e+11 (10-K 0001045810-26-000021)",
+          "Revenues 2024-01-29..2025-01-26 = 1.30497e+11 (10-K 0001045810-26-000021)",
+          "Revenues 2023-01-30..2024-01-28 = 6.0922e+10 (10-K 0001045810-26-000021)"
+        ]
+      }
+    },
+    {
+      "id": "r58",
+      "ticker": "NVDA",
+      "as_of": "2026-09-01",
+      "claim": "Net income grew faster than revenue in each of the last two fiscal years.",
+      "canonical": "each(2): yoy(net_income)[FY] > yoy(revenue)[FY]",
+      "expected": {
+        "outcome": "fails",
+        "bound": "(yoy(net_income)[FY2026] > yoy(revenue)[FY2026]) and (yoy(net_income)[FY2025] > yoy(revenue)[FY2025])",
+        "left": 64.74615806805708,
+        "right": 65.4735357900948,
+        "facts": [
+          "NetIncomeLoss 2025-01-27..2026-01-25 = 1.20067e+11 (DEF 14A 0001045810-26-000036)",
+          "NetIncomeLoss 2024-01-29..2025-01-26 = 7.288e+10 (DEF 14A 0001045810-26-000036)",
+          "Revenues 2025-01-27..2026-01-25 = 2.15938e+11 (10-K 0001045810-26-000021)",
+          "Revenues 2024-01-29..2025-01-26 = 1.30497e+11 (10-K 0001045810-26-000021)",
+          "NetIncomeLoss 2023-01-30..2024-01-28 = 2.976e+10 (DEF 14A 0001045810-26-000036)",
+          "Revenues 2023-01-30..2024-01-28 = 6.0922e+10 (10-K 0001045810-26-000021)"
+        ]
+      }
+    },
+    {
+      "id": "r59",
+      "ticker": "NVDA",
+      "as_of": "2026-03-01",
+      "claim": "Revenue has risen every year since fiscal 2026.",
+      "canonical": "each(since FY2026): revenue[FY] > revenue[FY-1]",
+      "expected": {
+        "outcome": "cannot_compute",
+        "bound": null,
+        "left": null,
+        "right": null,
+        "facts": []
+      }
+    },
+    {
+      "id": "r60",
+      "ticker": "NVDA",
+      "as_of": "2026-09-01",
+      "claim": "Revenue more than tripled between fiscal 2023 and fiscal 2025.",
+      "canonical": "change(revenue, FY2023)[FY2025] > 200%",
+      "expected": {
+        "outcome": "holds",
+        "bound": "change(revenue, FY2023)[FY2025] > 200%",
+        "left": 383.7880922369689,
+        "right": 200.0,
+        "facts": [
+          "Revenues 2024-01-29..2025-01-26 = 1.30497e+11 (10-K 0001045810-26-000021)",
+          "Revenues 2022-01-31..2023-01-29 = 2.6974e+10 (10-K 0001045810-25-000023)"
+        ]
+      }
+    },
+    {
+      "id": "r61",
+      "ticker": "NVDA",
+      "as_of": "2026-09-01",
+      "claim": "Revenue more than tripled over the past three fiscal years.",
+      "canonical": "change(revenue, FY-3)[FY] > 200%",
+      "expected": {
+        "outcome": "holds",
+        "bound": "change(revenue, FY2023)[FY2026] > 200%",
+        "left": 700.5412619559576,
+        "right": 200.0,
+        "facts": [
+          "Revenues 2025-01-27..2026-01-25 = 2.15938e+11 (10-K 0001045810-26-000021)",
+          "Revenues 2022-01-31..2023-01-29 = 2.6974e+10 (10-K 0001045810-25-000023)"
+        ]
+      }
+    },
+    {
+      "id": "r62",
+      "ticker": "AAPL",
+      "as_of": "2025-11-15",
+      "claim": "Net sales grew more than 10% between fiscal 2022 and fiscal 2025.",
+      "canonical": "change(revenue, FY2022)[FY2025] > 10%",
+      "expected": {
+        "outcome": "fails",
+        "bound": "change(revenue, FY2022)[FY2025] > 10%",
+        "left": 5.536761274877767,
+        "right": 10.0,
+        "facts": [
+          "RevenueFromContractWithCustomerExcludingAssessedTax 2024-09-29..2025-09-27 = 4.16161e+11 (10-K 0000320193-25-000079)",
+          "RevenueFromContractWithCustomerExcludingAssessedTax 2021-09-26..2022-09-24 = 3.94328e+11 (10-K 0000320193-24-000123)"
+        ]
+      }
+    },
+    {
+      "id": "r63",
+      "ticker": "NVDA",
+      "as_of": "2026-09-01",
+      "claim": "Operating cash flow was above net income in the latest fiscal year.",
+      "canonical": "operating_cash_flow[FY] > net_income[FY]",
+      "expected": {
+        "outcome": "fails",
+        "bound": "operating_cash_flow[FY2026] > net_income[FY2026]",
+        "left": 102718000000.0,
+        "right": 120067000000.0,
+        "facts": [
+          "NetCashProvidedByUsedInOperatingActivities 2025-01-27..2026-01-25 = 1.02718e+11 (10-K 0001045810-26-000021)",
+          "NetIncomeLoss 2025-01-27..2026-01-25 = 1.20067e+11 (DEF 14A 0001045810-26-000036)"
+        ]
+      }
+    },
+    {
+      "id": "r64",
+      "ticker": "NVDA",
+      "as_of": "2026-09-01",
+      "claim": "Capital expenditure was above operating cash flow in the latest fiscal year.",
+      "canonical": "capex[FY] > operating_cash_flow[FY]",
+      "expected": {
+        "outcome": "fails",
+        "bound": "capex[FY2026] > operating_cash_flow[FY2026]",
+        "left": 6042000000.0,
+        "right": 102718000000.0,
+        "facts": [
+          "PaymentsToAcquireProductiveAssets 2025-01-27..2026-01-25 = 6.042e+09 (10-K 0001045810-26-000021)",
+          "NetCashProvidedByUsedInOperatingActivities 2025-01-27..2026-01-25 = 1.02718e+11 (10-K 0001045810-26-000021)"
+        ]
+      }
+    },
+    {
+      "id": "r65",
+      "ticker": "NVDA",
+      "as_of": "2026-09-01",
+      "claim": "Revenue grew more than 50% year over year and gross margin is above 70%.",
+      "canonical": "(yoy(revenue)[Q] > 50%) and (gross_margin[Q] > 70%)",
+      "expected": {
+        "outcome": "holds",
+        "bound": "(yoy(revenue)[Q2 FY2027] > 50%) and (gross_margin[Q2 FY2027] > 70%)",
+        "left": 105.85114348672529,
+        "right": 50.0,
+        "facts": [
+          "Revenues 2026-04-27..2026-07-26 = 9.6221e+10 (10-Q 0001045810-26-000075)",
+          "Revenues 2025-04-28..2025-07-27 = 4.6743e+10 (10-Q 0001045810-26-000075)",
+          "GrossProfit 2026-04-27..2026-07-26 = 7.2142e+10 (10-Q 0001045810-26-000075)"
+        ]
+      }
+    },
+    {
+      "id": "r66",
+      "ticker": "NVDA",
+      "as_of": "2026-09-01",
+      "claim": "Revenue grew more than 50% year over year and gross margin is above 80%.",
+      "canonical": "(yoy(revenue)[Q] > 50%) and (gross_margin[Q] > 80%)",
+      "expected": {
+        "outcome": "fails",
+        "bound": "(yoy(revenue)[Q2 FY2027] > 50%) and (gross_margin[Q2 FY2027] > 80%)",
+        "left": 105.85114348672529,
+        "right": 50.0,
+        "facts": [
+          "Revenues 2026-04-27..2026-07-26 = 9.6221e+10 (10-Q 0001045810-26-000075)",
+          "Revenues 2025-04-28..2025-07-27 = 4.6743e+10 (10-Q 0001045810-26-000075)",
+          "GrossProfit 2026-04-27..2026-07-26 = 7.2142e+10 (10-Q 0001045810-26-000075)"
+        ]
+      }
+    },
+    {
+      "id": "r67",
+      "ticker": "NVDA",
+      "as_of": "2026-09-01",
+      "claim": "Data Center revenue made up over 80% of total revenue last fiscal year.",
+      "canonical": "share(segment \"Data Center\")[FY] > 80%",
+      "expected": {
+        "outcome": "holds",
+        "bound": null,
+        "left": 89.718808176421,
+        "right": 80.0,
+        "facts": [
+          "Data Center 1.93737e+11 of 2.15938e+11"
+        ]
+      }
+    },
+    {
+      "id": "r68",
+      "ticker": "NVDA",
+      "as_of": "2026-09-01",
+      "claim": "Data Center accounts for more than 90% of revenue in fiscal 2025.",
+      "canonical": "share(segment \"Data Center\")[FY2025] > 90%",
+      "expected": {
+        "outcome": "fails",
+        "bound": null,
+        "left": 88.26716322980604,
+        "right": 90.0,
+        "facts": [
+          "Data Center 1.15186e+11 of 1.30497e+11"
+        ]
+      }
+    },
+    {
+      "id": "r69",
+      "ticker": "MSFT",
+      "as_of": "2025-08-15",
+      "claim": "Operating margin has been above 40% in each of the last three fiscal years.",
+      "canonical": "each(3): operating_margin[FY] > 40%",
+      "expected": {
+        "outcome": "holds",
+        "bound": "(operating_margin[FY2025] > 40%) and (operating_margin[FY2024] > 40%) and (operating_margin[FY2023] > 40%)",
+        "left": 45.62195624085985,
+        "right": 40.0,
+        "facts": [
+          "OperatingIncomeLoss 2024-07-01..2025-06-30 = 1.28528e+11 (10-K 0000950170-25-100235)",
+          "RevenueFromContractWithCustomerExcludingAssessedTax 2024-07-01..2025-06-30 = 2.81724e+11 (10-K 0000950170-25-100235)",
+          "OperatingIncomeLoss 2023-07-01..2024-06-30 = 1.09433e+11 (10-K 0000950170-25-100235)",
+          "RevenueFromContractWithCustomerExcludingAssessedTax 2023-07-01..2024-06-30 = 2.45122e+11 (10-K 0000950170-25-100235)",
+          "OperatingIncomeLoss 2022-07-01..2023-06-30 = 8.8523e+10 (10-K 0000950170-25-100235)",
+          "RevenueFromContractWithCustomerExcludingAssessedTax 2022-07-01..2023-06-30 = 2.11915e+11 (10-K 0000950170-25-100235)"
         ]
       }
     }

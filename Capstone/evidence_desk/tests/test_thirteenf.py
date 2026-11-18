@@ -24,6 +24,7 @@ from app.core.thirteenf import (
     issuer_key,
     match_issuer,
     parse_information_table,
+    unit_note,
     value_scale,
 )
 from app.sources.prices import PriceUnavailable, SuppliedPrice
@@ -142,14 +143,30 @@ def test_a_company_not_held_is_a_reason() -> None:
 def test_the_price_is_value_over_shares_summed_over_the_rows() -> None:
     rows = [Holding("X", "COM", "1", 3000.0, 20.0), Holding("X", "COM", "1", 1500.0, 10.0)]
     # (3,000 + 1,500) ÷ (20 + 10) = 150 dollars a share when value is in dollars.
-    assert implied_price(rows, date(2023, 1, 3)) == pytest.approx(150.0)
+    assert implied_price(rows, value_scale(rows)) == pytest.approx(150.0)
 
 
-def test_a_filing_before_2023_reports_value_in_thousands() -> None:
-    rows = [Holding("X", "COM", "1", 3000.0, 20_000.0)]
-    assert (value_scale(date(2023, 1, 2)), value_scale(date(2023, 1, 3))) == (1000.0, 1.0)
+def test_a_table_of_thousands_is_told_by_its_median_and_read_as_thousands() -> None:
+    # Three positions worth 150, 40 and 9 dollars a share, written in thousands of dollars:
+    # value ÷ shares is 0.150, 0.040 and 0.009, median 0.040, under one dollar.
+    thousands = [
+        Holding("X", "COM", "1", 3000.0, 20_000.0),
+        Holding("Y", "COM", "2", 400.0, 10_000.0),
+        Holding("Z", "COM", "3", 90.0, 10_000.0),
+    ]
+    assert value_scale(thousands) == 1000.0
     # 3,000 thousand dollars ÷ 20,000 shares = 150 dollars a share.
-    assert implied_price(rows, date(2022, 11, 14)) == pytest.approx(150.0)
+    assert implied_price(thousands[:1], value_scale(thousands)) == pytest.approx(150.0)
+    # The same three in dollars, with one penny stock (0.50) among them: median 40, dollars.
+    dollars = [
+        Holding("X", "COM", "1", 3_000_000.0, 20_000.0),
+        Holding("Y", "COM", "2", 400_000.0, 10_000.0),
+        Holding("P", "COM", "4", 5_000.0, 10_000.0),
+    ]
+    assert value_scale(dollars) == 1.0
+    # A filer that kept thousands after the form changed is read right, and it is said.
+    assert "read as thousands" in unit_note(1000.0, date(2025, 2, 10))
+    assert unit_note(1000.0, date(2022, 11, 14)) == unit_note(1.0, date(2025, 2, 10)) == ""
 
 
 def test_two_prices_agree_within_half_a_percent() -> None:
@@ -176,6 +193,10 @@ Q2 = table(entry("ACME WHSL CORP NEW", "000111222", 4000, 100))  # 40.00
 Q3 = table(entry("ACME WHOLESALE CORPORATION", "000111222", 5000, 100))  # 50.00
 Q3_SECOND = table(entry("ACME WHSL CORP", "000111222", 10_020, 200))  # 50.10, within 0.5%
 Q3_FAR = table(entry("ACME WHSL CORP", "000111222", 2_500, 100))  # 25.00
+# 50.00 written in thousands (5 thousand dollars for 100 shares), beside another position.
+Q3_THOUSANDS = table(
+    entry("ACME WHSL CORP", "000111222", 5, 100), entry("OTHER INC", "111111111", 8, 100)
+)
 
 
 def test_the_newest_filing_filed_by_the_date_gives_the_price_and_a_second_confirms(
@@ -244,6 +265,22 @@ def test_a_second_manager_that_differs_is_said_not_averaged(tmp_path: Path) -> N
     price = QuarterEndPrices(source, (FIRST, SECOND)).price(ACME, date(2026, 11, 18))
     assert price.value == 50.0 and not price.confirmed
     assert "Differs from Second Fund's $25.00" in price.note
+
+
+def test_a_manager_that_reports_thousands_still_confirms(tmp_path: Path) -> None:
+    # Met live: as of 2025-03-01 one manager's 13F gave NVIDIA at $0.13 beside $134.29.
+    source = stocked(
+        tmp_path,
+        {
+            1: [("0000000001-26-000002", "2026-09-30", "2026-11-12", Q3)],
+            2: [("0000000002-26-000009", "2026-09-30", "2026-11-16", Q3_THOUSANDS)],
+        },
+    )
+    price = QuarterEndPrices(source, (FIRST, SECOND)).price(ACME, date(2026, 11, 18))
+    assert price.value == 50.0 and price.confirmed and "Differs" not in price.note
+    # And when the manager in thousands is the one the price is taken from, it is 50, not 0.05.
+    alone = QuarterEndPrices(source, (SECOND,)).price(ACME, date(2026, 11, 18))
+    assert alone.value == pytest.approx(50.0) and "read as thousands" in alone.note
 
 
 def test_no_manager_holding_the_company_is_unavailable_with_each_reason(tmp_path: Path) -> None:

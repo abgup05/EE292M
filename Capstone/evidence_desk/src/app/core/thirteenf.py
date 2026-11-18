@@ -11,9 +11,14 @@ The rules, each the answer to a quirk of the form:
 - **Rows read** (:func:`parse_information_table`): positions in shares (``SH``), not
   principal amounts (``PRN``), and not options (a row with ``putCall``); value and shares
   positive. Any other row is counted, not read.
-- **The unit of value.** A 13F filed on or after :data:`DOLLARS_FROM` reports value in
-  dollars; one filed before, in thousands of dollars (SEC changed the form), so an older
-  price is good to a few parts in ten thousand at best (:func:`value_scale`).
+- **The unit of value.** SEC changed the form: a 13F filed on or after
+  :data:`DOLLARS_FROM` should report value in dollars, one filed before, in thousands.
+  Filers do not all follow it (one of the three managers read still reported thousands in
+  2025), so the unit is read from the table itself (:func:`value_scale`): when the median
+  of value ÷ shares over its positions is under :data:`THOUSANDS_BELOW` dollars, the
+  values are thousands. No manager's median holding trades under a dollar; a table of
+  thousands has a median a thousand times smaller than its true one. A price from a table
+  of thousands is good to a few parts in ten thousand at best.
 - **Which issuer** (:func:`match_issuer`). A 13F names an issuer in the manager's own
   abbreviated words and by CUSIP; SEC publishes no table from a filer to its CUSIP. The
   company's EDGAR name and each row's issuer name are reduced to a key
@@ -34,8 +39,10 @@ import re
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
+from statistics import median
 
 DOLLARS_FROM = date(2023, 1, 3)
+THOUSANDS_BELOW = 1.0
 AGREE_TOLERANCE = 0.005
 MAX_ROWS = 60_000
 
@@ -213,16 +220,38 @@ def rows_of(holdings: Sequence[Holding], cusip: str) -> tuple[Holding, ...]:
     return tuple(row for row in holdings if row.cusip == cusip)
 
 
-def value_scale(filed: date) -> float:
-    """What one unit of a 13F's ``value`` is in dollars: 1, or 1,000 before the form changed."""
-    return 1.0 if filed >= DOLLARS_FROM else 1000.0
+def value_scale(holdings: Sequence[Holding]) -> float:
+    """What one unit of a table's ``value`` is in dollars: 1, or 1,000 when it reports thousands.
+
+    Read from the table: the median of value ÷ shares over its positions is under
+    :data:`THOUSANDS_BELOW` only when the values are thousands of dollars.
+    """
+    if not holdings:
+        raise ValueError("no holdings")
+    typical = median(row.value / row.shares for row in holdings)
+    return 1000.0 if typical < THOUSANDS_BELOW else 1.0
 
 
-def implied_price(rows: Sequence[Holding], filed: date) -> float:
-    """Sum of value ÷ sum of shares of ``rows``, in dollars a share."""
+def unit_note(scale: float, filed: date) -> str:
+    """What to say when a table's unit is not the one the form asks for on its filing date."""
+    if scale == 1000.0 and filed >= DOLLARS_FROM:
+        return (
+            "This filing reports value in thousands of dollars though the form has asked for "
+            "dollars since 2023; it is read as thousands."
+        )
+    if scale == 1.0 and filed < DOLLARS_FROM:
+        return (
+            "This filing reports value in dollars though the form asked for thousands before "
+            "2023; it is read as dollars."
+        )
+    return ""
+
+
+def implied_price(rows: Sequence[Holding], scale: float) -> float:
+    """Sum of value ÷ sum of shares of ``rows``, in dollars a share; ``scale`` from the table."""
     if not rows:
         raise ValueError("no rows")
-    return sum(row.value for row in rows) * value_scale(filed) / sum(row.shares for row in rows)
+    return sum(row.value for row in rows) * scale / sum(row.shares for row in rows)
 
 
 def agree(first: float, second: float) -> bool:

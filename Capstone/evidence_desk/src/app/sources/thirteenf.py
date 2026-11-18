@@ -45,6 +45,7 @@ from app.core.thirteenf import (
     match_issuer,
     parse_information_table,
     rows_of,
+    unit_note,
     value_scale,
 )
 from app.core.valuation import Price
@@ -224,7 +225,7 @@ class QuarterEndPrices:
         # The newest quarter first; among managers of one quarter, the order of MANAGERS.
         order = {cik: position for position, (cik, _) in enumerate(self._managers)}
         newest.sort(key=lambda f: (-f.period.toordinal(), order[f.manager_cik]))
-        taken: tuple[ManagerFiling, float, Matched] | None = None
+        taken: tuple[ManagerFiling, float, Matched, float] | None = None
         confirmations: list[tuple[ManagerFiling, float]] = []
         for filing in newest:
             if taken is not None and filing.period != taken[0].period:
@@ -243,18 +244,20 @@ class QuarterEndPrices:
                 if isinstance(matched, str):
                     reasons.append(f"{filing.manager}, quarter ended {filing.period}: {matched}")
                     continue
-                taken = (filing, implied_price(matched.rows, filing.filed), matched)
+                scale = value_scale(table.holdings)
+                taken = (filing, implied_price(matched.rows, scale), matched, scale)
             else:
                 rows = rows_of(table.holdings, taken[2].cusip)
                 if rows:
-                    confirmations.append((filing, implied_price(rows, filing.filed)))
+                    scale = value_scale(table.holdings)
+                    confirmations.append((filing, implied_price(rows, scale)))
         if taken is None:
             raise PriceUnavailable(
                 f"No 13F read gives a price for {company.name} by {as_of.isoformat()}: "
                 + "; ".join(reasons)
                 + "."
             )
-        filing, price, matched = taken
+        filing, price, matched, scale = taken
         agreeing = [f for f, other in confirmations if agree(price, other)]
         differing = [(f, other) for f, other in confirmations if not agree(price, other)]
         checks: list[str] = []
@@ -272,7 +275,9 @@ class QuarterEndPrices:
             )
         if not confirmations:
             checks.append("No second manager read holds it that quarter: the price is unconfirmed.")
-        value = sum(row.value for row in matched.rows) * value_scale(filing.filed)
+        if unit_note(scale, filing.filed):
+            checks.append(unit_note(scale, filing.filed))
+        value = sum(row.value for row in matched.rows) * scale
         shares = sum(row.shares for row in matched.rows)
         source = f"SEC Form 13F-HR {filing.accession}, CUSIP {matched.cusip}"
         inputs = tuple(

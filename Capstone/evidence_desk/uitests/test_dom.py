@@ -896,8 +896,11 @@ def test_first_screen_states_the_takeaway_beside_both_samples() -> None:
     """Interface finding 1. Only the markup is checked here: how prominent it looks is
     checked by looking at docs/screenshots/first-screen.png, which no dump covers."""
     soup = static_page()
-    takeaway = soup.select_one("header.masthead #takeaway")
-    assert takeaway is not None, "the masthead states no takeaway"
+    # The guide holds the takeaway and the samples. In the markup it sits in the Run drawer; on the
+    # first screen app.js moves it whole into the lead (uitests/frame.html records where it is).
+    takeaway = soup.select_one("#run-drawer #guide-slot #howto #takeaway")
+    assert takeaway is not None, "the guide states no takeaway"
+    assert soup.select_one("#empty-state #lead-slot") is not None, "the first screen has no place for the guide"
     said = " ".join(text(takeaway).split())
     for phrase in TAKEAWAY_PHRASES:
         assert phrase in said, f"the takeaway lacks {phrase!r}"
@@ -906,12 +909,13 @@ def test_first_screen_states_the_takeaway_beside_both_samples() -> None:
         link = soup.select_one(f"#{link_id}")
         assert link is not None and link["href"] == href, link_id
         assert row in link.parents, f"#{link_id} is not beside the takeaway"
-        assert link.find_parent(id="empty-state") is None, f"#{link_id} is still in the empty state"
+        assert link.find_parent(id="howto") is not None, f"#{link_id} is not in the guide"
 
 
 @both
 def test_rendered_page_keeps_the_takeaway(name: str) -> None:
-    takeaway = page(name).select_one("header.masthead #takeaway")
+    # Beside a run the takeaway is in the guide, in the Run drawer.
+    takeaway = page(name).select_one("#run-drawer #howto #takeaway")
     assert takeaway is not None and not takeaway.has_attr("hidden")
     assert TAKEAWAY_PHRASES[0] in " ".join(text(takeaway).split())
 

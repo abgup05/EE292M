@@ -598,6 +598,8 @@ def create_app(
                 "heading": policy.EVENTS_HEADING,
                 "note": policy.EVENTS_NOTE,
                 "category_labels": {c.value: label for c, label in CATEGORY_LABELS.items()},
+                "status_labels": policy.EVENT_STATUS_LABELS,
+                "kind_labels": policy.EVENT_KIND_LABELS,
                 "substantive": sorted(c.value for c in SUBSTANTIVE),
             },
         }

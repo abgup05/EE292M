@@ -24,7 +24,7 @@ from datetime import UTC, date, datetime
 from typing import Final
 
 from app.core import events as rules
-from app.core import limits
+from app.core import limits, policy
 from app.core.documents import Document, FilingRef, Passage
 from app.core.event_models import AsOf, Event, EventCounts, EventItem, EventStatus
 from app.core.models import Company, ExtractionStatus, Source, SourceKind
@@ -146,12 +146,15 @@ def read_timeline(
     if not annual_filed:
         timeline.index_error = NO_ANNUAL
         timeline.counts = rules.count_events([], cap, annual_filed)
+        timeline.counts.line = policy.EVENTS_NO_ANNUAL
         return timeline
     try:
         refs = filings.current_reports(company, annual_filed)
     except SourceError as exc:
         timeline.index_error = str(exc)
         timeline.counts = rules.count_events([], cap, annual_filed)
+        error = timeline.index_error.rstrip(".")
+        timeline.counts.line = policy.EVENT_INDEX_UNREAD_COUNTS.format(error=error)
         return timeline
     by_id = {f"ev-{ref.accession}": ref for ref in refs}
     timeline.events = [_event(ref) for ref in refs]

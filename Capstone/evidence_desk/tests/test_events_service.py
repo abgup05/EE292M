@@ -117,6 +117,9 @@ def test_an_unreadable_index_gives_an_empty_timeline_and_the_reason() -> None:
     assert timeline.events == []
     assert timeline.index_error == "EDGAR answered HTTP 503 for the index"
     assert timeline.counts.listed == 0
+    assert timeline.counts.line == (
+        "EDGAR's list of 8-Ks could not be read (EDGAR answered HTTP 503 for the index)."
+    )
 
 
 def test_no_annual_report_means_no_list() -> None:
@@ -124,6 +127,13 @@ def test_no_annual_report_means_no_list() -> None:
     timeline = read(filings, annual_filed=None)
     assert timeline.index_error == service.NO_ANNUAL
     assert filings.current_calls == []
+    assert timeline.counts.line == "No annual report was read, so no 8-K was listed."
+
+
+def test_every_status_an_event_can_have_has_its_words() -> None:
+    from app.core import policy
+
+    assert set(policy.EVENT_STATUS_LABELS) == {status.value for status in EventStatus}
 
 
 def test_a_second_read_comes_from_the_cache_and_fetches_nothing() -> None:

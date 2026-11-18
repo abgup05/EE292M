@@ -32,13 +32,6 @@ RESULTS_DIR = Path("results")
 _UNSAFE_NAME = re.compile(r"[^A-Za-z0-9-]")
 _CONTROL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")
 WIDTH = 100
-STATUS_WORDS = {
-    EventStatus.read: "read",
-    EventStatus.failed: "could not be read",
-    EventStatus.capped: "not read (cap per run)",
-    EventStatus.out_of_time: "not read (time limit)",
-    EventStatus.index_only: "listed from the index only",
-}
 
 
 def clean(text: str) -> str:
@@ -53,7 +46,7 @@ def _wrapped(text: str, indent: str) -> list[str]:
 
 
 def _event_lines(event: Event) -> list[str]:
-    kind = "substantive" if event.substantive else "routine"
+    kind = policy.EVENT_KIND_LABELS["substantive" if event.substantive else "routine"]
     head = f"{event.filed_date}  {event.form}  {event.accession}  ({kind}; {_status(event)})"
     lines = [head, f"    {event.url}"]
     if event.event_date and event.event_date != event.filed_date:
@@ -73,7 +66,7 @@ def _event_lines(event: Event) -> list[str]:
 
 
 def _status(event: Event) -> str:
-    words = STATUS_WORDS[event.status]
+    words = policy.EVENT_STATUS_LABELS[event.status.value]
     return f"{words}: {clean(event.reason)}" if event.reason else words
 
 
@@ -87,10 +80,6 @@ def render_text(record: CompanyEvents) -> str:
         *_wrapped(as_of.line, ""),
         *_wrapped(as_of.counts.line, ""),
     ]
-    if as_of.index_error:
-        lines += _wrapped(
-            policy.EVENT_INDEX_UNREAD_COUNTS.format(error=as_of.index_error.rstrip(".")), ""
-        )
     lines += ["", *_wrapped(policy.EVENTS_NOTE, ""), ""]
     if not record.timeline and not as_of.index_error:
         lines.append(policy.EVENTS_NONE.format(annual=as_of.annual_filed or "unknown date"))

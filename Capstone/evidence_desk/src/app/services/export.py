@@ -21,7 +21,7 @@ from datetime import UTC, datetime
 from urllib.parse import quote as percent_encode
 
 from app.core.claim_change_models import RelevantChange, RunChanges
-from app.core.event_models import Event, EventStatus
+from app.core.event_models import Event
 from app.core.metric_models import Metric
 from app.core.models import (
     Claim,
@@ -40,7 +40,8 @@ from app.core.models import (
 )
 from app.core.policy import (
     DECISION_LABELS,
-    EVENT_INDEX_UNREAD_COUNTS,
+    EVENT_KIND_LABELS,
+    EVENT_STATUS_LABELS,
     EVENTS_NONE,
     EVENTS_NOTE,
     FIGURES_NOTE,
@@ -269,19 +270,12 @@ def _excerpt(item: Evidence, sources: dict[str, Source]) -> list[str]:
 
 
 EVENTS_HEADING_MD = "## Events since the annual report"
-EVENT_STATUS_WORDS = {
-    EventStatus.read: "read",
-    EventStatus.failed: "could not be read",
-    EventStatus.capped: "not read: the cap per run came first",
-    EventStatus.out_of_time: "not read: the run time limit came first",
-    EventStatus.index_only: "listed from the index only",
-}
 
 
 def _event(event: Event) -> list[str]:
     """One 8-K: its date, form and link, each item with its category, the opening quoted."""
-    kind = "substantive" if event.substantive else "routine"
-    status = EVENT_STATUS_WORDS[event.status]
+    kind = EVENT_KIND_LABELS["substantive" if event.substantive else "routine"]
+    status = EVENT_STATUS_LABELS[event.status.value]
     if event.reason:
         status += f": {_text(event.reason)}"
     where = f"[{_link_text(event.form)}, filed {event.filed_label}]({_url(event.url)})"
@@ -300,11 +294,9 @@ def _events(run: Run) -> list[str]:
     if as_of is None:
         return []
     lines = [EVENTS_HEADING_MD, "", EVENTS_NOTE, ""]
-    if as_of.index_error:
-        error = as_of.index_error.rstrip(".")
-        lines += [_text(EVENT_INDEX_UNREAD_COUNTS.format(error=error), line_start=True), ""]
-        return lines
     lines += [_text(as_of.counts.line, line_start=True), ""]
+    if as_of.index_error:
+        return lines
     if not run.timeline:
         annual = as_of.annual_filed or NOT_AVAILABLE
         return [*lines, _text(EVENTS_NONE.format(annual=annual), line_start=True), ""]

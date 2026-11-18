@@ -191,6 +191,17 @@ EVENT_INDEX_UNREAD = (
     "EDGAR's list of 8-Ks could not be read ({error}), so whether one filed since {annual} "
     "reports {subjects} is not known."
 )
+# What became of each 8-K a run listed, keyed by EventStatus value: the page, the brief and
+# `make events` say it in these words.
+EVENT_STATUS_LABELS = {
+    "read": "read",
+    "failed": "could not be read",
+    "capped": "not read: the cap per run came first",
+    "out_of_time": "not read: the run time limit came first",
+    "index_only": "listed from the index only",
+}
+EVENT_KIND_LABELS = {"substantive": "substantive", "routine": "routine"}
+EVENTS_NO_ANNUAL = "No annual report was read, so no 8-K was listed."
 EVENTS_HEADING = "Since the annual report"
 EVENTS_NONE = "EDGAR lists no 8-K filed since the annual report of {annual}."
 EVENTS_NOTE = (

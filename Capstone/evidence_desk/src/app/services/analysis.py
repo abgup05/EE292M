@@ -62,6 +62,18 @@ MAX_OPENING_CHARS = 400
 # Reads the tagged breakdowns of the newest filings the run read: the reports and any failure.
 ReportReader = Callable[[], tuple[list[BreakdownReport], list[str]]]
 DEFAULT_PROVIDERS: tuple[AnalyticsProvider, ...] = (FactsProvider(),)
+# The order a claim's analytics are listed in, by kind (a kind not named here: with the measure).
+READING_ORDER = {
+    "headroom": 0,
+    "needed": 0,
+    "cushion": 0,
+    "sides": 0,
+    "history": 0,
+    "part_growth": 1,
+    "part_pace": 1,
+    "bridge": 3,
+    "earnings_quality": 4,
+}
 
 
 @dataclass(frozen=True)
@@ -302,7 +314,10 @@ def analyse_run(
     measures = Measures(numbers.book, numbers.calendar) if numbers.book is not None else None
     claimed: dict[str, _Claimed] = {}
     for claim in run.claims:
-        mine = [item.id for item in analytics if claim.id in item.claim_ids]
+        own = [item for item in analytics if claim.id in item.claim_ids]
+        # Reading order: the claim's own test, the part it names, the measure, then what lies
+        # behind the number. The sort is stable, so each provider's order holds within a group.
+        mine = [item.id for item in sorted(own, key=lambda item: READING_ORDER.get(item.kind, 2))]
         for measure in relevant[claim.id]:
             measure.analytic_ids = [
                 item.id
@@ -387,7 +402,7 @@ def _model_steps(
     elif run.company is None:
         why = "the company could not be read"
     if why:
-        analysis.corollaries_note = rules.NO_PROPOSER.format(why=why)
+        analysis.corollaries_note = rules.NO_PROPOSER
         analysis.argument_note = rules.NO_ARGUMENT.format(why=why)
         run.errors.append(rules.COMPUTED_ONLY_ERROR.format(why=why))
         return [], [], None

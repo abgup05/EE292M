@@ -336,7 +336,6 @@ def execute_run(
             cache=cache,
             html_by_accession=ingested.filing_html,
         )
-        ingested.filing_html.clear()  # megabytes of HTML, needed for the tags and no longer
         run.metrics += tagged.figures
         run.metrics_notes += tagged.notes
         figures = [*figures, *tagged.figures]
@@ -362,6 +361,19 @@ def execute_run(
             specs=FOR_CLAIMS,
         )[:2],
     )
+
+    # The parts the analysis may tie a claim to: the tags of the newest reports, from the
+    # cache when it keeps them, else from the HTML this run fetched (then kept for the next
+    # run). Never a fetch: a filing read from a cache that kept no tags gives a note instead.
+    part_reports, part_errors, _ = read_reports(
+        company,
+        filings,
+        newest,
+        cache=cache,
+        html_by_accession=ingested.filing_html,
+        fetch=False,
+    )
+    ingested.filing_html.clear()  # megabytes of HTML, needed for the tags and no longer
 
     _stage(run, store, "planning")
     queries = engine.plan(run.inputs, company)
@@ -577,15 +589,7 @@ def execute_run(
         numbers,
         computed,
         analyser or NoAnalyser(),
-        # Never a fetch: the tags kept in the cache, or the HTML this run fetched.
-        read_reports=lambda: read_reports(
-            company,
-            filings,
-            newest,
-            cache=cache,
-            html_by_accession=ingested.filing_html,
-            fetch=False,
-        )[:2],
+        read_reports=lambda: (part_reports, part_errors),
         out_of_time=out_of_time,
         on_step=analysing,
     )

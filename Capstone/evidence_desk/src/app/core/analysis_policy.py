@@ -85,10 +85,13 @@ COROLLARY_FLAG = (
     "Most of this claim's computed corollaries came out against what it implies "
     "({against} of {known}). The verdict is unchanged; read them before relying on the claim."
 )
-NO_PROPOSER = "No corollaries: no model was asked to propose them ({why})."
+NO_PROPOSER = "No corollaries: no model was asked to propose them."
 PROPOSE_FAILED = "No corollaries: the request for them failed ({why})."
-NO_ARGUMENT = "No model's argument: {why}. The analytics and their readings were written by code."
-NO_MODEL_WHY = "no model is configured: the engine is extractive"
+NO_ARGUMENT = "No model wrote an argument: {why}. The figures and their readings are code's."
+NO_MODEL_WHY = (
+    "this run was given no analysing model (the extractive engine, no key, or a run the "
+    "watcher started)"
+)
 OUT_OF_TIME_WHY = "the run's time limit was reached first"
 # One line in Run.errors whenever the record holds less than a model's full analysis.
 COMPUTED_ONLY_ERROR = (

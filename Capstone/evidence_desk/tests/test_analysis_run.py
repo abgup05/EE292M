@@ -468,3 +468,37 @@ def test_a_proposal_for_an_unknown_claim_or_with_no_outcome_is_dropped() -> None
     assert any("c2" in p for p in parsed.problems)
     with pytest.raises(EngineError):
         parse_proposals({"claims": "no"}, ["c1"])
+
+
+def test_a_second_run_reads_the_parts_from_the_cache_and_fetches_nothing(tmp_path: Path) -> None:
+    filings = recorded_filings()
+    cache = FilingCache(tmp_path / "cache.sqlite")
+
+    def run_once(name: str) -> Run:
+        request = ThesisRequest(ticker="NVDA", decision="Whether to hold NVIDIA", claims=CLAIMS)
+        return execute_run(
+            new_run(request),
+            Store(tmp_path / f"{name}.sqlite"),
+            filings=filings,
+            analyst=ScriptedAnalyst(lambda claim, passages: ClaimDraft()),
+            fetch_page=FakePages({}),
+            cache=cache,
+        )
+
+    first = run_once("first")
+    fetched = list(filings.fetched)
+    second = run_once("second")
+    assert filings.fetched == fetched, "the second run fetched a filing again"
+    assert first.analysis.breakdowns_note == second.analysis.breakdowns_note
+    assert "an:part:data_center:fy:pace" in second.claims[2].analysis.analytic_ids
+    assert [a.model_dump() for a in first.analysis.analytics] == [
+        a.model_dump() for a in second.analysis.analytics
+    ]
+    # A cache that kept the filings' text but not their tags (one filled before this version):
+    # no fetch for the tags, no part, and the record says why.
+    with cache._db.transaction(durable=False) as connection:  # noqa: SLF001 - the test's setup
+        connection.execute("DELETE FROM tagged")
+    third = run_once("third")
+    assert filings.fetched == fetched
+    assert "No part of the business could be read" in third.analysis.breakdowns_note
+    assert [m.key for m in third.claims[2].analysis.relevant] == []

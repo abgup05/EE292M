@@ -786,7 +786,7 @@ def _claim_analysis(claim: Claim, analysis: ClaimAnalysis, by_id: dict[str, Anal
     odds = analysis.persistence
     if odds is not None and odds.applicable:
         lines += [
-            "**Odds the test keeps holding** (resampled by code)",
+            "**Odds the test holds in each of the next four quarters** (resampled by code)",
             "",
             f"{_text(odds.note or odds.warning)} {_text(odds.caveat)}".strip(),
             "",

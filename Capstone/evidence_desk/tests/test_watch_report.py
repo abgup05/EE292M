@@ -30,8 +30,13 @@ def run(
         status=RunStatus.complete,
         started_at=datetime(2026, 11, 18, tzinfo=UTC),
         claims=[
-            Claim(id="c1", text=REQUEST.claims[0], verdict=verdicts[0], caution=caution,
-                  event_note=note),
+            Claim(
+                id="c1",
+                text=REQUEST.claims[0],
+                verdict=verdicts[0],
+                caution=caution,
+                event_note=note,
+            ),
             Claim(id="c2", text=REQUEST.claims[1], verdict=verdicts[1]),
         ],
         timeline=[
@@ -85,10 +90,10 @@ def test_a_note_counts_as_new_only_when_the_claim_had_none() -> None:
     later = run("run-2", (Verdict.unjudged, None), note="No 8-K filed ... dated 17 Nov 2026.")
     fresh = run("run-3", (Verdict.unjudged, None), note="No 8-K filed since the annual report.")
 
+    without = run("run-0", (Verdict.unjudged, None))
+
     assert not what_moved(earlier, later).moved
-    assert [n.claim for n in what_moved(run("run-0", (Verdict.unjudged, None)), fresh).new_notes] == [
-        REQUEST.claims[0]
-    ]
+    assert [note.claim for note in what_moved(without, fresh).new_notes] == [REQUEST.claims[0]]
 
 
 def test_the_first_run_has_nothing_to_compare_with() -> None:

@@ -8,6 +8,7 @@ cassette is written or read.
 
 from __future__ import annotations
 
+import threading
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -19,12 +20,18 @@ from app.core.claim_reading import as_reading
 from app.core.claimtest import ClaimTest, compile_claim
 from app.core.models import Confidence, Run, Stance, ThesisRequest
 from app.core.ports import ClaimDraft, FindingDraft, Quote
-from app.engines.analyser import ANALYSE_SCHEMA, PROPOSE_SCHEMA, ClaudeAnalyser, parse_proposals
+from app.engines.analyser import (
+    CLAIM_SCHEMA,
+    PROPOSE_SCHEMA,
+    THESIS_SCHEMA,
+    ClaudeAnalyser,
+    parse_proposals,
+)
 from app.engines.cassette import CassetteTransport
 from app.engines.transport import EngineError, ModelRequest
 from app.services.thesis_run import execute_run, new_run
 from app.store import FilingCache, Store
-from tests.fakes import FakePages, ScriptedAnalyst, flat_argument
+from tests.fakes import FakePages, ScriptedAnalyst, focus_of, scripted_argument
 from tests.replay_run import recorded_filings
 from tests.test_reading_schema import union_parameters
 
@@ -158,14 +165,27 @@ class FakeTransport:
     def __init__(self, answers: dict[str, Any]) -> None:
         self.answers = answers
         self.requests: list[ModelRequest] = []
+        self.lock = threading.Lock()
 
     def __call__(self, request: ModelRequest) -> dict[str, Any]:
-        self.requests.append(request)
-        answer = self.answers[request.step]
+        with self.lock:
+            self.requests.append(request)
+        # One scripted argument, written nested as the record holds it, answers every
+        # per-claim request and the thesis's; "analyse:c2" scripts one claim's request apart.
+        step = "analyse" if request.step == "conclude" else request.step
+        own = f"analyse:{focus_of(request)}" if request.step == "analyse" else ""
+        answer = self.answers.get(own, self.answers[step])
         if isinstance(answer, Exception):
             raise answer
-        # The scripted arguments are written nested, as the record holds them.
-        return flat_argument(answer) if request.step == "analyse" else answer
+        return scripted_argument(answer, request) if step == "analyse" else answer
+
+    def about(self, claim_id: str) -> ModelRequest:
+        """The per-claim request about ``claim_id``."""
+        return next(r for r in self.requests if r.step == "analyse" and focus_of(r) == claim_id)
+
+    def thesis(self) -> ModelRequest:
+        """The thesis's request."""
+        return next(r for r in self.requests if r.step == "conclude")
 
 
 def _run(tmp_path: Path, analyser: Any = None, name: str = "record") -> Run:
@@ -192,13 +212,32 @@ def analysed(tmp_path_factory: pytest.TempPathFactory) -> tuple[Run, FakeTranspo
     return run, transport, plain
 
 
-def test_two_requests_and_the_second_sees_the_corollaries(analysed: Any) -> None:
-    _, transport, _ = analysed
-    assert [r.step for r in transport.requests] == ["propose", "analyse"]
-    assert all(r.timeout == rules.MODEL_TIMEOUT_SECONDS for r in transport.requests)
+def test_one_request_per_claim_then_one_for_the_thesis(analysed: Any) -> None:
+    run, transport, _ = analysed
+    steps = [r.step for r in transport.requests]
+    assert steps[0] == "propose" and steps[-1] == "conclude"
+    assert sorted(steps[1:-1]) == ["analyse"] * len(CLAIMS)
+    assert sorted(focus_of(r) for r in transport.requests[1:-1]) == ["c1", "c2", "c3", "c4"]
+    for request in transport.requests[1:]:
+        assert request.timeout == rules.ANALYSE_TIMEOUT_SECONDS
+        assert request.max_tokens == rules.ANALYSE_MAX_TOKENS
     assert "cor:c2:1" not in transport.requests[0].user
-    assert 'id="cor:c2:1"' in transport.requests[1].user
-    assert 'id="an:gross_margin:yoy"' in transport.requests[1].user
+    # A claim's request holds that claim's material and the other claims' text only.
+    c2, c1 = transport.about("c2"), transport.about("c1")
+    assert 'id="cor:c2:1"' in c2.user and 'id="cor:c2:1"' not in c1.user
+    assert 'id="an:gross_margin:yoy"' in c1.user and 'id="an:gross_margin:yoy"' not in c2.user
+    assert "Gross margin is expanding." in c2.user
+    # The thesis's request holds everything, and each claim's audited argument.
+    thesis = transport.thesis().user
+    assert 'id="cor:c2:1"' in thesis and 'id="an:gross_margin:yoy"' in thesis
+    assert '<argument claim="c1">Lean: challenges.' in thesis
+    assert "9.9 percentage points on a year earlier. [UNVERIFIED: writes 9.9" in thesis
+    assert "The model reads the evidence as challenges, but the verdict is supported" in thesis
+    analysis = run.analysis
+    assert (analysis.argument_step, analysis.thesis_step) == ("answered", "answered")
+    assert analysis.argument_claims_asked == analysis.argument_claims_answered == len(CLAIMS)
+    assert run.coverage.analysis_claims_answered == len(CLAIMS)
+    assert run.coverage.analysis_thesis_answered == 1
 
 
 def test_the_analysis_never_changes_a_verdict_or_the_status(analysed: Any) -> None:
@@ -321,6 +360,7 @@ def test_a_failed_request_is_one_error_line_and_the_record_says_which_step(
     run = _run(tmp_path, ClaudeAnalyser(transport=failing, model="fake"))
     assert len(_analysis_errors(run)) == 1 and "the corollaries" in _analysis_errors(run)[0]
     assert run.analysis.corollaries_step == "failed" and run.analysis.argument_step == "answered"
+    assert "corollaries" in run.analysis.corollaries_note
     assert run.coverage.corollaries_proposed == 0 and run.coverage.corollaries_computed == 0
     # The argument still came, and its counts hold; a corollary it cites is not in the run.
     assert run.analysis.argument_by == "model"
@@ -330,13 +370,75 @@ def test_a_failed_request_is_one_error_line_and_the_record_says_which_step(
     second = _run(tmp_path, ClaudeAnalyser(transport=both, model="fake"), "both")
     assert len(_analysis_errors(second)) == 1
     assert "the corollaries" in _analysis_errors(second)[0]
-    assert "the argument" in _analysis_errors(second)[0]
+    assert "the argument about c1" in _analysis_errors(second)[0]
+    assert "the argument about the thesis" in _analysis_errors(second)[0]
     assert second.analysis.argument_by == "none" and second.analysis.argument_step == "failed"
-    assert "the request failed" in second.analysis.argument_note
+    assert second.analysis.thesis_step == "failed"
+    assert (second.analysis.argument_claims_asked, second.analysis.argument_claims_answered) == (
+        len(CLAIMS),
+        0,
+    )
+    assert "every request failed" in second.analysis.argument_note
+    assert all("the request failed (down)" in c.analysis.argument_note for c in second.claims)
     assert second.coverage.analysis_sentences_written == 0
     assert second.status == run.status
     assert second.analysis.analytics, "the computed analysis stays"
     assert [c.verdict for c in second.claims] == [c.verdict for c in run.claims]
+
+
+def test_a_claim_whose_request_fails_has_no_argument_and_the_others_stand(
+    tmp_path: Path,
+) -> None:
+    transport = FakeTransport(
+        {"propose": PROPOSAL, "analyse": ARGUMENT, "analyse:c2": EngineError("timed out")}
+    )
+    run = _run(tmp_path, ClaudeAnalyser(transport=transport, model="fake"))
+    analysis = run.analysis
+    assert (analysis.argument_step, analysis.thesis_step) == ("partial", "answered")
+    assert (analysis.argument_claims_asked, analysis.argument_claims_answered) == (4, 3)
+    assert analysis.argument_by == "model"
+    assert "A model argued 3 of 4 claim(s); the thesis's argument: answered" in (
+        analysis.argument_note
+    )
+    c1, c2 = run.claims[0].analysis, run.claims[1].analysis
+    assert c1.argument is not None and c1.argument_note == ""
+    assert c2.argument is None
+    assert c2.argument_note == "No model's argument for this claim: the request failed (timed out)."
+    # The thesis was argued on what there was, and told which claim has no argument.
+    assert analysis.thesis is not None and analysis.thesis.bottom_line
+    assert '<argument claim="c2">No model\'s argument for this claim' in transport.thesis().user
+    assert (
+        len(_analysis_errors(run)) == 1
+        and "the argument about c2: timed out" in (_analysis_errors(run)[0])
+    )
+    coverage = run.coverage
+    assert (coverage.analysis_claims_asked, coverage.analysis_claims_answered) == (4, 3)
+    assert coverage.analysis_sentences_written == (
+        coverage.analysis_sentences_verified + coverage.analysis_sentences_unverified
+    )
+
+    # The thesis's request failing leaves the claims' arguments standing.
+    class NoThesis(FakeTransport):
+        def __call__(self, request: ModelRequest) -> dict[str, Any]:
+            if request.step == "conclude":
+                with self.lock:
+                    self.requests.append(request)
+                raise EngineError("The model response was truncated")
+            return super().__call__(request)
+
+    second = _run(
+        tmp_path,
+        ClaudeAnalyser(
+            transport=NoThesis({"propose": PROPOSAL, "analyse": ARGUMENT}), model="fake"
+        ),
+        "nothesis",
+    )
+    assert (second.analysis.argument_step, second.analysis.thesis_step) == ("partial", "failed")
+    assert second.analysis.thesis is None and second.claims[0].analysis.argument is not None
+    assert "the thesis's argument: the request failed (The model response was truncated)" in (
+        second.analysis.argument_note
+    )
+    assert second.status == run.status
 
 
 def test_a_cassette_without_the_answers_leaves_the_computed_analysis(tmp_path: Path) -> None:
@@ -405,7 +507,8 @@ def test_a_withheld_finding_may_not_be_cited(tmp_path: Path) -> None:
     assert not sentence.verified
     assert f"cites {withheld}, a finding the run withheld" in sentence.problems
     assert run.coverage.analysis_unverified_disallowed_id == 1
-    assert withheld not in transport.requests[1].user, "a withheld finding is never shown"
+    shown = " ".join(r.user for r in transport.requests[1:])
+    assert f'<finding id="{withheld}"' not in shown, "a withheld finding is never shown"
 
 
 def test_as_of_a_date_the_analysis_reads_nothing_filed_later(tmp_path: Path) -> None:
@@ -438,12 +541,13 @@ def test_as_of_a_date_the_analysis_reads_nothing_filed_later(tmp_path: Path) -> 
                 assert all(p.filed <= as_of.isoformat() for p in corollary.computed.history)
     shown = " ".join(r.user for r in transport.requests)
     assert "Q2 FY2027" not in shown and "2026-07-26" not in shown
-    assert "<as_of>2026-06-15</as_of>" in transport.requests[1].user
+    assert all("<as_of>2026-06-15</as_of>" in r.user for r in transport.requests[1:])
 
 
 def test_the_schemas_have_no_union_typed_parameter() -> None:
     assert union_parameters(PROPOSE_SCHEMA) == 0
-    assert union_parameters(ANALYSE_SCHEMA) == 0
+    assert union_parameters(CLAIM_SCHEMA) == 0
+    assert union_parameters(THESIS_SCHEMA) == 0
 
 
 def test_a_proposal_for_an_unknown_claim_or_with_no_outcome_is_dropped() -> None:

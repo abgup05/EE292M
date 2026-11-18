@@ -29,7 +29,7 @@ API_VIA = "the Anthropic API"
 # verdicts the checks decide; the corollaries are proposed from the final verdicts
 # ("propose", app.engines.analyser) and the argued analysis reads the corollaries computed
 # from them ("analyse").
-STEPS = ("plan", "assess", "check", "summarize", "propose", "analyse")
+STEPS = ("plan", "assess", "check", "summarize", "propose", "analyse", "conclude")
 
 
 class EngineError(RuntimeError):

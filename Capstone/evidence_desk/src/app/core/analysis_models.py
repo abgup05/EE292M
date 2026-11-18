@@ -297,7 +297,8 @@ class ClaimAnalysis(BaseModel):
     ``corollaries`` its implications and ``corollary_flag`` a visible note when most of
     those computed came out against the claim. ``persistence`` the resampled odds that its
     test still holds. ``argument`` the model's audited argument, None when no model wrote
-    one (``Run.analysis.argument_note`` says why).
+    one, and ``argument_note`` then says why for this claim (its request failed, or was not
+    sent).
     """
 
     relevant: list[RelevantMeasure] = Field(default_factory=list)
@@ -307,9 +308,10 @@ class ClaimAnalysis(BaseModel):
     corollary_flag: str = ""
     persistence: Persistence | None = None
     argument: ClaimArgument | None = None
+    argument_note: str = ""
 
 
-StepState = Literal["not_asked", "failed", "answered"]
+StepState = Literal["not_asked", "failed", "partial", "answered"]
 
 
 class Analysis(BaseModel):
@@ -329,7 +331,13 @@ class Analysis(BaseModel):
     each model request: "not_asked" (no model, or no time), "failed" (asked, no usable
     answer: an API failure, a malformed answer, or a cassette that holds none) or
     "answered"; the counts in ``Run.coverage`` about a step mean something only when it was
-    answered.
+    answered. The argument is several requests, one per claim and then one for the thesis:
+    ``argument_claims_answered`` of ``argument_claims_asked`` claim requests gave an
+    argument (a claim not asked, for want of time, is in neither), ``thesis_step`` says what
+    became of the thesis's request, and ``argument_step`` sums them up: "answered" only
+    when every claim and the thesis were, "partial" when some were, "failed" when requests
+    were sent and none was, "not_asked" when none was sent. A claim with no argument says why
+    in ``Claim.analysis.argument_note``.
 
     Who wrote what: ``analytics_by`` is always "code". ``corollaries_by`` is the proposing
     model ("" when none was asked; ``corollaries_note`` says why) and ``corollary_rule``
@@ -351,6 +359,9 @@ class Analysis(BaseModel):
     analytics_by: Literal["code"] = "code"
     corollaries_step: StepState = "not_asked"
     argument_step: StepState = "not_asked"
+    argument_claims_asked: int = 0
+    argument_claims_answered: int = 0
+    thesis_step: StepState = "not_asked"
     corollaries_by: str = ""
     corollaries_note: str = ""
     corollary_rule: str = ""

@@ -759,7 +759,8 @@
           "note": "Odds are computed for a test of a quarterly measure (its value or its growth on a year earlier) against a constant; this test is not one.",
           "caveat": ""
         },
-        "argument": null
+        "argument": null,
+        "argument_note": ""
       }
     },
     {
@@ -1336,7 +1337,8 @@
           "note": "In 0% of 10,000 resampled paths the test held in each of the next 4 quarters, drawing from its last 20 quarterly growth rates.",
           "caveat": "This describes the measure's own past quarterly changes, resampled; it knows nothing of trend, seasonality or events, and is not a forecast."
         },
-        "argument": null
+        "argument": null,
+        "argument_note": ""
       }
     },
     {
@@ -1430,7 +1432,8 @@
           "note": "The claim has no computed test.",
           "caveat": ""
         },
-        "argument": null
+        "argument": null,
+        "argument_note": ""
       }
     },
     {
@@ -1652,7 +1655,8 @@
           "note": "Odds are computed for a test of a quarterly measure (its value or its growth on a year earlier) against a constant; this test is not one.",
           "caveat": ""
         },
-        "argument": null
+        "argument": null,
+        "argument_note": ""
       }
     },
     {
@@ -2079,7 +2083,8 @@
           "note": "The test could not be computed, so its persistence cannot be either.",
           "caveat": ""
         },
-        "argument": null
+        "argument": null,
+        "argument_note": ""
       }
     }
   ],
@@ -2820,6 +2825,9 @@
     "analysis_unverified_disallowed_id": 0,
     "analysis_unverified_number": 0,
     "analysis_claims_argued": 0,
+    "analysis_claims_asked": 0,
+    "analysis_claims_answered": 0,
+    "analysis_thesis_answered": 0,
     "analysis_lean_flags": 0
   },
   "metrics": [
@@ -13370,6 +13378,9 @@
     "analytics_by": "code",
     "corollaries_step": "not_asked",
     "argument_step": "not_asked",
+    "argument_claims_asked": 0,
+    "argument_claims_answered": 0,
+    "thesis_step": "not_asked",
     "corollaries_by": "",
     "corollaries_note": "No corollaries: no model was asked to propose them.",
     "corollary_rule": "A corollary is an implication a model proposed and code computed. Each is read by the grammar and by the typed form the proposing model wrote: two readers, which is weaker than the two-of-three rule the thesis's own claims are read under. A corollary never moves a verdict; when most of a claim's computed corollaries come out against it, the claim is flagged.",

@@ -875,7 +875,8 @@
           "case_against": [],
           "decides": [],
           "would_change": []
-        }
+        },
+        "argument_note": ""
       }
     },
     {
@@ -2943,7 +2944,8 @@
               "event_category": ""
             }
           ]
-        }
+        },
+        "argument_note": ""
       }
     },
     {
@@ -4275,7 +4277,8 @@
             }
           ],
           "would_change": []
-        }
+        },
+        "argument_note": ""
       }
     },
     {
@@ -5755,7 +5758,8 @@
             }
           ],
           "would_change": []
-        }
+        },
+        "argument_note": ""
       }
     },
     {
@@ -6404,7 +6408,8 @@
             }
           ],
           "would_change": []
-        }
+        },
+        "argument_note": ""
       }
     }
   ],
@@ -7203,6 +7208,9 @@
     "analysis_unverified_disallowed_id": 0,
     "analysis_unverified_number": 1,
     "analysis_claims_argued": 4,
+    "analysis_claims_asked": 5,
+    "analysis_claims_answered": 5,
+    "analysis_thesis_answered": 1,
     "analysis_lean_flags": 1
   },
   "metrics": [
@@ -18713,6 +18721,9 @@
     "analytics_by": "code",
     "corollaries_step": "answered",
     "argument_step": "answered",
+    "argument_claims_asked": 5,
+    "argument_claims_answered": 5,
+    "thesis_step": "answered",
     "corollaries_by": "scripted answers made by tests/examples_analysis.py from the run's own analytics (no model wrote them)",
     "corollaries_note": "",
     "corollary_rule": "A corollary is an implication a model proposed and code computed. Each is read by the grammar and by the typed form the proposing model wrote: two readers, which is weaker than the two-of-three rule the thesis's own claims are read under. A corollary never moves a verdict; when most of a claim's computed corollaries come out against it, the claim is flagged.",

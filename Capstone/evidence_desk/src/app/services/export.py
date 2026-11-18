@@ -776,6 +776,8 @@ def _claim_analysis(claim: Claim, analysis: ClaimAnalysis, by_id: dict[str, Anal
         lines += _section("Case against", argument.case_against)
         lines += _section("What decides it", argument.decides)
         lines += _section("What would change the verdict", argument.would_change)
+    elif analysis.argument_note:
+        lines += [_text(analysis.argument_note, line_start=True), ""]
     items = [by_id[i] for i in analysis.analytic_ids if i in by_id]
     if analysis.relevant:
         bears = "; ".join(

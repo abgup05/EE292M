@@ -277,10 +277,13 @@ nothing filed later reaches any stage, which `tests/lookahead.py` checks (`docs/
    next four quarters (`core/persistence`, 10,000 resampled paths, seed 20261118). Then, with an analysing
    model (`engines/analyser`, `ANTHROPIC_ANALYSIS_MODEL`, default the engine's model, the engine's transport
    or cassette): one `propose` request for every claim's corollaries, read by the grammar and the proposer's
-   typed form and computed by code (`core/corollaries`), then one `analyse` request for the argument, every
-   sentence `{text, cites}`, audited by code (`core/analysis_audit`: ids, evidence, numbers by
-   `core/numcheck`); an unverified sentence is kept and marked. `Run.analysis` records what became of each
-   request (`not_asked`, `failed`, `answered`); whenever the record holds less than a model's analysis (no
+   typed form and computed by code (`core/corollaries`), then the argument: one `analyse` request
+   per claim, up to three at once, and one `conclude` request for the thesis, which is shown the claims'
+   audited arguments (4,000 output tokens and 60 seconds each). Every sentence is `{text, cites}`, audited by
+   code (`core/analysis_audit`: ids, evidence, numbers by `core/numcheck`); an unverified sentence is kept
+   and marked. A claim whose request fails has no argument and says why, and the others stand.
+   `Run.analysis` records what became of each step (`not_asked`, `failed`, `partial`, `answered`, and how
+   many claims were answered); whenever the record holds less than a model's analysis (no
    model, no time, a failed request, a cassette without the answer) it says why and `run.errors` gets one
    line. It never changes a verdict or the status. The watcher's runs get no analysing model.
 

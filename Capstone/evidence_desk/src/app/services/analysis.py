@@ -27,13 +27,16 @@ from __future__ import annotations
 import logging
 import threading
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass, replace
 
 from app.core import analysis_policy as rules
+from app.core import limits
 from app.core.analysis_audit import audit_argument, citables
 from app.core.analysis_models import (
     Analysis,
     Analytic,
+    ArgSentence,
     ClaimAnalysis,
     ClaimArgument,
     Corollary,
@@ -49,7 +52,14 @@ from app.core.claimtest import ClaimTest
 from app.core.corollaries import COUNTED, FactsAt, corollaries, flag
 from app.core.models import Claim, Finding, Run
 from app.core.persistence import persistence
-from app.core.ports import Analyser, AnalysisBrief, BriefClaim, BriefItem, SourceError
+from app.core.ports import (
+    Analyser,
+    AnalysisBrief,
+    ArgumentDraft,
+    BriefClaim,
+    BriefItem,
+    SourceError,
+)
 from app.core.relevance import claim_relevance, headline, part_names, untied_metric_ids
 from app.engines.transport import EngineError
 from app.services.computed import Computed
@@ -384,7 +394,7 @@ def analyse_run(
     analysis.analytics = analytics
     if not analysis.headline:
         analysis.headline_note = rules.NO_HEADLINE
-    found, argument_claims, thesis = _model_steps(
+    found, argument_claims, thesis, reasons = _model_steps(
         run, numbers, reports, analyser, analytics, claimed, analysis, out_of_time, on_step
     )
     for claim in run.claims:
@@ -399,6 +409,7 @@ def analyse_run(
             corollary_flag=flag(own),
             persistence=mine.odds,
             argument=argument,
+            argument_note="" if argument is not None else reasons.get(claim.id, ""),
         )
         if claim.analysis.corollary_flag:
             analysis.flags.append(f"{claim.id}: {claim.analysis.corollary_flag}")
@@ -433,10 +444,9 @@ def _model_steps(
     analysis: Analysis,
     out_of_time: Callable[[], bool],
     on_step: Callable[[str], None],
-) -> tuple[list[Corollary], list[ClaimArgument], ThesisArgument | None]:
-    """The two model requests, when there is a model and time. Whatever keeps the record from
+) -> tuple[list[Corollary], list[ClaimArgument], ThesisArgument | None, dict[str, str]]:
+    """The model requests, when there is a model and time. Whatever keeps the record from
     holding a model's argument is a reason on the analysis and one line in ``run.errors``."""
-    coverage = run.coverage
     why = ""
     if analyser.name == "none":
         why = rules.NO_MODEL_WHY
@@ -448,7 +458,7 @@ def _model_steps(
         analysis.corollaries_note = rules.NO_PROPOSER
         analysis.argument_note = rules.NO_ARGUMENT.format(why=why)
         run.errors.append(rules.COMPUTED_ONLY_ERROR.format(why=why))
-        return [], [], None
+        return [], [], None, {}
     found: list[Corollary] = []
     failures: list[str] = []
     on_step("Analysing: proposing corollaries")
@@ -479,41 +489,148 @@ def _model_steps(
             dropped = "; ".join(proposed.problems)
             analysis.corollaries_note = f"Dropped from the proposal: {dropped}."
         _count_corollaries(run, found)
-    draft = None
-    if out_of_time():
-        analysis.argument_note = rules.NO_ARGUMENT.format(why=rules.OUT_OF_TIME_WHY)
-        failures.append(f"the argument: {rules.OUT_OF_TIME_WHY}")
-    else:
-        on_step("Analysing: writing the argument")
-        try:
-            draft = analyser.analyse(_brief(run, analytics, claimed, found))
-        except EngineError as exc:
-            analysis.argument_step = "failed"
-            analysis.argument_note = rules.NO_ARGUMENT.format(
-                why=f"the request failed ({_why(exc)})"
-            )
-            failures.append(f"the argument: {_why(exc)}")
+    claims, thesis, reasons = _argue(
+        run, analyser, analytics, claimed, found, analysis, failures, out_of_time, on_step
+    )
     if failures:
         run.errors.append(rules.MODEL_STEP_ERROR.format(why="; ".join(failures)))
-    if draft is None:
-        return found, [], None
+    return found, claims, thesis, reasons
+
+
+def _argument_text(argument: ClaimArgument) -> str:
+    """A claim's audited argument as the thesis's request is shown it: its lean, its
+    assessment and what decides it, each sentence that failed the audit marked with why."""
+
+    def lines(sentences: Sequence[ArgSentence]) -> str:
+        return " ".join(
+            s.text + ("" if s.verified else f" [UNVERIFIED: {'; '.join(s.problems)}]")
+            for s in sentences
+        )
+
+    parts = [f"Lean: {argument.lean}."]
+    if argument.lean_flag:
+        parts.append(argument.lean_flag)
+    for title, sentences in (
+        ("Assessment", argument.assessment),
+        ("What decides it", argument.decides),
+        ("What would change the verdict", argument.would_change),
+    ):
+        if sentences:
+            parts.append(f"{title}: {lines(sentences)}")
+    return " ".join(parts)
+
+
+def _argue(
+    run: Run,
+    analyser: Analyser,
+    analytics: list[Analytic],
+    claimed: dict[str, _Claimed],
+    found: Sequence[Corollary],
+    analysis: Analysis,
+    failures: list[str],
+    out_of_time: Callable[[], bool],
+    on_step: Callable[[str], None],
+) -> tuple[list[ClaimArgument], ThesisArgument | None, dict[str, str]]:
+    """The argument: one request per claim, several at once, each audited; then one for the
+    thesis, shown the audited arguments. A claim whose request fails, or is not sent for want
+    of time, has no argument and a reason, and the others stand; the thesis's request runs on
+    what there is. Returns the claims' arguments, the thesis's, and each missing one's reason."""
+    coverage = run.coverage
+    brief = _brief(run, analytics, claimed, found)
+    ids = [claim.id for claim in run.claims]
+
+    def one(claim_id: str) -> ArgumentDraft | str | None:
+        if out_of_time():
+            return None
+        try:
+            return analyser.analyse_claim(brief, claim_id)
+        except EngineError as exc:
+            return _why(exc)
+
+    on_step("Analysing: arguing each claim")
+    workers = limits.MAX_CONCURRENT_ASSESSMENTS
+    with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="analyse") as pool:
+        answers = dict(zip(ids, pool.map(one, ids), strict=True))
+    drafts = {cid: a for cid, a in answers.items() if isinstance(a, ArgumentDraft)}
+    reasons: dict[str, str] = {}
+    for claim_id, answer in answers.items():
+        if answer is None:
+            reasons[claim_id] = rules.NO_CLAIM_ARGUMENT.format(why=rules.OUT_OF_TIME_WHY)
+        elif isinstance(answer, str):
+            reasons[claim_id] = rules.NO_CLAIM_ARGUMENT.format(why=f"the request failed ({answer})")
+            failures.append(f"the argument about {claim_id}: {answer}")
+    asked = sum(1 for answer in answers.values() if answer is not None)
     odds = [mine.odds for mine in claimed.values()]
     known = citables(run, analytics, found, odds)
     withheld = {finding.id for finding in run.unsupported_findings}
     verdicts = {claim.id: claim.verdict for claim in run.claims}
-    claims, thesis, counts = audit_argument(draft.claims, draft.thesis, known, withheld, verdicts)
-    analysis.argument_step = "answered"
+    written = [draft.claims[0] for draft in drafts.values()]
+    claims, _, counts = audit_argument(written, None, known, withheld, verdicts)
+    by_id = {argument.claim_id: argument for argument in claims}
+    thesis: ThesisArgument | None = None
+    thesis_draft: ArgumentDraft | None = None
+    thesis_state = "not asked: " + rules.OUT_OF_TIME_WHY
+    if not out_of_time():
+        on_step("Analysing: arguing the thesis")
+        arguments = tuple(
+            BriefItem(cid, _argument_text(by_id[cid]) if cid in by_id else reasons[cid])
+            for cid in ids
+        )
+        try:
+            thesis_draft = analyser.analyse_thesis(replace(brief, arguments=arguments))
+        except EngineError as exc:
+            analysis.thesis_step = "failed"
+            thesis_state = f"the request failed ({_why(exc)})"
+            failures.append(f"the argument about the thesis: {_why(exc)}")
+        else:
+            _, thesis, more = audit_argument([], thesis_draft.thesis, known, withheld, verdicts)
+            counts = counts.merged(more)
+            analysis.thesis_step = "answered"
+            thesis_state = "answered"
+    elif asked:
+        failures.append(f"the argument about the thesis: {rules.OUT_OF_TIME_WHY}")
+    analysis.argument_claims_asked = asked
+    analysis.argument_claims_answered = len(drafts)
+    coverage.analysis_claims_asked = asked
+    coverage.analysis_claims_answered = len(drafts)
+    coverage.analysis_thesis_answered = int(thesis is not None)
+    sent = asked + int(analysis.thesis_step != "not_asked")
+    answered = len(drafts) + int(thesis is not None)
+    if sent == 0:
+        analysis.argument_step = "not_asked"
+        analysis.argument_note = rules.NO_ARGUMENT.format(why=rules.OUT_OF_TIME_WHY)
+        failures.append(f"the argument: {rules.OUT_OF_TIME_WHY}")
+        return [], None, reasons
+    if answered == 0:
+        analysis.argument_step = "failed"
+        first = next((why for why in answers.values() if isinstance(why, str)), thesis_state)
+        analysis.argument_note = rules.NO_ARGUMENT.format(
+            why=f"every request failed (the first: {first})"
+        )
+        return [], None, reasons
+    whole = len(drafts) == len(ids) and thesis is not None
+    analysis.argument_step = "answered" if whole else "partial"
     analysis.argument_by = "model"
     analysis.argument_detail = analyser.detail
-    if draft.problems:
-        analysis.argument_note = "Dropped from the answer: " + "; ".join(draft.problems) + "."
+    notes: list[str] = []
+    if not whole:
+        notes.append(
+            rules.ARGUMENT_PARTIAL.format(answered=len(drafts), total=len(ids), thesis=thesis_state)
+        )
+    dropped = [f"{cid}: {p}" for cid, draft in drafts.items() for p in draft.problems]
+    dropped += [f"thesis: {p}" for p in (thesis_draft.problems if thesis_draft else [])]
+    if dropped:
+        notes.append("Dropped from the answers: " + "; ".join(dropped) + ".")
+    analysis.argument_note = " ".join(notes)
     coverage.analysis_sentences_written = counts.written
     coverage.analysis_sentences_verified = counts.verified
     coverage.analysis_sentences_unverified = counts.unverified
-    coverage.analysis_sentences_cut = draft.cut
+    coverage.analysis_sentences_cut = sum(d.cut for d in drafts.values()) + (
+        thesis_draft.cut if thesis_draft else 0
+    )
     coverage.analysis_unverified_no_evidence = counts.reasons["no_evidence"]
     coverage.analysis_unverified_unknown_id = counts.reasons["unknown_id"]
     coverage.analysis_unverified_disallowed_id = counts.reasons["disallowed_id"]
     coverage.analysis_unverified_number = counts.reasons["number"]
     coverage.analysis_claims_argued = sum(1 for claim in claims if claim.assessment)
-    return found, claims, thesis
+    return claims, thesis, reasons

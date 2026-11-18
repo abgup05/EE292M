@@ -568,6 +568,11 @@ class Coverage(BaseModel):
     # Claims the model wrote an assessment for (of claims_total), and claims whose model
     # lean contradicts their verdict (the verdict is never changed).
     analysis_claims_argued: int = 0
+    # The argument's requests: one per claim, then one for the thesis. Claims asked (a
+    # request was sent) and answered (it gave an argument); the thesis answered, 0 or 1.
+    analysis_claims_asked: int = 0
+    analysis_claims_answered: int = 0
+    analysis_thesis_answered: int = 0
     analysis_lean_flags: int = 0
 
 

@@ -54,7 +54,7 @@ from app.services.view_providers import run_providers
 from app.sources.frames import FramesSource
 from app.sources.thirteenf import ThirteenFSource
 from app.store import FilingCache, Store
-from tests.fakes import FakeFilings, FakePages, ManualClock, flat_argument
+from tests.fakes import FakeFilings, FakePages, ManualClock, scripted_argument
 from tests.golden_run import replay_copy
 from tests.replay_run import DEFAULT_CASSETTE, recorded_filings
 
@@ -125,7 +125,7 @@ class HandBuilt:
         """The propose or analyse answer for the base run's claims."""
         if request.step == "propose":
             return {"claims": [self._proposal(claim.id) for claim in self.base.claims]}
-        return flat_argument(self._argument())
+        return scripted_argument(self._argument(), request)
 
     @staticmethod
     def _proposal(claim_id: str) -> dict[str, Any]:

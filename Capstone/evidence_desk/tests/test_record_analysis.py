@@ -12,8 +12,8 @@ from typing import Any
 
 from app.engines.transport import ModelRequest
 from tests import examples_analysis
-from tests.fakes import flat_argument
-from tests.record_analysis import record
+from tests.fakes import scripted_argument
+from tests.record_analysis import needed, record
 from tests.replay_run import DEFAULT_CASSETTE, CappedTransport
 
 EMPTY_THESIS = {
@@ -40,7 +40,7 @@ class FakeLive:
         self.steps.append(request.step)
         if request.step == "propose":
             return {"claims": []}
-        return flat_argument({"claims": [], "thesis": EMPTY_THESIS})
+        return scripted_argument({"claims": [], "thesis": EMPTY_THESIS}, request)
 
 
 def _cassettes(tmp_path: Path) -> dict[str, Path]:
@@ -52,17 +52,22 @@ def _cassettes(tmp_path: Path) -> dict[str, Path]:
 def test_only_missing_answers_are_asked_for_and_only_once(tmp_path: Path) -> None:
     cassettes = _cassettes(tmp_path)
     live = FakeLive()
-    capped = CappedTransport(live, 4)  # type: ignore[arg-type]
+    capped = CappedTransport(live, needed())  # type: ignore[arg-type]
     record(capped, **cassettes)
-    # The analysis example's cassette is new, so both its answers are asked for; the example
-    # thesis's cassette is a copy of the recorded one and is asked only for what that lacks.
-    assert live.steps[-2:] == ["propose", "analyse"]
-    assert 2 <= capped.sent == len(live.steps) <= 4
+    # The analysis example's cassette is new, so all its answers are asked for: the
+    # corollaries, each of its five claims, the thesis. The example thesis's cassette is a
+    # copy of the recorded one and is asked only for what that lacks.
+    own = live.steps[-7:]
+    assert own[0] == "propose" and own[-1] == "conclude" and own[1:-1] == ["analyse"] * 5
+    assert needed() == 14 and 7 <= capped.sent == len(live.steps) <= needed()
     asked = len(live.steps)
-    again = CappedTransport(live, 4)  # type: ignore[arg-type]
+    again = CappedTransport(live, needed())  # type: ignore[arg-type]
     lines = record(again, **cassettes)
     assert again.sent == 0 and len(live.steps) == asked, "recorded answers are not asked again"
-    assert any("argument: by model" in line for line in lines)
+    assert any(
+        "argument: by model" in line and "answered: claims answered 5 of 5" in line
+        for line in lines
+    )
     with_answers = examples_analysis.write_model(tmp_path, cassettes["analysis_cassette"])
     assert [path.name for path in with_answers] == list(examples_analysis.MODEL_FILES)
     assert "fake-model" in with_answers[0].read_text(encoding="utf-8")

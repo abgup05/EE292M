@@ -85,6 +85,15 @@ class AuditCounts:
         default_factory=lambda: {"no_evidence": 0, "unknown_id": 0, "disallowed_id": 0, "number": 0}
     )
 
+    def merged(self, other: AuditCounts) -> AuditCounts:
+        """The sum of two audits' counts."""
+        return AuditCounts(
+            self.written + other.written,
+            self.verified + other.verified,
+            self.unverified + other.unverified,
+            {key: self.reasons[key] + other.reasons[key] for key in self.reasons},
+        )
+
 
 def as_metric(
     item_id: str, label: str, value: float | None, unit: str, shown: str

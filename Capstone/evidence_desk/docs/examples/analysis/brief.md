@@ -249,110 +249,81 @@ Not a numeric claim this version computes: does not name a measure in the metric
 
 ## Analysis
 
-_Analytics, readings, relevance and odds: written by code._
+_The figures under each claim, their readings and the odds: computed by code._
 
 No corollaries: no model was asked to propose them (no model is configured: the engine is extractive).
 
 No model's argument: no model is configured: the engine is extractive. The analytics and their readings were written by code.
 
-Headline figures, from what the claims bear on:
+No part of the business could be read: The tagged figures of the 10-Q for the period ended 2026-07-26 could not be read (its tags were not kept when the filing was cached, and the filing is not fetched again for them (a run after the cache is refreshed reads them)); its segment, product, geography and customer figures were not offered. The tagged figures of the 10-K for the period ended 2026-01-25 could not be read (its tags were not kept when the filing was cached, and the filing is not fetched again for them (a run after the cache is refreshed reads them)); its segment, product, geography and customer figures were not offered.
 
-- Gross margin, Quarter ended 2026-07-26: 75.0% (c2)
-- Gross margin, Fiscal year ended 2026-01-25: 71.1% (c2)
-- Revenue, Quarter ended 2026-07-26: $96.22B (c3)
-- Revenue growth, quarter over quarter, Quarter ended 2026-07-26: +17.9% (c3)
-- Revenue growth, year over year, Quarter ended 2026-07-26: +105.9% (c3)
-- Revenue, Fiscal year ended 2026-01-25: $215.94B (c3)
-- Revenue growth, year over year, Fiscal year ended 2026-01-25: +65.5% (c3)
-- Free cash flow, Quarter ended 2026-07-26: $21.40B (c4)
-- Free cash flow, Fiscal year ended 2026-01-25: $96.68B (c4)
-- Net income, latest quarter, Q2 FY2027: $59.69B (c4)
+The figures the claims are about:
 
-102 reported figures are not tied to a claim (listed under Reported figures).
+- Gross margin, quarter ended 2026-07-26: 75.0% (c2)
+- Revenue growth, fiscal year ended 2026-01-25 on fiscal year ended 2025-01-26: +65.5% (c3)
+- Free cash flow, fiscal year ended 2026-01-25: $96.68B (c4)
+- Net income, fiscal year ended 2026-01-25: $120.07B (c4)
+
+102 reported figures are not tied to a claim: they are on the record (under Reported figures) and not part of the analysis.
 
 ### c1. Buy NVDA because Jensen is gone
 
-This claim names no measure the facts report, cites none and compiles to no test: no figure is tied to it.
+Verdict: Passages found, not judged.
 
+This claim names no measure the facts report, cites none and compiles to no test: no figure is tied to it.
 
 ### c2. Gross margin has stayed above 70% for the last four quarters
 
+Verdict: Supported.
+
+**What the figures say** (computed by code)
+
 Bears on it: Gross margin (test operand, named in the claim).
 
-- Gross margin, latest quarter: 75.0%. Gross margin was 75.0% in Q2 FY2027. (an:gross_margin:level)
-- Gross margin, change on a year earlier: +2.6 percentage points. Gross margin rose 2.6 percentage points on Q2 FY2026 (72.4% to 75.0%). (an:gross_margin:yoy)
-- Gross margin, change on the quarter before: +0.0 percentage points. Gross margin was about unchanged on Q1 FY2027 (74.9% to 75.0%). (an:gross_margin:qoq)
-- Gross margin, change over the last 4 quarters: +2.6 percentage points. Over the last 4 quarters gross margin moved +2.6 percentage points (72.4% in Q2 FY2026 to 75.0% in Q2 FY2027). (an:gross_margin:trend4)
-- Gross margin, change over the last 8 quarters: -0.2 percentage points. Over the last 8 quarters gross margin moved -0.2 percentage points (75.1% in Q2 FY2025 to 75.0% in Q2 FY2027). (an:gross_margin:trend8)
-- Gross margin, where the latest quarter sits in the last 8 quarters' range: 60.5% to 75.0%. Over the last 8 quarters gross margin ranged from 60.5% (Q1 FY2026) to 75.0% (Q4 FY2026); the latest, 75.0%, is 100% of the way from the low to the high. (an:gross_margin:range8)
-- Gross margin, median quarter-on-quarter move over the last 8 quarters: 1.3 percentage points. A typical quarter-on-quarter move in gross margin over the last 8 quarters is 1.3 percentage points (the median, ignoring direction; a flow's quarters include any seasonality). (an:gross_margin:typical_move)
-- Headroom of the test: +3.4 percentage points. The test holds (the tightest of its periods) with +3.4 percentage points of room: 73.4% against 70%. (an:c2:headroom)
-- Headroom in typical moves of the left side: 1.69x. The room is 1.69x the left side's typical move between filings (2.0 percentage points, the median over 19 changes in the test's history). (an:c2:headroom_moves)
-- Value at which the outcome flips: 70.0%. The outcome flips when gross margin, quarter ended 2025-10-26 crosses 70.0%; it stands at 73.4%. (an:c2:flip)
-- How often the test held across its history: 6 of 20. The test held as of 6 of the 20 filing dates it could be computed at (30.0%); its longest run holding was 4; it last flipped as of the filing of 2026-05-20. (an:c2:history)
-- Operating margin change on a year earlier, split into its parts: +5.4 percentage points. Operating margin moved +5.4 percentage points on Q2 FY2026 (60.8% to 66.2%); by part, as a share of revenue: gross margin +2.6 percentage points; R&D +1.8 percentage points; other operating expenses +1.0 percentage points (a rise in an expense share lowers the margin). (an:bridge:op_margin)
-- Inventory days (DIO): inventory ÷ the quarter's cost of revenue × its days: 119.3 days. At the end of Q2 FY2027, inventory of $31.57B stood for 119.3 days of the quarter's cost of revenue ($24.08B over 91 days), against 105.6 days a year before (Q2 FY2026). (an:eq:dio)
-- Odds the test keeps holding: In 69% of 10,000 resampled paths the test held in each of the next 4 quarters, drawing from its last 20 quarterly differences in points.
+- *Which way is gross margin moving on a year earlier?* Gross margin rose 2.6 percentage points on a year earlier: 72.4% in Q2 FY2026, 75.0% in Q2 FY2027. (an:gross_margin:yoy)
+- *Where does gross margin stand against the last two years?* Gross margin is 0.2 percentage points below where it was 8 quarters ago (75.1% in Q2 FY2025, 75.0% in Q2 FY2027); the highest was 75.1% (Q2 FY2025); the lowest was 60.5% (Q1 FY2026). (an:gross_margin:trend8)
+- *How much room does the test have, against how far the figure usually moves?* The test holds in its tightest period, gross\_margin\[Q3 FY2026\] > 70%, with 3.4 percentage points to spare: 73.4% against 70%. Between one reading of this test and the next its left side has typically moved 2.0 percentage points (the median of 19 moves, either way), so the room is 1.69x a typical move. (an:c2:headroom)
+- *How often has this been true before?* Run again as of each 10-K and 10-Q filing date of the last five years, the test gave 20 distinct readings (over 20 filing dates) and held in 6 of them (30.0%); its longest run holding was 4, and its outcome last changed with the filing of 2026-05-20. (an:c2:history)
+- *Is inventory building ahead of sales?* At the end of Q2 FY2027, inventory of $31.57B stood for 119.3 days of the quarter's cost of revenue ($24.08B over 91 days), against 105.6 days a year before: the balance grew +111.0% while cost of revenue grew +86.8%. (an:eq:dio)
+
+**Odds the test keeps holding** (resampled by code)
+
+In 69% of 10,000 resampled paths the test held in each of the next 4 quarters, drawing from its last 20 quarterly differences in points. This describes the measure's own past quarterly changes, resampled; it knows nothing of trend, seasonality or events, and is not a forecast.
 
 ### c3. Revenue more than doubled in fiscal 2026
 
+Verdict: Challenged.
+
+**What the figures say** (computed by code)
+
 Bears on it: Revenue (test operand, named in the claim).
 
-- Revenue, latest quarter: $96.22B. Revenue was $96.22B in Q2 FY2027. (an:revenue:level)
-- Revenue, change on a year earlier: +105.9%. Revenue grew 105.9% on Q2 FY2026 ($46.74B to $96.22B). (an:revenue:yoy)
-- Revenue, change on the quarter before: +17.9%. Revenue grew 17.9% on Q1 FY2027 ($81.61B to $96.22B). (an:revenue:qoq)
-- Revenue, compound quarterly growth over the last 4 quarters: +19.8%. Over the last 4 quarters revenue grew at a compound +19.8% a quarter ($46.74B in Q2 FY2026 to $96.22B in Q2 FY2027). (an:revenue:trend4)
-- Revenue, compound quarterly growth over the last 8 quarters: +15.7%. Over the last 8 quarters revenue grew at a compound +15.7% a quarter ($30.04B in Q2 FY2025 to $96.22B in Q2 FY2027). (an:revenue:trend8)
-- Revenue, growth on a year earlier now against a quarter before: +20.6 percentage points. Revenue growth on a year earlier is +105.9% in Q2 FY2027 against +85.2% a quarter before: speeding up by 20.6 percentage points, and against +55.6% four quarters before. (an:revenue:acceleration)
-- Revenue, where the latest quarter sits in the last 8 quarters' range: $35.08B to $96.22B. Over the last 8 quarters revenue ranged from $35.08B (Q3 FY2025) to $96.22B (Q2 FY2027); the latest, $96.22B, is at the high. (an:revenue:range8)
-- Revenue, median quarter-on-quarter move over the last 8 quarters: 17.3%. A typical quarter-on-quarter move in revenue over the last 8 quarters is 17.3% (the median, ignoring direction; a flow's quarters include any seasonality). (an:revenue:typical_move)
-- Headroom of the test: -34.5 percentage points. The test fails with -34.5 percentage points of room: +65.5% against 100%. (an:c3:headroom)
-- Headroom in typical moves of the left side: not available (Too few changes in the test's history to say what a typical move is (0; at least 3 are needed).)
-- Value at which the outcome flips: $260.99B. The outcome flips at $260.99B for revenue ($130.50B grown by 100%); it was $215.94B. (an:c3:flip)
-- Needed against actual: $45.06B. To hold it needed growth of 100% to $260.99B; it grew +65.5% to $215.94B, $45.06B short. (an:c3:needed)
-- How often the test held across its history: 0 of 3. The test held as of 0 of the 3 filing dates it could be computed at (0.0%); its longest run holding was 0; it never flipped. (an:c3:history)
-- Receivable days (DSO): accounts receivable ÷ the quarter's revenue × its days: 59.6 days. At the end of Q2 FY2027, accounts receivable of $63.06B stood for 59.6 days of the quarter's revenue ($96.22B over 91 days), against 54.1 days a year before (Q2 FY2026). (an:eq:dso)
-- Deferred revenue at the quarter's end, and its change on a year earlier: not available (The facts tag no deferred revenue at this quarter's end.)
+- *What has revenue done over the last fiscal years?* Revenue by fiscal year: $26.97B in FY2023, $60.92B in FY2024 (+125.9%), $130.50B in FY2025 (+114.2%), $215.94B in FY2026 (+65.5%). Growth slowed in FY2026, by 48.7 percentage points on the year before. (an:revenue:fy2026:path)
+- *What has happened to revenue since that fiscal year ended?* Since FY2026 ended: revenue grew 105.9% on a year earlier: $46.74B in Q2 FY2026, $96.22B in Q2 FY2027. FY2026 as a whole: +65.5%. (an:revenue:fy2026:since)
+- *How far short did it fall?* To hold, revenue had to reach $260.99B ($130.50B grown by 100%); it reached $215.94B, $45.06B short. (an:c3:needed)
+- *Is revenue being collected, or building up in receivables?* At the end of Q2 FY2027, accounts receivable of $63.06B stood for 59.6 days of the quarter's revenue ($96.22B over 91 days), against 54.1 days a year before: the balance grew +126.8% while revenue grew +105.9%. (an:eq:dso)
+- Could not be computed: Deferred revenue, change on a year earlier (The facts tag no deferred revenue at this quarter's end.)
 
 ### c4. Free cash flow was above net income last fiscal year
 
+Verdict: Challenged.
+
+**What the figures say** (computed by code)
+
 Bears on it: Free cash flow (test operand, named in the claim); Net income (test operand, named in the claim).
 
-- Free cash flow, latest quarter: $21.40B. Free cash flow was $21.40B in Q2 FY2027. (an:free_cash_flow:level)
-- Free cash flow, change on a year earlier: +58.9%. Free cash flow grew 58.9% on Q2 FY2026 ($13.47B to $21.40B). (an:free_cash_flow:yoy)
-- Free cash flow, change on the quarter before: -56.0%. Free cash flow shrank 56.0% on Q1 FY2027 ($48.59B to $21.40B). (an:free_cash_flow:qoq)
-- Free cash flow, compound quarterly growth over the last 4 quarters: +12.3%. Over the last 4 quarters free cash flow grew at a compound +12.3% a quarter ($13.47B in Q2 FY2026 to $21.40B in Q2 FY2027). (an:free_cash_flow:trend4)
-- Free cash flow, compound quarterly growth over the last 8 quarters: +5.9%. Over the last 8 quarters free cash flow grew at a compound +5.9% a quarter ($13.51B in Q2 FY2025 to $21.40B in Q2 FY2027). (an:free_cash_flow:trend8)
-- Free cash flow, growth on a year earlier now against a quarter before: -26.7 percentage points. Free cash flow growth on a year earlier is +58.9% in Q2 FY2027 against +85.5% a quarter before: slowing by 26.7 percentage points, and against -0.3% four quarters before. (an:free_cash_flow:acceleration)
-- Free cash flow, where the latest quarter sits in the last 8 quarters' range: $13.47B to $48.59B. Over the last 8 quarters free cash flow ranged from $13.47B (Q2 FY2026) to $48.59B (Q1 FY2027); the latest, $21.40B, is 23% of the way from the low to the high. (an:free_cash_flow:range8)
-- Free cash flow, median quarter-on-quarter move over the last 8 quarters: 52.3%. A typical quarter-on-quarter move in free cash flow over the last 8 quarters is 52.3% (the median, ignoring direction; a flow's quarters include any seasonality). (an:free_cash_flow:typical_move)
-- Net income, latest quarter: $59.69B. Net income was $59.69B in Q2 FY2027. (an:net_income:level)
-- Net income, change on a year earlier: +125.9%. Net income grew 125.9% on Q2 FY2026 ($26.42B to $59.69B). (an:net_income:yoy)
-- Net income, change on the quarter before: +2.3%. Net income grew 2.3% on Q1 FY2027 ($58.32B to $59.69B). (an:net_income:qoq)
-- Net income, compound quarterly growth over the last 4 quarters: +22.6%. Over the last 4 quarters net income grew at a compound +22.6% a quarter ($26.42B in Q2 FY2026 to $59.69B in Q2 FY2027). (an:net_income:trend4)
-- Net income, compound quarterly growth over the last 8 quarters: +17.3%. Over the last 8 quarters net income grew at a compound +17.3% a quarter ($16.60B in Q2 FY2025 to $59.69B in Q2 FY2027). (an:net_income:trend8)
-- Net income, growth on a year earlier now against a quarter before: -84.7 percentage points. Net income growth on a year earlier is +125.9% in Q2 FY2027 against +210.6% a quarter before: slowing by 84.7 percentage points, and against +59.2% four quarters before. (an:net_income:acceleration)
-- Net income, where the latest quarter sits in the last 8 quarters' range: $18.77B to $59.69B. Over the last 8 quarters net income ranged from $18.77B (Q1 FY2026) to $59.69B (Q2 FY2027); the latest, $59.69B, is at the high. (an:net_income:range8)
-- Net income, median quarter-on-quarter move over the last 8 quarters: 18.5%. A typical quarter-on-quarter move in net income over the last 8 quarters is 18.5% (the median, ignoring direction; a flow's quarters include any seasonality). (an:net_income:typical_move)
-- Headroom of the test: -$23.39B. The test fails with -$23.39B of room: $96.68B against $120.07B. (an:c4:headroom)
-- Headroom in typical moves of the left side: not available (Too few changes in the test's history to say what a typical move is (2; at least 3 are needed).)
-- Value at which the outcome flips: $120.07B. The outcome flips when free cash flow, fiscal year ended 2026-01-25 crosses $120.07B, the value of net income, fiscal year ended 2026-01-25; it stands at $96.68B. (an:c4:flip)
-- How often the test held across its history: 0 of 11. The test held as of 0 of the 11 filing dates it could be computed at (0.0%); its longest run holding was 0; it never flipped. (an:c4:history)
-- Free cash flow: operating cash flow less capital expenditure, four quarters: $127.01B. Over the four quarters to Q2 FY2027, operating cash flow of $134.36B less capital expenditure of $7.35B left free cash flow of $127.01B, 41.9% of revenue. (an:bridge:fcf)
-- Net income to operating cash flow, four quarters: -$58.52B. Over the four quarters to Q2 FY2027, operating cash flow of $134.36B was $58.52B below net income of $192.88B (the facts do not tag its non-cash parts). (an:bridge:ni_to_ocf)
-- Cash conversion: operating cash flow ÷ net income, four quarters: 0.70x. Each dollar of net income came with 0.70 dollars of operating cash flow over the four quarters to Q2 FY2027 ($134.36B against $192.88B). (an:eq:cash_conversion)
-- Accruals as a share of net income (net income less operating cash flow, ÷ net income; not the balance-sheet accrual ratio): 30.3%. 30.3% of net income was not matched by operating cash in the period (accruals), over the four quarters to Q2 FY2027. (an:eq:accrual_share)
-- Stock-based compensation as a share of revenue, four quarters: not available (No value for stock-based compensation (ShareBasedCompensation, AllocatedShareBasedCompensationExpense) for the quarter ended 2026-07-26.)
-- Capital expenditure as a share of revenue, four quarters: 2.4%. Capital expenditure as a share of revenue was 2.4% over the four quarters to Q2 FY2027. (an:eq:capex_ratio)
-- Return on average equity, four quarters: not available (Total assets is not reported at both ends of the four quarters.)
-- DuPont: net margin, four quarters: not available (Total assets is not reported at both ends of the four quarters.)
-- DuPont: asset turnover (revenue ÷ average total assets): not available (Total assets is not reported at both ends of the four quarters.)
-- DuPont: equity multiplier (average assets ÷ average equity): not available (Total assets is not reported at both ends of the four quarters.)
+- *Is the gap between the two sides closing or widening?* Free cash flow as a share of net income: 90.8% as of the 10-K filed 2024-02-21, 83.5% as of the 10-K filed 2025-02-26, 80.5% as of the 10-K filed 2026-02-25; it has fallen at every reading. (an:c4:sides)
+- *Where did the cash go between net income and free cash flow?* In FY2026, net income of $120.07B became operating cash flow of $102.72B ($17.35B less) and, after capital expenditure of $6.04B, free cash flow of $96.68B: $23.39B below net income. Over the same period accounts receivable rose $15.40B (to $38.47B) and inventory rose $11.32B (to $21.40B): a rise in either takes cash without touching net income. (an:bridge:cash:fy2026)
+- *Where did the cash go between net income and free cash flow?* In the four quarters to Q2 FY2027, net income of $192.88B became operating cash flow of $134.36B ($58.52B less) and, after capital expenditure of $7.35B, free cash flow of $127.01B: $65.87B below net income. Over the same period accounts receivable rose $35.25B (to $63.06B) and inventory rose $16.61B (to $31.57B): a rise in either takes cash without touching net income. (an:bridge:cash:ttm)
+- *Is net income turning into cash?* Over the four quarters to Q2 FY2027, each dollar of net income came with 0.70 dollars of operating cash flow ($134.36B against $192.88B). In Q2 FY2027 alone it was 0.40x ($24.08B against $59.69B), and 0.89x over the four quarters a year before. (an:eq:cash_conversion)
+- *How much of revenue goes back into capital expenditure?* Capital expenditure as a share of revenue was 2.4% over the four quarters to Q2 FY2027, against 3.0% over the four quarters a year before. (an:eq:capex_ratio)
+- Could not be computed: Stock-based compensation as a share of revenue, four quarters (No value for stock-based compensation (ShareBasedCompensation, AllocatedShareBasedCompensationExpense) for the quarter ended 2026-07-26.)
 
 ### c5. Data center demand is still accelerating
 
-This claim names no measure the facts report, cites none and compiles to no test: no figure is tied to it.
+Verdict: Passages found, not judged.
 
+This claim names no measure the facts report, cites none and compiles to no test: no figure is tied to it.
 
 ## Claims
 
@@ -581,7 +552,7 @@ This claim names no measure the facts report, cites none and compiles to no test
 
 ## Errors
 
-- None.
+- The analysis holds what code computed only, with no model's corollaries or argument: no model is configured: the engine is extractive.
 
 ## Provenance
 

@@ -296,134 +296,110 @@ The outcome as of each of the 20 10-K and 10-Q filing dates in the 5 years to 20
 
 ## Analysis
 
-_Analytics, readings, relevance and odds: written by code._
+_The figures under each claim, their readings and the odds: computed by code._
 
 No corollaries: no model was asked to propose them (no model is configured: the engine is extractive).
 
 No model's argument: no model is configured: the engine is extractive. The analytics and their readings were written by code.
 
-Headline figures, from what the claims bear on:
+Parts are read from the tags of the 10-Q filed 2026-08-26 and the 10-K filed 2026-02-25.
 
-- Gross margin, Quarter ended 2026-07-26: 75.0% (c1)
-- Gross margin, Fiscal year ended 2026-01-25: 71.1% (c1)
-- Revenue, Quarter ended 2026-07-26: $96.22B (c2, c3, c4, c5)
-- Revenue growth, quarter over quarter, Quarter ended 2026-07-26: +17.9% (c2, c3, c4, c5)
-- Revenue growth, year over year, Quarter ended 2026-07-26: +105.9% (c2, c3, c4, c5)
-- Revenue, Fiscal year ended 2026-01-25: $215.94B (c2, c3, c4, c5)
-- Revenue growth, year over year, Fiscal year ended 2026-01-25: +65.5% (c2, c3, c4, c5)
+The figures the claims are about:
 
-154 reported figures are not tied to a claim (listed under Reported figures).
+- Gross margin, quarter ended 2026-07-26: 75.0% (c1)
+- Gross margin, quarter ended 2025-07-27: 72.4% (c1)
+- Revenue growth, quarter ended 2026-07-26 on quarter ended 2025-07-27: +105.9% (c2)
+- Revenue, Quarter ended 2026-07-26: $96.22B (c3, c5)
+- Revenue growth, year over year, Quarter ended 2026-07-26: +105.9% (c3, c5)
+- Data Center revenue, growth on a year earlier, the quarter ended 2026-07-26: +116.6% (c3)
+- Data Center as a share of revenue, Quarter ended 2026-07-26 (10-Q): 92.5% (c4)
+
+154 reported figures are not tied to a claim: they are on the record (under Reported figures) and not part of the analysis.
 
 ### c1. Gross margin is expanding.
 
+Verdict: Supported.
+
+**What the figures say** (computed by code)
+
 Bears on it: Gross margin (test operand, named in the claim).
 
-- Gross margin, latest quarter: 75.0%. Gross margin was 75.0% in Q2 FY2027. (an:gross_margin:level)
-- Gross margin, change on a year earlier: +2.6 percentage points. Gross margin rose 2.6 percentage points on Q2 FY2026 (72.4% to 75.0%). (an:gross_margin:yoy)
-- Gross margin, change on the quarter before: +0.0 percentage points. Gross margin was about unchanged on Q1 FY2027 (74.9% to 75.0%). (an:gross_margin:qoq)
-- Gross margin, change over the last 4 quarters: +2.6 percentage points. Over the last 4 quarters gross margin moved +2.6 percentage points (72.4% in Q2 FY2026 to 75.0% in Q2 FY2027). (an:gross_margin:trend4)
-- Gross margin, change over the last 8 quarters: -0.2 percentage points. Over the last 8 quarters gross margin moved -0.2 percentage points (75.1% in Q2 FY2025 to 75.0% in Q2 FY2027). (an:gross_margin:trend8)
-- Gross margin, where the latest quarter sits in the last 8 quarters' range: 60.5% to 75.0%. Over the last 8 quarters gross margin ranged from 60.5% (Q1 FY2026) to 75.0% (Q4 FY2026); the latest, 75.0%, is 100% of the way from the low to the high. (an:gross_margin:range8)
-- Gross margin, median quarter-on-quarter move over the last 8 quarters: 1.3 percentage points. A typical quarter-on-quarter move in gross margin over the last 8 quarters is 1.3 percentage points (the median, ignoring direction; a flow's quarters include any seasonality). (an:gross_margin:typical_move)
-- Headroom of the test: +2.6 percentage points. The test holds with +2.6 percentage points of room: 75.0% against 72.4%. (an:c1:headroom)
-- Headroom in typical moves of the left side: 1.27x. The room is 1.27x the left side's typical move between filings (2.0 percentage points, the median over 19 changes in the test's history). (an:c1:headroom_moves)
-- Value at which the outcome flips: 72.4%. The outcome flips when gross margin, quarter ended 2026-07-26 crosses 72.4%, the value of gross margin, quarter ended 2025-07-27; it stands at 75.0%. (an:c1:flip)
-- How often the test held across its history: 12 of 20. The test held as of 12 of the 20 filing dates it could be computed at (60.0%); its longest run holding was 6; it last flipped as of the filing of 2026-02-25. (an:c1:history)
-- Operating margin change on a year earlier, split into its parts: +5.4 percentage points. Operating margin moved +5.4 percentage points on Q2 FY2026 (60.8% to 66.2%); by part, as a share of revenue: gross margin +2.6 percentage points; R&D +1.8 percentage points; other operating expenses +1.0 percentage points (a rise in an expense share lowers the margin). (an:bridge:op_margin)
-- Inventory days (DIO): inventory ÷ the quarter's cost of revenue × its days: 119.3 days. At the end of Q2 FY2027, inventory of $31.57B stood for 119.3 days of the quarter's cost of revenue ($24.08B over 91 days), against 105.6 days a year before (Q2 FY2026). (an:eq:dio)
+- *Which way is gross margin moving on a year earlier?* Gross margin rose 2.6 percentage points on a year earlier: 72.4% in Q2 FY2026, 75.0% in Q2 FY2027. (an:gross_margin:yoy)
+- *Where does gross margin stand against the last two years?* Gross margin is 0.2 percentage points below where it was 8 quarters ago (75.1% in Q2 FY2025, 75.0% in Q2 FY2027); the highest was 75.1% (Q2 FY2025); the lowest was 60.5% (Q1 FY2026). (an:gross_margin:trend8)
+- *How much room does the test have, against how far the figure usually moves?* The test holds with 2.6 percentage points to spare: 75.0% against 72.4%. Between one reading of this test and the next its left side has typically moved 2.0 percentage points (the median of 19 moves, either way), so the room is 1.27x a typical move. (an:c1:headroom)
+- *How often has this been true before?* Run again as of each 10-K and 10-Q filing date of the last five years, the test gave 20 distinct readings (over 20 filing dates) and held in 12 of them (60.0%); its longest run holding was 6, and its outcome last changed with the filing of 2026-02-25. (an:c1:history)
+- *Is inventory building ahead of sales?* At the end of Q2 FY2027, inventory of $31.57B stood for 119.3 days of the quarter's cost of revenue ($24.08B over 91 days), against 105.6 days a year before: the balance grew +111.0% while cost of revenue grew +86.8%. (an:eq:dio)
 
 ### c2. Revenue grew more than 200% year over year.
 
+Verdict: Challenged.
+
+**What the figures say** (computed by code)
+
 Bears on it: Revenue (test operand, named in the claim).
 
-- Revenue, latest quarter: $96.22B. Revenue was $96.22B in Q2 FY2027. (an:revenue:level)
-- Revenue, change on a year earlier: +105.9%. Revenue grew 105.9% on Q2 FY2026 ($46.74B to $96.22B). (an:revenue:yoy)
-- Revenue, change on the quarter before: +17.9%. Revenue grew 17.9% on Q1 FY2027 ($81.61B to $96.22B). (an:revenue:qoq)
-- Revenue, compound quarterly growth over the last 4 quarters: +19.8%. Over the last 4 quarters revenue grew at a compound +19.8% a quarter ($46.74B in Q2 FY2026 to $96.22B in Q2 FY2027). (an:revenue:trend4)
-- Revenue, compound quarterly growth over the last 8 quarters: +15.7%. Over the last 8 quarters revenue grew at a compound +15.7% a quarter ($30.04B in Q2 FY2025 to $96.22B in Q2 FY2027). (an:revenue:trend8)
-- Revenue, growth on a year earlier now against a quarter before: +20.6 percentage points. Revenue growth on a year earlier is +105.9% in Q2 FY2027 against +85.2% a quarter before: speeding up by 20.6 percentage points, and against +55.6% four quarters before. (an:revenue:acceleration)
-- Revenue, where the latest quarter sits in the last 8 quarters' range: $35.08B to $96.22B. Over the last 8 quarters revenue ranged from $35.08B (Q3 FY2025) to $96.22B (Q2 FY2027); the latest, $96.22B, is at the high. (an:revenue:range8)
-- Revenue, median quarter-on-quarter move over the last 8 quarters: 17.3%. A typical quarter-on-quarter move in revenue over the last 8 quarters is 17.3% (the median, ignoring direction; a flow's quarters include any seasonality). (an:revenue:typical_move)
-- Headroom of the test: -94.1 percentage points. The test fails with -94.1 percentage points of room: +105.9% against 200%. (an:c2:headroom)
-- Headroom in typical moves of the left side: -6.93x. The room is 6.93x the left side's typical move between filings (13.6 percentage points, the median over 19 changes in the test's history). (an:c2:headroom_moves)
-- Value at which the outcome flips: $140.23B. The outcome flips at $140.23B for revenue ($46.74B grown by 200%); it was $96.22B. (an:c2:flip)
-- Needed against actual: $44.01B. To hold it needed growth of 200% to $140.23B; it grew +105.9% to $96.22B, $44.01B short. (an:c2:needed)
-- How often the test held across its history: 3 of 20. The test held as of 3 of the 20 filing dates it could be computed at (15.0%); its longest run holding was 3; it last flipped as of the filing of 2024-08-28. (an:c2:history)
-- Receivable days (DSO): accounts receivable ÷ the quarter's revenue × its days: 59.6 days. At the end of Q2 FY2027, accounts receivable of $63.06B stood for 59.6 days of the quarter's revenue ($96.22B over 91 days), against 54.1 days a year before (Q2 FY2026). (an:eq:dso)
-- Deferred revenue at the quarter's end, and its change on a year earlier: not available (The facts tag no deferred revenue at this quarter's end.)
-- Compute and Networking Segment: contribution to revenue by business segment growth: +100.5 percentage points. Compute and Networking Segment added +100.5 percentage points to revenue by business segment growth of +105.9% (41,331 to 88,299, as the 10-Q of 2026-08-26 tags it). (an:bridge:segment:compute_and_networking_segment)
-- Graphics Segment: contribution to revenue by business segment growth: +5.4 percentage points. Graphics Segment added +5.4 percentage points to revenue by business segment growth of +105.9% (5,412 to 7,922, as the 10-Q of 2026-08-26 tags it). (an:bridge:segment:graphics_segment)
-- Odds the test keeps holding: In 1% of 10,000 resampled paths the test held in each of the next 4 quarters, drawing from its last 20 quarterly growth rates.
+- *Which way is revenue moving on a year earlier?* Revenue grew 105.9% on a year earlier: $46.74B in Q2 FY2026, $96.22B in Q2 FY2027. (an:revenue:yoy)
+- *Is revenue growth speeding up or slowing?* Revenue growth on a year earlier was +105.9% in Q2 FY2027 and +85.2% in Q1 FY2027: speeding up, by 20.6 percentage points. Four quarters before, in Q2 FY2026, it was +55.6%. (an:revenue:acceleration)
+- *Where does revenue stand against the last two years?* Revenue went from $30.04B in Q2 FY2025 to $96.22B in Q2 FY2027, a compound +15.7% a quarter; it rose in each of the 8 quarters. (an:revenue:trend8)
+- *How much room does the test have, against how far the figure usually moves?* The test fails by 94.1 percentage points: +105.9% against 200%. Between one reading of this test and the next its left side has typically moved 13.6 percentage points (the median of 19 moves, either way), so the room is 6.93x a typical move. (an:c2:headroom)
+- *How far short did it fall?* To hold, revenue had to reach $140.23B ($46.74B grown by 200%); it reached $96.22B, $44.01B short. (an:c2:needed)
+- *How often has this been true before?* Run again as of each 10-K and 10-Q filing date of the last five years, the test gave 20 distinct readings (over 20 filing dates) and held in 3 of them (15.0%); its longest run holding was 3, and its outcome last changed with the filing of 2024-08-28. (an:c2:history)
+- *Is revenue being collected, or building up in receivables?* At the end of Q2 FY2027, accounts receivable of $63.06B stood for 59.6 days of the quarter's revenue ($96.22B over 91 days), against 54.1 days a year before: the balance grew +126.8% while revenue grew +105.9%. (an:eq:dso)
+- *Which parts of the business drove the growth?* Revenue grew +105.9% in the quarter ended 2026-07-26. Of that growth, each part's contribution: Data Center +102.5 percentage points; Edge Computing +3.3 percentage points (as the 10-Q filed 2026-08-26 tags them; the parts shown split the total without overlap). (an:bridge:growth:revenue_by_product:q)
+- Could not be computed: Deferred revenue, change on a year earlier (The facts tag no deferred revenue at this quarter's end.)
+
+**Odds the test keeps holding** (resampled by code)
+
+In 1% of 10,000 resampled paths the test held in each of the next 4 quarters, drawing from its last 20 quarterly growth rates. This describes the measure's own past quarterly changes, resampled; it knows nothing of trend, seasonality or events, and is not a forecast.
 
 ### c3. Data center revenue is still growing year over year.
 
+Verdict: Passages found, not judged.
+
+**What the figures say** (computed by code)
+
 Bears on it: Revenue (named in the claim, part named in the claim); Revenue, segment Data Center (part named in the claim).
 
-- Revenue, latest quarter: $96.22B. Revenue was $96.22B in Q2 FY2027. (an:revenue:level)
-- Revenue, change on a year earlier: +105.9%. Revenue grew 105.9% on Q2 FY2026 ($46.74B to $96.22B). (an:revenue:yoy)
-- Revenue, change on the quarter before: +17.9%. Revenue grew 17.9% on Q1 FY2027 ($81.61B to $96.22B). (an:revenue:qoq)
-- Revenue, compound quarterly growth over the last 4 quarters: +19.8%. Over the last 4 quarters revenue grew at a compound +19.8% a quarter ($46.74B in Q2 FY2026 to $96.22B in Q2 FY2027). (an:revenue:trend4)
-- Revenue, compound quarterly growth over the last 8 quarters: +15.7%. Over the last 8 quarters revenue grew at a compound +15.7% a quarter ($30.04B in Q2 FY2025 to $96.22B in Q2 FY2027). (an:revenue:trend8)
-- Revenue, growth on a year earlier now against a quarter before: +20.6 percentage points. Revenue growth on a year earlier is +105.9% in Q2 FY2027 against +85.2% a quarter before: speeding up by 20.6 percentage points, and against +55.6% four quarters before. (an:revenue:acceleration)
-- Revenue, where the latest quarter sits in the last 8 quarters' range: $35.08B to $96.22B. Over the last 8 quarters revenue ranged from $35.08B (Q3 FY2025) to $96.22B (Q2 FY2027); the latest, $96.22B, is at the high. (an:revenue:range8)
-- Revenue, median quarter-on-quarter move over the last 8 quarters: 17.3%. A typical quarter-on-quarter move in revenue over the last 8 quarters is 17.3% (the median, ignoring direction; a flow's quarters include any seasonality). (an:revenue:typical_move)
-- Receivable days (DSO): accounts receivable ÷ the quarter's revenue × its days: 59.6 days. At the end of Q2 FY2027, accounts receivable of $63.06B stood for 59.6 days of the quarter's revenue ($96.22B over 91 days), against 54.1 days a year before (Q2 FY2026). (an:eq:dso)
-- Deferred revenue at the quarter's end, and its change on a year earlier: not available (The facts tag no deferred revenue at this quarter's end.)
-- Compute and Networking Segment: contribution to revenue by business segment growth: +100.5 percentage points. Compute and Networking Segment added +100.5 percentage points to revenue by business segment growth of +105.9% (41,331 to 88,299, as the 10-Q of 2026-08-26 tags it). (an:bridge:segment:compute_and_networking_segment)
-- Graphics Segment: contribution to revenue by business segment growth: +5.4 percentage points. Graphics Segment added +5.4 percentage points to revenue by business segment growth of +105.9% (5,412 to 7,922, as the 10-Q of 2026-08-26 tags it). (an:bridge:segment:graphics_segment)
+- *Which way is revenue moving on a year earlier?* Revenue grew 105.9% on a year earlier: $46.74B in Q2 FY2026, $96.22B in Q2 FY2027. (an:revenue:yoy)
+- *Is revenue growth speeding up or slowing?* Revenue growth on a year earlier was +105.9% in Q2 FY2027 and +85.2% in Q1 FY2027: speeding up, by 20.6 percentage points. Four quarters before, in Q2 FY2026, it was +55.6%. (an:revenue:acceleration)
+- *Where does revenue stand against the last two years?* Revenue went from $30.04B in Q2 FY2025 to $96.22B in Q2 FY2027, a compound +15.7% a quarter; it rose in each of the 8 quarters. (an:revenue:trend8)
+- *Is revenue being collected, or building up in receivables?* At the end of Q2 FY2027, accounts receivable of $63.06B stood for 59.6 days of the quarter's revenue ($96.22B over 91 days), against 54.1 days a year before: the balance grew +126.8% while revenue grew +105.9%. (an:eq:dso)
+- *Is Data Center growing faster or slower than the company?* Data Center revenue was $89.02B in the quarter ended 2026-07-26, +116.6% on a year earlier ($41.10B); the company's revenue grew +105.9%. It was 92.5% of revenue, against 87.9% a year earlier (as the 10-Q filed 2026-08-26 tags it). (an:part:data_center:q:growth)
+- *Is Data Center growing faster or slower than the company?* Data Center revenue was $193.74B in the fiscal year ended 2026-01-25, +68.2% on a year earlier ($115.19B); the company's revenue grew +65.5%. It was 89.7% of revenue, against 88.3% a year earlier (as the 10-K filed 2026-02-25 tags it). (an:part:data_center:fy:growth)
+- *Is Data Center growth speeding up or slowing?* Data Center revenue grew +68.2% on a year earlier in the fiscal year ended 2026-01-25, against +142.4% in the fiscal year ended 2025-01-26: slowing, by 74.2 percentage points (as the 10-K filed 2026-02-25 tags it). (an:part:data_center:fy:pace)
+- *Which parts of the business drove the growth?* Revenue grew +105.9% in the quarter ended 2026-07-26. Of that growth, each part's contribution: Data Center +102.5 percentage points; Edge Computing +3.3 percentage points (as the 10-Q filed 2026-08-26 tags them; the parts shown split the total without overlap). (an:bridge:growth:revenue_by_product:q)
+- Could not be computed: Deferred revenue, change on a year earlier (The facts tag no deferred revenue at this quarter's end.)
 
 ### c4. Data center is more than 80% of revenue.
 
+Verdict: Supported.
+
+**What the figures say** (computed by code)
+
 Bears on it: Revenue, segment Data Center (part named in the claim); Revenue (test operand, named in the claim, part named in the claim).
 
-- Revenue, latest quarter: $96.22B. Revenue was $96.22B in Q2 FY2027. (an:revenue:level)
-- Revenue, change on a year earlier: +105.9%. Revenue grew 105.9% on Q2 FY2026 ($46.74B to $96.22B). (an:revenue:yoy)
-- Revenue, change on the quarter before: +17.9%. Revenue grew 17.9% on Q1 FY2027 ($81.61B to $96.22B). (an:revenue:qoq)
-- Revenue, compound quarterly growth over the last 4 quarters: +19.8%. Over the last 4 quarters revenue grew at a compound +19.8% a quarter ($46.74B in Q2 FY2026 to $96.22B in Q2 FY2027). (an:revenue:trend4)
-- Revenue, compound quarterly growth over the last 8 quarters: +15.7%. Over the last 8 quarters revenue grew at a compound +15.7% a quarter ($30.04B in Q2 FY2025 to $96.22B in Q2 FY2027). (an:revenue:trend8)
-- Revenue, growth on a year earlier now against a quarter before: +20.6 percentage points. Revenue growth on a year earlier is +105.9% in Q2 FY2027 against +85.2% a quarter before: speeding up by 20.6 percentage points, and against +55.6% four quarters before. (an:revenue:acceleration)
-- Revenue, where the latest quarter sits in the last 8 quarters' range: $35.08B to $96.22B. Over the last 8 quarters revenue ranged from $35.08B (Q3 FY2025) to $96.22B (Q2 FY2027); the latest, $96.22B, is at the high. (an:revenue:range8)
-- Revenue, median quarter-on-quarter move over the last 8 quarters: 17.3%. A typical quarter-on-quarter move in revenue over the last 8 quarters is 17.3% (the median, ignoring direction; a flow's quarters include any seasonality). (an:revenue:typical_move)
-- Headroom of the test: +12.5 percentage points. The test holds with +12.5 percentage points of room: 92.5% against 80%. (an:c4:headroom)
-- Headroom in typical moves of the left side: not available (Too few changes in the test's history to say what a typical move is (0; at least 3 are needed).)
-- Value at which the outcome flips: 80.0%. The outcome flips when data Center as a share of revenue, Quarter ended 2026-07-26 (10-Q) crosses 80.0%; it stands at 92.5%. (an:c4:flip)
-- How often the test held across its history: not available (A share of revenue is read from the newest filing's tagged breakdowns, which have no history in the company facts; no history is drawn.)
-- Receivable days (DSO): accounts receivable ÷ the quarter's revenue × its days: 59.6 days. At the end of Q2 FY2027, accounts receivable of $63.06B stood for 59.6 days of the quarter's revenue ($96.22B over 91 days), against 54.1 days a year before (Q2 FY2026). (an:eq:dso)
-- Deferred revenue at the quarter's end, and its change on a year earlier: not available (The facts tag no deferred revenue at this quarter's end.)
-- Compute and Networking Segment: contribution to revenue by business segment growth: +100.5 percentage points. Compute and Networking Segment added +100.5 percentage points to revenue by business segment growth of +105.9% (41,331 to 88,299, as the 10-Q of 2026-08-26 tags it). (an:bridge:segment:compute_and_networking_segment)
-- Graphics Segment: contribution to revenue by business segment growth: +5.4 percentage points. Graphics Segment added +5.4 percentage points to revenue by business segment growth of +105.9% (5,412 to 7,922, as the 10-Q of 2026-08-26 tags it). (an:bridge:segment:graphics_segment)
+- *Which way is revenue moving on a year earlier?* Revenue grew 105.9% on a year earlier: $46.74B in Q2 FY2026, $96.22B in Q2 FY2027. (an:revenue:yoy)
+- *Is revenue growth speeding up or slowing?* Revenue growth on a year earlier was +105.9% in Q2 FY2027 and +85.2% in Q1 FY2027: speeding up, by 20.6 percentage points. Four quarters before, in Q2 FY2026, it was +55.6%. (an:revenue:acceleration)
+- *Where does revenue stand against the last two years?* Revenue went from $30.04B in Q2 FY2025 to $96.22B in Q2 FY2027, a compound +15.7% a quarter; it rose in each of the 8 quarters. (an:revenue:trend8)
+- *Is revenue being collected, or building up in receivables?* At the end of Q2 FY2027, accounts receivable of $63.06B stood for 59.6 days of the quarter's revenue ($96.22B over 91 days), against 54.1 days a year before: the balance grew +126.8% while revenue grew +105.9%. (an:eq:dso)
+- *Is Data Center growing faster or slower than the company?* Data Center revenue was $89.02B in the quarter ended 2026-07-26, +116.6% on a year earlier ($41.10B); the company's revenue grew +105.9%. It was 92.5% of revenue, against 87.9% a year earlier (as the 10-Q filed 2026-08-26 tags it). (an:part:data_center:q:growth)
+- *Is Data Center growing faster or slower than the company?* Data Center revenue was $193.74B in the fiscal year ended 2026-01-25, +68.2% on a year earlier ($115.19B); the company's revenue grew +65.5%. It was 89.7% of revenue, against 88.3% a year earlier (as the 10-K filed 2026-02-25 tags it). (an:part:data_center:fy:growth)
+- *Is Data Center growth speeding up or slowing?* Data Center revenue grew +68.2% on a year earlier in the fiscal year ended 2026-01-25, against +142.4% in the fiscal year ended 2025-01-26: slowing, by 74.2 percentage points (as the 10-K filed 2026-02-25 tags it). (an:part:data_center:fy:pace)
+- *Which parts of the business drove the growth?* Revenue grew +105.9% in the quarter ended 2026-07-26. Of that growth, each part's contribution: Data Center +102.5 percentage points; Edge Computing +3.3 percentage points (as the 10-Q filed 2026-08-26 tags them; the parts shown split the total without overlap). (an:bridge:growth:revenue_by_product:q)
+- Could not be computed: How often the test held before (A share of revenue is read from the newest filing's tagged breakdowns, which have no history in the company facts; no history is drawn.); Deferred revenue, change on a year earlier (The facts tag no deferred revenue at this quarter's end.)
 
 ### c5. Revenue grew in fiscal 2008.
 
+Verdict: Passages found, not judged.
+
+**What the figures say** (computed by code)
+
 Bears on it: Revenue (test operand, named in the claim).
 
-- Revenue, latest quarter: $96.22B. Revenue was $96.22B in Q2 FY2027. (an:revenue:level)
-- Revenue, change on a year earlier: +105.9%. Revenue grew 105.9% on Q2 FY2026 ($46.74B to $96.22B). (an:revenue:yoy)
-- Revenue, change on the quarter before: +17.9%. Revenue grew 17.9% on Q1 FY2027 ($81.61B to $96.22B). (an:revenue:qoq)
-- Revenue, compound quarterly growth over the last 4 quarters: +19.8%. Over the last 4 quarters revenue grew at a compound +19.8% a quarter ($46.74B in Q2 FY2026 to $96.22B in Q2 FY2027). (an:revenue:trend4)
-- Revenue, compound quarterly growth over the last 8 quarters: +15.7%. Over the last 8 quarters revenue grew at a compound +15.7% a quarter ($30.04B in Q2 FY2025 to $96.22B in Q2 FY2027). (an:revenue:trend8)
-- Revenue, growth on a year earlier now against a quarter before: +20.6 percentage points. Revenue growth on a year earlier is +105.9% in Q2 FY2027 against +85.2% a quarter before: speeding up by 20.6 percentage points, and against +55.6% four quarters before. (an:revenue:acceleration)
-- Revenue, where the latest quarter sits in the last 8 quarters' range: $35.08B to $96.22B. Over the last 8 quarters revenue ranged from $35.08B (Q3 FY2025) to $96.22B (Q2 FY2027); the latest, $96.22B, is at the high. (an:revenue:range8)
-- Revenue, median quarter-on-quarter move over the last 8 quarters: 17.3%. A typical quarter-on-quarter move in revenue over the last 8 quarters is 17.3% (the median, ignoring direction; a flow's quarters include any seasonality). (an:revenue:typical_move)
-- Headroom of the test: not available (The facts hold no FY2007 (no fiscal year labelled so ends in them).)
-- How often the test held across its history: not available (The outcome as of each of the 20 10-K and 10-Q filing dates in the 5 years to 2026-08-26, each from the facts filed by that date; it flipped 0 time(s).)
-- Receivable days (DSO): accounts receivable ÷ the quarter's revenue × its days: 59.6 days. At the end of Q2 FY2027, accounts receivable of $63.06B stood for 59.6 days of the quarter's revenue ($96.22B over 91 days), against 54.1 days a year before (Q2 FY2026). (an:eq:dso)
-- Deferred revenue at the quarter's end, and its change on a year earlier: not available (The facts tag no deferred revenue at this quarter's end.)
-- Compute and Networking Segment: contribution to revenue by business segment growth: +100.5 percentage points. Compute and Networking Segment added +100.5 percentage points to revenue by business segment growth of +105.9% (41,331 to 88,299, as the 10-Q of 2026-08-26 tags it). (an:bridge:segment:compute_and_networking_segment)
-- Graphics Segment: contribution to revenue by business segment growth: +5.4 percentage points. Graphics Segment added +5.4 percentage points to revenue by business segment growth of +105.9% (5,412 to 7,922, as the 10-Q of 2026-08-26 tags it). (an:bridge:segment:graphics_segment)
-
-### Analytics not tied to a claim
-
-- Free cash flow: operating cash flow less capital expenditure, four quarters: $127.01B. Over the four quarters to Q2 FY2027, operating cash flow of $134.36B less capital expenditure of $7.35B left free cash flow of $127.01B, 41.9% of revenue. (an:bridge:fcf)
-- Net income to operating cash flow, four quarters: -$58.52B. Over the four quarters to Q2 FY2027, operating cash flow of $134.36B was $58.52B below net income of $192.88B (the facts do not tag its non-cash parts). (an:bridge:ni_to_ocf)
-- Cash conversion: operating cash flow ÷ net income, four quarters: 0.70x. Each dollar of net income came with 0.70 dollars of operating cash flow over the four quarters to Q2 FY2027 ($134.36B against $192.88B). (an:eq:cash_conversion)
-- Accruals as a share of net income (net income less operating cash flow, ÷ net income; not the balance-sheet accrual ratio): 30.3%. 30.3% of net income was not matched by operating cash in the period (accruals), over the four quarters to Q2 FY2027. (an:eq:accrual_share)
-- Stock-based compensation as a share of revenue, four quarters: not available (No value for stock-based compensation (ShareBasedCompensation, AllocatedShareBasedCompensationExpense) for the quarter ended 2026-07-26.)
-- Capital expenditure as a share of revenue, four quarters: 2.4%. Capital expenditure as a share of revenue was 2.4% over the four quarters to Q2 FY2027. (an:eq:capex_ratio)
-- Return on average equity, four quarters: not available (Total assets is not reported at both ends of the four quarters.)
-- DuPont: net margin, four quarters: not available (Total assets is not reported at both ends of the four quarters.)
-- DuPont: asset turnover (revenue ÷ average total assets): not available (Total assets is not reported at both ends of the four quarters.)
-- DuPont: equity multiplier (average assets ÷ average equity): not available (Total assets is not reported at both ends of the four quarters.)
+- *What has happened to revenue since that fiscal year ended?* Since FY2008 ended: revenue grew 105.9% on a year earlier: $46.74B in Q2 FY2026, $96.22B in Q2 FY2027. (an:revenue:fy2008:since)
+- *Is revenue being collected, or building up in receivables?* At the end of Q2 FY2027, accounts receivable of $63.06B stood for 59.6 days of the quarter's revenue ($96.22B over 91 days), against 54.1 days a year before: the balance grew +126.8% while revenue grew +105.9%. (an:eq:dso)
+- *Which parts of the business drove the growth?* Revenue grew +65.5% in the fiscal year ended 2026-01-25. Of that growth, each part's contribution: Data Center +60.2 percentage points; Gaming +3.6 percentage points; Professional Visualization +1.0 percentage points; Automotive +0.5 percentage points; OEM and Other +0.2 percentage points (as the 10-K filed 2026-02-25 tags them; the parts shown split the total without overlap). (an:bridge:growth:revenue_by_product:fy)
+- Could not be computed: Revenue by fiscal year, to FY2008 (The facts hold no fiscal year of revenue before FY2008.); Deferred revenue, change on a year earlier (The facts tag no deferred revenue at this quarter's end.)
 
 ## Claims
 
@@ -661,7 +637,7 @@ Bears on it: Revenue (test operand, named in the claim).
 
 ## Errors
 
-- None.
+- The analysis holds what code computed only, with no model's corollaries or argument: no model is configured: the engine is extractive.
 
 ## Provenance
 

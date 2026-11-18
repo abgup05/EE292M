@@ -32,7 +32,12 @@ def test_the_computed_example_says_who_wrote_what(tmp_path: Path) -> None:
     assert all(item["reading_origin"] == "code" for item in analysis["analytics"])
     built = json.loads((tmp_path / "run-hand-built-argument.json").read_text(encoding="utf-8"))
     assert built["analysis"]["argument_detail"] == examples_analysis.HAND_BUILT
-    assert "(no model)" in built["analysis"]["argument_detail"]
+    assert "no model wrote them" in built["analysis"]["argument_detail"]
+    statuses = {
+        item["status"] for claim in built["claims"] for item in claim["analysis"]["corollaries"]
+    }
+    assert {"agreed", "not_agreed", "proposer_only", "not_computable"} <= statuses
+    assert all(item["question"] and item["claim_ids"] for item in analysis["analytics"])
 
 
 def test_the_replayed_example_exists_exactly_when_its_answers_are_recorded() -> None:

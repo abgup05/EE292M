@@ -9,10 +9,12 @@ Markdown export) serves:
   record carries the analysis code computes (relevance, headline, analytics, odds) and says
   no model wrote an argument;
 - ``run-hand-built-argument.json``: the same run with the corollaries and the argument
-  answered by a fake transport whose answers are BUILT HERE BY CODE from the run's own
-  analytics (one sentence per claim, citing an analytic; one corollary per compiled claim,
-  its own test). No model wrote them: the file shows the shape a model's answers take on the
-  record (``argument_detail`` says so), never what a model would say;
+  answered by a fake transport whose answers are SCRIPTED HERE BY CODE (fixed implications;
+  sentences that repeat the readings code wrote, and three made to fail the audit). No model
+  wrote them: the file shows every shape a model's answers take on the record (each
+  corollary status, a verified and an unverified sentence, a condition, a scenario, both
+  flags), and ``argument_detail`` says so. It is not an example of what a model would say,
+  and its argument is not an argument;
 - ``replayed-run.json``: the example thesis replayed from the cassette
   ``demo/cassettes/nvda-example``, with the analysis model's two answers when the cassette
   holds them. Written only then (and removed when stale); otherwise ``make
@@ -58,11 +60,40 @@ CLAIMS = [
     "Free cash flow was above net income last fiscal year",
     "Data center demand is still accelerating",
 ]
-HAND_BUILT = "hand-built answers made by tests/examples_analysis.py from the run's analytics (no model)"
+HAND_BUILT = (
+    "scripted answers made by tests/examples_analysis.py from the run's own analytics "
+    "(no model wrote them)"
+)
+# Implications scripted to show each way a corollary can come out: (claim, sentence, the
+# outcome expected, the sentence whose test stands in for the proposer's typed form; None
+# for the sentence's own, "" for none).
+SCRIPTED_IMPLICATIONS: tuple[tuple[str, str, str, str | None], ...] = (
+    ("c1", "Operating margin is above 60%.", "holds", None),
+    # The grammar reads no test in these words; the typed form stands alone.
+    ("c1", "Profit per dollar of sales stays healthy.", "holds", "Net margin is above 40%."),
+    ("c2", "Gross margin is above 72%.", "holds", None),
+    ("c2", "Operating margin is expanding.", "holds", "Revenue grew more than 50% year over year."),
+    ("c3", "Revenue grew more than 100% year over year.", "holds", None),
+    ("c3", "Net income more than doubled in fiscal 2026.", "holds", None),
+    ("c4", "Operating cash flow was above net income in the latest fiscal year.", "holds", None),
+    ("c4", "Free cash flow margin is above 50%.", "holds", None),
+    ("c5", "Revenue growth is accelerating.", "holds", None),
+    ("c5", "Customers keep telling management that demand is strong.", "holds", ""),
+)
+
+
+def _typed(sentence: str) -> dict[str, Any]:
+    test = compile_claim(sentence)
+    return as_reading(test)["tests"][0] if isinstance(test, ClaimTest) else {}
 
 
 class HandBuilt:
-    """A fake transport: answers built by code from a run without a model (see the docstring)."""
+    """A fake transport: answers scripted from a run without a model (see the docstring).
+
+    The implications are fixed sentences; the argument's sentences repeat readings code wrote
+    (so their numbers are the record's), plus one sentence with a wrong number, one citing an
+    id the run does not have and one citing nothing, to show how each is marked.
+    """
 
     detail = HAND_BUILT
 
@@ -72,55 +103,80 @@ class HandBuilt:
     def __call__(self, request: ModelRequest) -> dict[str, Any]:
         """The propose or analyse answer for the base run's claims."""
         if request.step == "propose":
-            return {"claims": [self._proposal(claim.id, claim.text) for claim in self.base.claims]}
+            return {"claims": [self._proposal(claim.id) for claim in self.base.claims]}
         return self._argument()
 
     @staticmethod
-    def _proposal(claim_id: str, text: str) -> dict[str, Any]:
-        test = compile_claim(text)
-        if not isinstance(test, ClaimTest):
-            return {"claim_id": claim_id, "implications": []}
-        typed = as_reading(test)["tests"][0]
+    def _proposal(claim_id: str) -> dict[str, Any]:
         return {
             "claim_id": claim_id,
             "implications": [
-                {"sentence": text, "expect": "holds", "why": "the claim itself", "test": typed}
+                {
+                    "sentence": sentence,
+                    "expect": expect,
+                    "why": "scripted: a consequence the claim commits to",
+                    "test": _typed(sentence if typed is None else typed) if typed != "" else {},
+                }
+                for claim, sentence, expect, typed in SCRIPTED_IMPLICATIONS
+                if claim == claim_id
             ],
         }
 
-    def _argument(self) -> dict[str, Any]:
+    def _readings(self, claim_id: str) -> list[dict[str, Any]]:
         analysis = self.base.analysis
-        assert analysis is not None
+        claim = next(c for c in self.base.claims if c.id == claim_id)
+        assert analysis is not None and claim.analysis is not None
         by_id = {item.id: item for item in analysis.analytics}
-        claims = []
-        for claim in self.base.claims:
-            mine = [
-                by_id[i]
-                for i in (claim.analysis.analytic_ids if claim.analysis else [])
-                if by_id[i].available
+        mine = [by_id[i] for i in claim.analysis.analytic_ids if by_id[i].available]
+        return [{"text": item.reading, "cites": [item.id]} for item in mine]
+
+    def _claim(self, claim_id: str) -> dict[str, Any]:
+        sentences = self._readings(claim_id)
+        extra: list[dict[str, Any]] = []
+        conditions: list[dict[str, Any]] = []
+        if claim_id == "c2":
+            extra = [
+                {"text": "Gross margin was 99.9% in the newest quarter.", "cites": ["test:c2"]},
+                {"text": "A sentence resting on an id the run does not have.", "cites": ["an:no"]},
+                {"text": "A sentence that cites the claim alone.", "cites": ["c2"]},
             ]
-            sentences = [{"text": item.reading, "cites": [item.id]} for item in mine[:1]]
-            claims.append(
+            conditions = [
                 {
-                    "claim_id": claim.id,
-                    "lean": "unclear",
-                    "assessment": sentences,
-                    "case_for": [],
-                    "case_against": [],
-                    "decides": [],
-                    "would_change": [],
+                    "text": "A quarter of gross margin below 70% would fail the test.",
+                    "cites": ["test:c2"],
+                    "measure": "gross_margin",
+                    "comparison": "<",
+                    "threshold": 70.0,
+                    "unit": "percent",
+                    "event_category": "none",
                 }
-            )
+            ]
         return {
-            "claims": claims,
+            "claim_id": claim_id,
+            # Scripted against c2's verdict (supported), to show the flag; unclear elsewhere.
+            "lean": "challenges" if claim_id == "c2" else "unclear",
+            "assessment": [*sentences[:2], *extra],
+            "case_for": sentences[2:3],
+            "case_against": sentences[3:4],
+            "decides": sentences[4:5],
+            "would_change": conditions,
+        }
+
+    def _argument(self) -> dict[str, Any]:
+        ids = [claim.id for claim in self.base.claims]
+        first = [s for claim_id in ids for s in self._readings(claim_id)[:1]]
+        return {
+            "claims": [self._claim(claim_id) for claim_id in ids],
             "thesis": {
-                "leans_on": [],
-                "weakest_link": "",
-                "weakest_why": [],
-                "strongest_for": [],
-                "strongest_against": [],
-                "bottom_line": [],
-                "scenarios": [],
+                "leans_on": ids[:2],
+                "weakest_link": ids[0],
+                "weakest_why": first[:1],
+                "strongest_for": first[1:2],
+                "strongest_against": first[2:3],
+                "bottom_line": first[:3],
+                "scenarios": [
+                    {"name": "Scripted scenario", "conditions": first[:1]},
+                ],
             },
         }
 

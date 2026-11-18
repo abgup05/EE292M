@@ -260,6 +260,9 @@ The two measurements the referee faulted are commands, not tests (`make bench`, 
 | A time line that drops, adds or misdraws a filing or an 8-K, or shades a gap the record does not have | `uitests/test_run_events_dom.py`, the time-line tests on four sample runs | written after the drawing; the newest 8-K then dropped from it on purpose: the three runs with 8-Ks failed |
 | A live-run sample that is not the run's record, or a page that hides where it came from | `uitests/test_run_events_dom.py::test_the_sample_is_the_live_run_unedited` (skipped where `results/` is not), `::test_the_page_says_where_the_sample_comes_from` | written with the sample |
 | Keys that act while you type, j and k that skip or wrap, a theme that is not remembered | `uitests/test_keys_dom.py`, on what `uitests/keys.html` recorded | written after the code; the guard on typing then removed on purpose: three of its tests failed |
+| A tape that shows a figure other than the record's (the year's where the record has the quarter's, a reformatted value, another order) | `uitests/test_run_events_dom.py::test_the_tape_shows_the_records_own_figures_in_order`, on four sample runs | written after the tape; the page then made to prefer the year's metric on purpose: all four runs failed |
+| A run that does not lead with its answer, a count lost from the status line, the withheld findings or the full counts left open, standing prose back on the reading path | the other second-pass tests of `uitests/test_run_events_dom.py` | written after the page code and not seen failing |
+| The specimen page not served | `tests/test_api.py::test_static_files_are_served[/specimen.html…]` | written first: it failed with 404 before the route was added |
 
 The command-line tools (`tests/test_events_cli.py`, `tests/test_events_probe.py`) were written after their code and were not seen failing.
 

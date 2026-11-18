@@ -12,7 +12,9 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Protocol
 
+from app.core.analysis_models import ClaimArgument, ThesisArgument
 from app.core.claimtest import ClaimTest, NotNumeric
+from app.core.corollaries import Implication
 from app.core.documents import FetchedFiling, FilingRef, Passage
 from app.core.fact_models import CompanyProfile
 from app.core.metric_models import Metric
@@ -244,3 +246,81 @@ class ClaimReader(Protocol):
 
 # The model readers a run is given beside the grammar: none, one, or two of different models.
 type ClaimReaders = ClaimReader | Sequence[ClaimReader] | None
+
+
+# The analysis (app.services.analysis): what the analysing model is shown, and its port.
+
+
+@dataclass(frozen=True)
+class BriefItem:
+    """One item of the record shown to the analysing model: its id and its text."""
+
+    id: str
+    text: str
+
+
+@dataclass(frozen=True)
+class BriefClaim:
+    """One claim as the analysing model is shown it: its verdict, computed test, findings
+    (verified only), analytics, corollaries and odds, each with the id it may be cited by."""
+
+    id: str
+    text: str
+    verdict: str
+    test: str = ""
+    findings: tuple[BriefItem, ...] = ()
+    analytics: tuple[BriefItem, ...] = ()
+    corollaries: tuple[BriefItem, ...] = ()
+    odds: tuple[BriefItem, ...] = ()
+
+
+@dataclass(frozen=True)
+class AnalysisBrief:
+    """Everything the analysing model is shown: the company, the decision, the claims, the
+    analytics that bear on the thesis as a whole, the reported figures and the 8-Ks."""
+
+    company: Company
+    decision: str
+    claims: tuple[BriefClaim, ...]
+    analytics: tuple[BriefItem, ...] = ()
+    figures: tuple[BriefItem, ...] = ()
+    events: tuple[BriefItem, ...] = ()
+
+
+@dataclass(frozen=True)
+class ProposedImplications:
+    """The proposing model's implications, each validated, and what was dropped and why."""
+
+    implications: list[Implication] = field(default_factory=list)
+    problems: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class ArgumentDraft:
+    """The analysing model's argument, parsed and bounded but not yet audited."""
+
+    claims: list[ClaimArgument] = field(default_factory=list)
+    thesis: ThesisArgument | None = None
+    cut: int = 0
+    problems: list[str] = field(default_factory=list)
+
+
+class Analyser(Protocol):
+    """The model that proposes corollaries and argues the analysis (two requests per run).
+
+    ``name`` is "none" for no model (then neither method is called); ``detail`` says which
+    model and how (the API, or the cassette). Both methods raise
+    :class:`~app.engines.transport.EngineError` on any failure; the run then records the
+    computed analysis only and says why.
+    """
+
+    name: str
+    detail: str
+
+    def propose(self, brief: AnalysisBrief) -> ProposedImplications:
+        """Two or three observable implications for each claim of ``brief``."""
+        ...
+
+    def analyse(self, brief: AnalysisBrief) -> ArgumentDraft:
+        """The argued analysis of ``brief``: per claim and for the thesis."""
+        ...

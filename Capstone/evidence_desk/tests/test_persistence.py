@@ -83,7 +83,10 @@ class _Computed:
 def test_a_claim_gets_its_method_sample_and_seed_on_the_record() -> None:
     payload = synthetic()
     record = persistence(
-        "c1", _test("Gross margin is above 55.5%."), _Computed(), _measures(payload)  # type: ignore[arg-type]
+        "c1",
+        _test("Gross margin is above 55.5%."),
+        _Computed(),
+        _measures(payload),  # type: ignore[arg-type]
     )
     # The margin rose a point every quarter: every change is +1, so every path holds.
     assert record.applicable and record.probability == pytest.approx(100.0)
@@ -116,7 +119,10 @@ def test_a_company_with_few_quarters_gets_the_warning() -> None:
         fiscal_calendar(payload, as_of=date(2024, 8, 31)),
     )
     record = persistence(
-        "c1", _test("Gross margin is above 50.5%."), _Computed(), measures  # type: ignore[arg-type]
+        "c1",
+        _test("Gross margin is above 50.5%."),
+        _Computed(),
+        measures,  # type: ignore[arg-type]
     )
     assert record.applicable and record.probability is None
     assert record.changes < rules.PERSISTENCE_MIN_CHANGES
@@ -126,7 +132,10 @@ def test_a_company_with_few_quarters_gets_the_warning() -> None:
 def test_a_test_it_does_not_apply_to_says_why() -> None:
     payload = synthetic()
     record = persistence(
-        "c1", _test("Gross margin is expanding."), _Computed(), _measures(payload)  # type: ignore[arg-type]
+        "c1",
+        _test("Gross margin is expanding."),
+        _Computed(),
+        _measures(payload),  # type: ignore[arg-type]
     )
     assert not record.applicable and record.note == rules.PERSISTENCE_NOT_APPLICABLE["form"]
     none = persistence("c2", None, None, None)

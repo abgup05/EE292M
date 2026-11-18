@@ -50,6 +50,7 @@ from app.core.models import (
     as_of_problem,
 )
 from app.core.ports import (
+    Analyser,
     Analyst,
     Checker,
     ClaimReaders,
@@ -59,6 +60,7 @@ from app.core.ports import (
     UnknownTicker,
 )
 from app.core.review import build_review
+from app.engines.analyser import NoAnalyser
 from app.engines.checker import NoChecker
 from app.services import events as event_service
 from app.services import theses, thesis_run
@@ -269,6 +271,7 @@ def create_app(
     facts_store: FactStore | None = None,
     claim_reader: ClaimReaders = None,
     wall_clock: Callable[[], datetime] | None = None,
+    analyser: Analyser | None = None,
 ) -> FastAPI:
     """Build the application. Collaborators not given are built by :mod:`app.wiring`.
 
@@ -293,7 +296,9 @@ def create_app(
         analyst = wiring.analyst_from_env()
         checker = checker or wiring.checker_from_env(analyst)
         claim_reader = claim_reader or wiring.claim_reader_from_env(analyst)
+        analyser = analyser or wiring.analyser_from_env(analyst)
     checker = checker or NoChecker()
+    analyser = analyser or NoAnalyser()
     executor = ThreadPoolExecutor(max_workers=RUN_WORKERS, thread_name_prefix="run")
     metrics_cache = MetricsCache(monotonic)
     changes_cache = ChangesCache(monotonic)
@@ -345,6 +350,7 @@ def create_app(
                 checker=checker,
                 facts_store=facts_store,
                 claim_reader=claim_reader,
+                analyser=analyser,
             )
         except Exception:  # noqa: BLE001 - last resort: a run must never stay "running"
             log.exception("Run %s crashed", run.id)
@@ -669,6 +675,7 @@ def create_app(
             "review_note": policy.REVIEW_NOTE,
             "engine": analyst.name,
             "checker": {"name": checker.name, "detail": str(checker.detail or "")},
+            "analyser": {"name": analyser.name, "detail": str(analyser.detail or "")},
             "support_labels": policy.SUPPORT_LABELS,
             "no_checker_note": policy.NO_CHECKER_NOTE,
             "example": EXAMPLE_THESIS.model_dump(mode="json"),

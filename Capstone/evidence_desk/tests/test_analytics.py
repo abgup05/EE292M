@@ -19,9 +19,9 @@ from app.core.analytics import (
     AnalyticsRequest,
     FactsProvider,
     bridge_analytics,
+    computed_test_analytics,
     earnings_quality,
     measure_analytics,
-    computed_test_analytics,
 )
 from app.core.claim_eval import HistoryBooks, Measures, claim_history, evaluate
 from app.core.claimtest import ClaimTest, compile_claim
@@ -80,10 +80,20 @@ def _filed(year: int, quarter: int) -> dict[str, Any]:
     if quarter < 4:
         end = date.fromisoformat(f"{year}-{ENDS[quarter - 1]}")
         filed = (end + timedelta(days=40)).isoformat()
-        return {"filed": filed, "accn": f"q-{year}-{quarter}", "form": "10-Q", "fy": year,
-                "fp": f"Q{quarter}"}
-    return {"filed": f"{year + 1}-02-15", "accn": f"k-{year}", "form": "10-K", "fy": year,
-            "fp": "FY"}
+        return {
+            "filed": filed,
+            "accn": f"q-{year}-{quarter}",
+            "form": "10-Q",
+            "fy": year,
+            "fp": f"Q{quarter}",
+        }
+    return {
+        "filed": f"{year + 1}-02-15",
+        "accn": f"k-{year}",
+        "form": "10-K",
+        "fy": year,
+        "fp": "FY",
+    }
 
 
 def synthetic() -> dict[str, Any]:
@@ -125,16 +135,12 @@ def test_a_measures_level_changes_trends_acceleration_range_and_typical_move(
     assert got["an:revenue:trend4"].value == pytest.approx(((r(11) / r(7)) ** 0.25 - 1) * 100)
     assert got["an:revenue:trend8"].value == pytest.approx(((r(11) / r(3)) ** 0.125 - 1) * 100)
     growth_now, growth_before = r(11) / r(7) - 1, r(10) / r(6) - 1
-    assert got["an:revenue:acceleration"].value == pytest.approx(
-        (growth_now - growth_before) * 100
-    )
+    assert got["an:revenue:acceleration"].value == pytest.approx((growth_now - growth_before) * 100)
     assert "slowing" in got["an:revenue:acceleration"].reading
     assert got["an:revenue:range8"].value == pytest.approx(100.0)  # rising: at the high
     assert "at the high" in got["an:revenue:range8"].reading
     moves = sorted(abs(r(i) / r(i - 1) - 1) for i in range(4, 12))
-    assert got["an:revenue:typical_move"].value == pytest.approx(
-        (moves[3] + moves[4]) / 2 * 100
-    )
+    assert got["an:revenue:typical_move"].value == pytest.approx((moves[3] + moves[4]) / 2 * 100)
     assert all(item.claim_ids == ["c1"] for item in got.values())
     assert all(item.reading_origin == "code" and item.reading for item in got.values())
 
@@ -235,8 +241,16 @@ def test_what_the_facts_lack_is_returned_unavailable_with_why() -> None:
     sparse = companyfacts(
         {
             "Revenues": [
-                fact(100 * M, "2025-03-31", "2025-01-01", filed="2025-05-10", form="10-Q",
-                     accn="q", fy=2025, fp="Q1")
+                fact(
+                    100 * M,
+                    "2025-03-31",
+                    "2025-01-01",
+                    filed="2025-05-10",
+                    form="10-Q",
+                    accn="q",
+                    fy=2025,
+                    fp="Q1",
+                )
             ]
         }
     )

@@ -282,7 +282,7 @@ def measure_analytics(
         return out
     latest = points[0]
     level = Analytic(
-        **_base(key, "level", f"{label}, latest quarter", claim_ids, latest.slot.label),  # type: ignore[arg-type]
+        **_base(key, "level", f"{label}, latest quarter", claim_ids, latest.slot.label),
         value=latest.value,
         unit=unit,
         display=display(latest.value, unit),
@@ -326,9 +326,7 @@ def _step_change(
         return _missing(fields, unit, before.note)
     value = _change(latest.value, before.value, ratio)
     if value is None:
-        return _missing(
-            fields, unit, f"Growth is not meaningful: {earlier.label} is not positive."
-        )
+        return _missing(fields, unit, f"Growth is not meaningful: {earlier.label} is not positive.")
     shown_now = display(latest.value, _unit_of(key))
     shown_before = display(before.value, _unit_of(key))
     formula = (
@@ -345,10 +343,10 @@ def _step_change(
         formula=formula,
         inputs=_fact_inputs((*latest.used, *before.used)),
         reading=(
-            f"{label} {_verb(value, ratio)} {text.lstrip('+')} on {earlier.label} "
+            f"{label} {_verb(value, ratio)} {text.lstrip('+-')} on {earlier.label} "
             f"({shown_before} to {shown_now})."
-            if value
-            else f"{label} was unchanged on {earlier.label} ({shown_now})."
+            if round(value, 1)
+            else f"{label} was about unchanged on {earlier.label} ({shown_before} to {shown_now})."
         ),
     )
 
@@ -767,8 +765,10 @@ def _flip(
     assert part.left is not None and part.right is not None
     if test.form == "streak" or part.right.value is None or part.left.value is None:
         return None
-    if test.form == "growth_threshold" and len(part.operands) >= 2 and isinstance(
-        test.right, Number
+    if (
+        test.form == "growth_threshold"
+        and len(part.operands) >= 2
+        and isinstance(test.right, Number)
     ):
         current, base = part.operands[0], part.operands[1]
         if base.value is None or current.value is None:
@@ -800,7 +800,17 @@ def _flip(
             ),
         )
     shown = _side_display(part.right.value, part)
-    other = "a constant" if isinstance(test.right, Number) else part.right.label
+    left_words = _lower(part.left.label)
+    if isinstance(test.right, Number):
+        reading = (
+            f"The outcome flips when {left_words} crosses {shown}; it stands at "
+            f"{part.left.display}."
+        )
+    else:
+        reading = (
+            f"The outcome flips when {left_words} crosses {shown}, the value of "
+            f"{_lower(part.right.label)}; it stands at {part.left.display}."
+        )
     return Analytic(
         **fields("flip", "Value at which the outcome flips"),
         value=part.right.value,
@@ -808,10 +818,7 @@ def _flip(
         display=shown,
         formula=f"{part.left.term} {part.comparison} {part.right.display}",
         inputs=[test_input],
-        reading=(
-            f"The outcome flips when {part.left.label.lower()} crosses {shown} ({other}); "
-            f"it is {part.left.display}."
-        ),
+        reading=reading,
     )
 
 
@@ -854,7 +861,9 @@ def _record(fields: object, computed: ComputedTest, test_input: AnalyticInput) -
     if total == 0:
         return _missing(base, "percent", computed.history_note or "The test has no history.")
     share = held / total * 100
-    flip = f"; it last flipped as of the filing of {last_flip}" if last_flip else "; it never flipped"
+    flip = (
+        f"; it last flipped as of the filing of {last_flip}" if last_flip else "; it never flipped"
+    )
     return Analytic(
         **base,  # type: ignore[arg-type]
         value=share,
@@ -1021,7 +1030,10 @@ def bridge_analytics(
         parts: list[str] = []
         rest = gap
         formula = f"{usd_text(ocf)} {MINUS} {usd_text(income)}"
-        for key, words in (("sbc", "stock-based compensation"), ("d_and_a", "depreciation and amortization")):
+        for key, words in (
+            ("sbc", "stock-based compensation"),
+            ("d_and_a", "depreciation and amortization"),
+        ):
             part = _ttm(measures, key, end)
             if part.value is not None:
                 used += part.used
@@ -1241,7 +1253,8 @@ def _days(
             return f"Not meaningful: {flow_words} is not positive in {quarter.label}."
         revenue = measures.series("quarter", "revenue").get(quarter.end)
         days = _quarter_days(revenue)
-        return balance[0] / flow.value * days, balance[0], flow.value, days, [balance[1], *flow.used]
+        used = [balance[1], *flow.used]
+        return balance[0] / flow.value * days, balance[0], flow.value, days, used
 
     now = at(slot)
     if isinstance(now, str):
@@ -1483,9 +1496,7 @@ def segment_contributions(
                         value=contribution,
                         unit="points",
                         display=shown,
-                        formula=(
-                            f"({now.display} {MINUS} {then.display}) ÷ {older.display}"
-                        ),
+                        formula=(f"({now.display} {MINUS} {then.display}) ÷ {older.display}"),
                         inputs=[
                             AnalyticInput(
                                 ref_kind="fact",
@@ -1551,9 +1562,7 @@ class FactsProvider:
             out += bridge_analytics(measures, end, label, request.measures)
             out += earnings_quality(measures, end, label, request.measures)
         parts = {
-            claim_id: [
-                key.split('"')[1] for key in keys if '"' in key
-            ]
+            claim_id: [key.split('"')[1] for key in keys if '"' in key]
             for claim_id, keys in request.measures.items()
         }
         out += segment_contributions(request.reports, request.measures, parts)

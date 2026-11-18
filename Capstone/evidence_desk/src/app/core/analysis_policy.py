@@ -16,6 +16,9 @@ BALANCE_MATCH_DAYS = 10
 # The length of a quarter when the facts do not give its start (days in a year / 4).
 DEFAULT_QUARTER_DAYS = 91
 
+# The headline (app.core.relevance): at most this many figures.
+MAX_HEADLINE = 12
+
 # Persistence odds (app.core.persistence)
 PERSISTENCE_PATHS = 10_000
 PERSISTENCE_SEED = 20261118
@@ -64,11 +67,11 @@ COROLLARY_RULE = (
 )
 READ_BY = {
     "agreed": "the grammar and the proposing model read the same test",
-    "grammar_only": "the grammar alone (the proposing model's typed form did not validate)",
+    "grammar_only": "the grammar alone (the proposing model gave no typed test that validated)",
     "proposer_only": "the proposing model only (the grammar read no test)",
     "not_agreed": (
-        "not agreed: the grammar and the proposing model read different tests; the grammar's "
-        "is computed and shown, and neither is taken as agreed"
+        "not agreed: the grammar and the proposing model read different tests; the proposing "
+        "model's is computed and both are shown, and it counts toward nothing"
     ),
     "not_computable": "no test: neither the grammar nor the proposing model read one",
 }
@@ -85,9 +88,11 @@ COROLLARY_FLAG = (
 NO_PROPOSER = "No corollaries: no model was asked to propose them ({why})."
 PROPOSE_FAILED = "No corollaries: the request for them failed ({why})."
 NO_ARGUMENT = "No model's argument: {why}. The analytics and their readings were written by code."
-NO_MODEL_WHY = "no model is configured (the extractive engine)"
+NO_MODEL_WHY = "no model is configured: the engine is extractive"
 OUT_OF_TIME_WHY = "the run's time limit was reached first"
-ANALYSE_FAILED_ERROR = "The analysis step failed ({why}); the record holds the computed analysis only."
+ANALYSE_FAILED_ERROR = (
+    "The analysis step failed ({why}); the record holds the computed analysis only."
+)
 PROPOSE_FAILED_ERROR = "The corollary step failed ({why}); no corollary was proposed."
 LEAN_FLAG = (
     "The model reads the evidence as {lean}, but the verdict is {verdict}. The verdict "

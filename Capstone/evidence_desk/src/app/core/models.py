@@ -533,8 +533,9 @@ class Coverage(BaseModel):
     # value; those that could not be computed are on the record and not counted here).
     analytics_computed: int = 0
     # Corollaries: proposed by the model (0 when no model was asked or the request failed:
-    # then nothing was proposed, and every count after it is 0 of 0), computed by code, and of
-    # those computed, how many came out as the claim implies and how many against it.
+    # then nothing was proposed, and every count after it is 0 of 0); computed by code to an
+    # outcome (computed == as_expected + against; one that could not be computed from the
+    # facts counts in neither); as the claim implies, and against it.
     corollaries_proposed: int = 0
     corollaries_computed: int = 0
     corollaries_as_expected: int = 0
@@ -548,6 +549,8 @@ class Coverage(BaseModel):
     analysis_sentences_written: int = 0
     analysis_sentences_verified: int = 0
     analysis_sentences_unverified: int = 0
+    # Sentences over a section's cap, cut by code before the audit (not in written).
+    analysis_sentences_cut: int = 0
     analysis_unverified_no_evidence: int = 0
     analysis_unverified_unknown_id: int = 0
     analysis_unverified_disallowed_id: int = 0

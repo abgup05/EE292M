@@ -51,6 +51,7 @@ from app.core.models import (
 from app.core.numcheck import check_numbers
 from app.core.periods import check_periods
 from app.core.ports import (
+    Analyser,
     Analyst,
     Checker,
     ClaimDraft,
@@ -60,12 +61,14 @@ from app.core.ports import (
     SourceError,
     SummaryDraft,
 )
+from app.engines.analyser import NoAnalyser
 from app.engines.checker import NoChecker
 from app.engines.extractive import ExtractiveAnalyst
 from app.engines.fallback import FallbackAnalyst
 from app.retrieval.chunk import chunk_document
 from app.retrieval.search import PassageIndex
 from app.services import events as event_service
+from app.services.analysis import analyse_run
 from app.services.computed import compute_claims, count_computed
 from app.services.ingest import Ingested, ingest
 from app.services.numbers import NumbersResult, load_numbers, select_figures
@@ -215,6 +218,7 @@ def execute_run(
     checker: Checker | None = None,
     facts_store: FactStore | None = None,
     claim_reader: ClaimReaders = None,
+    analyser: Analyser | None = None,
 ) -> Run:
     """Execute ``run`` to completion, persisting progress, and return the final record.
 
@@ -226,7 +230,9 @@ def execute_run(
     with :class:`~app.engines.checker.NoChecker`) every finding stays unchecked.
     ``facts_store`` keeps every XBRL fact the run reads (none kept without one).
     ``claim_reader`` is the model parser, a second reader of each claim's test; without
-    one (the default) the grammar reads them alone.
+    one (the default) the grammar reads them alone. ``analyser`` proposes each claim's
+    corollaries and argues the analysis once the verdicts are final (two requests); without
+    one the run records the analysis code computes (:mod:`app.services.analysis`).
     """
     if concurrency < 1:
         raise ValueError("concurrency must be at least 1")
@@ -340,7 +346,7 @@ def execute_run(
     # Computed tests: compiled from the claim text, computed from the facts just read. The
     # engine is never asked about them; their outcomes enter the verdicts after the summary.
     newest = newest_reports(ingested.filing_refs.values())
-    compute_claims(
+    computed = compute_claims(
         run,
         numbers,
         lambda: read_reports(
@@ -560,6 +566,20 @@ def execute_run(
         # The template is written again from the final verdicts, so it cannot contradict them.
         summary = deterministic.summarize(run.inputs, company, run.claims, run.findings)
     run.errors.extend(failures.messages())
+
+    # The analysis reads the final verdicts and never changes them, nor the run's status.
+    def analysing(step: str) -> None:
+        run.stage_detail = step
+        store.save_run(run)
+
+    analyse_run(
+        run,
+        numbers,
+        computed,
+        analyser or NoAnalyser(),
+        out_of_time=out_of_time,
+        on_step=analysing,
+    )
     unknowns, dropped = _drop_unverified_numbers(unknowns, run)
     next_steps, dropped_steps = _drop_unverified_numbers(summary.next_steps, run)
     if dropped + dropped_steps:

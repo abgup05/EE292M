@@ -1,4 +1,4 @@
-.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe replay golden-check golden-baseline profile bench eval eval-validate golden-sheet backup restore-check up-recorded live-walk changes breakdowns lock clean data vercel-deps referee versions-up versions-down versions-status versions-logs pr pr-describe pr-merge site-survey site-run-v1 site-export site-index site-scan site-test site-browse site-check
+.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe replay golden-check golden-baseline profile bench eval eval-validate golden-sheet backup restore-check up-recorded live-walk changes breakdowns lock clean data vercel-deps referee versions-up versions-down versions-status versions-logs pr pr-describe pr-merge site-survey site-run-v1 site-export site-index site-scan site-test site-browse site-check site-vendor site-live-up site-live-down site-live-test
 
 # make <target> runs the capstone by default; make APP=week2 <target> runs the Week 2 app.
 APP ?= capstone
@@ -147,3 +147,31 @@ site-browse:
 site-check:
 	@test -n '$(URL)' || { echo 'Usage: make site-check URL=https://ee292m-visualization.vercel.app'; exit 1; }
 	@$(SITE_PY) tools/snapshots/check.py '$(URL)' '$(SITE_DIR)'
+
+# The website runs each capstone version live (docs/site-live.md): tools/live/versions.map names
+# the git ref of each version N; make site-vendor copies that ref's Capstone/evidence_desk/src
+# into $(LIVE_DIR)/vN with the package renamed app -> ed_vN (tools/live/vendor.py, read from
+# git, never from a working tree), writes the EDGAR seed from the last ref's recorded test
+# fixtures, removes versions no longer in the map, then imports every vendored module and asks
+# each version for its page and /api/meta under the Week 2 app's dependencies.
+#   make site-vendor                     every version in the map
+#   make site-live-up / site-live-down   the function as Vercel runs it, on 127.0.0.1:8790
+#   make site-live-test                  every version: page, a no-key run through the shim,
+#                                        the finished run again from a fresh process
+LIVE_SITE := Homework/Week 2/visualization
+LIVE_DIR := $(LIVE_SITE)/vendored
+LIVE_MAP := tools/live/versions.map
+LIVE_PY_STDIN := docker run --rm -i --user "$$(id -u):$$(id -g)" -v "$(CURDIR):/repo" -w /repo $(SITE_IMAGE) python -B -I
+LIVE_LINES := grep -Ev '^[[:space:]]*(\#|$$)' $(LIVE_MAP)
+
+site-vendor:
+	@set -e; $(LIVE_LINES) | while read -r n ref; do \
+	  commit=$$(git rev-parse -q --verify "$$ref^{commit}") || { echo "version $$n: there is no ref $$ref"; exit 1; }; \
+	  git archive --format=tar "$$commit" Capstone/evidence_desk/src \
+	    | $(LIVE_PY_STDIN) tools/live/vendor.py version "$$n" --ref "$$ref" --commit "$$commit" --out '$(LIVE_DIR)'; \
+	done
+	@set -e; ref=$$($(LIVE_LINES) | tail -1 | awk '{print $$2}'); commit=$$(git rev-parse --verify "$$ref^{commit}"); \
+	  git archive --format=tar "$$commit" Capstone/evidence_desk/tests/fixtures \
+	    | $(LIVE_PY_STDIN) tools/live/vendor.py seed --ref "$$ref" --commit "$$commit" --out '$(LIVE_DIR)'
+	@$(LIVE_PY_STDIN) tools/live/vendor.py prune --out '$(LIVE_DIR)' $$($(LIVE_LINES) | awk '{print $$1}')
+	@$(MAKE) -s APP=week2 live-imports

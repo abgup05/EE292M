@@ -23,7 +23,6 @@ import math
 from collections.abc import Iterable
 from datetime import date
 
-from app.core.analysis_models import OutsideView
 from app.core.base_rates import AnnualTerm, AnnualTest, RefClass, annual_test, base_rate
 from app.core.claimtest import ClaimTest, compile_claim
 from app.core.facts import GROUPS
@@ -42,6 +41,8 @@ from app.core.metrics import usd_text
 from app.core.models import Company
 from app.core.peers import PEER_MEASURES, latest_year, peer_standing
 from app.core.ports import FilingSource, SourceError
+from app.core.view_models import OutsideView
+from app.services.view_analytics import peer_measures
 from app.sources.frames import FramesSource
 
 DEFAULT_YEARS = 15
@@ -147,6 +148,7 @@ def outside_view(
                 view.compile_note = f"The test {compiled.canonical} is not read on frames: {read}."
             else:
                 test = read
+                view.test_measures = sorted(test_measures(test))
         else:
             view.compile_note = f"The claim does not compile to a test: {compiled.reason}"
     wanted: list[tuple[str, int]] = []
@@ -197,7 +199,8 @@ def outside_view(
             definition=(
                 f"the {len(members):,} filers SEC lists today under SIC {sic}"
                 f"{f' ({sic_description})' if sic_description else ''} that have filed a 10-K, "
-                f"with revenue of at least {usd_text(INDUSTRY_FLOOR)} in the year read"
+                f"with revenue of at least {usd_text(INDUSTRY_FLOOR)} in the test's base year "
+                "(for a ranking, in the year ranked)"
             ),
         )
         classes.append(("industry", industry))
@@ -294,13 +297,19 @@ def describe(view: OutsideView) -> list[str]:
             lines.append(f"    own: {case.year} {case.display}")
         lines.extend(f"  - {a}" for a in rate.assumptions)
         lines.append("")
+    shown = peer_measures(view.test_measures)
     for peer in view.peers:
+        if peer.measure not in shown:
+            continue
         lines.append(f"[{peer.id}] {peer.reading}")
         if peer.now and peer.now.rank is not None:
             near = ", ".join(
                 f"{n.rank}. {n.name} {n.display}" for n in (*peer.now.above, *peer.now.below)
             )
             lines.append(f"    next to it: {near}")
+    more = [peer.measure for peer in view.peers if peer.measure not in shown]
+    if more:
+        lines.append(f"Standings not shown here (in the JSON): {', '.join(more)}")
     lines.append("")
     lines.extend(f"Note: {note}" for note in view.notes)
     lines.append(f"Catalogue measures covered by frames: {', '.join(view.covered_measures)}")

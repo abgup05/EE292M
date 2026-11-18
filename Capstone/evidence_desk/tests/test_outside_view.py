@@ -160,13 +160,14 @@ def test_a_test_frames_cannot_hold_is_refused_with_the_reason(claim: str, reason
 
 
 def test_the_base_rate_counts_company_years_of_the_class_by_hand() -> None:
-    # Floor $80M in the base year (t-1). By hand:
-    # t=2021, base 2020: in class Alpha 100, Beta 200, Delta 300, Epsilon 90, Own 1000
-    #   (Gamma 50 is under the floor): 5. Epsilon's 2020 and 2021 ends are not a year
-    #   apart: 4 computable. Held (> 50%): Alpha +60%, Own +70%: 2.
-    # t=2022, base 2021: Alpha 160, Beta 250, Gamma 120, Delta 290, Epsilon 200, Own 1700:
-    #   6. Delta has no 2022: 5 computable. Held: Beta +60%, Gamma +150%: 2.
-    # In all 4 of 9. Persistence: the 2021 hits (Alpha, Own) at 2022: +25%, +17.6%: 0 of 2.
+    # Floor $80M in the base year (t-1); the company itself (Own) is never counted. By hand:
+    # t=2021, base 2020: in class Alpha 100, Beta 200, Delta 300, Epsilon 90
+    #   (Gamma 50 is under the floor): 4. Epsilon's 2020 and 2021 ends are not a year
+    #   apart: 3 computable. Held (> 50%): Alpha +60%: 1.
+    # t=2022, base 2021: Alpha 160, Beta 250, Gamma 120, Delta 290, Epsilon 200:
+    #   5. Delta has no 2022: 4 computable. Held: Beta +60%, Gamma +150%: 2
+    #   (Epsilon +5%, Alpha +25%).
+    # In all 3 of 7. Persistence: the 2021 hit (Alpha) at 2022: +25%: 0 of 1.
     test = annual_test(compiled("Revenue grew more than 50% year over year"))
     assert not isinstance(test, str)
     rate = base_rate(
@@ -180,13 +181,13 @@ def test_the_base_rate_counts_company_years_of_the_class_by_hand() -> None:
         result_id="r",
     )
     assert [(y.year, y.in_class, y.computable, y.held) for y in rate.years] == [
-        (2021, 5, 4, 2),
-        (2022, 6, 5, 2),
+        (2021, 4, 3, 1),
+        (2022, 5, 4, 2),
     ]
-    assert (rate.held, rate.computable) == (4, 9)
-    assert rate.value == pytest.approx(400 / 9)
-    assert rate.display == "4 of 9 (44.4%)"
-    assert (rate.persisted, rate.persist_base) == (0, 2)
+    assert (rate.held, rate.computable) == (3, 7)
+    assert rate.value == pytest.approx(300 / 7)
+    assert rate.display == "3 of 7 (42.9%)"
+    assert (rate.persisted, rate.persist_base) == (0, 1)
     # Nearest to Own's newest value, +17.6% (2022): Beta and Alpha (+60%, 42.4 points away;
     # the later year first), then Gamma (+150%). Own's own hit is listed apart.
     assert [(c.name, c.year) for c in rate.cases] == [
@@ -197,7 +198,8 @@ def test_the_base_rate_counts_company_years_of_the_class_by_hand() -> None:
     assert rate.cases[1].next_year == "did not hold"
     assert rate.cases[0].next_year == ""  # 2023 is not read
     assert [(c.year, c.display) for c in rate.own] == [(2021, "70.0%")]
-    assert "4 of 9 company-years from 2021 to 2022" in rate.reading
+    assert "held in 3 of 7 company-years from 2021 to 2022" in rate.reading
+    assert any("The company itself is not counted" in a for a in rate.assumptions)
     assert any("read on years" in a for a in rate.assumptions)
 
 
@@ -223,7 +225,7 @@ def test_a_streak_of_years_counts_rises_in_a_row() -> None:
     # Own: 1000 -> 1700 -> 2000, two rises by 2022. Alpha: 100 -> 160 -> 200, two.
     # Beta: 200 -> 250 -> 400, two. Gamma: 50 -> 120 -> 300, two. Epsilon: its ends are
     # not a year apart: not computable. Delta has no 2022. Class floor $1M at t-2 (2020):
-    # all six; computable four; held four.
+    # the five others; computable three (Alpha, Beta, Gamma); held three. Own is not counted.
     test = annual_test(compiled("Revenue has grown for 2 consecutive years"))
     assert not isinstance(test, str), test
     rate = base_rate(
@@ -236,7 +238,7 @@ def test_a_streak_of_years_counts_rises_in_a_row() -> None:
         as_of="",
         result_id="r",
     )
-    assert (rate.held, rate.computable, rate.years[0].in_class) == (4, 4, 6)
+    assert (rate.held, rate.computable, rate.years[0].in_class) == (3, 3, 5)
 
 
 def test_no_computable_year_is_cannot_compute_not_zero() -> None:

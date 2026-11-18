@@ -21,7 +21,10 @@ The rules:
 - **The class** is decided in the earliest year the test reads (the base of a growth):
   revenue at least the floor there, and, for an industry class, the filer's current SIC
   code. A company-year in the class whose test cannot be computed is counted as such,
-  never as a failure.
+  never as a failure. Deciding it in the base year keeps the outcome out of the class: a
+  filer is not admitted because it grew.
+- **The company itself is left out** of every count, so that a small class is not the
+  company's own history; the years in which the test held for it are listed apart.
 - **Persistence**: of the company-years for which the test held in year t, those for
   which it could be computed in t + 1, and of them those for which it held.
 - **Nearest cases** are the other filers' company-years that held, nearest to the
@@ -37,14 +40,6 @@ from collections.abc import Callable, Collection, Sequence
 from dataclasses import dataclass, field
 from typing import Literal
 
-from app.core.analysis_models import (
-    BaseRate,
-    Case,
-    ConceptResolution,
-    Distribution,
-    ResultInput,
-    YearCount,
-)
 from app.core.claimtest import ClaimTest, Number, Period, Term
 from app.core.facts import GROUPS
 from app.core.frames import (
@@ -56,6 +51,14 @@ from app.core.frames import (
     years_apart,
 )
 from app.core.metrics import percent_text, usd_text
+from app.core.view_models import (
+    BaseRate,
+    Case,
+    ConceptResolution,
+    Distribution,
+    ResultInput,
+    YearCount,
+)
 
 MAX_CASES = 5
 OPS: dict[str, Callable[[float, float], bool]] = {
@@ -363,13 +366,15 @@ class _Tally:
     hits: list[tuple[int, int, Value]] = field(default_factory=list)
 
 
-def _tally(panel: Panel, test: AnnualTest, ref: RefClass, years: Sequence[int]) -> _Tally:
+def _tally(
+    panel: Panel, test: AnnualTest, ref: RefClass, years: Sequence[int], leave_out: int
+) -> _Tally:
     tally = _Tally()
     for year in years:
         base = year - test.reach
         in_class = computable = count = 0
         for cik in sorted(panel.filers(base)):
-            if not ref.admits(panel, cik, base):
+            if cik == leave_out or not ref.admits(panel, cik, base):
                 continue
             in_class += 1
             outcome, shown = held(panel, test, cik, year)
@@ -424,7 +429,7 @@ def base_rate(
     back to in ``panel``. Pure: the frames were read by the caller.
     """
     usable = [y for y in years if y - test.reach in panel.years and y in panel.years]
-    tally = _tally(panel, test, ref, usable)
+    tally = _tally(panel, test, ref, usable, company_cik)
     held_total = sum(y.held for y in tally.years)
     computable = sum(y.computable for y in tally.years)
     persisted = base = 0
@@ -436,8 +441,13 @@ def base_rate(
             continue
         base += 1
         persisted += int(outcome)
-    own_hits = [(c, y, v) for c, y, v in tally.hits if c == company_cik]
-    others = [(c, y, v) for c, y, v in tally.hits if c != company_cik]
+    own_hits = [
+        (company_cik, year, shown)
+        for year in usable
+        for outcome, shown in [held(panel, test, company_cik, year)]
+        if outcome
+    ]
+    others = tally.hits
     target = _own_value(panel, test, company_cik, usable)
     cases = [
         _case(panel, test, c, y, v, usable)
@@ -452,6 +462,13 @@ def base_rate(
         "year that best fits the calendar year; t-1 is the frame a year earlier, and the two "
         "periods must end a whole number of years apart.",
         "Frames carry no filing date: a value restated later is the restated value.",
+        "The company itself is not counted: the rate is of the other filers of the class, and "
+        "the years in which the test held for the company are listed apart.",
+        "A filer in the class in the base year with no value in year t (it was bought, went "
+        "under, stopped filing, or changed its tags) is in the class but not computable: the "
+        "rate is of the filers that can still be read.",
+        "A parent and a subsidiary that both file are two filers; a filer that reports in "
+        "another currency is in no USD frame.",
     ]
     if test.from_quarters:
         assumptions.append(
@@ -485,8 +502,8 @@ def base_rate(
         else "none that held could be read a year later"
     )
     reading = (
-        f"Among {ref.name}, {annual} held in {held_total} of {computable} company-years from "
-        f"{span}; {persist_text}."
+        f"Among {ref.name} (the company left out), {annual} held in {held_total} of "
+        f"{computable} company-years from {span}; {persist_text}."
     )
     return BaseRate(
         id=result_id,

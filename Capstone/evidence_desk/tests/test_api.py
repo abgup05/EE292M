@@ -1010,3 +1010,64 @@ def test_breakdowns_when_edgar_cannot_list_the_filing_are_a_503(tmp_path: Path) 
     with TestClient(app) as test_client:
         response = test_client.get("/api/companies/NVDA/breakdowns")
     assert response.status_code == 503 and "unavailable" in response.json()["error"]
+
+
+# A company's 8-Ks since its annual report
+
+
+def events_client(tmp_path: Path, filings: FakeFilings) -> TestClient:
+    app = create_app(
+        store=Store(tmp_path / "runs.sqlite"),
+        filings=filings,
+        analyst=ExtractiveAnalyst(),
+        fetch_page=FakePages({}),
+    )
+    return TestClient(app)
+
+
+def test_events_list_the_8ks_since_the_annual_report(tmp_path: Path) -> None:
+    with events_client(tmp_path, FakeFilings.nvidia_with_events()) as test_client:
+        response = test_client.get("/api/companies/nvda/events")
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["company"]["ticker"] == "NVDA"
+    timeline = body["timeline"]
+    assert len(timeline) == 11 and timeline[0]["filed_date"] == "2026-11-12"
+    first = timeline[0]["items"][0]
+    assert (first["number"], first["category"], first["found"]) == ("5.02", "leadership", True)
+    assert body["as_of"]["counts"]["read"] == 7
+    assert body["as_of"]["line"].startswith("Evidence as of 12 Nov 2026 (8-K), ")
+
+
+def test_events_refuse_a_malformed_or_unknown_ticker(tmp_path: Path) -> None:
+    with events_client(tmp_path, FakeFilings.nvidia_with_events()) as test_client:
+        malformed = test_client.get("/api/companies/NV%20DA!/events")
+        unknown = test_client.get("/api/companies/ZZZZ/events")
+    assert malformed.status_code == 422 and fields(malformed) == ["ticker"]
+    assert unknown.status_code == 422 and fields(unknown) == ["ticker"]
+
+
+def test_events_report_an_unreadable_8k_list_in_the_result(tmp_path: Path) -> None:
+    filings = FakeFilings.nvidia_with_events()
+    filings.current_error = SourceError("EDGAR answered HTTP 503")
+    with events_client(tmp_path, filings) as test_client:
+        response = test_client.get("/api/companies/NVDA/events")
+    assert response.status_code == 200
+    assert response.json()["timeline"] == []
+    assert response.json()["as_of"]["index_error"] == "EDGAR answered HTTP 503"
+
+
+def test_events_when_edgar_cannot_list_the_periodic_reports_are_a_503(tmp_path: Path) -> None:
+    filings = FakeFilings.nvidia_with_events()
+    filings.index_error = SourceError("the filing index of NVIDIA CORP is unavailable")
+    with events_client(tmp_path, filings) as test_client:
+        response = test_client.get("/api/companies/NVDA/events")
+    assert response.status_code == 503 and "unavailable" in response.json()["error"]
+
+
+def test_meta_carries_the_event_wording(tmp_path: Path) -> None:
+    with events_client(tmp_path, FakeFilings.nvidia_with_events()) as test_client:
+        events = test_client.get("/api/meta").json()["events"]
+    assert events["heading"] == "Since the annual report"
+    assert events["category_labels"]["leadership"] == "Leadership"
+    assert "leadership" in events["substantive"] and "exhibits" not in events["substantive"]

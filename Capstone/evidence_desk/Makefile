@@ -29,6 +29,7 @@ help:
 	@echo "Facts: restatements T=NVDA (live: every metric and period whose value differs between the company's filings, with each filing and the change; ARGS='--as-of 2020-01-01'; writes results/restatements-<ticker>-<UTC>.txt and .json)"
 	@echo "Claims: claim-labels (offline: the claim compiler against eval/claim-tests.json, development set; ARGS='--set held_out' scores the held-out set, at most twice ever)"
 	@echo "Claims: claim-results-key (offline: the expected results of eval/claim-results.json from the raw facts, by a route that never calls the evaluator; ARGS='--write' writes them)"
+	@echo "Claims: eval ARGS='compiler-vs-model' (the claim compiler and a model, given the same reported-figure lines, scored on eval/claim-results.json; prints the calls it would make first; ARGS='compiler-vs-model --record --max-calls 60' asks the API for missing answers, refusing above the cap)"
 	@echo 'Facts: facts-load TICKERS="NVDA AAPL" (live: every us-gaap fact of each company, with the filing that reported it and its SIC code, into data/facts/facts.sqlite; disposable)'
 	@echo 'Fixtures: fixtures-facts(record XBRL company facts of NVDA, AAPL, MSFT under tests/fixtures/edgar; REFRESH=1 to overwrite)'
 	@echo 'Fixtures: fixtures (record SEC EDGAR responses for NVIDIA under tests/fixtures/edgar; REFRESH=1 to overwrite)'

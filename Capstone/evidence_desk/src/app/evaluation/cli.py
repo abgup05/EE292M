@@ -22,6 +22,9 @@ Commands:
   ``eval/cassettes/golden``), plant mismatches (each verified finding's statement with
   another finding's quotes) and put them to the meaning checker through ``--cassette``;
   exit 3 while any check request is pending, writing nothing (``mismatch-*``).
+- ``compiler-vs-model [--record --max-calls N] [--cassette DIR]``: the claim compiler and a
+  model, given the same reported-figure lines, on ``eval/claim-results.json``
+  (:mod:`app.evaluation.compiler_vs_model`); says how many calls it will make first.
 
 ``plan``, ``generate`` and ``fetch`` pin each company's CIK and name, and
 ``generate`` and ``fetch`` its XBRL facts, in ``eval/filings.json`` the first time.
@@ -47,6 +50,7 @@ from typing import Any
 from app.core.documents import Document
 from app.core.models import Company
 from app.core.ports import SourceError
+from app.evaluation import compiler_vs_model
 from app.evaluation.companies import (
     CompanyFigures,
     company_for,
@@ -91,7 +95,17 @@ from app.evaluation.retrieval_eval import (
 )
 from app.sources.edgar import EdgarClient
 
-COMMANDS = ("validate", "run", "fetch", "pin", "show", "plan", "generate", "mismatch")
+COMMANDS = (
+    "validate",
+    "run",
+    "fetch",
+    "pin",
+    "show",
+    "plan",
+    "generate",
+    "mismatch",
+    "compiler-vs-model",
+)
 GLOBAL_OPTIONS_WITH_VALUE = ("--golden", "--filings")
 RESULTS_DIR = EVAL_DIR / "results"
 QUERIES_PATH = EVAL_DIR / "queries.json"
@@ -149,6 +163,12 @@ def _parser() -> argparse.ArgumentParser:
     )
     mismatch.add_argument("--queries", type=Path, default=QUERIES_PATH, help="from plan")
     mismatch.add_argument("--out", type=Path, default=RESULTS_DIR, help="where the record goes")
+    compiler_vs_model.add_arguments(
+        commands.add_parser(
+            "compiler-vs-model",
+            help="the claim compiler and a model on the golden computed claims",
+        )
+    )
     return parser
 
 
@@ -475,6 +495,9 @@ def _display(path: Path) -> str:
 def main(argv: Sequence[str] | None = None) -> int:
     """Parse the command line and run one command; returns the exit status."""
     args = _parser().parse_args(normalize_argv(sys.argv[1:] if argv is None else argv))
+    if args.command == "compiler-vs-model":
+        # Reads only recorded facts and the cassette; never contacts EDGAR.
+        return compiler_vs_model.main(args)
     try:
         pins = load_pins(args.filings) if args.filings.exists() or args.command != "pin" else {}
         if args.offline:

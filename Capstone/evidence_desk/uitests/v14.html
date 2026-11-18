@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Version 14 check</title>
+</head>
+<body>
+<!--
+  Version 14's states that the committed examples do not show. `make uitest` loads this file in
+  headless Chromium with the same-origin rule off for this page only (KEYS_FLAGS in the Makefile)
+  and dumps its DOM.
+
+  It loads the computed-claims sample (?sample=computed) in a frame and has the page's own code
+  draw, in turn:
+  - readers: the example run with a second reader, made here the way app/services/computed.py
+    makes it (docs/claim-tests.md): on c1 the model reads another test (the readings differ: the
+    test's read_by is the grammar alone, counted_as is "" and its note begins with the backend's
+    sentence), on c2 the model reads the same test (read_by both), on c3, which the grammar did
+    not compile, the model reads a test; and a third reading on c4, to show that the page lists
+    however many readers there are. No example run has a second reader: none was recorded.
+  - the restatement lookup, with sample mode off and a stand-in for `fetch`: a refused date (422),
+    the example ledger (200) and EDGAR out of reach (503), each in the README's shape;
+  - a run asked for as of a date: the request the form sends, a refused date (422), and the
+    example as-of run drawn when the server accepts it;
+  - the inbox: the v13 example page with one item's `moved.computed` filled in (the example
+    scenario changes no computed outcome), and the saved theses list with a `watch` on each
+    thesis, as GET /api/theses gives it (no example payload of that route exists).
+  Calls to any other /api/ route are answered 500 and listed as unexpected.
+
+  It decides nothing: after each step it writes what the page showed and what it sent into the
+  list below, and uitests/test_v14_dom.py judges it.
+-->
+<iframe id="app" title="Evidence Desk" src="http://app:8000/?sample=computed" width="1200" height="900"></iframe>
+<ol id="steps"></ol>
+<p id="done" data-done="false">running</p>
+<script>
+"use strict";
+const frame = document.getElementById("app");
+const steps = document.getElementById("steps");
+const done = document.getElementById("done");
+const V14 = "file:///work/docs/examples/v14/";
+const V13 = "file:///work/docs/examples/v13/";
+let routes = {};
+let calls = [];
+let unexpected = [];
+
+function readFile(url) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", url);
+    xhr.onload = () => resolve(JSON.parse(xhr.responseText));
+    xhr.onerror = () => reject(new Error(`could not read ${url}`));
+    xhr.send();
+  });
+}
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function until(test, what) {
+  for (let i = 0; i < 80; i += 1) {
+    if (test()) return;
+    await sleep(50);
+  }
+  throw new Error(`timed out waiting for ${what}`);
+}
+
+function stubFetch(realFetch) {
+  const win = frame.contentWindow;
+  return (input, options = {}) => {
+    const url = new URL(String(input), win.location.href);
+    const method = (options.method || "GET").toUpperCase();
+    if (!url.pathname.startsWith("/api/") || url.pathname === "/api/meta") return realFetch(input, options);
+    const key = `${method} ${url.pathname}${url.search}`;
+    calls.push({ key, body: options.body || "" });
+    const answer = routes[key] ?? routes[`${method} ${url.pathname}`];
+    if (!answer) {
+      unexpected.push(key);
+      return Promise.resolve(new win.Response(JSON.stringify({ error: "unexpected call in the harness" }), { status: 500 }));
+    }
+    const [status, body] = answer;
+    return Promise.resolve(new win.Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } }));
+  };
+}
+
+function text(node) {
+  return node ? node.textContent.replace(/\s+/g, " ").trim() : "";
+}
+
+function record(step, extra) {
+  const doc = frame.contentDocument;
+  const li = document.createElement("li");
+  li.dataset.step = step;
+  li.dataset.calls = JSON.stringify(calls);
+  li.dataset.unexpected = JSON.stringify(unexpected);
+  li.dataset.formErrors = doc.getElementById("form-errors").hidden ? "" : text(doc.getElementById("form-errors"));
+  li.dataset.asOfError = doc.getElementById("err-as_of").hidden ? "" : text(doc.getElementById("err-as_of"));
+  li.dataset.formNote = doc.getElementById("form-note").hidden ? "" : text(doc.getElementById("form-note"));
+  li.dataset.loadError = doc.getElementById("load-error").hidden ? "" : text(doc.getElementById("load-error"));
+  li.dataset.views = JSON.stringify(["run-view", "ledger-view", "inbox-view"].filter((id) => !doc.getElementById(id).hidden));
+  Object.assign(li.dataset, extra || {});
+  li.textContent = step;
+  steps.append(li);
+  calls = [];
+}
+
+/** What the page drew for each claim: the counted tag, the readings, the line when they differ, the board's computed part. */
+function claimsDrawn(doc) {
+  return JSON.stringify(
+    [...doc.querySelectorAll("#claim-list details.claim")].map((docket) => {
+      const id = docket.dataset.docket;
+      const row = doc.querySelector(`#scorecard li[data-claim-id="${id}"]`);
+      return {
+        id,
+        counted: (docket.querySelector("[data-counted]") || {}).dataset?.counted || "",
+        readers: [...docket.querySelectorAll(".readings li")].map((li) => li.dataset.reader),
+        canonicals: [...docket.querySelectorAll(".readings li")].map((li) => li.dataset.canonical),
+        differ: text(docket).includes("Readings differ: not counted"),
+        board: text(row && row.querySelector("[data-board-computed]")),
+        note: text(docket.querySelector("[data-test-note]")),
+        compileNote: text(docket.querySelector("[data-compile-note] p")),
+        flag: text(docket.querySelector("summary .docket-meta")),
+      };
+    }),
+  );
+}
+
+async function run() {
+  const win = frame.contentWindow;
+  const doc = frame.contentDocument;
+  const ex = {
+    run: await readFile(`${V14}run.json`),
+    asOf: await readFile(`${V14}as-of-run.json`),
+    ledger: await readFile(`${V14}restatements.json`),
+    inbox: await readFile(`${V13}inbox.json`),
+    meta: await readFile(`${V13}meta.json`),
+    watches: await readFile(`${V13}watches.json`),
+    health: await readFile(`${V13}health.json`),
+  };
+  record("sample", { claims: claimsDrawn(doc) });
+
+  // Two readers (and three on one claim), made the way the backend makes them.
+  const variant = JSON.parse(JSON.stringify(ex.run));
+  variant.claim_readers = "grammar and model";
+  variant.claim_reader_detail = "the grammar, and claude-haiku-5-5 as the model parser (made in this harness: no model was asked)";
+  const byId = Object.fromEntries(variant.claims.map((claim) => [claim.id, claim]));
+  const c1 = byId.c1;
+  const modelC1 = "gross_margin[Q] > gross_margin[Q-1]";
+  c1.readings.push({ reader: "model", canonical: modelC1, reason: "" });
+  c1.computed.read_by = ["grammar"];
+  c1.computed.counted_as = "";
+  c1.computed.note = `Readings differ: not counted. The grammar read ${c1.computed.canonical}; the model read ${modelC1}. The verdict rests on the findings alone.`;
+  const c2 = byId.c2;
+  c2.readings.push({ reader: "model", canonical: c2.computed.canonical, reason: "" });
+  c2.computed.read_by = ["grammar", "model"];
+  const c3 = byId.c3;
+  c3.readings.push({ reader: "model", canonical: "yoy(segment \"Data Center\")[Q] > 0%", reason: "" });
+  c3.compile_note += ` Readings differ: not counted. The grammar read no test; the model read yoy(segment "Data Center")[Q] > 0%. The verdict rests on the findings alone.`;
+  const c4 = byId.c4;
+  c4.readings.push({ reader: "model", canonical: c4.computed.canonical, reason: "" }, { reader: "second-model", canonical: c4.computed.canonical, reason: "" });
+  c4.computed.read_by = ["grammar", "model", "second-model"];
+  win.eval(`renderRun(${JSON.stringify(variant)})`);
+  await until(() => text(doc.querySelector("[data-claim-readers]")).includes("grammar and model"), "the run with two readers");
+  record("readers", { claims: claimsDrawn(doc), readersLine: text(doc.querySelector("[data-claim-readers]")) });
+
+  // The restatement lookup, sample mode off.
+  win.eval("state.sample = false; setFormEnabled(true)");
+  win.fetch = stubFetch(win.fetch.bind(win));
+  doc.getElementById("ticker").value = "NVDA";
+  doc.getElementById("as_of").value = "2008-06-30";
+  routes = { "GET /api/companies/NVDA/restatements?as_of=2008-06-30": [422, { error: "The request was refused", details: [{ field: "as_of", message: "as_of must be on or after 2009-01-01: XBRL facts begin in 2009" }] }] };
+  doc.getElementById("restatements").click();
+  await until(() => !doc.getElementById("err-as_of").hidden, "the refused date");
+  record("ledger-422");
+
+  doc.getElementById("as_of").value = "";
+  routes = { "GET /api/companies/NVDA/restatements": [200, ex.ledger] };
+  doc.getElementById("restatements").click();
+  await until(() => !doc.getElementById("ledger-view").hidden && doc.querySelector("[data-ledger] tbody tr"), "the ledger");
+  record("ledger-200", { rows: String(doc.querySelectorAll("[data-ledger] tbody tr").length), count: text(doc.querySelector("[data-ledger-count]")) });
+
+  routes = { "GET /api/companies/NVDA/restatements": [503, { error: "EDGAR could not give the company facts" }] };
+  doc.getElementById("restatements").click();
+  await until(() => !doc.getElementById("form-errors").hidden && text(doc.getElementById("form-errors")).includes("EDGAR"), "the 503");
+  record("ledger-503");
+
+  // A run as of a date: refused, then accepted and drawn.
+  doc.getElementById("decision").value = ex.asOf.inputs.decision;
+  doc.getElementById("claims").value = ex.asOf.inputs.claims.join("\n");
+  doc.getElementById("filings").value = String(ex.asOf.inputs.filings);
+  doc.getElementById("as_of").value = "2030-01-01";
+  routes = { "POST /api/runs": [422, { error: "The request was refused", details: [{ field: "as_of", message: "as_of is in the future: a run can only read what has been filed" }] }] };
+  doc.getElementById("thesis-form").requestSubmit();
+  await until(() => !doc.getElementById("err-as_of").hidden, "the refused run");
+  record("run-422");
+
+  doc.getElementById("as_of").value = ex.asOf.inputs.as_of;
+  routes = {
+    "POST /api/runs": [202, { id: ex.asOf.id, status: "running" }],
+    [`GET /api/runs/${ex.asOf.id}`]: [200, ex.asOf],
+    [`GET /api/runs/${ex.asOf.id}/review`]: [404, { error: "No review of this run" }],
+    [`GET /api/runs/${ex.asOf.id}/changes`]: [404, { error: "Run not found" }],
+    "GET /api/runs": [200, { runs: [] }],
+  };
+  doc.getElementById("thesis-form").requestSubmit();
+  await until(() => !doc.getElementById("asof-banner").hidden, "the as-of run");
+  await sleep(100);
+  record("run-as-of", {
+    banner: text(doc.getElementById("asof-banner")),
+    cmd: text(doc.querySelector("[data-cmd-as-of-requested]")),
+    bodyClass: doc.body.className,
+  });
+
+  // The inbox: an item whose computed test changed outcome, and each saved thesis's own watch.
+  const page = JSON.parse(JSON.stringify(ex.inbox));
+  const moved = page.items.find((item) => item.kind === "moved");
+  moved.moved.computed = [{ claim: moved.moved.verdicts[0]?.claim || "a claim", canonical: "gross_margin[Q] > gross_margin[Q-4]", before: "fails", after: "holds", before_label: "Fails", after_label: "Holds" }];
+  win.eval(`state.watchMeta = ${JSON.stringify(ex.meta)}; state.watches = new Map(${JSON.stringify(ex.watches.watches.map((w) => [w.thesis_id, w]))}); state.health = ${JSON.stringify(ex.health)}`);
+  win.eval(`showInboxView(); renderInbox(${JSON.stringify(page)})`);
+  await until(() => doc.querySelector("[data-moved-computed]"), "the inbox");
+  record("inbox", {
+    movedId: moved.id,
+    computed: JSON.stringify([...doc.querySelectorAll("[data-moved-computed]")].map((li) => ({ claim: li.dataset.movedComputed, outcomes: [...li.querySelectorAll("[data-outcome]")].map((n) => n.dataset.outcome), text: text(li) }))),
+    claimsLines: JSON.stringify([...doc.querySelectorAll("article.inbox-item")].map((a) => [a.dataset.itemId, text(a.querySelector("[data-claims-line]"))])),
+    folded: text(doc.querySelector('#inbox-collapsed [data-folded="count"]')),
+  });
+
+  const thesisId = ex.watches.watches[0].thesis_id;
+  routes = {
+    "GET /api/theses": [200, { theses: [
+      { id: thesisId, name: "Watched thesis", ticker: "NVDA", claims: 2, created_at: "2026-11-18T12:00:00Z", runs: 1, last_run_id: null, last_status: "complete", watch: { policy: "ask", policy_label: "Ask me first", unread: 3, waiting_runs: 1 } },
+      { id: "th-unwatched", name: "Unwatched thesis", ticker: "NVDA", claims: 1, created_at: "2026-11-18T12:00:00Z", runs: 0, last_run_id: null, last_status: null, watch: null },
+    ] }],
+  };
+  await win.eval("refreshTheses()");
+  await until(() => doc.querySelector('#theses [data-thesis="th-unwatched"]'), "the theses");
+  record("theses", {
+    tags: JSON.stringify([...doc.querySelectorAll("#theses [data-thesis]")].map((b) => [b.dataset.thesis, text(b.querySelector("[data-watch-tag]"))])),
+  });
+
+  done.dataset.done = "true";
+  done.textContent = "done";
+}
+
+function waitForRun(tries) {
+  let ready = false;
+  try {
+    const doc = frame.contentDocument;
+    ready = Boolean(doc && doc.querySelector("#claim-list details.claim") && doc.querySelector("[data-computed-test]"));
+  } catch (e) {
+    done.textContent = `the frame could not be read: ${e.message}`;
+    return;
+  }
+  if (ready) {
+    run().catch((error) => {
+      done.textContent = `failed: ${error.message}`;
+    });
+    return;
+  }
+  if (tries <= 0) {
+    done.textContent = "the computed sample never rendered in the frame";
+    return;
+  }
+  setTimeout(() => waitForRun(tries - 1), 100);
+}
+
+frame.addEventListener("load", () => waitForRun(80));
+</script>
+</body>
+</html>

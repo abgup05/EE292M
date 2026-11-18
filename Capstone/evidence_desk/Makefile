@@ -15,7 +15,7 @@ help:
 	@echo 'Dependencies: lock'
 	@echo 'Demonstration: demo (live NVIDIA example through the HTTP API: real EDGAR, configured engine; writes results/demo-<UTC>.json and .md)'
 	@echo 'Screenshots: screenshots (headless Chromium renders the first screen, the samples and the specimen page, in the Paper and Terminal themes and at phone width, into docs/screenshots)'
-	@echo 'Browser test: uitest (headless Chromium renders both sample records; pytest uitests checks the DOM against the JSON)'
+	@echo 'Browser test: uitest (headless Chromium renders the sample records and drives the keys and themes in uitests/keys.html; pytest uitests checks the DOM against the JSON)'
 	@echo "Replay: replay ARGS='--out demo' (the example thesis on recorded filings with model answers from the cassette; no network, no key)"
 	@echo 'Tripwire: golden-check (the offline example run against tests/golden/golden.json; names the first stage that moved)'
 	@echo 'Tripwire: golden-baseline (rewrite tests/golden/golden.json, and replay.json when the replay has nothing pending; read the diff before committing a new baseline)'

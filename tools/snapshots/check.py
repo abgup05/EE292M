@@ -89,7 +89,8 @@ def main(argv: list[str]) -> int:
             f"live_versions {live.get('live_versions')}, key_present {live.get('key_present')}, sec_user_agent_present "
             f"{live.get('sec_user_agent_present')}, model_engine {live.get('model_engine')}, "
             f"caps_invalid {live.get('caps_invalid')}, model runs today "
-            f"{live.get('counts', {}).get('model_runs_today')} (this instance)"
+            f"{live.get('counts', {}).get('model_runs_today')} (this instance), "
+            f"EDGAR's answers by host {json.dumps(live.get('edgar', 'not reported'))}"
         )
     else:
         what = "no live status: every version is expected to be recorded"

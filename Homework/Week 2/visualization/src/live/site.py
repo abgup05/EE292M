@@ -107,6 +107,7 @@ class Site:
             "caps_scope": "per server instance: counts are kept in memory and are not shared",
             "counts": self.guard.counts(),
             "seed": self.seed.counts(),
+            "edgar": self.seed.edgar(),
             "versions": {str(n): v.state(enabled) for n, v in self.versions.items()},
         }
 
@@ -259,7 +260,8 @@ class LiveVersionApp:
         else:
             notes.append(
                 "Extra web pages are off: it fetches no address a visitor supplies. Filings come "
-                "from SEC EDGAR, or from a recorded copy when EDGAR does not answer."
+                "from SEC EDGAR. When EDGAR does not answer this server, a recorded copy stands "
+                "in, and it covers NVIDIA only: another company then cannot be read here."
             )
         if info.watch:
             facts.append("no watcher runs online")

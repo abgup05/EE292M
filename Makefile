@@ -187,8 +187,18 @@ site-live-up:
 site-live-down:
 	@$(MAKE) -s APP=week2 live-down
 
+# With URL it tests the deployed site instead (tools/live/remote_test.mjs): one run per version
+# named (default 1, 8 and 14), refused when the server has a model key unless WITH_KEY=1.
+#   make site-live-test URL=https://ee292m-visualization.vercel.app VERSIONS="1 8 14"
+#   make site-live-test URL=... VERSIONS=14 COMPANY=COST    and a run outside the seed
 site-live-test:
+ifeq ($(strip $(URL)),)
 	@$(MAKE) -s APP=week2 live-test VERSIONS='$(if $(filter command line environment,$(origin VERSIONS)),$(VERSIONS),)'
+else
+	@docker run --rm -v "$(CURDIR):/repo:ro" -w /repo -e COMPANY='$(COMPANY)' -e WITH_KEY='$(WITH_KEY)' \
+	  --add-host=host.docker.internal:host-gateway node:24-slim \
+	  node tools/live/remote_test.mjs '$(URL)' $(if $(filter command line environment,$(origin VERSIONS)),$(VERSIONS),)
+endif
 
 # Each live page as a visitor sees it, for a person (or an agent) to look at: headless Chromium
 # against the emulated function writes PNG files under $(LIVE_SHOTS) (not committed): the page

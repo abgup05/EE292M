@@ -9,7 +9,9 @@ chosen here, all through parameters every version already has:
   ``EVIDENCE_DESK_DATA_DIR`` while the version is built (the name every version reads);
 - versions 2 and later get their own EDGAR client over :class:`live.seed.SeedTransport`,
   identified by ``SEC_USER_AGENT`` as their own client would be, and a page fetcher that
-  refuses every address (visitor-supplied ``extra_urls`` are off online);
+  refuses every address (visitor-supplied ``extra_urls`` are off online). The client is
+  subclassed in one place (:func:`live_edgar`): an unknown ticker is reported as EDGAR being
+  out of reach when the company list it was looked up in was the seed's short recording;
 - version 1 gets its store in that directory, a fetcher that reads only its example's two
   pages (live, or from the seed when the page cannot be fetched) and no web search.
 
@@ -110,7 +112,7 @@ def example_fetcher(fetch: Any, seed: Seed) -> Callable[..., Any]:
             recording = seed.get(url.strip())
             if recording is None:
                 raise
-            seed.count(instead=True)
+            seed.stand_in(url.strip(), "the page could not be fetched")
             return fetch.FetchedPage(
                 requested_url=url,
                 final_url=recording.url,
@@ -123,7 +125,52 @@ def example_fetcher(fetch: Any, seed: Seed) -> Callable[..., Any]:
     return fetch_example
 
 
-def build(info: Vendored, seed: Seed) -> Any:
+def live_edgar(edgar: Any, seed: Seed, client: httpx.Client) -> Any:
+    """The version's own EDGAR client, honest when the seed's short company list stood in.
+
+    The recorded company list holds a few tickers. When EDGAR refuses the real one and the
+    recording answers, the version would say of any other ticker that it "is not in SEC's
+    company list", which is false. Here that case becomes the version's own
+    ``SourceError`` (its page shows it as EDGAR being out of reach, HTTP 503) and says what
+    happened and what a visitor can do. Nothing else of the client is changed.
+    """
+    tickers_url = edgar.TICKERS_URL
+
+    class LiveEdgarClient(edgar.EdgarClient):  # type: ignore[misc, name-defined]
+        def company(self, ticker: str) -> Any:
+            try:
+                return super().company(ticker)
+            except edgar.UnknownTicker as exc:
+                reason = seed.stood_in(tickers_url)
+                if reason is None:
+                    raise
+                message = company_list_message(ticker, reason, seed, tickers_url)
+                raise edgar.SourceError(message) from exc
+
+    return LiveEdgarClient(
+        client=client, user_agent=os.environ.get(USER_AGENT_VARIABLE)
+    )
+
+
+def company_list_message(ticker: str, reason: str, seed: Seed, tickers_url: str) -> str:
+    """What a visitor is told when SEC's company list could not be read for their ticker."""
+    known = ", ".join(seed.tickers(tickers_url)) or "none"
+    contact = (
+        ""
+        if os.environ.get(USER_AGENT_VARIABLE, "").strip()
+        else " This server has no SEC contact string set, which EDGAR asks of every reader."
+    )
+    shown = ticker.strip().upper()[:12]
+    return (
+        f"{shown} could not be looked up: EDGAR did not give this server SEC's company list "
+        f"({reason}).{contact} A recorded copy of the list stands in, and it holds only "
+        f"{known}. Try one of those, try again later, or run this version locally."
+    )
+
+
+def build(
+    info: Vendored, seed: Seed, network: httpx.BaseTransport | None = None
+) -> Any:
     """Import version ``info`` and build its ASGI app as described in this module."""
     data_dir = data_root() / f"v{info.number}"
     data_dir.mkdir(parents=True, exist_ok=True)
@@ -154,13 +201,11 @@ def build(info: Vendored, seed: Seed) -> Any:
             edgar = importlib.import_module(f"{info.package}.sources.edgar")
             pages = importlib.import_module(f"{info.package}.sources.http")
             client = httpx.Client(
-                transport=SeedTransport(seed),
+                transport=SeedTransport(seed, network),
                 timeout=getattr(edgar, "TIMEOUT_SECONDS", 30.0),
                 follow_redirects=False,
             )
-            filings = edgar.EdgarClient(
-                client=client, user_agent=os.environ.get(USER_AGENT_VARIABLE)
-            )
+            filings = live_edgar(edgar, seed, client)
             return api.create_app(
                 filings=filings, fetch_page=refusing_fetcher(pages.FetchError)
             )

@@ -6,6 +6,7 @@ import asyncio
 import json
 from datetime import date
 
+import httpx
 import pytest
 from fastapi import FastAPI, Request
 from fastapi.responses import PlainTextResponse
@@ -22,7 +23,9 @@ from live.guard import (
     client_of,
     costly_read,
 )
+from live.seed import Seed
 from live.site import LiveVersionApp
+from live.versions import VENDOR_DIR, build
 
 
 def test_shim_carries_this_versions_settings():
@@ -381,3 +384,113 @@ def test_the_owner_can_switch_every_version_to_its_recording(monkeypatch):
     assert {state["serving"] for state in report["versions"].values()} == {"recorded"}
     monkeypatch.delenv("LIVE_VERSIONS")
     assert 'data-live-version="3"' in call("/v3/")[2].decode()
+
+
+# -- EDGAR refusing the server, as it does on Vercel without a contact string
+
+
+class Refusing(httpx.BaseTransport):
+    """EDGAR as it answered the deployed site: 403 from www.sec.gov, nothing else reachable."""
+
+    def handle_request(self, request: httpx.Request) -> httpx.Response:
+        if request.url.host == "www.sec.gov":
+            return httpx.Response(403, request=request)
+        raise httpx.ConnectError("unreachable", request=request)
+
+
+def version_behind(
+    network: httpx.BaseTransport, tmp_path, monkeypatch, number: int = 14
+):
+    monkeypatch.setenv("LIVE_DATA_ROOT", str(tmp_path))
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("SEC_USER_AGENT", raising=False)
+    seed = Seed(VENDOR_DIR / "seed")
+    return build(LIVE.versions[number].info, seed, network), seed
+
+
+@pytest.mark.parametrize("number", [2, 14])
+def test_a_company_outside_the_recorded_list_is_not_called_unknown_to_sec(
+    number, tmp_path, monkeypatch
+):
+    """The seed's list holds five tickers; "not in SEC's company list" would be false."""
+    app, seed = version_behind(Refusing(), tmp_path, monkeypatch, number)
+    request = {
+        "ticker": "COST",
+        "decision": "d" * 20,
+        "claims": ["Revenue is growing."],
+    }
+    scope = {
+        "type": "http",
+        "asgi": {"version": "3.0"},
+        "http_version": "1.1",
+        "scheme": "http",
+        "root_path": "",
+        "query_string": b"",
+        "client": ("192.0.2.1", 1),
+        "server": ("t", 80),
+        "headers": [(b"host", b"t"), (b"content-type", b"application/json")],
+    }
+    status, _, body = asyncio.run(
+        site_module.call(app, scope, "POST", "/api/runs", json.dumps(request).encode())
+    )
+    message = json.loads(body)["error"]
+    assert status == 503, body
+    assert "not in SEC's company list" not in message
+    assert "COST could not be looked up" in message and "HTTP 403" in message
+    assert "holds only AAPL, NVDA, MSFT, BRK-B, KO" in message
+    assert "no SEC contact string set" in message
+    assert seed.edgar()["www.sec.gov"] == {"HTTP 403": 1}
+    # A company the recording does hold is still found (saving a thesis looks it up).
+    if number >= 4:
+        request["ticker"] = "NVDA"
+        thesis = json.dumps({"name": "n", "request": request}).encode()
+        status, _, body = asyncio.run(
+            site_module.call(app, scope, "POST", "/api/theses", thesis)
+        )
+        assert status == 201, body
+
+
+def test_a_ticker_sec_really_does_not_list_is_still_called_unknown(
+    tmp_path, monkeypatch
+):
+    listing = b'{"0": {"cik_str": 1045810, "ticker": "NVDA", "title": "NVIDIA CORP"}}'
+
+    class Answering(httpx.BaseTransport):
+        def handle_request(self, request: httpx.Request) -> httpx.Response:
+            return httpx.Response(
+                200,
+                content=listing,
+                request=request,
+                headers={"content-type": "application/json"},
+            )
+
+    app, seed = version_behind(Answering(), tmp_path, monkeypatch)
+    request = {
+        "ticker": "ZZZZ",
+        "decision": "d" * 20,
+        "claims": ["Revenue is growing."],
+    }
+    scope = {
+        "type": "http",
+        "asgi": {"version": "3.0"},
+        "http_version": "1.1",
+        "scheme": "http",
+        "root_path": "",
+        "query_string": b"",
+        "client": ("192.0.2.1", 1),
+        "server": ("t", 80),
+        "headers": [(b"host", b"t"), (b"content-type", b"application/json")],
+    }
+    status, _, body = asyncio.run(
+        site_module.call(app, scope, "POST", "/api/runs", json.dumps(request).encode())
+    )
+    assert status == 422
+    assert "not in SEC's company list" in json.loads(body)["details"][0]["message"]
+    assert seed.edgar()["www.sec.gov"] == {"HTTP 200": 1}
+
+
+def test_status_says_how_edgar_answered_in_counts_only():
+    report = json.loads(call("/live/status")[2])
+    assert isinstance(report["edgar"], dict)
+    for outcomes in report["edgar"].values():
+        assert all(isinstance(count, int) for count in outcomes.values())

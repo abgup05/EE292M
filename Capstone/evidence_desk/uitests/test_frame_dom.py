@@ -40,6 +40,7 @@ WIDE = [
     "wide-c2-evidence",
     "wide-c2-pick-finding",
     "wide-c2-pick-test",
+    "wide-c4",
     "wide-events",
     "wide-pick-event",
     "wide-pick-figure",
@@ -213,6 +214,17 @@ def test_a_computed_tests_operands_and_arithmetic_are_read_in_the_inspector() ->
     assert s["data-detail-drawn-in-centre"] == "0"
     for operand in test["operands"]:
         assert operand["display"] in s["data-inspector-text"]
+
+
+def test_an_operand_with_a_long_note_stays_inside_the_inspector() -> None:
+    """c4's free cash flow carries a sentence of a note: it once squeezed the term to a letter a line."""
+    s = step("wide-c4")
+    test = claim("c4")["computed"]
+    assert any(len(operand.get("note") or "") > 80 for operand in test["operands"]), "the sample no longer has a long note"
+    assert s["data-inspecting"] == "test:c4"
+    assert int(s["data-inspector-spill"]) <= 0, "the inspector's content is wider than the inspector"
+    assert int(s["data-tallest-term"]) <= 48, "an operand's term is broken over more than two lines"
+    assert int(s["data-widest-note"]) >= 200, "the note is squeezed into the value's column"
 
 
 def test_an_8k_is_read_in_the_inspector() -> None:

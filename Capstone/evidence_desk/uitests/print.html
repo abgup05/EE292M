@@ -51,7 +51,7 @@ function emulatePrint(win) {
   for (const sheet of win.document.styleSheets) visit(sheet.cssRules);
 }
 
-function record(step) {
+function record(step, extra) {
   const doc = frame.contentDocument;
   const top = (node) => Math.round(node.getBoundingClientRect().top + frame.contentWindow.scrollY);
   const order = ["rail-head", "scorecard", "run-info", "status-banner", "tape-section", "summary-section", "claim-list", "sources", "timeline-section", "events-section", "figures-section", "coverage-limits"]
@@ -83,6 +83,7 @@ function record(step) {
   li.dataset.theme = doc.documentElement.getAttribute("data-theme") || "";
   li.dataset.selectedRowBackground = frame.contentWindow.getComputedStyle(doc.querySelector('#scorecard a.score-row[aria-current="true"]')).backgroundColor;
   li.dataset.pageScrolls = String(doc.documentElement.scrollHeight > frame.contentWindow.innerHeight);
+  Object.assign(li.dataset, extra || {});
   li.textContent = step;
   steps.append(li);
 }
@@ -94,10 +95,11 @@ async function run() {
   win.dispatchEvent(new win.Event("beforeprint"));
   emulatePrint(win);
   await sleep(200);
-  // As tall as the note, so a capture of this page shows all of it.
-  frame.height = String(Math.min(doc.documentElement.scrollHeight, 30000));
+  // How tall the note is in a window 1000px high; then the frame is made as tall, so a capture of this page shows all of it.
+  const noteHeight = doc.documentElement.scrollHeight;
+  frame.height = String(Math.min(noteHeight, 30000));
   await sleep(100);
-  record("print");
+  record("print", { noteHeight: String(noteHeight) });
   if (!location.hash.includes("keep")) {
     // Put the page back, as the browser does after printing; a capture keeps the printed state (#keep).
     win.dispatchEvent(new win.Event("afterprint"));

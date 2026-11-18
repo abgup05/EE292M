@@ -1898,6 +1898,8 @@ body.as-of-run .rail-head { border-left: 6px double var(--ink); }
 /* The specimen page: the design system, every component once. Its run view is flat (every panel
    and docket at once); the frame's own parts are shown beside it. */
 .inspector.spec-inspector { display: block; padding: var(--s-3) var(--s-4); border: 1px solid var(--line-strong); background: var(--pane-side); }
+/* Laid out flat, the run view has no panes, so nothing is padded as one. */
+.ws-flat { --pane-pad: 0; }
 .spec-section .rail-all { margin-top: var(--s-1); border: 1px solid var(--line); }
 .spec-section .tab:disabled { opacity: 1; cursor: default; }
 .spec-layout { grid-template-columns: minmax(0, 1fr); max-width: 1240px; }
@@ -1951,7 +1953,7 @@ body.as-of-run .rail-head { border-left: 6px double var(--ink); }
 .watch-card { padding: 0.2rem 0 0.4rem; }
 .watch-state { margin: 0 0 0.4rem; }
 .watch-on { font-family: var(--font-label); font-variant-caps: var(--label-caps); text-transform: var(--label-transform); letter-spacing: var(--label-track); font-weight: 700; color: var(--support); }
-.watch-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 0.2rem 1.2rem; margin: 0 0 0.6rem; font-size: var(--step--1); }
+.watch-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0.2rem 1.2rem; margin: 0 0 0.6rem; font-size: var(--step--1); }
 .watch-facts dt { font-size: var(--step--2); font-weight: 700; color: var(--ink-2); }
 .watch-facts dd { margin: 0; font-family: var(--font-data); }
 .watch-facts dd.is-error { color: var(--reject); font-family: var(--font-ui); }
@@ -2146,9 +2148,14 @@ body.as-of-run .rail-head { border-left: 6px double var(--ink); }
 .inspector :is(.inputs, .ct-table), .inspector :is(.inputs, .ct-table) :is(tbody, tr, th, td) { display: block; width: auto; }
 .inspector :is(.inputs, .ct-table) tr { padding: var(--s-3) 0; border-top: 1px solid var(--line-strong); }
 .inspector :is(.inputs, .ct-table) :is(th, td) { padding: 0.1rem 0; border: 0; text-align: left; white-space: normal; }
-.inspector .ct-table tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-1) var(--s-3); align-items: start; }
+/* The term keeps at least half the row however long the note under the value is. */
+.inspector .ct-table tr { display: grid; grid-template-columns: minmax(50%, 1fr) fit-content(50%); gap: var(--s-1) var(--s-3); align-items: start; }
+.inspector .ct-table :is(th, td) { min-width: 0; overflow-wrap: anywhere; }
+.inspector .ct-inspected code { white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
 .inspector .ct-table th[scope="row"] code { font-size: var(--step-0); }
-.inspector .ct-table td.num { text-align: right; font-size: var(--step-1); }
+/* The value sits beside its term; a note on the value takes a line of its own under both. */
+.inspector .ct-table td.num { display: contents; text-align: right; font-size: var(--step-1); }
+.inspector .ct-table td.num > .ct-label { grid-column: 1 / -1; text-align: left; font-size: var(--step--2); font-weight: 400; }
 .inspector .ct-table td:nth-child(n + 3) { grid-column: 1 / -1; }
 .inspector .ct-facts { gap: 0; }
 .inspector .ct-fact { padding: var(--s-1) 0; border-top: 1px dotted var(--line); line-height: 1.45; }
@@ -2282,7 +2289,8 @@ body.as-of-run .rail-head { border-left: 6px double var(--ink); }
 /* A window at least a laptop wide: the bar is one row, and the watch's detail is what gives way. */
 @media screen and (min-width: 1280px) {
   .cmdbar { flex-wrap: nowrap; }
-  .watch-health { overflow: hidden; text-overflow: ellipsis; }
+  .watch-health { overflow: hidden; }
+  .watch-health .health-detail { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 }
 
 /* A window too narrow for three panes: the rail is a strip across the top, the inspector a sheet from the bottom. */
@@ -2350,6 +2358,8 @@ body.as-of-run .rail-head { border-left: 6px double var(--ink); }
 :root[data-theme="terminal"] .block-title .g-limit { margin-right: 0.4em; }
 :root[data-theme="terminal"] .rail-all { border-top: 0; }
 :root[data-theme="terminal"] .rail-all-name, :root[data-theme="terminal"] .score-claim { font-family: var(--font-sans); }
+/* The rail is narrow and mono is wide: a row's counts are set in the sans so the line does not break before its last word. */
+:root[data-theme="terminal"] .score-row .score-counts { font-family: var(--font-sans); }
 :root[data-theme="terminal"] .rail-all:hover, :root[data-theme="terminal"] .score-row:hover { box-shadow: inset 2px 0 0 var(--accent); }
 :root[data-theme="terminal"] .rail-all[aria-current="true"], :root[data-theme="terminal"] .score-row[aria-current="true"] { background: #000; box-shadow: inset 3px 0 0 var(--accent); }
 :root[data-theme="terminal"] .score-row[aria-current="true"] .claim-id, :root[data-theme="terminal"] .rail-all[aria-current="true"] .rail-all-name { color: var(--accent); }
@@ -2426,6 +2436,7 @@ body.as-of-run .rail-head { border-left: 6px double var(--ink); }
   .tabs { position: sticky; top: 0; z-index: 10; margin: 0 calc(-1 * var(--gutter)); padding: 0 var(--gutter); background: var(--bg); }
   .tab { padding: var(--s-2) var(--s-2); }
   .tab-key { display: none; }
+  .sel-line .run-head-actions { margin-left: 0; }
   .tabpanel { padding-top: var(--s-4); }
   .claim { border-top: 0; margin: 0; background: transparent; }
   :root[data-theme="terminal"] .claim { border: 0; }

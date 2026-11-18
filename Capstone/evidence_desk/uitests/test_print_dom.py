@@ -71,7 +71,7 @@ def test_on_paper_every_tabs_panel_prints_in_reading_order() -> None:
     # The company and the decision, the verdicts, how the run was made, the counts, then the note.
     assert printed["data-order"].split() == ["rail-head", "scorecard", "run-info", "status-banner", "tape-section", "summary-section", "claim-list", "sources", "timeline-section", "events-section", "figures-section", "coverage-limits"]
     assert printed["data-lanes-drawn"].split() == [c["id"] for c in run()["claims"] if c.get("computed")]
-    assert printed["data-page-scrolls"] == "true", "a document, not a window"
+    assert int(printed["data-note-height"]) > 1000, "a document taller than the 1000px window it was laid out in, not a frame that fits it"
 
 
 def test_on_paper_there_is_no_frame_and_nothing_to_press() -> None:

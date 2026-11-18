@@ -28,4 +28,4 @@ services:
     working_dir: /work
     volumes:
       - ..:/work:ro
-    command: ["node", "--check", "src/web/app.js"]
+    command: ["sh", "-c", "node --check src/web/app.js && node --check src/live/shim.js"]

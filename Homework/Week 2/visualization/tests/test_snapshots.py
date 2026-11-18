@@ -1,4 +1,4 @@
-"""The capstone snapshots and /versions are served, and the Week 2 routes are unchanged."""
+"""/versions and every capstone version are served (live or recorded); the Week 2 routes are unchanged."""
 
 import asyncio
 import json
@@ -6,10 +6,12 @@ import re
 
 import pytest
 
-from app.api import SNAPSHOT_DIR, WEB_DIR, app, snapshot_names
+from app.api import SNAPSHOT_DIR, WEB_DIR, app, live_names, recorded_names
 
 
-def call(path: str, method: str = "GET") -> tuple[int, dict[str, str], bytes]:
+def call(
+    path: str, method: str = "GET", body: bytes = b"", headers: list | None = None
+) -> tuple[int, dict[str, str], bytes]:
     """Send one HTTP request straight to the ASGI app; return status, headers and body."""
     path, _, query = path.partition("?")
     scope = {
@@ -22,14 +24,14 @@ def call(path: str, method: str = "GET") -> tuple[int, dict[str, str], bytes]:
         "raw_path": path.encode(),
         "query_string": query.encode(),
         "root_path": "",
-        "headers": [(b"host", b"testserver")],
+        "headers": [(b"host", b"testserver"), *(headers or [])],
         "client": ("127.0.0.1", 50000),
         "server": ("testserver", 80),
     }
     messages: list[dict] = []
 
     async def receive() -> dict:
-        return {"type": "http.request", "body": b"", "more_body": False}
+        return {"type": "http.request", "body": body, "more_body": False}
 
     async def send(message: dict) -> None:
         messages.append(message)
@@ -41,7 +43,9 @@ def call(path: str, method: str = "GET") -> tuple[int, dict[str, str], bytes]:
     return start["status"], headers, body
 
 
-VERSIONS = snapshot_names()
+LIVE = live_names()
+RECORDED = recorded_names()
+EVERY = sorted(LIVE + RECORDED, key=lambda name: int(name[1:]))
 
 
 def test_the_week2_page_and_assets_are_unchanged():
@@ -56,44 +60,55 @@ def test_the_week2_page_and_assets_are_unchanged():
         assert body == (WEB_DIR / file).read_bytes(), path
 
 
-def test_snapshots_are_present_in_version_order():
-    assert VERSIONS, "no snapshot directory: run make site-export"
-    assert VERSIONS == sorted(VERSIONS, key=lambda name: int(name[1:]))
-    assert VERSIONS[0] == "v1"
+def test_versions_are_present_in_version_order():
+    assert EVERY, "no live or recorded version: run make site-vendor"
+    assert EVERY[0] == "v1"
+    assert EVERY == [f"v{n}" for n in range(1, len(EVERY) + 1)]
 
 
-def test_versions_page_lists_every_snapshot():
+def test_versions_page_lists_every_version():
     status, headers, body = call("/versions")
     assert status == 200
     assert headers["content-type"].startswith("text/html")
-    for name in VERSIONS:
+    for name in EVERY:
         assert f'href="/{name}/"'.encode() in body, name
 
 
-@pytest.mark.parametrize("name", VERSIONS)
+@pytest.mark.parametrize("name", EVERY)
 def test_bare_version_path_leads_to_its_directory(name):
     status, headers, _ = call(f"/{name}")
     assert status == 307
     assert headers["location"] == f"/{name}/"
 
 
-@pytest.mark.parametrize("name", VERSIONS)
-def test_snapshot_page_carries_its_banner_and_shim_before_its_script(name):
+@pytest.mark.parametrize("name", LIVE)
+def test_live_page_is_the_versions_own_with_a_banner_and_the_shim_first(name):
     status, headers, body = call(f"/{name}/")
     assert status == 200
     assert headers["content-type"].startswith("text/html")
     page = body.decode()
     number = name[1:]
-    assert f'data-snapshot-version="{number}"' in page
-    assert f"Recorded snapshot of Evidence Desk version {number}." in page
-    assert "Live runs need the app running locally." in page
+    assert f'data-live-version="{number}"' in page
+    assert f"Evidence Desk version {number} as tagged" in page
+    assert "running live on a shared public server" in page
+    assert "Runs and saved items are not kept" in page
+    assert "Live runs need the app running locally" not in page
     assert 'href="/versions"' in page
     assert f"https://github.com/abgup05/EE292M/tree/capstone-v{number}" in page
-    assert page.index('src="snapshot.js"') < page.index('src="app.js"')
+    assert page.index('src="live-shim.js"') < page.index('src="app.js"')
     assert not re.search(r'(?:href|src)="/(?!versions")', page), "an absolute reference is left"
 
 
-@pytest.mark.parametrize("name", VERSIONS)
+@pytest.mark.parametrize("name", RECORDED)
+def test_recorded_snapshot_page_carries_its_banner_and_shim_before_its_script(name):
+    status, headers, body = call(f"/{name}/")
+    assert status == 200
+    page = body.decode()
+    assert f'data-snapshot-version="{name[1:]}"' in page
+    assert page.index('src="snapshot.js"') < page.index('src="app.js"')
+
+
+@pytest.mark.parametrize("name", RECORDED)
 def test_every_recorded_answer_and_page_file_is_served(name):
     manifest = json.loads((SNAPSHOT_DIR / name / "snapshot.json").read_text())
     assert manifest["version"] == int(name[1:])
@@ -102,19 +117,6 @@ def test_every_recorded_answer_and_page_file_is_served(name):
         status, _, body = call(f"/{name}/{file}")
         assert status == 200, file
         assert body == (SNAPSHOT_DIR / name / file).read_bytes(), file
-    shim = (SNAPSHOT_DIR / name / "snapshot.js").read_text()
-    for route, file in manifest["routes"].items():
-        assert json.dumps(route) + ": " + json.dumps(file) in shim, route
-
-
-def test_every_snapshot_shows_a_real_record():
-    """Version 1 opens a recorded run; every later version has a recorded sample run."""
-    for name in VERSIONS:
-        manifest = json.loads((SNAPSHOT_DIR / name / "snapshot.json").read_text())
-        if manifest["open_run"]:
-            assert any(manifest["open_run"] in route for route in manifest["routes"]), name
-        else:
-            assert "sample-run.json" in manifest["page_files"], name
 
 
 @pytest.mark.parametrize("path", ["/v99/", "/v99", "/v1x/", "/versions/x", "/v1/../main.py"])

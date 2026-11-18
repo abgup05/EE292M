@@ -27,7 +27,7 @@ down:
 verify: build lint test smoke
 
 test:
-	$(COMPOSE) run --rm --no-deps app pytest -q -p no:cacheprovider tests
+	$(COMPOSE) run --rm --no-deps app pytest -q -p no:cacheprovider $(or $(TESTS),tests)
 
 lint:
 	$(COMPOSE) run --rm --no-deps app ruff check --no-cache src tests main.py

@@ -14,6 +14,7 @@ from enum import StrEnum
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.core import limits
+from app.core.claim_test_models import ComputedTest
 from app.core.event_models import AsOf, Event, Predating
 from app.core.metric_models import Metric, Series
 
@@ -184,6 +185,11 @@ class Claim(BaseModel):
     ``event_note`` says what the 8-Ks since the annual report do and do not report on
     the claim's categories (:func:`app.core.events.events_note`). Neither changes
     the verdict. All three are empty in runs recorded before version 12.
+
+    ``computed`` is the claim compiled to a typed test and computed from the run's dated
+    facts (:mod:`app.core.claimtest`, :mod:`app.core.claim_eval`); its outcome counts in
+    the verdict (:func:`app.core.policy.claim_verdict`). When the claim does not compile,
+    ``computed`` is None and ``compile_note`` says why. Both are empty before version 13.
     """
 
     id: str
@@ -197,6 +203,8 @@ class Claim(BaseModel):
     categories: list[str] = Field(default_factory=list)
     caution: str = ""
     event_note: str = ""
+    computed: ComputedTest | None = None
+    compile_note: str = ""
 
 
 class Source(BaseModel):
@@ -366,7 +374,11 @@ class DecisionRequest(BaseModel):
 
 
 class ReviewedClaim(BaseModel):
-    """One claim after review. ``reviewed_verdict`` counts accepted findings only."""
+    """One claim after review.
+
+    ``reviewed_verdict`` counts accepted findings only, and the claim's computed test
+    (``Claim.computed``), which a reviewer does not decide.
+    """
 
     claim_id: str
     engine_verdict: Verdict | None
@@ -476,6 +488,11 @@ class Coverage(BaseModel):
     # asked for them (ThesisRequest.tagged_figures); the engine saw the sum of the two.
     # figures_cited counts citations of either kind.
     tagged_figures_offered: int = 0
+    # Claims compiled to a computed test (app.core.claimtest), and how the tests came out.
+    claims_compiled: int = 0
+    computed_holds: int = 0
+    computed_fails: int = 0
+    computed_cannot: int = 0
     figures_cited: int = 0
     numbers_checked: int = 0
     numbers_unmatched: int = 0

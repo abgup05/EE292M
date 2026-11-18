@@ -142,6 +142,38 @@ def _read(
     return report
 
 
+def read_reports(
+    company: Company,
+    filings: FilingSource,
+    refs: Iterable[FilingRef],
+    *,
+    cache: FilingCache | None = None,
+    html_by_accession: Mapping[str, str] | None = None,
+) -> tuple[list[BreakdownReport], list[str], list[str]]:
+    """The breakdowns tagged in each of ``refs``, in order: reports, failures and notes.
+
+    A filing whose tags cannot be read is a :data:`~app.core.policy.TAGGED_UNAVAILABLE`
+    sentence in the failures; one that tags no breakdown is a note. Never raises for
+    EDGAR or for a filing's content. Kept reports are read from ``cache``.
+    """
+    reports: list[BreakdownReport] = []
+    errors: list[str] = []
+    notes: list[str] = []
+    for ref in refs:
+        read = _read(company, filings, ref, cache, html_by_accession or {})
+        if isinstance(read, str):
+            errors.append(
+                policy.TAGGED_UNAVAILABLE.format(
+                    form=ref.form, period_end=ref.period_end, error=read
+                )
+            )
+        elif not read.breakdowns:
+            notes.append(NO_BREAKDOWN.format(form=ref.form, period_end=ref.period_end))
+        else:
+            reports.append(read)
+    return reports, errors, notes
+
+
 def load_tagged_figures(
     company: Company,
     filings: FilingSource,
@@ -166,19 +198,11 @@ def load_tagged_figures(
     for prefix, kind in (("10-K", "annual"), ("10-Q", "quarterly")):
         if prefix not in kinds:
             result.notes.append(NOT_READ.format(kind=kind))
-    reports: list[BreakdownReport] = []
-    for ref in chosen:
-        read = _read(company, filings, ref, cache, html_by_accession or {})
-        if isinstance(read, str):
-            result.errors.append(
-                policy.TAGGED_UNAVAILABLE.format(
-                    form=ref.form, period_end=ref.period_end, error=read
-                )
-            )
-        elif not read.breakdowns:
-            result.notes.append(NO_BREAKDOWN.format(form=ref.form, period_end=ref.period_end))
-        else:
-            reports.append(read)
+    reports, errors, notes = read_reports(
+        company, filings, chosen, cache=cache, html_by_accession=html_by_accession
+    )
+    result.errors += errors
+    result.notes += notes
     units, notes = tagged_units(reports)
     result.figures, cut = select_tagged(units)
     result.notes += notes + cut

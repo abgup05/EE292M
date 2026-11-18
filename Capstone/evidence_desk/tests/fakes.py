@@ -22,7 +22,7 @@ from typing import Any
 from app.core.documents import FetchedFiling, FilingRef, Passage
 from app.core.fact_models import CompanyProfile
 from app.core.metric_models import Metric
-from app.core.models import Claim, Company, Finding, ThesisRequest
+from app.core.models import Claim, Company, Finding, ThesisRequest, Verdict
 from app.core.ports import (
     CheckItem,
     ClaimDraft,
@@ -407,6 +407,8 @@ class ScriptedAnalyst:
         self._extractive = ExtractiveAnalyst()
         self.offered: dict[str, list[str]] = {}
         self.figures: dict[str, list[Metric]] = {}
+        # The verdict of each claim (by id) as the summariser was shown it.
+        self.summarized: dict[str, Verdict | None] = {}
 
     def _maybe_fail(self, step: str) -> None:
         if step in self._fail_on:
@@ -441,6 +443,7 @@ class ScriptedAnalyst:
     ) -> SummaryDraft:
         """A fixed summary naming how many findings it was given."""
         self._maybe_fail("summarize")
+        self.summarized = {claim.id: claim.verdict for claim in claims}
         return SummaryDraft(
             summary=self._summary or f"Scripted summary of {len(findings)} finding(s).",
             next_steps=list(self._next_steps or ["Read the filings."]),

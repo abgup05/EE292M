@@ -51,7 +51,7 @@ def build_review(run: Run, decisions: Sequence[Decision]) -> Review:
             ReviewedClaim(
                 claim_id=claim.id,
                 engine_verdict=claim.verdict,
-                reviewed_verdict=claim_verdict(accepted) if decided_any else None,
+                reviewed_verdict=claim_verdict(accepted, claim.computed) if decided_any else None,
                 accepted=len(accepted),
                 rejected=rejected,
                 undecided=undecided,

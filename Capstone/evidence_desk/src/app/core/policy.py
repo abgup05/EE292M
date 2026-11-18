@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
 
+from app.core.claim_test_models import ComputedTest
 from app.core.models import (
     Claim,
     DecisionValue,
@@ -263,15 +264,19 @@ def mark_counted(findings: Iterable[Finding]) -> None:
         finding.count_note = FIGURE_ONLY_NOTE if demoted else ""
 
 
-def claim_verdict(findings: list[Finding]) -> Verdict:
-    """The verdict for one claim, from its verified findings alone.
+def claim_verdict(findings: list[Finding], computed: ComputedTest | None = None) -> Verdict:
+    """The verdict for one claim, from its verified findings and its computed test.
 
     A model proposes a stance per finding; it never sets the verdict. Findings
     that did not survive the citation gate do not count, and each verified one
-    counts as :func:`counted_stance` says.
+    counts as :func:`counted_stance` says. A computed test (``Claim.computed``) is
+    verified evidence computed from the facts: one that holds counts as support, one
+    that fails as a challenge, and one that cannot be computed counts as nothing.
     """
     verified = [finding for finding in findings if finding.verified]
     stances = [counted_stance(finding) for finding in verified]
+    if computed is not None and computed.counted_as in COMPUTED_COUNTS.values():
+        stances.append(Stance(computed.counted_as))
     supports = Stance.supports in stances
     challenges = Stance.challenges in stances
     if supports and challenges:
@@ -280,7 +285,7 @@ def claim_verdict(findings: list[Finding]) -> Verdict:
         return Verdict.supported
     if challenges:
         return Verdict.challenged
-    if verified:
+    if stances:
         return Verdict.unjudged
     return Verdict.not_addressed
 

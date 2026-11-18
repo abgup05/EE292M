@@ -65,9 +65,10 @@ from app.engines.fallback import FallbackAnalyst
 from app.retrieval.chunk import chunk_document
 from app.retrieval.search import PassageIndex
 from app.services import events as event_service
+from app.services.computed import compute_claims, count_computed
 from app.services.ingest import Ingested, ingest
 from app.services.numbers import NumbersResult, load_numbers, select_figures
-from app.services.tagged_figures import load_tagged_figures
+from app.services.tagged_figures import load_tagged_figures, newest_reports, read_reports
 from app.sources.http import fetch_page as default_fetch_page
 from app.store import FactStore, FilingCache, Store
 
@@ -327,6 +328,19 @@ def execute_run(
         tagged_errors = tagged.errors
         run.coverage.tagged_figures_offered = len(tagged.figures)
     offered_figures = {figure.id: figure for figure in figures}
+    # Computed tests: compiled from the claim text, computed from the facts just read. The
+    # engine is never asked about them; their outcomes enter the verdicts after the summary.
+    compute_claims(
+        run,
+        numbers,
+        lambda: read_reports(
+            company,
+            filings,
+            newest_reports(ingested.filing_refs.values()),
+            cache=cache,
+            html_by_accession=ingested.filing_html,
+        )[:2],
+    )
 
     _stage(run, store, "planning")
     queries = engine.plan(run.inputs, company)
@@ -513,6 +527,8 @@ def execute_run(
             run.errors.append(policy.SUMMARY_REPLACED.format(numbers=", ".join(unsupported)))
             summary = deterministic.summarize(run.inputs, company, run.claims, run.findings)
             model_wrote_summary = False
+    # The summariser was shown the verdicts of the findings; now the computed tests count.
+    count_computed(run, {claim.id for claim in unassessed})
     run.errors.extend(failures.messages())
     unknowns, dropped = _drop_unverified_numbers(unknowns, run)
     next_steps, dropped_steps = _drop_unverified_numbers(summary.next_steps, run)

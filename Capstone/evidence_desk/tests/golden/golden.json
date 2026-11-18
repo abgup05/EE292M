@@ -192,8 +192,12 @@
   },
   "coverage": {
     "counts": {
+      "claims_compiled": 1,
       "claims_total": 5,
       "claims_with_evidence": 5,
+      "computed_cannot": 0,
+      "computed_fails": 0,
+      "computed_holds": 1,
       "engine_fallbacks": 0,
       "excerpts_verified": 15,
       "figures_cited": 0,
@@ -730,7 +734,7 @@
     ],
     "passages_indexed": 636
   },
-  "sha256": "22d1b19bad3c193a555f77da70678dd708de9427fc1d46e0be2b537884c98990",
+  "sha256": "8dab0837fd6dfa0abbce6fdd3ae74f1c0e36f9b77d03c26daf611672fc549d29",
   "sources": [
     {
       "characters": 151303,
@@ -812,7 +816,7 @@
         "f12"
       ],
       "id": "c4",
-      "verdict": "unjudged"
+      "verdict": "supported"
     },
     {
       "finding_ids": [

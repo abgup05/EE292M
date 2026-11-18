@@ -154,7 +154,7 @@
 
       <section class="spec-section" data-part="note" aria-labelledby="spec-note-title">
         <h2 id="spec-note-title">The note: a run, every component once</h2>
-        <p class="spec-shape">The page's own run view, drawn by app.js from a made-up record: the head, the coverage strip, the time line, the verdict index with a review, what moved since an earlier run, the claim dockets with margin quotes, the withheld findings, the figures with sparklines, the 8-K register, the sources, the limits and the legend.</p>
+        <p class="spec-shape">The page's own run view, drawn by app.js from a made-up record: the head, the status line (open it for every count), the tape of the newest period's figures, the verdict board with a review, the time line, what moved since an earlier run, the claim dockets with margin quotes, the withheld findings behind one line, the figures with sparklines, the 8-K register, the sources, the limits and the legend.</p>
         <p id="loading" hidden></p><div id="load-error" hidden></div><div id="empty-state" hidden></div>
         <div id="figures-view" hidden></div><div id="changes-view" hidden></div><div id="breakdowns-view" hidden></div><div id="thesis-view" hidden></div>
       <div id="run-view">
@@ -165,25 +165,30 @@
           <ol id="stages" class="stages" aria-label="Run progress"></ol>
         </div>
 
-        <section id="timeline-section" class="block timeline-block" aria-labelledby="timeline-title" hidden>
-          <h3 id="timeline-title" class="block-title">The record on a time line</h3>
-          <div id="timeline" class="timeline"></div>
+        <section id="tape-section" class="tape-block" aria-labelledby="tape-title" hidden>
+          <h3 id="tape-title" class="visually-hidden">The newest period's reported figures</h3>
+          <div id="tape" class="tape"></div>
         </section>
 
         <section class="block" aria-labelledby="scorecard-title">
-          <h3 id="scorecard-title" class="block-title">Verdicts by claim</h3>
+          <h3 id="scorecard-title" class="block-title" data-code="VRD">Verdicts by claim</h3>
           <div id="review-line" class="review-line" hidden></div>
+          <div id="board-head" class="board-head" aria-hidden="true" hidden><span>Engine</span><span>After your review</span><span>Claim</span><span>Evidence</span></div>
           <ol id="scorecard" class="scorecard"></ol>
-          <p id="distinction" class="distinction">Each verdict follows by a fixed rule from the findings that passed their checks. <strong>Checked:</strong> every quote was found word for word in the stored filing, and numbers were matched to quotes and reported figures. <strong>Not checked:</strong> whether a quote supports or challenges the claim is the engine's reading of it. Read the quotes before you rely on a verdict.</p>
+        </section>
+
+        <section id="timeline-section" class="block timeline-block" aria-labelledby="timeline-title" hidden>
+          <h3 id="timeline-title" class="block-title" data-code="TL">The record on a time line</h3>
+          <div id="timeline" class="timeline"></div>
         </section>
 
         <section id="changes-section" class="block" aria-labelledby="changes-title" tabindex="-1" hidden>
-          <h3 id="changes-title" class="block-title">What moved since the earlier run</h3>
+          <h3 id="changes-title" class="block-title" data-code="MOV">What moved since the earlier run</h3>
           <div id="changes"></div>
         </section>
 
         <section id="summary-section" class="block" aria-labelledby="summary-title" hidden>
-          <h3 id="summary-title" class="block-title">Summary</h3>
+          <h3 id="summary-title" class="block-title" data-code="SUM">Summary</h3>
           <div id="summary-box" data-mw="summary">
             <p id="summary-origin" class="origin"></p>
             <p id="summary" class="summary"></p>
@@ -191,42 +196,40 @@
         </section>
 
         <section class="block" aria-labelledby="claims-title">
-          <h3 id="claims-title" class="block-title">Claims and their evidence</h3>
-          <p class="hint">Open a claim to read each finding, its checks, and the exact passage or figure it rests on. On a wide screen the quotes sit in the margin beside their finding. <kbd>j</kbd> and <kbd>k</kbd> move between claims.</p>
+          <h3 id="claims-title" class="block-title" data-code="CLM">Claims and their evidence</h3>
           <div id="run-filing-changes" class="cc-compared" aria-live="polite" hidden></div>
           <div id="claim-list"></div>
         </section>
 
         <section id="withheld-section" class="block withheld" aria-labelledby="withheld-title" hidden>
-          <h3 id="withheld-title" class="block-title"><span class="glyph g-limit" aria-hidden="true">▲</span> Withheld findings</h3>
-          <p class="hint">The engine proposed these findings, but each failed a check. They count toward no verdict.</p>
+          <h3 id="withheld-title" class="block-title" data-code="WHD"><span class="glyph g-limit" aria-hidden="true">▲</span> Withheld findings</h3>
           <div id="withheld"></div>
         </section>
 
         <section id="figures-section" class="block" aria-labelledby="figures-title" hidden>
-          <h3 id="figures-title" class="block-title">Reported figures</h3>
+          <h3 id="figures-title" class="block-title" data-code="FIG">Reported figures</h3>
           <div id="figures"></div>
         </section>
 
         <section id="events-section" class="block" aria-labelledby="events-title" tabindex="-1" hidden>
-          <h3 id="events-title" class="block-title">Since the annual report</h3>
+          <h3 id="events-title" class="block-title" data-code="EVT">Since the annual report</h3>
           <div id="events"></div>
         </section>
 
         <div class="block-pair">
           <section id="unknowns-section" class="block" aria-labelledby="unknowns-title" hidden>
-            <h3 id="unknowns-title" class="block-title">Unknowns</h3>
+            <h3 id="unknowns-title" class="block-title" data-code="UNK">Unknowns</h3>
             <ul id="unknowns" class="plain-list"></ul>
           </section>
 
           <section id="next-section" class="block" aria-labelledby="next-title" hidden>
-            <h3 id="next-title" class="block-title">Next steps</h3>
+            <h3 id="next-title" class="block-title" data-code="NXT">Next steps</h3>
             <ul id="next-steps" class="plain-list"></ul>
           </section>
         </div>
 
         <section class="block" aria-labelledby="sources-title">
-          <h3 id="sources-title" class="block-title">Sources</h3>
+          <h3 id="sources-title" class="block-title" data-code="SRC">Sources</h3>
           <div class="table-wrap" tabindex="0" role="region" aria-labelledby="sources-title">
             <table id="sources" class="sources">
               <thead>
@@ -249,19 +252,19 @@
 
         <div class="block-pair">
           <section id="coverage-limits" class="block" aria-labelledby="limits-title" tabindex="-1">
-            <h3 id="limits-title" class="block-title">Coverage limits</h3>
+            <h3 id="limits-title" class="block-title" data-code="LIM">Coverage limits</h3>
             <ul id="limits" class="mark-list"></ul>
           </section>
 
           <section class="block" aria-labelledby="errors-title">
-            <h3 id="errors-title" class="block-title">Errors</h3>
+            <h3 id="errors-title" class="block-title" data-code="ERR">Errors</h3>
             <ul id="errors" class="mark-list"></ul>
             <div id="errors-more"></div>
           </section>
         </div>
 
         <details id="legend" class="legend block" open>
-          <summary>How to read this page</summary>
+          <summary>The marks on this page</summary>
           <dl class="legend-list">
             <div><dt><span class="pill verdict v-supported"><span class="glyph" aria-hidden="true">✓</span><span>Supported</span></span></dt><dd>Verified findings support the claim and none challenge it. On a finding, the same mark means it supports the claim.</dd></div>
             <div><dt><span class="pill verdict v-challenged"><span class="glyph" aria-hidden="true">✕</span><span>Challenged</span></span></dt><dd>Verified findings challenge the claim and none support it. On a finding: it challenges the claim.</dd></div>
@@ -300,6 +303,7 @@
     <h2 id="keys-title" class="keys-title">Keys</h2>
     <dl class="keys-list">
       <div><dt><kbd>/</kbd></dt><dd>Put the cursor in the ticker</dd></div>
+      <div><dt><kbd>e</kbd></dt><dd>Open or close your thesis (the form) beside a result</dd></div>
       <div><dt><kbd>j</kbd></dt><dd>Next claim</dd></div>
       <div><dt><kbd>k</kbd></dt><dd>Previous claim</dd></div>
       <div><dt><kbd>Enter</kbd></dt><dd>Open or close the claim in focus</dd></div>
@@ -307,7 +311,7 @@
       <div><dt><kbd>?</kbd></dt><dd>Show these keys</dd></div>
       <div><dt><kbd>Esc</kbd></dt><dd>Close this list</dd></div>
     </dl>
-    <p class="hint">Keys do nothing while you type in a field. Printing opens every claim so the note prints whole.</p>
+    <p class="hint">Keys do nothing while you type in a field. Printing opens every claim so the note prints whole. What the verdicts rest on, the time line and the samples are under <button type="button" class="linklike" id="keys-howto">How to read this</button>.</p>
     <form method="dialog"><button type="submit" class="secondary" id="keys-close">Close</button></form>
   </dialog>
 

@@ -301,6 +301,18 @@ const els = {
   keysDialog: $("keys-dialog"),
   timelineSection: $("timeline-section"),
   timeline: $("timeline"),
+  tapeSection: $("tape-section"),
+  tape: $("tape"),
+  boardHead: $("board-head"),
+  howto: $("howto"),
+  howtoButton: $("howto-button"),
+  thesisButton: $("thesis-button"),
+  formPanel: $("form-panel"),
+  drawerClose: $("drawer-close"),
+  drawerScrim: $("drawer-scrim"),
+  leaveSample: $("leave-sample"),
+  statusbarRun: $("statusbar-run"),
+  keysHowto: $("keys-howto"),
 };
 
 // ---------------------------------------------------------------- helpers
@@ -1955,7 +1967,7 @@ function renderReviewLine(run) {
 /** The "After your review" cell of a scorecard row, from the Review's claim entry. */
 function reviewedSlot(entry) {
   const verdict = entry?.reviewed_verdict ?? null;
-  const slot = h("span", { class: "verdict-slot slot-reviewed", "data-reviewed-verdict": verdict ?? "none" }, h("span", { class: "slot-label", text: "After your review" }));
+  const slot = h("span", { class: "verdict-slot slot-reviewed", "data-reviewed-verdict": verdict ?? "none" }, h("span", { class: "slot-label visually-hidden", text: "After your review" }));
   if (!verdict) {
     slot.append(h("span", { class: "pill review-pending", text: "not reviewed yet" }));
     return slot;
@@ -2192,9 +2204,12 @@ async function loadSample(name) {
   els.thesesBlock.hidden = false;
   els.theses.replaceChildren(h("li", { class: "muted", text: "Saved theses are not loaded in sample mode." }));
   els.saveThesis.hidden = false;
-  const link = $("sample-link");
-  link.textContent = "Leave the sample";
-  link.href = location.pathname;
+  // The way out of sample mode sits in the command bar; the sample links are not offered inside one.
+  $("sample-link").hidden = true;
+  if (els.leaveSample) {
+    els.leaveSample.href = location.pathname;
+    els.leaveSample.hidden = false;
+  }
   $("synthetic-link").hidden = true;
   $("changes-link").hidden = true;
   $("breakdowns-link").hidden = true;
@@ -2277,6 +2292,7 @@ function renderRun(run) {
   renderBanner(run);
   renderStages(run);
   renderHead(run);
+  renderTape(run);
   renderTimeline(run);
   renderReviewLine(run);
   renderScorecard(run);
@@ -2430,6 +2446,26 @@ function renderBanner(run) {
     if (list(run.coverage_limits).length) {
       parts.push(h("p", { class: "banner-line" }, h("a", { href: "#coverage-limits", onclick: jumpTo("coverage-limits"), text: "Read the coverage limits" })));
     }
+    // One line under the head, the full counts one click away: every count stays in the record's words.
+    const wasOpen = els.banner.querySelector("details.banner-fold")?.open ?? false;
+    const sep = () => h("span", { class: "banner-sep", "aria-hidden": "true", text: " · " });
+    const line = h(
+      "summary",
+      { class: "banner-summary" },
+      h("span", { class: `status-word st-${status}` }, statusMark(run.status), ` ${capitalize(run.status)}`),
+      sep(),
+      h("span", null, cov(c, "sources_read"), " of ", cov(c, "sources_requested"), ` ${unit(c.sources_requested, "source", "sources")}`),
+      sep(),
+      hasProposed
+        ? h("span", null, cov(c, "findings_verified"), " of ", cov(c, "findings_proposed"), ` ${unit(c.findings_proposed, "finding", "findings")} verified`)
+        : h("span", null, cov(c, "findings_verified"), ` ${unit(c.findings_verified, "finding", "findings")} verified`),
+      sep(),
+      h("span", null, cov(c, "findings_withheld"), " withheld"),
+      list(run.coverage_limits).length ? [sep(), h("span", { class: "banner-limits" }, limitGlyph(), " limits")] : "",
+      h("span", { class: "banner-open", text: "all counts" }),
+    );
+    els.banner.replaceChildren(h("details", { class: "banner-fold", open: wasOpen }, line, h("div", { class: "banner-full" }, ...parts)));
+    return;
   }
   els.banner.replaceChildren(...parts);
 }
@@ -2482,7 +2518,17 @@ function companyTitle(company, fallbackTicker = "") {
 /** Where a sample record came from, in the head of the view that shows it. */
 function sampleNoteLine() {
   if (!state.sample || !state.sampleNote) return "";
-  return h("p", { class: "sample-note", "data-sample-note": "" }, h("span", { class: "label", text: "Where this sample comes from: " }), state.sampleNote);
+  // Its first sentence in view; the whole note one click away (the same note, not a shorter one).
+  const note = state.sampleNote;
+  const cut = note.indexOf(". ");
+  const first = cut > 0 ? note.slice(0, cut + 1) : note;
+  return h(
+    "div",
+    { class: "sample-note", "data-sample-note": "" },
+    cut > 0
+      ? h("details", { class: "prov-more" }, h("summary", null, h("span", { class: "label", text: "Sample: " }), first), h("p", { class: "prov-full", text: note }))
+      : h("p", null, h("span", { class: "label", text: "Sample: " }), note),
+  );
 }
 
 /**
@@ -2492,6 +2538,7 @@ function sampleNoteLine() {
 function renderCommandBar(run) {
   if (!els.cmdRun) return;
   if (!run) {
+    if (els.statusbarRun) els.statusbarRun.textContent = "";
     els.cmdRun.hidden = true;
     els.cmdStatus.replaceChildren();
     els.cmdEngine.replaceChildren();
@@ -2505,9 +2552,10 @@ function renderCommandBar(run) {
   const reader = str(run.engine_detail) || str(run.engine) || "not recorded";
   const checker = runMeaningChecked(run) ? str(run.checker_detail) || str(run.checker) : "";
   els.cmdEngine.replaceChildren(
-    h("span", { class: "cmd-line", "data-cmd-engine": "", title: reader }, h("span", { class: "cmd-key", text: "read " }), reader),
-    checker ? h("span", { class: "cmd-line", "data-cmd-checker": "", title: checker }, h("span", { class: "cmd-key", text: "checked " }), checker) : "",
+    h("span", { class: "cmd-line", "data-cmd-engine": "", title: reader, tabindex: "0" }, h("span", { class: "cmd-key", text: "read " }), reader),
+    checker ? h("span", { class: "cmd-line", "data-cmd-checker": "", title: checker, tabindex: "0" }, h("span", { class: "cmd-key", text: "checked " }), checker) : "",
   );
+  if (els.statusbarRun) els.statusbarRun.textContent = `${str(run.id)} · ${str(run.status)}`;
   const line = str(run.as_of?.line);
   els.cmdAsof.replaceChildren(
     line
@@ -2614,12 +2662,15 @@ function renderScorecard(run) {
   }
   const review = currentReview(run);
   const reviewed = new Map(list(review?.claims).map((entry) => [entry.claim_id, entry]));
+  // One header over the board's columns when there is a review; each row keeps its own labels for screen readers.
+  if (els.boardHead) els.boardHead.hidden = !review;
+  els.scorecard.classList.toggle("has-review", Boolean(review));
   claims.forEach((claim, index) => {
     const verdicts = review
       ? h(
           "span",
           { class: "score-verdicts" },
-          h("span", { class: "verdict-slot slot-engine" }, h("span", { class: "slot-label", text: "Engine" }), verdictPill(claim.verdict)),
+          h("span", { class: "verdict-slot slot-engine" }, h("span", { class: "slot-label visually-hidden", text: "Engine" }), verdictPill(claim.verdict)),
           reviewedSlot(reviewed.get(claim.id)),
         )
       : verdictPill(claim.verdict);
@@ -2649,6 +2700,7 @@ const DISTINCTION_DEFAULT = els.distinction ? els.distinction.cloneNode(true) : 
 
 /** The note under the verdicts: what was checked, and by whom, for this run. */
 function renderDistinction(run) {
+  if (!els.distinction) return;
   if (!runMeaningChecked(run)) {
     els.distinction.replaceChildren(...DISTINCTION_DEFAULT.cloneNode(true).childNodes);
     return;
@@ -3248,8 +3300,27 @@ function renderWithheld(run, ctx) {
   };
   const byMeaning = withheld.filter((finding) => str(finding.checks?.support) === "failed");
   const byChecks = withheld.filter((finding) => str(finding.checks?.support) !== "failed");
+  // Collapsed behind one line: the record's count, then the kinds of reason present.
+  const c = run.coverage ?? {};
+  const kinds = [];
+  if (byMeaning.length) kinds.push(Number.isFinite(c.findings_failed_meaning) ? [cov(c, "findings_failed_meaning"), " by the meaning check"] : "by the meaning check");
+  if (byChecks.length) kinds.push(byMeaning.length ? "the others for a quote or a number" : "for a quote or a number");
+  const fold = (...content) =>
+    h(
+      "details",
+      { class: "withheld-fold" },
+      h(
+        "summary",
+        null,
+        Number.isFinite(c.findings_withheld) ? [cov(c, "findings_withheld"), ` ${unit(c.findings_withheld, "finding", "findings")} withheld: `] : "Findings withheld: ",
+        ...kinds.flatMap((kind, i) => (i ? ["; ", kind] : [kind])),
+        h("span", { class: "fold-hint", text: ". None counts toward a verdict." }),
+      ),
+      h("p", { class: "hint", text: "The engine proposed these findings, but each failed a check. They count toward no verdict." }),
+      ...content,
+    );
   if (byMeaning.length === 0) {
-    els.withheld.replaceChildren(h("ul", { class: "withheld-list" }, byChecks.map(item)));
+    els.withheld.replaceChildren(fold(h("ul", { class: "withheld-list" }, byChecks.map(item))));
     return;
   }
   const group = (key, title, hint, findings) =>
@@ -3260,10 +3331,10 @@ function renderWithheld(run, ctx) {
       h("p", { class: "hint", text: hint }),
       h("ul", { class: "withheld-list" }, findings.map(item)),
     );
-  els.withheld.replaceChildren(
+  els.withheld.replaceChildren(fold(
     byChecks.length ? group("checks", "Withheld for a quote or a number", "A quote was not found in the filing, a number did not match, or nothing could be checked.", byChecks) : "",
     group("meaning", "Withheld by the meaning check", "A second model read the quoted evidence and judged that it does not support the statement. That too is a model's reading: read the quote before you dismiss the finding.", byMeaning),
-  );
+  ));
 }
 
 function renderBriefLists(run) {
@@ -3415,6 +3486,55 @@ function renderEvent(event, words) {
   }
   entry.append(items);
   return entry;
+}
+
+// ---------------------------------------------------------------- the tape
+
+/** The figures on the tape, in order: the run's own metrics of these keys, never computed here. */
+const TAPE_KEYS = ["revenue", "revenue_yoy", "gross_margin", "operating_margin", "fcf_margin", "eps_diluted"];
+
+/**
+ * The tape: the newest period's key figures in one dense row under the company's name. Each
+ * cell is a metric the record sends (its label, display string and period label) with the
+ * sparkline of its series; the quarter's metric when the record has one, else the year's.
+ * Selecting a cell opens that figure, with its arithmetic, among the reported figures.
+ */
+function renderTape(run) {
+  if (!els.tape) return;
+  const metrics = list(run.metrics);
+  const series = list(run.series);
+  const pick = (key) => metrics.find((m) => m.key === key && m.period === "quarter") ?? metrics.find((m) => m.key === key && m.period === "annual");
+  const chosen = TAPE_KEYS.map(pick).filter(Boolean);
+  els.tapeSection.hidden = chosen.length === 0;
+  if (chosen.length === 0) {
+    els.tape.replaceChildren();
+    return;
+  }
+  const period = str(chosen[0].period_label);
+  const cells = chosen.map((metric) =>
+    h(
+      "a",
+      { class: "tape-cell", href: `#figures-section`, "data-tape-metric": metric.id, onclick: openFigure(metric.id) },
+      h("span", { class: "tape-label", text: metric.label }),
+      h("span", { class: `tape-value ${valueClass(metric)} dec` }, ...decimalParts(metric.display)),
+      sparkline(metric, series),
+      str(metric.period_label) !== period ? h("span", { class: "tape-period", text: metric.period_label }) : "",
+    ),
+  );
+  els.tape.replaceChildren(h("p", { class: "tape-head" }, h("span", { class: "tape-code", "aria-hidden": "true", text: "FIG" }), period), h("div", { class: "tape-row" }, cells));
+}
+
+/** Open one figure among the reported figures and bring it into view. */
+function openFigure(metricId) {
+  return (event) => {
+    const row = document.querySelector(`#figures details.fig-row[data-metric-id="${CSS.escape(metricId)}"]`);
+    if (!row) return;
+    event.preventDefault();
+    row.open = true;
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    row.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" });
+    row.querySelector("summary")?.focus({ preventScroll: true });
+  };
 }
 
 // ---------------------------------------------------------------- the time line
@@ -3624,16 +3744,7 @@ function drawTimeline(container, run) {
   );
 
   const tipBox = h("div", { class: "tl-tip", role: "tooltip", id: "tl-tip", hidden: true });
-  const caption = h(
-    "p",
-    { class: "tl-caption" },
-    "Bars above the line: the annual (10-K) and quarterly (10-Q) reports this run read; a dot on top means a verified quote comes from it. Below the line: the 8-Ks the record lists since the annual report, ",
-    h("strong", { text: "filled diamonds" }),
-    " for those with an item of a substantive category, small circles for routine ones.",
-    Number.isFinite(data.newest) ? [" The hatched band runs from the newest filing read, ", h("strong", { text: dateLabel(run.as_of.newest_filed) }), ", to this run: nothing filed in it is in the record."] : "",
-    " Hover over or focus a mark to read it; select it to open the filing.",
-  );
-  container.replaceChildren(svg, tipBox, caption);
+  container.replaceChildren(svg, tipBox);
   container.dataset.width = String(width);
 }
 
@@ -3804,6 +3915,17 @@ function sparkline(metric, series) {
 }
 
 /** The class of a value cell: missing, negative (by the sign of the record's value) or plain. */
+/**
+ * A display string split at its decimal point, so a column of values lines up on it. The
+ * characters are the record's own, in order; nothing is rounded or reformatted.
+ */
+function decimalParts(display) {
+  const text = str(display);
+  const match = /^(.*?\d)(\.\d.*)$/.exec(text);
+  if (!match) return [h("span", { class: "dec-int", text }), h("span", { class: "dec-frac" })];
+  return [h("span", { class: "dec-int", text: match[1] }), h("span", { class: "dec-frac", text: match[2] })];
+}
+
 function valueClass(metric) {
   if (metric.value === null || metric.value === undefined) return "fig-value is-missing";
   return Number.isFinite(metric.value) && metric.value < 0 ? "fig-value is-neg" : "fig-value";
@@ -3847,7 +3969,7 @@ function figureRow(metric, series = []) {
         null,
         h("span", { class: "fig-label" }, metric.label, metric.period === "instant" ? h("span", { class: "muted small", text: ` · ${metric.period_label}` }) : ""),
         sparkline(metric, series),
-        h("span", { class: valueClass(metric), text: metric.display }),
+        h("span", { class: `${valueClass(metric)} dec` }, ...decimalParts(metric.display)),
       ),
       body,
     ),
@@ -4434,6 +4556,77 @@ function initSpecimen() {
   }
 }
 
+// ---------------------------------------------------------------- the first screen, the thesis drawer, the guide
+
+/** Whether the first screen is showing: no run or other record, so the form is the page. */
+function onFirstScreen() {
+  return Boolean(els.empty) && !els.empty.hidden;
+}
+
+/** Lay the page out for the first screen or for a result, when the empty state appears or goes. */
+function syncFirstScreen() {
+  const first = onFirstScreen();
+  document.body.classList.toggle("is-first", first);
+  if (els.thesisButton) els.thesisButton.hidden = first;
+  if (els.howtoButton) els.howtoButton.hidden = first;
+  // On the first screen the guide's opening (what this is, the samples) is the page's lead.
+  if (els.howto) setHowto(first);
+  if (first) closeDrawer(false);
+}
+
+function setHowto(open) {
+  els.howto.hidden = !open;
+  els.howtoButton?.setAttribute("aria-expanded", String(open));
+}
+
+function toggleHowto() {
+  setHowto(els.howto.hidden);
+  if (!els.howto.hidden) els.howto.querySelector("a, button, summary")?.focus({ preventScroll: true });
+}
+
+function drawerOpen() {
+  return document.body.classList.contains("drawer-open");
+}
+
+function openDrawer() {
+  if (onFirstScreen() || !els.formPanel) return;
+  document.body.classList.add("drawer-open");
+  els.thesisButton?.setAttribute("aria-expanded", "true");
+  if (els.drawerScrim) els.drawerScrim.hidden = false;
+  els.decision?.focus({ preventScroll: true });
+}
+
+function closeDrawer(returnFocus = true) {
+  if (!drawerOpen()) return;
+  document.body.classList.remove("drawer-open");
+  els.thesisButton?.setAttribute("aria-expanded", "false");
+  if (els.drawerScrim) els.drawerScrim.hidden = true;
+  if (returnFocus) els.thesisButton?.focus({ preventScroll: true });
+}
+
+function toggleDrawer() {
+  if (drawerOpen()) closeDrawer();
+  else openDrawer();
+}
+
+function initLayout() {
+  if (!els.empty) return;
+  new MutationObserver(syncFirstScreen).observe(els.empty, { attributes: true, attributeFilter: ["hidden"] });
+  syncFirstScreen();
+  els.thesisButton?.addEventListener("click", toggleDrawer);
+  els.drawerClose?.addEventListener("click", () => closeDrawer());
+  els.drawerScrim?.addEventListener("click", () => closeDrawer());
+  els.howtoButton?.addEventListener("click", toggleHowto);
+  els.keysHowto?.addEventListener("click", () => {
+    els.keysDialog?.close?.();
+    if (onFirstScreen()) return;
+    setHowto(true);
+    els.howto.scrollIntoView({ block: "start" });
+  });
+  // A refused field opens the drawer, so the reader sees what to fix.
+  if (els.formErrors) new MutationObserver(() => !els.formErrors.hidden && openDrawer()).observe(els.formErrors, { attributes: true, attributeFilter: ["hidden"] });
+}
+
 // ---------------------------------------------------------------- theme, keys, print
 
 /** The reader's stored theme, or "" when none is stored or the browser refuses storage. */
@@ -4522,6 +4715,11 @@ function openKeys() {
 /** The page's keys: / ticker, j and k claims, t theme, ? the list. Ignored while typing or with a modifier. */
 function onKey(event) {
   if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
+  if (event.key === "Escape" && drawerOpen()) {
+    event.preventDefault();
+    closeDrawer();
+    return;
+  }
   if (typing(event.target)) {
     if (event.key === "Escape" && event.target === els.ticker) els.ticker.blur();
     return;
@@ -4544,6 +4742,11 @@ function onKey(event) {
     case "t":
       event.preventDefault();
       toggleTheme();
+      break;
+    case "e":
+      if (onFirstScreen()) break;
+      event.preventDefault();
+      toggleDrawer();
       break;
     case "?":
       event.preventDefault();
@@ -4582,6 +4785,7 @@ function watchTimelineWidth() {
 
 function initChrome() {
   initTheme();
+  initLayout();
   document.addEventListener("keydown", onKey);
   els.keysButton?.addEventListener("click", openKeys);
   window.addEventListener("beforeprint", beforePrint);

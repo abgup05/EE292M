@@ -1,0 +1,9 @@
+{
+  "error": "Invalid request",
+  "details": [
+    {
+      "field": "policy",
+      "message": "Input should be 'auto' or 'ask'"
+    }
+  ]
+}

@@ -27,7 +27,16 @@ from app.services.examples import EXAMPLE_THESIS
 from app.services.export import render_markdown
 from app.services.thesis_run import execute_run, new_run
 from app.store import FilingCache, Store
-from tests.fakes import FY_2026, Q1_2027, Q2_2027, FakeFilings, recorded_companies, recorded_html
+from tests.fakes import (
+    FY_2026,
+    Q1_2027,
+    Q2_2027,
+    FakeFilings,
+    recorded_companies,
+    recorded_current_documents,
+    recorded_current_reports,
+    recorded_html,
+)
 
 DEFAULT_CASSETTE = Path("demo/cassettes/nvda-example")
 RECORDED_DOCUMENTS = {
@@ -38,10 +47,20 @@ RECORDED_DOCUMENTS = {
 
 
 def recorded_filings() -> FakeFilings:
-    """NVIDIA's three default filings and its XBRL facts, all from recorded fixtures."""
+    """NVIDIA's three default filings, its 8-Ks since the 10-K and its XBRL facts, as recorded.
+
+    The 8-Ks give the replayed run a timeline; no claim of the example thesis bears on
+    an 8-K's category, so none is offered to the model and the recorded prompts hold.
+    """
     refs = [Q2_2027, Q1_2027, FY_2026]
     documents = {ref.url: recorded_html(RECORDED_DOCUMENTS[ref.url]) for ref in refs}
-    return FakeFilings(refs=refs, documents=documents, companies=recorded_companies())
+    documents.update(recorded_current_documents())
+    return FakeFilings(
+        refs=refs,
+        documents=documents,
+        companies=recorded_companies(),
+        current=recorded_current_reports(),
+    )
 
 
 def replay(
@@ -77,7 +96,8 @@ def replay_checker(transport: CassetteTransport) -> ClaudeChecker:
 def sample_note(run: Run, cassette: Path) -> str:
     """What the page says about a sample: the recording it replays, and what the run asked for."""
     note = (
-        "A recorded run of the NVIDIA example thesis on three recorded filings. The model "
+        "A recorded run of the NVIDIA example thesis on three recorded filings and the 8-Ks "
+        "NVIDIA filed after the annual report, as recorded on 17 November 2026. The model "
         f"answers are replayed from the cassette {cassette.as_posix()}; see its "
         "README for how they were produced."
     )

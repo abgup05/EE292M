@@ -1,17 +1,20 @@
 {
-  "note": "A recorded run of the NVIDIA example thesis on three recorded filings. The model answers are replayed from the cassette demo/cassettes/nvda-example-tagged; see its README for how they were produced. This run asked to be offered the figures tagged in the filings as well.",
+  "note": "A recorded run of the NVIDIA example thesis on three recorded filings and the 8-Ks NVIDIA filed after the annual report, as recorded on 17 November 2026. The model answers are replayed from the cassette demo/cassettes/nvda-example-tagged; see its README for how they were produced. This run asked to be offered the figures tagged in the filings as well.",
   "meta": {
-    "version": "0.11.1",
+    "version": "0.12.0",
     "figures_note": "Reported figures are computed by the backend from the XBRL facts the company filed with the SEC; each shows the facts it used and its arithmetic.",
     "limits": {
       "CONTEXT_CHARS": 240,
       "DEFAULT_FILINGS": 3,
+      "EVENT_OPENING_SENTENCES": 2,
+      "EVENT_PASSAGES_PER_CLAIM": 2,
       "FIGURE_QUARTERS": 3,
       "FIGURE_YEARS": 2,
       "MAX_CLAIMS": 6,
       "MAX_CLAIM_CHARS": 400,
       "MAX_CONCURRENT_ASSESSMENTS": 3,
       "MAX_DECISION_CHARS": 500,
+      "MAX_EVENTS_READ": 8,
       "MAX_EXCERPT_CHARS": 600,
       "MAX_EXTRA_URLS": 5,
       "MAX_FIGURES_OFFERED": 40,
@@ -88,10 +91,39 @@
       "filings": 3,
       "extra_urls": [],
       "tagged_figures": false
+    },
+    "events": {
+      "heading": "Since the annual report",
+      "note": "Current reports (8-K) the company filed after the annual report this run read, newest first, as EDGAR's index lists them. The opening sentences of each item are quoted from the 8-Ks read; exhibits, such as a press release, are not read.",
+      "category_labels": {
+        "leadership": "Leadership",
+        "accounting": "Accounting",
+        "deal": "Deal",
+        "restructuring": "Restructuring",
+        "incident": "Incident",
+        "financing": "Financing",
+        "control": "Control",
+        "listing": "Listing",
+        "results": "Results",
+        "governance": "Governance",
+        "disclosure": "Disclosure",
+        "exhibits": "Exhibits",
+        "other": "Other"
+      },
+      "substantive": [
+        "accounting",
+        "control",
+        "deal",
+        "financing",
+        "incident",
+        "leadership",
+        "listing",
+        "restructuring"
+      ]
     }
   },
   "run": {
-    "id": "run-9a1250a74fe5",
+    "id": "run-537d41e52447",
     "inputs": {
       "ticker": "NVDA",
       "decision": "Whether to keep an overweight position in NVIDIA into the next earnings report",
@@ -111,8 +143,8 @@
     "status": "partial",
     "stage": "done",
     "stage_detail": "",
-    "started_at": "2026-11-17T20:40:56.619071Z",
-    "finished_at": "2026-11-17T20:40:57.074478Z",
+    "started_at": "2026-11-18T08:18:41.836481Z",
+    "finished_at": "2026-11-18T08:18:42.337345Z",
     "company": {
       "cik": 1045810,
       "ticker": "NVDA",
@@ -141,7 +173,10 @@
           "f4"
         ],
         "passages_considered": 8,
-        "assessed_by": "claude"
+        "assessed_by": "claude",
+        "categories": [],
+        "caution": "",
+        "event_note": ""
       },
       {
         "id": "c2",
@@ -160,7 +195,10 @@
           "f8"
         ],
         "passages_considered": 8,
-        "assessed_by": "claude"
+        "assessed_by": "claude",
+        "categories": [],
+        "caution": "",
+        "event_note": ""
       },
       {
         "id": "c3",
@@ -180,7 +218,10 @@
           "f12"
         ],
         "passages_considered": 8,
-        "assessed_by": "claude"
+        "assessed_by": "claude",
+        "categories": [],
+        "caution": "",
+        "event_note": ""
       },
       {
         "id": "c4",
@@ -200,7 +241,10 @@
           "f16"
         ],
         "passages_considered": 8,
-        "assessed_by": "claude"
+        "assessed_by": "claude",
+        "categories": [],
+        "caution": "",
+        "event_note": ""
       },
       {
         "id": "c5",
@@ -219,7 +263,10 @@
           "f19"
         ],
         "passages_considered": 8,
-        "assessed_by": "claude"
+        "assessed_by": "claude",
+        "categories": [],
+        "caution": "",
+        "event_note": ""
       }
     ],
     "sources": [
@@ -291,7 +338,7 @@
         "accession": null,
         "period_end": null,
         "published_date": null,
-        "retrieved_at": "2026-11-17T20:40:56.944712Z",
+        "retrieved_at": "2026-11-18T08:18:42.196993Z",
         "content_hash": "f6870031195cd1dc226506fcf891f4096679d400ac6139b9909a117dc9648f9b",
         "extraction_status": "extracted",
         "sections": 0,
@@ -528,7 +575,8 @@
         },
         "withheld_reason": "",
         "counted_as": "supports",
-        "count_note": ""
+        "count_note": "",
+        "predated_by": []
       },
       {
         "id": "f2",
@@ -559,7 +607,8 @@
         },
         "withheld_reason": "",
         "counted_as": "supports",
-        "count_note": ""
+        "count_note": "",
+        "predated_by": []
       },
       {
         "id": "f3",
@@ -592,7 +641,8 @@
         },
         "withheld_reason": "",
         "counted_as": "supports",
-        "count_note": ""
+        "count_note": "",
+        "predated_by": []
       },
       {
         "id": "f4",
@@ -619,7 +669,8 @@
         },
         "withheld_reason": "",
         "counted_as": "context",
-        "count_note": ""
+        "count_note": "",
+        "predated_by": []
       },
       {
         "id": "f5",
@@ -654,7 +705,8 @@
         },
         "withheld_reason": "",
         "counted_as": "supports",
-        "count_note": ""
+        "count_note": "",
+        "predated_by": []
       },
       {
         "id": "f6",
@@ -688,7 +740,8 @@
         },
         "withheld_reason": "",
         "counted_as": "supports",
-        "count_note": ""
+        "count_note": "",
+        "predated_by": []
       },
       {
         "id": "f8",
@@ -723,7 +776,8 @@
         },
         "withheld_reason": "",
         "counted_as": "supports",
-        "count_note": ""
+        "count_note": "",
+        "predated_by": []
       },
       {
         "id": "f9",
@@ -752,7 +806,8 @@
         },
         "withheld_reason": "",
         "counted_as": "supports",
-        "count_note": ""
+        "count_note": "",
+        "predated_by": []
       },
       {
         "id": "f10",
@@ -782,7 +837,8 @@
         },
         "withheld_reason": "",
         "counted_as": "supports",
-        "count_note": ""
+        "count_note": "",
+        "predated_by": []
       },
       {
         "id": "f11",
@@ -820,7 +876,8 @@
         },
         "withheld_reason": "",
         "counted_as": "context",
-        "count_note": ""
+        "count_note": "",
+        "predated_by": []
       },
       {
         "id": "f12",
@@ -847,7 +904,8 @@
         },
         "withheld_reason": "",
         "counted_as": "supports",
-        "count_note": ""
+        "count_note": "",
+        "predated_by": []
       },
       {
         "id": "f13",
@@ -881,7 +939,8 @@
         },
         "withheld_reason": "",
         "counted_as": "supports",
-        "count_note": ""
+        "count_note": "",
+        "predated_by": []
       },
       {
         "id": "f14",
@@ -916,7 +975,8 @@
         },
         "withheld_reason": "",
         "counted_as": "context",
-        "count_note": ""
+        "count_note": "",
+        "predated_by": []
       },
       {
         "id": "f15",
@@ -951,7 +1011,8 @@
         },
         "withheld_reason": "",
         "counted_as": "challenges",
-        "count_note": ""
+        "count_note": "",
+        "predated_by": []
       },
       {
         "id": "f16",
@@ -987,7 +1048,8 @@
         },
         "withheld_reason": "",
         "counted_as": "challenges",
-        "count_note": ""
+        "count_note": "",
+        "predated_by": []
       },
       {
         "id": "f17",
@@ -1014,7 +1076,8 @@
         },
         "withheld_reason": "",
         "counted_as": "supports",
-        "count_note": ""
+        "count_note": "",
+        "predated_by": []
       },
       {
         "id": "f18",
@@ -1041,7 +1104,8 @@
         },
         "withheld_reason": "",
         "counted_as": "supports",
-        "count_note": ""
+        "count_note": "",
+        "predated_by": []
       },
       {
         "id": "f19",
@@ -1068,7 +1132,8 @@
         },
         "withheld_reason": "",
         "counted_as": "context",
-        "count_note": ""
+        "count_note": "",
+        "predated_by": []
       }
     ],
     "unsupported_findings": [
@@ -1104,7 +1169,8 @@
         },
         "withheld_reason": "a number in the statement is not in its quotes or cited figures: 23%",
         "counted_as": null,
-        "count_note": ""
+        "count_note": "",
+        "predated_by": []
       }
     ],
     "coverage_limits": [
@@ -10931,6 +10997,490 @@
       "coverage_status": "partial",
       "status_note": "Part of the thesis could not be assessed with verified evidence. The reasons are listed under coverage limits.",
       "provenance_note": "Evidence comes from the company's own filings with the SEC. It shows what the company reported, not whether an outside party agrees."
+    },
+    "timeline": [
+      {
+        "id": "ev-0001045810-26-000082",
+        "form": "8-K",
+        "accession": "0001045810-26-000082",
+        "filed_date": "2026-11-12",
+        "event_date": "2026-11-11",
+        "filed_label": "12 Nov 2026",
+        "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000082/nvda-20261111.htm",
+        "items": [
+          {
+            "number": "5.02",
+            "title": "Departure of Directors or Certain Officers; Election of Directors; Appointment of Certain Officers; Compensatory Arrangements of Certain Officers",
+            "category": "leadership",
+            "known": true,
+            "found": true,
+            "locator": "Item 5.02. Departure of Directors or Certain Officers; Election of Directors; Appointment of Certain Officers; Compensatory Arrangements of Certain Officers",
+            "opening": [
+              "On November 11, 2026, the Board of Directors, or the Board, of NVIDIA Corporation accepted the resignation of Jen-Hsun Huang, as NVIDIA’s President, Chief Executive Officer and member of the Board, effective immediately.",
+              "Following Mr. Huang’s resignation, the Board appointed NVIDIA’s Executive Vice President and Chief Financial Officer Colette M. Kress, age 59, to serve as interim Chief Executive Officer, while the Board conducts a search for a new Chief Executive Officer."
+            ],
+            "roles": [
+              "President",
+              "Chief Executive Officer",
+              "Director",
+              "Executive Vice President",
+              "Chief Financial Officer",
+              "Chair"
+            ]
+          },
+          {
+            "number": "9.01",
+            "title": "Financial Statements and Exhibits",
+            "category": "exhibits",
+            "known": true,
+            "found": true,
+            "locator": "Item 9.01. Financial Statements and Exhibits",
+            "opening": [],
+            "roles": []
+          }
+        ],
+        "categories": [
+          "leadership",
+          "exhibits"
+        ],
+        "substantive": true,
+        "after_periodic": true,
+        "status": "read",
+        "reason": "",
+        "content_hash": "f7001eb231b8d019ca9e5c2a636349f38cce96557378739d3f84f506dd5895c1",
+        "source_id": null
+      },
+      {
+        "id": "ev-0001045810-26-000078",
+        "form": "8-K",
+        "accession": "0001045810-26-000078",
+        "filed_date": "2026-09-03",
+        "event_date": "2026-09-02",
+        "filed_label": "3 Sep 2026",
+        "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000078/nvda-20260902.htm",
+        "items": [
+          {
+            "number": "8.01",
+            "title": "Other Events",
+            "category": "disclosure",
+            "known": true,
+            "found": true,
+            "locator": "Item 8.01. Other Events",
+            "opening": [
+              "On September 2, 2026, NVIDIA Corporation (“NVIDIA”) entered into a definitive agreement to acquire Hugging Face, Inc. (“Hugging Face”).",
+              "Hugging Face operates a platform and community for developing, sharing and deploying open-source models, datasets and applications."
+            ],
+            "roles": []
+          }
+        ],
+        "categories": [
+          "disclosure"
+        ],
+        "substantive": false,
+        "after_periodic": true,
+        "status": "read",
+        "reason": "",
+        "content_hash": "da76dbea33d5145f3aeb66820e47f85bec25a559990cc3047c5cc721e4d87d5f",
+        "source_id": null
+      },
+      {
+        "id": "ev-0001045810-26-000073",
+        "form": "8-K",
+        "accession": "0001045810-26-000073",
+        "filed_date": "2026-08-26",
+        "event_date": "2026-08-26",
+        "filed_label": "26 Aug 2026",
+        "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000073/nvda-20260826.htm",
+        "items": [
+          {
+            "number": "2.02",
+            "title": "Results of Operations and Financial Condition",
+            "category": "results",
+            "known": true,
+            "found": false,
+            "locator": "",
+            "opening": [],
+            "roles": []
+          },
+          {
+            "number": "9.01",
+            "title": "Financial Statements and Exhibits",
+            "category": "exhibits",
+            "known": true,
+            "found": false,
+            "locator": "",
+            "opening": [],
+            "roles": []
+          }
+        ],
+        "categories": [
+          "results",
+          "exhibits"
+        ],
+        "substantive": false,
+        "after_periodic": false,
+        "status": "index_only",
+        "reason": "",
+        "content_hash": "",
+        "source_id": null
+      },
+      {
+        "id": "ev-0001045810-26-000069",
+        "form": "8-K",
+        "accession": "0001045810-26-000069",
+        "filed_date": "2026-08-17",
+        "event_date": "2026-08-17",
+        "filed_label": "17 Aug 2026",
+        "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000069/nvda-20260817.htm",
+        "items": [
+          {
+            "number": "1.01",
+            "title": "Entry into a Material Definitive Agreement",
+            "category": "deal",
+            "known": true,
+            "found": true,
+            "locator": "Item 1.01. Entry into a Material Definitive Agreement",
+            "opening": [
+              "On August 17, 2026, NVIDIA Corporation (“NVIDIA”) announced a multi-year partnership with SB Energy Corp. (collectively with its affiliates, “SB Energy”) to advance the development of the PORTS Technology Campus, a large-scale AI data center campus in Pike County, Ohio (the “Portsmouth Site”).",
+              "Through the partnership and the credit support described below, NVIDIA has secured land, power, and shell capacity at the Portsmouth Site to host NVIDIA AI compute infrastructure."
+            ],
+            "roles": []
+          },
+          {
+            "number": "2.03",
+            "title": "Creation of a Direct Financial Obligation or an Obligation under an Off-Balance Sheet Arrangement of a Registrant",
+            "category": "financing",
+            "known": true,
+            "found": true,
+            "locator": "Item 2.03. Creation of a Direct Financial Obligation or an Obligation under an Off-Balance Sheet Arrangement of a Registrant",
+            "opening": [
+              "The information set forth in Item 1.01 above is hereby incorporated by reference into this Item 2.03."
+            ],
+            "roles": []
+          },
+          {
+            "number": "7.01",
+            "title": "Regulation FD Disclosure",
+            "category": "disclosure",
+            "known": true,
+            "found": true,
+            "locator": "Item 7.01. Regulation FD",
+            "opening": [
+              "On August 17, 2026, NVIDIA issued a press release announcing the partnership with SB Energy.",
+              "The press release is attached as Exhibit 99.1 hereto and is incorporated herein by reference."
+            ],
+            "roles": []
+          }
+        ],
+        "categories": [
+          "deal",
+          "financing",
+          "disclosure"
+        ],
+        "substantive": true,
+        "after_periodic": false,
+        "status": "read",
+        "reason": "",
+        "content_hash": "574da7dea02c8b4433b1cb846405e46d7749322c134a39393cc6a4f006dbb5a0",
+        "source_id": null
+      },
+      {
+        "id": "ev-0001045810-26-000060",
+        "form": "8-K",
+        "accession": "0001045810-26-000060",
+        "filed_date": "2026-07-02",
+        "event_date": "2026-06-28",
+        "filed_label": "2 Jul 2026",
+        "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000060/nvda-20260628.htm",
+        "items": [
+          {
+            "number": "5.02",
+            "title": "Departure of Directors or Certain Officers; Election of Directors; Appointment of Certain Officers; Compensatory Arrangements of Certain Officers",
+            "category": "leadership",
+            "known": true,
+            "found": true,
+            "locator": "Item 5.02. Departure of Directors or Certain Officers; Election of Directors; Appointment of Certain Officers; Compensatory Arrangements of Certain Officers",
+            "opening": [
+              "On June 28, 2026, Ajay K. Puri, Executive Vice President, Worldwide Field Operations of NVIDIA Corporation, or the Company, notified the Company of his intention to retire from his role effective upon the employment commencement date of his successor.",
+              "Mr. Puri, a 21-year executive at NVIDIA, is expected to remain with the Company in a senior advisory role to ensure a seamless transition to his successor."
+            ],
+            "roles": [
+              "Executive Vice President",
+              "President",
+              "Vice President"
+            ]
+          }
+        ],
+        "categories": [
+          "leadership"
+        ],
+        "substantive": true,
+        "after_periodic": false,
+        "status": "read",
+        "reason": "",
+        "content_hash": "b97852498367e239c364174d48593aa1aa483f7df84df5fd54e2dd0221d47e57",
+        "source_id": null
+      },
+      {
+        "id": "ev-0001045810-26-000056",
+        "form": "8-K",
+        "accession": "0001045810-26-000056",
+        "filed_date": "2026-06-30",
+        "event_date": "2026-06-24",
+        "filed_label": "30 Jun 2026",
+        "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000056/nvda-20260624.htm",
+        "items": [
+          {
+            "number": "5.07",
+            "title": "Submission of Matters to a Vote of Security Holders",
+            "category": "governance",
+            "known": true,
+            "found": false,
+            "locator": "",
+            "opening": [],
+            "roles": []
+          }
+        ],
+        "categories": [
+          "governance"
+        ],
+        "substantive": false,
+        "after_periodic": false,
+        "status": "index_only",
+        "reason": "",
+        "content_hash": "",
+        "source_id": null
+      },
+      {
+        "id": "ev-0001193125-26-275783",
+        "form": "8-K",
+        "accession": "0001193125-26-275783",
+        "filed_date": "2026-06-18",
+        "event_date": "2026-06-15",
+        "filed_label": "18 Jun 2026",
+        "url": "https://www.sec.gov/Archives/edgar/data/1045810/000119312526275783/d48176d8k.htm",
+        "items": [
+          {
+            "number": "8.01",
+            "title": "Other Events",
+            "category": "disclosure",
+            "known": true,
+            "found": false,
+            "locator": "",
+            "opening": [],
+            "roles": []
+          },
+          {
+            "number": "9.01",
+            "title": "Financial Statements and Exhibits",
+            "category": "exhibits",
+            "known": true,
+            "found": false,
+            "locator": "",
+            "opening": [],
+            "roles": []
+          }
+        ],
+        "categories": [
+          "disclosure",
+          "exhibits"
+        ],
+        "substantive": false,
+        "after_periodic": false,
+        "status": "index_only",
+        "reason": "",
+        "content_hash": "",
+        "source_id": null
+      },
+      {
+        "id": "ev-0001045810-26-000051",
+        "form": "8-K",
+        "accession": "0001045810-26-000051",
+        "filed_date": "2026-05-20",
+        "event_date": "2026-05-20",
+        "filed_label": "20 May 2026",
+        "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000051/nvda-20260520.htm",
+        "items": [
+          {
+            "number": "2.02",
+            "title": "Results of Operations and Financial Condition",
+            "category": "results",
+            "known": true,
+            "found": false,
+            "locator": "",
+            "opening": [],
+            "roles": []
+          },
+          {
+            "number": "9.01",
+            "title": "Financial Statements and Exhibits",
+            "category": "exhibits",
+            "known": true,
+            "found": false,
+            "locator": "",
+            "opening": [],
+            "roles": []
+          }
+        ],
+        "categories": [
+          "results",
+          "exhibits"
+        ],
+        "substantive": false,
+        "after_periodic": false,
+        "status": "index_only",
+        "reason": "",
+        "content_hash": "",
+        "source_id": null
+      },
+      {
+        "id": "ev-0001045810-26-000028",
+        "form": "8-K",
+        "accession": "0001045810-26-000028",
+        "filed_date": "2026-05-08",
+        "event_date": "2026-05-07",
+        "filed_label": "8 May 2026",
+        "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000028/nvda-20260507.htm",
+        "items": [
+          {
+            "number": "5.02",
+            "title": "Departure of Directors or Certain Officers; Election of Directors; Appointment of Certain Officers; Compensatory Arrangements of Certain Officers",
+            "category": "leadership",
+            "known": true,
+            "found": true,
+            "locator": "Item 5.02. Departure of Directors or Certain Officers; Election of Directors; Appointment of Certain Officers; Compensatory Arrangements of Certain Officers",
+            "opening": [
+              "On May 7, 2026, the Board of Directors, or the Board, of NVIDIA Corporation appointed Suzanne Nora Johnson as a member of the Board and as a member of the Audit Committee of the Board and the number of directors constituting the full Board was increased from ten to eleven, in each case effective July 13, 2026.",
+              "Ms. Nora Johnson will join the Board effective July 13, 2026, due to a prior professional commitment."
+            ],
+            "roles": [
+              "Director"
+            ]
+          }
+        ],
+        "categories": [
+          "leadership"
+        ],
+        "substantive": true,
+        "after_periodic": false,
+        "status": "read",
+        "reason": "",
+        "content_hash": "d03aeb2c5861f75d1a29406309da0cdef80a09638c65bd0904d3fb0894e733c6",
+        "source_id": null
+      },
+      {
+        "id": "ev-0001045810-26-000026",
+        "form": "8-K",
+        "accession": "0001045810-26-000026",
+        "filed_date": "2026-04-27",
+        "event_date": "2026-04-24",
+        "filed_label": "27 Apr 2026",
+        "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000026/nvda-20260424.htm",
+        "items": [
+          {
+            "number": "5.02",
+            "title": "Departure of Directors or Certain Officers; Election of Directors; Appointment of Certain Officers; Compensatory Arrangements of Certain Officers",
+            "category": "leadership",
+            "known": true,
+            "found": true,
+            "locator": "Item 5.02. Departure of Directors or Certain Officers; Election of Directors; Appointment of Certain Officers; Compensatory Arrangements of Certain Officers",
+            "opening": [
+              "On April 24, 2026, Donald Robertson, Vice President, or VP, and Chief Accounting Officer, or CAO, of NVIDIA Corporation, or the Company, notified the Company of his intention to retire from his role as VP and CAO, effective May 4, 2026.",
+              "Following such date, he will remain with the Company as VP, Finance to support various projects until July 1, 2026."
+            ],
+            "roles": [
+              "Vice President",
+              "Chief Accounting Officer",
+              "Principal Accounting Officer",
+              "Senior Vice President",
+              "Controller",
+              "Director"
+            ]
+          }
+        ],
+        "categories": [
+          "leadership"
+        ],
+        "substantive": true,
+        "after_periodic": false,
+        "status": "read",
+        "reason": "",
+        "content_hash": "ab9dc9b43cfd89b1d40f9f3fe8cfdd3c9e203923e75da44dfcf4948cd8a21934",
+        "source_id": null
+      },
+      {
+        "id": "ev-0001045810-26-000024",
+        "form": "8-K",
+        "accession": "0001045810-26-000024",
+        "filed_date": "2026-03-06",
+        "event_date": "2026-03-02",
+        "filed_label": "6 Mar 2026",
+        "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000024/nvda-20260302.htm",
+        "items": [
+          {
+            "number": "5.02",
+            "title": "Departure of Directors or Certain Officers; Election of Directors; Appointment of Certain Officers; Compensatory Arrangements of Certain Officers",
+            "category": "leadership",
+            "known": true,
+            "found": true,
+            "locator": "Item 5.02. Departure of Directors or Certain Officers; Election of Directors; Appointment of Certain Officers; Compensatory Arrangements of Certain Officers",
+            "opening": [
+              "On March 2, 2026, the Compensation Committee of the Board of Directors, or the Board, of NVIDIA Corporation, or the Company, adopted the Variable Compensation Plan for Fiscal Year 2027, or the 2027 Plan, which provides eligible executive officers the opportunity to earn a variable cash payment based on the level of achievement by the Company of certain corporate performance goals, or the Performance Goals, during fiscal year 2027.",
+              "The Company operates on a fiscal year ending on the last Sunday in January and designates its fiscal year by the year in which that fiscal year ends."
+            ],
+            "roles": [
+              "President",
+              "Chief Executive Officer",
+              "Executive Vice President",
+              "Chief Financial Officer",
+              "General Counsel",
+              "Secretary"
+            ]
+          },
+          {
+            "number": "9.01",
+            "title": "Financial Statements and Exhibits",
+            "category": "exhibits",
+            "known": true,
+            "found": true,
+            "locator": "Item 9.01. Financial Statements and Exhibits",
+            "opening": [],
+            "roles": []
+          }
+        ],
+        "categories": [
+          "leadership",
+          "exhibits"
+        ],
+        "substantive": true,
+        "after_periodic": false,
+        "status": "read",
+        "reason": "",
+        "content_hash": "f929851b39ab5af389af47d85f20bf7f6740b21af04be81791c5c08b2e9a5d9b",
+        "source_id": null
+      }
+    ],
+    "as_of": {
+      "newest_form": "8-K",
+      "newest_filed": "2026-11-12",
+      "newest_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000082/nvda-20261111.htm",
+      "periodic_form": "10-Q",
+      "periodic_filed": "2026-08-26",
+      "annual_filed": "2026-02-25",
+      "days_since_newest": 6,
+      "counts": {
+        "listed": 11,
+        "wanted": 7,
+        "read": 7,
+        "failed": 0,
+        "capped": 0,
+        "out_of_time": 0,
+        "index_only": 4,
+        "cap": 8,
+        "line": "11 8-K(s) filed since the annual report of 25 Feb 2026: 7 read, 0 could not be read, 0 not read because of the cap of 8 per run, 4 routine 8-K(s) filed before the newest periodic report listed from the index only."
+      },
+      "index_error": "",
+      "line": "Evidence as of 12 Nov 2026 (8-K), 6 days before this run. Newest periodic report: 10-Q filed 26 Aug 2026."
     }
   }
 }

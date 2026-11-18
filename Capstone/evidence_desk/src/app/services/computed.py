@@ -22,7 +22,7 @@ one reader.
 from __future__ import annotations
 
 from collections.abc import Callable, Collection, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from app.core import policy
 from app.core.breakdown_models import BreakdownReport
@@ -41,6 +41,15 @@ MAX_WHY_CHARS = 320
 
 ReportReader = Callable[[], tuple[list[BreakdownReport], list[str]]]
 Readers = ClaimReader | Sequence[ClaimReader] | None
+
+
+@dataclass(frozen=True)
+class Computed:
+    """What computing the claims leaves for the analysis: each computed claim's test, by
+    claim id, and the tagged breakdowns read for them (none when no test needed one)."""
+
+    tests: dict[str, ClaimTest] = field(default_factory=dict)
+    reports: list[BreakdownReport] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -156,7 +165,7 @@ def compute_claims(
     read_reports: ReportReader,
     reader: Readers = None,
     read_part_reports: ReportReader | None = None,
-) -> None:
+) -> Computed:
     """Set ``computed`` or ``compile_note`` on every claim, and count the outcomes.
 
     ``read_reports`` gives the newest filings' tagged breakdowns and any failure to read
@@ -164,13 +173,14 @@ def compute_claims(
     them with the breakdowns only a claim test reads (a segment's operating income), and
     is called only when a test names a part (``read_reports`` stands in when it is None).
     ``reader`` is the model reader, or the two, when they are on (the counting rule).
+    Returns each computed claim's test and the breakdowns read (:class:`Computed`).
     """
     newest = newest_periods(numbers.book, numbers.calendar) if numbers.book is not None else None
     tests = read_claims(run, reader, newest)
     coverage = run.coverage
     coverage.claims_compiled = len(tests)
     if not tests:
-        return
+        return Computed()
     reports: list[BreakdownReport] = []
     report_errors: list[str] = []
     terms = [term for read in tests.values() for term in read.test.terms]
@@ -203,6 +213,7 @@ def compute_claims(
         coverage.computed_holds += outcome == "holds"
         coverage.computed_fails += outcome == "fails"
         coverage.computed_cannot += outcome == "cannot_compute"
+    return Computed({claim_id: read.test for claim_id, read in tests.items()}, reports)
 
 
 def count_computed(run: Run, unassessed: Collection[str] = ()) -> None:

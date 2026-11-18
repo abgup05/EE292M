@@ -543,3 +543,39 @@ class WallClock:
     def advance(self, seconds: float) -> None:
         """Move the clock forward."""
         self.now += timedelta(seconds=seconds)
+
+
+CLAIM_SECTIONS = ("assessment", "case_for", "case_against", "decides")
+THESIS_SECTIONS = ("bottom_line", "weakest_why", "strongest_for", "strongest_against")
+
+
+def flat_argument(nested: dict[str, Any]) -> dict[str, Any]:
+    """An analysing model's answer in the flat form the API is asked for, from one written
+    nested as the record holds it (per claim its sections, then the thesis): the tests'
+    scripted answers are easier to read nested."""
+    sentences: list[dict[str, Any]] = []
+    conditions: list[dict[str, Any]] = []
+    leans: list[dict[str, Any]] = []
+
+    def add(about: str, section: str, items: list[dict[str, Any]], scenario: str = "") -> None:
+        sentences.extend(
+            {"about": about, "section": section, "scenario": scenario, **item} for item in items
+        )
+
+    for claim in nested["claims"]:
+        leans.append({"claim_id": claim["claim_id"], "lean": claim["lean"]})
+        for section in CLAIM_SECTIONS:
+            add(claim["claim_id"], section, claim[section])
+        conditions.extend({"about": claim["claim_id"], **item} for item in claim["would_change"])
+    thesis = nested["thesis"]
+    for section in THESIS_SECTIONS:
+        add("thesis", section, thesis[section])
+    for scenario in thesis["scenarios"]:
+        add("thesis", "scenario", scenario["conditions"], scenario["name"])
+    return {
+        "leans": leans,
+        "sentences": sentences,
+        "conditions": conditions,
+        "leans_on": thesis["leans_on"],
+        "weakest_link": thesis["weakest_link"],
+    }

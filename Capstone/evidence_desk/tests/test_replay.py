@@ -43,6 +43,41 @@ def test_every_model_request_is_answered_by_the_cassette(
     assert not pending, f"{len(pending)} request(s) pending: {STALE}"
 
 
+def test_the_analysis_is_replayed_or_falls_back_to_code(
+    replayed: tuple[Run, list[str], Path],
+) -> None:
+    # The analysis model's two requests are replayed read-only: never pending, and never asked.
+    # Until `make record-analysis` records them, the run carries the computed analysis only.
+    run, pending, _ = replayed
+    analysis = run.analysis
+    assert analysis is not None and analysis.analytics
+    if analysis.argument_by == "model":
+        assert "cassette" in analysis.argument_detail
+        assert run.coverage.analysis_sentences_written == (
+            run.coverage.analysis_sentences_verified + run.coverage.analysis_sentences_unverified
+        )
+        return
+    assert analysis.argument_step == "failed"
+    assert "no recorded response for analyse" in analysis.argument_note
+    assert run.coverage.analysis_sentences_written == 0
+    coverage = run.coverage
+    if analysis.corollaries_step == "answered":
+        # The proposals are recorded and the argument is not: the corollaries are computed.
+        assert "cassette" in analysis.corollaries_by and coverage.corollaries_proposed > 0
+        assert coverage.corollaries_proposed == (
+            coverage.corollaries_as_expected
+            + coverage.corollaries_against
+            + coverage.corollaries_cannot_tell
+            + coverage.corollaries_no_test
+            + coverage.corollaries_not_agreed
+        )
+    else:
+        assert "no recorded response for propose" in analysis.corollaries_note
+        assert coverage.corollaries_proposed == 0
+    assert sum("analysis" in error for error in run.errors) == 1
+    assert all(error.startswith("The ") for error in run.errors if "analysis" in error)
+
+
 def test_no_engine_step_fell_back(replayed: tuple[Run, list[str], Path]) -> None:
     run, _, _ = replayed
     assert run.engine == "claude"

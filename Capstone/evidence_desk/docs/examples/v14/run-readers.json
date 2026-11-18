@@ -593,7 +593,58 @@
           "reason": "",
           "normal_form": "streak(gross_margin)[Q] >= 2"
         }
-      ]
+      ],
+      "analysis": {
+        "relevant": [
+          {
+            "key": "gross_margin",
+            "label": "Gross margin",
+            "reasons": [
+              "test operand",
+              "named in the claim"
+            ],
+            "metric_ids": [
+              "gross_margin:quarter:2026-07-26"
+            ],
+            "analytic_ids": [
+              "an:gross_margin:yoy",
+              "an:gross_margin:trend8",
+              "an:c1:headroom",
+              "an:c1:history"
+            ]
+          }
+        ],
+        "relevance_note": "",
+        "analytic_ids": [
+          "an:c1:headroom",
+          "an:c1:history",
+          "an:gross_margin:yoy",
+          "an:gross_margin:trend8",
+          "an:eq:dio"
+        ],
+        "corollaries": [],
+        "corollary_flag": "",
+        "persistence": {
+          "id": "odds:c1",
+          "claim_id": "c1",
+          "applicable": false,
+          "test": "",
+          "method": "",
+          "step": "",
+          "changes": 0,
+          "paths": 0,
+          "seed": 0,
+          "horizon": 0,
+          "start_value": null,
+          "start_display": "",
+          "probability": null,
+          "display": "",
+          "warning": "",
+          "note": "Odds are computed for a test of a quarterly measure (its value or its growth on a year earlier) against a constant; this test is not one.",
+          "caveat": ""
+        },
+        "argument": null
+      }
     },
     {
       "id": "c2",
@@ -966,7 +1017,49 @@
           "reason": "",
           "normal_form": "effective_tax_rate[FY-1] > effective_tax_rate[FY-2]"
         }
-      ]
+      ],
+      "analysis": {
+        "relevant": [
+          {
+            "key": "effective_tax_rate",
+            "label": "Effective tax rate",
+            "reasons": [
+              "test operand",
+              "named in the claim"
+            ],
+            "metric_ids": [],
+            "analytic_ids": [
+              "an:effective_tax_rate:fy2025:path"
+            ]
+          }
+        ],
+        "relevance_note": "",
+        "analytic_ids": [
+          "an:effective_tax_rate:fy2025:path"
+        ],
+        "corollaries": [],
+        "corollary_flag": "",
+        "persistence": {
+          "id": "odds:c2",
+          "claim_id": "c2",
+          "applicable": false,
+          "test": "",
+          "method": "",
+          "step": "",
+          "changes": 0,
+          "paths": 0,
+          "seed": 0,
+          "horizon": 0,
+          "start_value": null,
+          "start_display": "",
+          "probability": null,
+          "display": "",
+          "warning": "",
+          "note": "The test could not be computed, so its persistence cannot be either.",
+          "caveat": ""
+        },
+        "argument": null
+      }
     },
     {
       "id": "c3",
@@ -1395,7 +1488,62 @@
           "reason": "",
           "normal_form": "qoq(revenue)[Q-4] > 10%"
         }
-      ]
+      ],
+      "analysis": {
+        "relevant": [
+          {
+            "key": "revenue",
+            "label": "Revenue",
+            "reasons": [
+              "test operand",
+              "named in the claim"
+            ],
+            "metric_ids": [
+              "revenue:quarter:2026-07-26",
+              "revenue_yoy:quarter:2026-07-26"
+            ],
+            "analytic_ids": [
+              "an:revenue:yoy",
+              "an:revenue:acceleration",
+              "an:revenue:trend8",
+              "an:c3:needed",
+              "an:bridge:growth:revenue_by_product:q"
+            ]
+          }
+        ],
+        "relevance_note": "",
+        "analytic_ids": [
+          "an:c3:needed",
+          "an:revenue:yoy",
+          "an:revenue:acceleration",
+          "an:revenue:trend8",
+          "an:bridge:growth:revenue_by_product:q",
+          "an:eq:dso",
+          "an:eq:deferred_revenue"
+        ],
+        "corollaries": [],
+        "corollary_flag": "",
+        "persistence": {
+          "id": "odds:c3",
+          "claim_id": "c3",
+          "applicable": false,
+          "test": "",
+          "method": "",
+          "step": "",
+          "changes": 0,
+          "paths": 0,
+          "seed": 0,
+          "horizon": 0,
+          "start_value": null,
+          "start_display": "",
+          "probability": null,
+          "display": "",
+          "warning": "",
+          "note": "Odds are computed for a test of a quarterly measure (its value or its growth on a year earlier) against a constant; this test is not one.",
+          "caveat": ""
+        },
+        "argument": null
+      }
     },
     {
       "id": "c4",
@@ -1824,7 +1972,58 @@
           "reason": "",
           "normal_form": "cagr(revenue, 3y)[FY] > 90%"
         }
-      ]
+      ],
+      "analysis": {
+        "relevant": [
+          {
+            "key": "revenue",
+            "label": "Revenue",
+            "reasons": [
+              "test operand",
+              "named in the claim"
+            ],
+            "metric_ids": [
+              "revenue:quarter:2026-07-26",
+              "revenue_yoy:quarter:2026-07-26"
+            ],
+            "analytic_ids": [
+              "an:revenue:fy2026:path",
+              "an:revenue:fy2026:since",
+              "an:bridge:growth:revenue_by_product:fy"
+            ]
+          }
+        ],
+        "relevance_note": "",
+        "analytic_ids": [
+          "an:revenue:fy2026:path",
+          "an:revenue:fy2026:since",
+          "an:bridge:growth:revenue_by_product:fy",
+          "an:eq:dso",
+          "an:eq:deferred_revenue"
+        ],
+        "corollaries": [],
+        "corollary_flag": "",
+        "persistence": {
+          "id": "odds:c4",
+          "claim_id": "c4",
+          "applicable": false,
+          "test": "",
+          "method": "",
+          "step": "",
+          "changes": 0,
+          "paths": 0,
+          "seed": 0,
+          "horizon": 0,
+          "start_value": null,
+          "start_display": "",
+          "probability": null,
+          "display": "",
+          "warning": "",
+          "note": "Odds are computed for a test of a quarterly measure (its value or its growth on a year earlier) against a constant; this test is not one.",
+          "caveat": ""
+        },
+        "argument": null
+      }
     },
     {
       "id": "c5",
@@ -2236,7 +2435,58 @@
           "reason": "",
           "normal_form": "free_cash_flow[FY] > $90B"
         }
-      ]
+      ],
+      "analysis": {
+        "relevant": [
+          {
+            "key": "free_cash_flow",
+            "label": "Free cash flow",
+            "reasons": [
+              "test operand",
+              "named in the claim"
+            ],
+            "metric_ids": [
+              "free_cash_flow:quarter:2026-07-26"
+            ],
+            "analytic_ids": [
+              "an:free_cash_flow:fy2026:path",
+              "an:free_cash_flow:fy2026:since",
+              "an:bridge:cash:fy2026",
+              "an:bridge:cash:ttm"
+            ]
+          }
+        ],
+        "relevance_note": "",
+        "analytic_ids": [
+          "an:free_cash_flow:fy2026:path",
+          "an:free_cash_flow:fy2026:since",
+          "an:bridge:cash:fy2026",
+          "an:bridge:cash:ttm",
+          "an:eq:cash_conversion"
+        ],
+        "corollaries": [],
+        "corollary_flag": "",
+        "persistence": {
+          "id": "odds:c5",
+          "claim_id": "c5",
+          "applicable": false,
+          "test": "",
+          "method": "",
+          "step": "",
+          "changes": 0,
+          "paths": 0,
+          "seed": 0,
+          "horizon": 0,
+          "start_value": null,
+          "start_display": "",
+          "probability": null,
+          "display": "",
+          "warning": "",
+          "note": "Odds are computed for a test of a quarterly measure (its value or its growth on a year earlier) against a constant; this test is not one.",
+          "caveat": ""
+        },
+        "argument": null
+      }
     },
     {
       "id": "c6",
@@ -2277,7 +2527,76 @@
           "reason": "the model reader: The claim joins a growth threshold with a comparison against every other market platform (a rank), which is more than one computable test and not a single test the tool can place.",
           "normal_form": "none"
         }
-      ]
+      ],
+      "analysis": {
+        "relevant": [
+          {
+            "key": "revenue",
+            "label": "Revenue",
+            "reasons": [
+              "named in the claim",
+              "part named in the claim"
+            ],
+            "metric_ids": [
+              "revenue:quarter:2026-07-26",
+              "revenue_yoy:quarter:2026-07-26"
+            ],
+            "analytic_ids": [
+              "an:revenue:yoy",
+              "an:revenue:acceleration",
+              "an:revenue:trend8",
+              "an:bridge:growth:revenue_by_product:q"
+            ]
+          },
+          {
+            "key": "revenue(segment \"Data Center\")",
+            "label": "Revenue, segment Data Center",
+            "reasons": [
+              "part named in the claim"
+            ],
+            "metric_ids": [],
+            "analytic_ids": [
+              "an:part:data_center:q:growth",
+              "an:part:data_center:fy:growth",
+              "an:part:data_center:fy:pace"
+            ]
+          }
+        ],
+        "relevance_note": "",
+        "analytic_ids": [
+          "an:part:data_center:q:growth",
+          "an:part:data_center:fy:growth",
+          "an:part:data_center:fy:pace",
+          "an:revenue:yoy",
+          "an:revenue:acceleration",
+          "an:revenue:trend8",
+          "an:bridge:growth:revenue_by_product:q",
+          "an:eq:dso",
+          "an:eq:deferred_revenue"
+        ],
+        "corollaries": [],
+        "corollary_flag": "",
+        "persistence": {
+          "id": "odds:c6",
+          "claim_id": "c6",
+          "applicable": false,
+          "test": "",
+          "method": "",
+          "step": "",
+          "changes": 0,
+          "paths": 0,
+          "seed": 0,
+          "horizon": 0,
+          "start_value": null,
+          "start_display": "",
+          "probability": null,
+          "display": "",
+          "warning": "",
+          "note": "The claim has no computed test.",
+          "caveat": ""
+        },
+        "argument": null
+      }
     }
   ],
   "sources": [
@@ -3028,7 +3347,9 @@
   "coverage_limits": [
     "2 of 6 claim(s) have relevant passages but no judged stance."
   ],
-  "errors": [],
+  "errors": [
+    "The analysis holds what code computed only, with no model's corollaries or argument: this run was given no analysing model (the extractive engine, no key, or a run the watcher started)."
+  ],
   "coverage": {
     "filings_asked": 3,
     "sources_requested": 3,
@@ -3061,7 +3382,28 @@
     "findings_failed_meaning": 0,
     "periods_checked": 20,
     "periods_unverified": 0,
-    "periods_comparative": 0
+    "periods_comparative": 0,
+    "analytics_computed": 22,
+    "analytics_unavailable": 2,
+    "analytics_providers_failed": 0,
+    "corollaries_proposed": 0,
+    "corollaries_computed": 0,
+    "corollaries_as_expected": 0,
+    "corollaries_against": 0,
+    "corollaries_cannot_tell": 0,
+    "corollaries_no_test": 0,
+    "corollaries_not_agreed": 0,
+    "corollary_flags": 0,
+    "analysis_sentences_written": 0,
+    "analysis_sentences_verified": 0,
+    "analysis_sentences_unverified": 0,
+    "analysis_sentences_cut": 0,
+    "analysis_unverified_no_evidence": 0,
+    "analysis_unverified_unknown_id": 0,
+    "analysis_unverified_disallowed_id": 0,
+    "analysis_unverified_number": 0,
+    "analysis_claims_argued": 0,
+    "analysis_lean_flags": 0
   },
   "metrics": [
     {
@@ -13323,5 +13665,1931 @@
     "line": "Evidence as of 12 Nov 2026 (8-K), 6 days before this run. Newest periodic report: 10-Q filed 26 Aug 2026.",
     "requested": null,
     "requested_note": ""
+  },
+  "analysis": {
+    "headline": [
+      {
+        "id": "test:c1",
+        "source": "computed_test",
+        "label": "Gross margin: quarters in a row higher than the quarter before, to Q2 FY2027",
+        "period_label": "",
+        "value": 1.0,
+        "unit": "count",
+        "display": "1",
+        "claim_ids": [
+          "c1"
+        ]
+      },
+      {
+        "id": "test:c3",
+        "source": "computed_test",
+        "label": "Revenue growth, quarter ended 2025-07-27 on quarter ended 2025-04-27",
+        "period_label": "",
+        "value": 6.084608052289956,
+        "unit": "percent",
+        "display": "+6.1%",
+        "claim_ids": [
+          "c3"
+        ]
+      },
+      {
+        "id": "test:c4",
+        "source": "computed_test",
+        "label": "Revenue, compound annual growth from FY2023 to FY2026",
+        "period_label": "",
+        "value": 100.04509499443964,
+        "unit": "percent",
+        "display": "+100.0%",
+        "claim_ids": [
+          "c4"
+        ]
+      },
+      {
+        "id": "test:c5",
+        "source": "computed_test",
+        "label": "Free cash flow, fiscal year ended 2026-01-25",
+        "period_label": "",
+        "value": 96676000000.0,
+        "unit": "USD",
+        "display": "$96.68B",
+        "claim_ids": [
+          "c5"
+        ]
+      },
+      {
+        "id": "revenue:quarter:2026-07-26",
+        "source": "metric",
+        "label": "Revenue",
+        "period_label": "Quarter ended 2026-07-26",
+        "value": 96221000000.0,
+        "unit": "USD",
+        "display": "$96.22B",
+        "claim_ids": [
+          "c6"
+        ]
+      },
+      {
+        "id": "revenue_yoy:quarter:2026-07-26",
+        "source": "metric",
+        "label": "Revenue growth, year over year",
+        "period_label": "Quarter ended 2026-07-26",
+        "value": 105.85114348672529,
+        "unit": "percent",
+        "display": "+105.9%",
+        "claim_ids": [
+          "c6"
+        ]
+      },
+      {
+        "id": "an:part:data_center:q:growth",
+        "source": "analytic",
+        "label": "Data Center revenue, growth on a year earlier",
+        "period_label": "the quarter ended 2026-07-26",
+        "value": 116.6220556745182,
+        "unit": "percent",
+        "display": "+116.6%",
+        "claim_ids": [
+          "c6"
+        ]
+      }
+    ],
+    "headline_note": "",
+    "untied_metric_ids": [
+      "operating_margin:quarter:2026-07-26",
+      "operating_margin:quarter:2026-04-26",
+      "operating_margin:quarter:2026-01-25",
+      "operating_margin:quarter:2025-10-26",
+      "operating_margin:quarter:2025-07-27",
+      "operating_margin:quarter:2025-04-27",
+      "operating_margin:quarter:2025-01-26",
+      "operating_margin:quarter:2024-10-27",
+      "net_margin:quarter:2026-07-26",
+      "net_margin:quarter:2026-04-26",
+      "net_margin:quarter:2026-01-25",
+      "net_margin:quarter:2025-10-26",
+      "net_margin:quarter:2025-07-27",
+      "net_margin:quarter:2025-04-27",
+      "net_margin:quarter:2025-01-26",
+      "net_margin:quarter:2024-10-27",
+      "eps_diluted:quarter:2026-07-26",
+      "eps_diluted:quarter:2026-04-26",
+      "eps_diluted:quarter:2026-01-25",
+      "eps_diluted:quarter:2025-10-26",
+      "eps_diluted:quarter:2025-07-27",
+      "eps_diluted:quarter:2025-04-27",
+      "eps_diluted:quarter:2025-01-26",
+      "eps_diluted:quarter:2024-10-27",
+      "rnd_ratio:quarter:2026-07-26",
+      "rnd_ratio:quarter:2026-04-26",
+      "rnd_ratio:quarter:2026-01-25",
+      "rnd_ratio:quarter:2025-10-26",
+      "rnd_ratio:quarter:2025-07-27",
+      "rnd_ratio:quarter:2025-04-27",
+      "rnd_ratio:quarter:2025-01-26",
+      "rnd_ratio:quarter:2024-10-27",
+      "operating_cash_flow:quarter:2026-07-26",
+      "operating_cash_flow:quarter:2026-04-26",
+      "operating_cash_flow:quarter:2026-01-25",
+      "operating_cash_flow:quarter:2025-10-26",
+      "operating_cash_flow:quarter:2025-07-27",
+      "operating_cash_flow:quarter:2025-04-27",
+      "operating_cash_flow:quarter:2025-01-26",
+      "operating_cash_flow:quarter:2024-10-27",
+      "capex:quarter:2026-07-26",
+      "capex:quarter:2026-04-26",
+      "capex:quarter:2026-01-25",
+      "capex:quarter:2025-10-26",
+      "capex:quarter:2025-07-27",
+      "capex:quarter:2025-04-27",
+      "capex:quarter:2025-01-26",
+      "capex:quarter:2024-10-27",
+      "fcf_margin:quarter:2026-07-26",
+      "fcf_margin:quarter:2026-04-26",
+      "fcf_margin:quarter:2026-01-25",
+      "fcf_margin:quarter:2025-10-26",
+      "fcf_margin:quarter:2025-07-27",
+      "fcf_margin:quarter:2025-04-27",
+      "fcf_margin:quarter:2025-01-26",
+      "fcf_margin:quarter:2024-10-27",
+      "operating_margin:annual:2026-01-25",
+      "operating_margin:annual:2025-01-26",
+      "operating_margin:annual:2024-01-28",
+      "operating_margin:annual:2023-01-29",
+      "net_margin:annual:2026-01-25",
+      "net_margin:annual:2025-01-26",
+      "net_margin:annual:2024-01-28",
+      "net_margin:annual:2023-01-29",
+      "eps_diluted:annual:2026-01-25",
+      "eps_diluted:annual:2025-01-26",
+      "eps_diluted:annual:2024-01-28",
+      "eps_diluted:annual:2023-01-29",
+      "rnd_ratio:annual:2026-01-25",
+      "rnd_ratio:annual:2025-01-26",
+      "rnd_ratio:annual:2024-01-28",
+      "rnd_ratio:annual:2023-01-29",
+      "operating_cash_flow:annual:2026-01-25",
+      "operating_cash_flow:annual:2025-01-26",
+      "operating_cash_flow:annual:2024-01-28",
+      "operating_cash_flow:annual:2023-01-29",
+      "capex:annual:2026-01-25",
+      "capex:annual:2025-01-26",
+      "capex:annual:2024-01-28",
+      "capex:annual:2023-01-29",
+      "fcf_margin:annual:2026-01-25",
+      "fcf_margin:annual:2025-01-26",
+      "fcf_margin:annual:2024-01-28",
+      "fcf_margin:annual:2023-01-29",
+      "cash:instant:2026-07-26",
+      "cash:instant:2026-01-25",
+      "cash:instant:2025-01-26",
+      "cash_yoy:instant:2026-07-26",
+      "cash_yoy:instant:2026-01-25",
+      "cash_yoy:instant:2025-01-26",
+      "inventory:instant:2026-07-26",
+      "inventory:instant:2026-01-25",
+      "inventory:instant:2025-01-26",
+      "inventory_yoy:instant:2026-07-26",
+      "inventory_yoy:instant:2026-01-25",
+      "inventory_yoy:instant:2025-01-26",
+      "receivables:instant:2026-07-26",
+      "receivables:instant:2026-01-25",
+      "receivables:instant:2025-01-26",
+      "receivables_yoy:instant:2026-07-26",
+      "receivables_yoy:instant:2026-01-25",
+      "receivables_yoy:instant:2025-01-26",
+      "tagged:revenue_by_segment:nvda:ComputeAndNetworkingSegmentMember:quarter:2026-07-26",
+      "tagged:revenue_by_segment:nvda:ComputeAndNetworkingSegmentMember:change:quarter:2026-07-26",
+      "tagged:revenue_by_segment:nvda:GraphicsSegmentMember:quarter:2026-07-26",
+      "tagged:revenue_by_segment:nvda:GraphicsSegmentMember:change:quarter:2026-07-26",
+      "tagged:revenue_by_product:nvda:DataCenterMember:quarter:2026-07-26",
+      "tagged:revenue_by_product:nvda:DataCenterMember:change:quarter:2026-07-26",
+      "tagged:revenue_by_product:nvda:HyperscaleMember:quarter:2026-07-26",
+      "tagged:revenue_by_product:nvda:HyperscaleMember:change:quarter:2026-07-26",
+      "tagged:revenue_by_product:nvda:AICloudsIndustrialEnterpriseMember:quarter:2026-07-26",
+      "tagged:revenue_by_product:nvda:AICloudsIndustrialEnterpriseMember:change:quarter:2026-07-26",
+      "tagged:revenue_by_product:nvda:EdgeComputingMember:quarter:2026-07-26",
+      "tagged:revenue_by_product:nvda:EdgeComputingMember:change:quarter:2026-07-26",
+      "tagged:revenue_by_geography:country:US:quarter:2026-07-26",
+      "tagged:revenue_by_geography:country:US:change:quarter:2026-07-26",
+      "tagged:revenue_by_geography:country:TW:quarter:2026-07-26",
+      "tagged:revenue_by_geography:country:TW:change:quarter:2026-07-26",
+      "tagged:revenue_by_geography:nvda:ChinaIncludingHongKongMember:quarter:2026-07-26",
+      "tagged:revenue_by_geography:nvda:ChinaIncludingHongKongMember:change:quarter:2026-07-26",
+      "tagged:revenue_concentration_by_customer:nvda:RevenueCustomer1Member+ComputeandNetworking:quarter:2026-07-26",
+      "tagged:revenue_by_segment:nvda:ComputeAndNetworkingSegmentMember:annual:2026-01-25",
+      "tagged:revenue_by_segment:nvda:ComputeAndNetworkingSegmentMember:change:annual:2026-01-25",
+      "tagged:revenue_by_segment:nvda:GraphicsSegmentMember:annual:2026-01-25",
+      "tagged:revenue_by_segment:nvda:GraphicsSegmentMember:change:annual:2026-01-25",
+      "tagged:revenue_by_product:nvda:DataCenterMember:annual:2026-01-25",
+      "tagged:revenue_by_product:nvda:DataCenterMember:change:annual:2026-01-25",
+      "tagged:revenue_by_product:nvda:ComputeMember:annual:2026-01-25",
+      "tagged:revenue_by_product:nvda:ComputeMember:change:annual:2026-01-25",
+      "tagged:revenue_by_product:nvda:NetworkingMember:annual:2026-01-25",
+      "tagged:revenue_by_product:nvda:NetworkingMember:change:annual:2026-01-25",
+      "tagged:revenue_by_geography:country:US:annual:2026-01-25",
+      "tagged:revenue_by_geography:country:US:change:annual:2026-01-25",
+      "tagged:revenue_by_geography:country:TW:annual:2026-01-25",
+      "tagged:revenue_by_geography:country:TW:change:annual:2026-01-25",
+      "tagged:revenue_by_geography:nvda:ChinaIncludingHongKongMember:annual:2026-01-25",
+      "tagged:revenue_by_geography:nvda:ChinaIncludingHongKongMember:change:annual:2026-01-25",
+      "tagged:revenue_concentration_by_customer:nvda:CustomerOneMember+ComputeandNetworkingSegment:annual:2026-01-25",
+      "tagged:revenue_concentration_by_customer:nvda:CustomerTwoMember+ComputeandNetworkingSegment:annual:2026-01-25",
+      "tagged:receivables_concentration_by_customer:nvda:CustomerOneMember:annual:2026-01-25",
+      "tagged:receivables_concentration_by_customer:nvda:CustomerTwoMember:annual:2026-01-25",
+      "tagged:receivables_concentration_by_customer:nvda:CustomerThreeMember:annual:2026-01-25"
+    ],
+    "untied_note": "Reported figures no claim is tied to: on the record, not part of the analysis.",
+    "breakdowns_note": "Parts are read from the tags of the 10-Q filed 2026-08-26 and the 10-K filed 2026-02-25.",
+    "analytics": [
+      {
+        "id": "an:gross_margin:yoy",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "yoy",
+        "label": "Gross margin, change on a year earlier",
+        "question": "Which way is gross margin moving on a year earlier?",
+        "scope": "claim",
+        "claim_ids": [
+          "c1"
+        ],
+        "measure": "gross_margin",
+        "period": "Q2 FY2027",
+        "value": 2.551638826699886,
+        "unit": "points",
+        "display": "+2.6 percentage points",
+        "formula": "75.0% − 72.4%",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "gross_margin[Q2 FY2027]",
+            "label": "Gross margin, Q2 FY2027",
+            "value": 74.97531723844068,
+            "display": "75.0%",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "gross_margin[Q2 FY2026]",
+            "label": "Gross margin, Q2 FY2026",
+            "value": 72.4236784117408,
+            "display": "72.4%",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          }
+        ],
+        "reading": "Gross margin rose 2.6 percentage points on a year earlier: 72.4% in Q2 FY2026, 75.0% in Q2 FY2027.",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:gross_margin:trend8",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "trend8",
+        "label": "Gross margin, change over the last 8 quarters",
+        "question": "Where does gross margin stand against the last two years?",
+        "scope": "claim",
+        "claim_ids": [
+          "c1"
+        ],
+        "measure": "gross_margin",
+        "period": "Q2 FY2027",
+        "value": -0.17115413306397897,
+        "unit": "points",
+        "display": "-0.2 percentage points",
+        "formula": "75.0% − 75.1%",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "gross_margin[Q2 FY2025]",
+            "label": "Gross margin, Q2 FY2025",
+            "value": 75.14647137150466,
+            "display": "75.1%",
+            "accession": "0001045810-25-000209",
+            "form": "10-Q",
+            "filed": "2025-08-27"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "gross_margin[Q2 FY2027]",
+            "label": "Gross margin, Q2 FY2027",
+            "value": 74.97531723844068,
+            "display": "75.0%",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "gross_margin[Q1 FY2026]",
+            "label": "Gross margin, Q1 FY2026",
+            "value": 60.52380736235305,
+            "display": "60.5%",
+            "accession": "0001045810-26-000052",
+            "form": "10-Q",
+            "filed": "2026-05-20"
+          }
+        ],
+        "reading": "Gross margin is 0.2 percentage points below where it was 8 quarters ago (75.1% in Q2 FY2025, 75.0% in Q2 FY2027); the highest was 75.1% (Q2 FY2025); the lowest was 60.5% (Q1 FY2026).",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:effective_tax_rate:fy2025:path",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "fiscal_path",
+        "label": "Effective tax rate by fiscal year, to FY2025",
+        "question": "What has effective tax rate done over the last fiscal years?",
+        "scope": "claim",
+        "claim_ids": [
+          "c2"
+        ],
+        "measure": "effective_tax_rate",
+        "period": "FY2025",
+        "value": null,
+        "unit": "points",
+        "display": "n/a",
+        "formula": "",
+        "inputs": [],
+        "reading": "",
+        "reading_origin": "code",
+        "available": false,
+        "note": "No value for income tax expense (IncomeTaxExpenseBenefit) for the fiscal year ended 2025-01-26."
+      },
+      {
+        "id": "an:revenue:yoy",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "yoy",
+        "label": "Revenue, change on a year earlier",
+        "question": "Which way is revenue moving on a year earlier?",
+        "scope": "claim",
+        "claim_ids": [
+          "c3",
+          "c6"
+        ],
+        "measure": "revenue",
+        "period": "Q2 FY2027",
+        "value": 105.85114348672529,
+        "unit": "percent",
+        "display": "+105.9%",
+        "formula": "($96.22B − $46.74B) ÷ $46.74B",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "revenue[Q2 FY2027]",
+            "label": "Revenue, Q2 FY2027",
+            "value": 96221000000.0,
+            "display": "$96.22B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "revenue[Q2 FY2026]",
+            "label": "Revenue, Q2 FY2026",
+            "value": 46743000000.0,
+            "display": "$46.74B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          }
+        ],
+        "reading": "Revenue grew 105.9% on a year earlier: $46.74B in Q2 FY2026, $96.22B in Q2 FY2027.",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:revenue:acceleration",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "acceleration",
+        "label": "Revenue, growth on a year earlier now against the quarter before",
+        "question": "Is revenue growth speeding up or slowing?",
+        "scope": "claim",
+        "claim_ids": [
+          "c3",
+          "c6"
+        ],
+        "measure": "revenue",
+        "period": "Q2 FY2027",
+        "value": 20.623509697973077,
+        "unit": "points",
+        "display": "+20.6 percentage points",
+        "formula": "+105.9% − +85.2%",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "revenue[Q2 FY2027]",
+            "label": "Revenue, Q2 FY2027",
+            "value": 96221000000.0,
+            "display": "$96.22B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "revenue[Q2 FY2026]",
+            "label": "Revenue, Q2 FY2026",
+            "value": 46743000000.0,
+            "display": "$46.74B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "revenue[Q1 FY2027]",
+            "label": "Revenue, Q1 FY2027",
+            "value": 81615000000.0,
+            "display": "$81.61B",
+            "accession": "0001045810-26-000052",
+            "form": "10-Q",
+            "filed": "2026-05-20"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "revenue[Q1 FY2026]",
+            "label": "Revenue, Q1 FY2026",
+            "value": 44062000000.0,
+            "display": "$44.06B",
+            "accession": "0001045810-26-000052",
+            "form": "10-Q",
+            "filed": "2026-05-20"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "revenue[Q2 FY2025]",
+            "label": "Revenue, Q2 FY2025",
+            "value": 30040000000.0,
+            "display": "$30.04B",
+            "accession": "0001045810-25-000209",
+            "form": "10-Q",
+            "filed": "2025-08-27"
+          }
+        ],
+        "reading": "Revenue growth on a year earlier was +105.9% in Q2 FY2027 and +85.2% in Q1 FY2027: speeding up, by 20.6 percentage points. Four quarters before, in Q2 FY2026, it was +55.6%.",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:revenue:trend8",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "trend8",
+        "label": "Revenue, compound quarterly growth over the last 8 quarters",
+        "question": "Where does revenue stand against the last two years?",
+        "scope": "claim",
+        "claim_ids": [
+          "c3",
+          "c6"
+        ],
+        "measure": "revenue",
+        "period": "Q2 FY2027",
+        "value": 15.663476621761795,
+        "unit": "percent",
+        "display": "+15.7%",
+        "formula": "($96.22B ÷ $30.04B)^(1/8) − 1",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "revenue[Q2 FY2025]",
+            "label": "Revenue, Q2 FY2025",
+            "value": 30040000000.0,
+            "display": "$30.04B",
+            "accession": "0001045810-25-000209",
+            "form": "10-Q",
+            "filed": "2025-08-27"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "revenue[Q2 FY2027]",
+            "label": "Revenue, Q2 FY2027",
+            "value": 96221000000.0,
+            "display": "$96.22B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          }
+        ],
+        "reading": "Revenue went from $30.04B in Q2 FY2025 to $96.22B in Q2 FY2027, a compound +15.7% a quarter; it rose in each of the 8 quarters.",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:revenue:fy2026:path",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "fiscal_path",
+        "label": "Revenue by fiscal year, to FY2026",
+        "question": "What has revenue done over the last fiscal years?",
+        "scope": "claim",
+        "claim_ids": [
+          "c4"
+        ],
+        "measure": "revenue",
+        "period": "FY2026",
+        "value": 65.4735357900948,
+        "unit": "percent",
+        "display": "+65.5%",
+        "formula": "($215.94B − $130.50B) ÷ $130.50B",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "revenue[FY2023]",
+            "label": "Revenue, FY2023",
+            "value": 26974000000.0,
+            "display": "$26.97B",
+            "accession": "0001045810-25-000023",
+            "form": "10-K",
+            "filed": "2025-02-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "revenue[FY2024]",
+            "label": "Revenue, FY2024",
+            "value": 60922000000.0,
+            "display": "$60.92B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "revenue[FY2025]",
+            "label": "Revenue, FY2025",
+            "value": 130497000000.0,
+            "display": "$130.50B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "revenue[FY2026]",
+            "label": "Revenue, FY2026",
+            "value": 215938000000.0,
+            "display": "$215.94B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          }
+        ],
+        "reading": "Revenue by fiscal year: $26.97B in FY2023, $60.92B in FY2024 (+125.9%), $130.50B in FY2025 (+114.2%), $215.94B in FY2026 (+65.5%). Growth slowed in FY2026, by 48.7 percentage points on the year before.",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:revenue:fy2026:since",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "since",
+        "label": "Revenue in the newest quarter since FY2026, on a year earlier",
+        "question": "What has happened to revenue since that fiscal year ended?",
+        "scope": "claim",
+        "claim_ids": [
+          "c4"
+        ],
+        "measure": "revenue",
+        "period": "Q2 FY2027",
+        "value": 105.85114348672529,
+        "unit": "percent",
+        "display": "+105.9%",
+        "formula": "($96.22B − $46.74B) ÷ $46.74B",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "revenue[Q2 FY2027]",
+            "label": "Revenue, Q2 FY2027",
+            "value": 96221000000.0,
+            "display": "$96.22B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "revenue[Q2 FY2026]",
+            "label": "Revenue, Q2 FY2026",
+            "value": 46743000000.0,
+            "display": "$46.74B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          }
+        ],
+        "reading": "Since FY2026 ended: revenue grew 105.9% on a year earlier: $46.74B in Q2 FY2026, $96.22B in Q2 FY2027. FY2026 as a whole: +65.5%.",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:free_cash_flow:fy2026:path",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "fiscal_path",
+        "label": "Free cash flow by fiscal year, to FY2026",
+        "question": "What has free cash flow done over the last fiscal years?",
+        "scope": "claim",
+        "claim_ids": [
+          "c5"
+        ],
+        "measure": "free_cash_flow",
+        "period": "FY2026",
+        "value": 58.86809195931178,
+        "unit": "percent",
+        "display": "+58.9%",
+        "formula": "($96.68B − $60.85B) ÷ $60.85B",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "free_cash_flow[FY2023]",
+            "label": "Free cash flow, FY2023",
+            "value": 3808000000.0,
+            "display": "$3.81B",
+            "accession": "0001045810-25-000023",
+            "form": "10-K",
+            "filed": "2025-02-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "free_cash_flow[FY2024]",
+            "label": "Free cash flow, FY2024",
+            "value": 27021000000.0,
+            "display": "$27.02B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "free_cash_flow[FY2025]",
+            "label": "Free cash flow, FY2025",
+            "value": 60853000000.0,
+            "display": "$60.85B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "free_cash_flow[FY2026]",
+            "label": "Free cash flow, FY2026",
+            "value": 96676000000.0,
+            "display": "$96.68B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          }
+        ],
+        "reading": "Free cash flow by fiscal year: $3.81B in FY2023, $27.02B in FY2024 (+609.6%), $60.85B in FY2025 (+125.2%), $96.68B in FY2026 (+58.9%). Growth slowed in FY2026, by 66.3 percentage points on the year before.",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:free_cash_flow:fy2026:since",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "since",
+        "label": "Free cash flow in the newest quarter since FY2026, on a year earlier",
+        "question": "What has happened to free cash flow since that fiscal year ended?",
+        "scope": "claim",
+        "claim_ids": [
+          "c5"
+        ],
+        "measure": "free_cash_flow",
+        "period": "Q2 FY2027",
+        "value": 58.87156644394952,
+        "unit": "percent",
+        "display": "+58.9%",
+        "formula": "($21.40B − $13.47B) ÷ $13.47B",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "free_cash_flow[Q2 FY2027]",
+            "label": "Free cash flow, Q2 FY2027",
+            "value": 21400000000.0,
+            "display": "$21.40B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "free_cash_flow[Q2 FY2026]",
+            "label": "Free cash flow, Q2 FY2026",
+            "value": 13470000000.0,
+            "display": "$13.47B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          }
+        ],
+        "reading": "Since FY2026 ended: free cash flow grew 58.9% on a year earlier: $13.47B in Q2 FY2026, $21.40B in Q2 FY2027. FY2026 as a whole: +58.9%.",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:c1:headroom",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "headroom",
+        "label": "Room of the test, against a typical move",
+        "question": "How much room does the test have, against how far the figure usually moves?",
+        "scope": "claim",
+        "claim_ids": [
+          "c1"
+        ],
+        "measure": "gross_margin",
+        "period": "streak(gross_margin)[Q2 FY2027] >= 2",
+        "value": -1.0,
+        "unit": "count",
+        "display": "-1",
+        "formula": "1 − 2; ÷ 1",
+        "inputs": [
+          {
+            "ref_kind": "computed_test",
+            "id": "test:c1",
+            "label": "streak(gross_margin)[Q] >= 2",
+            "value": null,
+            "display": "Fails",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          },
+          {
+            "ref_kind": "computed_test",
+            "id": "test:c1",
+            "label": "Gross margin: quarters in a row higher than the quarter before, to Q2 FY2027",
+            "value": 1.0,
+            "display": "1",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          },
+          {
+            "ref_kind": "computed_test",
+            "id": "test:c1",
+            "label": "the threshold",
+            "value": 2.0,
+            "display": "2",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          }
+        ],
+        "reading": "The test fails by 1: 1 against 2. Between one reading of this test and the next its left side has typically moved 1 (the median of 16 moves, either way), so the room is 1.00x a typical move.",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:c1:history",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "history",
+        "label": "How often the test held before",
+        "question": "How often has this been true before?",
+        "scope": "claim",
+        "claim_ids": [
+          "c1"
+        ],
+        "measure": "gross_margin",
+        "period": "streak(gross_margin)[Q2 FY2027] >= 2",
+        "value": 64.70588235294117,
+        "unit": "percent",
+        "display": "11 of 17",
+        "formula": "11 ÷ 17",
+        "inputs": [
+          {
+            "ref_kind": "computed_test",
+            "id": "test:c1",
+            "label": "streak(gross_margin)[Q] >= 2",
+            "value": null,
+            "display": "Fails",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          }
+        ],
+        "reading": "Run again as of each 10-K and 10-Q filing date of the last five years, the test gave 17 distinct readings (over 20 filing dates) and held in 11 of them (64.7%); its longest run holding was 6, and its outcome last changed with the filing of 2026-05-20.",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:c3:needed",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "needed",
+        "label": "Needed against reached",
+        "question": "How far short did it fall?",
+        "scope": "claim",
+        "claim_ids": [
+          "c3"
+        ],
+        "measure": "revenue",
+        "period": "qoq(revenue)[Q2 FY2026] > 10%",
+        "value": -1725200000.0000076,
+        "unit": "USD",
+        "display": "-$1.73B",
+        "formula": "$46.74B − $44.06B × (1 + 10%)",
+        "inputs": [
+          {
+            "ref_kind": "computed_test",
+            "id": "test:c3",
+            "label": "qoq(revenue)[Q2 FY2026] > 10%",
+            "value": null,
+            "display": "Fails",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          },
+          {
+            "ref_kind": "computed_test",
+            "id": "test:c3",
+            "label": "Revenue, quarter ended 2025-07-27",
+            "value": 46743000000.0,
+            "display": "$46.74B",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          },
+          {
+            "ref_kind": "computed_test",
+            "id": "test:c3",
+            "label": "Revenue, quarter ended 2025-04-27",
+            "value": 44062000000.0,
+            "display": "$44.06B",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          }
+        ],
+        "reading": "To hold, revenue had to reach $48.47B ($44.06B grown by 10%); it reached $46.74B, $1.73B short.",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:bridge:cash:fy2026",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "bridge",
+        "label": "Net income to free cash flow, FY2026",
+        "question": "Where did the cash go between net income and free cash flow?",
+        "scope": "claim",
+        "claim_ids": [
+          "c5"
+        ],
+        "measure": "free_cash_flow",
+        "period": "FY2026",
+        "value": -23391000000.0,
+        "unit": "USD",
+        "display": "-$23.39B",
+        "formula": "($102.72B − $6.04B) − $120.07B",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "NetIncomeLoss:2025-01-27..2026-01-25",
+            "label": "NetIncomeLoss",
+            "value": 120067000000.0,
+            "display": "$120.07B",
+            "accession": "0001045810-26-000036",
+            "form": "DEF 14A",
+            "filed": "2026-05-12"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "NetCashProvidedByUsedInOperatingActivities:2025-01-27..2026-01-25",
+            "label": "NetCashProvidedByUsedInOperatingActivities",
+            "value": 102718000000.0,
+            "display": "$102.72B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "PaymentsToAcquireProductiveAssets:2025-01-27..2026-01-25",
+            "label": "PaymentsToAcquireProductiveAssets",
+            "value": 6042000000.0,
+            "display": "$6.04B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "AccountsReceivableNetCurrent:..2026-01-25",
+            "label": "AccountsReceivableNetCurrent",
+            "value": 38466000000.0,
+            "display": "$38.47B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "AccountsReceivableNetCurrent:..2025-01-26",
+            "label": "AccountsReceivableNetCurrent",
+            "value": 23065000000.0,
+            "display": "$23.07B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "InventoryNet:..2026-01-25",
+            "label": "InventoryNet",
+            "value": 21403000000.0,
+            "display": "$21.40B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "InventoryNet:..2025-01-26",
+            "label": "InventoryNet",
+            "value": 10080000000.0,
+            "display": "$10.08B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          }
+        ],
+        "reading": "In FY2026, net income of $120.07B became operating cash flow of $102.72B ($17.35B less) and, after capital expenditure of $6.04B, free cash flow of $96.68B: $23.39B below net income. Over the same period accounts receivable rose $15.40B (to $38.47B) and inventory rose $11.32B (to $21.40B): a rise in either takes cash without touching net income.",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:bridge:cash:ttm",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "bridge",
+        "label": "Net income to free cash flow, the four quarters to Q2 FY2027",
+        "question": "Where did the cash go between net income and free cash flow?",
+        "scope": "claim",
+        "claim_ids": [
+          "c5"
+        ],
+        "measure": "free_cash_flow",
+        "period": "the four quarters to Q2 FY2027",
+        "value": -65873000000.0,
+        "unit": "USD",
+        "display": "-$65.87B",
+        "formula": "($134.36B − $7.35B) − $192.88B",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "NetIncomeLoss:2026-04-27..2026-07-26",
+            "label": "NetIncomeLoss",
+            "value": 59688000000.0,
+            "display": "$59.69B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "NetIncomeLoss:2026-01-26..2026-04-26",
+            "label": "NetIncomeLoss",
+            "value": 58321000000.0,
+            "display": "$58.32B",
+            "accession": "0001045810-26-000052",
+            "form": "10-Q",
+            "filed": "2026-05-20"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "NetIncomeLoss:2025-10-27..2026-01-25",
+            "label": "NetIncomeLoss",
+            "value": 42960000000.0,
+            "display": "$42.96B",
+            "accession": "0001045810-26-000036",
+            "form": "DEF 14A",
+            "filed": "2026-05-12"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "NetIncomeLoss:2025-07-28..2025-10-26",
+            "label": "NetIncomeLoss",
+            "value": 31910000000.0,
+            "display": "$31.91B",
+            "accession": "0001045810-25-000230",
+            "form": "10-Q",
+            "filed": "2025-11-19"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "NetCashProvidedByUsedInOperatingActivities:2026-04-27..2026-07-26",
+            "label": "NetCashProvidedByUsedInOperatingActivities",
+            "value": 24077000000.0,
+            "display": "$24.08B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "NetCashProvidedByUsedInOperatingActivities:2026-01-26..2026-04-26",
+            "label": "NetCashProvidedByUsedInOperatingActivities",
+            "value": 50344000000.0,
+            "display": "$50.34B",
+            "accession": "0001045810-26-000052",
+            "form": "10-Q",
+            "filed": "2026-05-20"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "NetCashProvidedByUsedInOperatingActivities:2025-10-27..2026-01-25",
+            "label": "NetCashProvidedByUsedInOperatingActivities",
+            "value": 36188000000.0,
+            "display": "$36.19B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "NetCashProvidedByUsedInOperatingActivities:2025-07-28..2025-10-26",
+            "label": "NetCashProvidedByUsedInOperatingActivities",
+            "value": 23751000000.0,
+            "display": "$23.75B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "PaymentsToAcquireProductiveAssets:2026-04-27..2026-07-26",
+            "label": "PaymentsToAcquireProductiveAssets",
+            "value": 2677000000.0,
+            "display": "$2.68B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "PaymentsToAcquireProductiveAssets:2026-01-26..2026-04-26",
+            "label": "PaymentsToAcquireProductiveAssets",
+            "value": 1757000000.0,
+            "display": "$1.76B",
+            "accession": "0001045810-26-000052",
+            "form": "10-Q",
+            "filed": "2026-05-20"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "PaymentsToAcquireProductiveAssets:2025-10-27..2026-01-25",
+            "label": "PaymentsToAcquireProductiveAssets",
+            "value": 1284000000.0,
+            "display": "$1.28B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "PaymentsToAcquireProductiveAssets:2025-07-28..2025-10-26",
+            "label": "PaymentsToAcquireProductiveAssets",
+            "value": 1636000000.0,
+            "display": "$1.64B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "AccountsReceivableNetCurrent:..2026-07-26",
+            "label": "AccountsReceivableNetCurrent",
+            "value": 63059000000.0,
+            "display": "$63.06B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "AccountsReceivableNetCurrent:..2025-07-27",
+            "label": "AccountsReceivableNetCurrent",
+            "value": 27808000000.0,
+            "display": "$27.81B",
+            "accession": "0001045810-25-000209",
+            "form": "10-Q",
+            "filed": "2025-08-27"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "InventoryNet:..2026-07-26",
+            "label": "InventoryNet",
+            "value": 31575000000.0,
+            "display": "$31.57B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "InventoryNet:..2025-07-27",
+            "label": "InventoryNet",
+            "value": 14962000000.0,
+            "display": "$14.96B",
+            "accession": "0001045810-25-000209",
+            "form": "10-Q",
+            "filed": "2025-08-27"
+          }
+        ],
+        "reading": "In the four quarters to Q2 FY2027, net income of $192.88B became operating cash flow of $134.36B ($58.52B less) and, after capital expenditure of $7.35B, free cash flow of $127.01B: $65.87B below net income. Over the same period accounts receivable rose $35.25B (to $63.06B) and inventory rose $16.61B (to $31.57B): a rise in either takes cash without touching net income.",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:eq:cash_conversion",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "earnings_quality",
+        "label": "Cash conversion: operating cash flow ÷ net income",
+        "question": "Is net income turning into cash?",
+        "scope": "claim",
+        "claim_ids": [
+          "c5"
+        ],
+        "measure": "operating_cash_flow",
+        "period": "the four quarters to Q2 FY2027",
+        "value": 0.6966025331943861,
+        "unit": "multiple",
+        "display": "0.70x",
+        "formula": "$134.36B ÷ $192.88B",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "NetCashProvidedByUsedInOperatingActivities:2026-04-27..2026-07-26",
+            "label": "NetCashProvidedByUsedInOperatingActivities",
+            "value": 24077000000.0,
+            "display": "$24.08B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "NetCashProvidedByUsedInOperatingActivities:2026-01-26..2026-04-26",
+            "label": "NetCashProvidedByUsedInOperatingActivities",
+            "value": 50344000000.0,
+            "display": "$50.34B",
+            "accession": "0001045810-26-000052",
+            "form": "10-Q",
+            "filed": "2026-05-20"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "NetCashProvidedByUsedInOperatingActivities:2025-10-27..2026-01-25",
+            "label": "NetCashProvidedByUsedInOperatingActivities",
+            "value": 36188000000.0,
+            "display": "$36.19B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "NetCashProvidedByUsedInOperatingActivities:2025-07-28..2025-10-26",
+            "label": "NetCashProvidedByUsedInOperatingActivities",
+            "value": 23751000000.0,
+            "display": "$23.75B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "NetIncomeLoss:2026-04-27..2026-07-26",
+            "label": "NetIncomeLoss",
+            "value": 59688000000.0,
+            "display": "$59.69B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "NetIncomeLoss:2026-01-26..2026-04-26",
+            "label": "NetIncomeLoss",
+            "value": 58321000000.0,
+            "display": "$58.32B",
+            "accession": "0001045810-26-000052",
+            "form": "10-Q",
+            "filed": "2026-05-20"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "NetIncomeLoss:2025-10-27..2026-01-25",
+            "label": "NetIncomeLoss",
+            "value": 42960000000.0,
+            "display": "$42.96B",
+            "accession": "0001045810-26-000036",
+            "form": "DEF 14A",
+            "filed": "2026-05-12"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "NetIncomeLoss:2025-07-28..2025-10-26",
+            "label": "NetIncomeLoss",
+            "value": 31910000000.0,
+            "display": "$31.91B",
+            "accession": "0001045810-25-000230",
+            "form": "10-Q",
+            "filed": "2025-11-19"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "NetCashProvidedByUsedInOperatingActivities:2025-04-28..2025-07-27",
+            "label": "NetCashProvidedByUsedInOperatingActivities",
+            "value": 15365000000.0,
+            "display": "$15.37B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "NetCashProvidedByUsedInOperatingActivities:2025-01-27..2025-04-27",
+            "label": "NetCashProvidedByUsedInOperatingActivities",
+            "value": 27414000000.0,
+            "display": "$27.41B",
+            "accession": "0001045810-26-000052",
+            "form": "10-Q",
+            "filed": "2026-05-20"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "NetCashProvidedByUsedInOperatingActivities:2024-10-28..2025-01-26",
+            "label": "NetCashProvidedByUsedInOperatingActivities",
+            "value": 16629000000.0,
+            "display": "$16.63B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "NetCashProvidedByUsedInOperatingActivities:2024-07-29..2024-10-27",
+            "label": "NetCashProvidedByUsedInOperatingActivities",
+            "value": 17627000000.0,
+            "display": "$17.63B",
+            "accession": "0001045810-25-000230",
+            "form": "10-Q",
+            "filed": "2025-11-19"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "NetIncomeLoss:2025-04-28..2025-07-27",
+            "label": "NetIncomeLoss",
+            "value": 26422000000.0,
+            "display": "$26.42B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "NetIncomeLoss:2025-01-27..2025-04-27",
+            "label": "NetIncomeLoss",
+            "value": 18775000000.0,
+            "display": "$18.77B",
+            "accession": "0001045810-26-000052",
+            "form": "10-Q",
+            "filed": "2026-05-20"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "NetIncomeLoss:2024-10-28..2025-01-26",
+            "label": "NetIncomeLoss",
+            "value": 22091000000.0,
+            "display": "$22.09B",
+            "accession": "0001045810-26-000036",
+            "form": "DEF 14A",
+            "filed": "2026-05-12"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "NetIncomeLoss:2024-07-29..2024-10-27",
+            "label": "NetIncomeLoss",
+            "value": 19309000000.0,
+            "display": "$19.31B",
+            "accession": "0001045810-25-000230",
+            "form": "10-Q",
+            "filed": "2025-11-19"
+          }
+        ],
+        "reading": "Over the four quarters to Q2 FY2027, each dollar of net income came with 0.70 dollars of operating cash flow ($134.36B against $192.88B). In Q2 FY2027 alone it was 0.40x ($24.08B against $59.69B), and 0.89x over the four quarters a year before.",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:eq:dso",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "earnings_quality",
+        "label": "Receivable days: accounts receivable ÷ the quarter's revenue × its days",
+        "question": "Is revenue being collected, or building up in receivables?",
+        "scope": "claim",
+        "claim_ids": [
+          "c3",
+          "c4",
+          "c6"
+        ],
+        "measure": "receivables",
+        "period": "Q2 FY2027",
+        "value": 59.63738684902464,
+        "unit": "days",
+        "display": "59.6 days",
+        "formula": "$63.06B ÷ $96.22B × 91",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "AccountsReceivableNetCurrent:..2026-07-26",
+            "label": "AccountsReceivableNetCurrent",
+            "value": 63059000000.0,
+            "display": "$63.06B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "Revenues:2026-04-27..2026-07-26",
+            "label": "Revenues",
+            "value": 96221000000.0,
+            "display": "$96.22B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "AccountsReceivableNetCurrent:..2025-07-27",
+            "label": "AccountsReceivableNetCurrent",
+            "value": 27808000000.0,
+            "display": "$27.81B",
+            "accession": "0001045810-25-000209",
+            "form": "10-Q",
+            "filed": "2025-08-27"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "Revenues:2025-04-28..2025-07-27",
+            "label": "Revenues",
+            "value": 46743000000.0,
+            "display": "$46.74B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          }
+        ],
+        "reading": "At the end of Q2 FY2027, accounts receivable of $63.06B stood for 59.6 days of the quarter's revenue ($96.22B over 91 days), against 54.1 days a year before: the balance grew +126.8% while revenue grew +105.9%.",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:eq:dio",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "earnings_quality",
+        "label": "Inventory days: inventory ÷ the quarter's cost of revenue × its days",
+        "question": "Is inventory building ahead of sales?",
+        "scope": "claim",
+        "claim_ids": [
+          "c1"
+        ],
+        "measure": "inventory",
+        "period": "Q2 FY2027",
+        "value": 119.32908343369742,
+        "unit": "days",
+        "display": "119.3 days",
+        "formula": "$31.57B ÷ $24.08B × 91",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "InventoryNet:..2026-07-26",
+            "label": "InventoryNet",
+            "value": 31575000000.0,
+            "display": "$31.57B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "CostOfRevenue:2026-04-27..2026-07-26",
+            "label": "CostOfRevenue",
+            "value": 24079000000.0,
+            "display": "$24.08B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "InventoryNet:..2025-07-27",
+            "label": "InventoryNet",
+            "value": 14962000000.0,
+            "display": "$14.96B",
+            "accession": "0001045810-25-000209",
+            "form": "10-Q",
+            "filed": "2025-08-27"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "CostOfRevenue:2025-04-28..2025-07-27",
+            "label": "CostOfRevenue",
+            "value": 12890000000.0,
+            "display": "$12.89B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          }
+        ],
+        "reading": "At the end of Q2 FY2027, inventory of $31.57B stood for 119.3 days of the quarter's cost of revenue ($24.08B over 91 days), against 105.6 days a year before: the balance grew +111.0% while cost of revenue grew +86.8%.",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:eq:deferred_revenue",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "earnings_quality",
+        "label": "Deferred revenue, change on a year earlier",
+        "question": "Is revenue billed ahead of delivery growing or shrinking?",
+        "scope": "claim",
+        "claim_ids": [
+          "c3",
+          "c4",
+          "c6"
+        ],
+        "measure": "deferred_revenue",
+        "period": "Q2 FY2027",
+        "value": null,
+        "unit": "percent",
+        "display": "n/a",
+        "formula": "",
+        "inputs": [],
+        "reading": "",
+        "reading_origin": "code",
+        "available": false,
+        "note": "The facts tag no deferred revenue at this quarter's end."
+      },
+      {
+        "id": "an:part:data_center:q:growth",
+        "provider": "facts",
+        "data_origin": "sec_tagged_breakdowns",
+        "kind": "part_growth",
+        "label": "Data Center revenue, growth on a year earlier",
+        "question": "Is Data Center growing faster or slower than the company?",
+        "scope": "claim",
+        "claim_ids": [
+          "c6"
+        ],
+        "measure": "revenue(segment \"Data Center\")",
+        "period": "the quarter ended 2026-07-26",
+        "value": 116.6220556745182,
+        "unit": "percent",
+        "display": "+116.6%",
+        "formula": "($89.02B − $41.10B) ÷ $41.10B",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000075:data_center:2026-04-27..2026-07-26",
+            "label": "Data Center, 2026-04-27 to 2026-07-26",
+            "value": 89023000000.0,
+            "display": "$89.02B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000075:data_center:2025-04-28..2025-07-27",
+            "label": "Data Center, 2025-04-28 to 2025-07-27",
+            "value": 41096000000.0,
+            "display": "$41.10B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000075:total_revenue:2026-04-27..2026-07-26",
+            "label": "Total revenue, 2026-04-27 to 2026-07-26",
+            "value": 96221000000.0,
+            "display": "$96.22B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000075:total_revenue:2025-04-28..2025-07-27",
+            "label": "Total revenue, 2025-04-28 to 2025-07-27",
+            "value": 46743000000.0,
+            "display": "$46.74B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          }
+        ],
+        "reading": "Data Center revenue was $89.02B in the quarter ended 2026-07-26, +116.6% on a year earlier ($41.10B); the company's revenue grew +105.9%. It was 92.5% of revenue, against 87.9% a year earlier (as the 10-Q filed 2026-08-26 tags it).",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:part:data_center:fy:growth",
+        "provider": "facts",
+        "data_origin": "sec_tagged_breakdowns",
+        "kind": "part_growth",
+        "label": "Data Center revenue, growth on a year earlier",
+        "question": "Is Data Center growing faster or slower than the company?",
+        "scope": "claim",
+        "claim_ids": [
+          "c6"
+        ],
+        "measure": "revenue(segment \"Data Center\")",
+        "period": "the fiscal year ended 2026-01-25",
+        "value": 68.19491952146961,
+        "unit": "percent",
+        "display": "+68.2%",
+        "formula": "($193.74B − $115.19B) ÷ $115.19B",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:data_center:2025-01-27..2026-01-25",
+            "label": "Data Center, 2025-01-27 to 2026-01-25",
+            "value": 193737000000.0,
+            "display": "$193.74B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:data_center:2024-01-29..2025-01-26",
+            "label": "Data Center, 2024-01-29 to 2025-01-26",
+            "value": 115186000000.0,
+            "display": "$115.19B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:total_revenue:2025-01-27..2026-01-25",
+            "label": "Total revenue, 2025-01-27 to 2026-01-25",
+            "value": 215938000000.0,
+            "display": "$215.94B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:total_revenue:2024-01-29..2025-01-26",
+            "label": "Total revenue, 2024-01-29 to 2025-01-26",
+            "value": 130497000000.0,
+            "display": "$130.50B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          }
+        ],
+        "reading": "Data Center revenue was $193.74B in the fiscal year ended 2026-01-25, +68.2% on a year earlier ($115.19B); the company's revenue grew +65.5%. It was 89.7% of revenue, against 88.3% a year earlier (as the 10-K filed 2026-02-25 tags it).",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:part:data_center:fy:pace",
+        "provider": "facts",
+        "data_origin": "sec_tagged_breakdowns",
+        "kind": "part_pace",
+        "label": "Data Center revenue, growth now against growth before",
+        "question": "Is Data Center growth speeding up or slowing?",
+        "scope": "claim",
+        "claim_ids": [
+          "c6"
+        ],
+        "measure": "revenue(segment \"Data Center\")",
+        "period": "the fiscal year ended 2026-01-25",
+        "value": -74.17435980520057,
+        "unit": "points",
+        "display": "-74.2 percentage points",
+        "formula": "+68.2% − +142.4%",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:data_center:2025-01-27..2026-01-25",
+            "label": "Data Center, 2025-01-27 to 2026-01-25",
+            "value": 193737000000.0,
+            "display": "$193.74B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:data_center:2024-01-29..2025-01-26",
+            "label": "Data Center, 2024-01-29 to 2025-01-26",
+            "value": 115186000000.0,
+            "display": "$115.19B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:data_center:2023-01-30..2024-01-28",
+            "label": "Data Center, 2023-01-30 to 2024-01-28",
+            "value": 47525000000.0,
+            "display": "$47.52B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          }
+        ],
+        "reading": "Data Center revenue grew +68.2% on a year earlier in the fiscal year ended 2026-01-25, against +142.4% in the fiscal year ended 2025-01-26: slowing, by 74.2 percentage points (as the 10-K filed 2026-02-25 tags it).",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:bridge:growth:revenue_by_product:q",
+        "provider": "facts",
+        "data_origin": "sec_tagged_breakdowns",
+        "kind": "bridge",
+        "label": "Revenue by product or service: each part's contribution to growth",
+        "question": "Which parts of the business drove the growth?",
+        "scope": "claim",
+        "claim_ids": [
+          "c3",
+          "c6"
+        ],
+        "measure": "revenue",
+        "period": "the quarter ended 2026-07-26",
+        "value": 102.53299959352202,
+        "unit": "points",
+        "display": "+102.5 percentage points",
+        "formula": "($89.02B − $41.10B) ÷ $46.74B",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000075:total_revenue:2026-04-27..2026-07-26",
+            "label": "Total revenue, 2026-04-27 to 2026-07-26",
+            "value": 96221000000.0,
+            "display": "$96.22B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000075:total_revenue:2025-04-28..2025-07-27",
+            "label": "Total revenue, 2025-04-28 to 2025-07-27",
+            "value": 46743000000.0,
+            "display": "$46.74B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000075:data_center:2026-04-27..2026-07-26",
+            "label": "Data Center, 2026-04-27 to 2026-07-26",
+            "value": 89023000000.0,
+            "display": "$89.02B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000075:data_center:2025-04-28..2025-07-27",
+            "label": "Data Center, 2025-04-28 to 2025-07-27",
+            "value": 41096000000.0,
+            "display": "$41.10B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000075:edge_computing:2026-04-27..2026-07-26",
+            "label": "Edge Computing, 2026-04-27 to 2026-07-26",
+            "value": 7198000000.0,
+            "display": "$7.20B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000075:edge_computing:2025-04-28..2025-07-27",
+            "label": "Edge Computing, 2025-04-28 to 2025-07-27",
+            "value": 5647000000.0,
+            "display": "$5.65B",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "filed": "2026-08-26"
+          }
+        ],
+        "reading": "Revenue grew +105.9% in the quarter ended 2026-07-26. Of that growth, each part's contribution: Data Center +102.5 percentage points; Edge Computing +3.3 percentage points (as the 10-Q filed 2026-08-26 tags them; the parts shown split the total without overlap).",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:bridge:growth:revenue_by_product:fy",
+        "provider": "facts",
+        "data_origin": "sec_tagged_breakdowns",
+        "kind": "bridge",
+        "label": "Revenue by product or service: each part's contribution to growth",
+        "question": "Which parts of the business drove the growth?",
+        "scope": "claim",
+        "claim_ids": [
+          "c4"
+        ],
+        "measure": "revenue",
+        "period": "the fiscal year ended 2026-01-25",
+        "value": 60.19372092845047,
+        "unit": "points",
+        "display": "+60.2 percentage points",
+        "formula": "($193.74B − $115.19B) ÷ $130.50B",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:total_revenue:2025-01-27..2026-01-25",
+            "label": "Total revenue, 2025-01-27 to 2026-01-25",
+            "value": 215938000000.0,
+            "display": "$215.94B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:total_revenue:2024-01-29..2025-01-26",
+            "label": "Total revenue, 2024-01-29 to 2025-01-26",
+            "value": 130497000000.0,
+            "display": "$130.50B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:data_center:2025-01-27..2026-01-25",
+            "label": "Data Center, 2025-01-27 to 2026-01-25",
+            "value": 193737000000.0,
+            "display": "$193.74B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:data_center:2024-01-29..2025-01-26",
+            "label": "Data Center, 2024-01-29 to 2025-01-26",
+            "value": 115186000000.0,
+            "display": "$115.19B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:gaming:2025-01-27..2026-01-25",
+            "label": "Gaming, 2025-01-27 to 2026-01-25",
+            "value": 16042000000.0,
+            "display": "$16.04B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:gaming:2024-01-29..2025-01-26",
+            "label": "Gaming, 2024-01-29 to 2025-01-26",
+            "value": 11350000000.0,
+            "display": "$11.35B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:professional_visualization:2025-01-27..2026-01-25",
+            "label": "Professional Visualization, 2025-01-27 to 2026-01-25",
+            "value": 3191000000.0,
+            "display": "$3.19B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:professional_visualization:2024-01-29..2025-01-26",
+            "label": "Professional Visualization, 2024-01-29 to 2025-01-26",
+            "value": 1878000000.0,
+            "display": "$1.88B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:automotive:2025-01-27..2026-01-25",
+            "label": "Automotive, 2025-01-27 to 2026-01-25",
+            "value": 2349000000.0,
+            "display": "$2.35B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:automotive:2024-01-29..2025-01-26",
+            "label": "Automotive, 2024-01-29 to 2025-01-26",
+            "value": 1694000000.0,
+            "display": "$1.69B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:oem_and_other:2025-01-27..2026-01-25",
+            "label": "OEM and Other, 2025-01-27 to 2026-01-25",
+            "value": 619000000.0,
+            "display": "$619.0M",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:oem_and_other:2024-01-29..2025-01-26",
+            "label": "OEM and Other, 2024-01-29 to 2025-01-26",
+            "value": 389000000.0,
+            "display": "$389.0M",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          }
+        ],
+        "reading": "Revenue grew +65.5% in the fiscal year ended 2026-01-25. Of that growth, each part's contribution: Data Center +60.2 percentage points; Gaming +3.6 percentage points; Professional Visualization +1.0 percentage points; Automotive +0.5 percentage points; OEM and Other +0.2 percentage points (as the 10-K filed 2026-02-25 tags them; the parts shown split the total without overlap).",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      }
+    ],
+    "providers": [
+      "facts"
+    ],
+    "providers_failed": [],
+    "provider_reasons": {},
+    "analytics_by": "code",
+    "corollaries_step": "not_asked",
+    "argument_step": "not_asked",
+    "corollaries_by": "",
+    "corollaries_note": "No corollaries: no model was asked to propose them.",
+    "corollary_rule": "A corollary is an implication a model proposed and code computed. Each is read by the grammar and by the typed form the proposing model wrote: two readers, which is weaker than the two-of-three rule the thesis's own claims are read under. A corollary never moves a verdict; when most of a claim's computed corollaries come out against it, the claim is flagged.",
+    "persistence_method": "Resampling with replacement: 10,000 paths of 4 quarters, each step drawn from the measure's own last N quarterly changes (differences in points for a percent, growth rates for an amount), from the current value; the share of paths in which the test holds in every one of the 4 quarters. Seed 20261118. It assumes the past changes are exchangeable: it ignores trend, seasonality and anything not in the facts. It describes the history; it is not a forecast.",
+    "argument_by": "none",
+    "argument_detail": "",
+    "argument_note": "No model wrote an argument: this run was given no analysing model (the extractive engine, no key, or a run the watcher started). The figures and their readings are code's.",
+    "thesis": null,
+    "flags": []
   }
 }

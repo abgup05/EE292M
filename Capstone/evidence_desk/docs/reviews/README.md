@@ -20,7 +20,7 @@ The referee is not a checklist review. It is the agent in `.claude/agents/refere
 4. Check that nothing in the checkout is newer than the `.started` file and that every file the referee says it opened is inside the checkout. Save the text unedited under a header that says what was read, by which model, and what was removed. Triage every finding in a file of its own.
 5. Remove the worktree.
 
-The first two referee runs were started with that command typed directly, before the target existed; the third and the fourth used the target.
+The first two referee runs were started with that command typed directly, before the target existed; the third, the fourth and the fifth used the target.
 
 ## Index
 
@@ -36,3 +36,4 @@ The first two referee runs were started with that command typed directly, before
 | [referee-3-version-9.md](referee-3-version-9.md) | before Week 9B | `capstone-v9` | A hostile referee a third time: the changes under each claim, the tagged breakdowns, and the older claims again |
 | [review-6-speed-system.md](review-6-speed-system.md) | before Week 9B | `capstone-v10` | Speed, the system, what cannot be rebuilt, one boundary, on the system as it now stands |
 | [referee-4-version-11.md](referee-4-version-11.md) | before Week 9B | `capstone-v11` | A hostile referee a fourth time: findings that cite tagged figures, the period check, the restore check and the speed measurements, and the older claims again. Eight findings, each decided in [`../referee-4-triage.md`](../referee-4-triage.md) |
+| [referee-5-version-14.md](referee-5-version-14.md) | before Week 9B | `capstone-v14` | A hostile referee a fifth time: where the model answers came from, the summary beside the computed verdicts, the computed tests' arithmetic and readers, the number check, the gate's and the restore check's evidence, and the older claims again. Thirteen findings, each decided in [`../referee-5-triage.md`](../referee-5-triage.md) |

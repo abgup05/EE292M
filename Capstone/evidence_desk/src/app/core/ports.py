@@ -262,7 +262,9 @@ class BriefItem:
 @dataclass(frozen=True)
 class BriefClaim:
     """One claim as the analysing model is shown it: its verdict, computed test, findings
-    (verified only), analytics, corollaries and odds, each with the id it may be cited by."""
+    (verified only), analytics, corollaries and odds, each with the id it may be cited by;
+    ``notes`` the run's own notes on the claim (why no test, a caution, what the 8-Ks do and
+    do not report) and ``not_computed`` what was asked of the facts and could not be had."""
 
     id: str
     text: str
@@ -272,12 +274,16 @@ class BriefClaim:
     analytics: tuple[BriefItem, ...] = ()
     corollaries: tuple[BriefItem, ...] = ()
     odds: tuple[BriefItem, ...] = ()
+    notes: tuple[str, ...] = ()
+    not_computed: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
 class AnalysisBrief:
     """Everything the analysing model is shown: the company, the decision, the claims, the
-    analytics that bear on the thesis as a whole, the reported figures and the 8-Ks."""
+    analytics another provider computed about the company as a whole, the reported figures
+    the claims are tied to, the 8-Ks, the date the run is as of ("" for none), and the names
+    of the parts of the business the filings read tag (a corollary may name one)."""
 
     company: Company
     decision: str
@@ -285,6 +291,8 @@ class AnalysisBrief:
     analytics: tuple[BriefItem, ...] = ()
     figures: tuple[BriefItem, ...] = ()
     events: tuple[BriefItem, ...] = ()
+    as_of: str = ""
+    parts: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

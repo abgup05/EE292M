@@ -8,7 +8,7 @@ own (:mod:`app.core.watch_policy`), so the contract test of ``limits.py`` is not
 from __future__ import annotations
 
 # Analytics (app.core.analytics)
-# Quarters a measure's trend, range and typical move are read over.
+# Quarters a measure's trend is read over, and the fewest moves a typical move is the median of.
 SHORT_WINDOW = 4
 LONG_WINDOW = 8
 # A balance is matched to a quarter's end within this many days.
@@ -42,7 +42,7 @@ PROPOSE_STEP = "propose"
 ANALYSE_STEP = "analyse"
 ANALYSIS_MODEL_VARIABLE = "ANTHROPIC_ANALYSIS_MODEL"
 PROPOSE_MAX_TOKENS = 8_000
-ANALYSE_MAX_TOKENS = 12_000
+ANALYSE_MAX_TOKENS = 10_000
 # One request must finish well under two minutes; it is not retried on a timeout.
 MODEL_TIMEOUT_SECONDS = 110.0
 # Sentences per section of the argument: the assessment and the bottom line are arguments.
@@ -90,10 +90,14 @@ PROPOSE_FAILED = "No corollaries: the request for them failed ({why})."
 NO_ARGUMENT = "No model's argument: {why}. The analytics and their readings were written by code."
 NO_MODEL_WHY = "no model is configured: the engine is extractive"
 OUT_OF_TIME_WHY = "the run's time limit was reached first"
-ANALYSE_FAILED_ERROR = (
-    "The analysis step failed ({why}); the record holds the computed analysis only."
+# One line in Run.errors whenever the record holds less than a model's full analysis.
+COMPUTED_ONLY_ERROR = (
+    "The analysis holds what code computed only, with no model's corollaries or argument: {why}."
 )
-PROPOSE_FAILED_ERROR = "The corollary step failed ({why}); no corollary was proposed."
+MODEL_STEP_ERROR = (
+    "The analysis is missing a model step ({why}); what the record holds of the analysis "
+    "says who wrote it."
+)
 LEAN_FLAG = (
     "The model reads the evidence as {lean}, but the verdict is {verdict}. The verdict "
     "stands: it is computed from verified evidence and the computed test."
@@ -114,6 +118,10 @@ PERSISTENCE_METHOD = (
     "quarters. Seed {seed}. It assumes the past changes are exchangeable: it ignores trend, "
     "seasonality and anything not in the facts. It describes the history; it is not a "
     "forecast."
+)
+PERSISTENCE_CAVEAT = (
+    "This describes the measure's own past quarterly changes, resampled; it knows nothing of "
+    "trend, seasonality or events, and is not a forecast."
 )
 PERSISTENCE_SHORT = (
     "Only {changes} quarterly changes are in the facts; at least {needed} are needed for the "

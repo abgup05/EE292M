@@ -153,6 +153,7 @@ def persistence(
         "horizon": horizon,
         "start_value": setup.levels[0],
         "start_display": display(setup.levels[0], unit),  # type: ignore[arg-type]
+        "caveat": rules.PERSISTENCE_CAVEAT,
         "method": rules.PERSISTENCE_METHOD.format(
             paths=paths, horizon=horizon, changes=len(setup.changes), step=words, seed=seed
         ),

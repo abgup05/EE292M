@@ -17,10 +17,11 @@ destinations that cannot end early.
 from __future__ import annotations
 
 import re
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from urllib.parse import quote as percent_encode
 
-from app.core.analysis_models import Analytic, ArgSentence, ClaimAnalysis
+from app.core.analysis_models import Analytic, ArgSentence, ClaimAnalysis, Corollary
 from app.core.claim_change_models import RelevantChange, RunChanges
 from app.core.event_models import Event
 from app.core.metric_models import Metric
@@ -702,74 +703,101 @@ def _who_wrote(run: Run) -> str:
     """Who wrote each part of the analysis, in one line."""
     analysis = run.analysis
     assert analysis is not None
-    parts = ["Analytics, readings, relevance and odds: written by code."]
-    if analysis.corollaries_by:
-        parts.append(f"Corollaries proposed by {analysis.corollaries_by}; computed by code.")
+    parts = ["The figures under each claim, their readings and the odds: computed by code."]
+    if analysis.corollaries_step == "answered":
+        parts.append(
+            f"Corollaries: proposed by {analysis.corollaries_by or 'a model'}, computed by code."
+        )
     if analysis.argument_by == "model":
         parts.append(
-            f"Argument written by {analysis.argument_detail or 'a model'}; every sentence "
-            "audited by code."
+            f"The argument: written by {analysis.argument_detail or 'a model'}, every sentence "
+            "audited by code (a sentence that fails is kept and marked)."
         )
     return " ".join(parts)
 
 
 def _sentence_line(sentence: ArgSentence, indent: str = "") -> str:
     """One sentence of the argument, its citations, and why it is unverified when it is."""
-    cites = f" [cites: {_text(', '.join(sentence.cites))}]" if sentence.cites else ""
+    cites = f" [{_text(', '.join(sentence.cites))}]" if sentence.cites else ""
     line = f"{indent}- {_text(sentence.text, line_start=True)}{cites}"
     if not sentence.verified:
         line += f" **Unverified:** {_text('; '.join(sentence.problems) or 'not audited')}."
     return line
 
 
-def _section(title: str, sentences: list, indent: str = "") -> list[str]:
+def _section(title: str, sentences: Sequence[ArgSentence]) -> list[str]:
     if not sentences:
         return []
-    return [f"{indent}- {title}:", *(_sentence_line(s, indent + "  ") for s in sentences)]
+    return [f"**{title}**", "", *(_sentence_line(s) for s in sentences), ""]
 
 
-def _analytic_line(item: Analytic) -> str:
-    if not item.available:
-        return f"- {_text(item.label)}: not available ({_text(item.note)})"
-    return f"- {_text(item.label)}: {_text(item.display)}. {_text(item.reading)} ({item.id})"
+def _analytic_lines(items: Sequence[Analytic]) -> list[str]:
+    """The figures that bear on a claim, each under the question it answers; then, in one
+    line, what was asked of the facts and could not be had."""
+    lines = [
+        f"- *{_text(item.question or item.label)}* {_text(item.reading)} ({item.id})"
+        for item in items
+        if item.available
+    ]
+    missing = [item for item in items if not item.available]
+    if missing:
+        listed = "; ".join(f"{_text(item.label)} ({_text(item.note)})" for item in missing)
+        lines.append(f"- Could not be computed: {listed}")
+    return lines
+
+
+def _corollary_line(corollary: Corollary) -> str:
+    line = f"- {_text(corollary.sentence)} If the claim is true this should {corollary.expect[:-1]}"
+    if corollary.why:
+        line += f" ({_text(corollary.why)})"
+    if corollary.computed is None:
+        return f"{line}. Not computed: {_text(corollary.read_by)}. ({corollary.id})"
+    test = corollary.computed
+    margin = f", by {_text(test.margin_display)}" if test.margin_display else ""
+    return (
+        f"{line}. Computed as `{test.bound or test.canonical}`: "
+        f"{_text(test.outcome_label)}{margin}; {_text(corollary.result_label)}. Read by "
+        f"{_text(corollary.read_by)}. ({corollary.id})"
+    )
 
 
 def _claim_analysis(claim: Claim, analysis: ClaimAnalysis, by_id: dict[str, Analytic]) -> list[str]:
-    lines = [f"### {_text(claim.id)}. {_text(claim.text)}", ""]
-    if analysis.relevant:
-        bears = "; ".join(
-            f"{_text(m.label)} ({_text(', '.join(m.reasons))})" for m in analysis.relevant
-        )
-        lines += [f"Bears on it: {bears}.", ""]
-    else:
-        lines += [_text(analysis.relevance_note, line_start=True), ""]
-    lines += [_analytic_line(by_id[i]) for i in analysis.analytic_ids if i in by_id]
-    odds = analysis.persistence
-    if odds is not None and odds.applicable:
-        lines.append(f"- Odds the test keeps holding: {_text(odds.note or odds.warning)}")
-    for corollary in analysis.corollaries:
-        outcome = (
-            f"{_text(corollary.computed.outcome_label)}, {_text(corollary.result_label)}"
-            if corollary.computed is not None
-            else "not computable"
-        )
-        lines.append(
-            f"- Corollary {corollary.id}: {_text(corollary.sentence)} (expected to "
-            f"{corollary.expect}; read by {_text(corollary.read_by)}): {outcome}."
-        )
-    if analysis.corollary_flag:
-        lines.append(f"- **Flag:** {_text(analysis.corollary_flag)}")
+    verdict = VERDICT_LABELS[claim.verdict] if claim.verdict else "No verdict"
+    lines = [f"### {_text(claim.id)}. {_text(claim.text)}", "", f"Verdict: {_text(verdict)}.", ""]
     argument = analysis.argument
     if argument is not None:
-        lines.append(f"- The model reads the record as: {argument.lean}.")
+        lines += [f"The model reads the record as: {argument.lean}.", ""]
         if argument.lean_flag:
-            lines.append(f"- **Flag:** {_text(argument.lean_flag)}")
+            lines += [f"**Flag:** {_text(argument.lean_flag)}", ""]
         lines += _section("Assessment", argument.assessment)
         lines += _section("Case for", argument.case_for)
         lines += _section("Case against", argument.case_against)
         lines += _section("What decides it", argument.decides)
-        lines += _section("What would change the verdict", list(argument.would_change))
-    return [*lines, ""]
+        lines += _section("What would change the verdict", argument.would_change)
+    items = [by_id[i] for i in analysis.analytic_ids if i in by_id]
+    if analysis.relevant:
+        bears = "; ".join(
+            f"{_text(m.label)} ({_text(', '.join(m.reasons))})" for m in analysis.relevant
+        )
+        lines += ["**What the figures say** (computed by code)", "", f"Bears on it: {bears}.", ""]
+        lines += [*_analytic_lines(items), ""]
+    else:
+        lines += [_text(analysis.relevance_note, line_start=True), ""]
+    odds = analysis.persistence
+    if odds is not None and odds.applicable:
+        lines += [
+            "**Odds the test keeps holding** (resampled by code)",
+            "",
+            f"{_text(odds.note or odds.warning)} {_text(odds.caveat)}".strip(),
+            "",
+        ]
+    if analysis.corollaries:
+        lines += ["**If the claim were true, what else would be?**", ""]
+        lines += [_corollary_line(corollary) for corollary in analysis.corollaries]
+        lines.append("")
+    if analysis.corollary_flag:
+        lines += [f"**Flag:** {_text(analysis.corollary_flag)}", ""]
+    return lines
 
 
 def _analysis(run: Run) -> list[str]:
@@ -778,16 +806,29 @@ def _analysis(run: Run) -> list[str]:
     if analysis is None:
         return []
     lines = [ANALYSIS_HEADING_MD, "", f"_{_text(_who_wrote(run))}_", ""]
-    for note in (analysis.corollaries_note, analysis.argument_note):
+    for note in (analysis.corollaries_note, analysis.argument_note, analysis.breakdowns_note):
         if note:
             lines += [_text(note, line_start=True), ""]
     if analysis.flags:
         lines += ["Flags:", "", *_bullets(analysis.flags, ""), ""]
+    thesis = analysis.thesis
+    if thesis is not None:
+        lines += ["### The thesis", ""]
+        lines += _section("Bottom line", thesis.bottom_line)
+        if thesis.leans_on:
+            lines += [f"It leans on: {', '.join(thesis.leans_on)}.", ""]
+        if thesis.weakest_link:
+            lines += [f"Its weakest link: {thesis.weakest_link}.", ""]
+        lines += _section("Why that is the weakest link", thesis.weakest_why)
+        lines += _section("Strongest point for", thesis.strongest_for)
+        lines += _section("Strongest point against", thesis.strongest_against)
+        for scenario in thesis.scenarios:
+            lines += _section(f"Scenario: {_text(scenario.name)}", scenario.conditions)
     if analysis.headline:
-        lines += ["Headline figures, from what the claims bear on:", ""]
+        lines += ["The figures the claims are about:", ""]
         lines += [
-            f"- {_text(figure.label)}, {_text(figure.period_label)}: {_text(figure.display)} "
-            f"({', '.join(figure.claim_ids)})"
+            f"- {_text(', '.join(part for part in (figure.label, figure.period_label) if part))}: "
+            f"{_text(figure.display)} ({', '.join(figure.claim_ids)})"
             for figure in analysis.headline
         ]
         lines.append("")
@@ -795,33 +836,17 @@ def _analysis(run: Run) -> list[str]:
         lines += [_text(analysis.headline_note, line_start=True), ""]
     if analysis.untied_metric_ids:
         lines += [
-            f"{len(analysis.untied_metric_ids)} reported figures are not tied to a claim "
-            "(listed under Reported figures).",
+            f"{len(analysis.untied_metric_ids)} reported figures are not tied to a claim: they "
+            "are on the record (under Reported figures) and not part of the analysis.",
             "",
         ]
-    thesis = analysis.thesis
-    if thesis is not None:
-        lines += ["### The thesis", ""]
-        if thesis.leans_on:
-            lines.append(f"- Leans on: {', '.join(thesis.leans_on)}.")
-        if thesis.weakest_link:
-            lines.append(f"- Weakest link: {thesis.weakest_link}.")
-        lines += _section("Why it is the weakest", thesis.weakest_why)
-        lines += _section("Strongest point for", thesis.strongest_for)
-        lines += _section("Strongest point against", thesis.strongest_against)
-        lines += _section("Bottom line", thesis.bottom_line)
-        for scenario in thesis.scenarios:
-            lines += _section(f"Scenario: {_text(scenario.name)}", scenario.conditions)
-        lines.append("")
     by_id = {item.id: item for item in analysis.analytics}
     for claim in run.claims:
         if claim.analysis is not None:
             lines += _claim_analysis(claim, claim.analysis, by_id)
-    thesis_wide = [item for item in analysis.analytics if not item.claim_ids]
-    if thesis_wide:
-        lines += ["### Analytics not tied to a claim", ""]
-        lines += [_analytic_line(item) for item in thesis_wide]
-        lines.append("")
+    company_wide = [item for item in analysis.analytics if not item.claim_ids]
+    if company_wide:
+        lines += ["### About the company as a whole", "", *_analytic_lines(company_wide), ""]
     return lines
 
 
@@ -837,8 +862,10 @@ def render_markdown(
     table (finished runs only), summary,
     reported figures (when the run has any), the 8-Ks since the annual report (runs
     from version 12), the computed tests, the analysis (version 0.14.2: who wrote each
-    part, flags, headline figures, the argument with every unverified sentence marked, and
-    each claim's measures, analytics, odds and corollaries), claims with their caution and 8-K note and their verified findings,
+    part, flags, the thesis's argument with every unverified sentence marked, the figures the
+    claims are about, and under each claim its argument, the figures that bear on it each
+    under the question it answers, the odds and the corollaries), claims with their caution
+    and 8-K note and their verified findings,
     their checks, cited figures and excerpts, unknowns, next steps,
     sources, coverage limits, errors, provenance, withheld findings, and for a
     reviewed brief a closing line dating the decisions. A reviewed brief adds

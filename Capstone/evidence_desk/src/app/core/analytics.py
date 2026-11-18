@@ -1,31 +1,36 @@
-"""Analytics: the numbers an analyst works out from a company's dated facts, with their arithmetic.
+"""Analytics: what an analyst would work out about a claim from the company's dated facts.
 
 Pure: no I/O, no model. Everything is computed from one :class:`~app.core.facts.FactBook`
 (as of the run's date when it has one, so nothing filed later is seen) through the same
 :class:`~app.core.claim_eval.Measures` the computed tests read, so an analytic and a test
-never disagree about a value. Each result is an :class:`~app.core.analysis_models.Analytic`
-with a stable id, its formula with the numbers used, its inputs (each fact with its
-filing) and one plain reading written from a template.
+never disagree about a value, and from the tagged breakdowns of the filings the run read.
 
-Four families (``docs/analysis.md`` defines each):
+Every analytic answers a question about a claim, and says which (``question``). None is
+computed for the thesis at large: a number no claim asks for is not in the analysis. An
+analytic is computed on the claim's own basis: a claim about a fiscal year gets fiscal-year
+analytics (and what has happened since), any other claim the newest quarters.
 
-- per measure (``an:<measure>:<what>``): level, change on the year and on the quarter,
-  the 4- and 8-quarter trend, whether growth is speeding up or slowing, the 8-quarter
-  range and the typical quarterly move;
-- per computed test (``an:<claim>:<what>``): headroom in units and in typical moves, the
-  value at which the outcome flips, needed against actual for a failing growth test, and
-  how often the test held across its history;
-- bridges (``an:bridge:<what>``): free cash flow from operating cash flow and capex, net
-  income to operating cash flow, the operating-margin change split into its parts, and
-  each part's contribution to growth from the tagged breakdowns the run already read;
-- earnings quality and operating signals (``an:eq:<what>``): cash conversion, accruals as
-  a share of net income, receivable and inventory days, stock compensation and capex
-  against revenue, deferred revenue, and a DuPont split of return on equity.
+- about a measure a claim bears on, quarterly (``an:<measure>:<what>``): its change on a
+  year earlier, whether its growth is speeding up or slowing, and where it stands against
+  the last eight quarters;
+- about a measure, for a fiscal-year claim (``an:<measure>:<fy>:<what>``): its path over the
+  last fiscal years, and the newest quarter since;
+- about a computed test (``an:<claim>:<what>``): its room, the room in typical moves, the
+  level a growth test needed (or could have given up), how often it held before, and for a
+  test of one measure against another, whether the gap is closing;
+- bridges (``an:bridge:<what>``): net income to free cash flow, with the balance-sheet
+  changes over the same period; the operating-margin change split into its parts; which
+  parts drove revenue growth;
+- a part a claim names (``an:part:<name>:<what>``): its growth against the company's, its
+  share, and whether its growth is speeding up or slowing;
+- earnings quality (``an:eq:<what>``): cash conversion, receivable and inventory days,
+  stock compensation and capital expenditure against revenue, deferred revenue, and return
+  on equity split the DuPont way.
 
-An analytic the facts cannot give is still returned, with ``available`` False and a note
-saying why, so the record shows what was tried. :class:`FactsProvider` is the first
-:class:`AnalyticsProvider`; a later provider (peers, prices) returns analytics of the same
-shape with its own ``provider`` and ``data_origin``.
+An analytic the facts cannot give is still returned for the claim that asked, with
+``available`` False and a note saying why. :class:`FactsProvider` is the first
+:class:`AnalyticsProvider`; another provider returns analytics of the same shape with its
+own ``provider`` and ``data_origin``.
 """
 
 from __future__ import annotations
@@ -35,27 +40,57 @@ import statistics
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import date
-from typing import Protocol
+from typing import Literal, Protocol
 
 from app.core import analysis_policy as rules
 from app.core.analysis_models import Analytic, AnalyticInput, AnalyticUnit
-from app.core.breakdown_models import Breakdown, BreakdownReport, BreakdownValue
+from app.core.breakdown_models import Breakdown, BreakdownReport, BreakdownRow, BreakdownValue
 from app.core.claim_eval import Measures, Slot
 from app.core.claim_test_models import ComputedTest, HistoryPoint
 from app.core.claimtest import METRICS, ClaimTest, Number
 from app.core.facts import FactBook, PeriodValue
-from app.core.metrics import MINUS, Outcome, eps_text, percent_text, usd_text
+from app.core.metrics import MINUS, eps_text, percent_text, usd_text
 from app.core.periods import FiscalCalendar
 
 PROVIDER = "facts"
 ORIGIN = "sec_xbrl_facts"
 BREAKDOWN_ORIGIN = "sec_tagged_breakdowns"
 NO_FACTS = "The run could not read the company's XBRL facts{why}."
-AMOUNT_KINDS = ("flow", "instant", "per_share", "shares")
-SEGMENT_BREAKDOWNS = ("revenue_by_segment", "revenue_by_product", "revenue_by_geography")
+PART_BREAKDOWNS = {
+    "revenue_by_segment": "segment",
+    "revenue_by_product": "segment",
+    "revenue_by_geography": "geography",
+}
 YEAR_DAYS = (350, 380)
 QUARTER_DAYS = (80, 100)
-SAME_END_DAYS = 10
+FISCAL_YEARS_SHOWN = 4
+READINGS_SHOWN = 4
+PARTS_SHOWN = 5
+SPAN_SLACK_DAYS = 10
+
+# The question each analytic answers, in the words the record shows.
+Q_YOY = "Which way is {what} moving on a year earlier?"
+Q_ACCELERATION = "Is {what} growth speeding up or slowing?"
+Q_TREND = "Where does {what} stand against the last two years?"
+Q_PATH = "What has {what} done over the last fiscal years?"
+Q_SINCE = "What has happened to {what} since that fiscal year ended?"
+Q_HEADROOM = "How much room does the test have, against how far the figure usually moves?"
+Q_NEEDED = "How far short did it fall?"
+Q_CUSHION = "How much could it have given up and still held?"
+Q_RECORD = "How often has this been true before?"
+Q_SIDES = "Is the gap between the two sides closing or widening?"
+Q_CASH_WALK = "Where did the cash go between net income and free cash flow?"
+Q_MARGIN_SPLIT = "What moved the operating margin?"
+Q_DRIVERS = "Which parts of the business drove the growth?"
+Q_PART = "Is {what} growing faster or slower than the company?"
+Q_PART_PACE = "Is {what} growth speeding up or slowing?"
+Q_CONVERSION = "Is net income turning into cash?"
+Q_DSO = "Is revenue being collected, or building up in receivables?"
+Q_DIO = "Is inventory building ahead of sales?"
+Q_SBC = "How much of the cost base is paid in stock, which cash flow does not show?"
+Q_CAPEX = "How much of revenue goes back into capital expenditure?"
+Q_DEFERRED = "Is revenue billed ahead of delivery growing or shrinking?"
+Q_ROE = "What is the return on equity made of?"
 
 
 # The shape
@@ -65,10 +100,10 @@ SAME_END_DAYS = 10
 class AnalyticsRequest:
     """What a provider is asked for: the run's facts and what its claims bear on.
 
-    ``measures`` maps each claim id to the catalogue keys it bears on, in order (parts are
-    not keys here). ``tests`` maps a claim id to its compiled test and the computed result.
-    ``reports`` are the tagged breakdowns the run already read (none read for this).
-    ``error`` says why there are no facts when ``book`` is None.
+    ``measures`` maps each claim id to the keys it bears on, in order: catalogue keys, and
+    parts as 'revenue(segment "Data Center")'. ``tests`` maps a claim id to its compiled
+    test and the computed result. ``reports`` are the tagged breakdowns of the newest
+    filings the run read. ``error`` says why there are no facts when ``book`` is None.
     """
 
     book: FactBook | None
@@ -87,6 +122,26 @@ class AnalyticsProvider(Protocol):
     def provide(self, request: AnalyticsRequest) -> list[Analytic]:
         """Every analytic it can compute for ``request``; an unavailable one says why."""
         ...
+
+
+@dataclass(frozen=True)
+class Basis:
+    """The periods a claim is about: the newest quarters, or one fiscal year (``slot``)."""
+
+    kind: Literal["quarter", "annual"] = "quarter"
+    slot: Slot | None = None
+
+
+def claim_basis(test: ClaimTest | None, measures: Measures) -> Basis:
+    """Fiscal-year when every period the claim's test names is a fiscal year; else quarterly."""
+    if test is None or test.from_filing:
+        return Basis()
+    if not test.terms or any(term.period.kind != "FY" for term in test.terms):
+        return Basis()
+    bound = measures.bind(test.left.period, "revenue")
+    if isinstance(bound, Slot) and bound.kind == "annual":
+        return Basis("annual", bound)
+    return Basis()
 
 
 # Display
@@ -117,6 +172,11 @@ def display(value: float | None, unit: AnalyticUnit, *, signed: bool = False) ->
             return f"{value:g}"
 
 
+def _points(value: float) -> str:
+    """A size in percentage points, unsigned: "2.6 percentage points"."""
+    return f"{abs(round(value, 1)):.1f} percentage points"
+
+
 def _unit_of(key: str) -> AnalyticUnit:
     kind = METRICS[key][1]
     if kind == "ratio":
@@ -134,6 +194,10 @@ def _label(key: str) -> str:
 
 def _lower(text: str) -> str:
     return text[:1].lower() + text[1:] if text[1:2].islower() or len(text) < 2 else text
+
+
+def _is_ratio(key: str) -> bool:
+    return METRICS[key][1] == "ratio"
 
 
 def _fact_inputs(used: Sequence[PeriodValue]) -> list[AnalyticInput]:
@@ -162,12 +226,40 @@ def _fact_inputs(used: Sequence[PeriodValue]) -> list[AnalyticInput]:
     return out
 
 
-# Reading a measure quarter by quarter
+def _fields(
+    analytic_id: str,
+    kind: str,
+    label: str,
+    question: str,
+    claim_ids: Sequence[str],
+    *,
+    measure: str = "",
+    period: str = "",
+    origin: str = ORIGIN,
+) -> dict[str, object]:
+    return {
+        "id": analytic_id,
+        "provider": PROVIDER,
+        "data_origin": origin,
+        "kind": kind,
+        "label": label,
+        "question": question,
+        "claim_ids": list(claim_ids),
+        "measure": measure,
+        "period": period,
+    }
+
+
+def _missing(fields: dict[str, object], unit: AnalyticUnit, note: str) -> Analytic:
+    return Analytic(**fields, unit=unit, available=False, note=note)  # type: ignore[arg-type]
+
+
+# Reading a measure period by period
 
 
 @dataclass(frozen=True)
 class Point:
-    """One measure over one bound quarter (or at one balance date)."""
+    """One measure over one bound period (or at one balance date)."""
 
     slot: Slot
     value: float
@@ -175,7 +267,7 @@ class Point:
 
 
 def _point_input(key: str, point: Point) -> AnalyticInput:
-    """One quarter of a measure as an input, with the newest filing among its facts."""
+    """One period of a measure as an input, with the newest filing among its facts."""
     refs = [value.refs[0] for value in point.used]
     newest = max(refs, key=lambda ref: ref.filed) if refs else None
     return AnalyticInput(
@@ -199,15 +291,7 @@ def latest_slot(measures: Measures, key: str) -> Slot | None:
     return measures.slot("quarter", max(series)) if series else None
 
 
-def quarterly(measures: Measures, key: str, count: int) -> tuple[list[Point], str]:
-    """Up to ``count`` consecutive quarters of ``key``, newest first, and why it stopped.
-
-    The walk stops at the first quarter with no value (a gap is never bridged), so every
-    pair of neighbours is one quarter apart.
-    """
-    slot = latest_slot(measures, key)
-    if slot is None:
-        return [], f"The facts hold no quarter of {_lower(_label(key))}."
+def _walk_back(measures: Measures, key: str, slot: Slot | None, count: int) -> tuple[list, str]:
     points: list[Point] = []
     why = ""
     while slot is not None and len(points) < count:
@@ -220,6 +304,18 @@ def quarterly(measures: Measures, key: str, count: int) -> tuple[list[Point], st
     return points, why
 
 
+def quarterly(measures: Measures, key: str, count: int) -> tuple[list[Point], str]:
+    """Up to ``count`` consecutive quarters of ``key``, newest first, and why it stopped.
+
+    The walk stops at the first quarter with no value (a gap is never bridged), so every
+    pair of neighbours is one quarter apart.
+    """
+    slot = latest_slot(measures, key)
+    if slot is None:
+        return [], f"The facts hold no quarter of {_lower(_label(key))}."
+    return _walk_back(measures, key, slot, count)
+
+
 def _change(now: float, before: float, ratio: bool) -> float | None:
     """Points for a ratio; percent growth on a positive base for an amount."""
     if ratio:
@@ -229,125 +325,159 @@ def _change(now: float, before: float, ratio: bool) -> float | None:
     return (now - before) / before * 100
 
 
-# Per measure
-
-
-def _base(
-    key: str, kind: str, label: str, claim_ids: Sequence[str], period: str = ""
-) -> dict[str, object]:
-    return {
-        "id": f"an:{key}:{kind}",
-        "provider": PROVIDER,
-        "data_origin": ORIGIN,
-        "kind": kind,
-        "label": label,
-        "claim_ids": list(claim_ids),
-        "measure": key,
-        "period": period,
-    }
-
-
-def _missing(fields: dict[str, object], unit: AnalyticUnit, note: str) -> Analytic:
-    return Analytic(**fields, unit=unit, available=False, note=note)  # type: ignore[arg-type]
+def _change_text(value: float, ratio: bool) -> str:
+    return display(value, "points" if ratio else "percent", signed=True)
 
 
 def _verb(value: float, ratio: bool) -> str:
     if value > 0:
         return "rose" if ratio else "grew"
-    if value < 0:
-        return "fell" if ratio else "shrank"
-    return "was unchanged"
+    return "fell" if ratio else "shrank"
 
 
-def measure_analytics(
+def _point_at(measures: Measures, key: str, slot: Slot | None) -> Point | None:
+    if slot is None:
+        return None
+    outcome = measures.outcome(key, slot)
+    return None if outcome.value is None else Point(slot, outcome.value, outcome.used)
+
+
+def _growth_at(measures: Measures, key: str, point: Point) -> tuple[float, Point] | None:
+    """``point``'s change on the same period a year earlier, and that earlier point."""
+    earlier = _point_at(measures, key, measures.year_before(point.slot, key))
+    if earlier is None:
+        return None
+    value = _change(point.value, earlier.value, _is_ratio(key))
+    return None if value is None else (value, earlier)
+
+
+# About a measure, quarterly
+
+
+def quarter_analytics(
     measures: Measures, key: str, claim_ids: Sequence[str] = ()
 ) -> list[Analytic]:
-    """Every per-measure analytic of ``key``: level, changes, trends, acceleration, range
-    and typical move. Each one the facts cannot give is returned unavailable, with why."""
-    ratio = METRICS[key][1] == "ratio"
-    label = _label(key)
-    unit = _unit_of(key)
-    change_unit: AnalyticUnit = "points" if ratio else "percent"
-    history = max(rules.LONG_WINDOW, 4 + rules.SHORT_WINDOW) + 1
-    points, why = quarterly(measures, key, history)
-    out: list[Analytic] = []
-    if not points:
-        note = why or f"The facts hold no quarter of {_lower(label)}."
-        for kind, what in (
-            ("level", unit),
-            ("yoy", change_unit),
-            ("qoq", change_unit),
-        ):
-            out.append(_missing(_base(key, kind, f"{label}: {kind}", claim_ids), what, note))
-        return out
-    latest = points[0]
-    level = Analytic(
-        **_base(key, "level", f"{label}, latest quarter", claim_ids, latest.slot.label),
-        value=latest.value,
-        unit=unit,
-        display=display(latest.value, unit),
-        formula=measures.outcome(key, latest.slot).formula,
-        inputs=_fact_inputs(latest.used),
-        reading=f"{label} was {display(latest.value, unit)} in {latest.slot.label}.",
+    """The newest quarter of ``key`` on a year earlier, whether its growth is speeding up or
+    slowing (an amount only), and where it stands against the last eight quarters."""
+    what = _lower(_label(key))
+    points, why = quarterly(measures, key, rules.LONG_WINDOW + 1)
+    yoy = _fields(
+        f"an:{key}:yoy",
+        "yoy",
+        f"{_label(key)}, change on a year earlier",
+        Q_YOY.format(what=what),
+        claim_ids,
+        measure=key,
     )
-    out.append(level)
-    out.append(_step_change(measures, key, latest, "yoy", claim_ids))
-    out.append(_step_change(measures, key, latest, "qoq", claim_ids, points))
-    for window in (rules.SHORT_WINDOW, rules.LONG_WINDOW):
-        out.append(_trend(key, points, window, claim_ids))
-    if not ratio:
+    unit: AnalyticUnit = "points" if _is_ratio(key) else "percent"
+    if not points:
+        return [_missing(yoy, unit, why or f"The facts hold no quarter of {what}.")]
+    out = [_year_change(measures, key, points[0], yoy)]
+    if not _is_ratio(key) and METRICS[key][1] != "instant":
         out.append(_acceleration(measures, key, points, claim_ids))
-    out.append(_range(key, points, claim_ids))
-    out.append(_typical_move(key, points, claim_ids))
+    out.append(_trend(key, points, claim_ids))
     return out
 
 
-def _step_change(
-    measures: Measures,
-    key: str,
-    latest: Point,
-    kind: str,
-    claim_ids: Sequence[str],
-    points: Sequence[Point] = (),
+def _year_change(
+    measures: Measures, key: str, latest: Point, fields: dict[str, object]
 ) -> Analytic:
-    ratio = METRICS[key][1] == "ratio"
-    label = _label(key)
+    ratio = _is_ratio(key)
     unit: AnalyticUnit = "points" if ratio else "percent"
-    on = "a year earlier" if kind == "yoy" else "the quarter before"
-    fields = _base(key, kind, f"{label}, change on {on}", claim_ids, latest.slot.label)
-    if kind == "yoy":
-        earlier = measures.year_before(latest.slot, key)
-    else:
-        earlier = points[1].slot if len(points) > 1 else None
-    if earlier is None:
-        return _missing(fields, unit, f"No quarter {on} than {latest.slot.label} is in the facts.")
-    before = measures.outcome(key, earlier)
-    if before.value is None:
-        return _missing(fields, unit, before.note)
-    value = _change(latest.value, before.value, ratio)
-    if value is None:
-        return _missing(fields, unit, f"Growth is not meaningful: {earlier.label} is not positive.")
-    shown_now = display(latest.value, _unit_of(key))
-    shown_before = display(before.value, _unit_of(key))
+    fields = {**fields, "period": latest.slot.label}
+    found = _growth_at(measures, key, latest)
+    if found is None:
+        return _missing(
+            fields,
+            unit,
+            f"No comparable quarter a year before {latest.slot.label} is in the facts.",
+        )
+    value, before = found
+    now_text = display(latest.value, _unit_of(key))
+    before_text = display(before.value, _unit_of(key))
     formula = (
-        f"{shown_now} {MINUS} {shown_before}"
+        f"{now_text} {MINUS} {before_text}"
         if ratio
-        else f"({shown_now} {MINUS} {shown_before}) ÷ {shown_before}"
+        else f"({now_text} {MINUS} {before_text}) ÷ {before_text}"
     )
-    text = display(value, unit, signed=True)
+    size = _points(value) if ratio else percent_text(abs(value))
+    label = _label(key)
+    if round(value, 1):
+        reading = (
+            f"{label} {_verb(value, ratio)} {size} on a year earlier: {before_text} in "
+            f"{before.slot.label}, {now_text} in {latest.slot.label}."
+        )
+    else:
+        reading = (
+            f"{label} was about unchanged on a year earlier: {before_text} in "
+            f"{before.slot.label}, {now_text} in {latest.slot.label}."
+        )
     return Analytic(
         **fields,  # type: ignore[arg-type]
         value=value,
         unit=unit,
-        display=text,
+        display=_change_text(value, ratio),
         formula=formula,
-        inputs=_fact_inputs((*latest.used, *before.used)),
-        reading=(
-            f"{label} {_verb(value, ratio)} {text.lstrip('+-')} on {earlier.label} "
-            f"({shown_before} to {shown_now})."
-            if round(value, 1)
-            else f"{label} was about unchanged on {earlier.label} ({shown_before} to {shown_now})."
-        ),
+        inputs=[_point_input(key, latest), _point_input(key, before)],
+        reading=reading,
+    )
+
+
+def _acceleration(
+    measures: Measures, key: str, points: Sequence[Point], claim_ids: Sequence[str]
+) -> Analytic:
+    """Growth on a year earlier now, a quarter before and four quarters before."""
+    label = _label(key)
+    fields = _fields(
+        f"an:{key}:acceleration",
+        "acceleration",
+        f"{label}, growth on a year earlier now against the quarter before",
+        Q_ACCELERATION.format(what=_lower(label)),
+        claim_ids,
+        measure=key,
+        period=points[0].slot.label,
+    )
+    found = [_growth_at(measures, key, points[i]) if i < len(points) else None for i in (0, 1, 4)]
+    now, previous, year_ago = found
+    if now is None or previous is None:
+        return _missing(
+            fields,
+            "points",
+            "Growth on a year earlier is needed for the latest two quarters; the facts do "
+            "not give both.",
+        )
+    value = now[0] - previous[0]
+    g = [percent_text(item[0], signed=True) for item in (now, previous)]
+    inputs = [
+        _point_input(key, points[0]),
+        _point_input(key, now[1]),
+        _point_input(key, points[1]),
+        _point_input(key, previous[1]),
+    ]
+    if round(value, 1) > 0:
+        pace = f"speeding up, by {_points(value)}"
+    elif round(value, 1) < 0:
+        pace = f"slowing, by {_points(value)}"
+    else:
+        pace = "steady"
+    reading = (
+        f"{label} growth on a year earlier was {g[0]} in {points[0].slot.label} and {g[1]} in "
+        f"{points[1].slot.label}: {pace}"
+    )
+    if year_ago is not None:
+        reading += (
+            f". Four quarters before, in {points[4].slot.label}, it was "
+            f"{percent_text(year_ago[0], signed=True)}"
+        )
+        inputs += [_point_input(key, points[4]), _point_input(key, year_ago[1])]
+    return Analytic(
+        **fields,  # type: ignore[arg-type]
+        value=value,
+        unit="points",
+        display=display(value, "points"),
+        formula=f"{g[0]} {MINUS} {g[1]}",
+        inputs=list({i.id: i for i in inputs}.values()),
+        reading=reading + ".",
     )
 
 
@@ -359,17 +489,27 @@ def compound_rate(first: float, last: float, steps: int) -> float | None:
     return ((last / first) ** (1 / steps) - 1) * 100
 
 
-def _trend(key: str, points: Sequence[Point], window: int, claim_ids: Sequence[str]) -> Analytic:
-    ratio = METRICS[key][1] == "ratio"
+def _trend(key: str, points: Sequence[Point], claim_ids: Sequence[str]) -> Analytic:
+    """The change over the last eight quarters and where the newest sits between their low
+    and high: points for a ratio, the compound quarterly rate for an amount."""
+    ratio = _is_ratio(key)
     label = _label(key)
+    window = rules.LONG_WINDOW
     unit: AnalyticUnit = "points" if ratio else "percent"
-    kind = f"trend{window}"
-    what = (
+    name = (
         f"change over the last {window} quarters"
         if ratio
         else f"compound quarterly growth over the last {window} quarters"
     )
-    fields = _base(key, kind, f"{label}, {what}", claim_ids, points[0].slot.label)
+    fields = _fields(
+        f"an:{key}:trend8",
+        "trend8",
+        f"{label}, {name}",
+        Q_TREND.format(what=_lower(label)),
+        claim_ids,
+        measure=key,
+        period=points[0].slot.label,
+    )
     if len(points) <= window:
         return _missing(
             fields,
@@ -378,198 +518,166 @@ def _trend(key: str, points: Sequence[Point], window: int, claim_ids: Sequence[s
         )
     first, last = points[window], points[0]
     shown = (display(first.value, _unit_of(key)), display(last.value, _unit_of(key)))
-    inputs = [_point_input(key, first), _point_input(key, last)]
+    span = list(points[: window + 1])
+    low, high = min(span, key=lambda p: p.value), max(span, key=lambda p: p.value)
+    low_text, high_text = display(low.value, _unit_of(key)), display(high.value, _unit_of(key))
+    rising = all(a.value > b.value for a, b in zip(span, span[1:], strict=False))
+    if rising:
+        where = f"it rose in each of the {window} quarters"
+    elif last is high:
+        where = "the newest quarter is the highest of them"
+    elif last is low:
+        where = "the newest quarter is the lowest of them"
+    else:
+        where = f"the highest was {high_text} ({high.slot.label})"
+    if not rising and last is not low:
+        where += f"; the lowest was {low_text} ({low.slot.label})"
     if ratio:
         value: float | None = last.value - first.value
         formula = f"{shown[1]} {MINUS} {shown[0]}"
+        moved = (
+            f"is {_points(last.value - first.value)} "
+            f"{'above' if last.value >= first.value else 'below'} where it was"
+            if round(last.value - first.value, 1)
+            else "is where it was"
+        )
+        reading = (
+            f"{label} {moved} {window} quarters ago ({shown[0]} in {first.slot.label}, "
+            f"{shown[1]} in {last.slot.label}); {where}."
+        )
     else:
         value = compound_rate(first.value, last.value, window)
         formula = f"({shown[1]} ÷ {shown[0]})^(1/{window}) {MINUS} 1"
-    if value is None:
-        return _missing(fields, unit, "A compound rate needs both ends positive.")
-    text = display(value, unit, signed=True)
-    if ratio:
+        if value is None:
+            return _missing(fields, unit, "A compound rate needs both ends positive.")
         reading = (
-            f"Over the last {window} quarters {_lower(label)} moved {text} "
-            f"({shown[0]} in {first.slot.label} to {shown[1]} in {last.slot.label})."
-        )
-    else:
-        reading = (
-            f"Over the last {window} quarters {_lower(label)} grew at a compound {text} a quarter "
-            f"({shown[0]} in {first.slot.label} to {shown[1]} in {last.slot.label})."
+            f"{label} went from {shown[0]} in {first.slot.label} to {shown[1]} in "
+            f"{last.slot.label}, a compound {percent_text(value, signed=True)} a quarter; {where}."
         )
     return Analytic(
         **fields,  # type: ignore[arg-type]
         value=value,
         unit=unit,
-        display=text,
+        display=_change_text(value, ratio),
         formula=formula,
-        inputs=inputs,
+        inputs=list(
+            {i.id: i for i in (_point_input(key, p) for p in (first, last, low, high))}.values()
+        ),
         reading=reading,
     )
 
 
-def _acceleration(
-    measures: Measures, key: str, points: Sequence[Point], claim_ids: Sequence[str]
-) -> Analytic:
-    """Growth on a year earlier now, a quarter ago and a year ago: speeding up or slowing."""
-    label = _label(key)
-    fields = _base(
-        key,
-        "acceleration",
-        f"{label}, growth on a year earlier now against a quarter before",
-        claim_ids,
-        points[0].slot.label,
-    )
+# About a measure, for a fiscal-year claim
 
-    def growth_at(index: int) -> tuple[float, Point, Point] | None:
-        if index >= len(points):
-            return None
-        point = points[index]
-        earlier = measures.year_before(point.slot, key)
-        if earlier is None:
-            return None
-        before = measures.outcome(key, earlier)
-        if before.value is None:
-            return None
-        value = _change(point.value, before.value, False)
-        if value is None:
-            return None
-        return value, point, Point(earlier, before.value, before.used)
 
-    now, previous, year_ago = growth_at(0), growth_at(1), growth_at(4)
-    if now is None or previous is None:
-        return _missing(
-            fields,
-            "points",
-            "Growth on a year earlier is needed for the latest two quarters; the facts do "
-            "not give both.",
+def fiscal_year_analytics(
+    measures: Measures, key: str, slot: Slot, claim_ids: Sequence[str] = ()
+) -> list[Analytic]:
+    """``key`` over the fiscal years up to ``slot``, and the newest quarter since."""
+    return [
+        item
+        for item in (
+            _fiscal_path(measures, key, slot, claim_ids),
+            _since(measures, key, slot, claim_ids),
         )
-    value = now[0] - previous[0]
-    g = [percent_text(item[0], signed=True) for item in (now, previous)]
-    inputs = [_point_input(key, now[1]), _point_input(key, now[2])]
-    inputs += [_point_input(key, previous[1]), _point_input(key, previous[2])]
-    pace = "speeding up" if value > 0 else "slowing" if value < 0 else "steady"
-    reading = (
-        f"{label} growth on a year earlier is {g[0]} in {now[1].slot.label} against {g[1]} a "
-        f"quarter before: {pace} by {abs(round(value, 1)):.1f} percentage points"
-    )
-    formula = f"{g[0]} {MINUS} {g[1]}"
-    if year_ago is not None:
-        g4 = percent_text(year_ago[0], signed=True)
-        reading += f", and against {g4} four quarters before"
-        inputs += [_point_input(key, year_ago[1]), _point_input(key, year_ago[2])]
-    return Analytic(
-        **fields,  # type: ignore[arg-type]
-        value=value,
-        unit="points",
-        display=display(value, "points"),
-        formula=formula,
-        inputs=list({i.id: i for i in inputs}.values()),
-        reading=reading + ".",
-    )
+        if item is not None
+    ]
 
 
-def _range(key: str, points: Sequence[Point], claim_ids: Sequence[str]) -> Analytic:
-    """Where the latest value sits between the low and the high of the last 8 quarters."""
-    label = _label(key)
-    unit = _unit_of(key)
-    window = list(points[: rules.LONG_WINDOW])
-    fields = _base(
-        key,
-        "range8",
-        f"{label}, where the latest quarter sits in the last {len(window)} quarters' range",
-        claim_ids,
-        points[0].slot.label,
-    )
-    if len(window) < rules.SHORT_WINDOW:
-        return _missing(
-            fields,
-            "percent",
-            f"At least {rules.SHORT_WINDOW} quarters are needed; the facts hold {len(window)}.",
-        )
-    low = min(window, key=lambda p: p.value)
-    high = max(window, key=lambda p: p.value)
-    latest = window[0]
-    span = high.value - low.value
-    position = 100.0 if span == 0 else (latest.value - low.value) / span * 100
-    shown = (display(low.value, unit), display(high.value, unit), display(latest.value, unit))
-    where = (
-        "at the high"
-        if latest is high
-        else "at the low"
-        if latest is low
-        else f"{position:.0f}% of the way from the low to the high"
-    )
-    return Analytic(
-        **fields,  # type: ignore[arg-type]
-        value=position,
-        unit="percent",
-        display=f"{shown[0]} to {shown[1]}",
-        formula=f"({shown[2]} {MINUS} {shown[0]}) ÷ ({shown[1]} {MINUS} {shown[0]})",
-        inputs=[_point_input(key, low), _point_input(key, high), _point_input(key, latest)],
-        reading=(
-            f"Over the last {len(window)} quarters {_lower(label)} ranged from {shown[0]} "
-            f"({low.slot.label}) to {shown[1]} ({high.slot.label}); the latest, {shown[2]}, is "
-            f"{where}."
-        ),
-    )
-
-
-def median_move(values: Sequence[float], ratio: bool) -> float | None:
-    """The median absolute change between neighbours of ``values`` (newest first): points for a
-    ratio, percent of the earlier value for an amount (a non-positive earlier value is
-    skipped)."""
-    moves: list[float] = []
-    for newer, older in zip(values, values[1:], strict=False):
-        change = _change(newer, older, ratio)
-        if change is not None:
-            moves.append(abs(change))
-    return statistics.median(moves) if moves else None
-
-
-def _typical_move(key: str, points: Sequence[Point], claim_ids: Sequence[str]) -> Analytic:
-    ratio = METRICS[key][1] == "ratio"
+def _fiscal_path(
+    measures: Measures, key: str, slot: Slot, claim_ids: Sequence[str]
+) -> Analytic | None:
+    ratio = _is_ratio(key)
     label = _label(key)
     unit: AnalyticUnit = "points" if ratio else "percent"
-    window = list(points[: rules.LONG_WINDOW + 1])
-    fields = _base(
-        key,
-        "typical_move",
-        f"{label}, median quarter-on-quarter move over the last {len(window) - 1} quarters",
+    fields = _fields(
+        f"an:{key}:{slot.label.lower()}:path",
+        "fiscal_path",
+        f"{label} by fiscal year, to {slot.label}",
+        Q_PATH.format(what=_lower(label)),
         claim_ids,
-        points[0].slot.label,
+        measure=key,
+        period=slot.label,
     )
-    if len(window) - 1 < rules.SHORT_WINDOW:
+    points, why = _walk_back(measures, key, slot, FISCAL_YEARS_SHOWN)
+    if len(points) < 2:
+        note = why or f"The facts hold no fiscal year of {_lower(label)} before {slot.label}."
+        return _missing(fields, unit, note)
+    points.reverse()  # oldest first
+    changes = [
+        _change(newer.value, older.value, ratio)
+        for older, newer in zip(points, points[1:], strict=False)
+    ]
+    pieces = [f"{display(points[0].value, _unit_of(key))} in {points[0].slot.label}"]
+    for point, change in zip(points[1:], changes, strict=True):
+        tail = f" ({_change_text(change, ratio)})" if change is not None else ""
+        pieces.append(f"{display(point.value, _unit_of(key))} in {point.slot.label}{tail}")
+    latest = changes[-1]
+    if latest is None:
         return _missing(
-            fields,
-            unit,
-            f"At least {rules.SHORT_WINDOW} quarterly changes are needed; the facts hold "
-            f"{max(len(window) - 1, 0)}.",
+            fields, unit, f"Growth is not meaningful: {points[-2].slot.label} is not positive."
         )
-    value = median_move([p.value for p in window], ratio)
-    if value is None:
-        return _missing(fields, unit, "No quarterly change has a positive base.")
-    text = display(value, unit).lstrip("+")
+    reading = f"{label} by fiscal year: {', '.join(pieces)}."
+    known = [c for c in changes if c is not None]
+    if not ratio and len(known) >= 2 and len(known) == len(changes):
+        before = known[-2]
+        if round(latest - before, 1) < 0:
+            reading += (
+                f" Growth slowed in {points[-1].slot.label}, by {_points(latest - before)} on "
+                f"the year before."
+            )
+        elif round(latest - before, 1) > 0:
+            reading += (
+                f" Growth sped up in {points[-1].slot.label}, by {_points(latest - before)} on "
+                f"the year before."
+            )
+    now, base = points[-1], points[-2]
+    shown = (display(now.value, _unit_of(key)), display(base.value, _unit_of(key)))
     return Analytic(
         **fields,  # type: ignore[arg-type]
-        value=value,
+        value=latest,
         unit=unit,
-        display=text,
-        formula=f"median of |quarter-on-quarter change| over {len(window) - 1} changes",
-        inputs=[_point_input(key, p) for p in window],
-        reading=(
-            f"A typical quarter-on-quarter move in {_lower(label)} over the last "
-            f"{len(window) - 1} quarters is {text} (the median, ignoring direction; a flow's "
-            "quarters include any seasonality)."
+        display=_change_text(latest, ratio),
+        formula=(
+            f"{shown[0]} {MINUS} {shown[1]}"
+            if ratio
+            else f"({shown[0]} {MINUS} {shown[1]}) ÷ {shown[1]}"
         ),
+        inputs=[_point_input(key, point) for point in points],
+        reading=reading,
     )
 
 
-# Per computed test
+def _since(measures: Measures, key: str, slot: Slot, claim_ids: Sequence[str]) -> Analytic | None:
+    """The newest quarter after the fiscal year, on a year earlier; None when there is none."""
+    latest = _point_at(measures, key, latest_slot(measures, key))
+    if latest is None or latest.slot.end <= slot.end or latest.slot.kind != "quarter":
+        return None
+    ratio = _is_ratio(key)
+    label = _label(key)
+    fields = _fields(
+        f"an:{key}:{slot.label.lower()}:since",
+        "since",
+        f"{label} in the newest quarter since {slot.label}, on a year earlier",
+        Q_SINCE.format(what=_lower(label)),
+        claim_ids,
+        measure=key,
+    )
+    analytic = _year_change(measures, key, latest, fields)
+    if not analytic.available:
+        return analytic
+    whole = _point_at(measures, key, slot)
+    tail = ""
+    if whole is not None:
+        found = _growth_at(measures, key, whole)
+        if found is not None:
+            tail = f" {slot.label} as a whole: {_change_text(found[0], ratio)}."
+    return analytic.model_copy(
+        update={"reading": f"Since {slot.label} ended: {_lower(analytic.reading)}{tail}"}
+    )
 
-# The id, provider, claim and period of one test's analytics, given its kind and label.
-Fields = Callable[[str, str], dict[str, object]]
+
+# About a computed test
 
 
 def _single_tests(computed: ComputedTest) -> list[ComputedTest]:
@@ -606,51 +714,57 @@ def _side_display(value: float, test: ComputedTest) -> str:
     return f"{value:g}"
 
 
-def history_moves(history: Sequence[HistoryPoint]) -> list[float]:
-    """The left side's values across a history, oldest first, a repeated value dropped (a
-    10-Q leaves a fiscal-year test where the 10-K put it)."""
-    values: list[float] = []
+def readings(history: Sequence[HistoryPoint]) -> list[HistoryPoint]:
+    """The history's distinct readings, oldest first: the points that could be computed, a
+    run of filing dates that gave the same two sides counted once (a 10-Q leaves a
+    fiscal-year test where the 10-K put it)."""
+    out: list[HistoryPoint] = []
     for point in history:
-        if point.left is None:
+        if point.outcome == "cannot_compute":
             continue
-        if not values or point.left != values[-1]:
-            values.append(point.left)
-    return values
+        if out and (out[-1].left, out[-1].right) == (point.left, point.right):
+            continue
+        out.append(point)
+    return out
 
 
 def history_record(history: Sequence[HistoryPoint]) -> tuple[int, int, int, str]:
-    """(held, computed, longest run held, date of the last flip) across a history."""
-    computed = [p for p in history if p.outcome != "cannot_compute"]
-    held = sum(1 for p in computed if p.outcome == "holds")
+    """(held, readings, longest run held, filing date of the last change of outcome) over the
+    history's distinct readings."""
+    distinct = readings(history)
+    held = sum(1 for p in distinct if p.outcome == "holds")
     longest = run = 0
-    for point in computed:
+    last_flip = ""
+    for before, point in zip([None, *distinct], distinct, strict=False):
         run = run + 1 if point.outcome == "holds" else 0
         longest = max(longest, run)
-    flips = [p.filed for p in computed if p.flipped]
-    return held, len(computed), longest, flips[-1] if flips else ""
+        if before is not None and before.outcome != point.outcome:
+            last_flip = point.filed
+    return held, len(distinct), longest, last_flip
 
 
 def computed_test_analytics(
-    claim_id: str, test: ClaimTest, computed: ComputedTest, measures: Measures | None
+    claim_id: str, test: ClaimTest, computed: ComputedTest
 ) -> list[Analytic]:
-    """Headroom, its size in typical moves, the flip value, needed against actual for a
-    failing growth test, and the test's record across its history."""
-    out: list[Analytic] = []
+    """What a computed test's outcome leaves unsaid: its room against how far its left side
+    usually moves (and its tightest period, for a test held in several), what a growth test
+    needed or could have given up, whether a gap between two measures is closing, and how
+    often the test held before. The outcome and its margin are the test's own and are not
+    repeated as an analytic."""
     singles = _single_tests(computed)
-    rooms = [(part, _room(part)) for part in singles]
-    known = [(part, room) for part, room in rooms if room is not None]
+    known = [(part, room) for part in singles if (room := _room(part)) is not None]
+    measure = test.left.subject if not test.left.axis and test.left.subject in METRICS else ""
 
-    def fields(kind: str, label: str) -> dict[str, object]:
-        return {
-            "id": f"an:{claim_id}:{kind}",
-            "provider": PROVIDER,
-            "data_origin": ORIGIN,
-            "kind": kind,
-            "label": label,
-            "claim_ids": [claim_id],
-            "measure": test.left.subject if not test.left.axis else "",
-            "period": computed.bound,
-        }
+    def fields(kind: str, label: str, question: str) -> dict[str, object]:
+        return _fields(
+            f"an:{claim_id}:{kind}",
+            kind,
+            label,
+            question,
+            [claim_id],
+            measure=measure,
+            period=computed.bound,
+        )
 
     test_input = AnalyticInput(
         ref_kind="computed_test",
@@ -658,211 +772,260 @@ def computed_test_analytics(
         label=computed.canonical,
         display=computed.outcome_label,
     )
-    unit = _test_unit(singles[0])
     if not known:
-        why = computed.reason or "The test could not be computed."
-        out.append(_missing(fields("headroom", "Headroom of the test"), unit, why))
-    else:
-        part, room = min(known, key=lambda item: item[1])
-        assert part.left is not None and part.right is not None
-        text = display(room, unit, signed=True) if unit != "count" else f"{room:+g}"
-        tightest = " (the tightest of its periods)" if len(singles) > 1 else ""
-        out.append(
-            Analytic(
-                **fields("headroom", "Headroom of the test"),  # type: ignore[arg-type]
-                value=room,
-                unit=unit,
-                display=text,
-                formula=(
-                    f"{part.left.display} {MINUS} {part.right.display}"
-                    if part.comparison in (">", ">=")
-                    else f"{part.right.display} {MINUS} {part.left.display}"
-                ),
-                inputs=[
-                    test_input,
-                    AnalyticInput(
-                        ref_kind="computed_test",
-                        id=f"test:{claim_id}",
-                        label=part.left.label,
-                        value=part.left.value,
-                        display=part.left.display,
-                    ),
-                    AnalyticInput(
-                        ref_kind="computed_test",
-                        id=f"test:{claim_id}",
-                        label=part.right.label,
-                        value=part.right.value,
-                        display=part.right.display,
-                    ),
-                ],
-                reading=(
-                    f"The test {'holds' if room >= 0 else 'fails'}{tightest} with {text} of "
-                    f"room: {part.left.display} against {part.right.display}."
-                    if room
-                    else f"The test sits exactly on its line: {part.left.display}."
-                ),
-            )
+        return []
+    part, room = min(known, key=lambda item: item[1])
+    out: list[Analytic] = []
+    headroom = _headroom(
+        fields("headroom", "Room of the test, against a typical move", Q_HEADROOM),
+        room,
+        part,
+        computed,
+        test_input,
+    )
+    if headroom is not None:
+        out.append(headroom)
+    level = _growth_level(fields, test, part, test_input)
+    if level is not None:
+        out.append(level)
+    sides = _sides(
+        fields("sides", "Left side as a share of the right, reading by reading", Q_SIDES),
+        test,
+        computed,
+        test_input,
+    )
+    if sides is not None:
+        out.append(sides)
+    if sides is None or len(readings(computed.history)) > READINGS_SHOWN:
+        record = _record(
+            fields("history", "How often the test held before", Q_RECORD),
+            test,
+            computed,
+            test_input,
         )
-        out.append(_room_in_moves(fields, room, unit, part, computed, test_input))
-        flip = _flip(fields, test, part, computed, test_input)
-        if flip is not None:
-            out.append(flip)
-        needed = _needed(fields, test, part, computed, test_input)
-        if needed is not None:
-            out.append(needed)
-    out.append(_record(fields, computed, test_input))
+        if record is not None:
+            out.append(record)
     return out
 
 
-def _room_in_moves(
-    fields: Fields,
-    room: float,
-    unit: AnalyticUnit,
-    part: ComputedTest,
-    computed: ComputedTest,
-    test_input: AnalyticInput,
-) -> Analytic:
-    base = fields("headroom_moves", "Headroom in typical moves of the left side")
-    values = history_moves(computed.history)
-    if len(values) - 1 < rules.SHORT_WINDOW - 1:
-        return _missing(
-            base,
-            "multiple",
-            "Too few changes in the test's history to say what a typical move is "
-            f"({max(len(values) - 1, 0)}; at least {rules.SHORT_WINDOW - 1} are needed).",
-        )
+def typical_move(history: Sequence[HistoryPoint]) -> tuple[float, int] | None:
+    """The median move of a test's left side between its history's distinct readings, either
+    way, and how many moves it is the median of; None with fewer than
+    :data:`~app.core.analysis_policy.SHORT_WINDOW` moves, or when it never moved."""
+    values = [p.left for p in readings(history) if p.left is not None]
     moves = [abs(b - a) for a, b in zip(values, values[1:], strict=False)]
+    if len(moves) < rules.SHORT_WINDOW:
+        return None
     typical = statistics.median(moves)
-    if typical == 0:
-        return _missing(base, "multiple", "The left side did not move across the history.")
-    value = room / typical
-    move_text = (
-        display(typical, "points").lstrip("+") if unit == "points" else _side_display(typical, part)
-    )
-    return Analytic(
-        **base,  # type: ignore[arg-type]
-        value=value,
-        unit="multiple",
-        display=f"{value:.2f}x",
-        formula=f"{display(room, unit, signed=True)} ÷ {move_text}",
-        inputs=[test_input],
-        reading=(
-            f"The room is {abs(value):.2f}x the left side's typical move between filings "
-            f"({move_text}, the median over {len(moves)} changes in the test's history)"
-            + (": one typical move against it would flip it." if abs(value) < 1 else ".")
-        ),
-    )
+    return (typical, len(moves)) if typical > 0 else None
 
 
-def _flip(
-    fields: Fields,
-    test: ClaimTest,
+def _headroom(
+    base: dict[str, object],
+    room: float,
     part: ComputedTest,
     computed: ComputedTest,
     test_input: AnalyticInput,
 ) -> Analytic | None:
-    """The value of the measure at which the outcome flips."""
+    """The room of the test (of its tightest period when it is held in several), and how many
+    typical moves of its left side that is. None when it would only repeat the test's own
+    margin: a single test with too short a history to say what a typical move is."""
     assert part.left is not None and part.right is not None
-    if test.form == "streak" or part.right.value is None or part.left.value is None:
+    several = len(_single_tests(computed)) > 1
+    typical = typical_move(computed.history)
+    if typical is None and not several:
         return None
-    if (
-        test.form == "growth_threshold"
-        and len(part.operands) >= 2
-        and isinstance(test.right, Number)
-    ):
-        current, base = part.operands[0], part.operands[1]
-        if base.value is None or current.value is None:
-            return None
-        level = base.value * (1 + part.right.value / 100)
-        unit: AnalyticUnit = "USD" if current.unit == "USD" else "USD_per_share"
-        if current.unit not in ("USD", "USD_per_share"):
-            return None
-        shown = display(level, unit)
-        return Analytic(
-            **fields("flip", "Value at which the outcome flips"),
-            value=level,
-            unit=unit,
-            display=shown,
-            formula=f"{base.display} × (1 + {part.right.display})",
-            inputs=[
-                test_input,
-                AnalyticInput(
-                    ref_kind="computed_test",
-                    id=f"test:{test_input.id.removeprefix('test:')}",
-                    label=base.label,
-                    value=base.value,
-                    display=base.display,
-                ),
-            ],
-            reading=(
-                f"The outcome flips at {shown} for {current.label.split(',')[0].lower()} "
-                f"({base.display} grown by {part.right.display}); it was {current.display}."
-            ),
-        )
-    shown = _side_display(part.right.value, part)
-    left_words = _lower(part.left.label)
-    if isinstance(test.right, Number):
+    unit = _test_unit(part)
+    text = display(room, unit, signed=True) if unit != "count" else f"{room:+g}"
+    size = text.lstrip("+-")
+    where = f" in its tightest period, {part.bound}," if several and part.bound else ""
+    if room > 0:
         reading = (
-            f"The outcome flips when {left_words} crosses {shown}; it stands at "
-            f"{part.left.display}."
+            f"The test holds{where} with {size} to spare: {part.left.display} against "
+            f"{part.right.display}."
+        )
+    elif room < 0:
+        reading = (
+            f"The test fails{where} by {size}: {part.left.display} against {part.right.display}."
         )
     else:
-        reading = (
-            f"The outcome flips when {left_words} crosses {shown}, the value of "
-            f"{_lower(part.right.label)}; it stands at {part.left.display}."
+        reading = f"The test sits exactly on its line{where}: {part.left.display}."
+    formula = (
+        f"{part.left.display} {MINUS} {part.right.display}"
+        if part.comparison in (">", ">=")
+        else f"{part.right.display} {MINUS} {part.left.display}"
+    )
+    if typical is not None:
+        move, count = typical
+        multiple = abs(room) / move
+        move_text = _points(move) if unit == "points" else _side_display(move, part)
+        if multiple < 1:
+            way = "against it" if room >= 0 else "in its favour"
+            verdict = (
+                f"so the room is less than one typical move ({multiple:.2f}x): an ordinary "
+                f"change {way} would flip the outcome"
+            )
+        else:
+            verdict = f"so the room is {multiple:.2f}x a typical move"
+        reading += (
+            f" Between one reading of this test and the next its left side has typically "
+            f"moved {move_text} (the median of {count} moves, either way), {verdict}."
         )
+        formula += f"; ÷ {move_text}"
     return Analytic(
-        **fields("flip", "Value at which the outcome flips"),
-        value=part.right.value,
-        unit="percent" if part.left.unit == "percent" else _test_unit(part),
-        display=shown,
-        formula=f"{part.left.term} {part.comparison} {part.right.display}",
-        inputs=[test_input],
+        **base,  # type: ignore[arg-type]
+        value=room,
+        unit=unit,
+        display=text,
+        formula=formula,
+        inputs=[
+            test_input,
+            *(
+                AnalyticInput(
+                    ref_kind="computed_test",
+                    id=test_input.id,
+                    label=side.label,
+                    value=side.value,
+                    display=side.display,
+                )
+                for side in (part.left, part.right)
+            ),
+        ],
         reading=reading,
     )
 
 
-def _needed(
-    fields: Fields,
+def _growth_level(
+    fields: Callable[[str, str, str], dict[str, object]],
     test: ClaimTest,
     part: ComputedTest,
-    computed: ComputedTest,
     test_input: AnalyticInput,
 ) -> Analytic | None:
-    """For a failing growth test: the growth and the level needed against those reached."""
-    if computed.outcome != "fails" or test.form != "growth_threshold":
+    """For a growth test against a constant: the level it needed, and the gap to the level
+    reached (a shortfall when it fails, a cushion when it holds)."""
+    if test.form != "growth_threshold" or not isinstance(test.right, Number):
         return None
-    if part.outcome != "fails" or len(part.operands) < 2 or part.right is None:
+    if len(part.operands) < 2 or part.right is None or part.left is None:
         return None
     current, base = part.operands[0], part.operands[1]
     if current.value is None or base.value is None or part.right.value is None:
         return None
-    if current.unit != "USD" or part.left is None or part.left.value is None:
+    if current.unit != "USD" or part.comparison not in (">", ">="):
         return None
     level = base.value * (1 + part.right.value / 100)
-    gap = level - current.value
+    gap = current.value - level
+    what = current.label.split(",")[0].lower()
+    formula = f"{current.display} {MINUS} {base.display} × (1 + {part.right.display})"
+    inputs = [
+        test_input,
+        *(
+            AnalyticInput(
+                ref_kind="computed_test",
+                id=test_input.id,
+                label=side.label,
+                value=side.value,
+                display=side.display,
+            )
+            for side in (current, base)
+        ),
+    ]
+    if gap < 0:
+        base_fields = fields("needed", "Needed against reached", Q_NEEDED)
+        reading = (
+            f"To hold, {what} had to reach {usd_text(level)} ({base.display} grown by "
+            f"{part.right.display}); it reached {current.display}, {usd_text(-gap)} short."
+        )
+    else:
+        base_fields = fields("cushion", "Reached against needed", Q_CUSHION)
+        reading = (
+            f"To hold, {what} had to reach {usd_text(level)} ({base.display} grown by "
+            f"{part.right.display}); it reached {current.display}, {usd_text(gap)} more than "
+            "needed."
+        )
     return Analytic(
-        **fields("needed", "Needed against actual"),
+        **base_fields,  # type: ignore[arg-type]
         value=gap,
         unit="USD",
-        display=usd_text(gap),
-        formula=f"{base.display} × (1 + {part.right.display}) {MINUS} {current.display}",
-        inputs=[test_input],
-        reading=(
-            f"To hold it needed growth of {part.right.display} to {usd_text(level)}; it grew "
-            f"{part.left.display} to {current.display}, {usd_text(gap)} short."
-        ),
+        display=display(gap, "USD", signed=True),
+        formula=formula,
+        inputs=inputs,
+        reading=reading,
     )
 
 
-def _record(fields: object, computed: ComputedTest, test_input: AnalyticInput) -> Analytic:
-    base = fields("history", "How often the test held across its history")
+def _sides(
+    base: dict[str, object], test: ClaimTest, computed: ComputedTest, test_input: AnalyticInput
+) -> Analytic | None:
+    """For a test of one amount against another: the left side as a percent of the right at
+    each distinct reading of the history, and which way that has gone."""
+    if isinstance(test.right, Number) or test.also is not None or test.each:
+        return None
+    if computed.left is None or computed.left.unit != "USD":
+        return None
+    distinct = [
+        p
+        for p in readings(computed.history)
+        if p.left is not None and p.right is not None and p.right > 0
+    ][-READINGS_SHOWN:]
+    if len(distinct) < 2:
+        return None
+    shares = [p.left / p.right * 100 for p in distinct]  # type: ignore[operator]
+    left = computed.left.label.split(",")[0]
+    right = computed.right.label.split(",")[0].lower() if computed.right else "the right side"
+    pieces = [
+        f"{percent_text(share)} as of the {p.form} filed {p.filed}"
+        for share, p in zip(shares, distinct, strict=True)
+    ]
+    steps = [b - a for a, b in zip(shares, shares[1:], strict=False)]
+    if all(step < 0 for step in steps):
+        trend = "it has fallen at every reading"
+    elif all(step > 0 for step in steps):
+        trend = "it has risen at every reading"
+    else:
+        trend = "it has moved both ways"
+    newest = distinct[-1]
+    return Analytic(
+        **base,  # type: ignore[arg-type]
+        value=shares[-1],
+        unit="percent",
+        display=percent_text(shares[-1]),
+        formula=f"{newest.left_display} ÷ {newest.right_display}",
+        inputs=[
+            test_input,
+            *(
+                AnalyticInput(
+                    ref_kind="computed_test",
+                    id=test_input.id,
+                    label=f"{left} ÷ {right}, as of the {p.form} filed {p.filed}",
+                    value=share,
+                    display=percent_text(share),
+                    accession=p.accession,
+                    form=p.form,
+                    filed=p.filed,
+                )
+                for share, p in zip(shares, distinct, strict=True)
+            ),
+        ],
+        reading=f"{left} as a share of {right}: {', '.join(pieces)}; {trend}.",
+    )
+
+
+def _record(
+    base: dict[str, object], test: ClaimTest, computed: ComputedTest, test_input: AnalyticInput
+) -> Analytic | None:
+    """How often the test held over its history's distinct readings; None for a test of a
+    named period, whose history is that one period read again."""
+    if any(term.period.named for term in test.terms):
+        return None
     held, total, longest, last_flip = history_record(computed.history)
     if total == 0:
         return _missing(base, "percent", computed.history_note or "The test has no history.")
     share = held / total * 100
+    dates = sum(1 for p in computed.history if p.outcome != "cannot_compute")
     flip = (
-        f"; it last flipped as of the filing of {last_flip}" if last_flip else "; it never flipped"
+        f"its outcome last changed with the filing of {last_flip}"
+        if last_flip
+        else "its outcome never changed"
     )
     return Analytic(
         **base,  # type: ignore[arg-type]
@@ -872,22 +1035,14 @@ def _record(fields: object, computed: ComputedTest, test_input: AnalyticInput) -
         formula=f"{held} ÷ {total}",
         inputs=[test_input],
         reading=(
-            f"The test held as of {held} of the {total} filing dates it could be computed at "
-            f"({percent_text(share)}); its longest run holding was {longest}{flip}."
+            f"Run again as of each 10-K and 10-Q filing date of the last five years, the test "
+            f"gave {total} distinct readings (over {dates} filing dates) and held in {held} of "
+            f"them ({percent_text(share)}); its longest run holding was {longest}, and {flip}."
         ),
     )
 
 
-# Bridges and earnings quality
-
-
-def _ttm(measures: Measures, key: str, end: date) -> Outcome:
-    return measures.outcome(key, measures.slot("ttm", end))
-
-
-def _newest_quarter(measures: Measures) -> date | None:
-    series = measures.series("quarter", "revenue")
-    return max(series) if series else None
+# Bridges
 
 
 def _balance(measures: Measures, key: str, end: date) -> tuple[float, PeriodValue] | None:
@@ -903,177 +1058,106 @@ def _balance(measures: Measures, key: str, end: date) -> tuple[float, PeriodValu
     return outcome.value, dates[nearest]
 
 
-def _quarter_days(value: PeriodValue | None) -> int:
-    if value is None or value.start is None:
-        return rules.DEFAULT_QUARTER_DAYS
-    return (value.end - value.start).days + 1
+def _year_start(measures: Measures, slot: Slot) -> date | None:
+    """The end of the period a year before ``slot`` (an annual or a four-quarter one)."""
+    like = slot if slot.kind == "annual" else measures.slot("quarter", slot.end)
+    earlier = measures.year_before(like, "revenue")
+    return None if earlier is None else earlier.end
 
 
-def _eq_fields(
-    what: str, label: str, period: str, claim_ids: Sequence[str], measure: str = ""
-) -> dict[str, object]:
-    return {
-        "id": f"an:eq:{what}",
-        "provider": PROVIDER,
-        "data_origin": ORIGIN,
-        "kind": "earnings_quality",
-        "label": label,
-        "claim_ids": list(claim_ids),
-        "measure": measure,
-        "period": period,
-    }
+def _period_words(slot: Slot) -> str:
+    return (
+        slot.label
+        if slot.kind == "annual"
+        else f"the four quarters to {slot.label.removeprefix('TTM to ')}"
+    )
 
 
-def _bridge_fields(
-    what: str, label: str, period: str, claim_ids: Sequence[str], measure: str = ""
-) -> dict[str, object]:
-    return {
-        "id": f"an:bridge:{what}",
-        "provider": PROVIDER,
-        "data_origin": ORIGIN,
-        "kind": "bridge",
-        "label": label,
-        "claim_ids": list(claim_ids),
-        "measure": measure,
-        "period": period,
-    }
-
-
-# Which claims each bridge or signal bears on: those relevant to any of these measures.
-BEARS_ON: dict[str, tuple[str, ...]] = {
-    "fcf": ("free_cash_flow", "operating_cash_flow", "capex", "fcf_margin", "capex_ratio"),
-    "ni_to_ocf": ("operating_cash_flow", "net_income", "free_cash_flow", "net_margin", "sbc"),
-    "op_margin": ("operating_margin", "gross_margin", "rnd_ratio", "operating_income"),
-    "segments": ("revenue", "revenue_yoy"),
-    "cash_conversion": ("operating_cash_flow", "net_income", "free_cash_flow", "eps_diluted"),
-    "accrual_share": ("operating_cash_flow", "net_income", "eps_diluted", "net_margin"),
-    "dso": ("receivables", "revenue"),
-    "dio": ("inventory", "gross_margin", "cost_of_revenue"),
-    "sbc": ("sbc", "sbc_ratio", "operating_margin", "free_cash_flow", "net_income"),
-    "capex": ("capex", "capex_ratio", "free_cash_flow", "fcf_margin"),
-    "deferred_revenue": ("deferred_revenue", "revenue", "deferred_revenue_current"),
-    "dupont": ("net_income", "net_margin", "equity", "total_assets", "eps_diluted"),
-}
-
-
-def bears_on(topic: str, measures_by_claim: dict[str, list[str]]) -> list[str]:
-    """The claims whose measures include any of :data:`BEARS_ON` for ``topic``."""
-    keys = set(BEARS_ON[topic])
-    return [claim for claim, measures in measures_by_claim.items() if keys & set(measures)]
-
-
-def _ttm_values(
-    measures: Measures, end: date, keys: Sequence[str]
-) -> tuple[dict[str, float], list[PeriodValue], str]:
+def cash_walk(measures: Measures, slot: Slot, claim_ids: Sequence[str]) -> Analytic:
+    """Net income to operating cash flow to free cash flow over ``slot`` (a fiscal year or four
+    quarters), with the non-cash charges the facts tag and the change in receivables and
+    inventory over the same period."""
+    words = _period_words(slot)
+    tag = slot.label.lower() if slot.kind == "annual" else "ttm"
+    fields = _fields(
+        f"an:bridge:cash:{tag}",
+        "bridge",
+        f"Net income to free cash flow, {words}",
+        Q_CASH_WALK,
+        claim_ids,
+        measure="free_cash_flow",
+        period=words,
+    )
     values: dict[str, float] = {}
     used: list[PeriodValue] = []
-    for key in keys:
-        outcome = _ttm(measures, key, end)
+    for key in ("net_income", "operating_cash_flow", "capex"):
+        outcome = measures.outcome(key, slot)
         if outcome.value is None:
-            return values, used, outcome.note or f"{_label(key)} over four quarters is missing."
+            return _missing(fields, "USD", outcome.note or f"{_label(key)} is not in the facts.")
         values[key] = outcome.value
         used += outcome.used
-    return values, used, ""
-
-
-def bridge_analytics(
-    measures: Measures, end: date, period: str, claims: dict[str, list[str]]
-) -> list[Analytic]:
-    """Free cash flow, net income to operating cash flow, and the operating-margin split."""
-    out: list[Analytic] = []
-    ttm = f"four quarters to {period}"
-    # Free cash flow from operating cash flow and capex.
-    fields = _bridge_fields(
-        "fcf",
-        "Free cash flow: operating cash flow less capital expenditure, four quarters",
-        ttm,
-        bears_on("fcf", claims),
-        "free_cash_flow",
+    income, ocf, capex = values["net_income"], values["operating_cash_flow"], values["capex"]
+    fcf = ocf - capex
+    gap = fcf - income
+    step = ocf - income
+    reading = (
+        f"In {words}, net income of {usd_text(income)} became operating cash flow of "
+        f"{usd_text(ocf)} ({usd_text(abs(step))} {'more' if step >= 0 else 'less'}) and, after "
+        f"capital expenditure of {usd_text(capex)}, free cash flow of {usd_text(fcf)}: "
+        f"{usd_text(abs(gap))} {'above' if gap >= 0 else 'below'} net income."
     )
-    values, used, why = _ttm_values(measures, end, ("operating_cash_flow", "capex", "revenue"))
-    if why:
-        out.append(_missing(fields, "USD", why))
-    else:
-        ocf, capex, revenue = values["operating_cash_flow"], values["capex"], values["revenue"]
-        fcf = ocf - capex
-        margin = fcf / revenue * 100 if revenue > 0 else None
-        tail = f", {percent_text(margin)} of revenue" if margin is not None else ""
-        out.append(
-            Analytic(
-                **fields,  # type: ignore[arg-type]
-                value=fcf,
-                unit="USD",
-                display=usd_text(fcf),
-                formula=f"{usd_text(ocf)} {MINUS} {usd_text(capex)}",
-                inputs=_fact_inputs(used),
-                reading=(
-                    f"Over the four quarters to {period}, operating cash flow of {usd_text(ocf)} "
-                    f"less capital expenditure of {usd_text(capex)} left free cash flow of "
-                    f"{usd_text(fcf)}{tail}."
-                ),
-            )
+    charges: list[str] = []
+    for key, name in (
+        ("sbc", "stock-based compensation"),
+        ("d_and_a", "depreciation and amortization"),
+    ):
+        outcome = measures.outcome(key, slot)
+        if outcome.value is not None:
+            used += outcome.used
+            charges.append(f"{name} of {usd_text(outcome.value)}")
+    if charges:
+        reading += f" Non-cash charges added back on the way: {' and '.join(charges)}."
+    start = _year_start(measures, slot)
+    moved: list[str] = []
+    for key in ("receivables", "inventory"):
+        now = _balance(measures, key, slot.end)
+        then = _balance(measures, key, start) if start is not None else None
+        if now is None or then is None:
+            continue
+        change = now[0] - then[0]
+        used += [now[1], then[1]]
+        moved.append(
+            f"{_lower(_label(key))} {'rose' if change >= 0 else 'fell'} {usd_text(abs(change))} "
+            f"(to {usd_text(now[0])})"
         )
-    # Net income to operating cash flow.
-    fields = _bridge_fields(
-        "ni_to_ocf",
-        "Net income to operating cash flow, four quarters",
-        ttm,
-        bears_on("ni_to_ocf", claims),
-        "operating_cash_flow",
+    if moved:
+        reading += (
+            f" Over the same period {' and '.join(moved)}: a rise in either takes cash without "
+            "touching net income."
+        )
+    return Analytic(
+        **fields,  # type: ignore[arg-type]
+        value=gap,
+        unit="USD",
+        display=display(gap, "USD", signed=True),
+        formula=(f"({usd_text(ocf)} {MINUS} {usd_text(capex)}) {MINUS} {usd_text(income)}"),
+        inputs=_fact_inputs(used),
+        reading=reading,
     )
-    values, used, why = _ttm_values(measures, end, ("net_income", "operating_cash_flow"))
-    if why:
-        out.append(_missing(fields, "USD", why))
-    else:
-        income, ocf = values["net_income"], values["operating_cash_flow"]
-        gap = ocf - income
-        parts: list[str] = []
-        rest = gap
-        formula = f"{usd_text(ocf)} {MINUS} {usd_text(income)}"
-        for key, words in (
-            ("sbc", "stock-based compensation"),
-            ("d_and_a", "depreciation and amortization"),
-        ):
-            part = _ttm(measures, key, end)
-            if part.value is not None:
-                used += part.used
-                rest -= part.value
-                parts.append(f"{words} {usd_text(part.value)}")
-        split = (
-            f": non-cash charges added back ({', '.join(parts)}) and {usd_text(rest)} of working "
-            "capital and other items"
-            if parts
-            else " (the facts do not tag its non-cash parts)"
-        )
-        out.append(
-            Analytic(
-                **fields,  # type: ignore[arg-type]
-                value=gap,
-                unit="USD",
-                display=usd_text(gap),
-                formula=formula,
-                inputs=_fact_inputs(used),
-                reading=(
-                    f"Over the four quarters to {period}, operating cash flow of {usd_text(ocf)} "
-                    f"was {usd_text(abs(gap))} {'above' if gap >= 0 else 'below'} net income of "
-                    f"{usd_text(income)}{split}."
-                ),
-            )
-        )
-    out.append(_margin_split(measures, end, claims))
-    return out
 
 
-def _margin_split(measures: Measures, end: date, claims: dict[str, list[str]]) -> Analytic:
+def margin_split(measures: Measures, end: date, claim_ids: Sequence[str]) -> Analytic:
     """The change in operating margin on a year earlier, split into gross margin, R&D and the
     rest of operating expenses (each as a share of revenue)."""
     slot = measures.slot("quarter", end)
-    fields = _bridge_fields(
-        "op_margin",
+    fields = _fields(
+        "an:bridge:op_margin",
+        "bridge",
         "Operating margin change on a year earlier, split into its parts",
-        slot.label,
-        bears_on("op_margin", claims),
-        "operating_margin",
+        Q_MARGIN_SPLIT,
+        claim_ids,
+        measure="operating_margin",
+        period=slot.label,
     )
     earlier = measures.year_before(slot, "revenue")
     if earlier is None:
@@ -1088,8 +1172,7 @@ def _margin_split(measures: Measures, end: date, claims: dict[str, list[str]]) -
             return _missing(fields, "points", (now if now.value is None else then).note)
         shares[key] = (now.value, then.value)
         used += [*now.used, *then.used]
-    revenue_now, revenue_then = shares["revenue"]
-    if revenue_now <= 0 or revenue_then <= 0:
+    if min(shares["revenue"]) <= 0:
         return _missing(fields, "points", "Revenue is not positive in one of the two quarters.")
 
     def pct(key: str, index: int) -> float:
@@ -1103,14 +1186,19 @@ def _margin_split(measures: Measures, end: date, claims: dict[str, list[str]]) -
     d_om, d_gm = om[0] - om[1], gm[0] - gm[1]
     d_rnd = (rnd[0] - rnd[1]) if rnd else None
     d_other = other[0] - other[1]
+    # Each piece is its effect on the operating margin: a lower expense share adds to it.
     pieces = [f"gross margin {display(d_gm, 'points')}"]
     formula = f"{display(d_gm, 'points')} {MINUS} ({display(d_other, 'points')})"
     if d_rnd is not None:
-        pieces.append(f"R&D {display(-d_rnd, 'points')}")
+        pieces.append(f"a change in R&D as a share of revenue {display(-d_rnd, 'points')}")
         formula += f" {MINUS} ({display(d_rnd, 'points')})"
     pieces.append(
-        ("other operating expenses " if d_rnd is not None else "operating expenses ")
-        + display(-d_other, "points")
+        (
+            "a change in other operating expenses "
+            if d_rnd is not None
+            else "a change in operating expenses "
+        )
+        + f"as a share of revenue {display(-d_other, 'points')}"
     )
     return Analytic(
         **fields,  # type: ignore[arg-type]
@@ -1120,290 +1208,14 @@ def _margin_split(measures: Measures, end: date, claims: dict[str, list[str]]) -
         formula=formula,
         inputs=_fact_inputs(used),
         reading=(
-            f"Operating margin moved {display(d_om, 'points')} on {earlier.label} "
-            f"({percent_text(om[1])} to {percent_text(om[0])}); by part, as a share of revenue: "
-            + "; ".join(pieces)
-            + " (a rise in an expense share lowers the margin)."
+            f"Operating margin went from {percent_text(om[1])} in {earlier.label} to "
+            f"{percent_text(om[0])} in {slot.label}, {display(d_om, 'points')}. What each part "
+            f"added to it: {'; '.join(pieces)}."
         ),
     )
 
 
-def earnings_quality(
-    measures: Measures, end: date, period: str, claims: dict[str, list[str]]
-) -> list[Analytic]:
-    """Cash conversion, accruals, receivable and inventory days, SBC and capex against
-    revenue, deferred revenue and a DuPont split of return on equity."""
-    out: list[Analytic] = []
-    ttm = f"four quarters to {period}"
-    values, used, why = _ttm_values(measures, end, ("net_income", "operating_cash_flow"))
-    conversion = _eq_fields(
-        "cash_conversion",
-        "Cash conversion: operating cash flow ÷ net income, four quarters",
-        ttm,
-        bears_on("cash_conversion", claims),
-    )
-    accrual = _eq_fields(
-        "accrual_share",
-        "Accruals as a share of net income (net income less operating cash flow, ÷ net "
-        "income; not the balance-sheet accrual ratio)",
-        ttm,
-        bears_on("accrual_share", claims),
-    )
-    if why:
-        out += [_missing(conversion, "multiple", why), _missing(accrual, "percent", why)]
-    elif values["net_income"] <= 0:
-        why = "Not meaningful: net income over the four quarters is not positive."
-        out += [_missing(conversion, "multiple", why), _missing(accrual, "percent", why)]
-    else:
-        income, ocf = values["net_income"], values["operating_cash_flow"]
-        ratio = ocf / income
-        share = (income - ocf) / income * 100
-        inputs = _fact_inputs(used)
-        out.append(
-            Analytic(
-                **conversion,  # type: ignore[arg-type]
-                value=ratio,
-                unit="multiple",
-                display=f"{ratio:.2f}x",
-                formula=f"{usd_text(ocf)} ÷ {usd_text(income)}",
-                inputs=inputs,
-                reading=(
-                    f"Each dollar of net income came with {ratio:.2f} dollars of operating cash "
-                    f"flow over the four quarters to {period} ({usd_text(ocf)} against "
-                    f"{usd_text(income)})."
-                ),
-            )
-        )
-        out.append(
-            Analytic(
-                **accrual,  # type: ignore[arg-type]
-                value=share,
-                unit="percent",
-                display=percent_text(share),
-                formula=f"({usd_text(income)} {MINUS} {usd_text(ocf)}) ÷ {usd_text(income)}",
-                inputs=inputs,
-                reading=(
-                    f"{percent_text(abs(share))} of net income "
-                    + (
-                        "was not matched by operating cash in the period (accruals)"
-                        if share > 0
-                        else "is the amount by which operating cash flow exceeded it"
-                    )
-                    + f", over the four quarters to {period}."
-                ),
-            )
-        )
-    out.append(_days(measures, end, "dso", "receivables", "revenue", claims))
-    out.append(_days(measures, end, "dio", "inventory", "cost_of_revenue", claims))
-    for what, key in (("sbc", "sbc_ratio"), ("capex", "capex_ratio")):
-        fields = _eq_fields(
-            f"{what}_ratio", f"{_label(key)}, four quarters", ttm, bears_on(what, claims), key
-        )
-        outcome = _ttm(measures, key, end)
-        if outcome.value is None:
-            out.append(_missing(fields, "percent", outcome.note or "Not in the facts."))
-            continue
-        out.append(
-            Analytic(
-                **fields,  # type: ignore[arg-type]
-                value=outcome.value,
-                unit="percent",
-                display=percent_text(outcome.value),
-                formula=outcome.formula,
-                inputs=_fact_inputs(outcome.used),
-                reading=(
-                    f"{_label(key)} was {percent_text(outcome.value)} over the four quarters "
-                    f"to {period}."
-                ),
-            )
-        )
-    out.append(_deferred(measures, end, claims))
-    out += _dupont(measures, end, period, claims)
-    return out
-
-
-def _days(
-    measures: Measures,
-    end: date,
-    what: str,
-    balance_key: str,
-    flow_key: str,
-    claims: dict[str, list[str]],
-) -> Analytic:
-    """Days of a quarter's flow a balance stands for at the quarter's end, and a year before."""
-    slot = measures.slot("quarter", end)
-    name = "Receivable days (DSO)" if what == "dso" else "Inventory days (DIO)"
-    flow_words = "revenue" if flow_key == "revenue" else "cost of revenue"
-    fields = _eq_fields(
-        what,
-        f"{name}: {_lower(_label(balance_key))} ÷ the quarter's {flow_words} × its days",
-        slot.label,
-        bears_on(what, claims),
-        balance_key,
-    )
-
-    def at(quarter: Slot) -> tuple[float, float, float, int, list[PeriodValue]] | str:
-        balance = _balance(measures, balance_key, quarter.end)
-        if balance is None:
-            return f"No {_lower(_label(balance_key))} balance is reported at {quarter.label}'s end."
-        flow = measures.outcome(flow_key, quarter)
-        if flow.value is None:
-            return flow.note or f"No {flow_words} for {quarter.label}."
-        if flow.value <= 0:
-            return f"Not meaningful: {flow_words} is not positive in {quarter.label}."
-        revenue = measures.series("quarter", "revenue").get(quarter.end)
-        days = _quarter_days(revenue)
-        used = [balance[1], *flow.used]
-        return balance[0] / flow.value * days, balance[0], flow.value, days, used
-
-    now = at(slot)
-    if isinstance(now, str):
-        return _missing(fields, "days", now)
-    value, balance, flow, days, used = now
-    reading = (
-        f"At the end of {slot.label}, {_lower(_label(balance_key))} of {usd_text(balance)} stood "
-        f"for {value:.1f} days of the quarter's {flow_words} ({usd_text(flow)} over {days} days)"
-    )
-    earlier = measures.year_before(slot, "revenue")
-    then = at(earlier) if earlier is not None else "no year-earlier quarter"
-    if earlier is not None and not isinstance(then, str):
-        reading += f", against {then[0]:.1f} days a year before ({earlier.label})"
-        used = [*used, *then[4]]
-    return Analytic(
-        **fields,  # type: ignore[arg-type]
-        value=value,
-        unit="days",
-        display=f"{value:.1f} days",
-        formula=f"{usd_text(balance)} ÷ {usd_text(flow)} × {days}",
-        inputs=_fact_inputs(used),
-        reading=reading + ".",
-    )
-
-
-def _deferred(measures: Measures, end: date, claims: dict[str, list[str]]) -> Analytic:
-    key = "deferred_revenue"
-    slot = measures.slot("quarter", end)
-    fields = _eq_fields(
-        "deferred_revenue",
-        "Deferred revenue at the quarter's end, and its change on a year earlier",
-        slot.label,
-        bears_on("deferred_revenue", claims),
-        key,
-    )
-    now = _balance(measures, key, end)
-    if now is None:
-        return _missing(fields, "USD", "The facts tag no deferred revenue at this quarter's end.")
-    earlier = measures.year_before(slot, "revenue")
-    then = _balance(measures, key, earlier.end) if earlier is not None else None
-    reading = f"Deferred revenue was {usd_text(now[0])} at the end of {slot.label}"
-    used = [now[1]]
-    if then is not None and then[0] > 0:
-        growth = (now[0] - then[0]) / then[0] * 100
-        reading += f", {percent_text(growth, signed=True)} on a year earlier ({usd_text(then[0])})"
-        used.append(then[1])
-    return Analytic(
-        **fields,  # type: ignore[arg-type]
-        value=now[0],
-        unit="USD",
-        display=usd_text(now[0]),
-        formula=measures.outcome(key, measures.slot("instant", now[1].end)).formula,
-        inputs=_fact_inputs(used),
-        reading=reading + ".",
-    )
-
-
-def _dupont(
-    measures: Measures, end: date, period: str, claims: dict[str, list[str]]
-) -> list[Analytic]:
-    """Return on equity over four quarters = net margin × asset turnover × equity multiplier,
-    on balances averaged over the quarter's end and a year before it."""
-    ttm = f"four quarters to {period}"
-    names = {
-        "roe": "Return on average equity, four quarters",
-        "dupont_margin": "DuPont: net margin, four quarters",
-        "asset_turnover": "DuPont: asset turnover (revenue ÷ average total assets)",
-        "equity_multiplier": "DuPont: equity multiplier (average assets ÷ average equity)",
-    }
-    claim_ids = bears_on("dupont", claims)
-    fields = {what: _eq_fields(what, label, ttm, claim_ids) for what, label in names.items()}
-    units: dict[str, AnalyticUnit] = {
-        "roe": "percent",
-        "dupont_margin": "percent",
-        "asset_turnover": "multiple",
-        "equity_multiplier": "multiple",
-    }
-
-    def missing(why: str) -> list[Analytic]:
-        return [_missing(fields[what], units[what], why) for what in names]
-
-    values, used, why = _ttm_values(measures, end, ("net_income", "revenue"))
-    if why:
-        return missing(why)
-    earlier = measures.year_before(measures.slot("quarter", end), "revenue")
-    balances: dict[str, list[float]] = {}
-    for key in ("total_assets", "equity"):
-        found = [_balance(measures, key, end)]
-        found.append(_balance(measures, key, earlier.end) if earlier is not None else None)
-        if any(item is None for item in found):
-            return missing(f"{_label(key)} is not reported at both ends of the four quarters.")
-        balances[key] = [item[0] for item in found if item is not None]
-        used += [item[1] for item in found if item is not None]
-    assets = sum(balances["total_assets"]) / 2
-    equity = sum(balances["equity"]) / 2
-    income, revenue = values["net_income"], values["revenue"]
-    if equity <= 0 or revenue <= 0 or assets <= 0:
-        return missing("Not meaningful: average equity, assets or revenue is not positive.")
-    margin = income / revenue * 100
-    turnover = revenue / assets
-    multiplier = assets / equity
-    roe = margin * turnover * multiplier
-    inputs = _fact_inputs(used)
-    a, e = usd_text(assets), usd_text(equity)
-    return [
-        Analytic(
-            **fields["roe"],  # type: ignore[arg-type]
-            value=roe,
-            unit="percent",
-            display=percent_text(roe),
-            formula=f"{percent_text(margin)} × {turnover:.2f}x × {multiplier:.2f}x",
-            inputs=inputs,
-            reading=(
-                f"Return on average equity was {percent_text(roe)} over the four quarters to "
-                f"{period}: a net margin of {percent_text(margin)}, times asset turnover of "
-                f"{turnover:.2f}x, times an equity multiplier of {multiplier:.2f}x."
-            ),
-        ),
-        Analytic(
-            **fields["dupont_margin"],  # type: ignore[arg-type]
-            value=margin,
-            unit="percent",
-            display=percent_text(margin),
-            formula=f"{usd_text(income)} ÷ {usd_text(revenue)}",
-            inputs=inputs,
-            reading=f"Net income was {percent_text(margin)} of revenue over the four quarters.",
-        ),
-        Analytic(
-            **fields["asset_turnover"],  # type: ignore[arg-type]
-            value=turnover,
-            unit="multiple",
-            display=f"{turnover:.2f}x",
-            formula=f"{usd_text(revenue)} ÷ {a}",
-            inputs=inputs,
-            reading=f"Revenue was {turnover:.2f}x average total assets of {a}.",
-        ),
-        Analytic(
-            **fields["equity_multiplier"],  # type: ignore[arg-type]
-            value=multiplier,
-            unit="multiple",
-            display=f"{multiplier:.2f}x",
-            formula=f"{a} ÷ {e}",
-            inputs=inputs,
-            reading=f"Average total assets of {a} were {multiplier:.2f}x average equity of {e}.",
-        ),
-    ]
-
-
-# Segment contribution, from the tagged breakdowns the run already read
+# Parts: the tagged breakdowns of the filings the run read
 
 
 def _slug(text: str) -> str:
@@ -1417,129 +1229,684 @@ def _length(value: BreakdownValue) -> int | None:
     return (end - start).days + 1
 
 
+def _same_span(a: BreakdownValue, b: BreakdownValue) -> bool:
+    """True when two periods are of one kind: their lengths differ by days only (a leap year,
+    a 53-week fiscal year)."""
+    first, second = _length(a), _length(b)
+    return first is not None and second is not None and abs(first - second) <= SPAN_SLACK_DAYS
+
+
 def _year_apart(newer: str, older: str) -> bool:
     days = (date.fromisoformat(newer) - date.fromisoformat(older)).days
     return YEAR_DAYS[0] <= days <= YEAR_DAYS[1]
 
 
-def _columns(item: Breakdown) -> tuple[BreakdownValue, BreakdownValue] | None:
-    """The newest total and the total of the same length a year before it."""
-    totals = sorted(item.total, key=lambda v: v.period_end, reverse=True)
-    if not totals:
-        return None
-    newest = totals[0]
-    length = _length(newest)
-    for older in totals[1:]:
-        if _length(older) == length and _year_apart(newest.period_end, older.period_end):
-            return newest, older
-    return None
+def _span_words(value: BreakdownValue) -> str:
+    length = _length(value)
+    if length is not None and YEAR_DAYS[0] <= length <= YEAR_DAYS[1]:
+        return f"the fiscal year ended {value.period_end}"
+    if length is not None and QUARTER_DAYS[0] <= length <= QUARTER_DAYS[1]:
+        return f"the quarter ended {value.period_end}"
+    return f"{value.period_start} to {value.period_end}"
 
 
-def _cell(values: Sequence[BreakdownValue], like: BreakdownValue) -> BreakdownValue | None:
+def _years(values: Sequence[BreakdownValue]) -> list[BreakdownValue]:
+    """The newest period and the same-length periods a year and two years before it."""
+    ordered = sorted(
+        (v for v in values if v.period_start is not None),
+        key=lambda v: (v.period_end, -(_length(v) or 0)),
+        reverse=True,
+    )
+    if not ordered:
+        return []
+    # The newest period, the shortest when a filing tags a quarter and the year to date.
+    newest = min(
+        (v for v in ordered if v.period_end == ordered[0].period_end), key=lambda v: _length(v) or 0
+    )
+    chain = [newest]
+    for older in ordered:
+        if _same_span(older, chain[-1]) and _year_apart(chain[-1].period_end, older.period_end):
+            chain.append(older)
+    return chain[:3]
+
+
+def _like(values: Sequence[BreakdownValue], like: BreakdownValue) -> BreakdownValue | None:
+    """The value for the same period as ``like``: the same end and the same kind of span."""
     return next(
-        (
-            v
-            for v in values
-            if v.period_end == like.period_end and v.period_start == like.period_start
-        ),
+        (v for v in values if v.period_end == like.period_end and _same_span(v, like)),
         None,
     )
 
 
-def segment_contributions(
-    reports: Sequence[BreakdownReport], claims: dict[str, list[str]], parts: dict[str, list[str]]
-) -> list[Analytic]:
-    """Each tagged part's contribution to total growth, in percentage points, from the newest
-    breakdown of revenue by segment, product or geography the run read.
+def _growth(now: BreakdownValue, then: BreakdownValue) -> float | None:
+    return None if then.value <= 0 else (now.value - then.value) / then.value * 100
 
-    A part's contribution is (its value now − its value a year before) ÷ the total a year
-    before; the contributions add up to the total's growth when the parts add up to it.
-    ``parts`` maps a claim id to the part names it names, so a part is tied to the claims
-    that name it (and every part to the claims about revenue).
-    """
+
+def _part_inputs(
+    report: BreakdownReport, label: str, values: Sequence[BreakdownValue]
+) -> list[AnalyticInput]:
+    return [
+        AnalyticInput(
+            ref_kind="fact",
+            id=f"{report.filing.accession}:{_slug(label)}:{v.period_start}..{v.period_end}",
+            label=f"{label}, {v.period_start} to {v.period_end}",
+            value=v.value,
+            display=usd_text(v.value),
+            accession=report.filing.accession,
+            form=report.filing.form,
+            filed=report.filing.filed_date,
+        )
+        for v in values
+    ]
+
+
+def find_part(report: BreakdownReport, name: str) -> tuple[Breakdown, BreakdownRow] | None:
+    """The breakdown of revenue and its row whose label is ``name`` (case apart)."""
+    for item in report.breakdowns:
+        if item.id not in PART_BREAKDOWNS:
+            continue
+        for row in item.rows:
+            if row.label.casefold() == name.casefold():
+                return item, row
+    return None
+
+
+def part_analytics(
+    reports: Sequence[BreakdownReport], name: str, key: str, claim_ids: Sequence[str]
+) -> list[Analytic]:
+    """A named part's growth against the company's, and whether it is speeding up or slowing,
+    from each filing that tags it (the newest quarterly report, then the annual one)."""
     out: list[Analytic] = []
-    revenue_claims = bears_on("segments", claims)
-    for report in reports[:1]:
-        for item in report.breakdowns:
-            if item.id not in SEGMENT_BREAKDOWNS:
+    for report in reports:
+        found = find_part(report, name)
+        if found is None:
+            continue
+        item, row = found
+        chain = _years(row.values)
+        if len(chain) < 2:
+            continue
+        now, then = chain[0], chain[1]
+        growth = _growth(now, then)
+        if growth is None:
+            continue
+        span = _span_words(now)
+        tag = "fy" if span.startswith("the fiscal year") else "q"
+        source = f"the {report.filing.form} filed {report.filing.filed_date}"
+        reading = (
+            f"{row.label} revenue was {usd_text(now.value)} in {span}, "
+            f"{percent_text(growth, signed=True)} on a year earlier ({usd_text(then.value)})"
+        )
+        inputs = _part_inputs(report, row.label, [now, then])
+        total_now, total_then = _like(item.total, now), _like(item.total, then)
+        if total_now is not None and total_then is not None and total_then.value > 0:
+            total_growth = _growth(total_now, total_then)
+            assert total_growth is not None
+            share_now = now.value / total_now.value * 100
+            share_then = then.value / total_then.value * 100
+            reading += (
+                f"; the company's revenue grew {percent_text(total_growth, signed=True)}. It was "
+                f"{percent_text(share_now)} of revenue, against {percent_text(share_then)} a year "
+                "earlier"
+            )
+            inputs += _part_inputs(report, "Total revenue", [total_now, total_then])
+        out.append(
+            Analytic(
+                **_fields(  # type: ignore[arg-type]
+                    f"an:part:{_slug(row.label)}:{tag}:growth",
+                    "part_growth",
+                    f"{row.label} revenue, growth on a year earlier",
+                    Q_PART.format(what=row.label),
+                    claim_ids,
+                    measure=key,
+                    period=span,
+                    origin=BREAKDOWN_ORIGIN,
+                ),
+                value=growth,
+                unit="percent",
+                display=percent_text(growth, signed=True),
+                formula=(
+                    f"({usd_text(now.value)} {MINUS} {usd_text(then.value)}) ÷ "
+                    f"{usd_text(then.value)}"
+                ),
+                inputs=inputs,
+                reading=f"{reading} (as {source} tags it).",
+            )
+        )
+        pace = _part_pace(report, row, chain, key, claim_ids, tag, source)
+        if pace is not None:
+            out.append(pace)
+    return out
+
+
+def _part_pace(
+    report: BreakdownReport,
+    row: BreakdownRow,
+    chain: Sequence[BreakdownValue],
+    key: str,
+    claim_ids: Sequence[str],
+    tag: str,
+    source: str,
+) -> Analytic | None:
+    """The part's growth in the newest period against its growth just before: the year before
+    when the filing tags three years, else the earlier part of the year to date."""
+    now, then = chain[0], chain[1]
+    growth = _growth(now, then)
+    assert growth is not None
+    before: float | None = None
+    earlier_words = ""
+    used: list[BreakdownValue] = [now, then]
+    if len(chain) >= 3:
+        before = _growth(then, chain[2])
+        earlier_words = _span_words(then)
+        used.append(chain[2])
+    else:
+        ytd_now = next(
+            (
+                v
+                for v in row.values
+                if v.period_end == now.period_end
+                and v.period_start is not None
+                and (_length(v) or 0) > (_length(now) or 0) + SPAN_SLACK_DAYS
+            ),
+            None,
+        )
+        ytd_then = next(
+            (
+                v
+                for v in row.values
+                if v.period_end == then.period_end
+                and v.period_start is not None
+                and ytd_now is not None
+                and _same_span(v, ytd_now)
+            ),
+            None,
+        )
+        if ytd_now is not None and ytd_then is not None:
+            rest_now, rest_then = ytd_now.value - now.value, ytd_then.value - then.value
+            if rest_then > 0:
+                before = (rest_now - rest_then) / rest_then * 100
+                earlier_words = (
+                    f"the earlier part of the fiscal year to date ({ytd_now.period_start} to the "
+                    f"start of the quarter)"
+                )
+                used += [ytd_now, ytd_then]
+    if before is None:
+        return None
+    value = growth - before
+    if round(value, 1) > 0:
+        pace = f"speeding up, by {_points(value)}"
+    elif round(value, 1) < 0:
+        pace = f"slowing, by {_points(value)}"
+    else:
+        pace = "steady"
+    g = (percent_text(growth, signed=True), percent_text(before, signed=True))
+    return Analytic(
+        **_fields(  # type: ignore[arg-type]
+            f"an:part:{_slug(row.label)}:{tag}:pace",
+            "part_pace",
+            f"{row.label} revenue, growth now against growth before",
+            Q_PART_PACE.format(what=row.label),
+            claim_ids,
+            measure=key,
+            period=_span_words(now),
+            origin=BREAKDOWN_ORIGIN,
+        ),
+        value=value,
+        unit="points",
+        display=display(value, "points"),
+        formula=f"{g[0]} {MINUS} {g[1]}",
+        inputs=_part_inputs(report, row.label, used),
+        reading=(
+            f"{row.label} revenue grew {g[0]} on a year earlier in {_span_words(now)}, against "
+            f"{g[1]} in {earlier_words}: {pace} (as {source} tags it)."
+        ),
+    )
+
+
+def partition(
+    rows: Sequence[tuple[BreakdownRow, BreakdownValue, BreakdownValue]], total: float
+) -> list[tuple[BreakdownRow, BreakdownValue, BreakdownValue]]:
+    """The rows that split ``total`` without overlap, largest first: a filing tags a part and
+    its own sub-parts on one axis, so a row is kept only while the rows kept still fit inside
+    the total (within half a percent). The largest parts are kept, their sub-parts left out."""
+    kept: list[tuple[BreakdownRow, BreakdownValue, BreakdownValue]] = []
+    running = 0.0
+    for row in sorted(rows, key=lambda item: item[1].value, reverse=True):
+        if running + row[1].value <= total * 1.005:
+            kept.append(row)
+            running += row[1].value
+    return kept
+
+
+def growth_drivers(
+    reports: Sequence[BreakdownReport],
+    names: Sequence[str],
+    claim_ids: Sequence[str],
+    *,
+    annual: bool = False,
+) -> Analytic | None:
+    """Each tagged part's contribution to revenue growth, in percentage points, from the
+    newest filing whose breakdown tags two years of the wanted length (fiscal years for
+    ``annual``, else a shorter period): the breakdown holding a named part, else the first.
+    A part's contribution is its change over the total a year before; the parts shown are a
+    split of the total without overlap (:func:`partition`)."""
+    for report in reports:
+        items = [
+            item for item in report.breakdowns if item.id in PART_BREAKDOWNS and len(item.rows) > 1
+        ]
+        named = [
+            item
+            for item in items
+            if any(row.label.casefold() == n.casefold() for row in item.rows for n in names)
+        ]
+        for item in [*named, *items][:1]:
+            chain = _years(item.total)
+            if len(chain) < 2 or chain[1].value <= 0:
                 continue
-            columns = _columns(item)
-            if columns is None:
-                continue
-            newest, older = columns
-            if older.value <= 0:
+            newest, older = chain[0], chain[1]
+            if _span_words(newest).startswith("the fiscal year") != annual:
                 continue
             total_growth = (newest.value - older.value) / older.value * 100
-            axis = "geography" if "geography" in item.id else "segment"
-            for row in item.rows:
-                now, then = _cell(row.values, newest), _cell(row.values, older)
-                if now is None or then is None:
-                    continue
-                contribution = (now.value - then.value) / older.value * 100
-                named = [
-                    claim
-                    for claim, names in parts.items()
-                    if any(name.casefold() == row.label.casefold() for name in names)
-                ]
-                claim_ids = list(dict.fromkeys([*named, *revenue_claims]))
-                shown = display(contribution, "points")
-                out.append(
-                    Analytic(
-                        id=f"an:bridge:{axis}:{_slug(row.label)}",
-                        provider=PROVIDER,
-                        data_origin=BREAKDOWN_ORIGIN,
-                        kind="bridge",
-                        label=f"{row.label}: contribution to {item.title.lower()} growth",
-                        claim_ids=claim_ids,
-                        measure=f'revenue({axis} "{row.label}")',
-                        period=f"{newest.period_start} to {newest.period_end}",
-                        value=contribution,
-                        unit="points",
-                        display=shown,
-                        formula=(f"({now.display} {MINUS} {then.display}) ÷ {older.display}"),
-                        inputs=[
-                            AnalyticInput(
-                                ref_kind="fact",
-                                id=f"{report.filing.accession}:{row.member}:{v.period_end}",
-                                label=f"{row.label}, {v.period_start} to {v.period_end}",
-                                value=v.value,
-                                display=v.display,
-                                accession=report.filing.accession,
-                                form=report.filing.form,
-                                filed=report.filing.filed_date,
-                            )
-                            for v in (now, then)
-                        ],
-                        reading=(
-                            f"{row.label} added {shown} to {item.title.lower()} growth of "
-                            f"{percent_text(total_growth, signed=True)} ({then.display} to "
-                            f"{now.display}, as the {report.filing.form} of "
-                            f"{report.filing.filed_date} tags it)."
-                        ),
-                    )
-                )
-            if out:
-                return out
-    return out
+            rows = [
+                (row, now, then)
+                for row in item.rows
+                if (now := _like(row.values, newest)) is not None
+                and (then := _like(row.values, older)) is not None
+            ]
+            parts = [
+                ((now.value - then.value) / older.value * 100, row, now, then)
+                for row, now, then in partition(rows, newest.value)
+            ]
+            if not parts:
+                continue
+            parts.sort(key=lambda part: abs(part[0]), reverse=True)
+            shown = parts[:PARTS_SHOWN]
+            pieces = [f"{row.label} {display(c, 'points')}" for c, row, _, _ in shown]
+            rest = len(parts) - len(shown)
+            top = shown[0]
+            inputs = _part_inputs(report, "Total revenue", [newest, older])
+            for _, row, now, then in shown:
+                inputs += _part_inputs(report, row.label, [now, then])
+            return Analytic(
+                **_fields(  # type: ignore[arg-type]
+                    f"an:bridge:growth:{item.id}:{'fy' if annual else 'q'}",
+                    "bridge",
+                    f"{item.title}: each part's contribution to growth",
+                    Q_DRIVERS,
+                    claim_ids,
+                    measure="revenue",
+                    period=_span_words(newest),
+                    origin=BREAKDOWN_ORIGIN,
+                ),
+                value=top[0],
+                unit="points",
+                display=display(top[0], "points"),
+                formula=(
+                    f"({usd_text(top[2].value)} {MINUS} {usd_text(top[3].value)}) ÷ "
+                    f"{usd_text(older.value)}"
+                ),
+                inputs=inputs,
+                reading=(
+                    f"Revenue grew {percent_text(total_growth, signed=True)} in "
+                    f"{_span_words(newest)}. Of that growth, each part's contribution: "
+                    f"{'; '.join(pieces)}"
+                    + (f"; {rest} smaller part(s) not shown" if rest > 0 else "")
+                    + f" (as the {report.filing.form} filed {report.filing.filed_date} tags "
+                    "them; the parts shown split the total without overlap)."
+                ),
+            )
+    return None
+
+
+# Earnings quality
+
+
+def _eq(
+    what: str, label: str, question: str, period: str, claim_ids: Sequence[str], measure: str = ""
+) -> dict[str, object]:
+    return _fields(
+        f"an:eq:{what}",
+        "earnings_quality",
+        label,
+        question,
+        claim_ids,
+        measure=measure,
+        period=period,
+    )
+
+
+def _conversion_at(measures: Measures, slot: Slot) -> tuple[float, float, float, tuple] | str:
+    """(ratio, operating cash flow, net income, facts) over ``slot``, or why not."""
+    income, ocf = (
+        measures.outcome("net_income", slot),
+        measures.outcome("operating_cash_flow", slot),
+    )
+    for outcome, key in ((income, "net_income"), (ocf, "operating_cash_flow")):
+        if outcome.value is None:
+            return outcome.note or f"{_label(key)} is not in the facts."
+    assert income.value is not None and ocf.value is not None
+    if income.value <= 0:
+        return f"Not meaningful: net income is not positive in {slot.label}."
+    return ocf.value / income.value, ocf.value, income.value, (*ocf.used, *income.used)
+
+
+def cash_conversion(measures: Measures, end: date, claim_ids: Sequence[str]) -> Analytic:
+    """Operating cash flow over net income for the four quarters to ``end``, with the newest
+    quarter alone and the four quarters a year before."""
+    quarter = measures.slot("quarter", end)
+    ttm = measures.slot("ttm", end)
+    words = f"the four quarters to {quarter.label}"
+    fields = _eq(
+        "cash_conversion",
+        "Cash conversion: operating cash flow ÷ net income",
+        Q_CONVERSION,
+        words,
+        claim_ids,
+        "operating_cash_flow",
+    )
+    now = _conversion_at(measures, ttm)
+    if isinstance(now, str):
+        return _missing(fields, "multiple", now)
+    ratio, ocf, income, used = now
+    reading = (
+        f"Over {words}, each dollar of net income came with {ratio:.2f} dollars of operating "
+        f"cash flow ({usd_text(ocf)} against {usd_text(income)})"
+    )
+    alone = _conversion_at(measures, quarter)
+    if not isinstance(alone, str):
+        reading += (
+            f". In {quarter.label} alone it was {alone[0]:.2f}x ({usd_text(alone[1])} against "
+            f"{usd_text(alone[2])})"
+        )
+    earlier = measures.year_before(quarter, "revenue")
+    if earlier is not None:
+        before = _conversion_at(measures, measures.slot("ttm", earlier.end))
+        if not isinstance(before, str):
+            reading += f", and {before[0]:.2f}x over the four quarters a year before"
+            used = (*used, *before[3])
+    return Analytic(
+        **fields,  # type: ignore[arg-type]
+        value=ratio,
+        unit="multiple",
+        display=f"{ratio:.2f}x",
+        formula=f"{usd_text(ocf)} ÷ {usd_text(income)}",
+        inputs=_fact_inputs(used),
+        reading=reading + ".",
+    )
+
+
+def _quarter_days(value: PeriodValue | None) -> int:
+    if value is None or value.start is None:
+        return rules.DEFAULT_QUARTER_DAYS
+    return (value.end - value.start).days + 1
+
+
+def balance_days(measures: Measures, end: date, what: str, claim_ids: Sequence[str]) -> Analytic:
+    """Days of a quarter's flow a balance stands for at the quarter's end, and a year before:
+    receivables over revenue ("dso"), inventory over cost of revenue ("dio")."""
+    balance_key, flow_key = (
+        ("receivables", "revenue") if what == "dso" else ("inventory", "cost_of_revenue")
+    )
+    slot = measures.slot("quarter", end)
+    name = "Receivable days" if what == "dso" else "Inventory days"
+    flow_words = "revenue" if flow_key == "revenue" else "cost of revenue"
+    fields = _eq(
+        what,
+        f"{name}: {_lower(_label(balance_key))} ÷ the quarter's {flow_words} × its days",
+        Q_DSO if what == "dso" else Q_DIO,
+        slot.label,
+        claim_ids,
+        balance_key,
+    )
+
+    def at(quarter: Slot) -> tuple[float, float, float, int, list[PeriodValue]] | str:
+        balance = _balance(measures, balance_key, quarter.end)
+        if balance is None:
+            return f"No {_lower(_label(balance_key))} balance is reported at {quarter.label}'s end."
+        flow = measures.outcome(flow_key, quarter)
+        if flow.value is None:
+            return flow.note or f"No {flow_words} for {quarter.label}."
+        if flow.value <= 0:
+            return f"Not meaningful: {flow_words} is not positive in {quarter.label}."
+        days = _quarter_days(measures.series("quarter", "revenue").get(quarter.end))
+        return (
+            balance[0] / flow.value * days,
+            balance[0],
+            flow.value,
+            days,
+            [balance[1], *flow.used],
+        )
+
+    now = at(slot)
+    if isinstance(now, str):
+        return _missing(fields, "days", now)
+    value, balance, flow, days, used = now
+    reading = (
+        f"At the end of {slot.label}, {_lower(_label(balance_key))} of {usd_text(balance)} stood "
+        f"for {value:.1f} days of the quarter's {flow_words} ({usd_text(flow)} over {days} days)"
+    )
+    earlier = measures.year_before(slot, "revenue")
+    then = at(earlier) if earlier is not None else "no year-earlier quarter"
+    if earlier is not None and not isinstance(then, str):
+        grew = (balance / then[1] - 1) * 100 if then[1] > 0 else None
+        flow_grew = (flow / then[2] - 1) * 100 if then[2] > 0 else None
+        reading += f", against {then[0]:.1f} days a year before"
+        if grew is not None and flow_grew is not None:
+            reading += (
+                f": the balance grew {percent_text(grew, signed=True)} while {flow_words} grew "
+                f"{percent_text(flow_grew, signed=True)}"
+            )
+        used = [*used, *then[4]]
+    return Analytic(
+        **fields,  # type: ignore[arg-type]
+        value=value,
+        unit="days",
+        display=f"{value:.1f} days",
+        formula=f"{usd_text(balance)} ÷ {usd_text(flow)} × {days}",
+        inputs=_fact_inputs(used),
+        reading=reading + ".",
+    )
+
+
+def revenue_share(measures: Measures, end: date, key: str, claim_ids: Sequence[str]) -> Analytic:
+    """A cost as a share of revenue over four quarters, and over the four a year before:
+    ``sbc_ratio`` or ``capex_ratio``."""
+    quarter = measures.slot("quarter", end)
+    words = f"the four quarters to {quarter.label}"
+    fields = _eq(
+        key,
+        f"{_label(key)}, four quarters",
+        Q_SBC if key == "sbc_ratio" else Q_CAPEX,
+        words,
+        claim_ids,
+        key,
+    )
+    outcome = measures.outcome(key, measures.slot("ttm", end))
+    if outcome.value is None:
+        return _missing(fields, "percent", outcome.note or "Not in the facts.")
+    reading = f"{_label(key)} was {percent_text(outcome.value)} over {words}"
+    used = outcome.used
+    earlier = measures.year_before(quarter, "revenue")
+    if earlier is not None:
+        before = measures.outcome(key, measures.slot("ttm", earlier.end))
+        if before.value is not None:
+            reading += (
+                f", against {percent_text(before.value)} over the four quarters a year before"
+            )
+            used = (*used, *before.used)
+    return Analytic(
+        **fields,  # type: ignore[arg-type]
+        value=outcome.value,
+        unit="percent",
+        display=percent_text(outcome.value),
+        formula=outcome.formula,
+        inputs=_fact_inputs(used),
+        reading=reading + ".",
+    )
+
+
+def deferred_revenue(measures: Measures, end: date, claim_ids: Sequence[str]) -> Analytic:
+    """Deferred revenue at the quarter's end and its change on a year earlier, beside revenue's."""
+    key = "deferred_revenue"
+    slot = measures.slot("quarter", end)
+    fields = _eq(
+        "deferred_revenue",
+        "Deferred revenue, change on a year earlier",
+        Q_DEFERRED,
+        slot.label,
+        claim_ids,
+        key,
+    )
+    now = _balance(measures, key, end)
+    if now is None:
+        return _missing(
+            fields, "percent", "The facts tag no deferred revenue at this quarter's end."
+        )
+    earlier = measures.year_before(slot, "revenue")
+    then = _balance(measures, key, earlier.end) if earlier is not None else None
+    if then is None or then[0] <= 0:
+        return _missing(
+            fields, "percent", "The facts tag no deferred revenue a year before to compare with."
+        )
+    growth = (now[0] - then[0]) / then[0] * 100
+    reading = (
+        f"Deferred revenue was {usd_text(now[0])} at the end of {slot.label}, "
+        f"{percent_text(growth, signed=True)} on a year earlier ({usd_text(then[0])})"
+    )
+    latest = _point_at(measures, "revenue", slot)
+    found = _growth_at(measures, "revenue", latest) if latest is not None else None
+    if found is not None:
+        reading += f"; revenue grew {percent_text(found[0], signed=True)} over the same year"
+    return Analytic(
+        **fields,  # type: ignore[arg-type]
+        value=growth,
+        unit="percent",
+        display=percent_text(growth, signed=True),
+        formula=f"({usd_text(now[0])} {MINUS} {usd_text(then[0])}) ÷ {usd_text(then[0])}",
+        inputs=_fact_inputs([now[1], then[1]]),
+        reading=reading + ".",
+    )
+
+
+def return_on_equity(measures: Measures, end: date, claim_ids: Sequence[str]) -> Analytic:
+    """Return on average equity over four quarters = net margin × asset turnover × equity
+    multiplier (the DuPont split), on balances averaged over the quarter's end and a year
+    before it."""
+    quarter = measures.slot("quarter", end)
+    words = f"the four quarters to {quarter.label}"
+    fields = _eq("roe", "Return on average equity, split the DuPont way", Q_ROE, words, claim_ids)
+    ttm = measures.slot("ttm", end)
+    values: dict[str, float] = {}
+    used: list[PeriodValue] = []
+    for key in ("net_income", "revenue"):
+        outcome = measures.outcome(key, ttm)
+        if outcome.value is None:
+            return _missing(
+                fields, "percent", outcome.note or f"{_label(key)} is not in the facts."
+            )
+        values[key] = outcome.value
+        used += outcome.used
+    earlier = measures.year_before(quarter, "revenue")
+    averages: dict[str, float] = {}
+    for key in ("total_assets", "equity"):
+        ends = [_balance(measures, key, end)]
+        ends.append(_balance(measures, key, earlier.end) if earlier is not None else None)
+        if any(item is None for item in ends):
+            return _missing(
+                fields,
+                "percent",
+                f"{_label(key)} is not reported at both ends of the four quarters.",
+            )
+        averages[key] = sum(item[0] for item in ends if item is not None) / 2
+        used += [item[1] for item in ends if item is not None]
+    assets, equity = averages["total_assets"], averages["equity"]
+    income, revenue = values["net_income"], values["revenue"]
+    if equity <= 0 or revenue <= 0 or assets <= 0:
+        return _missing(
+            fields, "percent", "Not meaningful: average equity, assets or revenue is not positive."
+        )
+    margin = income / revenue * 100
+    turnover = revenue / assets
+    multiplier = assets / equity
+    roe = margin * turnover * multiplier
+    return Analytic(
+        **fields,  # type: ignore[arg-type]
+        value=roe,
+        unit="percent",
+        display=percent_text(roe),
+        formula=f"{percent_text(margin)} × {turnover:.2f}x × {multiplier:.2f}x",
+        inputs=_fact_inputs(used),
+        reading=(
+            f"Return on average equity was {percent_text(roe)} over {words}: a net margin of "
+            f"{percent_text(margin)}, times revenue of {turnover:.2f}x average total assets "
+            f"({usd_text(assets)}), times average assets of {multiplier:.2f}x average equity "
+            f"({usd_text(equity)})."
+        ),
+    )
+
+
+# Which claims each bridge or signal bears on: those tied to any of these measures.
+BEARS_ON: dict[str, tuple[str, ...]] = {
+    "cash_walk": ("free_cash_flow", "operating_cash_flow", "fcf_margin"),
+    "op_margin": ("operating_margin", "operating_income", "rnd_ratio", "opex_ratio", "sga_ratio"),
+    "drivers": ("revenue",),
+    "cash_conversion": (
+        "net_income",
+        "eps_diluted",
+        "net_margin",
+        "operating_cash_flow",
+        "free_cash_flow",
+        "fcf_margin",
+    ),
+    # The cash walk already gives a cash-flow claim the change in both balances.
+    "dso": ("revenue", "receivables"),
+    "dio": ("inventory", "gross_margin", "cost_of_revenue"),
+    "sbc_ratio": ("sbc", "sbc_ratio", "free_cash_flow", "fcf_margin", "operating_margin"),
+    "capex_ratio": ("capex", "capex_ratio", "free_cash_flow", "fcf_margin"),
+    "deferred_revenue": ("deferred_revenue", "deferred_revenue_current", "revenue"),
+    "roe": ("equity", "total_assets", "net_margin"),
+}
+
+
+def bears_on(topic: str, measures_by_claim: dict[str, list[str]]) -> list[str]:
+    """The claims whose measures include any of :data:`BEARS_ON` for ``topic``."""
+    keys = set(BEARS_ON[topic])
+    return [claim for claim, measures in measures_by_claim.items() if keys & set(measures)]
+
+
+def part_name(key: str) -> str:
+    """The part a key such as 'revenue(segment "Data Center")' names; "" for a catalogue key."""
+    match = re.fullmatch(r'\w+\(\w+ "(.+)"\)', key)
+    return match[1] if match else ""
+
+
+def _two_measures(test: ClaimTest) -> bool:
+    """True for a test of one measure against a different one (not against its own past)."""
+    return not isinstance(test.right, Number) and test.right.subject != test.left.subject
 
 
 # The provider
 
 
 class FactsProvider:
-    """Analytics from the run's dated XBRL facts and the breakdowns it already read."""
+    """Analytics from the run's dated XBRL facts and the tagged breakdowns of its filings."""
 
     name = PROVIDER
 
     def provide(self, request: AnalyticsRequest) -> list[Analytic]:
-        """Every analytic of the four families (see the module docstring)."""
+        """Every analytic a claim of ``request`` asks for (see the module docstring)."""
+        tied = {claim_id: keys for claim_id, keys in request.measures.items() if keys}
         if request.book is None:
+            if not tied and not request.tests:
+                return []
             why = f" ({request.error})" if request.error else ""
             return [
                 Analytic(
                     id="an:facts",
                     kind="none",
                     label="Analytics from the company's facts",
+                    question="What do the company's reported figures say about the claims?",
+                    claim_ids=list(dict.fromkeys([*tied, *request.tests])),
                     available=False,
                     unit="count",
                     note=NO_FACTS.format(why=why),
@@ -1547,23 +1914,98 @@ class FactsProvider:
             ]
         measures = Measures(request.book, request.calendar)
         out: list[Analytic] = []
-        by_measure: dict[str, list[str]] = {}
-        for claim_id, keys in request.measures.items():
-            for key in keys:
-                if key in METRICS:
-                    by_measure.setdefault(key, []).append(claim_id)
-        for key, claim_ids in by_measure.items():
-            out += measure_analytics(measures, key, claim_ids)
-        for claim_id, (test, computed) in request.tests.items():
-            out += computed_test_analytics(claim_id, test, computed, measures)
-        end = _newest_quarter(measures)
-        if end is not None:
-            label = measures.slot("quarter", end).label
-            out += bridge_analytics(measures, end, label, request.measures)
-            out += earnings_quality(measures, end, label, request.measures)
-        parts = {
-            claim_id: [key.split('"')[1] for key in keys if '"' in key]
-            for claim_id, keys in request.measures.items()
+        bases = {
+            claim_id: claim_basis(
+                request.tests[claim_id][0] if claim_id in request.tests else None, measures
+            )
+            for claim_id in request.measures
         }
-        out += segment_contributions(request.reports, request.measures, parts)
+        # A measure's analytics, once per basis, tied to every claim that asks on that basis.
+        asked: dict[tuple[str, str], tuple[Slot | None, list[str]]] = {}
+        for claim_id, keys in tied.items():
+            basis = bases[claim_id]
+            pair = request.tests.get(claim_id)
+            for key in keys:
+                if key not in METRICS:
+                    continue
+                if pair is not None and _two_measures(pair[0]):
+                    # One measure against another: the gap is the subject, and the test's
+                    # own analytics and the bridges follow it; neither side's path does.
+                    continue
+                annual = basis.kind == "annual" and METRICS[key][1] != "instant"
+                tag = basis.slot.label if annual and basis.slot else "quarter"
+                asked.setdefault((key, tag), (basis.slot if annual else None, []))[1].append(
+                    claim_id
+                )
+        for (key, _), (slot, claim_ids) in asked.items():
+            if slot is not None:
+                out += fiscal_year_analytics(measures, key, slot, claim_ids)
+            else:
+                out += quarter_analytics(measures, key, claim_ids)
+        for claim_id, (test, computed) in request.tests.items():
+            out += computed_test_analytics(claim_id, test, computed)
+        out += self._bridges(measures, tied, bases)
+        out += self._parts(request.reports, tied, bases)
+        return out
+
+    @staticmethod
+    def _bridges(
+        measures: Measures, tied: dict[str, list[str]], bases: dict[str, Basis]
+    ) -> list[Analytic]:
+        series = measures.series("quarter", "revenue")
+        end = max(series) if series else None
+        if end is None:
+            return []
+        out: list[Analytic] = []
+        walkers = bears_on("cash_walk", tied)
+        years: dict[str, tuple[Slot, list[str]]] = {}
+        for claim_id in walkers:
+            basis = bases[claim_id]
+            if basis.kind == "annual" and basis.slot is not None:
+                years.setdefault(basis.slot.label, (basis.slot, []))[1].append(claim_id)
+        for slot, claim_ids in years.values():
+            out.append(cash_walk(measures, slot, claim_ids))
+        if walkers:
+            out.append(cash_walk(measures, measures.slot("ttm", end), walkers))
+        if claims := bears_on("op_margin", tied):
+            out.append(margin_split(measures, end, claims))
+        if claims := bears_on("cash_conversion", tied):
+            out.append(cash_conversion(measures, end, claims))
+        for what in ("dso", "dio"):
+            if claims := bears_on(what, tied):
+                out.append(balance_days(measures, end, what, claims))
+        for key in ("sbc_ratio", "capex_ratio"):
+            if claims := bears_on(key, tied):
+                out.append(revenue_share(measures, end, key, claims))
+        if claims := bears_on("deferred_revenue", tied):
+            out.append(deferred_revenue(measures, end, claims))
+        if claims := bears_on("roe", tied):
+            out.append(return_on_equity(measures, end, claims))
+        return out
+
+    @staticmethod
+    def _parts(
+        reports: Sequence[BreakdownReport], tied: dict[str, list[str]], bases: dict[str, Basis]
+    ) -> list[Analytic]:
+        out: list[Analytic] = []
+        named: dict[str, tuple[str, list[str]]] = {}
+        for claim_id, keys in tied.items():
+            for key in keys:
+                name = part_name(key)
+                if name and key.startswith("revenue("):
+                    named.setdefault(name.casefold(), (key, []))[1].append(claim_id)
+        for key, claim_ids in named.values():
+            out += part_analytics(reports, part_name(key), key, claim_ids)
+        names = [part_name(key) for key, _ in named.values()]
+        asking = [*bears_on("drivers", tied), *(c for _, ids in named.values() for c in ids)]
+        for annual in (False, True):
+            claim_ids = [
+                claim_id
+                for claim_id in dict.fromkeys(asking)
+                if (bases[claim_id].kind == "annual") == annual
+            ]
+            if claim_ids:
+                found = growth_drivers(reports, names, claim_ids, annual=annual)
+                if found is not None:
+                    out.append(found)
         return out

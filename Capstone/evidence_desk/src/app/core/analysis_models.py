@@ -57,12 +57,16 @@ class Analytic(BaseModel):
     """One number an analyst would work out, computed by code, with its arithmetic.
 
     ``id`` is stable across runs of the same thesis ("an:revenue:yoy", "an:c2:headroom",
-    "an:eq:cash_conversion"). ``provider`` names the code that computed it (this version:
+    "an:bridge:cash:fy2026", "an:eq:cash_conversion"). ``provider`` names the code that
+    computed it (this version:
     "facts"); ``data_origin`` what it was computed from ("sec_xbrl_facts" for the run's
     dated XBRL facts, "sec_tagged_breakdowns" for a filing's own tags; later providers add
-    their own). ``kind`` says what sort of analytic it is ("level", "yoy", "trend4",
-    "headroom", "bridge", "earnings_quality", ...). ``claim_ids`` are the claims it bears
-    on (empty: it bears on the thesis as a whole). ``measure`` is the catalogue key it is
+    their own). ``kind`` says what sort of analytic it is ("yoy", "acceleration", "trend8",
+    "fiscal_path", "headroom", "bridge", "part_growth", "earnings_quality", ...).
+    ``question`` is the question about a claim it answers, in plain words: an analytic that
+    answers none is not computed. ``claim_ids`` are the claims it bears on (the facts
+    provider computes none for the thesis at large; another provider may leave it empty
+    for an analytic about the company as a whole). ``measure`` is the catalogue key it is
     about, ``period`` the period in words. ``value`` is unrounded in ``unit`` (a percent as
     12.5; ``points`` are percentage points; ``probability`` is a percent of paths), None
     when it could not be computed, and then ``available`` is False and ``note`` says why.
@@ -75,6 +79,7 @@ class Analytic(BaseModel):
     data_origin: str = "sec_xbrl_facts"
     kind: str
     label: str
+    question: str = ""
     claim_ids: list[str] = Field(default_factory=list)
     measure: str = ""
     period: str = ""
@@ -109,12 +114,13 @@ class RelevantMeasure(BaseModel):
 class HeadlineFigure(BaseModel):
     """One figure of the thesis's headline, drawn from what its claims bear on.
 
-    ``source`` says whether ``id`` is a run metric or an analytic; ``claim_ids`` the
-    claims it is relevant to, in claim order.
+    ``source`` says what ``id`` names: a side of a claim's computed test ("computed_test",
+    id ``test:<claim>``), a reported figure of the run ("metric") or an analytic;
+    ``claim_ids`` the claims it is relevant to, in claim order.
     """
 
     id: str
-    source: Literal["metric", "analytic"]
+    source: Literal["computed_test", "metric", "analytic"]
     label: str
     period_label: str = ""
     value: float | None = None
@@ -167,6 +173,7 @@ class Persistence(BaseModel):
     and ``seed`` make it repeatable, ``horizon`` is the number of quarters ahead.
     ``probability`` is the percent of paths in which the test holds in every one of those
     quarters (None with ``warning`` when the history is too short to mean anything).
+    ``caveat`` says what the number is not, and belongs wherever the number is shown.
     """
 
     id: str
@@ -185,6 +192,7 @@ class Persistence(BaseModel):
     display: str = ""
     warning: str = ""
     note: str = ""
+    caveat: str = ""
 
 
 class ArgSentence(BaseModel):
@@ -286,14 +294,25 @@ class ClaimAnalysis(BaseModel):
     argument: ClaimArgument | None = None
 
 
+StepState = Literal["not_asked", "failed", "answered"]
+
+
 class Analysis(BaseModel):
     """The run-level analysis (``Run.analysis``).
 
     ``headline`` is the ordered list of figures the page's headline is drawn from: those
     the claims bear on, in claim order (``headline_note`` says why it is empty when no
     claim names a measure). ``untied_metric_ids`` are the run's reported figures that no
-    claim is tied to (they stay in ``Run.metrics``). ``analytics`` every analytic of the
-    run, from every provider in ``providers``.
+    claim is tied to (they stay in ``Run.metrics``). ``breakdowns_note`` says which filings'
+    tagged breakdowns the parts were read from, or why none could be. ``analytics`` every
+    analytic of the run, from every provider in ``providers``.
+
+    ``providers_failed`` names any provider that raised (its analytics are missing, and
+    ``Run.errors`` says so). ``corollaries_step`` and ``argument_step`` say what became of
+    each model request: "not_asked" (no model, or no time), "failed" (asked, no usable
+    answer: an API failure, a malformed answer, or a cassette that holds none) or
+    "answered"; the counts in ``Run.coverage`` about a step mean something only when it was
+    answered.
 
     Who wrote what: ``analytics_by`` is always "code". ``corollaries_by`` is the proposing
     model ("" when none was asked; ``corollaries_note`` says why) and ``corollary_rule``
@@ -307,9 +326,13 @@ class Analysis(BaseModel):
     headline_note: str = ""
     untied_metric_ids: list[str] = Field(default_factory=list)
     untied_note: str = ""
+    breakdowns_note: str = ""
     analytics: list[Analytic] = Field(default_factory=list)
     providers: list[str] = Field(default_factory=list)
+    providers_failed: list[str] = Field(default_factory=list)
     analytics_by: Literal["code"] = "code"
+    corollaries_step: StepState = "not_asked"
+    argument_step: StepState = "not_asked"
     corollaries_by: str = ""
     corollaries_note: str = ""
     corollary_rule: str = ""

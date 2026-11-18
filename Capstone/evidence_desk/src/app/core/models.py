@@ -529,23 +529,33 @@ class Coverage(BaseModel):
     periods_checked: int = 0
     periods_unverified: int = 0
     periods_comparative: int = 0
-    # The analysis (app.services.analysis, version 0.14.2). Analytics computed by code (with a
-    # value; those that could not be computed are on the record and not counted here).
+    # The analysis (app.services.analysis, version 0.14.2). Analytics a claim asked for:
+    # computed (with a value) and unavailable (asked for, on the record with why, no value);
+    # providers that raised (their analytics are in neither count; Run.errors names them).
     analytics_computed: int = 0
-    # Corollaries: proposed by the model (0 when no model was asked or the request failed:
-    # then nothing was proposed, and every count after it is 0 of 0); computed by code to an
-    # outcome (computed == as_expected + against; one that could not be computed from the
-    # facts counts in neither); as the claim implies, and against it.
+    analytics_unavailable: int = 0
+    analytics_providers_failed: int = 0
+    # Corollaries. These counts mean something only when Run.analysis.corollaries_step is
+    # "answered"; otherwise nothing was proposed and all are 0. Every proposed corollary is
+    # in exactly one of: as_expected, against, cannot_tell (a reader read a test the facts
+    # could not compute), no_test (neither reader read a test) and not_agreed (the two
+    # readers read different tests: computed and shown, counted toward nothing).
+    # computed == as_expected + against.
     corollaries_proposed: int = 0
     corollaries_computed: int = 0
     corollaries_as_expected: int = 0
     corollaries_against: int = 0
-    # The argued analysis: sentences the model wrote (0 when no model's argument was recorded:
-    # the step was not asked or failed, which Run.analysis.argument_note says), verified and
-    # unverified (written == verified + unverified), and why each unverified one is: it cites
-    # nothing that is evidence, cites an id not in the run, cites an id of a kind not allowed
-    # (a withheld finding), or states a number nothing it cites carries. A sentence with
-    # several problems counts once in unverified and once under each reason.
+    corollaries_cannot_tell: int = 0
+    corollaries_no_test: int = 0
+    corollaries_not_agreed: int = 0
+    # Claims flagged because most of their counted corollaries came out against them.
+    corollary_flags: int = 0
+    # The argued analysis. These counts mean something only when
+    # Run.analysis.argument_step is "answered". Sentences the model wrote, verified and
+    # unverified (written == verified + unverified), and why each unverified one is: it
+    # cites nothing that is evidence, cites an id not in the run, cites a finding the run
+    # withheld, or states a number nothing it cites carries. A sentence with several
+    # problems counts once in unverified and once under each reason.
     analysis_sentences_written: int = 0
     analysis_sentences_verified: int = 0
     analysis_sentences_unverified: int = 0
@@ -555,7 +565,9 @@ class Coverage(BaseModel):
     analysis_unverified_unknown_id: int = 0
     analysis_unverified_disallowed_id: int = 0
     analysis_unverified_number: int = 0
-    # Claims whose model lean contradicts their verdict (the verdict is never changed).
+    # Claims the model wrote an assessment for (of claims_total), and claims whose model
+    # lean contradicts their verdict (the verdict is never changed).
+    analysis_claims_argued: int = 0
     analysis_lean_flags: int = 0
 
 

@@ -10,9 +10,11 @@ Pure. A measure bears on a claim for one or more stated reasons, in this order:
   or whose name, as a tagged breakdown the run already read labels it, the claim's words
   contain.
 
-The headline is the ordered list of reported figures (or, for a measure with none, its
-latest-level analytic) those measures give, claim by claim; a reported figure no claim is
-tied to stays on the record and is listed as not tied to a claim.
+The headline is drawn from the claims, in claim order: the sides of a claim's computed test
+(the figures the claim is about, for the period it is about); for a claim with no test, the
+newest reported figure of each measure it bears on with its change on a year earlier, and
+the growth of a part it names. A reported figure no claim is tied to stays on the record
+and is listed as not tied to a claim.
 """
 
 from __future__ import annotations
@@ -22,8 +24,10 @@ from collections.abc import Sequence
 
 from app.core import analysis_policy as rules
 from app.core.analysis_models import Analytic, HeadlineFigure, RelevantMeasure
+from app.core.analytics import PART_BREAKDOWNS
 from app.core.breakdown_models import BreakdownReport
-from app.core.claimtest import METRICS, ClaimTest, Term, measures_named
+from app.core.claim_test_models import Operand
+from app.core.claimtest import METRICS, ClaimTest, Number, Term, measures_named
 from app.core.metric_models import Metric
 from app.core.models import Claim, Finding
 
@@ -32,11 +36,7 @@ CITED = "cited by a finding"
 NAMED = "named in the claim"
 PART_NAMED = "part named in the claim"
 CHANGE_SUFFIXES = ("_yoy", "_qoq")
-PART_BREAKDOWNS = {
-    "revenue_by_segment": "segment",
-    "revenue_by_product": "segment",
-    "revenue_by_geography": "geography",
-}
+SHORT_LABEL = 3
 
 
 def base_key(metric_key: str) -> str:
@@ -90,11 +90,11 @@ def _label(key: str, metrics: dict[str, Metric]) -> str:
 
 
 def newest_metric_ids(key: str, metrics: Sequence[Metric]) -> list[str]:
-    """The reported figures of ``key`` (and of its growth) in the newest quarter and fiscal
-    year the run reported, quarter first."""
-    keys = {key, *(f"{key}{suffix}" for suffix in CHANGE_SUFFIXES)}
+    """The newest reported figure of ``key`` and its change on a year earlier: the newest
+    quarter (a balance: the newest date), or the newest fiscal year when no quarter is
+    reported."""
+    keys = {key, f"{key}_yoy"}
     of_key = [m for m in metrics if m.key in keys and m.value is not None]
-    out: list[str] = []
     for period in ("quarter", "instant", "annual"):
         here = [m for m in of_key if m.period == period]
         if not here:
@@ -104,8 +104,8 @@ def newest_metric_ids(key: str, metrics: Sequence[Metric]) -> list[str]:
             (m for m in here if m.period_end == newest),
             key=lambda m: (m.key != key, m.key),
         )
-        out += [m.id for m in ordered]
-    return out
+        return [m.id for m in ordered]
+    return []
 
 
 def claim_relevance(
@@ -139,7 +139,10 @@ def claim_relevance(
         add(key, NAMED)
     lowered = claim.text.casefold()
     for axis, label in parts:
-        if re.search(rf"(?<!\w){re.escape(label.casefold())}(?!\w)", lowered):
+        # A short label ("US") is matched as written, so that the word "us" is not a country.
+        short = len(label) <= SHORT_LABEL
+        haystack, needle = (claim.text, label) if short else (lowered, label.casefold())
+        if re.search(rf"(?<!\w){re.escape(needle)}(?!\w)", haystack):
             add(part_key("revenue", axis, label), PART_NAMED)
             add("revenue", PART_NAMED)
     return [
@@ -153,58 +156,76 @@ def claim_relevance(
     ]
 
 
+def _side_figure(claim_id: str, side: Operand) -> HeadlineFigure:
+    return HeadlineFigure(
+        id=f"test:{claim_id}",
+        source="computed_test",
+        label=side.label,
+        value=side.value,
+        unit=side.unit,
+        display=side.display,
+        claim_ids=[claim_id],
+    )
+
+
 def headline(
     claims: Sequence[Claim],
     relevant: dict[str, list[RelevantMeasure]],
     metrics: Sequence[Metric],
     analytics: Sequence[Analytic],
+    tests: dict[str, ClaimTest] | None = None,
 ) -> list[HeadlineFigure]:
-    """The thesis's headline figures, claim by claim and measure by measure, without repeats.
-
-    A measure with reported figures gives them; one without gives its latest-level analytic
-    when it has one. At most :data:`~app.core.analysis_policy.MAX_HEADLINE` figures.
-    """
+    """The thesis's headline figures, claim by claim, without repeats (see the module
+    docstring). At most :data:`~app.core.analysis_policy.MAX_HEADLINE` figures."""
     by_id = {metric.id: metric for metric in metrics}
-    levels = {item.measure: item for item in analytics if item.kind == "level" and item.available}
-    out: dict[str, HeadlineFigure] = {}
+    growth = {item.measure: item for item in reversed(analytics) if item.kind == "part_growth"}
+    out: dict[tuple[str, str], HeadlineFigure] = {}
+
+    def add(figure: HeadlineFigure, claim_id: str) -> None:
+        kept = out.setdefault((figure.id, figure.label), figure)
+        if claim_id not in kept.claim_ids:
+            kept.claim_ids.append(claim_id)
+
     for claim in claims:
+        computed = claim.computed
+        test = (tests or {}).get(claim.id)
+        if computed is not None and computed.outcome != "cannot_compute":
+            newest = computed.parts[0] if computed.parts else computed
+            if newest.left is not None:
+                add(_side_figure(claim.id, newest.left), claim.id)
+            measured = test is not None and not isinstance(test.right, Number)
+            if measured and newest.right is not None:
+                add(_side_figure(claim.id, newest.right), claim.id)
+            continue
         for measure in relevant.get(claim.id, []):
-            ids = measure.metric_ids
-            if ids:
-                for metric_id in ids:
-                    metric = by_id[metric_id]
-                    figure = out.setdefault(
-                        metric_id,
-                        HeadlineFigure(
-                            id=metric_id,
-                            source="metric",
-                            label=metric.label,
-                            period_label=metric.period_label,
-                            value=metric.value,
-                            unit=metric.unit,
-                            display=metric.display,
-                        ),
-                    )
-                    if claim.id not in figure.claim_ids:
-                        figure.claim_ids.append(claim.id)
-                continue
-            level = levels.get(measure.key)
-            if level is None:
-                continue
-            figure = out.setdefault(
-                level.id,
-                HeadlineFigure(
-                    id=level.id,
-                    source="analytic",
-                    label=level.label,
-                    period_label=level.period,
-                    value=level.value,
-                    unit=level.unit,
-                    display=level.display,
-                ),
-            )
-            if claim.id not in figure.claim_ids:
-                figure.claim_ids.append(claim.id)
+            for metric_id in measure.metric_ids:
+                metric = by_id[metric_id]
+                add(
+                    HeadlineFigure(
+                        id=metric_id,
+                        source="metric",
+                        label=metric.label,
+                        period_label=metric.period_label,
+                        value=metric.value,
+                        unit=metric.unit,
+                        display=metric.display,
+                    ),
+                    claim.id,
+                )
+            part = growth.get(measure.key)
+            if part is not None:
+                add(
+                    HeadlineFigure(
+                        id=part.id,
+                        source="analytic",
+                        label=part.label,
+                        period_label=part.period,
+                        value=part.value,
+                        unit=part.unit,
+                        display=part.display,
+                    ),
+                    claim.id,
+                )
     return list(out.values())[: rules.MAX_HEADLINE]
 
 

@@ -9,7 +9,13 @@ Pure. A sentence is verified when
   about);
 - every number it writes is a value of something it cites, by the numeric check the
   findings pass (:func:`app.core.numcheck.check_numbers`, with its rules for signs, units
-  and the precision written).
+  and the precision written). One exception, stated on the record: a condition that would
+  change a verdict may write its own threshold (``Condition.threshold``), which is a line
+  the model proposes to watch, not a statement about the record.
+
+What the audit does not decide: whether a sentence follows from what it cites. A sentence
+with no number that cites a real id passes; it is the reader, shown each citation, who
+judges the inference.
 
 A sentence that fails is kept and marked unverified, with one problem per reason. The
 audit never changes a verdict: a model's lean that contradicts a claim's verdict is a flag.
@@ -26,6 +32,7 @@ from app.core.analysis_models import (
     Analytic,
     ArgSentence,
     ClaimArgument,
+    Condition,
     Corollary,
     Persistence,
     ThesisArgument,
@@ -185,7 +192,10 @@ def citables(
         metric = as_metric(record.id, "odds", record.probability, "probability", record.display)
         out[record.id] = Citable("odds", True, tuple(t for t in texts if t), _present([metric]))
     for event in run.timeline:
-        out[event.id] = Citable("event", True, (event.filed_label,))
+        texts = [event.filed_label, event.filed_date, event.event_date]
+        for item in event.items:
+            texts += [f"Item {item.number} {item.title}", *item.opening]
+        out[event.id] = Citable("event", True, tuple(text for text in texts if text))
     return out
 
 
@@ -210,6 +220,11 @@ def audit_sentence(
         reasons.append("no_evidence")
     texts = [text for item in valid for text in item.excerpts]
     figures = [metric for item in valid for metric in item.metrics]
+    if isinstance(sentence, Condition) and sentence.measure and sentence.unit != "none":
+        own = as_metric(
+            "threshold", "the condition's own threshold", sentence.threshold, sentence.unit, ""
+        )
+        figures += [own] if own is not None else []
     check = check_numbers(sentence.text, texts, figures)
     for raw in check.unmatched:
         problems.append(NUMBER.format(raw=raw))

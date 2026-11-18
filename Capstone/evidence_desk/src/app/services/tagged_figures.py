@@ -114,10 +114,21 @@ def _kept(
         return None
 
 
-def _html(filings: FilingSource, ref: FilingRef, at_hand: Mapping[str, str]) -> str | Exception:
-    """The filing's HTML: what the run already fetched, else fetched now; or the failure."""
+NOT_FETCHED = (
+    "its tags were not kept when the filing was cached, and the filing is not fetched again "
+    "for them (a run after the cache is refreshed reads them)"
+)
+
+
+def _html(
+    filings: FilingSource, ref: FilingRef, at_hand: Mapping[str, str], fetch: bool = True
+) -> str | Exception | None:
+    """The filing's HTML: what the run already fetched, else fetched now (None when
+    ``fetch`` is off); or the failure."""
     if ref.accession in at_hand:
         return at_hand[ref.accession]
+    if not fetch:
+        return None
     try:
         return filings.fetch(ref).html
     except Exception as exc:  # noqa: BLE001 - any failure of the port leaves the run to the rest
@@ -131,12 +142,15 @@ def _read(
     cache: FilingCache | None,
     at_hand: Mapping[str, str],
     specs: Sequence[BreakdownSpec] = SPECS,
+    fetch: bool = True,
 ) -> BreakdownReport | str:
     """The breakdowns tagged in ``ref``, or why they could not be read."""
     kept = _kept(cache, ref, _version(specs))
     if kept is not None:
         return kept
-    html = _html(filings, ref, at_hand)
+    html = _html(filings, ref, at_hand, fetch)
+    if html is None:
+        return NOT_FETCHED
     if isinstance(html, SourceError):
         return str(html)[:MAX_ERROR_CHARS]  # our own message: it names the URL and the status
     if isinstance(html, Exception):
@@ -163,6 +177,7 @@ def read_reports(
     cache: FilingCache | None = None,
     html_by_accession: Mapping[str, str] | None = None,
     specs: Sequence[BreakdownSpec] = SPECS,
+    fetch: bool = True,
 ) -> tuple[list[BreakdownReport], list[str], list[str]]:
     """The breakdowns tagged in each of ``refs``, in order: reports, failures and notes.
 
@@ -170,13 +185,15 @@ def read_reports(
     sentence in the failures; one that tags no breakdown is a note. Never raises for
     EDGAR or for a filing's content. Kept reports are read from ``cache``. ``specs`` are
     the breakdowns built: a run's own, or :data:`FOR_CLAIMS` for a claim test's part
-    (kept apart, under :data:`CLAIM_READER_VERSION`).
+    (kept apart, under :data:`CLAIM_READER_VERSION`). With ``fetch`` off a filing is read
+    only from the kept tags or the HTML at hand, never fetched for its tags
+    (:data:`NOT_FETCHED` is then the failure).
     """
     reports: list[BreakdownReport] = []
     errors: list[str] = []
     notes: list[str] = []
     for ref in refs:
-        read = _read(company, filings, ref, cache, html_by_accession or {}, specs)
+        read = _read(company, filings, ref, cache, html_by_accession or {}, specs, fetch)
         if isinstance(read, str):
             errors.append(
                 policy.TAGGED_UNAVAILABLE.format(

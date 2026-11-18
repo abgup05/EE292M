@@ -577,6 +577,15 @@ def execute_run(
         numbers,
         computed,
         analyser or NoAnalyser(),
+        # Never a fetch: the tags kept in the cache, or the HTML this run fetched.
+        read_reports=lambda: read_reports(
+            company,
+            filings,
+            newest,
+            cache=cache,
+            html_by_accession=ingested.filing_html,
+            fetch=False,
+        )[:2],
         out_of_time=out_of_time,
         on_step=analysing,
     )

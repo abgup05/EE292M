@@ -8,6 +8,7 @@ cassette is written or read.
 
 from __future__ import annotations
 
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -16,9 +17,10 @@ import pytest
 from app.core import analysis_policy as rules
 from app.core.claim_reading import as_reading
 from app.core.claimtest import ClaimTest, compile_claim
-from app.core.models import Run, ThesisRequest
-from app.core.ports import ClaimDraft
+from app.core.models import Confidence, Run, Stance, ThesisRequest
+from app.core.ports import ClaimDraft, FindingDraft, Quote
 from app.engines.analyser import ANALYSE_SCHEMA, PROPOSE_SCHEMA, ClaudeAnalyser, parse_proposals
+from app.engines.cassette import CassetteTransport
 from app.engines.transport import EngineError, ModelRequest
 from app.services.thesis_run import execute_run, new_run
 from app.store import FilingCache, Store
@@ -30,6 +32,7 @@ CLAIMS = [
     "Gross margin is expanding.",
     "Revenue grew more than 200% year over year.",
     "Data center demand is still accelerating.",
+    "Management is excellent.",
 ]
 
 
@@ -201,12 +204,18 @@ def test_the_analysis_never_changes_a_verdict_or_the_status(analysed: Any) -> No
     run, _, plain = analysed
     assert [c.verdict for c in run.claims] == [c.verdict for c in plain.claims]
     assert run.status == plain.status
-    assert not any("analysis step failed" in e or "corollary step" in e for e in run.errors)
+    assert not any("analysis" in e for e in run.errors)
+    # Without a model the record says so once, as an error line; the status is unmoved.
+    assert [e for e in plain.errors if "analysis" in e] == [
+        rules.COMPUTED_ONLY_ERROR.format(why=rules.NO_MODEL_WHY)
+    ]
+    assert plain.analysis.corollaries_step == plain.analysis.argument_step == "not_asked"
+    assert run.analysis.corollaries_step == run.analysis.argument_step == "answered"
 
 
 def test_corollaries_are_read_by_two_readers_and_computed(analysed: Any) -> None:
     run, _, _ = analysed
-    c1, c2, c3 = (claim.analysis.corollaries for claim in run.claims)
+    c1, c2, c3, _ = (claim.analysis.corollaries for claim in run.claims)
     assert [c.status for c in c1] == ["agreed", "not_agreed", "agreed"]
     assert c1[1].computed is not None
     assert c1[1].computed.canonical == c1[1].proposer != c1[1].grammar
@@ -222,6 +231,18 @@ def test_corollaries_are_read_by_two_readers_and_computed(analysed: Any) -> None
         coverage.corollaries_as_expected + coverage.corollaries_against
     )
     assert coverage.corollaries_against >= 2
+    # Every proposed corollary is in exactly one count; the one not agreed counts toward
+    # neither outcome, though it was computed and came out as expected.
+    assert (coverage.corollaries_not_agreed, coverage.corollaries_no_test) == (1, 1)
+    assert c1[1].result == "as_expected"
+    assert coverage.corollaries_proposed == (
+        coverage.corollaries_as_expected
+        + coverage.corollaries_against
+        + coverage.corollaries_cannot_tell
+        + coverage.corollaries_no_test
+        + coverage.corollaries_not_agreed
+    )
+    assert coverage.corollary_flags == 1
     note = run.analysis.corollaries_note
     assert "c99" in note and "over the cap" in note
 
@@ -265,21 +286,40 @@ def test_relevance_headline_and_analytics_without_a_model(analysed: Any) -> None
     assert rules.NO_MODEL_WHY in analysis.argument_note
     keys = [[m.key for m in c.analysis.relevant] for c in plain.claims]
     assert keys[0] == ["gross_margin"] and keys[1] == ["revenue"]
-    assert keys[2] == [] and plain.claims[2].analysis.relevance_note == rules.NO_MEASURE
+    # The part a claim names is read from the tags of the filings the run read, though no
+    # computed test asked for them.
+    assert keys[2] == ['revenue(segment "Data Center")', "revenue"]
+    assert "10-Q filed" in analysis.breakdowns_note and "10-K filed" in analysis.breakdowns_note
+    ids = plain.claims[2].analysis.analytic_ids
+    assert "an:part:data_center:fy:pace" in ids and "an:revenue:acceleration" in ids
+    assert keys[3] == [] and plain.claims[3].analysis.relevance_note == rules.NO_MEASURE
+    assert plain.claims[3].analysis.analytic_ids == []
     assert analysis.headline and analysis.headline[0].claim_ids == ["c1"]
+    assert analysis.headline[0].source == "computed_test"
     assert all(item.reading_origin == "code" for item in analysis.analytics)
+    assert all(item.claim_ids and item.question for item in analysis.analytics)
     assert plain.coverage.analytics_computed == sum(1 for a in analysis.analytics if a.available)
+    assert plain.coverage.analytics_computed + plain.coverage.analytics_unavailable == len(
+        analysis.analytics
+    )
     assert plain.coverage.corollaries_proposed == 0
     assert plain.coverage.analysis_sentences_written == 0
     assert "an:c2:needed" in plain.claims[1].analysis.analytic_ids
 
 
-def test_a_failed_request_is_one_error_line_and_the_counts_say_0_of_0(tmp_path: Path) -> None:
+def _analysis_errors(run: Run) -> list[str]:
+    return [e for e in run.errors if "analysis" in e]
+
+
+def test_a_failed_request_is_one_error_line_and_the_record_says_which_step(
+    tmp_path: Path,
+) -> None:
     failing = FakeTransport(
         {"propose": EngineError("Model request failed: APIError"), "analyse": ARGUMENT}
     )
     run = _run(tmp_path, ClaudeAnalyser(transport=failing, model="fake"))
-    assert [e for e in run.errors if "corollary step failed" in e]
+    assert len(_analysis_errors(run)) == 1 and "the corollaries" in _analysis_errors(run)[0]
+    assert run.analysis.corollaries_step == "failed" and run.analysis.argument_step == "answered"
     assert run.coverage.corollaries_proposed == 0 and run.coverage.corollaries_computed == 0
     # The argument still came, and its counts hold; a corollary it cites is not in the run.
     assert run.analysis.argument_by == "model"
@@ -287,12 +327,117 @@ def test_a_failed_request_is_one_error_line_and_the_counts_say_0_of_0(tmp_path: 
     assert not bottom.verified and any("cor:c2:1" in p for p in bottom.problems)
     both = FakeTransport({"propose": EngineError("down"), "analyse": EngineError("down")})
     second = _run(tmp_path, ClaudeAnalyser(transport=both, model="fake"), "both")
-    assert sum("analysis step failed" in e for e in second.errors) == 1
-    assert second.analysis.argument_by == "none"
+    assert len(_analysis_errors(second)) == 1
+    assert "the corollaries" in _analysis_errors(second)[0]
+    assert "the argument" in _analysis_errors(second)[0]
+    assert second.analysis.argument_by == "none" and second.analysis.argument_step == "failed"
     assert "the request failed" in second.analysis.argument_note
     assert second.coverage.analysis_sentences_written == 0
     assert second.status == run.status
     assert second.analysis.analytics, "the computed analysis stays"
+    assert [c.verdict for c in second.claims] == [c.verdict for c in run.claims]
+
+
+def test_a_cassette_without_the_answers_leaves_the_computed_analysis(tmp_path: Path) -> None:
+    empty = tmp_path / "cassette"
+    empty.mkdir()
+    replaying = ClaudeAnalyser(transport=CassetteTransport(empty, read_only=True), model="fake")
+    run = _run(tmp_path, replaying)
+    assert len(_analysis_errors(run)) == 1
+    assert run.analysis.corollaries_step == run.analysis.argument_step == "failed"
+    assert run.analysis.argument_by == "none" and run.analysis.analytics
+    assert not (empty / "pending").exists(), "a read-only cassette saves no pending request"
+
+
+def test_a_withheld_finding_may_not_be_cited(tmp_path: Path) -> None:
+    def draft(claim: Any, passages: Any) -> ClaimDraft:
+        # A finding whose quote is in no passage: the gate withholds it.
+        return ClaimDraft(
+            findings=[
+                FindingDraft(
+                    statement="Gross margin widened.",
+                    stance=Stance.supports,
+                    confidence=Confidence.high,
+                    rationale="made up",
+                    quotes=[Quote(passage_id=passages[0].id, text="no filing says this")],
+                )
+            ]
+            if passages and claim.id == "c1"
+            else []
+        )
+
+    base = execute_run(
+        new_run(ThesisRequest(ticker="NVDA", decision="Whether to hold NVIDIA", claims=CLAIMS[:1])),
+        Store(tmp_path / "base.sqlite"),
+        filings=recorded_filings(),
+        analyst=ScriptedAnalyst(draft),
+        fetch_page=FakePages({}),
+        cache=FilingCache(),
+    )
+    assert base.unsupported_findings, "the scripted finding should have been withheld"
+    withheld = base.unsupported_findings[0].id
+    argument = {
+        "claims": [
+            {
+                "claim_id": "c1",
+                "lean": "supports",
+                "assessment": [_sentence("A finding says the margin widened.", withheld)],
+                "case_for": [],
+                "case_against": [],
+                "decides": [],
+                "would_change": [],
+            }
+        ],
+        "thesis": {**ARGUMENT["thesis"], "bottom_line": [], "scenarios": []},
+    }
+    transport = FakeTransport({"propose": {"claims": []}, "analyse": argument})
+    run = execute_run(
+        new_run(ThesisRequest(ticker="NVDA", decision="Whether to hold NVIDIA", claims=CLAIMS[:1])),
+        Store(tmp_path / "cited.sqlite"),
+        filings=recorded_filings(),
+        analyst=ScriptedAnalyst(draft),
+        fetch_page=FakePages({}),
+        cache=FilingCache(),
+        analyser=ClaudeAnalyser(transport=transport, model="fake"),
+    )
+    sentence = run.claims[0].analysis.argument.assessment[0]
+    assert not sentence.verified
+    assert f"cites {withheld}, a finding the run withheld" in sentence.problems
+    assert run.coverage.analysis_unverified_disallowed_id == 1
+    assert withheld not in transport.requests[1].user, "a withheld finding is never shown"
+
+
+def test_as_of_a_date_the_analysis_reads_nothing_filed_later(tmp_path: Path) -> None:
+    as_of = date(2026, 6, 15)
+    request = ThesisRequest(
+        ticker="NVDA", decision="Whether to hold NVIDIA", claims=CLAIMS, as_of=as_of
+    )
+    transport = FakeTransport({"propose": PROPOSAL, "analyse": ARGUMENT})
+    run = execute_run(
+        new_run(request),
+        Store(tmp_path / "asof.sqlite"),
+        filings=recorded_filings(),
+        analyst=ScriptedAnalyst(lambda claim, passages: ClaimDraft()),
+        fetch_page=FakePages({}),
+        cache=FilingCache(),
+        analyser=ClaudeAnalyser(transport=transport, model="fake"),
+    )
+    analytics = run.analysis.analytics
+    filed = [i.filed for item in analytics for i in item.inputs if i.filed]
+    assert filed and max(filed) <= as_of.isoformat()
+    assert sum(item.available for item in analytics) >= 5
+    # The newest quarter the run may know is Q1 FY2027 (10-Q filed 2026-05-20), not Q2.
+    text = " ".join(item.reading + item.period for item in analytics)
+    assert "Q1 FY2027" in text and "Q2 FY2027" not in text and "2026-07-26" not in text
+    assert "2026-08-26" not in run.analysis.breakdowns_note
+    for claim in run.claims:
+        for corollary in claim.analysis.corollaries:
+            if corollary.computed is not None:
+                assert "Q2 FY2027" not in corollary.computed.bound
+                assert all(p.filed <= as_of.isoformat() for p in corollary.computed.history)
+    shown = " ".join(r.user for r in transport.requests)
+    assert "Q2 FY2027" not in shown and "2026-07-26" not in shown
+    assert "<as_of>2026-06-15</as_of>" in transport.requests[1].user
 
 
 def test_the_schemas_have_no_union_typed_parameter() -> None:

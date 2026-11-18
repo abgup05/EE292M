@@ -119,7 +119,7 @@ screenshots:
 	$(COMPOSE) up --force-recreate -d app
 	@trap '$(COMPOSE) down' EXIT; \
 	$(COMPOSE) exec -T app python uitests/wait_ready.py && \
-	$(COMPOSE) run --rm shots --window-size=1280,720 --screenshot=/work/docs/screenshots/first-screen.png "http://app:8000/?theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=1280,1000 --screenshot=/work/docs/screenshots/first-screen.png "http://app:8000/?theme=paper" && \
 	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-run.png "http://app:8000/?sample&theme=paper" && \
 	$(COMPOSE) run --rm shots --window-size=390,1400 --screenshot=/work/docs/screenshots/sample-run-phone.png "http://app:8000/?sample&theme=paper" && \
 	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-synthetic.png "http://app:8000/?sample=synthetic&theme=paper" && \
@@ -127,7 +127,7 @@ screenshots:
 	$(COMPOSE) run --rm shots --window-size=390,2600 --screenshot=/work/docs/screenshots/sample-changes-phone.png "http://app:8000/?sample=changes&theme=paper" && \
 	$(COMPOSE) run --rm shots --window-size=1280,2400 --screenshot=/work/docs/screenshots/sample-breakdowns.png "http://app:8000/?sample=breakdowns&theme=paper" && \
 	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/tagged-figures.png "http://app:8000/?sample=run-tagged&theme=paper" && \
-	$(COMPOSE) run --rm shots --window-size=1280,720 --screenshot=/work/docs/screenshots/first-screen-terminal.png "http://app:8000/?theme=terminal" && \
+	$(COMPOSE) run --rm shots --window-size=1280,1000 --screenshot=/work/docs/screenshots/first-screen-terminal.png "http://app:8000/?theme=terminal" && \
 	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-run-terminal.png "http://app:8000/?sample&theme=terminal" && \
 	$(COMPOSE) run --rm shots --window-size=390,1400 --screenshot=/work/docs/screenshots/sample-run-phone-terminal.png "http://app:8000/?sample&theme=terminal" && \
 	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-events.png "http://app:8000/?sample=run-events&theme=paper" && \
@@ -136,13 +136,13 @@ screenshots:
 	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-synthetic-terminal.png "http://app:8000/?sample=synthetic&theme=terminal" && \
 	$(COMPOSE) run --rm shots --window-size=1280,2400 --screenshot=/work/docs/screenshots/sample-changes-terminal.png "http://app:8000/?sample=changes&theme=terminal" && \
 	$(COMPOSE) run --rm shots --window-size=1280,2400 --screenshot=/work/docs/screenshots/sample-breakdowns-terminal.png "http://app:8000/?sample=breakdowns&theme=terminal" && \
-	$(COMPOSE) run --rm shots --allow-file-access-from-files --window-size=1280,3600 --screenshot=/work/docs/screenshots/specimen.png "file:///work/src/web/specimen.html?theme=paper" && \
-	$(COMPOSE) run --rm shots --allow-file-access-from-files --window-size=1280,3600 --screenshot=/work/docs/screenshots/specimen-terminal.png "file:///work/src/web/specimen.html?theme=terminal" && \
-	$(COMPOSE) run --rm shots --allow-file-access-from-files --window-size=1280,3600 --screenshot=/work/docs/screenshots/specimen-v13.png "file:///work/src/web/specimen.html?theme=paper&only=v13" && \
-	$(COMPOSE) run --rm shots --allow-file-access-from-files --window-size=1280,3600 --screenshot=/work/docs/screenshots/specimen-note.png "file:///work/src/web/specimen.html?theme=paper&only=note" && \
-	$(COMPOSE) run --rm shots --allow-file-access-from-files --window-size=1280,3600 --screenshot=/work/docs/screenshots/specimen-note-terminal.png "file:///work/src/web/specimen.html?theme=terminal&only=note" && \
-	$(COMPOSE) run --rm shots --allow-file-access-from-files --window-size=1280,2400 --screenshot=/work/docs/screenshots/specimen-views.png "file:///work/src/web/specimen.html?theme=paper&only=views" && \
-	$(COMPOSE) run --rm shots --allow-file-access-from-files --window-size=390,3000 --screenshot=/work/docs/screenshots/specimen-phone.png "file:///work/src/web/specimen.html?theme=paper"
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/specimen.png "http://app:8000/specimen.html?theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/specimen-terminal.png "http://app:8000/specimen.html?theme=terminal" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/specimen-v13.png "http://app:8000/specimen.html?theme=paper&only=v13" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/specimen-note.png "http://app:8000/specimen.html?theme=paper&only=note" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/specimen-note-terminal.png "http://app:8000/specimen.html?theme=terminal&only=note" && \
+	$(COMPOSE) run --rm shots --window-size=1280,2400 --screenshot=/work/docs/screenshots/specimen-views.png "http://app:8000/specimen.html?theme=paper&only=views" && \
+	$(COMPOSE) run --rm shots --window-size=390,3000 --screenshot=/work/docs/screenshots/specimen-phone.png "http://app:8000/specimen.html?theme=paper"
 	@for name in $(SHOTS); do \
 		test docs/screenshots/$$name.png -nt results/.screenshots-started \
 		|| { echo "screenshots: docs/screenshots/$$name.png was not written"; exit 1; }; \

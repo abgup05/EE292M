@@ -14,6 +14,7 @@ from enum import StrEnum
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.core import limits
+from app.core.analysis_models import Analysis, ClaimAnalysis
 from app.core.claim_test_models import ClaimReading, ComputedTest
 from app.core.event_models import AsOf, Event, Predating
 from app.core.metric_models import Metric, Series
@@ -193,6 +194,10 @@ class Claim(BaseModel):
     ``readings`` is each reader's reading of the claim's test, the grammar's first, then
     the model readers' when they are on (:func:`app.core.policy.reading_agreement`);
     empty before version 14.
+
+    ``analysis`` is what the analysis holds for the claim: the measures that bear on it,
+    its analytics, corollaries and odds, and the model's audited argument
+    (:class:`~app.core.analysis_models.ClaimAnalysis`); None before version 0.14.2.
     """
 
     id: str
@@ -209,6 +214,7 @@ class Claim(BaseModel):
     computed: ComputedTest | None = None
     compile_note: str = ""
     readings: list[ClaimReading] = Field(default_factory=list)
+    analysis: ClaimAnalysis | None = None
 
 
 class Source(BaseModel):
@@ -523,6 +529,31 @@ class Coverage(BaseModel):
     periods_checked: int = 0
     periods_unverified: int = 0
     periods_comparative: int = 0
+    # The analysis (app.services.analysis, version 0.14.2). Analytics computed by code (with a
+    # value; those that could not be computed are on the record and not counted here).
+    analytics_computed: int = 0
+    # Corollaries: proposed by the model (0 when no model was asked or the request failed:
+    # then nothing was proposed, and every count after it is 0 of 0), computed by code, and of
+    # those computed, how many came out as the claim implies and how many against it.
+    corollaries_proposed: int = 0
+    corollaries_computed: int = 0
+    corollaries_as_expected: int = 0
+    corollaries_against: int = 0
+    # The argued analysis: sentences the model wrote (0 when no model's argument was recorded:
+    # the step was not asked or failed, which Run.analysis.argument_note says), verified and
+    # unverified (written == verified + unverified), and why each unverified one is: it cites
+    # nothing that is evidence, cites an id not in the run, cites an id of a kind not allowed
+    # (a withheld finding), or states a number nothing it cites carries. A sentence with
+    # several problems counts once in unverified and once under each reason.
+    analysis_sentences_written: int = 0
+    analysis_sentences_verified: int = 0
+    analysis_sentences_unverified: int = 0
+    analysis_unverified_no_evidence: int = 0
+    analysis_unverified_unknown_id: int = 0
+    analysis_unverified_disallowed_id: int = 0
+    analysis_unverified_number: int = 0
+    # Claims whose model lean contradicts their verdict (the verdict is never changed).
+    analysis_lean_flags: int = 0
 
 
 class Run(BaseModel):
@@ -564,6 +595,9 @@ class Run(BaseModel):
     # evidence is (app.services.events). Empty and None in runs recorded before version 12.
     timeline: list[Event] = Field(default_factory=list)
     as_of: AsOf | None = None
+    # Relevance, analytics, corollaries, odds and the argued analysis (app.services.analysis);
+    # None in runs recorded before version 0.14.2.
+    analysis: Analysis | None = None
 
 
 class CompanyEvents(BaseModel):

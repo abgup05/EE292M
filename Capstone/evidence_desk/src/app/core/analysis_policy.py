@@ -59,6 +59,10 @@ ANALYSE_MAX_TOKENS = 4_000
 # One claim or thesis request; not retried on a timeout. Claims are asked several at once
 # (limits.MAX_CONCURRENT_ASSESSMENTS), so five claims are two rounds of this, then the thesis.
 ANALYSE_TIMEOUT_SECONDS = 60.0
+# The thesis's argument rests on every claim's and has more sections: on the first recording one
+# of two answers was truncated at 4,000 tokens, so it has its own cap and its own time.
+CONCLUDE_MAX_TOKENS = 7_000
+CONCLUDE_TIMEOUT_SECONDS = 90.0
 # One request must finish well under two minutes; it is not retried on a timeout.
 MODEL_TIMEOUT_SECONDS = 110.0
 # Sentences per section of the argument: the assessment and the bottom line are arguments.

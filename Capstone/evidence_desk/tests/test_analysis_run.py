@@ -218,9 +218,11 @@ def test_one_request_per_claim_then_one_for_the_thesis(analysed: Any) -> None:
     assert steps[0] == "propose" and steps[-1] == "conclude"
     assert sorted(steps[1:-1]) == ["analyse"] * len(CLAIMS)
     assert sorted(focus_of(r) for r in transport.requests[1:-1]) == ["c1", "c2", "c3", "c4"]
-    for request in transport.requests[1:]:
+    for request in transport.requests[1:-1]:
         assert request.timeout == rules.ANALYSE_TIMEOUT_SECONDS
         assert request.max_tokens == rules.ANALYSE_MAX_TOKENS
+    assert transport.requests[-1].timeout == rules.CONCLUDE_TIMEOUT_SECONDS
+    assert transport.requests[-1].max_tokens == rules.CONCLUDE_MAX_TOKENS
     assert "cor:c2:1" not in transport.requests[0].user
     # A claim's request holds that claim's material and the other claims' text only.
     c2, c1 = transport.about("c2"), transport.about("c1")

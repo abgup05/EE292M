@@ -500,8 +500,8 @@ def thesis_request(brief: AnalysisBrief) -> ModelRequest:
         THESIS_SYSTEM,
         thesis_user_prompt(brief),
         THESIS_SCHEMA,
-        rules.ANALYSE_MAX_TOKENS,
-        timeout=rules.ANALYSE_TIMEOUT_SECONDS,
+        rules.CONCLUDE_MAX_TOKENS,
+        timeout=rules.CONCLUDE_TIMEOUT_SECONDS,
     )
 
 

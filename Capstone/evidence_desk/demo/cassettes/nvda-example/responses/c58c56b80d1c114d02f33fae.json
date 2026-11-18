@@ -1,0 +1,163 @@
+{
+  "key": "c58c56b80d1c114d02f33fae",
+  "step": "analyse",
+  "via": "the Anthropic API",
+  "model": "claude-opus-5-5",
+  "recorded_at": "2026-11-18T23:21:50+00:00",
+  "response": {
+    "lean": "mixed",
+    "sentences": [
+      {
+        "section": "assessment",
+        "text": "The premise holds narrowly: the filings show export controls cutting into one China product line, with an inventory and purchase-obligation charge on H20 and only token licensed sales since.",
+        "cites": [
+          "f8",
+          "f9"
+        ]
+      },
+      {
+        "section": "assessment",
+        "text": "What the record does not show is a restriction on company revenue, which roughly doubled on a year earlier and sped up against the prior quarter.",
+        "cites": [
+          "f11",
+          "an:revenue:yoy",
+          "an:revenue:acceleration"
+        ]
+      },
+      {
+        "section": "assessment",
+        "text": "The claim's own implied test points the wrong way: China including Hong Kong revenue did not fall year over year, so even the China line is not visibly shrinking in the newest quarter.",
+        "cites": [
+          "cor:c3:2"
+        ]
+      },
+      {
+        "section": "assessment",
+        "text": "Data center alone supplied 102.5 percentage points of the 105.9% growth, so whatever China demand was lost has been more than replaced elsewhere in the segment the thesis relies on.",
+        "cites": [
+          "an:bridge:growth:revenue_by_product:q"
+        ]
+      },
+      {
+        "section": "assessment",
+        "text": "For holding into the next report, the step from 'controls restrict China sales' to 'controls restrict the investment case' is assumed, not backed: the record shows a cost already taken and forgone sales that cannot be measured, not a drag on reported growth.",
+        "cites": [
+          "f8",
+          "an:revenue:trend8"
+        ]
+      },
+      {
+        "section": "assessment",
+        "text": "The record cannot show revenue that would have existed without the controls; that counterfactual, and why China revenue rose, would need segment and product disclosure the record does not compute.",
+        "cites": [
+          "cor:c3:2",
+          "cor:c3:1"
+        ]
+      },
+      {
+        "section": "case_for",
+        "text": "The H20 charge is a direct, filing-stated consequence of the license requirement, which is the strongest evidence in the record that controls removed demand rather than merely delaying it.",
+        "cites": [
+          "f8"
+        ]
+      },
+      {
+        "section": "case_for",
+        "text": "Licensed shipments produced only about $60 million of H20 revenue and none from H200, so the licenses did not restore the lost business.",
+        "cites": [
+          "f9"
+        ]
+      },
+      {
+        "section": "case_for",
+        "text": "Inventory grew faster than revenue, as the claim would imply, and the filing warns the controls can depress demand beyond China, in Europe, Latin America and Southeast Asia.",
+        "cites": [
+          "cor:c3:3",
+          "f10"
+        ]
+      },
+      {
+        "section": "case_against",
+        "text": "Revenue rose in each of the last 8 quarters and its growth is accelerating, so any restriction is invisible at the level the decision is made on.",
+        "cites": [
+          "an:revenue:trend8",
+          "an:revenue:acceleration"
+        ]
+      },
+      {
+        "section": "case_against",
+        "text": "China revenue did not fall on a year earlier, which contradicts the plainest reading that controls are shrinking sales there now.",
+        "cites": [
+          "cor:c3:2"
+        ]
+      },
+      {
+        "section": "case_against",
+        "text": "Inventory outpacing revenue by a few points is weak support, since it is consistent with building stock for a business growing this fast and the record names no China cause for it.",
+        "cites": [
+          "cor:c3:3",
+          "an:revenue:yoy"
+        ]
+      },
+      {
+        "section": "decides",
+        "text": "Whether the restriction stays confined to a China product line already written down, or spreads to the other markets the filing names.",
+        "cites": [
+          "f10",
+          "f8"
+        ]
+      },
+      {
+        "section": "decides",
+        "text": "Whether China revenue turns down year over year in a later filing, which would make the claim visible in the numbers rather than in a past charge.",
+        "cites": [
+          "cor:c3:2"
+        ]
+      },
+      {
+        "section": "decides",
+        "text": "Whether data center growth keeps absorbing lost China demand, since it carries nearly all of the company's growth.",
+        "cites": [
+          "an:bridge:growth:revenue_by_product:q"
+        ]
+      }
+    ],
+    "conditions": [
+      {
+        "text": "Gross margin falling below the latest quarter's 75.0% would be consistent with a further export-related inventory charge like the H20 one.",
+        "cites": [
+          "gross_margin:quarter:2026-07-26",
+          "f8"
+        ],
+        "measure": "gross_margin",
+        "comparison": "<",
+        "threshold": 75.0,
+        "unit": "percent",
+        "event_category": "none"
+      },
+      {
+        "text": "Quarterly revenue dropping below the year-earlier $46.74B would make a revenue restriction visible at the company level.",
+        "cites": [
+          "an:revenue:yoy"
+        ],
+        "measure": "revenue",
+        "comparison": "<",
+        "threshold": 46740000000,
+        "unit": "USD",
+        "event_category": "none"
+      },
+      {
+        "text": "An 8-K disclosing a new export restriction or related charge would extend the claim beyond the H20 line.",
+        "cites": [
+          "f10",
+          "f8"
+        ],
+        "measure": "",
+        "comparison": "none",
+        "threshold": 0,
+        "unit": "none",
+        "event_category": "other"
+      }
+    ]
+  }
+}

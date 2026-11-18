@@ -240,3 +240,7 @@ class ClaimReader(Protocol):
     def read(self, claim: str) -> ClaimTest | NotNumeric:
         """The test in ``claim``, or why there is none."""
         ...
+
+
+# The model readers a run is given beside the grammar: none, one, or two of different models.
+type ClaimReaders = ClaimReader | Sequence[ClaimReader] | None

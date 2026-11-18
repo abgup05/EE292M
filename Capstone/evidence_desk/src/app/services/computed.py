@@ -8,19 +8,26 @@ history (:func:`app.core.claim_eval.claim_history`) from the same facts, with no
 request of its own. A share of revenue reads the newest filings' tagged breakdowns,
 which the run has at hand or in its cache. Nothing here asks the engine anything.
 
-With the model parser on (a :class:`~app.core.ports.ClaimReader`), each claim is read a
-second time, and a computed test counts toward the verdict only when both readings are
-the same test (:func:`app.core.policy.reading_counts`); otherwise the test is still
-computed and shown, with both readings, and counts as nothing.
+With model readers on (one or two :class:`~app.core.ports.ClaimReader`, different models),
+each claim is read again by each, every reading is put in one normal form
+(:func:`app.core.claim_normal.normal_form`) and the counting rule
+(:func:`app.core.policy.reading_agreement`) decides: a test at least two readers reach is
+computed and counts (the grammar's own writing of it when the grammar is one of them); a
+different test from the third reader is shown as a dissent; when no two agree, the
+grammar's test (if it read one) is computed and shown with every reading, and counts as
+nothing. With the grammar alone a compiled test counts as before, and the run says that is
+one reader.
 """
 
 from __future__ import annotations
 
-from collections.abc import Callable, Collection
+from collections.abc import Callable, Collection, Sequence
+from dataclasses import dataclass
 
 from app.core import policy
 from app.core.breakdown_models import BreakdownReport
-from app.core.claim_eval import HistoryBooks, claim_history, evaluate
+from app.core.claim_eval import HistoryBooks, claim_history, evaluate, newest_periods
+from app.core.claim_normal import Newest, normal_form
 from app.core.claim_test_models import ClaimReading, ComputedTest
 from app.core.claimtest import ClaimTest, NotNumeric, compile_claim
 from app.core.models import Claim, Run
@@ -33,6 +40,16 @@ SHARES = ("share", "max_share")
 MAX_WHY_CHARS = 320
 
 ReportReader = Callable[[], tuple[list[BreakdownReport], list[str]]]
+Readers = ClaimReader | Sequence[ClaimReader] | None
+
+
+@dataclass(frozen=True)
+class ReadClaim:
+    """The test a claim's readings lead to computing, and the rule's conclusion."""
+
+    test: ClaimTest
+    agreement: policy.Agreement
+    reader: str  # whose writing of the test is computed
 
 
 def _not_computed(test: ClaimTest, reason: str) -> ComputedTest:
@@ -46,98 +63,134 @@ def _not_computed(test: ClaimTest, reason: str) -> ComputedTest:
     )
 
 
-def _reading(reader: str, result: ClaimTest | NotNumeric) -> ClaimReading:
+def _as_list(readers: Readers) -> list[ClaimReader]:
+    if readers is None:
+        return []
+    if isinstance(readers, Sequence):
+        return list(readers)
+    return [readers]
+
+
+def _reading(reader: str, result: ClaimTest | NotNumeric, newest: Newest) -> ClaimReading:
     if isinstance(result, NotNumeric):
-        return ClaimReading(reader=reader, canonical=policy.NO_TEST, reason=result.reason)  # type: ignore[arg-type]
-    return ClaimReading(reader=reader, canonical=result.canonical)  # type: ignore[arg-type]
+        return ClaimReading(
+            reader=reader,  # type: ignore[arg-type]
+            canonical=policy.NO_TEST,
+            reason=result.reason,
+            normal_form=policy.NO_TEST,
+        )
+    return ClaimReading(
+        reader=reader,  # type: ignore[arg-type]
+        canonical=result.canonical,
+        normal_form=normal_form(result, newest),
+    )
 
 
-def _model_reading(run: Run, claim: Claim, reader: ClaimReader) -> ClaimReading:
-    """The model parser's reading of ``claim``; a failure to ask is recorded, never raised."""
+def _model_read(run: Run, claim: Claim, reader: ClaimReader) -> ClaimTest | NotNumeric:
+    """A model reader's reading of ``claim``; a failure to ask is recorded, never raised."""
     try:
-        return _reading(policy.MODEL_READER, reader.read(claim.text))
+        return reader.read(claim.text)
     except EngineError as exc:  # its message is safe to show (EngineError's contract)
         why = str(exc)[:MAX_WHY_CHARS]
         run.errors.append(policy.READER_ERROR.format(claim_id=claim.id, why=why))
-        reason = policy.COMPUTED_READER_FAILED.format(why=why)
-        return ClaimReading(reader="model", canonical=policy.NO_TEST, reason=reason)
+        return NotNumeric(policy.COMPUTED_READER_FAILED.format(why=why))
 
 
-def read_claims(run: Run, reader: ClaimReader | None = None) -> dict[str, ClaimTest]:
-    """Read every claim's test, record the readings, and return the grammar's tests by id.
+def read_claims(
+    run: Run, readers: Readers = None, newest: Newest | None = None
+) -> dict[str, ReadClaim]:
+    """Read every claim with every reader, record the readings, and say what to compute.
 
-    A claim the grammar does not compile gets ``compile_note``; with ``reader``, one that
-    only the model reads says so there too.
+    ``newest`` (the newest fiscal year and quarter of the facts) lets a named period
+    compare equal to the default one in the normal form. A claim with nothing to compute
+    gets ``compile_note``: why the grammar read no test, and every other reading when a
+    model read one.
     """
-    run.claim_readers = policy.GRAMMAR_READER
-    if reader is not None:
-        run.claim_readers = f"{policy.GRAMMAR_READER} and {policy.MODEL_READER}"
-        run.claim_reader_detail = str(reader.detail or "")
-    tests: dict[str, ClaimTest] = {}
+    models = _as_list(readers)
+    names = [policy.GRAMMAR_READER, *(reader.name for reader in models)]
+    run.claim_readers = names[0] if len(names) == 1 else f"{', '.join(names[:-1])} and {names[-1]}"
+    run.claim_reading_rule = policy.reading_rule(names)
+    if models:
+        run.claim_reader_detail = "; ".join(str(reader.detail or "") for reader in models)
+    at = newest or Newest()
+    to_compute: dict[str, ReadClaim] = {}
     for claim in run.claims:
         compiled = compile_claim(claim.text)
-        claim.readings = [_reading(policy.GRAMMAR_READER, compiled)]
-        if reader is not None:
-            claim.readings.append(_model_reading(run, claim, reader))
-        if isinstance(compiled, ClaimTest):
-            tests[claim.id] = compiled
+        results: dict[str, ClaimTest | NotNumeric] = {policy.GRAMMAR_READER: compiled}
+        for reader in models:
+            results[reader.name] = _model_read(run, claim, reader)
+        claim.readings = [_reading(name, result, at) for name, result in results.items()]
+        agreement = policy.reading_agreement({r.reader: r.normal_form for r in claim.readings})
+        chosen = agreement.agreeing[0] if agreement.counts else policy.GRAMMAR_READER
+        test = results[chosen]
+        if isinstance(test, ClaimTest):
+            to_compute[claim.id] = ReadClaim(test, agreement, chosen)
             continue
-        reason = compiled.reason.removeprefix("not compiled: ")
+        reason = test.reason.removeprefix("not compiled: ")
         claim.compile_note = policy.COMPUTED_NOT_NUMERIC.format(reason=reason)
-        if reader is not None and claim.readings[1].canonical != policy.NO_TEST:
-            claim.compile_note += " " + _differ(claim)
-    return tests
+        if any(r.canonical != policy.NO_TEST for r in claim.readings[1:]):
+            claim.compile_note += " " + _differ(claim.readings)
+    return to_compute
 
 
-def _differ(claim: Claim) -> str:
-    grammar, model = claim.readings[0], claim.readings[1]
-
-    def said(reading: ClaimReading) -> str:
-        if reading.canonical != policy.NO_TEST:
-            return reading.canonical
-        return f"no test ({reading.reason})" if reading.reason else "no test"
-
-    return policy.COMPUTED_READINGS_DIFFER.format(grammar=said(grammar), model=said(model))
+def _said(reading: ClaimReading) -> str:
+    if reading.canonical != policy.NO_TEST:
+        return reading.canonical
+    return f"no test ({reading.reason})" if reading.reason else "no test"
 
 
-def _counts(claim: Claim) -> bool:
-    model = claim.readings[1].canonical if len(claim.readings) > 1 else None
-    return policy.reading_counts(claim.readings[0].canonical, model)
+def _readings_text(readings: Sequence[ClaimReading], *, capital: bool = True) -> str:
+    """ "The grammar read X; the model read Y", in reading order."""
+    parts = [f"{policy.READER_WORDS.get(r.reader, r.reader)} read {_said(r)}" for r in readings]
+    text = "; ".join(parts)
+    return text[:1].upper() + text[1:] if capital else text
+
+
+def _differ(readings: Sequence[ClaimReading]) -> str:
+    return policy.COMPUTED_READINGS_DIFFER.format(readings=_readings_text(readings))
 
 
 def compute_claims(
     run: Run,
     numbers: NumbersResult,
     read_reports: ReportReader,
-    reader: ClaimReader | None = None,
+    reader: Readers = None,
+    read_part_reports: ReportReader | None = None,
 ) -> None:
     """Set ``computed`` or ``compile_note`` on every claim, and count the outcomes.
 
     ``read_reports`` gives the newest filings' tagged breakdowns and any failure to read
-    them; it is called only when a claim is a share of revenue. ``reader`` is the model
-    parser, when it is on: a test counts only when it reads the same test as the grammar.
+    them; it is called only when a test is a share of revenue. ``read_part_reports`` gives
+    them with the breakdowns only a claim test reads (a segment's operating income), and
+    is called only when a test names a part (``read_reports`` stands in when it is None).
+    ``reader`` is the model reader, or the two, when they are on (the counting rule).
     """
-    tests = read_claims(run, reader)
+    newest = newest_periods(numbers.book, numbers.calendar) if numbers.book is not None else None
+    tests = read_claims(run, reader, newest)
     coverage = run.coverage
     coverage.claims_compiled = len(tests)
     if not tests:
         return
     reports: list[BreakdownReport] = []
     report_errors: list[str] = []
-    if any(test.left.fn in SHARES for test in tests.values()):
+    if any(read.test.left.axis for read in tests.values()):
+        reports, report_errors = (read_part_reports or read_reports)()
+    elif any(read.test.left.fn in SHARES for read in tests.values()):
         reports, report_errors = read_reports()
     books = HistoryBooks(numbers.payload) if numbers.payload is not None else None
     for claim in run.claims:
-        test = tests.get(claim.id)
-        if test is None:
+        read = tests.get(claim.id)
+        if read is None:
             continue
+        test = read.test
         if numbers.book is None or books is None:
             why = f" ({numbers.error})" if numbers.error else ""
             claim.computed = _not_computed(test, NO_FACTS.format(why=why))
         else:
             result = evaluate(test, numbers.book, calendar=numbers.calendar, reports=reports)
             history, note = claim_history(test, books.payload, as_of=numbers.as_of, books=books)
-            extra = " ".join(report_errors) if test.left.fn in SHARES and report_errors else ""
+            from_filing = test.left.fn in SHARES or bool(test.left.axis)
+            extra = " ".join(report_errors) if from_filing and report_errors else ""
             claim.computed = result.model_copy(
                 update={
                     "history": history,
@@ -145,7 +198,7 @@ def compute_claims(
                     "note": " ".join(text for text in (result.note, extra) if text),
                 }
             )
-        claim.computed = _attributed(claim, claim.computed)
+        claim.computed = _attributed(claim, claim.computed, read)
         outcome = claim.computed.outcome
         coverage.computed_holds += outcome == "holds"
         coverage.computed_fails += outcome == "fails"
@@ -167,12 +220,21 @@ def count_computed(run: Run, unassessed: Collection[str] = ()) -> None:
         claim.verdict = policy.claim_verdict(own, claim.computed)
 
 
-def _attributed(claim: Claim, computed: ComputedTest) -> ComputedTest:
-    """``computed`` with who read it, and not counted when the readings differ."""
-    if _counts(claim):
-        read_by = [reading.reader for reading in claim.readings]
-        return computed.model_copy(update={"read_by": read_by})
-    note = " ".join(text for text in (_differ(claim), computed.note) if text)
-    return computed.model_copy(
-        update={"read_by": [policy.GRAMMAR_READER], "counted_as": "", "note": note}
-    )
+def _attributed(claim: Claim, computed: ComputedTest, read: ReadClaim) -> ComputedTest:
+    """``computed`` with who read it and the rule's conclusion; not counted unless it counts."""
+    agreement = read.agreement
+    update: dict[str, object] = {
+        "agreement": agreement.conclusion,
+        "agreement_label": policy.AGREEMENT_LABELS[agreement.conclusion],
+    }
+    if agreement.counts:
+        dissent = [r for r in claim.readings if r.reader in agreement.dissenting]
+        note = computed.note
+        if dissent:
+            said = policy.COMPUTED_DISSENT.format(readings=_readings_text(dissent, capital=False))
+            note = " ".join(text for text in (said, computed.note) if text)
+        update |= {"read_by": list(agreement.agreeing), "dissent": dissent, "note": note}
+        return computed.model_copy(update=update)
+    note = " ".join(text for text in (_differ(claim.readings), computed.note) if text)
+    update |= {"read_by": [read.reader], "counted_as": "", "note": note}
+    return computed.model_copy(update=update)

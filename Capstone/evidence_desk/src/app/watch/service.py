@@ -38,7 +38,7 @@ from app.core.models import Company, Run, RunStatus, Thesis
 from app.core.ports import (
     Analyst,
     Checker,
-    ClaimReader,
+    ClaimReaders,
     FilingSource,
     PageFetcher,
     SourceError,
@@ -133,7 +133,7 @@ def run_executor(
     checker: Checker | None = None,
     fetch_page: PageFetcher = default_fetch_page,
     facts_store: FactStore | None = None,
-    claim_reader: ClaimReader | None = None,
+    claim_reader: ClaimReaders = None,
 ) -> RunExecutor:
     """A function that executes a started run to its end, as the API's worker does.
 

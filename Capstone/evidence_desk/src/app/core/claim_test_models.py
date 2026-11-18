@@ -64,13 +64,17 @@ class HistoryPoint(BaseModel):
 class ClaimReading(BaseModel):
     """One reader's reading of a claim: the canonical test, or ``none`` and why.
 
-    ``reader`` is "grammar" (:mod:`app.core.claimtest`) or "model" (the model parser,
-    :mod:`app.engines.claim_reader`); ``reason`` says why it read no test.
+    ``reader`` is "grammar" (:mod:`app.core.claimtest`), "model" or "model_2" (the
+    model readers, :mod:`app.engines.claim_reader`); ``reason`` says why it read no test.
+    ``normal_form`` is the test in the form the counting rule compares
+    (:func:`app.core.claim_normal.normal_form`), "none" for no test; empty before the
+    counting rule compared normal forms.
     """
 
-    reader: Literal["grammar", "model"]
+    reader: Literal["grammar", "model", "model_2"]
     canonical: str
     reason: str = ""
+    normal_form: str = ""
 
 
 class ComputedTest(BaseModel):
@@ -89,7 +93,10 @@ class ComputedTest(BaseModel):
     10-Q filing date of the last years, oldest first; ``history_note`` says what it
     covers or why there is none. ``read_by`` names the readers whose reading this test
     is ("grammar", and "model" when the model parser read the same test); empty before
-    version 14.
+    version 14. ``agreement`` is the counting rule's conclusion
+    (:data:`app.core.policy.AGREEMENT_LABELS`, with ``agreement_label`` in words) and
+    ``dissent`` the readings of a different test by a reader outside the agreement;
+    both empty before the counting rule had several readers.
     """
 
     canonical: str
@@ -111,3 +118,6 @@ class ComputedTest(BaseModel):
     history: list[HistoryPoint] = Field(default_factory=list)
     history_note: str = ""
     read_by: list[str] = Field(default_factory=list)
+    agreement: str = ""
+    agreement_label: str = ""
+    dissent: list[ClaimReading] = Field(default_factory=list)

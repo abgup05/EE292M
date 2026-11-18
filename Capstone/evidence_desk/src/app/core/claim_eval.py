@@ -51,6 +51,7 @@ from typing import Any, Literal
 
 from app.core import limits, policy
 from app.core.breakdown_models import Breakdown, BreakdownReport, BreakdownRow, BreakdownValue
+from app.core.claim_normal import Newest
 from app.core.claim_test_models import (
     ComputedOutcome,
     ComputedTest,
@@ -1035,6 +1036,23 @@ def evaluate(
 
 
 # History
+
+
+def newest_periods(book: FactBook, calendar: FiscalCalendar | None) -> Newest:
+    """The newest fiscal year and fiscal quarter the facts hold, as the normal form takes
+    them (:class:`app.core.claim_normal.Newest`); unknown without a calendar."""
+    if calendar is None:
+        return Newest()
+    measures = Measures(book, calendar)
+    years = measures.series("annual", "revenue")
+    quarters = measures.series("quarter", "revenue")
+    year = calendar.fiscal_year(max(years)) if years else None
+    quarter = None
+    if quarters:
+        end = max(quarters)
+        number = calendar.fiscal_quarter(end)
+        quarter = (calendar.fiscal_year(end), number) if number else None
+    return Newest(fiscal_year=year, quarter=quarter)
 
 
 class HistoryBooks:

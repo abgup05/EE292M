@@ -54,7 +54,7 @@ from app.core.ports import (
     Analyst,
     Checker,
     ClaimDraft,
-    ClaimReader,
+    ClaimReaders,
     FilingSource,
     PageFetcher,
     SourceError,
@@ -69,7 +69,12 @@ from app.services import events as event_service
 from app.services.computed import compute_claims, count_computed
 from app.services.ingest import Ingested, ingest
 from app.services.numbers import NumbersResult, load_numbers, select_figures
-from app.services.tagged_figures import load_tagged_figures, newest_reports, read_reports
+from app.services.tagged_figures import (
+    FOR_CLAIMS,
+    load_tagged_figures,
+    newest_reports,
+    read_reports,
+)
 from app.sources.http import fetch_page as default_fetch_page
 from app.store import FactStore, FilingCache, Store
 
@@ -209,7 +214,7 @@ def execute_run(
     cache: FilingCache | None = None,
     checker: Checker | None = None,
     facts_store: FactStore | None = None,
-    claim_reader: ClaimReader | None = None,
+    claim_reader: ClaimReaders = None,
 ) -> Run:
     """Execute ``run`` to completion, persisting progress, and return the final record.
 
@@ -334,17 +339,22 @@ def execute_run(
     offered_figures = {figure.id: figure for figure in figures}
     # Computed tests: compiled from the claim text, computed from the facts just read. The
     # engine is never asked about them; their outcomes enter the verdicts after the summary.
+    newest = newest_reports(ingested.filing_refs.values())
     compute_claims(
         run,
         numbers,
         lambda: read_reports(
-            company,
-            filings,
-            newest_reports(ingested.filing_refs.values()),
-            cache=cache,
-            html_by_accession=ingested.filing_html,
+            company, filings, newest, cache=cache, html_by_accession=ingested.filing_html
         )[:2],
         claim_reader,
+        lambda: read_reports(
+            company,
+            filings,
+            newest,
+            cache=cache,
+            html_by_accession=ingested.filing_html,
+            specs=FOR_CLAIMS,
+        )[:2],
     )
 
     _stage(run, store, "planning")

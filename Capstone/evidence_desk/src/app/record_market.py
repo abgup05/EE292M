@@ -45,7 +45,7 @@ from app.core.facts import BOOK_GROUPS, GROUPS
 from app.core.frames import admitted_years, groups_for
 from app.core.peers import PEER_MEASURES
 from app.core.thirteenf import issuer_key
-from app.core.valuation import DEBT_TOTALS, SECURITIES_FALLBACK
+from app.core.valuation import DEBT_TOTALS
 from app.sources.frames import FRAME_URL, SIC_URL, FramesSource
 from app.sources.thirteenf import MANAGERS, SUBMISSIONS_URL, ThirteenFSource
 from app.sources.xbrl import company_facts_url
@@ -76,7 +76,7 @@ def _digest(payload: Any) -> tuple[str, int]:
 def trim_facts(payload: dict[str, Any]) -> dict[str, Any]:
     """The company facts with only the concepts the app reads and the cover page's shares."""
     wanted = {concept for group in BOOK_GROUPS.values() for concept in group.concepts}
-    wanted |= {concept for concept, _ in DEBT_TOTALS} | set(SECURITIES_FALLBACK)
+    wanted |= {concept for concept, _ in DEBT_TOTALS}
     gaap = payload.get("facts", {}).get("us-gaap", {})
     dei = payload.get("facts", {}).get("dei", {})
     return {
@@ -182,7 +182,7 @@ def record(refresh: bool) -> int:
             "original_bytes": size,
             "kept": (
                 "us-gaap concepts of app.core.facts.BOOK_GROUPS, of app.core.valuation's "
-                f"DEBT_TOTALS and SECURITIES_FALLBACK, and dei:{DEI_SHARES}"
+                f"DEBT_TOTALS, and dei:{DEI_SHARES}"
             ),
         }
         if refresh or not facts_path.exists():

@@ -204,11 +204,6 @@ DEBT_TOTALS: tuple[tuple[str, str], ...] = (
     ),
     ("LongTermDebt", "long-term debt; it may leave out the current portion"),
 )
-# Current marketable securities under tags the catalogue's group does not list.
-SECURITIES_FALLBACK: tuple[str, ...] = (
-    "DebtSecuritiesCurrent",
-    "AvailableForSaleSecuritiesCurrent",
-)
 BALANCE_SHEET_ANCHOR = "total_assets"
 
 
@@ -311,9 +306,9 @@ def total_debt(measures: Measures, companyfacts: object, as_of: date) -> Figure:
 def cash_and_securities(measures: Measures, companyfacts: object, as_of: date) -> Figure:
     """Cash and current marketable securities at the newest balance-sheet date.
 
-    The catalogue counts securities as zero when the company tags none under its
-    concepts; here a value under :data:`SECURITIES_FALLBACK` on that balance sheet is
-    added, and when there is none the result says securities were counted as zero.
+    The catalogue's measure, which reads current securities under each tag of its group
+    (:data:`app.core.facts.CLAIM_GROUPS`) and counts them as zero when the company tags
+    none; then the result says so.
     """
     label = "Cash and marketable securities"
     found = balance(measures, "cash_and_securities", label)
@@ -328,23 +323,9 @@ def cash_and_securities(measures: Measures, companyfacts: object, as_of: date) -
     listed = CLAIM_GROUPS["marketable_securities"].concepts
     if any(concept in i.label for i in found.inputs for concept in listed):
         return found
-    for concept in SECURITIES_FALLBACK:
-        raw = _raw_at(companyfacts, concept, anchor, as_of)
-        if raw is None:
-            continue
-        value, row = raw
-        cash = found.value
-        found.value = cash + value
-        found.formula = f"{usd_text(cash)} + {usd_text(value)}"
-        found.inputs.append(_raw_input("Marketable securities, current", concept, value, row))
-        found.note = (
-            f"Current marketable securities are read from {concept}: the company tags none "
-            "under the catalogue's concepts on this balance sheet."
-        )
-        return found
     found.note = (
         "No current marketable securities are tagged on this balance sheet "
-        f"({', '.join((*listed, *SECURITIES_FALLBACK))}): counted as zero."
+        f"({', '.join(listed)}): counted as zero."
     )
     return found
 

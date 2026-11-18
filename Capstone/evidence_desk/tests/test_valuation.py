@@ -124,8 +124,9 @@ def test_securities_under_another_tag_are_added_and_none_is_said_to_be_zero() ->
     payload = company({**other, "DebtSecuritiesCurrent": [fact(80 * M, "2025-12-31", **K2025)]})
     measures = Measures(FactBook(payload, as_of=AS_OF), fiscal_calendar(payload, as_of=AS_OF))
     cash = cash_and_securities(measures, payload, AS_OF)
-    # 120M of cash + 80M under DebtSecuritiesCurrent = 200M.
-    assert cash.value == 200 * M and "read from DebtSecuritiesCurrent" in cash.note
+    # 120M of cash + 80M under DebtSecuritiesCurrent = 200M, read by the measure itself.
+    assert cash.value == 200 * M and cash.note == ""
+    assert any("DebtSecuritiesCurrent" in i.label for i in cash.inputs)
     bare = company(other)
     measures = Measures(FactBook(bare, as_of=AS_OF), fiscal_calendar(bare, as_of=AS_OF))
     cash = cash_and_securities(measures, bare, AS_OF)

@@ -93,7 +93,8 @@ Rules a reader should know:
   what it means (Tesla: `DebtInstrumentCarryingAmount`).
 - **Cash**: cash and equivalents + current marketable securities. NVIDIA stopped tagging
   `MarketableSecuritiesCurrent` after October 2025 and tags `DebtSecuritiesCurrent` ($34.14B on
-  26 July 2026); that is added and said. Non-current securities are not subtracted (Apple holds
+  26 July 2026); the measure's concept group (`core/facts.py`) reads both tags, so a claim
+  test and the valuation agree. Non-current securities are not subtracted (Apple holds
   $80.21B of them on 26 September 2026), so the enterprise value here is higher than one that
   counts them. (Both figures: `make market-probe ARGS="--concepts 'NVDA:Securities'"` and
   `'AAPL:^Marketable'`, 18 November 2026. The app's own `cash_and_securities` measure, which the

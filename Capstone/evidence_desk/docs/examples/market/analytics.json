@@ -330,7 +330,7 @@
         {
           "ref_kind": "fact",
           "id": "DebtSecuritiesCurrent",
-          "label": "Marketable securities, current (DebtSecuritiesCurrent)",
+          "label": "Cash and marketable securities (DebtSecuritiesCurrent)",
           "value": 34143000000.0,
           "display": "$34.14B",
           "accession": "0001045810-26-000075",
@@ -341,7 +341,7 @@
       "reading": "Market value $5.50T plus total debt $33.37B less cash and marketable securities $56.59B (2026-07-26) is $5.48T.",
       "reading_origin": "code",
       "available": true,
-      "note": "Current marketable securities are read from DebtSecuritiesCurrent: the company tags none under the catalogue's concepts on this balance sheet. Enterprise value = market value + total debt − cash and marketable securities (leases, preferred stock and minority interests are left out). Both balances are of the newest balance sheet filed by the price's date; one last reported for an older date is not carried forward. Non-current marketable securities are not subtracted: for a company that holds a long-dated portfolio the enterprise value here is higher than one that counts it."
+      "note": "Enterprise value = market value + total debt − cash and marketable securities (leases, preferred stock and minority interests are left out). Both balances are of the newest balance sheet filed by the price's date; one last reported for an older date is not carried forward. Non-current marketable securities are not subtracted: for a company that holds a long-dated portfolio the enterprise value here is higher than one that counts it."
     },
     {
       "id": "ev_sales:NVDA:2026-09-30",

@@ -12,13 +12,12 @@ Price: quarter-end price from SEC Form 13F-HR 0001582202-26-000008 of Swiss Nati
 [enterprise_value:NVDA:2026-09-30] Enterprise value: $5.48T
   Market value $5.50T plus total debt $33.37B less cash and marketable securities $56.59B (2026-07-26) is $5.48T.
   formula: $5.50T + $33.37B − $56.59B
-  note: Current marketable securities are read from DebtSecuritiesCurrent: the company tags none under the catalogue's concepts on this balance sheet.
   input: Price per share = $228.38 (quarter-end price from SEC Form 13F-HR 0001582202-26-000008 of Swiss National Bank, filed 2026-11-12, 2026-09-30, filed 2026-11-12)
   input: Shares outstanding (dei:EntityCommonStockSharesOutstanding) = 24,100,000,000 (SEC company facts, 10-Q 0001045810-26-000075, 2026-08-21, filed 2026-08-26)
   input: Total debt (LongTermDebtNoncurrent) = $32.37B (SEC company facts, 10-Q 0001045810-26-000075, 2026-07-26, filed 2026-08-26)
   input: Total debt (LongTermDebtCurrent) = $1.00B (SEC company facts, 10-Q 0001045810-26-000075, 2026-07-26, filed 2026-08-26)
   input: Cash and marketable securities (CashAndCashEquivalentsAtCarryingValue) = $22.44B (SEC company facts, 10-Q 0001045810-26-000075, 2026-07-26, filed 2026-08-26)
-  input: Marketable securities, current (DebtSecuritiesCurrent) = $34.14B (SEC company facts, 10-Q 0001045810-26-000075, 2026-07-26, filed 2026-08-26)
+  input: Cash and marketable securities (DebtSecuritiesCurrent) = $34.14B (SEC company facts, 10-Q 0001045810-26-000075, 2026-07-26, filed 2026-08-26)
 [ev_sales:NVDA:2026-09-30] Enterprise value ÷ revenue: 18.1×
   Enterprise value ÷ revenue is 18.1×: $5.48T over revenue, four quarters ended 2026-07-26 of $302.97B.
   formula: $5.48T ÷ $302.97B

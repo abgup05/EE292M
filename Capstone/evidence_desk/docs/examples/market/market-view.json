@@ -123,7 +123,7 @@
           "url": ""
         },
         {
-          "label": "Marketable securities, current (DebtSecuritiesCurrent)",
+          "label": "Cash and marketable securities (DebtSecuritiesCurrent)",
           "value": 34143000000.0,
           "display": "$34.14B",
           "source": "SEC company facts, 10-Q 0001045810-26-000075",
@@ -140,7 +140,7 @@
       "reading": "Market value $5.50T plus total debt $33.37B less cash and marketable securities $56.59B (2026-07-26) is $5.48T.",
       "data_origin": "market_prices",
       "as_of": "2026-11-18",
-      "note": "Current marketable securities are read from DebtSecuritiesCurrent: the company tags none under the catalogue's concepts on this balance sheet."
+      "note": ""
     },
     {
       "id": "ev_sales:NVDA:2026-09-30",

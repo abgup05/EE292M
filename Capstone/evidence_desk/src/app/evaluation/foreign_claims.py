@@ -56,8 +56,11 @@ class Claim:
 
     @property
     def half(self) -> str:
-        """``development`` for an odd id, ``held_out`` for an even one."""
-        return "development" if int(self.id.lstrip("f")) % 2 else "held_out"
+        """``development`` for an odd id, ``held_out`` for an even one (set A's halves).
+
+        The id's letter prefix ("f" in set A, "g" in set B) is ignored.
+        """
+        return "development" if int(self.id.lstrip("abcdefghijklmnopqrstuvwxyz")) % 2 else "held_out"
 
 
 @dataclass(frozen=True)

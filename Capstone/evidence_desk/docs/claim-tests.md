@@ -117,9 +117,85 @@ model and the compiler against the key, saying where the answers came from. It w
 fake transport only. **No model answer has been recorded, so there is no model score.** Without a recording
 the command says: 52 cases, 0 answered, 52 requests to make.
 
+## Claims the grammar's author did not write
+
+`eval/claim-tests-foreign.json` holds 120 analyst claims written by another model (Claude Sonnet 5.5), told not
+to look at the repository: 40 each for NVIDIA, Apple and Microsoft, each marked by its author `numeric` or
+`not_numeric`. The brief expected 80 and 40; the file has 83 and 37. It was committed unchanged (cb0265c,
+SHA-256 `e73090c2…87983`) before anything was scored. Odd ids are the development half, even ids the held-out
+half (60 each; 43 and 40 numeric).
+
+**The judge is the grammar's author.** For each claim, `eval/claim-tests-foreign-judgements.json` records the
+test the compiler printed (or none) and a judgement with a one-line reason: `right`; `wrong` (it compiled to a
+test that does not mean what the sentence says); or not compiled, with the cause for a claim marked numeric
+(`metric` the tool does not have, `form` the grammar does not have, `period` it cannot place, `phrasing` of
+something it supports). Each entry says whether it was judged before or after the grammar changed. No second
+person or model has checked a judgement; read them line by line before trusting a number below. A wrong
+compile counts worse than no compile: it turns a misreading into a computed verdict.
+
+`make claim-foreign` scores it offline (`ARGS='--write eval/results/FILE.txt'` keeps the text); it exits 1 while
+any reading it prints is unjudged. `tests/test_foreign_claims.py` pins the final numbers.
+
+| Numeric claims (author's label) | Before (09ce28a) | After (c8aca10) |
+|---|---|---|
+| **Held-out half** (40): compiled and right | 7 | 8 |
+| Held-out: compiled and **wrong** | 15 | 11 |
+| Held-out: not compiled (metric, form, period, phrasing) | 18 (8, 5, 1, 4) | 21 (9, 8, 1, 3) |
+| Development half (43): compiled and right | 8 | 14 |
+| Development: compiled and **wrong** | 6 | 0 |
+| Development: not compiled (metric, form, period, phrasing) | 29 (18, 7, 0, 4) | 29 (19, 10, 0, 0) |
+| All 83: right, wrong, not compiled | 15, 21, 47 | 22, 11, 50 |
+
+Of the 37 claims marked `not_numeric` (17 development, 20 held out), none compiled, before or after. Records:
+`eval/results/claim-tests-foreign-before.txt` and `claim-tests-foreign-after.txt`.
+
+The headline is the held-out half: on claims written by someone else, the grammar reads 8 of 40 numeric claims
+rightly and 11 wrongly, and leaves 21 alone. Most of what it leaves are measures it does not have (debt,
+buybacks, dividends, share count, a segment's history) or forms it does not have (a condition held in each of
+several periods, a rank, an approximate value, two statements in one).
+
+**What changed, from the development half only.** A condition held in each of several periods ("above 70% for
+the last four quarters", "in each of the last three quarters", "every year") is refused, except a rise in each
+of the last N years or N sequential quarters, which is the streak form. Two statements joined by "but",
+"though", "although", "despite" or "whereas" are refused. Marketable securities and short-term investments are
+measures outside the set, no longer read as cash. "At or above", "at or below", "hit", "reached" and "better
+than" are comparators. A share may be "of the total", and its subject may carry its revenue words ("iPad sales",
+"revenue from the United States"). Spans may be in fiscal years. No metric was added: the commonest missing
+measures (share repurchases, debt, the diluted share count, dividends) each appear in one or two development
+claims, and a new measure is a new concept group in `core/facts.py`, which changes the metrics report, the
+restatement ledger and the tripwire, and would need `make figures` on the eight probe companies before and after.
+
+**The discipline, which cannot be proven.** The held-out results of the first scoring were seen before the
+grammar changed. No rule was added or changed because of an even-id claim; each rule's test sentences in
+`tests/test_claimtest.py` are new sentences, not foreign ones. Some even-id claims moved as a side effect
+(f006, f052, f084 and f096 are now refused by the each-period rule; f088 now compiles as a share). Nothing but
+this statement shows that the even ids were not used.
+
+**The wrong compiles that remain** are all in the held-out half, and each is a pattern no development claim
+showed:
+
+- a part of the company read as the whole: f050 (a product line's revenue as total revenue), f104 (a segment's
+  operating income and revenue as the company's);
+- a measure the grammar does not know read as one it does: f064 (SG&A, compared as gross profit with itself),
+  f106 (sales and marketing as a percent of revenue, read as revenue shrinking), f068 (receivables plus vendor
+  non-trade receivables as receivables);
+- a period read wrongly: f016 ("between fiscal 2024 and fiscal 2025" bound to FY2024), f058 (the named
+  "September quarter" ignored), f098 ("on a trailing basis" read as the fiscal year);
+- half a claim: f020 (the "more than ten points" of an expansion dropped), f060 ("and has barely moved in three
+  years" dropped), f102 ("roughly in line with revenue" read as receivables grew).
+
+They are left because fixing them now would be fitting to the held-out half. Each would be the next thing to fix
+with new development claims.
+
+**Own labels.** The 150 development and 60 held-out labels and the 52 golden results still pass unchanged
+(`tests/test_foreign_claims.py::test_the_own_labels_still_compile_exactly`, `tests/test_claim_results.py`). That
+pin compiles the 60 own held-out claims a third time, as pass or fail only; the brief required it. No foreign
+claim showed an own label to be wrong.
+
 ## What is not shown
 
-- That the grammar reads claims written by anyone but its author (see the label scores above).
+- That the grammar reads analysts' claims well: on 40 held-out numeric claims another model wrote it reads 8
+  rightly and 11 wrongly, by its own author's judgement (above).
 - Whether a computed test agrees with what an analyst means: "expanding" is read as against the same quarter a
   year earlier, not the previous quarter. The canonical test is printed beside every outcome so a reader can
   see which comparison was made.

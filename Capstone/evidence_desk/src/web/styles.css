@@ -73,17 +73,21 @@
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", "Noto Sans", "FreeSans", system-ui, Arial, sans-serif;
   --font-mono: "SF Mono", ui-monospace, "JetBrains Mono", "IBM Plex Mono", "Cascadia Mono", Menlo, Consolas, "DejaVu Sans Mono", "Liberation Mono", "FreeMono", monospace;
 
-  /* What each kind of text is set in. Paper: prose in the serif, data in the sans. */
-  --font-prose: var(--font-serif);
+  /* What each kind of text is set in. Paper: the serif is for what was filed and for the summary
+     (--font-quote); one sans sets everything else, so no line changes face part way. */
+  --font-quote: var(--font-serif);
+  --font-prose: var(--font-sans);
   --font-ui: var(--font-sans);
   --font-control: var(--font-sans);
-  --font-label: var(--font-serif);
+  --font-label: var(--font-sans);
   --font-data: var(--font-sans);
   --font-code: var(--font-mono);
-  --label-caps: all-small-caps;
-  --label-transform: none;
-  --label-track: 0.06em;
-  --label-size: 0.95rem;
+  --label-caps: normal;
+  --label-transform: uppercase;
+  --label-track: 0.05em;
+  --label-size: 0.6875rem;
+  /* Something you can click. The accent is for selection and focus. */
+  --link: var(--accent);
   --mono-weight: 500;
 
   --step--2: 0.72rem;
@@ -108,7 +112,7 @@
   --s-5: 1.5rem;
   --s-6: 2rem;
   /* The frame: the bar's height, a pane's padding, the widths of the rail and the inspector. */
-  --bar-h: 2.75rem;
+  --bar-h: 2rem;
   --pane-pad: 1rem;
   --rail-w: 21.5rem;
   --insp-w: 26rem;
@@ -153,8 +157,10 @@
   --chart-bar: #6f7c8a;
   --gap-hatch: #3b3420;
   --bar-bg: #000000;
-  --bar-rule: #ffad33;
 
+  /* Terminal: mono for numbers, identifiers, labels and controls, without tracking; the sans for
+     sentences. A size smaller and tighter than Paper throughout: 13px body at 1.35, 22px rows. */
+  --font-quote: var(--font-sans);
   --font-prose: var(--font-sans);
   --font-ui: var(--font-sans);
   --font-control: var(--font-mono);
@@ -162,16 +168,27 @@
   --font-data: var(--font-mono);
   --label-caps: normal;
   --label-transform: uppercase;
-  --label-track: 0.09em;
-  --label-size: 0.75rem;
+  --label-track: 0;
+  --label-size: 0.6875rem;
   --mono-weight: 500;
+  --link: var(--ink);
 
-  --prose-size: 0.95rem;
-  --prose-leading: 1.55;
+  --step--2: 0.6875rem;
+  --step--1: 0.75rem;
+  --step-0: 0.8125rem;
+  --step-1: 0.875rem;
+  --step-2: 1rem;
+  --step-3: 1.25rem;
+  --step-4: 1.5rem;
+  --prose-size: 0.8125rem;
+  --prose-leading: 1.35;
   --radius: 0;
-  --row-pad: 0.3rem;
+  --row-pad: 0.14rem;
   --gutter: 1.1rem;
-  --bar-h: 2.5rem;
+  --bar-h: 2rem;
+  --rail-w: 19rem;
+  --insp-w: 24rem;
+  --bar-rule: var(--line-strong);
   --pane-pad: 0.75rem;
   --pane-main: var(--bg);
   --pane-side: var(--surface);
@@ -188,7 +205,7 @@
     --model: #b9a3ff; --model-bg: #1e1838; --reject: #ff6b6b; --reject-bg: #351313;
     --mark-bg: #4d3f00; --mark-ink: #fff4c7; --change: #5ad7e4; --change-bg: #0b2529;
     --rule: #b5cc6a; --rule-bg: #1d230c; --neg: #ff8a65; --chart-ink: #e8e3d4; --chart-bar: #6f7c8a;
-    --gap-hatch: #3b3420; --bar-bg: #000000; --bar-rule: #ffad33;
+    --gap-hatch: #3b3420; --bar-bg: #000000; --bar-rule: #46525f; --link: #e8e3d4;
     --pane-main: var(--bg); --pane-side: var(--surface);
     color-scheme: dark;
   }
@@ -211,8 +228,9 @@ body {
   overflow-wrap: break-word;
   font-variant-numeric: tabular-nums lining-nums;
 }
+:root[data-theme="terminal"] body { line-height: 1.35; }
 
-a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 0.18em; }
+a { color: var(--link); text-decoration-line: underline; text-decoration-thickness: 1px; text-underline-offset: 0.18em; }
 a:hover { text-decoration-thickness: 2px; }
 abbr[title] { text-decoration: underline dotted; text-underline-offset: 0.15em; cursor: help; }
 code, kbd, samp { font-family: var(--font-code); font-size: 0.9em; font-weight: var(--mono-weight); }
@@ -382,7 +400,7 @@ kbd {
   background: var(--ink);
   border-radius: var(--radius);
 }
-:root[data-theme="terminal"] .brand { font-size: 0.85rem; color: var(--accent); }
+:root[data-theme="terminal"] .brand { font-size: 0.85rem; color: var(--link); }
 :root[data-theme="terminal"] .brand-mark { color: #000; background: var(--accent); }
 
 .cmd-ticker {
@@ -410,7 +428,7 @@ kbd {
   border-radius: var(--radius);
 }
 .cmd-ticker input::placeholder { color: var(--ink-2); opacity: 0.55; font-weight: 500; }
-:root[data-theme="terminal"] .cmd-ticker input { color: var(--accent); background: #000; border-color: var(--line-strong); caret-color: var(--accent); }
+:root[data-theme="terminal"] .cmd-ticker input { color: var(--link); background: #000; border-color: var(--line-strong); caret-color: var(--link); }
 .key-hint { font-size: 0.7rem; color: var(--ink-2); }
 .cmd-error {
   position: absolute;
@@ -457,11 +475,11 @@ body.is-first .howto-title { display: none; }
   border-radius: var(--radius);
   white-space: nowrap;
 }
-.tool:hover { border-color: var(--accent); }
+.tool:hover { border-color: var(--link); }
 .tool.small { padding: 0.05rem 0.45rem; font-size: var(--step--2); }
 .thesis-button { align-self: center; margin-left: var(--s-3); }
 body.drawer-open .thesis-button { background: var(--ink); color: var(--bar-bg); }
-.leave-sample { text-decoration: none; color: var(--accent); border-color: var(--accent); }
+.leave-sample { text-decoration: none; color: var(--link); border-color: var(--link); }
 .theme-toggle { gap: 0 !important; padding: 0 0.45rem 0 0 !important; }
 .theme-option { padding: 0.2rem 0.5rem; color: var(--ink-2); }
 :root:not([data-theme="terminal"]) .theme-option[data-theme-option="paper"],
@@ -478,7 +496,7 @@ body.drawer-open .thesis-button { background: var(--ink); color: var(--bar-bg); 
 .lede { margin: 0; }
 .intro { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-3); align-items: start; }
 .intro-line { margin: 0; font-family: var(--font-prose); font-size: var(--step-3); line-height: 1.15; font-weight: 500; letter-spacing: -0.01em; max-width: 24ch; }
-:root[data-theme="terminal"] .intro-line { font-family: var(--font-mono); font-size: var(--step-2); letter-spacing: 0; max-width: 34ch; color: var(--accent); }
+:root[data-theme="terminal"] .intro-line { font-family: var(--font-mono); font-size: var(--step-2); letter-spacing: 0; max-width: 34ch; color: var(--link); }
 .takeaway { max-width: 62ch; font-family: var(--font-prose); font-size: var(--step-0); line-height: 1.5; color: var(--ink-2); }
 .intro-samples .rail-title { margin-top: var(--s-1); }
 .sample-nav { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); font-size: var(--step--1); }
@@ -495,12 +513,12 @@ body:not(.is-first) .intro-line { font-size: var(--step-1); max-width: none; }
 .engine-line { margin: 0; max-width: 62ch; font-size: var(--step--2); color: var(--ink-2); }
 .distinction { margin: 0 0 0.45rem; font-size: var(--step--1); color: var(--ink-2); max-width: 88ch; }
 .distinction strong { color: var(--ink); }
-button.linklike { padding: 0; border: 0; background: none; color: var(--accent); font: inherit; text-decoration: underline; cursor: pointer; text-align: left; }
+button.linklike { padding: 0; border: 0; background: none; color: var(--link); font: inherit; text-decoration: underline; cursor: pointer; text-align: left; }
 .engine-name { font-weight: 600; }
 /* A long provenance note: its first clause in view, the whole note one click away. */
 .prov-more { display: inline; }
 .prov-more > summary { display: inline; cursor: pointer; }
-.prov-more > summary::after { content: " (full note)"; color: var(--accent); }
+.prov-more > summary::after { content: " (full note)"; color: var(--link); }
 .prov-more[open] > summary::after { content: " (hide the full note)"; }
 .prov-more[open] > .prov-full { display: block; margin-top: 0.15rem; }
 .prov-full { color: var(--ink-2); }
@@ -600,14 +618,14 @@ button {
   cursor: pointer;
 }
 button.primary { background: var(--accent); color: var(--accent-ink); }
-button.secondary { background: transparent; color: var(--accent); }
+button.secondary { background: transparent; color: var(--link); }
 button.small { padding: 0.2rem 0.55rem; font-size: var(--step--1); }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
 button.primary:not(:disabled):hover { filter: brightness(1.12); }
 button.secondary:not(:disabled):hover { background: var(--surface-2); }
 .actions-lookup button.secondary { font-size: var(--step--1); padding: 0.3rem 0.6rem; }
 :root[data-theme="terminal"] .actions-lookup button.secondary { color: var(--ink); border-color: var(--line-strong); }
-:root[data-theme="terminal"] .actions-lookup button.secondary:not(:disabled):hover { border-color: var(--accent); color: var(--accent); }
+:root[data-theme="terminal"] .actions-lookup button.secondary:not(:disabled):hover { border-color: var(--link); color: var(--link); }
 
 .form-note { margin-top: 0.7rem; padding: 0.5rem 0.65rem; border-left: 2px solid var(--line-strong); background: var(--surface-2); color: var(--ink); }
 
@@ -681,7 +699,7 @@ button.secondary:not(:disabled):hover { background: var(--surface-2); }
 .banner-summary .status-word { font-weight: 700; }
 .banner-sep { color: var(--ink-2); padding: 0 0.25rem; }
 .banner-limits { color: var(--ink); font-weight: 600; }
-.banner-open { margin-left: auto; color: var(--accent); }
+.banner-open { margin-left: auto; color: var(--link); }
 .banner-open::after { content: " ▾"; }
 .banner-fold[open] .banner-open::after { content: " ▴"; }
 .banner.st-partial .banner-fold > summary, .banner.st-failed .banner-fold > summary { box-shadow: inset 3px 0 0 var(--limit); padding-left: var(--s-3); }
@@ -806,7 +824,7 @@ button.secondary:not(:disabled):hover { background: var(--surface-2); }
 .mark-list li.mark-limit { padding-left: 1.25rem; text-indent: -1.25rem; }
 .mark-list li.mark-limit > .g-limit { display: inline-block; width: 1rem; text-indent: 0; }
 .errors-all { margin-top: 0.5rem; font-size: var(--step--1); }
-.errors-all > summary { cursor: pointer; font-weight: 600; color: var(--accent); }
+.errors-all > summary { cursor: pointer; font-weight: 600; color: var(--link); }
 .errors-all > ul { margin-top: 0.4rem; }
 
 /* ------------------------------------------------------------ verdict stamps and stance pills */
@@ -1029,15 +1047,14 @@ button.decide[aria-pressed="true"] { background: var(--accent); color: var(--acc
 .legend-list dd { margin: 0; color: var(--ink-2); }
 .legend-list .mark-limit, .legend-list .mark-reject { font-weight: 700; }
 .legend-mark { background: var(--mark-bg); color: var(--mark-ink); padding: 0 0.2em; font-family: var(--font-prose); }
-.legend-link { color: var(--accent); text-decoration: underline; text-underline-offset: 0.18em; }
+.legend-link { color: var(--link); text-decoration: underline; text-underline-offset: 0.18em; }
 .legend-tl { width: 4rem; height: 1.25rem; vertical-align: middle; overflow: visible; }
 
 /* ------------------------------------------------------------ summary */
 
 .origin { margin: 0 0 0.4rem; font-size: var(--step--1); }
 .origin-tag { color: var(--ink-2); }
-.summary { margin: 0; max-width: 72ch; font-family: var(--font-prose); font-size: var(--prose-size); line-height: var(--prose-leading); }
-#summary-section .summary::first-letter { font-size: 1.15em; font-weight: 700; }
+.summary { margin: 0; max-width: 72ch; font-family: var(--font-quote); font-size: var(--prose-size); line-height: var(--prose-leading); }
 
 /* ------------------------------------------------------------ time line */
 
@@ -1084,7 +1101,7 @@ button.decide[aria-pressed="true"] { background: var(--accent); color: var(--acc
 .tl-tip p { margin: 0; }
 .tl-tip .tl-tip-head { font-weight: 700; font-family: var(--font-data); }
 .tl-tip .tl-tip-items { color: var(--ink-2); }
-.tl-tip .tl-tip-open { color: var(--accent); margin-top: 0.15rem; }
+.tl-tip .tl-tip-open { color: var(--link); margin-top: 0.15rem; }
 .tl-caption { margin: 0.35rem 0 0; font-size: var(--step--1); color: var(--ink-2); max-width: 90ch; }
 .tl-caption strong { color: var(--ink); }
 
@@ -1148,7 +1165,7 @@ button.decide[aria-pressed="true"] { background: var(--accent); color: var(--acc
 .chart-block { margin: 0; min-width: 0; padding-top: 0.4rem; border-top: 1px solid var(--line-strong); }
 .chart-title { font-weight: 700; font-size: var(--label-size); margin-bottom: 0.25rem; color: var(--ink); }
 .chart-table { margin-top: 0.3rem; font-size: var(--step--1); }
-.chart-table > summary { cursor: pointer; color: var(--accent); }
+.chart-table > summary { cursor: pointer; color: var(--link); }
 
 svg.chart { display: block; width: 100%; height: auto; font-family: var(--font-data); overflow: visible; }
 .chart .axis { stroke: var(--ink); stroke-width: 1; }
@@ -1290,7 +1307,7 @@ svg.chart { display: block; width: 100%; height: auto; font-family: var(--font-d
 .check-list > li, .cited-list > li { display: inline; }
 .check-list > li + li::before, .cited-list > li + li::before { content: " · "; color: var(--ink-2); }
 .check-detail { display: inline-block; margin-left: 0.4rem; }
-.check-detail > summary { cursor: pointer; color: var(--accent); }
+.check-detail > summary { cursor: pointer; color: var(--link); }
 .check-detail ul { margin: 0.2rem 0 0; padding-left: 1.1rem; }
 .check-detail > .checker-reason { white-space: normal; }
 .cited .fig-value { text-align: left; }
@@ -1577,9 +1594,9 @@ del.seg-del { text-decoration-line: line-through; text-decoration-color: var(--i
 .bd-total th, .bd-total td { border-top: 1.5px solid var(--ink-2); border-bottom: none; }
 .bd-total th { font-weight: 700; }
 .bd-change { display: inline; margin-left: 0.5rem; }
-.bd-change > summary { display: inline; cursor: pointer; color: var(--accent); list-style: none; }
+.bd-change > summary { display: inline; cursor: pointer; color: var(--link); list-style: none; }
 .bd-change > summary::-webkit-details-marker { display: none; }
-.bd-change > summary .num-neg { color: var(--neg); text-decoration: underline; text-decoration-color: var(--accent); }
+.bd-change > summary .num-neg { color: var(--neg); text-decoration: underline; text-decoration-color: var(--link); }
 .bd-change[open] { display: block; margin: 0.2rem 0 0; }
 .bd-formula { display: block; max-width: 26rem; margin-left: auto; white-space: normal; text-align: left; color: var(--ink-2); font-size: 0.95em; }
 .bd-no-change { color: var(--ink-2); }
@@ -1595,7 +1612,7 @@ p.bd-adds-yes, dt .bd-adds-yes { font-weight: 650; color: var(--ink); }
 
 /* The run option: a checkbox beside its label, its help under both. */
 .field-check { display: grid; grid-template-columns: auto 1fr; gap: 0.15rem 0.5rem; align-items: start; }
-.field-check input[type="checkbox"] { width: auto; margin: 0.25rem 0 0; padding: 0; accent-color: var(--accent); }
+.field-check input[type="checkbox"] { width: auto; margin: 0.25rem 0 0; padding: 0; accent-color: var(--link); }
 .field-check label { font-weight: 600; }
 .field-check .hint, .field-check .field-error { grid-column: 2; margin: 0; }
 
@@ -1822,10 +1839,10 @@ details.ct-readings > summary { cursor: pointer; font-size: var(--step--1); colo
 .tot-note { margin: 0.3rem 0 0; }
 .tot-claim.no-history .tot-note { margin-top: 0.4rem; padding-left: 0.6rem; border-left: 2px dashed var(--line-strong); }
 .tot-flips { margin: 0.35rem 0 0; padding: 0; list-style: none; font-size: var(--step--1); display: grid; gap: 0.15rem; }
-.tot-flips .glyph { color: var(--accent); }
+.tot-flips .glyph { color: var(--link); }
 .tot-flips code { font-size: var(--step--2); overflow-wrap: anywhere; }
 .tot-table { margin-top: 0.35rem; font-size: var(--step--1); }
-.tot-table > summary { cursor: pointer; color: var(--accent); }
+.tot-table > summary { cursor: pointer; color: var(--link); }
 .tot-table table { width: 100%; min-width: 44rem; border-collapse: collapse; font-family: var(--font-data); font-size: var(--step--2); }
 .tot-table th, .tot-table td { padding: 0.2rem 0.45rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
 .tot-table td.num { text-align: right; }
@@ -1960,7 +1977,7 @@ body.as-of-run .rail-head { border-left: 6px double var(--ink); }
 .watch-policy { margin: 0 0 0.5rem; padding: 0; border: 0; }
 .watch-policy legend { padding: 0; margin-bottom: 0.2rem; font-size: var(--step--1); font-weight: 600; }
 .watch-choice { display: inline-flex; align-items: baseline; gap: 0.35rem; margin-right: 1.4rem; font-size: var(--step--1); }
-.watch-choice > input { width: auto; min-width: 0; margin: 0; padding: 0; accent-color: var(--accent); }
+.watch-choice > input { width: auto; min-width: 0; margin: 0; padding: 0; accent-color: var(--link); }
 .watch-choice .hint { font-weight: 400; }
 .watch-actions { display: flex; gap: 0.5rem; align-items: center; }
 .watch-list { list-style: none; margin: 0; padding: 0; }
@@ -1985,11 +2002,11 @@ body.as-of-run .rail-head { border-left: 6px double var(--ink); }
   color: var(--ink);
 }
 .kind-tag.k-moved { color: var(--change); border-color: var(--change); background: var(--change-bg); }
-.kind-tag.k-waiting { border-style: dashed; color: var(--accent); border-color: var(--accent); }
+.kind-tag.k-waiting { border-style: dashed; color: var(--link); border-color: var(--link); }
 .kind-tag.k-running { border-style: dotted; }
 .kind-tag.k-failed { color: var(--limit); border-color: var(--limit); background: var(--limit-bg); }
 .kind-tag.k-not_relevant, .kind-tag.k-nothing_moved { color: var(--ink-2); }
-.unread-mark { font-weight: 800; color: var(--accent); }
+.unread-mark { font-weight: 800; color: var(--link); }
 .read-mark, .inbox-when { color: var(--ink-2); }
 .inbox-headline { margin: 0.3rem 0 0.35rem; font-family: var(--font-prose); font-size: var(--step-1); line-height: 1.3; max-width: 70ch; }
 .inbox-filing { font-size: var(--step--1); }
@@ -2022,7 +2039,7 @@ body.as-of-run .rail-head { border-left: 6px double var(--ink); }
 .moved-verdicts li { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; }
 .moved-claim { font-family: var(--font-prose); }
 .moved-arrow { color: var(--ink-2); font-weight: 700; }
-.moved-compare > summary { cursor: pointer; color: var(--accent); }
+.moved-compare > summary { cursor: pointer; color: var(--link); }
 .moved-compare-body { margin-top: 0.4rem; }
 .inbox-actions { margin-top: 0.4rem; font-size: var(--step--1); }
 .inbox-folded { margin-top: 0.6rem; border-top: 1px solid var(--line); }
@@ -2244,9 +2261,6 @@ body.as-of-run .rail-head { border-left: 6px double var(--ink); }
   body.app .pane-head .pane-label { flex: 1 1 auto; margin: 0; }
   body.app .inspect-close { display: none; }
   body.app .inspect-body { padding-top: var(--s-3); }
-  /* Nothing to read at the side on this tab: the centre pane takes the width. */
-  body.app .ws.no-inspector { grid-template-columns: var(--rail-w) minmax(0, 1fr); grid-template-areas: "strip strip" "rail centre"; }
-  body.app .ws.no-inspector .inspector { display: none; }
 
   /* The selected claim's docket, without its own heading: the centre pane's head says it. */
   body.app .claim { margin: 0; border: 0; background: transparent; }
@@ -2258,7 +2272,7 @@ body.as-of-run .rail-head { border-left: 6px double var(--ink); }
   body.app .ws[data-tab="overview"] .part-findings :is(.queries, .finding-meta, .checks, .cited, .review-slot, .finding-margin, .cc-slot) { display: none; }
 
   /* What can be picked says so, and the item being read in the inspector is marked on the side the inspector is. */
-  body.app .pick { display: inline-block; justify-self: start; margin: var(--s-2) 0 0; padding: 0; border: 0; background: none; color: var(--accent); font-family: var(--font-control); font-size: var(--step--1); font-weight: 600; text-align: left; text-decoration: underline; text-underline-offset: 0.18em; cursor: pointer; }
+  body.app .pick { display: inline-block; justify-self: start; margin: var(--s-2) 0 0; padding: 0; border: 0; background: none; color: var(--link); font-family: var(--font-control); font-size: var(--step--1); font-weight: 600; text-align: left; text-decoration: underline; text-underline-offset: 0.18em; cursor: pointer; }
   body.app .ct-pick { margin-top: 0 !important; }
   body.app .ws .centre :is(.finding, .event, .ct)[data-pick]:hover { background: var(--surface-2); }
   body.app .ws .centre .is-picked { box-shadow: inset -3px 0 0 var(--accent); }
@@ -2312,7 +2326,6 @@ body.as-of-run .rail-head { border-left: 6px double var(--ink); }
   body.app .inspector { position: fixed; z-index: 30; left: 0; right: 0; bottom: 0; height: min(50vh, 28rem); display: none; border-left: 0; border-top: 2px solid var(--bar-rule); box-shadow: 0 -10px 28px rgb(0 0 0 / 0.22); }
   body.app .inspector.is-sheet-open { display: flex; }
   body.app .inspect-close { display: inline-flex; }
-  body.app .ws.no-inspector { grid-template-columns: minmax(0, 1fr); grid-template-areas: "strip" "rail" "centre"; }
   /* The bar takes a second row for its tools. */
   .cmdbar { flex-wrap: wrap; }
   .cmd-tools { flex: 1 1 100%; justify-content: flex-end; padding: 0 0 var(--s-1); }
@@ -2362,8 +2375,8 @@ body.as-of-run .rail-head { border-left: 6px double var(--ink); }
 :root[data-theme="terminal"] .score-row .score-counts { font-family: var(--font-sans); }
 :root[data-theme="terminal"] .rail-all:hover, :root[data-theme="terminal"] .score-row:hover { box-shadow: inset 2px 0 0 var(--accent); }
 :root[data-theme="terminal"] .rail-all[aria-current="true"], :root[data-theme="terminal"] .score-row[aria-current="true"] { background: #000; box-shadow: inset 3px 0 0 var(--accent); }
-:root[data-theme="terminal"] .score-row[aria-current="true"] .claim-id, :root[data-theme="terminal"] .rail-all[aria-current="true"] .rail-all-name { color: var(--accent); }
-:root[data-theme="terminal"] .sel-id { color: var(--accent); }
+:root[data-theme="terminal"] .score-row[aria-current="true"] .claim-id, :root[data-theme="terminal"] .rail-all[aria-current="true"] .rail-all-name { color: var(--link); }
+:root[data-theme="terminal"] .sel-id { color: var(--link); }
 
 /* Mono is wide: the bar's controls are set a size smaller so the bar stays one row. */
 :root[data-theme="terminal"] .cmdbar .tool { padding: 0.15rem 0.45rem; font-size: 0.75rem; }
@@ -2372,14 +2385,14 @@ body.as-of-run .rail-head { border-left: 6px double var(--ink); }
 
 :root[data-theme="terminal"] .tabs { border-bottom: 1px solid var(--accent); }
 :root[data-theme="terminal"] .tab { margin-bottom: 0; padding: 0.3rem 0.7rem 0.3rem 0.3rem; border-bottom: 0; border-right: 1px solid var(--line); font-size: 0.72rem; letter-spacing: 0.07em; text-transform: uppercase; }
-:root[data-theme="terminal"] .tab-key { min-width: 1.6em; border: 1px solid var(--line-strong); border-radius: 0; background: #000; color: var(--accent); }
+:root[data-theme="terminal"] .tab-key { min-width: 1.6em; border: 1px solid var(--line-strong); border-radius: 0; background: #000; color: var(--link); }
 :root[data-theme="terminal"] .tab[aria-selected="true"] { color: #000; background: var(--accent); }
 :root[data-theme="terminal"] .tab[aria-selected="true"] .tab-key { border-color: #000; }
 
 :root[data-theme="terminal"] .tape-code { display: inline-block; margin-right: var(--s-2); padding: 0 0.4rem; color: #000; background: var(--accent); font-weight: 800; }
 :root[data-theme="terminal"] .tape-row { border: 1px solid var(--line-strong); background: #000; gap: 0; }
 :root[data-theme="terminal"] .tape-cell { border-right: 1px solid var(--line); padding: 0.3rem 0.55rem 0.35rem; }
-:root[data-theme="terminal"] .tape-value { font-size: var(--step-1); color: var(--accent); }
+:root[data-theme="terminal"] .tape-value { font-size: var(--step-1); color: var(--link); }
 :root[data-theme="terminal"] .tape-value.is-neg { color: var(--neg); }
 :root[data-theme="terminal"] .tape-label { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.04em; }
 :root[data-theme="terminal"] .tape-cell .spark-line { stroke: var(--ink); }
@@ -2410,7 +2423,7 @@ body.as-of-run .rail-head { border-left: 6px double var(--ink); }
   background: #000;
   border-top: 1px solid var(--accent);
 }
-:root[data-theme="terminal"] .statusbar kbd { color: var(--accent); border-color: var(--line-strong); background: #000; margin-right: 0.15rem; }
+:root[data-theme="terminal"] .statusbar kbd { color: var(--link); border-color: var(--line-strong); background: #000; margin-right: 0.15rem; }
 :root[data-theme="terminal"] .statusbar-run { margin-left: auto; color: var(--ink); }
 
 /* ------------------------------------------------------------ a phone: one column, the tabs stay in view */
@@ -2468,6 +2481,279 @@ body.as-of-run .rail-head { border-left: 6px double var(--ink); }
   *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }
 
+/* ------------------------------------------------------------ hierarchy, restraint, density
+ * What a second look asked for. The verdict is the loudest mark on the screen: a solid stamp,
+ * and one cell per claim in a strip drawn the same way everywhere. Who wrote or computed a
+ * thing is said in dim words with a glyph, never a box. A stripe at the left edge means two
+ * things only: a finding's stance, and the row the rail has selected. In Terminal amber means
+ * selection and focus and nothing else. On paper the stamps keep their outline (a printer does
+ * not print fills), so the fills are for a screen. */
+
+.count-value { font-family: inherit; }
+.ct-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-3); margin: 0; font-family: var(--font-data); font-size: var(--step--1); }
+.ct-bar-svg { flex: 0 0 auto; }
+.ct-bar-rail { stroke: var(--line-strong); stroke-width: 1; }
+.ct-bar-value { fill: var(--neutral); }
+.ct-bar.o-holds .ct-bar-value { fill: var(--support); }
+.ct-bar.o-fails .ct-bar-value { fill: var(--challenge); }
+.ct-bar-mark { stroke: var(--ink); stroke-width: 2; }
+
+/* A value on its decimal point, whatever its unit: the whole part, the decimals, the unit. */
+.dec { grid-template-columns: auto 3ch 2.4ch; }
+.dec-unit { text-align: left; white-space: nowrap; }
+.tape-value.dec { grid-template-columns: auto auto auto; }
+.fig-row > summary { grid-template-columns: minmax(0, 1fr) 5.5rem minmax(8rem, auto); }
+.fig-label { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); min-width: 0; }
+.fig-name { min-width: 0; }
+.fig-asof { flex: 0 0 auto; white-space: nowrap; }
+.fig-asof .sep { display: none; }
+/* A breakdown's change is a column of its own beside the value, so both line up down the table. */
+.bd-cell .bd-display { display: inline-block; min-width: 6ch; text-align: right; }
+.bd-cell .bd-change, .bd-cell .bd-no-change { display: inline-block; width: 7ch; margin-left: var(--s-2); text-align: right; }
+.bd-cell .bd-change[open] { display: block; width: auto; }
+
+/* The tiles share a baseline: a label has two lines whether it needs them or not. */
+.tape-cell { grid-template-rows: 2.5em auto 1.1rem; align-content: start; }
+.tape-label { height: 2.5em; min-height: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tape-cell .spark-empty { display: block; width: 100%; height: 1.1rem; }
+.tot-state, .tot-date, .tot-flip-label, .tl-lane, .tl-tick-label, .tl-year, .tl-gap-label { font-size: 11px; }
+
+/* The Overview of the whole thesis: when the run was made and the result, then a grid. */
+.overview-mast { display: grid; gap: var(--s-2); margin-bottom: var(--s-4); padding-bottom: var(--s-3); border-bottom: 1px solid var(--line-strong); }
+.mast-line, .mast-tally { margin: 0; font-size: var(--step--1); color: var(--ink-2); }
+.overview-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-5); }
+.overview-grid > .block { margin-top: 0; min-width: 0; }
+#verdicts-section { container: verdicts / inline-size; }
+#verdict-table { overflow-x: auto; }
+.vtable { width: 100%; border-collapse: collapse; font-family: var(--font-data); font-size: var(--step--1); }
+.vtable th, .vtable td { padding: var(--row-pad) 0.4rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; white-space: nowrap; }
+.vtable thead th { color: var(--ink-2); font-weight: 600; font-family: var(--font-label); font-size: var(--label-size); text-transform: var(--label-transform); letter-spacing: var(--label-track); border-bottom: 1px solid var(--ink); }
+.vtable .num { text-align: right; }
+.vtable .vrow-id { font-family: var(--font-code); font-weight: 700; }
+.vtable .score-verdicts { flex-wrap: nowrap; }
+.vtable .slot-label, .vtable .review-tally, .vtable .undecided { display: none; }
+/* A narrow table keeps the claim, its verdict and its test; the margin, readers and findings come with room. */
+@container verdicts (max-width: 24rem) {
+  .vtable :is(th, td):nth-child(n + 5) { display: none; }
+}
+@container verdicts (max-width: 21rem) {
+  .vtable :is(th, td):nth-child(n + 4) { display: none; }
+}
+@container note (min-width: 36rem) {
+  .overview-grid { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); grid-template-areas: "sum vrd" "tape tape"; }
+  #summary-section { grid-area: sum; }
+  #verdicts-section { grid-area: vrd; }
+  #tape-section { grid-area: tape; }
+  /* Terminal: the claims as a table with the figures beside it, the prose under both. */
+  :root[data-theme="terminal"] .overview-grid { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); grid-template-areas: "vrd tape" "sum sum"; gap: var(--s-4); }
+  :root[data-theme="terminal"] .overview-grid .tape-row { grid-template-columns: minmax(0, 1fr); }
+  :root[data-theme="terminal"] .overview-grid .tape-cell { grid-template-columns: minmax(0, 1fr) 4rem auto; grid-template-rows: auto; align-items: center; gap: var(--s-2); padding: var(--row-pad) 0.4rem; border-right: 0; border-bottom: 1px solid var(--line); }
+  :root[data-theme="terminal"] .overview-grid .tape-label { height: auto; display: block; white-space: nowrap; text-overflow: ellipsis; }
+  :root[data-theme="terminal"] .overview-grid .tape-value { font-size: var(--step-0); justify-content: end; }
+  :root[data-theme="terminal"] .overview-grid .tape-cell .spark, :root[data-theme="terminal"] .overview-grid .tape-cell .spark-empty { width: 4rem; height: 0.9rem; }
+  /* The prose runs the pane's width in two columns: short lines, no empty half. */
+  :root[data-theme="terminal"] .overview-grid .summary { max-width: none; columns: 2 20rem; column-gap: var(--s-5); }
+}
+
+/* The inspector's grids: a name, then its value. */
+.ins-grid { display: grid; margin: 0 0 var(--s-3); }
+.ins-grid > div { display: grid; grid-template-columns: 7rem minmax(0, 1fr); gap: var(--s-2); padding: var(--s-1) 0; border-bottom: 1px solid var(--line); }
+.ins-grid dt { font-size: var(--step--2); color: var(--ink-2); }
+.ins-grid dd { margin: 0; font-family: var(--font-data); font-size: var(--step--1); }
+.ins-block { margin: var(--s-4) 0; font-size: var(--step--1); }
+.ins-block > .label { margin: 0 0 var(--s-1); }
+/* A fact a value was read from, as the reported-figure grid: one named field to a line. */
+.inspector .ct-fact { display: grid; gap: 1px; padding: var(--s-2) 0; }
+.inspector .ct-fact > .sep { display: none; }
+.inspector .ct-fact > .cf { display: grid; grid-template-columns: 7rem minmax(0, 1fr); gap: var(--s-2); }
+.inspector .ct-fact > .cf::before { content: attr(data-th); color: var(--ink-2); font-size: var(--step--2); }
+.inspector .ct-fact > .cf > :not(:first-child) { grid-column: 2; }
+
+/* The menu: the guide, the theme, the keys. */
+.menu { position: relative; }
+.menu > summary { list-style: none; cursor: pointer; }
+.menu > summary::-webkit-details-marker { display: none; }
+.menu-button::after { content: "▾"; color: var(--ink-2); }
+.menu-panel { position: absolute; z-index: 30; right: 0; top: calc(100% + 4px); display: grid; min-width: 16rem; padding: var(--s-1); background: var(--surface); border: 1px solid var(--line-strong); box-shadow: 0 8px 24px rgb(0 0 0 / 0.2); }
+.menu-item, .menu-item.theme-toggle { display: flex; align-items: center; gap: var(--s-2) !important; width: 100%; padding: var(--s-2) var(--s-3) !important; border: 0; border-radius: 0; background: none; color: var(--ink); font-family: var(--font-control); font-size: var(--step--1); font-weight: 500; text-align: left; }
+.menu-item:hover { background: var(--surface-2); }
+.menu-item .key-hint { display: inline-block !important; margin-left: auto; }
+.menu-word { margin-right: auto; }
+.menu-item .theme-option, :root .menu-item .theme-option[data-theme-option] { display: inline !important; padding: 0 0.2rem; color: var(--ink-2); background: none; }
+:root:not([data-theme="terminal"]) .menu-item .theme-option[data-theme-option="paper"], :root[data-theme="terminal"] .menu-item .theme-option[data-theme-option="terminal"] { color: var(--ink); font-weight: 700; box-shadow: inset 0 -2px 0 var(--accent); }
+.keys-code { margin-left: 0.2em; font-family: var(--font-code); font-size: 0.85em; }
+
+/* Another view's sections, when it is laid out in the frame (a wide window); otherwise it reads as one column. */
+.view-rail { display: none; }
+.view-entries { list-style: none; margin: 0; padding: 0; }
+.view-entry { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; width: 100%; padding: 0.3rem var(--pane-pad); border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: none; color: var(--ink); font-family: var(--font-ui); font-size: var(--step--1); font-weight: 400; line-height: 1.3; text-align: left; }
+.view-entry { max-height: calc(2.6em + 0.6rem); }
+.view-entry:hover { background: var(--surface-2); }
+.view-centre .pane-scroll > .block:first-child, .view-centre .pane-scroll > :first-child > .block:first-child { margin-top: 0; }
+.view-entries > .is-unread .view-entry { font-weight: 700; }
+.view-aside .run-head { display: block; padding-bottom: var(--s-3); border-bottom: 1px solid var(--line); }
+.view-aside .block:first-of-type, .view-aside .legend { margin-top: var(--s-4); }
+.view-aside .legend-list, .view-aside .legend-list > div { grid-template-columns: minmax(0, 1fr); gap: 2px var(--s-2); }
+.view-aside .watch-facts { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+/* A watch's last failure is a sentence: it takes the whole row, not one cell of five. */
+.watch-facts > div:has(dd.is-error) { grid-column: 1 / -1; }
+.watch-actions { display: inline-flex; vertical-align: middle; }
+
+/* The form: fields that look like this page's own, one button and two quiet links. */
+textarea { resize: none; }
+input[type="date"] { -webkit-appearance: none; appearance: none; min-height: 2rem; font-family: var(--font-data); }
+input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.55; cursor: pointer; }
+:root[data-theme="terminal"] input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
+.actions-run { align-items: baseline; gap: var(--s-2) var(--s-4); }
+.field { margin-bottom: var(--s-3); }
+.sample-nav > li { grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: var(--s-3); align-items: baseline; padding: 0.25rem 0; }
+.sample-button { text-decoration: none; }
+.sample-button:hover { text-decoration: underline; }
+.sample-what { font-size: var(--step--2); }
+
+@media screen {
+  /* ---- the verdict: a solid stamp, and the same fills in the strip of cells */
+  .pill.verdict { padding: 0.05rem 0.45rem; font-family: var(--font-label); font-size: 0.6875rem; font-variant-caps: normal; text-transform: uppercase; letter-spacing: 0.05em; line-height: 1.5; border-width: 1px; }
+  .score-top .pill { font-size: 0.6875rem; }
+  .pill.verdict.v-supported, .vcell.v-supported { color: var(--surface); background: var(--support); border-color: var(--support); }
+  .pill.verdict.v-challenged, .vcell.v-challenged { color: var(--surface); background: var(--challenge); border-color: var(--challenge); }
+  .pill.verdict.v-mixed, .vcell.v-mixed { color: var(--surface); border-color: var(--support) var(--challenge) var(--challenge) var(--support); background: linear-gradient(90deg, var(--support) 0 50%, var(--challenge) 50% 100%); }
+  .pill.verdict.v-mixed .glyph, .vcell.v-mixed .glyph { color: inherit; }
+  .vstrip { display: inline-flex; flex-wrap: wrap; gap: 2px; vertical-align: middle; }
+  .vcell { display: inline-flex; align-items: center; justify-content: center; gap: 0.3em; min-width: 1.2rem; height: 1.2rem; padding: 0 0.2rem; border: 1px solid var(--neutral); border-radius: 0; background: transparent; color: var(--neutral); font-family: var(--font-code); font-size: 0.6875rem; font-weight: 700; line-height: 1; }
+  .vcell.v-unjudged, .vcell.v-pending { border-style: dashed; }
+  .vcell:hover { filter: brightness(1.12); }
+  .vstrip.has-ids .vcell { min-width: 3.2rem; height: 1.7rem; padding: 0 0.5rem; font-size: var(--step--1); }
+  .rail-head .vstrip { margin-top: var(--s-2); }
+  .cmd-verdicts { display: inline-flex; }
+
+  /* ---- who wrote it, who computed it, who agreed: dim words with a glyph, no box */
+  .badge-model, .rule-mark, .meaning-mark, .ct-kicker .rule-mark { display: inline; padding: 0; border: 0; border-radius: 0; background: none; color: var(--ink-2); font-family: inherit; font-size: var(--step--1); font-weight: 400; white-space: normal; }
+  .meaning-mark { color: var(--ink); }
+  .meaning-mark .glyph, .rule-mark .g-rule { margin-right: 0.3em; }
+  .mw .badge-model { margin-top: 0; }
+  .reader-mark { padding: 0; border: 0; border-radius: 0; background: none; }
+  .ct-outcome, .score-computed .ct-outcome, .tot-now .ct-outcome, .ct-part .ct-outcome { padding: 0 0.35rem; font-size: 0.6875rem; font-variant-caps: normal; text-transform: uppercase; letter-spacing: 0.04em; border-width: 1px; background: none; }
+  .ct-head { background: none; }
+
+  /* ---- no stripe but a finding's stance and the rail's selection */
+  .mw.is-model, .ct-not, .event-note, .after-summary, .withheld-item, .triage-claims > li, .triage-paragraph, .tot-claim.no-history .tot-note, .run-provenance, .sample-note, .form-note, .banner-full, .watch-down .mark-limit, .watch-down-slot .mark-limit { border-left: 0; padding-left: 0; }
+  .checker-reason, .ct-part, .ct-part.o-holds, .ct-part.o-fails, .ct-part.o-cannot_compute { border-left: 0; padding-left: var(--s-4); }
+  .ct { border-left: 1px solid var(--line-strong); }
+  .claim-caution, .alert { border-left-width: 1px; }
+  .after-summary, .sample-note, .form-note { padding: 0; background: none; }
+  .banner-full { padding: var(--s-3); }
+  .withheld-item { padding-top: var(--s-2); border-top: 1px solid var(--line); }
+  .banner.st-partial .banner-fold > summary, .banner.st-failed .banner-fold > summary { box-shadow: none; padding-left: 0; }
+  .inbox-item.is-unread, :root[data-theme="terminal"] .inbox-item.is-unread { box-shadow: none; }
+  body.as-of-run .rail-head { border-left: 0; }
+  body.app .ws .centre .is-picked { box-shadow: none; }
+  body.app .ws .centre .ct.is-picked { background: var(--surface); }
+  body.app .ws .centre .event.ev-substantive.is-picked { box-shadow: inset 3px 0 0 var(--ink); }
+  body.app .ws .centre .excerpt { border-left: 0; padding-left: 0; }
+  .ct-bar + .ct-sides { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  /* ---- the bar: one low row of words; the status line under it says the counts, not the status again */
+  .cmdbar { align-items: center; border-bottom-width: 1px; }
+  .brand { font-size: 0.8125rem; }
+  .brand-mark { width: 1.15rem; height: 1.15rem; font-size: 0.8rem; }
+  .cmd-ticker { padding: 0 var(--s-2); border: 0; }
+  .cmd-ticker input { width: 6rem; padding: 0.05rem 0.4rem; font-size: 0.8125rem; }
+  .cmdbar .key-hint { display: none; }
+  .tool { padding: 0.1rem 0.45rem; border: 0; background: none; }
+  .tool:hover { background: var(--surface-2); }
+  .leave-sample { text-decoration: underline; }
+  .thesis-button { margin-left: 0; }
+  .cmd-run { gap: var(--s-1); padding: 0 var(--s-2); }
+  .cmd-tools { gap: var(--s-1); padding: 0 0 0 var(--s-2); }
+  .cmdbar .page-tag { font-size: 0.625rem; padding: 0 0.35rem; }
+  .statusbar-hint { color: var(--ink-2); }
+
+  /* ---- the rail: a claim is two lines, its id, stamp and test mark over its words */
+  .score-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "top sub" "claim claim"; gap: 2px var(--s-2); padding: 0.3rem var(--pane-pad); }
+  .score-top { grid-area: top; flex-wrap: nowrap; min-width: 0; }
+  .score-sub { grid-area: sub; }
+  .score-flag { margin-left: 0; }
+  .score-claim { grid-area: claim; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: var(--step-0); line-height: 1.3; }
+  :root[data-theme="terminal"] .score-claim { -webkit-line-clamp: 1; }
+  /* Its counts are in the centre pane's head when it is selected, and here for a screen reader. */
+  .score-row .score-counts, .score-row .score-computed .ct-counted, .score-row .score-readers, .score-row .score-computed.is-none { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .rail-all { padding: 0.3rem var(--pane-pad); }
+
+  /* ---- Terminal: amber is selection and focus; the rest is ink, dim ink and the verdicts */
+  :root[data-theme="terminal"] .brand, :root[data-theme="terminal"] .sel-id, :root[data-theme="terminal"] .tape-value, :root[data-theme="terminal"] .cmd-ticker input { color: var(--ink); }
+  :root[data-theme="terminal"] .brand-mark { background: var(--ink); }
+  :root[data-theme="terminal"] .score-row[aria-current="true"] .claim-id, :root[data-theme="terminal"] .rail-all[aria-current="true"] .rail-all-name { color: var(--accent); }
+  :root[data-theme="terminal"] button { border-color: var(--line-strong); }
+  :root[data-theme="terminal"] button.primary { color: var(--bg); background: var(--ink); border-color: var(--ink); }
+  :root[data-theme="terminal"] button.secondary { color: var(--ink); }
+  :root[data-theme="terminal"] .inbox-count { background: var(--ink); }
+  :root[data-theme="terminal"] .rail-all:hover, :root[data-theme="terminal"] .score-row:hover, :root[data-theme="terminal"] .fig-row > summary:hover, :root[data-theme="terminal"] .sources tbody tr:hover > *, :root[data-theme="terminal"] .event:hover { box-shadow: none; }
+  :root[data-theme="terminal"] .event.ev-substantive:hover { box-shadow: inset 3px 0 0 var(--ink); }
+  :root[data-theme="terminal"] .tabs, :root[data-theme="terminal"] .statusbar { border-color: var(--line-strong); }
+  :root[data-theme="terminal"] .tab-key { min-width: 0; border: 0; background: none; color: var(--ink-2); font-size: 0.6875rem; }
+  :root[data-theme="terminal"] .tab[aria-selected="true"] .tab-key { color: #000; }
+  :root[data-theme="terminal"] :is(.tab, .tape-label, .page-tag, .event-kind, .kind-tag, .cmd-ticker input) { letter-spacing: 0; }
+  /* What can be clicked and is not a link by its shape is underlined, since it is ink. */
+  :root[data-theme="terminal"] :is(.check-detail > summary, .chart-table > summary, .tot-table > summary, .moved-compare > summary, .errors-all > summary, .banner-open, .bd-change > summary, .sample-button, .vrow-id) { text-decoration: underline; text-underline-offset: 0.18em; }
+  /* A code is what you type to go there (".sum"): dim, unfilled, before its title. */
+  :root[data-theme="terminal"] :is(.block-title, .pane-label)[data-code]::before { content: "." attr(data-code); min-width: 0; margin-right: var(--s-2); padding: 0; color: var(--ink-2); background: none; font-weight: 500; text-transform: lowercase; }
+  :root[data-theme="terminal"] .block-title, :root[data-theme="terminal"] .pane-label { color: var(--ink); }
+  :root[data-theme="terminal"] .event-head, :root[data-theme="terminal"] .event-head a { font-family: var(--font-data); }
+  :root[data-theme="terminal"] .fig-row > summary { padding: var(--row-pad) 0.25rem; }
+  :root[data-theme="terminal"] .finding { padding-top: var(--s-2); padding-bottom: var(--s-2); }
+}
+
+@media screen and (min-width: 641px) {
+  /* The bar's chip says the status; the line under it goes straight to the counts. */
+  body.app .banner-summary > .status-word, body.app .banner-summary > .status-word + .banner-sep { display: none; }
+  /* Quote first: what was filed is the object, and the model's statement its caption. */
+  body.app .ws[data-tab="evidence"] .centre .finding { display: flex; flex-direction: column; }
+  body.app .ws[data-tab="evidence"] .centre .finding-margin { order: -1; padding: 0; border: 0; }
+  body.app .ws[data-tab="evidence"] .centre .excerpt { display: block; overflow: visible; margin: 0 0 var(--s-1); font-family: var(--font-quote); font-size: var(--step-1); line-height: 1.5; color: var(--ink); }
+  body.app .ws[data-tab="evidence"] .centre .excerpt mark::before { content: "\201C"; }
+  body.app .ws[data-tab="evidence"] .centre .excerpt mark::after { content: "\201D"; }
+  body.app .ws[data-tab="evidence"] .centre .finding-head { margin-top: var(--s-2); }
+  body.app .ws[data-tab="evidence"] .centre .finding-statement { font-size: var(--step-0); font-weight: 400; }
+}
+
+/* A wide window lays any other view out in the frame's three panes. */
+@media screen and (min-width: 1100px) {
+  body.app .result-panel:has(> .view-frame:not([hidden])) { display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+  body.app .view-frame:not([hidden]) { flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: var(--rail-w) minmax(0, 1fr) var(--insp-w); grid-template-areas: "rail centre aside"; }
+  body.app .view-rail { grid-area: rail; display: flex; overflow-y: auto; background: var(--pane-side); border-right: 1px solid var(--line-strong); }
+  body.app .view-rail > .pane-label { margin: 0; padding: var(--s-2) var(--pane-pad) var(--s-1); }
+  body.app .view-centre { grid-area: centre; overflow: hidden; background: var(--pane-main); }
+  body.app .view-aside { grid-area: aside; overflow: hidden; background: var(--pane-side); border-left: 1px solid var(--line-strong); }
+}
+
+/* Too narrow for three panes: the claims are chips (id and stamp) that wrap; the bar's tools follow on. */
+@media screen and (min-width: 641px) and (max-width: 1099px) {
+  body.app .rail { grid-template-columns: auto minmax(0, 1fr); }
+  body.app .scorecard { flex-wrap: wrap; overflow: visible; }
+  body.app .scorecard > li { flex: 0 0 auto; border-bottom: 1px solid var(--line); }
+  body.app .score-row { grid-template-areas: "top sub"; padding: var(--s-1) var(--s-2); }
+  body.app .score-claim, body.app .rail-all-what { display: none; }
+  body.app .rail-all { width: auto; grid-template-columns: auto; padding: var(--s-1) var(--s-3); }
+  .cmd-tools { flex: 0 1 auto; justify-content: flex-start; margin-left: auto; padding: 0; }
+}
+
+/* A phone: one row of bar (mark, ticker, menu; the rest opens with the menu), the status line under it. */
+@media screen and (max-width: 640px) {
+  .cmdbar { align-items: center; }
+  .thesis-button, .cmd-run, .cmd-tools > :not(.menu) { display: none; }
+  .cmd-ticker { flex: 1 1 6rem; }
+  .cmd-tools { order: 3; flex: 0 0 auto; flex-wrap: wrap; justify-content: flex-end; margin-left: auto; padding: 0; }
+  .cmdbar:has(.menu[open]) .thesis-button { display: inline-flex; order: 5; }
+  .cmdbar:has(.menu[open]) .cmd-run { display: flex; order: 6; flex: 1 1 100%; flex-wrap: wrap; padding: var(--s-1) 0; border-top: 0; }
+  .cmdbar:has(.menu[open]) .cmd-tools { flex: 1 1 100%; }
+  .cmdbar:has(.menu[open]) .cmd-tools > :not(.menu):not([hidden]) { display: inline-flex; }
+  .ws { display: flex; flex-direction: column; }
+  .run-strip { order: -1; }
+  /* The tabs scroll sideways inside their strip, and fade at the edge to say so. */
+  .tabs { -webkit-mask-image: linear-gradient(90deg, #000 86%, transparent); mask-image: linear-gradient(90deg, #000 86%, transparent); }
+}
+
 /* ------------------------------------------------------------ print: the note as a document
  * Always the Paper colours, no bar, no tabs, no inspector, no controls. Every tab's panel and
  * every claim's docket prints, one after another, each docket under its own heading; app.js
@@ -2482,9 +2768,9 @@ body.as-of-run .rail-head { border-left: 6px double var(--ink); }
     --limit: #7a4e00; --limit-bg: #ffffff; --model: #5a3fb8; --model-bg: #ffffff; --mark-bg: #f3e39a;
     --mark-ink: #000000; --change: #0b6670; --change-bg: #ffffff; --rule: #586112; --rule-bg: #ffffff;
     --neg: #9b3412; --chart-ink: #000000; --chart-bar: #6d6556; --bar-bg: #ffffff; --bar-rule: #000000;
-    --pane-main: #ffffff; --pane-side: #ffffff;
-    --font-prose: var(--font-serif); --font-ui: var(--font-sans); --font-label: var(--font-serif); --font-data: var(--font-sans); --font-control: var(--font-sans);
-    --label-caps: all-small-caps; --label-transform: none; --label-track: 0.06em; --label-size: 0.95rem;
+    --pane-main: #ffffff; --pane-side: #ffffff; --link: #1f4e8c;
+    --font-quote: var(--font-serif); --font-prose: var(--font-sans); --font-ui: var(--font-sans); --font-label: var(--font-sans); --font-data: var(--font-sans); --font-control: var(--font-sans);
+    --label-caps: normal; --label-transform: uppercase; --label-track: 0.05em; --label-size: 0.6875rem;
     color-scheme: light;
   }
   body { font-size: 10pt; background: #fff; }

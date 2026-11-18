@@ -384,6 +384,10 @@ const els = {
   runInfo: $("run-info"),
   guideSlot: $("guide-slot"),
   leadSlot: $("lead-slot"),
+  cmdVerdicts: $("cmd-verdicts"),
+  overviewMast: $("overview-mast"),
+  verdictTable: $("verdict-table"),
+  barMenu: $("bar-menu"),
 };
 
 // ---------------------------------------------------------------- helpers
@@ -2048,6 +2052,7 @@ function applyReview(review, force) {
   if (!run || !review || review.run_id !== run.id) return;
   renderReviewLine(run);
   renderScorecard(run);
+  renderVerdictViews(run);
   renderReviewSlots(run, force);
   applySelection();
 }
@@ -2450,6 +2455,7 @@ function renderRun(run) {
   renderThesisOverTime(run);
   renderReviewLine(run);
   renderScorecard(run);
+  renderVerdictViews(run);
   renderDistinction(run);
   renderRunChanges(run);
   renderSummary(run);
@@ -2730,6 +2736,7 @@ function renderCommandBar(run) {
     if (els.statusbarRun) els.statusbarRun.textContent = "";
     els.cmdRun.hidden = true;
     els.cmdStatus.replaceChildren();
+    els.cmdVerdicts?.replaceChildren();
     els.cmdAsof.replaceChildren();
     els.cmdAsof.removeAttribute("title");
     return;
@@ -2771,6 +2778,7 @@ function renderRailHead(run) {
     ...companyTitle(run.company, str(inputs.ticker)),
     h("p", { class: "decision" }, h("span", { class: "label", text: "Decision: " }), inputs.decision ?? ""),
   );
+  appendAll(els.railHead, [verdictStrip(run)]);
 }
 
 /**
@@ -2940,6 +2948,7 @@ function renderScorecard(run) {
         href: `#claim-${index}`,
         "data-select": claim.id,
         "aria-current": "false",
+        title: claim.text,
         onclick: (event) => {
           event.preventDefault();
           select(claim.id);
@@ -3819,7 +3828,7 @@ function renderTape(run) {
       str(metric.period_label) !== period ? h("span", { class: "tape-period", text: metric.period_label }) : "",
     ),
   );
-  els.tape.replaceChildren(h("p", { class: "tape-head" }, h("span", { class: "tape-code", "aria-hidden": "true", text: "FIG" }), period), h("div", { class: "tape-row" }, cells));
+  els.tape.replaceChildren(h("p", { class: "tape-head", text: period }), h("div", { class: "tape-row" }, cells));
 }
 
 /**
@@ -3923,7 +3932,7 @@ function drawTimeline(container, run) {
   const width = Math.max(Math.round(container.clientWidth || 880), 300);
   const narrow = width < 560;
   // Without 8-Ks the space below the axis holds only the gap's label and the months.
-  const H = data.events.length ? (narrow ? 186 : 196) : Number.isFinite(data.newest) ? 176 : 132;
+  const H = data.events.length ? 184 : Number.isFinite(data.newest) ? 176 : 132;
   const axisY = 84;
   const left = 10;
   const right = 14;
@@ -3952,13 +3961,13 @@ function drawTimeline(container, run) {
         "g",
         { "data-tl": "gap" },
         s("title", { text: `Between the newest filing read (${dateLabel(run.as_of.newest_filed)}) and ${data.asOf ? "the date this run is as of" : "this run"}${daysWord ? `: ${daysWord}` : ""}. Nothing filed in this time is in the record.` }),
-        s("rect", { x: x0, y: 18, width: Math.max(x1 - x0, 2), height: axisY + 26 - 18, class: "tl-gap" }),
+        s("rect", { x: x0, y: 18, width: Math.max(x1 - x0, 2), height: axisY + 44 - 18, class: "tl-gap" }),
       ),
     );
     if (daysWord) {
       // Under the 8-K labels, ending at the run's line: how long the record cannot see.
       const text = `${daysWord} between the newest filing read and ${data.asOf ? "the date the run is as of" : "the run"}`;
-      svg.append(s("text", { x: x1, y: axisY + 72, class: "tl-gap-label", "text-anchor": "end", text }));
+      svg.append(s("text", { x: x1, y: axisY + 92, class: "tl-gap-label", "text-anchor": "end", text }));
     }
   }
 
@@ -3975,7 +3984,7 @@ function drawTimeline(container, run) {
     const month = d.getUTCMonth();
     if (x - lastLabel > (narrow ? 34 : 30)) {
       const yearLabel = month === 0 || firstTick;
-      ticks.append(s("text", { x: x + 2, y: H - 6, class: yearLabel ? "tl-year" : "tl-tick-label", text: yearLabel ? `${MONTHS[month]} ${d.getUTCFullYear()}` : MONTHS[month] }));
+      ticks.append(s("text", { x: x + 2, y: axisY + 16, class: yearLabel ? "tl-year" : "tl-tick-label", text: yearLabel ? `${MONTHS[month]} ${d.getUTCFullYear()}` : MONTHS[month] }));
       lastLabel = x + (yearLabel ? 30 : 0);
       firstTick = false;
     }
@@ -4011,7 +4020,7 @@ function drawTimeline(container, run) {
   for (const item of data.events.sort((a, b) => a.day - b.day)) {
     const event = item.event;
     const x = xAt(item.day);
-    const y = axisY + 18;
+    const y = axisY + 34;
     const substantive = event.substantive === true;
     const categories = eventCategories(event);
     const words = state.meta?.events ?? {};
@@ -4023,17 +4032,19 @@ function drawTimeline(container, run) {
       item.quoted ? "Quoted in this run's findings" : "",
     ];
     const shape = [
-      s("rect", { x: x - 8, y: axisY + 4, width: 16, height: 28, class: "tl-hit" }),
+      s("rect", { x: x - 8, y: axisY + 20, width: 16, height: 28, class: "tl-hit" }),
       substantive
         ? s("path", { d: `M ${x} ${y - 7} L ${x + 6} ${y} L ${x} ${y + 7} L ${x - 6} ${y} Z`, class: "tl-8k is-substantive" })
         : s("circle", { cx: x, cy: y, r: 3.6, class: "tl-8k is-routine" }),
-      item.quoted ? s("circle", { cx: x, cy: axisY + 6, r: 3, class: "tl-quoted-dot" }) : "",
+      item.quoted ? s("circle", { cx: x, cy: axisY + 23, r: 3, class: "tl-quoted-dot" }) : "",
     ];
-    if (substantive && categories.length && !narrow) {
-      const row = x - labelRows[0] > 96 ? 0 : x - labelRows[1] > 96 ? 1 : 0;
+    // A category is written under its mark on one of two rows, and only where a row has room: a
+    // mark without a written label still says its categories on hover, on focus and to a screen reader.
+    const row = x - labelRows[0] > 104 ? 0 : x - labelRows[1] > 104 ? 1 : -1;
+    if (substantive && categories.length && !narrow && row >= 0) {
       labelRows[row] = x;
       const labelX = Math.min(Math.max(x, left + 40), width - 50);
-      shape.push(s("text", { x: labelX, y: axisY + 42 + row * 13, "text-anchor": "middle", class: "tl-label is-cat", text: categories.join(", ") }));
+      shape.push(s("text", { x: labelX, y: axisY + 56 + row * 13, "text-anchor": "middle", class: "tl-label is-cat", text: categories.join(", ") }));
     }
     svg.append(timelineMark("8k", { "data-event-id": str(event.id), "data-kind": kind, "data-quoted": item.quoted ? "true" : "false" }, event.url, tip, shape, container));
   }
@@ -4046,7 +4057,7 @@ function drawTimeline(container, run) {
       "g",
       { "data-tl": "run", class: "tl-run-mark" },
       s("title", { text: data.asOf ? `This run is as of ${dateLabel(data.asOf)} (it ran ${utc(run.started_at)})` : `This run, started ${utc(run.started_at)}` }),
-      s("line", { x1: rx, x2: rx, y1: 12, y2: axisY + 30, class: "tl-run" }),
+      s("line", { x1: rx, x2: rx, y1: 12, y2: axisY + 46, class: "tl-run" }),
       s("path", { d: `M ${rx - 4} 12 L ${rx + 4} 12 L ${rx} 18 Z`, class: "tl-run-head" }),
       s("text", { x: runEnd ? rx - 7 : rx + 7, y: 16, "text-anchor": runEnd ? "end" : "start", class: "tl-label is-run", text: data.asOf ? `As of ${dateLabel(data.asOf)}` : `Run ${dateLabel(run.started_at)}` }),
     ),
@@ -4193,7 +4204,8 @@ function sparkline(metric, series) {
   const match = series.find((x) => x.key === metric.key && x.period === metric.period);
   const points = list(match?.points);
   const values = points.map((p) => p.value).filter((v) => Number.isFinite(v));
-  if (values.length < 2) return h("span", { class: "spark-empty", "aria-hidden": "true" });
+  // Fewer than three points draw as fragments, not a line: none is drawn.
+  if (values.length < 3) return h("span", { class: "spark-empty", "aria-hidden": "true" });
   const W = 88;
   const H = 20;
   const pad = 2.5;
@@ -4229,10 +4241,12 @@ function sparkline(metric, series) {
  * characters are the record's own, in order; nothing is rounded or reformatted.
  */
 function decimalParts(display) {
+  // Three columns: up to the decimal point, the decimals, then the unit ("B", "%", " points"), so
+  // a column of values lines up on the point whatever each one's unit is.
   const text = str(display);
-  const match = /^(.*?\d)(\.\d.*)$/.exec(text);
-  if (!match) return [h("span", { class: "dec-int", text }), h("span", { class: "dec-frac" })];
-  return [h("span", { class: "dec-int", text: match[1] }), h("span", { class: "dec-frac", text: match[2] })];
+  const match = /^(.*?\d)((?:\.\d+)?)(\D*)$/.exec(text);
+  if (!match) return [h("span", { class: "dec-int", text }), h("span", { class: "dec-frac" }), h("span", { class: "dec-unit" })];
+  return [h("span", { class: "dec-int", text: match[1] }), h("span", { class: "dec-frac", text: match[2] }), h("span", { class: "dec-unit", text: match[3] })];
 }
 
 function valueClass(metric) {
@@ -4292,7 +4306,7 @@ function figureRow(metric, series = []) {
             pick({ kind: "figure", id: metric.id });
           },
         },
-        h("span", { class: "fig-label" }, metric.label, metric.period === "instant" ? h("span", { class: "muted small", text: ` · ${metric.period_label}` }) : ""),
+        h("span", { class: "fig-label" }, h("span", { class: "fig-name", text: metric.label }), metric.period === "instant" ? h("span", { class: "fig-asof muted small" }, h("span", { class: "sep", text: " · " }), metric.period_label) : ""),
         sparkline(metric, series),
         h("span", { class: `${valueClass(metric)} dec` }, ...decimalParts(metric.display)),
       ),
@@ -4778,12 +4792,16 @@ function factLine(ref, cik) {
   return h(
     "li",
     { class: "ct-fact", "data-fact-accession": str(ref?.accession) },
-    h("code", { text: str(ref?.concept) || "concept not recorded" }),
-    ` · ${period} · ${value} · `,
-    filingRef(ref, cik),
-    str(ref?.accession) ? h("span", { class: "muted" }, " ", h("abbr", { title: ACCESSION_GLOSS, text: ref.accession })) : "",
-    flags.length ? h("span", { class: "ct-flag", text: ` · ${flags.join(", ")}` }) : "",
-    str(ref?.note) ? h("span", { class: "muted", text: ` — ${ref.note}` }) : "",
+    // One span per field, each named: in a row they read as a line, in the inspector as a grid.
+    h("span", { class: "cf", "data-th": "Concept" }, h("code", { text: str(ref?.concept) || "concept not recorded" })),
+    h("span", { class: "sep", text: " · " }),
+    h("span", { class: "cf", "data-th": "Period", text: period }),
+    h("span", { class: "sep", text: " · " }),
+    h("span", { class: "cf", "data-th": "Value", text: value }),
+    h("span", { class: "sep", text: " · " }),
+    h("span", { class: "cf", "data-th": "Filing" }, filingRef(ref, cik), str(ref?.accession) ? h("span", { class: "muted" }, " ", h("abbr", { title: ACCESSION_GLOSS, text: ref.accession })) : ""),
+    flags.length ? h("span", { class: "cf ct-flag", "data-th": "Flags", text: ` · ${flags.join(", ")}` }) : "",
+    str(ref?.note) ? h("span", { class: "cf muted", "data-th": "Note", text: ` — ${ref.note}` }) : "",
   );
 }
 
@@ -4809,6 +4827,34 @@ function sidesLine(test) {
     return [h("code", { text: str(operand.term) }), " = ", h("strong", { text: str(operand.display) || "—" })];
   };
   return h("p", { class: "ct-sides", "data-sides": "" }, h("span", { class: "label", text: "Compared: " }), ...side(test.left), ` ${str(test.comparison)} `, ...side(test.right));
+}
+
+/**
+ * The two sides of a test as a graphic: the value as a bar from zero, what it is compared with as
+ * a tick, on one scale, with both display strings beside it. Placing the record's two numbers on
+ * a line is drawing; the outcome and the margin are the record's. Nothing without both numbers.
+ */
+function marginBar(test) {
+  const value = test?.left?.value;
+  const against = test?.right?.value;
+  if (!Number.isFinite(value) || !Number.isFinite(against)) return "";
+  const lo = Math.min(0, value, against);
+  const hi = Math.max(0, value, against);
+  if (!(hi > lo)) return "";
+  const W = 160;
+  const xAt = (v) => 1 + ((v - lo) / (hi - lo)) * (W - 2);
+  return h(
+    "p",
+    { class: `ct-bar o-${token(test.outcome, TEST_MARK)}`, "data-margin-bar": "" },
+    s(
+      "svg",
+      { class: "ct-bar-svg", viewBox: `0 0 ${W} 14`, width: W, height: 14, "aria-hidden": "true", focusable: "false" },
+      s("line", { x1: xAt(lo), x2: xAt(hi), y1: 7, y2: 7, class: "ct-bar-rail" }),
+      s("rect", { x: Math.min(xAt(0), xAt(value)), y: 4, width: Math.max(Math.abs(xAt(value) - xAt(0)), 1), height: 6, class: "ct-bar-value" }),
+      s("line", { x1: xAt(against), x2: xAt(against), y1: 0, y2: 14, class: "ct-bar-mark" }),
+    ),
+    h("span", { class: "ct-bar-words", "aria-hidden": "true" }, h("strong", { text: str(test.left.display) || "—" }), ` ${str(test.comparison)} ${str(test.right.display) || "—"}`),
+  );
 }
 
 /** How a test of several parts is put together, in words: the rule of app.core.claim_eval._combined, not a result. */
@@ -4872,7 +4918,7 @@ function partsBlock(claim, test) {
             str(part?.margin_display) ? h("span", { class: `ct-margin${signClass(part.margin_display)}`, "data-part-margin": "", text: ` ${part.margin_display}` }) : "",
           ),
           str(part?.reason) ? h("p", { class: "ct-reason", "data-part-reason": "" }, h("span", { class: "label", text: "Why it could not be computed: " }), part.reason) : "",
-          part && typeof part === "object" ? sidesLine(part) : "",
+          part && typeof part === "object" ? [marginBar(part), sidesLine(part)] : "",
           h("div", { "data-part-arith": "" }, arithmeticList(list(part?.arithmetic))),
           str(part?.note) ? h("p", { class: "ct-note muted", "data-part-note": "", text: part.note }) : "",
         );
@@ -4906,7 +4952,7 @@ function computedTest(claim, cik, details = {}) {
     str(test.reason) ? h("p", { class: "ct-reason", "data-reason": "" }, h("span", { class: "label", text: "Why it could not be computed: " }), test.reason) : "",
     h("p", { class: "ct-bound" }, h("span", { class: "label", text: "Computed for: " }), str(test.bound) ? h("code", { "data-bound": "", text: test.bound }) : h("span", { class: "muted", text: "no period could be placed" })),
     str(test.as_of) ? h("p", { class: "ct-asof", "data-test-as-of": test.as_of }, h("span", { class: "label", text: "Facts read up to: " }), dateLabel(test.as_of)) : "",
-    combined ? "" : sidesLine(test),
+    combined ? "" : [marginBar(test), sidesLine(test)],
     // A test of several parts shows every part here: each part's outcome is the substance of the whole.
     combined ? partsBlock(claim, test) : "",
     combined && !str(test.margin_display)
@@ -5002,6 +5048,8 @@ function drawThesisOverTime(container, run) {
   const compiledIds = new Set(compiled.map((claim) => claim.id));
   const notCompiled = list(run.claims).filter((claim) => claim && !compiledIds.has(claim.id)).map((claim) => str(claim.id));
   container.replaceChildren(
+    // The verdicts over the lanes, drawn as they are everywhere (only for a run: each claim has one).
+    list(run.claims).length && list(run.claims).every((claim) => str(claim?.verdict)) ? verdictStrip(run, { ids: true }) : "",
     h(
       "p",
       { class: "hint tot-lead" },
@@ -5105,7 +5153,8 @@ function totSvg(claim, points, { lo, hi, width }) {
   const roomy = W >= 560;
   const plotL = roomy ? 70 : 52;
   const plotR = W - 14;
-  const top = roomy ? 26 : 10;
+  // Room above the line for a flip's label, so the line never runs through one.
+  const top = roomy ? 36 : 10;
   const gap = 16;
   const yAt = (outcome) => top + (TOT_LEVEL[outcome] ?? 1) * gap;
   const span = Math.max(hi - lo, DAY_MS);
@@ -6458,6 +6507,198 @@ function reveal(target, { scroll = true } = {}) {
   if (scroll) target.scrollIntoView({ block: "start", behavior: reducedMotion() ? "auto" : "smooth" });
 }
 
+// ---- the verdicts, drawn one way everywhere
+
+/**
+ * One cell per claim in the record's order, filled in its verdict's colour and carrying its
+ * glyph: the thesis's result at a glance, in the bar, over the rail, at the head of the Overview
+ * and over the thesis over time. A cell selects its claim. With `ids` each cell also names its claim.
+ */
+function verdictStrip(run, { ids = false } = {}) {
+  const claims = list(run?.claims);
+  if (claims.length === 0) return "";
+  return h(
+    "span",
+    { class: ids ? "vstrip has-ids" : "vstrip", role: "group", "aria-label": "Verdicts, one cell per claim" },
+    claims.map((claim) =>
+      h(
+        "button",
+        { type: "button", class: `vcell v-${claim.verdict ? token(claim.verdict, VERDICT_GLYPH) : "pending"}`, "data-vcell": claim.id, title: `${claim.id}: ${verdictLabel(claim.verdict)}`, onclick: () => select(claim.id) },
+        ids ? h("span", { class: "vcell-id", text: claim.id }) : "",
+        h("span", { class: "glyph", "aria-hidden": "true", text: VERDICT_GLYPH[claim.verdict] ?? "…" }),
+        h("span", { class: "visually-hidden", text: `${ids ? "" : ` ${claim.id}`} ${verdictLabel(claim.verdict)}` }),
+      ),
+    ),
+  );
+}
+
+/**
+ * The verdicts as a table, one row per claim by its id (the claim's words are in the rail, once):
+ * the verdict, and for a run with computed tests the test's outcome, its margin and how many
+ * readers agreed, then the number of findings. Every cell is the record's; a row's id selects the claim.
+ */
+function verdictTable(run) {
+  const claims = list(run.claims);
+  if (claims.length === 0) return h("p", { class: "muted", text: run.status === "running" ? "Claims appear once the run has planned them." : "This run recorded no claims." });
+  const review = currentReview(run);
+  const tested = claims.some((claim) => testOf(claim));
+  const heads = ["Claim", "Verdict", ...(tested ? ["Test", "Margin", "Readers"] : []), "Findings"];
+  return h(
+    "table",
+    { class: "vtable" },
+    h("thead", null, h("tr", null, heads.map((text) => h("th", { scope: "col", class: text === "Margin" || text === "Findings" ? "num" : null, text })))),
+    h(
+      "tbody",
+      null,
+      claims.map((claim) => {
+        const test = testOf(claim);
+        const readers = test ? boardReaders(claim) : "";
+        return h(
+          "tr",
+          { "data-vrow": claim.id },
+          h("th", { scope: "row" }, h("button", { type: "button", class: "linklike vrow-id", onclick: () => select(claim.id), text: claim.id }), str(claim.caution) ? [" ", limitGlyph()] : ""),
+          h("td", null, claimStamps(claim, review)),
+          tested ? h("td", null, test ? testOutcome(test.outcome, test.outcome_label) : h("span", { class: "muted", text: "none" })) : "",
+          tested ? h("td", { class: `num${test ? signClass(str(test.margin_display)) : ""}`, text: (test && str(test.margin_display)) || "—" }) : "",
+          tested ? h("td", { text: readers ? readers.textContent : "—" }) : "",
+          h("td", { class: "num", text: num(list(claim.finding_ids).length) }),
+        );
+      }),
+    ),
+  );
+}
+
+/** Draw the verdict strip where it stands apart from the rail, and the Overview's masthead and table. */
+function renderVerdictViews(run) {
+  if (els.cmdVerdicts) {
+    els.cmdVerdicts.replaceChildren();
+    appendAll(els.cmdVerdicts, [verdictStrip(run)]);
+  }
+  if (els.overviewMast) {
+    const c = run.coverage ?? {};
+    els.overviewMast.replaceChildren();
+    appendAll(els.overviewMast, [
+      // When the run was made and how old its evidence is, in the record's words; then the result.
+      h("p", { class: "mast-line" }, `Run of ${dateLabel(run.started_at)}`, str(run.as_of?.line) ? ` · ${run.as_of.line}` : ""),
+      verdictStrip(run, { ids: true }),
+      Number.isFinite(c.claims_total) && Number.isFinite(c.claims_with_evidence)
+        ? h("p", { class: "mast-tally", text: `${num(c.claims_with_evidence)} of ${plural(c.claims_total, "claim", "claims")} with verified excerpts or figures` })
+        : "",
+    ]);
+  }
+  els.verdictTable?.replaceChildren(verdictTable(run));
+}
+
+// ---- codes: the letters before a title, typed to go there
+
+/**
+ * Go to the panel whose title carries this code (`data-code`): typed in the ticker field after a
+ * full stop, then Enter (".fig"). Three codes are not panels: RUN and GDE open the Run drawer on
+ * who did the work and on the guide, INS puts the focus in the inspector. False when nothing on
+ * this screen has the code.
+ */
+function runCode(text) {
+  const code = text.trim().toUpperCase();
+  if (!/^[A-Z]{2,4}$/.test(code)) return false;
+  if (code === "RUN" || code === "GDE") {
+    if (onFirstScreen()) return false;
+    openRunDrawer(code === "RUN" ? "run" : "guide");
+    return true;
+  }
+  if (code === "INS") {
+    if (!inspectorOn() || els.runView.hidden) return false;
+    els.inspectBody.focus({ preventScroll: true });
+    return true;
+  }
+  const titled = [...document.querySelectorAll("#result-panel [data-code]")].filter((node) => node.dataset.code === code && !node.closest("[hidden]"));
+  if (titled.length === 0) return false;
+  // A code inside every claim's docket (FND) means the selected claim's, else the first claim's.
+  const claim = selectedClaim();
+  const target = titled.find((node) => !node.closest("details.claim")) ?? titled.find((node) => claim && node.closest("details.claim")?.dataset.docket === claim.id) ?? titled[0];
+  reveal(target);
+  return true;
+}
+
+/** Enter in the ticker field on ".code": go there, and give the field back what it held. */
+function onTickerKey(event) {
+  const typed = els.ticker.value.trim();
+  if (event.key !== "Enter" || !typed.startsWith(".")) return;
+  event.preventDefault();
+  if (runCode(typed.slice(1))) {
+    els.ticker.value = state.tickerOnFocus ?? "";
+    setFieldError("ticker", []);
+    els.ticker.blur();
+  } else {
+    setFieldError("ticker", [`Nothing on this screen has the code ${typed.slice(1).toUpperCase()}. The codes are listed under Keys.`]);
+  }
+}
+
+// ---- the other views in the same frame
+
+/**
+ * A view that is not a run (a filing comparison, tagged breakdowns, the restatement ledger, the
+ * inbox, a saved thesis, figures only) is laid out in the same three panes: its sections or
+ * items in a rail, its tables and lists in the centre, and what explains it (its head, its
+ * legend, a watch's settings) at the side. `aside` names the nodes that go to the side; the rest
+ * is the centre; `entries` selects what the rail lists.
+ */
+const VIEW_FRAMES = [
+  { id: "changes-view", aside: ["changes-head", "changes-legend"], entries: ".block-title, .chg-item-title" },
+  { id: "breakdowns-view", aside: ["breakdowns-head", "breakdowns-legend"], entries: ".bd-title" },
+  { id: "ledger-view", aside: ["ledger-head", "ledger-legend"], entries: ".block-title" },
+  { id: "inbox-view", aside: ["inbox-head", "watch-down", "watches-section"], entries: ".inbox-headline" },
+  { id: "thesis-view", aside: ["thesis-head", "thesis-watch-section"], entries: ".block-title" },
+  { id: "figures-view", aside: ["figures-head"], entries: ".fig-head" },
+];
+
+function frameViews() {
+  for (const frame of VIEW_FRAMES) {
+    const view = $(frame.id);
+    if (!view) continue;
+    const side = frame.aside.map($).filter(Boolean);
+    const rest = [...view.children].filter((node) => !side.includes(node));
+    const entries = h("ol", { class: "view-entries" });
+    const scroll = h("div", { class: "pane-scroll" }, ...rest);
+    view.classList.add("view-frame");
+    view.replaceChildren(
+      h("nav", { class: "pane rail view-rail", "aria-label": "The sections of this view" }, h("h3", { class: "pane-label", text: "Sections" }), entries),
+      // Before the centre in the markup: a phone and paper read what the view is, then the view.
+      h("aside", { class: "pane view-aside", "aria-label": "About this view" }, h("div", { class: "pane-scroll" }, ...side)),
+      h("div", { class: "pane centre view-centre" }, scroll),
+    );
+    // Once after a burst of changes (a timer, not a frame: a page that is not painting still gets its rail).
+    let pending = 0;
+    const sync = () => {
+      clearTimeout(pending);
+      pending = setTimeout(() => drawViewEntries(entries, scroll, frame.entries), 30);
+    };
+    new MutationObserver(sync).observe(scroll, { childList: true, subtree: true });
+    sync();
+  }
+}
+
+/** The rail of such a view: one entry per section or item now in its centre pane; selecting one scrolls to it, opening what holds it. */
+function drawViewEntries(entries, scroll, selector) {
+  const nodes = [...scroll.querySelectorAll(selector)].filter((node) => node.textContent.trim() && !node.closest("[hidden]"));
+  entries.replaceChildren(
+    ...nodes.map((node) =>
+      h(
+        "li",
+        { class: node.closest(".is-unread") ? "is-unread" : null },
+        h("button", {
+          type: "button",
+          class: "view-entry",
+          onclick: () => {
+            for (let fold = node.closest("details"); fold; fold = fold.parentElement?.closest("details")) fold.open = true;
+            node.scrollIntoView({ block: "start", behavior: reducedMotion() ? "auto" : "smooth" });
+          },
+          text: node.textContent.replace(/\s+/g, " ").trim(),
+        }),
+      ),
+    ),
+  );
+}
+
 // ---- the inspector
 
 /** A button that reads its item in the inspector: for the keyboard, and for the eye. Selecting the item itself does the same. */
@@ -6565,11 +6806,8 @@ function inspectTest(id) {
   const claim = state.ctx.claims.get(id);
   const test = claim && claim.computed && typeof claim.computed === "object" ? claim.computed : null;
   if (!test) return null;
-  return [
-    inspectHead("Computed test", `of claim ${claim.id}`, testOutcome(test.outcome, test.outcome_label), " ", countedTag(claim)),
-    h("p", { class: "ct-expr" }, h("code", { text: str(test.canonical) })),
-    h("div", { class: "ct-inspected" }, ...computedDetail(claim, state.run.company?.cik)),
-  ];
+  // The centre pane has the expression and the outcome: here, only what is behind them.
+  return [inspectHead("Operands and arithmetic", `of claim ${claim.id}'s test`), h("div", { class: "ct-inspected" }, ...computedDetail(claim, state.run.company?.cik))];
 }
 
 /** One 8-K whole: its items, the roles a 5.02 names, its opening sentences and the link to it. */
@@ -6591,6 +6829,47 @@ function inspectFigure(id) {
   ];
 }
 
+/**
+ * With nothing picked and nothing on the tab to pick: the run's own facts, each the record's
+ * (its status, the counts of the status line, the sources, the coverage limits).
+ */
+function inspectRunFacts() {
+  const run = state.run;
+  const c = run.coverage ?? {};
+  const fact = (label, ...value) => h("div", null, h("dt", { text: label }), h("dd", null, ...value));
+  const sources = list(run.sources);
+  const limits = list(run.coverage_limits);
+  const kind = (source) => (source.kind === "sec_filing" ? `${str(source.form) || "Filing"}${source.published_date ? `, filed ${source.published_date}` : ""}` : source.kind === "sec_xbrl" ? "XBRL data" : "Web page");
+  return [
+    inspectHead("The run", str(run.id)),
+    h(
+      "dl",
+      { class: "ins-grid" },
+      fact("Status", statusMark(run.status), ` ${capitalize(run.status)}`),
+      Number.isFinite(c.sources_requested) ? fact("Sources read", `${num(c.sources_read)} of ${num(c.sources_requested)}`) : "",
+      Number.isFinite(c.passages_indexed) ? fact("Passages indexed", num(c.passages_indexed)) : "",
+      Number.isFinite(c.findings_verified) ? fact("Findings verified", Number.isFinite(c.findings_proposed) && c.findings_proposed > 0 ? `${num(c.findings_verified)} of ${num(c.findings_proposed)}` : num(c.findings_verified)) : "",
+      Number.isFinite(c.findings_withheld) ? fact("Withheld", num(c.findings_withheld)) : "",
+      str(run.as_of?.line) ? fact("As of", run.as_of.line) : "",
+    ),
+    sources.length
+      ? h(
+          "div",
+          { class: "ins-block" },
+          h("p", { class: "label", text: "Sources" }),
+          h("ul", { class: "ins-list" }, sources.map((source) => h("li", null, h("span", null, h("strong", { text: `${str(source.id)} ` }), kind(source)), h("span", { class: "muted", text: source.extraction_status === "extracted" ? "Read" : "Not read" })))),
+        )
+      : "",
+    h(
+      "div",
+      { class: "ins-block" },
+      h("p", { class: "label", text: "Coverage limits" }),
+      limits.length ? h("ul", { class: "mark-list" }, limits.map((line) => limitLine("li", String(line)))) : h("p", { class: "muted", text: run.status === "running" ? "Listed when the run finishes." : "None recorded." }),
+    ),
+    h("p", { class: "ins-none muted", text: "Select a finding, a computed test, an 8-K or a figure in the centre pane to read it here." }),
+  ];
+}
+
 const INSPECT = { finding: inspectFinding, test: inspectTest, event: inspectEvent, figure: inspectFigure };
 
 /** Fill the inspector from what was picked, else from the tab's first item, and mark that item in the centre pane. */
@@ -6603,13 +6882,8 @@ function drawInspector() {
   for (const node of els.centreScroll.querySelectorAll("[data-pick]")) node.classList.toggle("is-picked", Boolean(key) && node.dataset.pick === key);
   els.inspector.dataset.inspecting = key;
   els.inspector.classList.toggle("is-sheet-open", Boolean(explicit) && Boolean(content));
-  // A tab with nothing to read at the side gives the inspector's width to the centre pane: no empty pane.
-  els.workspace.classList.toggle("no-inspector", !content);
-  els.inspectBody.replaceChildren(
-    ...(content ?? [
-      h("p", { class: "ins-none muted", text: "Select a finding to read its quote in the text around it, a computed test for its operands and arithmetic, an 8-K, or a figure for the reported values behind it." }),
-    ]),
-  );
+  // The inspector is always there: with nothing to read from the tab it shows the run's own facts.
+  els.inspectBody.replaceChildren(...(content ?? inspectRunFacts()));
   els.inspectBody.scrollTop = 0;
 }
 
@@ -6738,6 +7012,13 @@ function initLayout() {
   els.runDrawerClose?.addEventListener("click", () => closeRunDrawer());
   els.howtoButton?.addEventListener("click", () => toggleRunDrawer("guide", els.howtoButton));
   els.inboxButton?.addEventListener("click", () => openInbox());
+  // The menu shuts when one of its items is used and when the reader clicks anywhere else.
+  els.barMenu?.addEventListener("click", (event) => {
+    if (event.target instanceof Element && event.target.closest(".menu-item")) els.barMenu.open = false;
+  });
+  document.addEventListener("click", (event) => {
+    if (els.barMenu?.open && event.target instanceof Node && !els.barMenu.contains(event.target)) els.barMenu.open = false;
+  });
   els.keysHowto?.addEventListener("click", () => {
     els.keysDialog?.close?.();
     if (onFirstScreen()) return;
@@ -6831,6 +7112,11 @@ function onKey(event) {
   if (event.key === "Escape" && drawerOpen()) {
     event.preventDefault();
     closeDrawer();
+    return;
+  }
+  if (event.key === "Escape" && els.barMenu?.open) {
+    event.preventDefault();
+    els.barMenu.open = false;
     return;
   }
   if (event.key === "Escape" && runDrawerOpen()) {
@@ -6972,7 +7258,12 @@ function init() {
     initSpecimen();
     return;
   }
+  frameViews();
   initChrome();
+  els.ticker.addEventListener("focus", () => {
+    state.tickerOnFocus = els.ticker.value;
+  });
+  els.ticker.addEventListener("keydown", onTickerKey);
   els.form.addEventListener("submit", onSubmit);
   els.figuresOnly.addEventListener("click", onFiguresOnly);
   els.filingChanges.addEventListener("click", onFilingChanges);

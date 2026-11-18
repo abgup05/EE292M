@@ -47,6 +47,9 @@ WIDE = [
     "wide-c2-time",
     "wide-thesis-time",
     "wide-thesis-limits",
+    "wide-code",
+    "wide-code-unknown",
+    "wide-vcell",
     "wide-counts-open",
     "wide-run-drawer",
     "wide-address",
@@ -169,9 +172,11 @@ def test_the_claims_are_listed_once(name: str) -> None:
     assert s["data-claim-rows"].split() == claim_ids(), "the rail lists every claim"
     selected = s["data-selected"]
     drawn = json.loads(s["data-claim-texts-drawn"])
+    # Below 1100px the rail is a strip of chips (id and stamp): a claim's words are its chip's title.
+    in_rail = 0 if name in MID else 1
     for claim_id in claim_ids():
         # In the rail; and, for the claim selected, in the centre pane's head.
-        expected = 2 if claim_id == selected else 1
+        expected = in_rail + (1 if claim_id == selected else 0)
         assert drawn.get(claim_id, 0) == expected, f"{claim_id} is drawn {drawn.get(claim_id, 0)} times"
     assert s["data-docket-headings-drawn"] == "0", "a docket's own heading is for paper"
     assert s["data-dockets-drawn"].split() in ([], [selected]), "only the selected claim's docket is drawn"
@@ -259,12 +264,53 @@ def test_over_time_shows_the_selected_claims_lane_and_every_lane_for_the_thesis(
     assert step("wide-thesis-time")["data-selected"] == ""
 
 
-def test_a_tab_with_nothing_to_inspect_gives_the_inspectors_width_to_the_centre_pane() -> None:
+def test_the_inspector_stays_on_every_tab_and_reads_the_runs_facts_when_nothing_is_picked() -> None:
     before, after = pane("wide-thesis-time", "centre"), pane("wide-thesis-limits", "centre")
-    assert pane("wide-thesis-time", "inspector") is not None
-    assert pane("wide-thesis-limits", "inspector") is None
+    assert pane("wide-thesis-time", "inspector") == pane("wide-thesis-limits", "inspector") is not None
     assert step("wide-thesis-limits")["data-panels-shown"] == "panel-limits"
-    assert after["width"] > before["width"]
+    assert after["width"] == before["width"], "the centre pane does not reflow between tabs"
+    s = step("wide-thesis-limits")
+    assert s["data-inspecting"] == "" and s["data-picked"] == ""
+    said = s["data-inspector-text"].replace(" ", "")
+    coverage = run()["coverage"]
+    assert f"Sourcesread{coverage['sources_read']:,}of{coverage['sources_requested']:,}" in said
+    assert f"Findingsverified{coverage['findings_verified']:,}of{coverage['findings_proposed']:,}" in said
+    for source in run()["sources"]:
+        assert source["id"] in said
+    for limit in run()["coverage_limits"]:
+        assert "".join(limit.split()) in said
+
+
+def test_the_verdicts_are_one_strip_of_cells_drawn_the_same_everywhere() -> None:
+    s = step("wide-loaded")
+    expected = " ".join(f"{c['id']}:v-{c['verdict']}" for c in run()["claims"])
+    assert s["data-cells-bar"] == s["data-cells-rail"] == s["data-cells-overview"] == expected
+    assert s["data-table-rows"] == " ".join(f"{c['id']}:{c['verdict']}" for c in run()["claims"])
+    # The result first: the masthead with its strip, then the summary and the verdict table, then the figures.
+    assert s["data-overview-order"].split()[0] == "overview-mast" and s["data-overview-order"].split()[-1] == "tape-section"
+    picked = step("wide-vcell")
+    assert picked["data-selected"] == "c3" and picked["data-sel-title"] == claim("c3")["text"]
+
+
+def test_a_verdict_is_a_solid_stamp_and_a_provenance_tag_is_not_a_box() -> None:
+    s = step("wide-loaded")
+    assert 11 <= float(s["data-stamp-font-px"].removesuffix("px")) <= 12
+    assert s["data-stamp-fill"] not in ("rgba(0, 0, 0, 0)", "transparent"), "a verdict stamp is filled"
+    assert s["data-badge-border"] == "0px", "the model-written tag has no box"
+
+
+def test_a_rail_row_is_two_lines_and_the_bar_has_one_menu() -> None:
+    s = step("wide-loaded")
+    assert all(int(height) <= 72 for height in s["data-rail-row-heights"].split()), "a row is its id line and at most two lines of claim"
+    assert s["data-menu-items"].split() == ["howto-button", "theme-toggle", "keys-button"]
+    assert s["data-bar-buttons-with-hints"] == "0", "no key hint inside a button of the bar"
+
+
+def test_a_code_typed_in_the_ticker_field_goes_to_its_panel() -> None:
+    went, unknown = step("wide-code"), step("wide-code-unknown")
+    assert (went["data-tab"], went["data-panels-shown"]) == ("events", "panel-events")
+    assert went["data-ticker-error"] == "" and went["data-ticker-after"] == "", "the field gets back what it held"
+    assert "ZZZ" in unknown["data-ticker-error"] and unknown["data-tab"] == "events"
 
 
 def test_the_address_can_name_a_claim_and_a_tab() -> None:
@@ -297,7 +343,8 @@ def test_nothing_drawn_is_inert_while_the_drawers_are_closed() -> None:
 
 def test_the_full_counts_open_over_the_panes_without_moving_them() -> None:
     assert step("wide-counts-open")["data-counts-open"] == "true"
-    assert pane("wide-counts-open", "centre") == pane("wide-thesis-limits", "centre")
+    box = lambda name: {k: pane(name, "centre")[k] for k in ("left", "top", "width", "height")}  # noqa: E731
+    assert box("wide-counts-open") == box("wide-thesis-limits")
 
 
 def test_the_run_drawer_holds_who_did_the_work_the_guide_and_the_marks() -> None:
@@ -318,9 +365,14 @@ def test_on_the_first_screen_the_guide_is_the_lead_beside_the_form() -> None:
     assert int(s["data-samples-drawn"]) == len(index.select("#sample-nav a"))
 
 
-def test_a_view_that_is_not_a_run_is_one_pane_that_scrolls_inside_itself() -> None:
+def test_a_view_that_is_not_a_run_is_laid_out_in_the_same_three_panes() -> None:
     s = step("wide-inbox")
-    assert (s["data-panel-scrolls"], s["data-panel-overflow-y"]) == ("true", "auto")
+    assert (s["data-panel-scrolls"], s["data-panel-overflow-y"]) == ("true", "auto"), "the list scrolls inside the centre pane"
+    rail, centre, aside = (tuple(int(n) for n in s[f"data-view-{name}"].split(",")) for name in ("rail", "centre", "aside"))
+    assert rail[0] == 0 and centre[0] == rail[1] and aside[0] == centre[0] + centre[1] and aside[0] + aside[1] == 1440
+    index = BeautifulSoup((RESULTS / "dom-inbox.html").read_text(encoding="utf-8"), "html.parser")
+    assert int(s["data-rail-entries"]) == len(index.select("#inbox-items .inbox-headline, #inbox-collapsed .inbox-headline")) > 0
+    assert s["data-head-in-aside"] == "true"
 
 
 # ---------------------------------------------------------------- narrower windows
@@ -372,5 +424,5 @@ def test_a_phone_reads_in_place_what_a_wide_window_reads_in_the_inspector() -> N
 @pytest.mark.parametrize("name", [*WIDE, "laptop-c1", "wide-first", "wide-inbox", "laptop-inbox-terminal"])
 def test_the_bar_is_one_row_with_every_control_inside_the_window(name: str) -> None:
     s = step(name)
-    assert int(s["data-bar-height"]) <= 48, "the bar wrapped to a second row"
+    assert int(s["data-bar-height"]) <= 36, "the bar is one low row"
     assert int(s["data-bar-right"]) <= int(s["data-page-client-width"]), "a control of the bar is outside the window"

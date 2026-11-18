@@ -139,7 +139,23 @@ async function run() {
   let frame = await open("?sample=run-live&theme=paper", 1440, 900, runReady, "the live run at 1440x900");
   let doc = frame.contentDocument;
   let win = frame.contentWindow;
-  record(frame, "wide-loaded", { firstScreen: String(doc.body.classList.contains("is-first")), howtoIn: doc.getElementById("howto").parentElement.id });
+  const cells = (root) => [...doc.querySelectorAll(`${root} [data-vcell]`)].filter(visible).map((cell) => `${cell.dataset.vcell}:${[...cell.classList].find((name) => name.startsWith("v-"))}`).join(" ");
+  record(frame, "wide-loaded", {
+    firstScreen: String(doc.body.classList.contains("is-first")),
+    howtoIn: doc.getElementById("howto").parentElement.id,
+    // The verdicts, one cell per claim: in the bar, over the rail and at the head of the Overview.
+    cellsBar: cells("#cmd-verdicts"),
+    cellsRail: cells("#rail-head"),
+    cellsOverview: cells("#overview-mast"),
+    tableRows: [...doc.querySelectorAll("#verdict-table tr[data-vrow]")].filter(visible).map((row) => `${row.dataset.vrow}:${row.querySelector(".pill.verdict").dataset.verdict}`).join(" "),
+    overviewOrder: ["overview-mast", "summary-section", "verdicts-section", "tape-section"].map((id) => doc.getElementById(id)).filter(visible).sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top || a.getBoundingClientRect().left - b.getBoundingClientRect().left).map((node) => node.id).join(" "),
+    menuItems: [...doc.querySelectorAll("#bar-menu .menu-item")].map((item) => item.id).join(" "),
+    barButtonsWithHints: String([...doc.querySelectorAll(".cmdbar > .tool .key-hint, .cmd-run .key-hint")].filter(visible).length),
+    stampFontPx: win.getComputedStyle(doc.querySelector("#scorecard .pill.verdict")).fontSize,
+    stampFill: win.getComputedStyle(doc.querySelector("#scorecard .pill.verdict.v-challenged")).backgroundColor,
+    badgeBorder: win.getComputedStyle(doc.querySelector("#summary-origin .badge-model")).borderTopWidth,
+    railRowHeights: [...doc.querySelectorAll("#scorecard a.score-row")].map((row) => Math.round(row.getBoundingClientRect().height)).join(" "),
+  });
 
   // Select the second claim by its row in the rail.
   doc.querySelector('#scorecard a.score-row[data-select="c2"]').click();
@@ -216,6 +232,27 @@ async function run() {
   await sleep(100);
   record(frame, "wide-thesis-limits");
 
+  // A code typed in the ticker field after a full stop goes to that panel; one that names nothing says so.
+  const ticker = doc.getElementById("ticker");
+  const typeCode = (code) => {
+    ticker.focus();
+    ticker.value = code;
+    ticker.dispatchEvent(new win.KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
+  };
+  typeCode(".evt");
+  await sleep(150);
+  record(frame, "wide-code", { tickerAfter: ticker.value, tickerError: doc.getElementById("err-ticker").hidden ? "" : text(doc.getElementById("err-ticker")) });
+  typeCode(".zzz");
+  await sleep(100);
+  record(frame, "wide-code-unknown", { tickerError: doc.getElementById("err-ticker").hidden ? "" : text(doc.getElementById("err-ticker")) });
+  ticker.value = "";
+  ticker.dispatchEvent(new win.Event("input", { bubbles: true }));
+  ticker.blur();
+  // A cell of the verdict strip in the bar selects its claim.
+  doc.querySelector('#cmd-verdicts [data-vcell="c3"]').click();
+  await sleep(100);
+  record(frame, "wide-vcell");
+
   // The status line's full counts open over the panes, and the Run drawer from the chip.
   doc.querySelector("#status-banner details.banner-fold > summary").click();
   await sleep(100);
@@ -277,8 +314,22 @@ async function run() {
   record(frame, "phone-inbox");
   frame = await open("?sample=inbox&theme=paper", 1440, 900, (d) => !d.getElementById("inbox-view").hidden && d.querySelector("#inbox-items article"), "the recorded inbox at 1440x900");
   doc = frame.contentDocument;
-  const panel = doc.getElementById("result-panel");
-  record(frame, "wide-inbox", { panelScrolls: String(panel.scrollHeight > panel.clientHeight), panelOverflowY: frame.contentWindow.getComputedStyle(panel).overflowY });
+  await sleep(200);
+  const box = (node) => {
+    const r = node.getBoundingClientRect();
+    return `${Math.round(r.left)},${Math.round(r.width)}`;
+  };
+  const panel = doc.querySelector("#inbox-view .view-centre .pane-scroll");
+  // Another view in the same frame: its items in the rail, the list in the centre, its head and the watch at the side.
+  record(frame, "wide-inbox", {
+    panelScrolls: String(panel.scrollHeight > panel.clientHeight),
+    panelOverflowY: frame.contentWindow.getComputedStyle(panel).overflowY,
+    viewRail: box(doc.querySelector("#inbox-view .view-rail")),
+    viewCentre: box(doc.querySelector("#inbox-view .view-centre")),
+    viewAside: box(doc.querySelector("#inbox-view .view-aside")),
+    railEntries: String(doc.querySelectorAll("#inbox-view .view-entries > li").length),
+    headInAside: String(Boolean(doc.querySelector("#inbox-view .view-aside #inbox-head"))),
+  });
   // The widest bar there is: the recorded inbox in Terminal (mono), with the watch's health in it, on a laptop.
   frame = await open("?sample=inbox&theme=terminal", 1280, 800, (d) => !d.getElementById("inbox-view").hidden && d.querySelector("#inbox-items article") && !d.getElementById("watch-health").hidden, "the recorded inbox at 1280x800, Terminal");
   record(frame, "laptop-inbox-terminal");

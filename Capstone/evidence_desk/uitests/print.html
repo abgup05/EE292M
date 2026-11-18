@@ -54,7 +54,7 @@ function emulatePrint(win) {
 function record(step, extra) {
   const doc = frame.contentDocument;
   const top = (node) => Math.round(node.getBoundingClientRect().top + frame.contentWindow.scrollY);
-  const order = ["rail-head", "scorecard", "run-info", "status-banner", "tape-section", "summary-section", "claim-list", "sources", "timeline-section", "events-section", "figures-section", "coverage-limits"]
+  const order = ["rail-head", "scorecard", "run-info", "status-banner", "summary-section", "tape-section", "claim-list", "sources", "timeline-section", "events-section", "figures-section", "coverage-limits"]
     .map((id) => doc.getElementById(id))
     .filter(visible)
     .sort((a, b) => top(a) - top(b))

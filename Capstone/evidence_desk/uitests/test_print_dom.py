@@ -69,7 +69,7 @@ def test_on_paper_every_tabs_panel_prints_in_reading_order() -> None:
     printed = steps()["print"]
     assert printed["data-panels-drawn"].split() == ["panel-overview", "panel-claim", "panel-evidence", "panel-time", "panel-events", "panel-figures", "panel-limits"]
     # The company and the decision, the verdicts, how the run was made, the counts, then the note.
-    assert printed["data-order"].split() == ["rail-head", "scorecard", "run-info", "status-banner", "tape-section", "summary-section", "claim-list", "sources", "timeline-section", "events-section", "figures-section", "coverage-limits"]
+    assert printed["data-order"].split() == ["rail-head", "scorecard", "run-info", "status-banner", "summary-section", "tape-section", "claim-list", "sources", "timeline-section", "events-section", "figures-section", "coverage-limits"]
     assert printed["data-lanes-drawn"].split() == [c["id"] for c in run()["claims"] if c.get("computed")]
     assert int(printed["data-note-height"]) > 1000, "a document taller than the 1000px window it was laid out in, not a frame that fits it"
 

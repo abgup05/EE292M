@@ -16,7 +16,7 @@ The [Week 2 Industry Flow Explorer](Homework/Week%202/visualization/README.md) v
 
 ## Sessions, hand-ins and versions
 
-`Homework/` holds the hand-in for each session and `Work Logs/` the work log. The [three capstone pitches](Capstone/idea%20pitches.md) are in `Capstone/`. One row per course session; the slide decks themselves are not in this repository.
+`Homework/` holds the hand-in for each session and `Work Logs/` the work log. The [three capstone pitches](Capstone/idea%20pitches.md) are in `Capstone/`. One row per course session; the slide decks themselves are not in this repository. The same history one row per capstone version, with each version's review and its recorded snapshot on the website, is [`docs/versions.md`](docs/versions.md).
 
 | Session | Date (2026) | Slides | What the session's work was | Hand-in | Work log | Version to open |
 | --- | --- | --- | --- | --- | --- | --- |

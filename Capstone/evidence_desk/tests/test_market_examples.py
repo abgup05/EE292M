@@ -22,6 +22,8 @@ def test_committed_examples_are_up_to_date(written: dict[str, Any]) -> None:
     for name, payload in written.items():
         committed = json.loads((market_examples.OUT / name).read_text())
         assert committed == payload, f"{name} is stale: run make market-examples"
+    for name, text in market_examples.texts(written).items():
+        assert (market_examples.OUT / name).read_text() == text, f"{name} is stale"
 
 
 def _by_kind(view: dict[str, Any]) -> dict[str, dict[str, Any]]:
@@ -36,9 +38,17 @@ def test_valuation_agrees_with_its_own_inputs(written: dict[str, Any]) -> None:
     results = _by_kind(written["market-view.json"])
     market = results["market_value"]
     shares = _sum(market, "Shares outstanding")
-    assert market["value"] == pytest.approx(market_examples.PRICE * shares)
+    # The price is the manager's position value ÷ its shares, both inputs of the result.
+    position = next(i["value"] for i in market["inputs"] if "value of the position" in i["label"])
+    held = next(i["value"] for i in market["inputs"] if "shares held" in i["label"])
+    assert market["value"] == pytest.approx(position / held * shares)
     ev = results["enterprise_value"]
-    expected_ev = market["value"] + _sum(ev, "Total debt") - _sum(ev, "Cash")
+    expected_ev = (
+        market["value"]
+        + _sum(ev, "Total debt")
+        - _sum(ev, "Cash")
+        - _sum(ev, "Marketable securities")
+    )
     assert ev["value"] == pytest.approx(expected_ev)
     assert results["ev_sales"]["value"] == pytest.approx(
         expected_ev / _sum(results["ev_sales"], "Revenue")
@@ -120,3 +130,49 @@ def test_example_files_are_where_the_docs_say() -> None:
     assert sorted(p.name for p in Path(market_examples.OUT).glob("*.json")) == sorted(
         market_examples.FILES
     )
+    assert sorted(p.name for p in Path(market_examples.OUT).glob("*.txt")) == sorted(
+        market_examples.TEXTS
+    )
+
+
+def test_reverse_dcf_by_a_closed_form(written: dict[str, Any]) -> None:
+    # A second route to the same value, with no loop: the ten years are a geometric series.
+    # With q = (1 + g) ÷ (1 + r), k = margin × (1 − tax) and s the sales-to-capital ratio,
+    #   years 1..10: R0 × (k − g ÷ (s × (1 + g))) × q × (1 − q^10) ÷ (1 − q)
+    #   after:       R0 × (1 + g)^10 × ((1 + gt) × k − gt ÷ s) ÷ (r − gt) ÷ (1 + r)^10
+    view = written["market-view.json"]
+    dcf = view["reverse_dcf"]
+    results = _by_kind(view)
+    ev = results["enterprise_value"]
+    revenue = _sum(results["ev_sales"], "Revenue")
+    income = sum(i["value"] for i in dcf["inputs"] if i["label"].startswith("Operating income"))
+    debt = _sum(ev, "Total debt")
+    cash = _sum(ev, "Cash") + _sum(ev, "Marketable securities")
+    equity = float(
+        next(a for a in dcf["assumptions"] if a.startswith("Sales-to-capital"))
+        .split("(equity $")[1]
+        .split("B")[0]
+    )
+    s2c = revenue / (equity * 1e9 + debt - cash)
+    k, g, r, gt = income / revenue * (1 - 0.21), dcf["value"] / 100, 0.09, 0.03
+    q = (1 + g) / (1 + r)
+    years = revenue * (k - g / (s2c * (1 + g))) * q * (1 - q**10) / (1 - q)
+    after = revenue * (1 + g) ** 10 * ((1 + gt) * k - gt / s2c) / (r - gt) / (1 + r) ** 10
+    # Equity is read back from a figure printed to 10 million dollars: allow that rounding.
+    assert years + after == pytest.approx(ev["value"], rel=1e-3)
+    assert dcf["implied_revenue"] == pytest.approx(revenue * (1 + g) ** 10)
+
+
+def test_the_price_implied_growth_is_set_beside_what_filers_of_its_size_did(
+    written: dict[str, Any],
+) -> None:
+    dcf = written["market-view.json"]["reverse_dcf"]
+    spread = dcf["distribution"]
+    assert spread["n"] > 0 and f"Of {spread['n']} ten-year spans" in dcf["reading"]
+    assert f"{spread['at_least']} grew at least that fast" in dcf["reading"]
+    assert spread["at_least_of"] == dcf["value"]
+    kinds = [s["kind"] for s in dcf["scenarios"]]
+    assert kinds == ["reverse_dcf_peer_median_margin", "reverse_dcf_peer_p90_margin"]
+    top = dcf["scenarios"][1]
+    # A lower margin needs more growth for the same price, when growth adds value at all.
+    assert top["value"] > dcf["value"]

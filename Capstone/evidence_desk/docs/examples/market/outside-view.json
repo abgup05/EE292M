@@ -9,6 +9,9 @@
   "sic_description": "Semiconductors & Related Devices",
   "as_of": "2026-11-18",
   "test": "yoy(revenue)[FY2026] > 50%",
+  "test_measures": [
+    "revenue"
+  ],
   "compile_note": "",
   "base_rates": [
     {
@@ -17,10 +20,10 @@
       "label": "Base rate of yoy(revenue)[t] > 50% among filers with revenue of at least $100.00B",
       "outcome": "computed",
       "reason": "",
-      "value": 1.3623978201634876,
+      "value": 1.092896174863388,
       "unit": "percent",
-      "display": "5 of 367 (1.4%)",
-      "formula": "held ÷ computable = 5 ÷ 367",
+      "display": "4 of 366 (1.1%)",
+      "formula": "held ÷ computable = 4 ÷ 366",
       "inputs": [
         {
           "label": "Revenue: every filer's row, by the first concept that has one",
@@ -36,9 +39,12 @@
         "Class: every filer in SEC's annual frames whose revenue in the test's base year was at least $100.00B (half the company's newest revenue, rounded down to 1, 2 or 5 times a power of ten)",
         "Each year t is a calendar-year frame: SEC places in it, for each filer, the fiscal year that best fits the calendar year; t-1 is the frame a year earlier, and the two periods must end a whole number of years apart.",
         "Frames carry no filing date: a value restated later is the restated value.",
+        "The company itself is not counted: the rate is of the other filers of the class, and the years in which the test held for the company are listed apart.",
+        "A filer in the class in the base year with no value in year t (it was bought, went under, stopped filing, or changed its tags) is in the class but not computable: the rate is of the filers that can still be read.",
+        "A parent and a subsidiary that both file are two filers; a filer that reports in another currency is in no USD frame.",
         "The SIC code is the filer's code today, not the code it had in year t."
       ],
-      "reading": "Among filers with revenue of at least $100.00B, yoy(revenue)[t] > 50% held in 5 of 367 company-years from 2011 to 2025; of the 4 that held and could be read a year later, 0 still held.",
+      "reading": "Among filers with revenue of at least $100.00B (the company left out), yoy(revenue)[t] > 50% held in 4 of 366 company-years from 2011 to 2025; of the 4 that held and could be read a year later, 0 still held.",
       "data_origin": "sec_frames",
       "as_of": "2026-11-18",
       "note": "",
@@ -133,13 +139,13 @@
         },
         {
           "year": 2025,
-          "in_class": 36,
-          "computable": 35,
-          "held": 1
+          "in_class": 35,
+          "computable": 34,
+          "held": 0
         }
       ],
-      "held": 5,
-      "computable": 367,
+      "held": 4,
+      "computable": 366,
       "persisted": 0,
       "persist_base": 4,
       "cases": [
@@ -189,6 +195,50 @@
         }
       ],
       "own": [
+        {
+          "name": "NVIDIA CORP",
+          "cik": 1045810,
+          "year": 2020,
+          "period_end": "2021-01-31",
+          "value": 52.729437625938814,
+          "display": "52.7%",
+          "revenue": 16675000000.0,
+          "revenue_display": "$16.68B",
+          "next_year": "held"
+        },
+        {
+          "name": "NVIDIA CORP",
+          "cik": 1045810,
+          "year": 2021,
+          "period_end": "2022-01-30",
+          "value": 61.403298350824585,
+          "display": "61.4%",
+          "revenue": 26914000000.0,
+          "revenue_display": "$26.91B",
+          "next_year": "did not hold"
+        },
+        {
+          "name": "NVIDIA CORP",
+          "cik": 1045810,
+          "year": 2023,
+          "period_end": "2024-01-28",
+          "value": 125.85452658115221,
+          "display": "125.9%",
+          "revenue": 60922000000.0,
+          "revenue_display": "$60.92B",
+          "next_year": "held"
+        },
+        {
+          "name": "NVIDIA CORP",
+          "cik": 1045810,
+          "year": 2024,
+          "period_end": "2025-01-26",
+          "value": 114.20340763599357,
+          "display": "114.2%",
+          "revenue": 130497000000.0,
+          "revenue_display": "$130.50B",
+          "next_year": "held"
+        },
         {
           "name": "NVIDIA CORP",
           "cik": 1045810,
@@ -354,10 +404,10 @@
       "label": "Base rate of yoy(revenue)[t] > 50% among SIC 3674 filers with revenue of at least $100.0M",
       "outcome": "computed",
       "reason": "",
-      "value": 8.11320754716981,
+      "value": 7.751196172248803,
       "unit": "percent",
-      "display": "86 of 1060 (8.1%)",
-      "formula": "held ÷ computable = 86 ÷ 1060",
+      "display": "81 of 1045 (7.8%)",
+      "formula": "held ÷ computable = 81 ÷ 1045",
       "inputs": [
         {
           "label": "Revenue: every filer's row, by the first concept that has one",
@@ -370,115 +420,118 @@
         }
       ],
       "assumptions": [
-        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the year read",
+        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
         "Each year t is a calendar-year frame: SEC places in it, for each filer, the fiscal year that best fits the calendar year; t-1 is the frame a year earlier, and the two periods must end a whole number of years apart.",
         "Frames carry no filing date: a value restated later is the restated value.",
+        "The company itself is not counted: the rate is of the other filers of the class, and the years in which the test held for the company are listed apart.",
+        "A filer in the class in the base year with no value in year t (it was bought, went under, stopped filing, or changed its tags) is in the class but not computable: the rate is of the filers that can still be read.",
+        "A parent and a subsidiary that both file are two filers; a filer that reports in another currency is in no USD frame.",
         "The SIC code is the filer's code today, not the code it had in year t."
       ],
-      "reading": "Among SIC 3674 filers with revenue of at least $100.0M, yoy(revenue)[t] > 50% held in 86 of 1060 company-years from 2011 to 2025; of the 73 that held and could be read a year later, 16 still held.",
+      "reading": "Among SIC 3674 filers with revenue of at least $100.0M (the company left out), yoy(revenue)[t] > 50% held in 81 of 1045 company-years from 2011 to 2025; of the 69 that held and could be read a year later, 13 still held.",
       "data_origin": "sec_frames",
       "as_of": "2026-11-18",
       "note": "",
       "test": "yoy(revenue)[FY2026] > 50%",
       "annual_test": "yoy(revenue)[t] > 50%",
       "class_name": "SIC 3674 filers with revenue of at least $100.0M",
-      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the year read",
+      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
       "years": [
         {
           "year": 2011,
-          "in_class": 95,
-          "computable": 89,
+          "in_class": 94,
+          "computable": 88,
           "held": 6
         },
         {
           "year": 2012,
-          "in_class": 100,
-          "computable": 89,
+          "in_class": 99,
+          "computable": 88,
           "held": 4
         },
         {
           "year": 2013,
-          "in_class": 94,
-          "computable": 90,
+          "in_class": 93,
+          "computable": 89,
           "held": 1
         },
         {
           "year": 2014,
-          "in_class": 95,
-          "computable": 83,
+          "in_class": 94,
+          "computable": 82,
           "held": 8
         },
         {
           "year": 2015,
-          "in_class": 88,
-          "computable": 72,
+          "in_class": 87,
+          "computable": 71,
           "held": 10
         },
         {
           "year": 2016,
-          "in_class": 76,
-          "computable": 67,
+          "in_class": 75,
+          "computable": 66,
           "held": 8
         },
         {
           "year": 2017,
-          "in_class": 76,
-          "computable": 69,
+          "in_class": 75,
+          "computable": 68,
           "held": 6
         },
         {
           "year": 2018,
-          "in_class": 72,
-          "computable": 64,
+          "in_class": 71,
+          "computable": 63,
           "held": 2
         },
         {
           "year": 2019,
-          "in_class": 69,
-          "computable": 64,
+          "in_class": 68,
+          "computable": 63,
           "held": 4
         },
         {
           "year": 2020,
-          "in_class": 67,
-          "computable": 62,
-          "held": 4
+          "in_class": 66,
+          "computable": 61,
+          "held": 3
         },
         {
           "year": 2021,
-          "in_class": 68,
-          "computable": 62,
-          "held": 12
+          "in_class": 67,
+          "computable": 61,
+          "held": 11
         },
         {
           "year": 2022,
-          "in_class": 68,
-          "computable": 65,
+          "in_class": 67,
+          "computable": 64,
           "held": 9
         },
         {
           "year": 2023,
-          "in_class": 66,
-          "computable": 62,
-          "held": 2
+          "in_class": 65,
+          "computable": 61,
+          "held": 1
         },
         {
           "year": 2024,
-          "in_class": 61,
-          "computable": 60,
-          "held": 4
+          "in_class": 60,
+          "computable": 59,
+          "held": 3
         },
         {
           "year": 2025,
-          "in_class": 64,
-          "computable": 62,
-          "held": 6
+          "in_class": 63,
+          "computable": 61,
+          "held": 5
         }
       ],
-      "held": 86,
-      "computable": 1060,
-      "persisted": 16,
-      "persist_base": 73,
+      "held": 81,
+      "computable": 1045,
+      "persisted": 13,
+      "persist_base": 69,
       "cases": [
         {
           "name": "TESSERA TECHNOLOGIES INC",
@@ -764,7 +817,7 @@
         }
       ],
       "assumptions": [
-        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the year read",
+        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
         "Measure: Revenue as tagged.",
         "Rank 1 is the highest value; the percentile is the share of the other members with a lower value.",
         "Frames carry no filing date: a value restated later is the restated value."
@@ -775,7 +828,7 @@
       "note": "",
       "measure": "revenue",
       "class_name": "SIC 3674 filers with revenue of at least $100.0M",
-      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the year read",
+      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
       "now": {
         "year": 2025,
         "period_end": "2026-01-25",
@@ -857,7 +910,7 @@
         }
       ],
       "assumptions": [
-        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the year read",
+        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
         "Measure: Revenue as tagged.",
         "Rank 1 is the highest value; the percentile is the share of the other members with a lower value.",
         "Frames carry no filing date: a value restated later is the restated value."
@@ -868,7 +921,7 @@
       "note": "",
       "measure": "revenue_growth",
       "class_name": "SIC 3674 filers with revenue of at least $100.0M",
-      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the year read",
+      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
       "now": {
         "year": 2025,
         "period_end": "2026-01-25",
@@ -998,7 +1051,7 @@
         }
       ],
       "assumptions": [
-        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the year read",
+        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
         "Measure: Gross profit ÷ revenue.",
         "Rank 1 is the highest value; the percentile is the share of the other members with a lower value.",
         "Frames carry no filing date: a value restated later is the restated value."
@@ -1009,7 +1062,7 @@
       "note": "",
       "measure": "gross_margin",
       "class_name": "SIC 3674 filers with revenue of at least $100.0M",
-      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the year read",
+      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
       "now": {
         "year": 2025,
         "period_end": "2026-01-25",
@@ -1130,7 +1183,7 @@
         }
       ],
       "assumptions": [
-        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the year read",
+        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
         "Measure: Operating income ÷ revenue.",
         "Rank 1 is the highest value; the percentile is the share of the other members with a lower value.",
         "Frames carry no filing date: a value restated later is the restated value."
@@ -1141,7 +1194,7 @@
       "note": "",
       "measure": "operating_margin",
       "class_name": "SIC 3674 filers with revenue of at least $100.0M",
-      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the year read",
+      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
       "now": {
         "year": 2025,
         "period_end": "2026-01-25",
@@ -1232,7 +1285,7 @@
         }
       ],
       "assumptions": [
-        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the year read",
+        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
         "Measure: Net income ÷ revenue.",
         "Rank 1 is the highest value; the percentile is the share of the other members with a lower value.",
         "Frames carry no filing date: a value restated later is the restated value."
@@ -1243,7 +1296,7 @@
       "note": "",
       "measure": "net_margin",
       "class_name": "SIC 3674 filers with revenue of at least $100.0M",
-      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the year read",
+      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
       "now": {
         "year": 2025,
         "period_end": "2026-01-25",
@@ -1342,7 +1395,7 @@
         }
       ],
       "assumptions": [
-        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the year read",
+        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
         "Measure: Research and development ÷ revenue.",
         "Rank 1 is the highest value; the percentile is the share of the other members with a lower value.",
         "Frames carry no filing date: a value restated later is the restated value."
@@ -1353,7 +1406,7 @@
       "note": "",
       "measure": "rnd_ratio",
       "class_name": "SIC 3674 filers with revenue of at least $100.0M",
-      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the year read",
+      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
       "now": {
         "year": 2025,
         "period_end": "2026-01-25",
@@ -1465,7 +1518,7 @@
         }
       ],
       "assumptions": [
-        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the year read",
+        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
         "Measure: NetCashProvidedByUsedInOperatingActivities.",
         "Rank 1 is the highest value; the percentile is the share of the other members with a lower value.",
         "Frames carry no filing date: a value restated later is the restated value."
@@ -1476,7 +1529,7 @@
       "note": "",
       "measure": "operating_cash_flow",
       "class_name": "SIC 3674 filers with revenue of at least $100.0M",
-      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the year read",
+      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
       "now": {
         "year": 2025,
         "period_end": "2026-01-25",
@@ -1558,7 +1611,7 @@
         }
       ],
       "assumptions": [
-        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the year read",
+        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
         "Measure: PaymentsToAcquirePropertyPlantAndEquipment (else PaymentsToAcquireProductiveAssets).",
         "Rank 1 is the highest value; the percentile is the share of the other members with a lower value.",
         "Frames carry no filing date: a value restated later is the restated value."
@@ -1569,7 +1622,7 @@
       "note": "",
       "measure": "capex",
       "class_name": "SIC 3674 filers with revenue of at least $100.0M",
-      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the year read",
+      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
       "now": {
         "year": 2025,
         "period_end": "2026-01-25",
@@ -1690,7 +1743,7 @@
         }
       ],
       "assumptions": [
-        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the year read",
+        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
         "Measure: Capital expenditure ÷ revenue.",
         "Rank 1 is the highest value; the percentile is the share of the other members with a lower value.",
         "Frames carry no filing date: a value restated later is the restated value."
@@ -1701,7 +1754,7 @@
       "note": "",
       "measure": "capex_ratio",
       "class_name": "SIC 3674 filers with revenue of at least $100.0M",
-      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the year read",
+      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
       "now": {
         "year": 2025,
         "period_end": "2026-01-25",
@@ -1822,7 +1875,7 @@
         }
       ],
       "assumptions": [
-        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the year read",
+        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
         "Measure: Operating cash flow − capital expenditure (the app's house definition).",
         "Rank 1 is the highest value; the percentile is the share of the other members with a lower value.",
         "Frames carry no filing date: a value restated later is the restated value."
@@ -1833,7 +1886,7 @@
       "note": "",
       "measure": "free_cash_flow",
       "class_name": "SIC 3674 filers with revenue of at least $100.0M",
-      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the year read",
+      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
       "now": {
         "year": 2025,
         "period_end": "2026-01-25",
@@ -1933,7 +1986,7 @@
         }
       ],
       "assumptions": [
-        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the year read",
+        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
         "Measure: (Operating cash flow − capital expenditure) ÷ revenue.",
         "Rank 1 is the highest value; the percentile is the share of the other members with a lower value.",
         "Frames carry no filing date: a value restated later is the restated value."
@@ -1944,7 +1997,7 @@
       "note": "",
       "measure": "fcf_margin",
       "class_name": "SIC 3674 filers with revenue of at least $100.0M",
-      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the year read",
+      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
       "now": {
         "year": 2025,
         "period_end": "2026-01-25",
@@ -2043,7 +2096,7 @@
         }
       ],
       "assumptions": [
-        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the year read",
+        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
         "Measure: Operating cash flow ÷ net income, when net income is positive.",
         "Rank 1 is the highest value; the percentile is the share of the other members with a lower value.",
         "Frames carry no filing date: a value restated later is the restated value."
@@ -2054,7 +2107,7 @@
       "note": "",
       "measure": "cash_conversion",
       "class_name": "SIC 3674 filers with revenue of at least $100.0M",
-      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the year read",
+      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
       "now": {
         "year": 2025,
         "period_end": "2026-01-25",

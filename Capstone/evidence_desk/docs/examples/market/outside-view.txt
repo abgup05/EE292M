@@ -1,0 +1,89 @@
+Outside view: NVIDIA CORP (NVDA), SIC 3674 Semiconductors & Related Devices, as of 2026-11-18
+Claim: Revenue grew more than 50% year over year in fiscal 2026
+Test: yoy(revenue)[FY2026] > 50%
+Frames read: 94; years in the panel: 2010 to 2025
+
+[base_rate:NVDA:size:yoy(revenue)[t] > 50%:2026-11-18]
+  Base rate of yoy(revenue)[t] > 50% among filers with revenue of at least $100.00B: 4 of 366 (1.1%)
+  Among filers with revenue of at least $100.00B (the company left out), yoy(revenue)[t] > 50% held in 4 of 366 company-years from 2011 to 2025; of the 4 that held and could be read a year later, 0 still held.
+  formula: held ÷ computable = 4 ÷ 366
+    2011: held 0 of 15 computable (16 in class)
+    2012: held 0 of 18 computable (18 in class)
+    2013: held 0 of 17 computable (18 in class)
+    2014: held 0 of 18 computable (18 in class)
+    2015: held 0 of 17 computable (17 in class)
+    2016: held 0 of 19 computable (19 in class)
+    2017: held 0 of 20 computable (20 in class)
+    2018: held 0 of 23 computable (24 in class)
+    2019: held 0 of 26 computable (26 in class)
+    2020: held 0 of 28 computable (28 in class)
+    2021: held 1 of 27 computable (27 in class)
+    2022: held 3 of 34 computable (34 in class)
+    2023: held 0 of 35 computable (35 in class)
+    2024: held 0 of 35 computable (35 in class)
+    2025: held 0 of 34 computable (35 in class)
+    nearest: Exxon Mobil Corporation 2021 (to 2021-12-31) 54.9%, revenue $276.69B; a year later did not hold
+    nearest: VALERO ENERGY CORP/TX 2022 (to 2022-12-31) 54.8%, revenue $176.38B; a year later did not hold
+    nearest: Phillips 66 2022 (to 2022-12-31) 52.5%, revenue $169.99B; a year later did not hold
+    nearest: Chevron Corp 2022 (to 2022-12-31) 51.5%, revenue $235.72B; a year later did not hold
+    own: 2020 52.7%
+    own: 2021 61.4%
+    own: 2023 125.9%
+    own: 2024 114.2%
+    own: 2025 65.5%
+  - Class: every filer in SEC's annual frames whose revenue in the test's base year was at least $100.00B (half the company's newest revenue, rounded down to 1, 2 or 5 times a power of ten)
+  - Each year t is a calendar-year frame: SEC places in it, for each filer, the fiscal year that best fits the calendar year; t-1 is the frame a year earlier, and the two periods must end a whole number of years apart.
+  - Frames carry no filing date: a value restated later is the restated value.
+  - The company itself is not counted: the rate is of the other filers of the class, and the years in which the test held for the company are listed apart.
+  - A filer in the class in the base year with no value in year t (it was bought, went under, stopped filing, or changed its tags) is in the class but not computable: the rate is of the filers that can still be read.
+  - A parent and a subsidiary that both file are two filers; a filer that reports in another currency is in no USD frame.
+  - The SIC code is the filer's code today, not the code it had in year t.
+
+[base_rate:NVDA:industry:yoy(revenue)[t] > 50%:2026-11-18]
+  Base rate of yoy(revenue)[t] > 50% among SIC 3674 filers with revenue of at least $100.0M: 81 of 1045 (7.8%)
+  Among SIC 3674 filers with revenue of at least $100.0M (the company left out), yoy(revenue)[t] > 50% held in 81 of 1045 company-years from 2011 to 2025; of the 69 that held and could be read a year later, 13 still held.
+  formula: held ÷ computable = 81 ÷ 1045
+    2011: held 6 of 88 computable (94 in class)
+    2012: held 4 of 88 computable (99 in class)
+    2013: held 1 of 89 computable (93 in class)
+    2014: held 8 of 82 computable (94 in class)
+    2015: held 10 of 71 computable (87 in class)
+    2016: held 8 of 66 computable (75 in class)
+    2017: held 6 of 68 computable (75 in class)
+    2018: held 2 of 63 computable (71 in class)
+    2019: held 4 of 63 computable (68 in class)
+    2020: held 3 of 61 computable (66 in class)
+    2021: held 11 of 61 computable (67 in class)
+    2022: held 9 of 64 computable (67 in class)
+    2023: held 1 of 61 computable (65 in class)
+    2024: held 3 of 59 computable (60 in class)
+    2025: held 5 of 61 computable (63 in class)
+    nearest: TESSERA TECHNOLOGIES INC 2014 (to 2014-12-31) 65.2%, revenue $278.8M; a year later did not hold
+    nearest: DAQO NEW ENERGY CORP. 2017 (to 2017-12-31) 64.7%, revenue $323.2M; a year later did not hold
+    nearest: Ultra Clean Holdings, Inc. 2017 (to 2017-12-29) 64.3%, revenue $924.4M; a year later did not hold
+    nearest: Analog Devices, Inc. 2022 (to 2022-10-29) 64.2%, revenue $12.01B; a year later did not hold
+    nearest: TOWER SEMICONDUCTOR LTD. 2014 (to 2014-12-31) 64.0%, revenue $828.0M; a year later did not hold
+    own: 2020 52.7%
+    own: 2021 61.4%
+    own: 2023 125.9%
+    own: 2024 114.2%
+    own: 2025 65.5%
+  - Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)
+  - Each year t is a calendar-year frame: SEC places in it, for each filer, the fiscal year that best fits the calendar year; t-1 is the frame a year earlier, and the two periods must end a whole number of years apart.
+  - Frames carry no filing date: a value restated later is the restated value.
+  - The company itself is not counted: the rate is of the other filers of the class, and the years in which the test held for the company are listed apart.
+  - A filer in the class in the base year with no value in year t (it was bought, went under, stopped filing, or changed its tags) is in the class but not computable: the rate is of the filers that can still be read.
+  - A parent and a subsidiary that both file are two filers; a filer that reports in another currency is in no USD frame.
+  - The SIC code is the filer's code today, not the code it had in year t.
+
+[peer:NVDA:revenue:2025:2026-11-18] Revenue ranks 1 of 63 in 2025 at $215.94B (above 100% of the others; class median $1.34B) among SIC 3674 filers with revenue of at least $100.0M; a year earlier it ranks 1 of 64 in 2024 at $130.50B (above 100% of the others; class median $1.05B).
+    next to it: 2. Broadcom Inc. $63.89B, 3. INTEL CORP $52.85B
+[peer:NVDA:revenue_growth:2025:2026-11-18] Revenue growth, year over year ranks 6 of 63 in 2025 at 65.5% (above 92% of the others; class median 13.0%) among SIC 3674 filers with revenue of at least $100.0M; a year earlier it ranks 4 of 61 in 2024 at 114.2% (above 95% of the others; class median -2.1%).
+    next to it: 4. Astera Labs, Inc. 115.1%, 5. Applied Optoelectronics, Inc. 82.8%, 7. SiTime Corporation 61.2%, 8. Micron Technology, Inc. 48.9%
+Standings not shown here (in the JSON): gross_margin, operating_margin, net_margin, rnd_ratio, operating_cash_flow, capex, capex_ratio, free_cash_flow, fcf_margin, cash_conversion
+
+Note: Frames admitted: periods ending by 2026-07-21 (120 days before today: an annual report is due within 60 to 90 days). A frame holds the latest value SEC has, so a later restatement is included.
+Note: Left out for a scale break (two concepts of one filer and year differing by a factor near a thousand): 5 filer-year(s) of revenue.
+Note: Rows dropped: 2 not a year long (350 to 380 days).
+Catalogue measures covered by frames: capex, capex_ratio, fcf_margin, free_cash_flow, gross_margin, gross_profit, net_income, net_margin, operating_cash_flow, operating_expenses, operating_income, operating_margin, revenue, rnd, rnd_ratio
+Not covered: accounts_payable, cash, cash_and_securities, commercial_paper, cost_of_revenue, current_debt, d_and_a, deferred_revenue, deferred_revenue_current, deferred_revenue_noncurrent, diluted_shares, dividends_paid, effective_tax_rate, eps_diluted, equity, general_admin, goodwill, income_tax, interest_expense, interest_income, inventory, long_term_debt, marketable_securities, net_cash, net_debt, opex_ratio, other_income, ppe, pretax_income, receivables, sales_marketing, sales_marketing_ratio, sbc, sbc_ratio, sga, sga_ratio, share_repurchases, shareholder_returns, total_assets, total_debt, total_liabilities, total_operating_expenses

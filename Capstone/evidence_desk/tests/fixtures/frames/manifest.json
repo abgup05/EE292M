@@ -1,5 +1,5 @@
 {
-  "recorded_at": "2026-11-18T20:22:08+00:00",
+  "recorded_at": "2026-11-18T20:42:31+00:00",
   "command": "make fixtures-market",
   "trim": "Each frame keeps every row of a filer with a revenue row of at least $50B in any recorded year (any revenue concept), of a filer SEC lists under SIC 3674, and of NVDA; every other row is dropped.",
   "cache": "A body already in the disposable cache (data/cache/frames, kept from an earlier live read) is used as it is; 'requests' counts the bodies this command fetched. The cache's files carry the time each was fetched.",
@@ -881,7 +881,190 @@
     "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001045810.json",
     "original_sha256": "c8d2deb79257bf637db44c1166c78aa5f344a138d9e9071ba49c532054ee6e6f",
     "original_bytes": 4092966,
-    "kept": "us-gaap concepts of app.core.facts.BOOK_GROUPS and dei:EntityCommonStockSharesOutstanding"
+    "kept": "us-gaap concepts of app.core.facts.BOOK_GROUPS, of app.core.valuation's DEBT_TOTALS and SECURITIES_FALLBACK, and dei:EntityCommonStockSharesOutstanding"
   },
-  "requests": 0
+  "requests": 0,
+  "thirteenf": {
+    "trim": "Each table keeps the positions whose issuer's name, reduced as the price source reduces it, starts with the first word of 'NVIDIA CORP'; every other position is dropped. Tables of 13F-HR filings filed since 2025-10-14.",
+    "managers": [
+      {
+        "cik": 1582202,
+        "name": "Swiss National Bank",
+        "index": "13f-1582202-filings.json.gz",
+        "index_url": "https://data.sec.gov/submissions/CIK0001582202.json",
+        "filings_in_index": 54,
+        "tables": [
+          {
+            "file": "13f-1582202-0001582202-26-000008.xml.gz",
+            "url": "https://www.sec.gov/Archives/edgar/data/1582202/000158220226000008/",
+            "period": "2026-09-30",
+            "filed": "2026-11-12",
+            "original_sha256": "4c32a40b363adc1c33da06a07f8c51710ef1398675f89c8610a286c91cfabb1c",
+            "original_bytes": 1220194,
+            "entries": 2300,
+            "entries_kept": 1
+          },
+          {
+            "file": "13f-1582202-0001582202-26-000007.xml.gz",
+            "url": "https://www.sec.gov/Archives/edgar/data/1582202/000158220226000007/",
+            "period": "2026-06-30",
+            "filed": "2026-08-11",
+            "original_sha256": "88beb429dec442cf9d397bda60b642360874ee16ec8fc2968559f24db6bf9216",
+            "original_bytes": 1220787,
+            "entries": 2301,
+            "entries_kept": 1
+          },
+          {
+            "file": "13f-1582202-0001582202-26-000004.xml.gz",
+            "url": "https://www.sec.gov/Archives/edgar/data/1582202/000158220226000004/",
+            "period": "2026-03-31",
+            "filed": "2026-05-07",
+            "original_sha256": "49d50a4052c3844b9ff2a2d5c5e641ccee6d341d922ea02c3c8b202ec2448705",
+            "original_bytes": 1220436,
+            "entries": 2301,
+            "entries_kept": 1
+          },
+          {
+            "file": "13f-1582202-0001582202-26-000002.xml.gz",
+            "url": "https://www.sec.gov/Archives/edgar/data/1582202/000158220226000002/",
+            "period": "2025-12-31",
+            "filed": "2026-02-12",
+            "original_sha256": "020896d72b03b1e392da2a25690037201045698f3b649b928564bb51e5248f2a",
+            "original_bytes": 1225682,
+            "entries": 2311,
+            "entries_kept": 1
+          },
+          {
+            "file": "13f-1582202-0001582202-25-000011.xml.gz",
+            "url": "https://www.sec.gov/Archives/edgar/data/1582202/000158220225000011/",
+            "period": "2025-09-30",
+            "filed": "2025-11-13",
+            "original_sha256": "b6ddc838b45f231c228a62e19f68aee0ec90b3cd2ee2f4dcf164523e6c3606a2",
+            "original_bytes": 1227493,
+            "entries": 2315,
+            "entries_kept": 1
+          }
+        ]
+      },
+      {
+        "cik": 919079,
+        "name": "California Public Employees Retirement System",
+        "index": "13f-919079-filings.json.gz",
+        "index_url": "https://data.sec.gov/submissions/CIK0000919079.json",
+        "filings_in_index": 111,
+        "tables": [
+          {
+            "file": "13f-919079-0000919079-26-000013.xml.gz",
+            "url": "https://www.sec.gov/Archives/edgar/data/919079/000091907926000013/",
+            "period": "2026-09-30",
+            "filed": "2026-11-16",
+            "original_sha256": "cde5b7953145363586db210aa95c519353d71e95777020b2a23c55ec19fc886e",
+            "original_bytes": 481593,
+            "entries": 1043,
+            "entries_kept": 1
+          },
+          {
+            "file": "13f-919079-0000919079-26-000011.xml.gz",
+            "url": "https://www.sec.gov/Archives/edgar/data/919079/000091907926000011/",
+            "period": "2026-06-30",
+            "filed": "2026-08-14",
+            "original_sha256": "772e32d8b1df346be64f5039b10de0c26647bc9dd6f8e7d5e2fc1acdeef161e9",
+            "original_bytes": 489746,
+            "entries": 1061,
+            "entries_kept": 1
+          },
+          {
+            "file": "13f-919079-0000919079-26-000006.xml.gz",
+            "url": "https://www.sec.gov/Archives/edgar/data/919079/000091907926000006/",
+            "period": "2026-03-31",
+            "filed": "2026-05-06",
+            "original_sha256": "212109d49f29906c091f5c6873a14238dc538c350a9fc95e1a3be662dfda014c",
+            "original_bytes": 490804,
+            "entries": 1064,
+            "entries_kept": 1
+          },
+          {
+            "file": "13f-919079-0000919079-26-000003.xml.gz",
+            "url": "https://www.sec.gov/Archives/edgar/data/919079/000091907926000003/",
+            "period": "2025-12-31",
+            "filed": "2026-02-12",
+            "original_sha256": "4b879a1e36f11d3fb2b455b294c11f76bc9eadd0ba4f70c83ddbcd55a0f69fe7",
+            "original_bytes": 501223,
+            "entries": 1086,
+            "entries_kept": 1
+          },
+          {
+            "file": "13f-919079-0000919079-25-000012.xml.gz",
+            "url": "https://www.sec.gov/Archives/edgar/data/919079/000091907925000012/",
+            "period": "2025-09-30",
+            "filed": "2025-11-14",
+            "original_sha256": "cd28a302c61aff8075dcdc6ec0fd7251cfc16c54c3916c5c235512e4f1dde31b",
+            "original_bytes": 578827,
+            "entries": 1089,
+            "entries_kept": 1
+          }
+        ]
+      },
+      {
+        "cik": 810265,
+        "name": "New York State Common Retirement Fund",
+        "index": "13f-810265-filings.json.gz",
+        "index_url": "https://data.sec.gov/submissions/CIK0000810265.json",
+        "filings_in_index": 111,
+        "tables": [
+          {
+            "file": "13f-810265-0000810265-26-000008.xml.gz",
+            "url": "https://www.sec.gov/Archives/edgar/data/810265/000081026526000008/",
+            "period": "2026-09-30",
+            "filed": "2026-11-17",
+            "original_sha256": "455040149f853a36f8fddeda5d49312b5079904c11084af02fed18d9f2a8102d",
+            "original_bytes": 1572822,
+            "entries": 2975,
+            "entries_kept": 1
+          },
+          {
+            "file": "13f-810265-0000810265-26-000004.xml.gz",
+            "url": "https://www.sec.gov/Archives/edgar/data/810265/000081026526000004/",
+            "period": "2026-06-30",
+            "filed": "2026-07-29",
+            "original_sha256": "bbff14b8314665dec4df34985e605217b1baafaae030bbcd9a0d002f8a3b34af",
+            "original_bytes": 1680148,
+            "entries": 3173,
+            "entries_kept": 1
+          },
+          {
+            "file": "13f-810265-0000810265-26-000003.xml.gz",
+            "url": "https://www.sec.gov/Archives/edgar/data/810265/000081026526000003/",
+            "period": "2026-03-31",
+            "filed": "2026-05-06",
+            "original_sha256": "e3f7c1f407f9e28c8f3b88e4f59b90def8556e7c97309705b7e1a4362417ff07",
+            "original_bytes": 1657662,
+            "entries": 3132,
+            "entries_kept": 1
+          },
+          {
+            "file": "13f-810265-0000810265-26-000002.xml.gz",
+            "url": "https://www.sec.gov/Archives/edgar/data/810265/000081026526000002/",
+            "period": "2025-12-31",
+            "filed": "2026-02-12",
+            "original_sha256": "fa3c1c41ace1837e0a41cc222f6087582c652ebd127e7b5a4063029def1faab9",
+            "original_bytes": 1681576,
+            "entries": 3177,
+            "entries_kept": 1
+          },
+          {
+            "file": "13f-810265-0000810265-25-000025.xml.gz",
+            "url": "https://www.sec.gov/Archives/edgar/data/810265/000081026525000025/",
+            "period": "2025-09-30",
+            "filed": "2025-11-03",
+            "original_sha256": "2a9d81ffd8c4a0a801907475a5d89c12705d691b93776d74b65a557f3478dca7",
+            "original_bytes": 1708432,
+            "entries": 3182,
+            "entries_kept": 1
+          }
+        ]
+      }
+    ],
+    "requests": 24
+  }
 }

@@ -68,7 +68,7 @@ from app.services.filing_changes import filing_changes
 from app.services.numbers import load_numbers
 from app.sources.http import fetch_page as default_fetch_page
 from app.sources.urls import canonicalize, validate_public_url
-from app.store import FilingCache, Store
+from app.store import FactStore, FilingCache, Store
 
 WEB_DIR = Path(__file__).resolve().parents[1] / "web"
 RUN_WORKERS = 2
@@ -246,6 +246,7 @@ def create_app(
     monotonic: Callable[[], float] = time.monotonic,
     cache: FilingCache | None = None,
     checker: Checker | None = None,
+    facts_store: FactStore | None = None,
 ) -> FastAPI:
     """Build the application. Collaborators not given are built by :mod:`app.wiring`.
 
@@ -254,7 +255,11 @@ def create_app(
     store is the configured one, otherwise one in memory for this application.
     ``checker`` reads every run's findings again: the configured one when the
     engine is the configured one, otherwise none unless one is given.
+    ``facts_store`` keeps every XBRL fact a run or a company route reads: the
+    configured one when the store is, otherwise one in memory for this application.
     """
+    if facts_store is None:
+        facts_store = wiring.facts_from_env() if store is None else FactStore()
     if cache is None:
         cache = wiring.cache_from_env() if store is None else FilingCache()
     store = store or wiring.store_from_env()
@@ -302,6 +307,7 @@ def create_app(
                 fetch_page=fetch_page,
                 cache=cache,
                 checker=checker,
+                facts_store=facts_store,
             )
         except Exception:  # noqa: BLE001 - last resort: a run must never stay "running"
             log.exception("Run %s crashed", run.id)
@@ -517,7 +523,7 @@ def create_app(
         cached = metrics_cache.get(company.cik)
         if cached is not None:
             return cached
-        result = load_numbers(company, filings)
+        result = load_numbers(company, filings, facts_store=facts_store)
         if result.report is None:
             raise SourceError(result.error or "The XBRL company facts could not be read")
         metrics_cache.put(company.cik, result.report)

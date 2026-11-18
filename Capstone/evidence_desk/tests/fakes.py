@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from app.core.documents import FetchedFiling, FilingRef, Passage
+from app.core.fact_models import CompanyProfile
 from app.core.metric_models import Metric
 from app.core.models import Claim, Company, Finding, ThesisRequest
 from app.core.ports import (
@@ -203,6 +204,7 @@ class FakeFilings:
     current: list[FilingRef] = field(default_factory=list)
     current_error: SourceError | None = None
     current_calls: list[str] = field(default_factory=list)
+    profile_calls: int = 0
 
     @classmethod
     def nvidia(cls, *refs: FilingRef) -> FakeFilings:
@@ -262,6 +264,22 @@ class FakeFilings:
         if isinstance(document, SourceError):
             raise document
         return FetchedFiling(ref=ref, html=document, retrieved_at=RETRIEVED_AT)
+
+    def company_profile(self, company: Company) -> CompanyProfile:
+        """The company's industry code: NVIDIA's from the recorded index, none for another."""
+        self.profile_calls += 1
+        if self.index_error is not None:
+            raise self.index_error
+        if company.cik != NVIDIA.cik:
+            return CompanyProfile(cik=company.cik, ticker=company.ticker, name=company.name)
+        payload = json.loads((EDGAR / f"submissions-CIK{NVIDIA.cik:010d}.json").read_text())
+        return CompanyProfile(
+            cik=company.cik,
+            ticker=company.ticker,
+            name=company.name,
+            sic=payload["sic"],
+            sic_description=payload["sicDescription"],
+        )
 
     def company_facts(self, company: Company) -> dict[str, Any]:
         """The configured facts, the recorded facts of the company, or the configured failure."""

@@ -69,7 +69,7 @@ from app.services.ingest import Ingested, ingest
 from app.services.numbers import NumbersResult, load_numbers, select_figures
 from app.services.tagged_figures import load_tagged_figures
 from app.sources.http import fetch_page as default_fetch_page
-from app.store import FilingCache, Store
+from app.store import FactStore, FilingCache, Store
 
 log = logging.getLogger(__name__)
 MAX_UNKNOWNS = 12
@@ -206,6 +206,7 @@ def execute_run(
     concurrency: int = limits.MAX_CONCURRENT_ASSESSMENTS,
     cache: FilingCache | None = None,
     checker: Checker | None = None,
+    facts_store: FactStore | None = None,
 ) -> Run:
     """Execute ``run`` to completion, persisting progress, and return the final record.
 
@@ -215,6 +216,7 @@ def execute_run(
     ``checker`` reads each claim's verified findings again, after the gate and
     before the verdict, in the worker that assessed the claim; without one (or
     with :class:`~app.engines.checker.NoChecker`) every finding stays unchecked.
+    ``facts_store`` keeps every XBRL fact the run reads (none kept without one).
     """
     if concurrency < 1:
         raise ValueError("concurrency must be at least 1")
@@ -291,7 +293,9 @@ def execute_run(
     _stage(run, store, "numbers")
     # The facts are recorded as a source but are not a document: they are never chunked or
     # quoted, and they do not count toward sources requested or read.
-    numbers = load_numbers(company, filings, source_id=f"s{len(run.sources) + 1}")
+    numbers = load_numbers(
+        company, filings, source_id=f"s{len(run.sources) + 1}", facts_store=facts_store
+    )
     if numbers.source is not None:
         run.sources.append(numbers.source)
     if numbers.report is not None:

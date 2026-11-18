@@ -13,6 +13,7 @@ from enum import StrEnum
 from typing import Protocol
 
 from app.core.documents import FetchedFiling, FilingRef, Passage
+from app.core.fact_models import CompanyProfile
 from app.core.metric_models import Metric
 from app.core.models import Claim, Company, Confidence, Finding, Stance, ThesisRequest
 
@@ -49,6 +50,10 @@ class FilingSource(Protocol):
 
     def company_facts(self, company: Company) -> dict:
         """The company's XBRL facts as EDGAR serves them. Raises :class:`SourceError`."""
+        ...
+
+    def company_profile(self, company: Company) -> CompanyProfile:
+        """The company's industry code from EDGAR's index. Raises :class:`SourceError`."""
         ...
 
 

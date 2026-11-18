@@ -25,6 +25,7 @@ from urllib.parse import urlsplit
 import httpx
 
 from app.core.documents import FetchedFiling, FilingRef
+from app.core.fact_models import CompanyProfile
 from app.core.models import Company
 from app.core.ports import SourceError, UnknownTicker
 from app.sources.xbrl import decode_json, fetch_company_facts
@@ -183,18 +184,39 @@ class EdgarClient:
         :data:`INDEX_REUSE_SECONDS` old, so a run lists its 8-Ks without a request of
         their own; otherwise the index is fetched.
         """
-        with self._index_lock:
-            last = self._last_index.get(company.cik)
-        if last is not None and self._monotonic() - last[0] <= INDEX_REUSE_SECONDS:
-            payload = last[1]
-        else:
-            payload = self._index_payload(company)
+        payload = self._reused_index(company)
         rows = self._rows(payload["filings"]["recent"], f"the filing index of {company.name}")
         chosen = [
             row for row in rows if row["form"] in CURRENT_FORMS and row["filingDate"] > filed_after
         ]
         chosen.sort(key=lambda row: (row["filingDate"], row["accessionNumber"]), reverse=True)
         return [self._ref(company.cik, row) for row in chosen]
+
+    def company_profile(self, company: Company) -> CompanyProfile:
+        """The company's industry code (SIC) and its title, as its submissions index gives them.
+
+        The index :meth:`periodic_filings` fetched is reused when it is at most
+        :data:`INDEX_REUSE_SECONDS` old, so a run learns the code without a request of
+        its own. A code the index does not give is "". Raises :class:`SourceError`.
+        """
+        payload = self._reused_index(company)
+        sic = payload.get("sic")
+        description = payload.get("sicDescription")
+        return CompanyProfile(
+            cik=company.cik,
+            ticker=company.ticker,
+            name=company.name,
+            sic=sic.strip() if isinstance(sic, str) else "",
+            sic_description=description.strip() if isinstance(description, str) else "",
+        )
+
+    def _reused_index(self, company: Company) -> dict[str, Any]:
+        """The filing index fetched for the company in the last minute, else a fresh one."""
+        with self._index_lock:
+            last = self._last_index.get(company.cik)
+        if last is not None and self._monotonic() - last[0] <= INDEX_REUSE_SECONDS:
+            return last[1]
+        return self._index_payload(company)
 
     def filings_of_form(self, company: Company, form: str, limit: int) -> list[FilingRef]:
         """The newest ``limit`` filings of exactly ``form`` (amendments skipped), newest first.

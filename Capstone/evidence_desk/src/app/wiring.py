@@ -6,8 +6,9 @@ configuration. Nothing here runs at import time: each function builds its
 object when it is called.
 
 The data directory (``$EVIDENCE_DESK_DATA_DIR``, default ``data``) holds
-``record/record.sqlite`` (the record: back it up) and ``cache/filings.sqlite``
-(disposable). A version 3 database at ``runs/runs.sqlite`` is left alone, not read.
+``record/record.sqlite`` (the record: back it up), ``cache/filings.sqlite`` and
+``facts/facts.sqlite`` (both disposable). A version 3 database at
+``runs/runs.sqlite`` is left alone, not read.
 """
 
 from __future__ import annotations
@@ -24,13 +25,14 @@ from app.engines.claude import ClaudeAnalyst
 from app.engines.extractive import ExtractiveAnalyst
 from app.engines.transport import AnthropicTransport
 from app.sources.edgar import EdgarClient
-from app.store import FilingCache, Store
+from app.store import FactStore, FilingCache, Store
 
 log = logging.getLogger(__name__)
 DATA_DIR_VARIABLE = "EVIDENCE_DESK_DATA_DIR"
 DEFAULT_DATA_DIR = "data"
 RECORD_PATH = Path("record") / "record.sqlite"
 CACHE_PATH = Path("cache") / "filings.sqlite"
+FACTS_PATH = Path("facts") / "facts.sqlite"
 VERSION_3_DATABASE = Path("runs") / "runs.sqlite"
 KEY_VARIABLE = "ANTHROPIC_API_KEY"
 CASSETTE_VARIABLE = "EVIDENCE_DESK_CASSETTE"
@@ -195,3 +197,8 @@ def store_from_env() -> Store:
 def cache_from_env() -> FilingCache:
     """The disposable filing cache at ``data_dir()/cache/filings.sqlite``, created if needed."""
     return FilingCache(data_dir() / CACHE_PATH)
+
+
+def facts_from_env() -> FactStore:
+    """The disposable fact store at ``data_dir()/facts/facts.sqlite``, created if needed."""
+    return FactStore(data_dir() / FACTS_PATH)

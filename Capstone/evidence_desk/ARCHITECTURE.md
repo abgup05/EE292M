@@ -1,6 +1,6 @@
 # Architecture
 
-Evidence Desk (version 0.14.0) tests an equity analyst's thesis claims against the company's own SEC filings and shows,
+Evidence Desk (version 0.14.1) tests an equity analyst's thesis claims against the company's own SEC filings and shows,
 per claim, the verbatim passages and figures that support or challenge it. A reviewer can accept or reject each
 finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the brief; `docs/reviews/` the review.
 
@@ -115,7 +115,10 @@ Three SQLite files under the data directory (`EVIDENCE_DESK_DATA_DIR`; `data/`, 
   `make restore-check` verifies the newest backup's hash, restores it to a temporary directory and compares it with
   the live record: every column of every stored run, decision and thesis, so a record that no longer parses is
   compared too, and so is the link from a run to its thesis. It then fails if any record in the backup cannot be read by this version. PASS with the backup's age,
-  or FAIL with the first difference. `make backup-status` says in one line what was made or changed since the newest
+  FAIL with the first difference, or (from 0.14.1) BEHIND, exit code 2, when every difference is a row written after
+  the second the backup was taken: a row the backup lacks whose creation time is later, or a row both hold that differs
+  and whose time of last change is later (decisions, watches, watch jobs, inbox items; runs and theses keep no such
+  time, so one that changed still fails). `make backup-status` says in one line what was made or changed since the newest
   backup; `make up` prints it. `make two-writers` has the app and a one-off container write one scratch record at
   once (`EVIDENCE_DESK_DATA_DIR`, overridden for that target only) and checks its integrity and every row.
 - **Deleting the cache loses no record, and one thing a record points at.** The next run fetches the filings from EDGAR, parses them again and refills it. But the stored text that an old run's excerpts are offsets into lives only in the cache. With it gone, the excerpts are still in the record as text; checking that they are spans of the stored text again needs the same filing fetched and parsed by the parser that produced it.
@@ -194,7 +197,9 @@ nothing filed later reaches any stage, which `tests/lookahead.py` checks (`docs/
    includes a heading line the parser wrote, is rejected. A quote must also be whole (`gate.is_whole`): an
    occurrence that begins or ends inside a word, or inside a number at a decimal point or a thousands separator, is
    passed over, and a later whole occurrence is still found. A cited figure must have been offered; `core/numcheck`
-   requires every number a statement writes to appear in its excerpts or figures. A finding with no surviving quote
+   requires every number a statement writes to appear in its excerpts or figures (a number glued to B, bn, M or mm
+   is read as an amount; a percentage governed by a word of decline does not match a cited figure the backend
+   computed and printed with a plus sign). A finding with no surviving quote
    or figure, or an unmatched number, is withheld and counted. A verified finding's reason, a claim's commentary,
    the unknowns and the next steps are checked the same way: a reason or commentary with an unmatched number is
    replaced by a note, an unknown or next step is dropped; a model summary with an unmatched number is replaced by
@@ -212,7 +217,12 @@ nothing filed later reaches any stage, which `tests/lookahead.py` checks (`docs/
    `Run.coverage`. It withholds nothing and changes no verdict or status (`docs/period-check.md`).
 10. **Decide.** `policy.claim_verdict` sets each verdict from verified findings only, and after the summary from the
    claim's computed test too (a test that holds counts as support, one that fails as a challenge, one that cannot be
-   computed as nothing), so the summariser is shown the verdicts of the findings alone; a finding that rests on
+   computed as nothing), so the summariser is shown the verdicts of the findings alone and a recorded request stays
+   as recorded. Then a template summary is written again from the final verdicts, and a model's summary is kept and
+   followed by `Brief.verdicts_after_summary`, a line written by `policy.verdicts_after_summary` that names each
+   claim whose verdict the computed tests set or changed (0.14.1). A computed test compares stored values; its
+   arithmetic line and margin are printed with as many decimals as make the printed comparison the one made
+   (`claim_eval.compared_sides`); a finding that rests on
    reported figures alone counts as its stance only when the meaning check passed it, and as context otherwise
    (`Finding.counted_as`, `count_note`). `policy.run_status` sets complete, partial (with each reason and its
    denominator) or failed; a filing mostly outside numbered Items (`Source.item_coverage` below

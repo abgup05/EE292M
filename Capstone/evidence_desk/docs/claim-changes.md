@@ -49,8 +49,10 @@ The fourth row is the feature doing its job: the newest annual report added a se
 
 ## Limits
 
-- **Keyword overlap is not relevance.** The rule is permissive on purpose: on the example between 126 and 276 distinct changes share two words with each claim or its queries, and only the five best are shown. A paragraph that bears on a claim in other words is not found.
+- **Keyword overlap is not relevance.** The rule is permissive on purpose: on the example between 126 and 276 distinct changes share two words with each claim or its queries, and only the five that rank best by BM25 against the claim and those queries (the best score over the queries) are shown; overlap is the threshold, not the ranking. A paragraph that bears on a claim in other words is not found.
 - **Nobody has judged these lists.** No person has read them and no model has scored them. The page marks the block as a keyword match that no one has checked.
 - **The comparison's own limits carry over**: what counts as a paragraph, the threshold for "reworded", table rows that are counted and never shown (`filing-changes.md`).
 - **Old runs.** The filing before the run's is looked for among the twelve latest filings of that form which EDGAR lists, and EDGAR's older index pages are read only when its recent index holds fewer than two of the form. A run whose filing is older than that gets a note in place of a comparison.
+- **A filing read again is noted only for the later filing.** When the parser has changed since the run, the later filing's text no longer matches the run's, and a note says the paragraphs are from today's reading; the earlier filing of the pair is not checked the same way (`services/claim_changes.py`, `REREAD_NOTE`). The listed paragraphs and offsets are always from today's parse, not from the text the run stored.
+- **A label with a digit glued to letters is a word.** The comparison masks a number only when no letter or digit comes before it, so "FY25" becoming "FY26" or "Q1" becoming "Q2" makes a paragraph "reworded", not "changed in figures only" (`core/filing_diff.py`).
 - **In the Markdown brief it is a reading list, set apart.** `export.md?changes=true` adds it after the claims under a paragraph that says it is not findings; the page's download links ask for it.

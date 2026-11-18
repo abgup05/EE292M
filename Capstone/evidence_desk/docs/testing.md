@@ -346,6 +346,41 @@ replay's requests (`tests/golden/replay.json`). `tests/test_thesis_run.py::test_
 failed once on the change, because a claim the time limit skipped took its computed verdict; such a claim now
 keeps none.
 
+## The fifth referee's findings (version 14.1)
+
+Each fix began as a test that failed on the code of version 14, run once before the fix
+([`referee-5-triage.md`](referee-5-triage.md)); the failing counts are from that run.
+
+- **The comparison a computed test prints** (`tests/test_computed_digits.py`, 5 of 9 failed): a gross margin
+  of 74.96% or 74.996% against "at least 75%" fails and its arithmetic line, read back, compares the same way
+  ("74.96% >= 75.00%: fails", not "75.0% >= 75%: fails"); the margin keeps its sign ("-0.04 points"); an
+  amount of $8,999,999,000 against "at least $9 billion" prints a comparison that fails; a comparison the
+  rounding does not hide prints as before. A tenth test, that a history point's sides compare as the outcome
+  says, was written after the fix and not seen failing.
+- **The summary and the verdict table** (`tests/test_summary_after_computed.py`, 3 of 3 failed): a template
+  summary counts the final verdicts; a model's summary is kept, the summariser is still shown the findings'
+  verdicts alone, and `Brief.verdicts_after_summary` names exactly the three claims the computed tests moved,
+  from what to what; the brief prints the line and a Computed column. Two tests of `tests/test_export.py`
+  changed their expected header and rows for the new column, and nothing else.
+- **Who read a computed test** (`tests/test_computed_readers_note.py`, 3 of 3 failed): the brief's note for
+  the grammar alone, for the grammar and one model, and for the grammar and two models.
+- **Three numbers the number check let through** (`tests/test_numcheck_signs_and_units.py`, 8 of 14 failed):
+  "fell 65.5%" against a cited +65.5% fails; "46.7B", "2.5M", "1.2bn", "10M", "100B" are read and a wrong one
+  fails; "March 15%" is a percentage. The six that passed before are guards that still hold: a rise against the
+  same figure, a decline against a computed decrease, a decline against a quote (still not held to its sign),
+  "3M", "4K", "10K" and "5090Ti" staying names.
+- **A backup that is behind, not broken** (`tests/test_backup.py`, 2 of 24 failed on the old `backup.py`):
+  a run, a decision and a thesis written after the backup give BEHIND and exit code 2; a run the backup lacks
+  that started before it, alone or beside a later one, still fails. One test of `tests/test_watch_backup.py`
+  now expects BEHIND for an inbox item read after the backup (it expected FAIL, which is the behaviour changed
+  on purpose); a new one, written after the fix, keeps a row changed with nothing dated after the backup a FAIL.
+- **The tagged reader's version** (`tests/test_tagged_cache.py`, 1 failed): the version covers
+  `core/metrics.py`, whose formats a kept report's display strings are written with.
+
+The examples, the page's samples and the replays were made again through their targets; every recording
+still replays, and the tripwire (`make golden-check`) did not move: its extractive run has no model summary and
+its summary is not one of its stages.
+
 ## How long the gate takes
 
 Measured on this laptop on 17 November 2026 at version 8, with the Docker image's layers already

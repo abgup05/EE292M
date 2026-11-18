@@ -64,7 +64,7 @@ What that says, and how far:
 - **A live run without a key is mostly waiting for EDGAR**: about two thirds of it, cold or warm. Parsing is a quarter of a cold run and none of a warm one. Indexing, building the figures, retrieval, the extractive assessment, the gate and saving are together 65 to 105 ms: about 5% of a cold run and 12% of a warm one.
 - **EDGAR's latency moves more than anything here.** The same six requests took a median of 603 ms, 760 ms, 1,006 ms and 940 ms in four sessions on one afternoon. So the whole-run medians of different sessions are not comparable to within a few hundred milliseconds, and the third row above being faster than the first is that noise and nothing else. Within one session the conditions are taken in turn, which is what makes their comparison fair.
 - **What is not covered by a stage** on a warm run is mostly rebuilding the three documents from the cached text, which is not a stage of this stopwatch.
-- **The model is still untimed.** With a key, five assessments of several seconds each would outweigh all of this. The API has refused every call from this project for lack of credit, so the largest part of the run the tool exists for has never been measured.
+- **The model is still untimed.** With a key, five assessments of several seconds each would outweigh all of this. The API refused every call from this project for lack of credit until 18 November, and the live runs since were not timed ([`README.md`](../README.md#where-the-model-answers-came-from)), so the largest part of the run the tool exists for has never been measured.
 
 ## Version 11: one change on the live path, measured, that changed no answer
 
@@ -104,8 +104,8 @@ So the cut saves about 34 ms of an offline run, 7% of it, and the saving on the 
 **The offline profile below is not where a real run's time goes.** It replays three
 recorded NVIDIA filings with the deterministic engine and waits on nothing. A real run waits on
 SEC EDGAR for the filing list, each filing and the XBRL facts, and, with a key, on one model call
-per claim of several seconds each. The model has never been timed (the API account has no
-credit), so the largest part of a model-backed run is unmeasured. What was measured follows,
+per claim of several seconds each. The model has never been timed (the API account had no
+credit when this was measured), so the largest part of a model-backed run is unmeasured. What was measured follows,
 live path first. Review 3's findings F1 to F5 are answered in order.
 
 ## A live run, and what the filing cache saves (F1)
@@ -224,7 +224,7 @@ the thread safety of the real transport beyond its lock.
 
 ## What was not measured
 
-- Model latency and the real gain from concurrency (no API credit).
+- Model latency and the real gain from concurrency (no API credit when this was measured; not timed since).
 - EDGAR latency beyond the two runs above, and its variance.
 - Speed on other hardware: every number here comes from one laptop, in Docker.
 - The filing cache under two processes writing at once (WAL allows it; no test runs two).

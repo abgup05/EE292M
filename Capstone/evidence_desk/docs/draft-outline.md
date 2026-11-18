@@ -45,7 +45,7 @@ The schedule. An idea with no reader. A model that could not be called. A parser
 
 ## 6. Limits, stated plainly
 
-The model path has not run through the API since October. The golden set is a model's reading. The second model is not independent. Tables are flattened. The link into a filing is unverified in a browser. The record has one disk. No colleague has reviewed this, and I have not reviewed theirs.
+The model path ran through the API in October and again from 18 November, but most measured results are still a stand-in's recordings (the README's "Where the model answers came from"). The golden set is a model's reading. The second model is not independent. Tables are flattened. The link into a filing is unverified in a browser. The record has one disk. No colleague has reviewed this, and I have not reviewed theirs.
 
 ## 7. What I have to do before 30 November
 

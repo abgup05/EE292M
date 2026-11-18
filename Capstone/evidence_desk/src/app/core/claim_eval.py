@@ -44,6 +44,7 @@ Rules a reader can check:
 from __future__ import annotations
 
 import operator
+import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field, replace
 from datetime import date
@@ -194,7 +195,24 @@ def _plain(value: float, unit: OperandUnit) -> str:
     return f"{value:g}"
 
 
-def _margin_text(margin: float, unit: OperandUnit) -> str:
+def _margin_text(margin: float, unit: OperandUnit, places: int | None = None) -> str:
+    """The margin for reading; with ``places``, as many decimals as the comparison line used.
+
+    A margin that is not zero is never printed as zero: decimals are added until its
+    sign shows ("-0.04 points", not "-0.0 points").
+    """
+    if places is None:
+        text = _default_margin(margin, unit)
+    else:
+        text = _precise_margin(margin, unit, places)
+    digits = places or 1
+    while margin != 0 and _shown_value(text) == 0 and digits < MAX_PLACES:
+        digits += 1
+        text = _precise_margin(margin, unit, digits)
+    return text
+
+
+def _default_margin(margin: float, unit: OperandUnit) -> str:
     if unit == "percent":
         return f"{margin:+.1f} points"
     if unit == "USD":
@@ -204,6 +222,71 @@ def _margin_text(margin: float, unit: OperandUnit) -> str:
     if unit == "shares":
         return ("+" if margin >= 0 else "−") + _shares_text(abs(margin))
     return f"{margin:+g}"
+
+
+def _precise_margin(margin: float, unit: OperandUnit, places: int) -> str:
+    if unit == "percent":
+        return f"{margin:+.{places}f} points"
+    return _precise(margin, unit, places, signed=True)
+
+
+# The most decimals a comparison line or a margin is printed with; beyond it, the exact value.
+MAX_PLACES = 12
+# A side or a margin as this module prints it: "$46.74B", "-$1.20B", "75.0%", "+5.0%", "75%",
+# "$9B", "$2.46", "24,532M shares", "-0.04 points", "8".
+_SHOWN = re.compile(r"^([+\-−]?)\$?([0-9][0-9,]*(?:\.[0-9]+)?)(B|M)?(?:%| points| shares)?$")
+
+
+def _shown_value(text: str) -> float | None:
+    """The number ``text`` shows, in dollars, percent points or units; None if it is not one."""
+    match = _SHOWN.match(text.strip())
+    if match is None:
+        return None
+    sign, digits, scale = match.groups()
+    value = float(digits.replace(",", "")) * {"B": 1e9, "M": 1e6, None: 1.0}[scale]
+    return -value if sign in ("-", "−") else value
+
+
+def _precise(value: float, unit: OperandUnit, places: int, *, signed: bool) -> str:
+    """``value`` with ``places`` decimals in its unit's plainest scale (millions for USD)."""
+    sign = "-" if value < 0 else ("+" if signed and value > 0 else "")
+    size = abs(value)
+    if unit == "percent":
+        return f"{sign}{size:.{places}f}%"
+    if unit == "USD":
+        return f"{sign}${size / 1e6:,.{places}f}M"
+    if unit == "USD_per_share":
+        return f"{sign}${size:.{places + 1}f}"
+    if unit == "shares":
+        return f"{sign}{size / 1e6:,.{places}f}M shares"
+    return f"{sign}{size:.{places}f}"
+
+
+def compared_sides(
+    left: Operand, right: Operand, op: str, holds: bool
+) -> tuple[str, str, int | None]:
+    """The two sides as a comparison line prints them, and the decimals added, if any.
+
+    The comparison is made on the stored values. The sides are printed as displayed when
+    the displayed numbers compare as the stored ones did; otherwise both are printed with
+    as many decimals as that takes, so that the printed line is the comparison that was made
+    ("74.96% >= 75.00%: fails", not "75.0% >= 75%: fails").
+    """
+    shown = (_shown_value(left.display), _shown_value(right.display))
+    if shown[0] is not None and shown[1] is not None and OPS[op](*shown) == holds:
+        return left.display, right.display, None
+    assert left.value is not None and right.value is not None
+    unit = left.unit
+    signed = (left.display.startswith("+"), right.display.startswith("+"))
+    for places in range(1, MAX_PLACES + 1):
+        texts = (
+            _precise(left.value, unit, places, signed=signed[0]),
+            _precise(right.value, unit, places, signed=signed[1]),
+        )
+        values = (_shown_value(texts[0]), _shown_value(texts[1]))
+        if values[0] is not None and values[1] is not None and OPS[op](*values) == holds:
+            return texts[0], texts[1], places
+    return repr(left.value), repr(right.value), MAX_PLACES
 
 
 def _refs(used: Sequence[PeriodValue]) -> list[FactRef]:
@@ -1103,19 +1186,23 @@ def _single(
     l_value, r_value = left.operand.value, right.operand.value
     outcome: ComputedOutcome
     margin: float | None = None
+    places: int | None = None
     reason = ""
     if l_value is None or r_value is None:
         outcome = "cannot_compute"
         reason = left.reason or right.reason or "A side could not be computed."
     else:
+        # The stored values are compared, never the rounded ones; the line prints enough
+        # digits that the comparison it shows is this one.
         holds = OPS[test.op](l_value, r_value)
         margin = l_value - r_value
         if not holds and left.open_ended:
             outcome, reason = "cannot_compute", left.reason
         else:
             outcome = "holds" if holds else "fails"
+        l_text, r_text, places = compared_sides(left.operand, right.operand, test.op, holds)
         arithmetic.append(
-            f"{left.operand.display} {test.op} {right.operand.display}: "
+            f"{l_text} {test.op} {r_text}: "
             + ("holds" if outcome == "holds" else "fails" if outcome == "fails" else "cannot tell")
         )
     return ComputedTest(
@@ -1132,7 +1219,7 @@ def _single(
         arithmetic=arithmetic,
         margin=margin if outcome != "cannot_compute" else None,
         margin_display=(
-            _margin_text(margin, left.operand.unit)
+            _margin_text(margin, left.operand.unit, places)
             if margin is not None and outcome != "cannot_compute"
             else ""
         ),
@@ -1253,6 +1340,21 @@ def _combined(test: ClaimTest, parts: list[ComputedTest], combines: str) -> Comp
 # History
 
 
+def _history_sides(result: ComputedTest) -> tuple[str, str]:
+    """A history point's two sides (the first part's, for a combined test), printed as the
+    comparison line prints them, so that a point never shows sides that compare otherwise."""
+    test = result.parts[0] if result.parts else result
+    left, right = test.left, test.right
+    if left is None or right is None:
+        return (left.display if left else "", right.display if right else "")
+    if test.outcome == "cannot_compute" or left.value is None or right.value is None:
+        return left.display, right.display
+    if test.comparison not in OPS:
+        return left.display, right.display
+    shown = compared_sides(left, right, test.comparison, test.outcome == "holds")
+    return shown[0], shown[1]
+
+
 def newest_periods(book: FactBook, calendar: FiscalCalendar | None) -> Newest:
     """The newest fiscal year and fiscal quarter the facts hold, as the normal form takes
     them (:class:`app.core.claim_normal.Newest`); unknown without a calendar."""
@@ -1353,6 +1455,7 @@ def claim_history(
         flips += flipped
         if result.outcome != "cannot_compute":
             previous = result.outcome
+        sides = _history_sides(result)
         points.append(
             HistoryPoint(
                 filed=day.isoformat(),
@@ -1361,9 +1464,9 @@ def claim_history(
                 outcome=result.outcome,
                 bound=result.bound,
                 left=result.left.value if result.left else None,
-                left_display=result.left.display if result.left else "",
+                left_display=sides[0],
                 right=result.right.value if result.right else None,
-                right_display=result.right.display if result.right else "",
+                right_display=sides[1],
                 flipped=flipped,
                 reason=result.reason,
             )

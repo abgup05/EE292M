@@ -18,17 +18,17 @@ Whether to keep an overweight position in NVIDIA
 
 ## Verdicts
 
-| Claim | Verdict | Supporting | Challenging | Context | Filings quoted |
-| --- | --- | ---: | ---: | ---: | ---: |
-| Gross margin is expanding. | Supported | 0 | 0 | 3 | 2 |
-| Revenue grew more than 200% year over year. | Challenged | 0 | 0 | 3 | 1 |
-| Data center revenue is still growing year over year. | Passages found, not judged | 0 | 0 | 3 | 2 |
-| Data center is more than 80% of revenue. | Supported | 0 | 0 | 3 | 2 |
-| Revenue grew in fiscal 2008. | Passages found, not judged | 0 | 0 | 3 | 1 |
+| Claim | Verdict | Computed | Supporting | Challenging | Context | Filings quoted |
+| --- | --- | --- | ---: | ---: | ---: | ---: |
+| Gross margin is expanding. | Supported | Holds, counted as support | 0 | 0 | 3 | 2 |
+| Revenue grew more than 200% year over year. | Challenged | Fails, counted as a challenge | 0 | 0 | 3 | 1 |
+| Data center revenue is still growing year over year. | Passages found, not judged | No test | 0 | 0 | 3 | 2 |
+| Data center is more than 80% of revenue. | Supported | Holds, counted as support | 0 | 0 | 3 | 2 |
+| Revenue grew in fiscal 2008. | Passages found, not judged | Cannot be computed | 0 | 0 | 3 | 1 |
 
 ## Summary
 
-Verdicts across 5 claims — Passages found, not judged: 5. No engine judged the stance of the passages found for 5 claim(s), so read those excerpts before relying on them.
+Verdicts across 5 claims — Supported: 2; Challenged: 1; Passages found, not judged: 2. No engine judged the stance of the passages found for 2 claim(s), so read those excerpts before relying on them.
 
 _Summary written by: template_
 
@@ -170,7 +170,7 @@ Current reports (8-K) the company filed after the annual report this run read, n
 
 ## Computed tests
 
-Each claim compiled to a typed test and computed from the dated XBRL facts, by arithmetic written out below; no model wrote these lines. A test that holds counts as support in the verdict, one that fails as a challenge, one that cannot be computed as nothing.
+Each claim was read into a typed test by the grammar alone, a fixed rule: no model was involved in choosing the test or in computing it. The test is computed from the dated XBRL facts by arithmetic written out below; no model wrote these lines. A test that holds counts as support in the verdict, one that fails as a challenge, one that cannot be computed as nothing.
 
 ### c1: Gross margin is expanding.
 

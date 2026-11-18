@@ -12826,7 +12826,7 @@
     "52 tagged figures were read; the 40 offered to the engine take each breakdown's members from the largest in the newest period, the newer filing first among members of the same place, a value always with its change (at most 40)."
   ],
   "brief": {
-    "summary": "Verdicts across 6 claims — Passages found, not judged: 5; Not addressed: 1. No engine judged the stance of the passages found for 5 claim(s), so read those excerpts before relying on them.",
+    "summary": "Verdicts across 6 claims — Supported: 2; Challenged: 2; Passages found, not judged: 2. No engine judged the stance of the passages found for 2 claim(s), so read those excerpts before relying on them.",
     "summary_origin": "template",
     "unknowns": [],
     "next_steps": [
@@ -12835,7 +12835,8 @@
     ],
     "coverage_status": "partial",
     "status_note": "Part of the thesis could not be assessed with verified evidence. The reasons are listed under coverage limits.",
-    "provenance_note": "Evidence comes from the company's own filings with the SEC. It shows what the company reported, not whether an outside party agrees."
+    "provenance_note": "Evidence comes from the company's own filings with the SEC. It shows what the company reported, not whether an outside party agrees.",
+    "verdicts_after_summary": ""
   },
   "timeline": [
     {

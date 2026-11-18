@@ -66,10 +66,13 @@ The analysing model (`engines/analyser.py`, version 0.14.2, `docs/analysis.md`) 
 requests per run after the summary: `propose` (corollaries for every claim) and then `analyse`
 (the argument, which reads the computed corollaries). Recording, they are recorded in the
 engine's cassette and run like any other step (`model` is `ANTHROPIC_ANALYSIS_MODEL`, default
-`claude-opus-5-5`). Replaying, the cassette is **read-only** for them: a missing answer is never
+the engine's model). Replaying, the cassette is **read-only** for them: a missing answer is never
 written to `pending/`, so a cassette recorded before 0.14.2 still replays every other request, and
-the run records the computed analysis with a note saying the cassette holds no answer. To add the
-two answers to the example cassette, `make record-analysis` (2 API calls; see `docs/analysis.md`).
+the run records the computed analysis with a note saying the cassette holds no answer and one line
+in its errors. `make record-analysis` adds the answers through the API: two to the example cassette
+and two to `demo/cassettes/analysis-example` (the analysis example of `docs/examples/analysis`,
+whose engine is the extractive one, so that cassette holds nothing else). It sends only a request
+a cassette lacks and never more than `MAX_CALLS` (default 4); see `docs/analysis.md`.
 
 ## The honesty rule
 

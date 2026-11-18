@@ -34,11 +34,11 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/core/tagged_figures.py  turns a filing's tagged breakdowns into figures a finding can cite (ids starting "tagged:") and chooses the ones offered; pure
     src/app/core/metrics.py     computes the metrics report from facts; metric_models.py is its pure data
     src/app/core/analysis_models.py, analysis_policy.py   the analysis's pure data (analytic, relevance, headline, corollary, odds, argument, sentence) and every number and sentence it uses
-    src/app/core/relevance.py   which measures bear on each claim and why, the headline figures, the reported figures tied to no claim; pure
-    src/app/core/analytics.py   the analytics from dated facts: per measure, per computed test, bridges, earnings quality, a part's contribution from breakdowns already read; the AnalyticsProvider port and FactsProvider; pure
+    src/app/core/relevance.py   which measures bear on each claim and why (test operand, cited, named, a part the filings tag), the headline figures (the sides of each claim's test), the reported figures tied to no claim; pure
+    src/app/core/analytics.py   the analytics, each answering a stated question about a claim on the claim's own basis (quarters, or a fiscal year and what came since): a measure's path, a computed test's room and record, the walk from net income to free cash flow, a named part against the company, earnings quality; the AnalyticsProvider port and FactsProvider; pure
     src/app/core/persistence.py the odds a quarterly test keeps holding, by resampling its own past changes (seeded); pure
     src/app/core/corollaries.py a model's proposed implications read by the grammar and the typed form, computed and compared; the flag; pure
-    src/app/core/analysis_audit.py   what a sentence of the argument may cite, and the audit of each (ids, evidence, numbers); the lean flag; pure
+    src/app/core/analysis_audit.py   what a sentence of the argument may cite, and the audit of each (ids, evidence, numbers; a condition may state its own threshold); the lean flag; pure
     src/app/core/numcheck.py    the numeric check: each number a statement writes is in what it cites
     src/app/core/periods.py     the period check: each year or fiscal label a statement names is in its evidence (reported, never withheld); a company's fiscal calendar from its newest annual report; a planted wrong year, for measuring the check
     src/app/core/meaning.py     the meaning check's pure half: what the checker is shown, and applying its judgements
@@ -70,7 +70,7 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/services/breakdowns.py   the latest filing of a form, fetched and read into breakdowns
     src/app/services/events.py  a company's 8-Ks after its newest annual report: listed from the index, the ones the rule picks read through the cache and split; a document that cannot be read is a reason on its event, never an error; the item sections offered to a claim
     src/app/services/computed.py   for a run: compiles every claim, computes the compiled ones and their histories from the facts the run read, and counts the outcomes in the verdicts after the summary; returns the compiled tests and breakdowns for the analysis
-    src/app/services/analysis.py   for a run: relevance, analytics from every provider, odds, headline; the two model steps with the corollaries and the audit; what the analysing model is shown
+    src/app/services/analysis.py   for a run: relevance, analytics from every provider, odds, headline; the two model steps with the corollaries and the audit, and what became of each; what the analysing model is shown
     src/app/services/restatements.py   a company's restatement ledger outside a run, as of a date when given
     src/app/services/tagged_figures.py   for a run that asks: the tags of the newest annual and quarterly report it read, as figures; a filing that cannot be read is a reason, never an error
     src/app/watch/store.py      the watch's tables: WatchStore (watches, seen filings, jobs, inbox, in the record) and WatchStatus (heartbeat and checks, in the cache)
@@ -99,7 +99,7 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/evaluation/claim_readers.py   each reader's normal form of each claim of a set, the agreeing pairs and the counting rule's conclusion, one row per claim for a judge; and the judge's file of the readings that would count (`make eval ARGS='claim-readers --set FILE [--judge]'`)
     src/web/                    index.html, app.js, styles.css (one layout, two themes: docs/design.md), specimen.html (every component on made-up data, served at /specimen.html), sample-run.json, sample-run-events.json (a live run, copied unedited), sample-synthetic.json, sample-changes.json, sample-run-changes.json, sample-run-tagged.json, sample-breakdowns.json, sample-breakdowns-gap.json (synthetic), sample-inbox.json, sample-inbox-page-2.json, sample-inbox-watches.json, sample-inbox-health.json, sample-inbox-meta.json (the watch's example payloads of docs/examples/v13, copied unedited by `make sample-inbox`), sample-computed.json, sample-as-of.json, sample-restatements.json, sample-readers.json (version 14's example run, as-of run, restatement ledger and run with two model readers of docs/examples/v14, copied unedited by `make sample-v14`), sample-run-live.json (a live run with three claim readers, copied unedited)
     eval/                       the golden set, its pinned filings, cache/ and results/; README.md
-    tests/                      offline tests, fakes.py (EDGAR, pages, engine, clock), smoke.py; replay_run.py, golden_run.py, speed_run.py; lookahead.py (the no-lookahead checks); examples_v14.py (`make examples`, docs/examples/v14; the example with two model readers only once its reads are recorded in eval/cassettes/claim-readers)
+    tests/                      offline tests, fakes.py (EDGAR, pages, engine, clock), smoke.py; replay_run.py, golden_run.py, speed_run.py; lookahead.py (the no-lookahead checks); examples_v14.py (`make examples`, docs/examples/v14; the example with two model readers only once its reads are recorded in eval/cassettes/claim-readers); examples_analysis.py (`make examples-analysis`, docs/examples/analysis) and record_analysis.py (`make record-analysis`, the only analysis code that reaches the API, capped)
     tests/live_walk.py          the live end-to-end walk over HTTP; tests/golden/ the tripwire and replayed verdicts
     tests/watch_examples.py, watch_replay.py, watch_contention.py   the watch's example payloads (docs/examples/v13); the live replay of a year of filings against eval/watch-replay-nvda.json; a run timed alone and beside a watcher
     uitests/                    browser tests: the rendered DOM of the sample runs, the sample filing comparison and breakdowns against their JSON; test_events_dom.py the 8-Ks and the as-of line; test_run_events_dom.py the live-run sample and the time line; keys.html + test_keys_dom.py the keys and the themes; test_inbox_dom.py the recorded inbox, and watch.html (the page's code for every answer of the watch routes, with `fetch` stood in for)
@@ -244,18 +244,22 @@ nothing filed later reaches any stage, which `tests/lookahead.py` checks (`docs/
    record"), never that the claim is false.
 11. **Analyse** (version 0.14.2, `services/analysis.analyse_run`, `docs/analysis.md`). After the verdicts are final,
    while the stage stays `verifying` (its detail says what is being analysed). Code decides which measures bear
-   on each claim (`core/relevance`: test operand, cited by a finding, named in the claim, part named in the
-   claim), the headline figures and the reported figures tied to no claim; computes the analytics from the
-   run's FactBook and the breakdowns it already read (`core/analytics`, one `AnalyticsProvider`, "facts"; each
-   analytic has an id, formula, inputs with their filings, and a templated reading) and the odds a quarterly
-   test keeps holding (`core/persistence`, 10,000 resampled paths, seed 20261118). Then, with an analysing
-   model (`engines/analyser`, `ANTHROPIC_ANALYSIS_MODEL`, default `claude-opus-5-5`, the engine's transport or
-   cassette): one `propose` request for every claim's corollaries, read by the grammar and the proposer's typed
-   form and computed by code (`core/corollaries`), then one `analyse` request for the argument, every sentence
-   `{text, cites}`, audited by code (`core/analysis_audit`: ids, evidence, numbers by `core/numcheck`); an
-   unverified sentence is kept and marked. A failed request is one line in `run.errors` and a note; no model,
-   no time or a cassette without the answer leaves the computed analysis, labelled as such. It never changes a
-   verdict or the status. The watcher's runs get no analysing model.
+   on each claim (`core/relevance`: test operand, cited by a finding, named in the claim, or a part of the
+   business the claim names as the newest filings tag it) and the headline: the figures the claims are about.
+   The parts are read once per run from the tags the cache keeps or the HTML the run fetched, never by a
+   fetch (`ingest` keeps a fetched filing's HTML until then). Every analytic (`core/analytics`, one
+   `AnalyticsProvider`, "facts") answers a stated question about a claim on the claim's own basis, with its
+   id, formula, inputs with their filings and a templated reading; none is computed for the thesis at large,
+   and one the facts cannot give stays on the record with why. The odds a quarterly test holds in each of the
+   next four quarters (`core/persistence`, 10,000 resampled paths, seed 20261118). Then, with an analysing
+   model (`engines/analyser`, `ANTHROPIC_ANALYSIS_MODEL`, default the engine's model, the engine's transport
+   or cassette): one `propose` request for every claim's corollaries, read by the grammar and the proposer's
+   typed form and computed by code (`core/corollaries`), then one `analyse` request for the argument, every
+   sentence `{text, cites}`, audited by code (`core/analysis_audit`: ids, evidence, numbers by
+   `core/numcheck`); an unverified sentence is kept and marked. `Run.analysis` records what became of each
+   request (`not_asked`, `failed`, `answered`); whenever the record holds less than a model's analysis (no
+   model, no time, a failed request, a cassette without the answer) it says why and `run.errors` gets one
+   line. It never changes a verdict or the status. The watcher's runs get no analysing model.
 
 Saves: the run is saved at each stage, after each source and after each claim. A save while the status is `running`
 is a progress save, not synced to disk on its own; the final save is synced and carries those before it. A power cut
@@ -332,6 +336,16 @@ the end of `create_app`, which takes an injectable `wall_clock`): `PUT` and `DEL
 - **A change to the verdict or status rule**: `core/policy.py` and its tests only.
 - **A new output view**: a module that reads a `Run` (and a `Review` if it shows decisions) and the wording in
   `core/policy.py`, as `services/export.py` does; serve it from `api.py`.
+- **A new analytic**: a function in `core/analytics.py` returning an `Analytic` with the question it answers,
+  called from `FactsProvider` for the claims it bears on (`BEARS_ON`), with a test whose expected value comes
+  from the definition (`tests/test_analytics.py`) and, where the facts allow, from a company's raw facts
+  (`tests/test_analytics_recorded.py`). If no claim would ask its question, it does not belong. The count in
+  the tripwire's coverage stage moves: `make golden-baseline`, `make examples-analysis`, read both diffs.
+  Analytics from another source (peers, prices): a second `AnalyticsProvider` in `DEFAULT_PROVIDERS`
+  (`services/analysis.py`), with its own `provider` and `data_origin`.
+- **A change to the analysis prompts or schemas** (`engines/analyser.py`): the recorded `propose` and
+  `analyse` answers no longer match, and a replay falls back to the computed analysis. `make record-analysis`
+  (API), read the answers, then `make examples-analysis` and `make golden-baseline`.
 - **A new metric**: its computation in `core/metrics.py` (writing the formula out); if the engine should see it, its
   key in `services/numbers.FIGURE_KEYS`. The gate and numeric check apply unchanged; re-baseline the tripwire.
 - **A prompt or schema change** (`engines/claude.py`): the tripwire's `prompts` stage moves and the replay finds no

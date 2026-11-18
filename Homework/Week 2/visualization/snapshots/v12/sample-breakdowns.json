@@ -1,0 +1,935 @@
+{
+ "note": "A recorded reading of the tagged facts in NVIDIA's annual report for the fiscal year ended 2026-01-25, produced by `make breakdowns ARGS=\"NVDA --form 10-K\"` on 2026-11-17 from the filing fetched from SEC EDGAR. No model is involved.",
+ "report": {
+  "company": {
+   "cik": 1045810,
+   "ticker": "NVDA",
+   "name": "NVIDIA CORP"
+  },
+  "filing": {
+   "form": "10-K",
+   "period_end": "2026-01-25",
+   "filed_date": "2026-02-25",
+   "accession": "0001045810-26-000021",
+   "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm"
+  },
+  "breakdowns": [
+   {
+    "id": "revenue_by_segment",
+    "title": "Revenue by business segment",
+    "concept": "us-gaap:Revenues",
+    "axis": "us-gaap:StatementBusinessSegmentsAxis",
+    "period_kind": "fiscal year",
+    "unit_label": "USD millions",
+    "periods": [
+     {
+      "period_start": "2025-01-27",
+      "period_end": "2026-01-25",
+      "label": "Fiscal year ended 2026-01-25"
+     },
+     {
+      "period_start": "2024-01-29",
+      "period_end": "2025-01-26",
+      "label": "Fiscal year ended 2025-01-26"
+     },
+     {
+      "period_start": "2023-01-30",
+      "period_end": "2024-01-28",
+      "label": "Fiscal year ended 2024-01-28"
+     }
+    ],
+    "rows": [
+     {
+      "member": "nvda:ComputeAndNetworkingSegmentMember",
+      "label": "Compute and Networking Segment",
+      "values": [
+       {
+        "period_start": "2025-01-27",
+        "period_end": "2026-01-25",
+        "value": 193479000000.0,
+        "unit": "USD",
+        "shown": "193,479",
+        "display": "193,479",
+        "change": 66.5151945470037,
+        "change_display": "+66.5%",
+        "change_formula": "(193,479 − 116,193) ÷ 116,193 = +66.5%: the change from the fiscal year ended 2025-01-26, in USD millions"
+       },
+       {
+        "period_start": "2024-01-29",
+        "period_end": "2025-01-26",
+        "value": 116193000000.0,
+        "unit": "USD",
+        "shown": "116,193",
+        "display": "116,193",
+        "change": 145.10705621769856,
+        "change_display": "+145.1%",
+        "change_formula": "(116,193 − 47,405) ÷ 47,405 = +145.1%: the change from the fiscal year ended 2024-01-28, in USD millions"
+       },
+       {
+        "period_start": "2023-01-30",
+        "period_end": "2024-01-28",
+        "value": 47405000000.0,
+        "unit": "USD",
+        "shown": "47,405",
+        "display": "47,405",
+        "change": null,
+        "change_display": "",
+        "change_formula": "No value for the same period one year earlier is tagged."
+       }
+      ]
+     },
+     {
+      "member": "nvda:GraphicsSegmentMember",
+      "label": "Graphics Segment",
+      "values": [
+       {
+        "period_start": "2025-01-27",
+        "period_end": "2026-01-25",
+        "value": 22459000000.0,
+        "unit": "USD",
+        "shown": "22,459",
+        "display": "22,459",
+        "change": 57.01202460850112,
+        "change_display": "+57.0%",
+        "change_formula": "(22,459 − 14,304) ÷ 14,304 = +57.0%: the change from the fiscal year ended 2025-01-26, in USD millions"
+       },
+       {
+        "period_start": "2024-01-29",
+        "period_end": "2025-01-26",
+        "value": 14304000000.0,
+        "unit": "USD",
+        "shown": "14,304",
+        "display": "14,304",
+        "change": 5.822297847155434,
+        "change_display": "+5.8%",
+        "change_formula": "(14,304 − 13,517) ÷ 13,517 = +5.8%: the change from the fiscal year ended 2024-01-28, in USD millions"
+       },
+       {
+        "period_start": "2023-01-30",
+        "period_end": "2024-01-28",
+        "value": 13517000000.0,
+        "unit": "USD",
+        "shown": "13,517",
+        "display": "13,517",
+        "change": null,
+        "change_display": "",
+        "change_formula": "No value for the same period one year earlier is tagged."
+       }
+      ]
+     }
+    ],
+    "total": [
+     {
+      "period_start": "2025-01-27",
+      "period_end": "2026-01-25",
+      "value": 215938000000.0,
+      "unit": "USD",
+      "shown": "215,938",
+      "display": "215,938",
+      "change": 65.4735357900948,
+      "change_display": "+65.5%",
+      "change_formula": "(215,938 − 130,497) ÷ 130,497 = +65.5%: the change from the fiscal year ended 2025-01-26, in USD millions"
+     },
+     {
+      "period_start": "2024-01-29",
+      "period_end": "2025-01-26",
+      "value": 130497000000.0,
+      "unit": "USD",
+      "shown": "130,497",
+      "display": "130,497",
+      "change": 114.20340763599357,
+      "change_display": "+114.2%",
+      "change_formula": "(130,497 − 60,922) ÷ 60,922 = +114.2%: the change from the fiscal year ended 2024-01-28, in USD millions"
+     },
+     {
+      "period_start": "2023-01-30",
+      "period_end": "2024-01-28",
+      "value": 60922000000.0,
+      "unit": "USD",
+      "shown": "60,922",
+      "display": "60,922",
+      "change": null,
+      "change_display": "",
+      "change_formula": "No value for the same period one year earlier is tagged."
+     }
+    ],
+    "adds_up": true,
+    "notes": [
+     "The members add up to the tagged total in each of the 3 period(s) checked, within the rounding the tags declare.",
+     "Labels are derived from each member's tag name (the \"Member\" suffix dropped and the words split); they are not the company's own labels."
+    ]
+   },
+   {
+    "id": "revenue_by_product",
+    "title": "Revenue by product or service",
+    "concept": "us-gaap:Revenues",
+    "axis": "srt:ProductOrServiceAxis",
+    "period_kind": "fiscal year",
+    "unit_label": "USD millions",
+    "periods": [
+     {
+      "period_start": "2025-01-27",
+      "period_end": "2026-01-25",
+      "label": "Fiscal year ended 2026-01-25"
+     },
+     {
+      "period_start": "2024-01-29",
+      "period_end": "2025-01-26",
+      "label": "Fiscal year ended 2025-01-26"
+     },
+     {
+      "period_start": "2023-01-30",
+      "period_end": "2024-01-28",
+      "label": "Fiscal year ended 2024-01-28"
+     }
+    ],
+    "rows": [
+     {
+      "member": "nvda:DataCenterMember",
+      "label": "Data Center",
+      "values": [
+       {
+        "period_start": "2025-01-27",
+        "period_end": "2026-01-25",
+        "value": 193737000000.0,
+        "unit": "USD",
+        "shown": "193,737",
+        "display": "193,737",
+        "change": 68.19491952146961,
+        "change_display": "+68.2%",
+        "change_formula": "(193,737 − 115,186) ÷ 115,186 = +68.2%: the change from the fiscal year ended 2025-01-26, in USD millions"
+       },
+       {
+        "period_start": "2024-01-29",
+        "period_end": "2025-01-26",
+        "value": 115186000000.0,
+        "unit": "USD",
+        "shown": "115,186",
+        "display": "115,186",
+        "change": 142.36927932667018,
+        "change_display": "+142.4%",
+        "change_formula": "(115,186 − 47,525) ÷ 47,525 = +142.4%: the change from the fiscal year ended 2024-01-28, in USD millions"
+       },
+       {
+        "period_start": "2023-01-30",
+        "period_end": "2024-01-28",
+        "value": 47525000000.0,
+        "unit": "USD",
+        "shown": "47,525",
+        "display": "47,525",
+        "change": null,
+        "change_display": "",
+        "change_formula": "No value for the same period one year earlier is tagged."
+       }
+      ]
+     },
+     {
+      "member": "nvda:ComputeMember",
+      "label": "Compute",
+      "values": [
+       {
+        "period_start": "2025-01-27",
+        "period_end": "2026-01-25",
+        "value": 162361000000.0,
+        "unit": "USD",
+        "shown": "162,361",
+        "display": "162,361",
+        "change": 58.87216720810991,
+        "change_display": "+58.9%",
+        "change_formula": "(162,361 − 102,196) ÷ 102,196 = +58.9%: the change from the fiscal year ended 2025-01-26, in USD millions"
+       },
+       {
+        "period_start": "2024-01-29",
+        "period_end": "2025-01-26",
+        "value": 102196000000.0,
+        "unit": "USD",
+        "shown": "102,196",
+        "display": "102,196",
+        "change": 162.37740693196406,
+        "change_display": "+162.4%",
+        "change_formula": "(102,196 − 38,950) ÷ 38,950 = +162.4%: the change from the fiscal year ended 2024-01-28, in USD millions"
+       },
+       {
+        "period_start": "2023-01-30",
+        "period_end": "2024-01-28",
+        "value": 38950000000.0,
+        "unit": "USD",
+        "shown": "38,950",
+        "display": "38,950",
+        "change": null,
+        "change_display": "",
+        "change_formula": "No value for the same period one year earlier is tagged."
+       }
+      ]
+     },
+     {
+      "member": "nvda:NetworkingMember",
+      "label": "Networking",
+      "values": [
+       {
+        "period_start": "2025-01-27",
+        "period_end": "2026-01-25",
+        "value": 31376000000.0,
+        "unit": "USD",
+        "shown": "31,376",
+        "display": "31,376",
+        "change": 141.53964588144729,
+        "change_display": "+141.5%",
+        "change_formula": "(31,376 − 12,990) ÷ 12,990 = +141.5%: the change from the fiscal year ended 2025-01-26, in USD millions"
+       },
+       {
+        "period_start": "2024-01-29",
+        "period_end": "2025-01-26",
+        "value": 12990000000.0,
+        "unit": "USD",
+        "shown": "12,990",
+        "display": "12,990",
+        "change": 51.48688046647231,
+        "change_display": "+51.5%",
+        "change_formula": "(12,990 − 8,575) ÷ 8,575 = +51.5%: the change from the fiscal year ended 2024-01-28, in USD millions"
+       },
+       {
+        "period_start": "2023-01-30",
+        "period_end": "2024-01-28",
+        "value": 8575000000.0,
+        "unit": "USD",
+        "shown": "8,575",
+        "display": "8,575",
+        "change": null,
+        "change_display": "",
+        "change_formula": "No value for the same period one year earlier is tagged."
+       }
+      ]
+     },
+     {
+      "member": "nvda:GamingMember",
+      "label": "Gaming",
+      "values": [
+       {
+        "period_start": "2025-01-27",
+        "period_end": "2026-01-25",
+        "value": 16042000000.0,
+        "unit": "USD",
+        "shown": "16,042",
+        "display": "16,042",
+        "change": 41.33920704845815,
+        "change_display": "+41.3%",
+        "change_formula": "(16,042 − 11,350) ÷ 11,350 = +41.3%: the change from the fiscal year ended 2025-01-26, in USD millions"
+       },
+       {
+        "period_start": "2024-01-29",
+        "period_end": "2025-01-26",
+        "value": 11350000000.0,
+        "unit": "USD",
+        "shown": "11,350",
+        "display": "11,350",
+        "change": 8.643629750167513,
+        "change_display": "+8.6%",
+        "change_formula": "(11,350 − 10,447) ÷ 10,447 = +8.6%: the change from the fiscal year ended 2024-01-28, in USD millions"
+       },
+       {
+        "period_start": "2023-01-30",
+        "period_end": "2024-01-28",
+        "value": 10447000000.0,
+        "unit": "USD",
+        "shown": "10,447",
+        "display": "10,447",
+        "change": null,
+        "change_display": "",
+        "change_formula": "No value for the same period one year earlier is tagged."
+       }
+      ]
+     },
+     {
+      "member": "nvda:ProfessionalVisualizationMember",
+      "label": "Professional Visualization",
+      "values": [
+       {
+        "period_start": "2025-01-27",
+        "period_end": "2026-01-25",
+        "value": 3191000000.0,
+        "unit": "USD",
+        "shown": "3,191",
+        "display": "3,191",
+        "change": 69.91480298189563,
+        "change_display": "+69.9%",
+        "change_formula": "(3,191 − 1,878) ÷ 1,878 = +69.9%: the change from the fiscal year ended 2025-01-26, in USD millions"
+       },
+       {
+        "period_start": "2024-01-29",
+        "period_end": "2025-01-26",
+        "value": 1878000000.0,
+        "unit": "USD",
+        "shown": "1,878",
+        "display": "1,878",
+        "change": 20.927237604636186,
+        "change_display": "+20.9%",
+        "change_formula": "(1,878 − 1,553) ÷ 1,553 = +20.9%: the change from the fiscal year ended 2024-01-28, in USD millions"
+       },
+       {
+        "period_start": "2023-01-30",
+        "period_end": "2024-01-28",
+        "value": 1553000000.0,
+        "unit": "USD",
+        "shown": "1,553",
+        "display": "1,553",
+        "change": null,
+        "change_display": "",
+        "change_formula": "No value for the same period one year earlier is tagged."
+       }
+      ]
+     },
+     {
+      "member": "nvda:AutomotiveMember",
+      "label": "Automotive",
+      "values": [
+       {
+        "period_start": "2025-01-27",
+        "period_end": "2026-01-25",
+        "value": 2349000000.0,
+        "unit": "USD",
+        "shown": "2,349",
+        "display": "2,349",
+        "change": 38.66587957497048,
+        "change_display": "+38.7%",
+        "change_formula": "(2,349 − 1,694) ÷ 1,694 = +38.7%: the change from the fiscal year ended 2025-01-26, in USD millions"
+       },
+       {
+        "period_start": "2024-01-29",
+        "period_end": "2025-01-26",
+        "value": 1694000000.0,
+        "unit": "USD",
+        "shown": "1,694",
+        "display": "1,694",
+        "change": 55.27039413382218,
+        "change_display": "+55.3%",
+        "change_formula": "(1,694 − 1,091) ÷ 1,091 = +55.3%: the change from the fiscal year ended 2024-01-28, in USD millions"
+       },
+       {
+        "period_start": "2023-01-30",
+        "period_end": "2024-01-28",
+        "value": 1091000000.0,
+        "unit": "USD",
+        "shown": "1,091",
+        "display": "1,091",
+        "change": null,
+        "change_display": "",
+        "change_formula": "No value for the same period one year earlier is tagged."
+       }
+      ]
+     },
+     {
+      "member": "nvda:OEMAndOtherMember",
+      "label": "OEM and Other",
+      "values": [
+       {
+        "period_start": "2025-01-27",
+        "period_end": "2026-01-25",
+        "value": 619000000.0,
+        "unit": "USD",
+        "shown": "619",
+        "display": "619",
+        "change": 59.12596401028277,
+        "change_display": "+59.1%",
+        "change_formula": "(619 − 389) ÷ 389 = +59.1%: the change from the fiscal year ended 2025-01-26, in USD millions"
+       },
+       {
+        "period_start": "2024-01-29",
+        "period_end": "2025-01-26",
+        "value": 389000000.0,
+        "unit": "USD",
+        "shown": "389",
+        "display": "389",
+        "change": 27.124183006535947,
+        "change_display": "+27.1%",
+        "change_formula": "(389 − 306) ÷ 306 = +27.1%: the change from the fiscal year ended 2024-01-28, in USD millions"
+       },
+       {
+        "period_start": "2023-01-30",
+        "period_end": "2024-01-28",
+        "value": 306000000.0,
+        "unit": "USD",
+        "shown": "306",
+        "display": "306",
+        "change": null,
+        "change_display": "",
+        "change_formula": "No value for the same period one year earlier is tagged."
+       }
+      ]
+     }
+    ],
+    "total": [
+     {
+      "period_start": "2025-01-27",
+      "period_end": "2026-01-25",
+      "value": 215938000000.0,
+      "unit": "USD",
+      "shown": "215,938",
+      "display": "215,938",
+      "change": 65.4735357900948,
+      "change_display": "+65.5%",
+      "change_formula": "(215,938 − 130,497) ÷ 130,497 = +65.5%: the change from the fiscal year ended 2025-01-26, in USD millions"
+     },
+     {
+      "period_start": "2024-01-29",
+      "period_end": "2025-01-26",
+      "value": 130497000000.0,
+      "unit": "USD",
+      "shown": "130,497",
+      "display": "130,497",
+      "change": 114.20340763599357,
+      "change_display": "+114.2%",
+      "change_formula": "(130,497 − 60,922) ÷ 60,922 = +114.2%: the change from the fiscal year ended 2024-01-28, in USD millions"
+     },
+     {
+      "period_start": "2023-01-30",
+      "period_end": "2024-01-28",
+      "value": 60922000000.0,
+      "unit": "USD",
+      "shown": "60,922",
+      "display": "60,922",
+      "change": null,
+      "change_display": "",
+      "change_formula": "No value for the same period one year earlier is tagged."
+     }
+    ],
+    "adds_up": true,
+    "notes": [
+     "Data Center equals Compute plus Networking; these parts are tagged as members too. With Data Center counted once, the members add up to the tagged total in 3 of the 3 period(s) checked.",
+     "Labels are derived from each member's tag name (the \"Member\" suffix dropped and the words split); they are not the company's own labels."
+    ]
+   },
+   {
+    "id": "revenue_by_geography",
+    "title": "Revenue by geography",
+    "concept": "us-gaap:Revenues",
+    "axis": "srt:StatementGeographicalAxis",
+    "period_kind": "fiscal year",
+    "unit_label": "USD millions",
+    "periods": [
+     {
+      "period_start": "2025-01-27",
+      "period_end": "2026-01-25",
+      "label": "Fiscal year ended 2026-01-25"
+     },
+     {
+      "period_start": "2024-01-29",
+      "period_end": "2025-01-26",
+      "label": "Fiscal year ended 2025-01-26"
+     },
+     {
+      "period_start": "2023-01-30",
+      "period_end": "2024-01-28",
+      "label": "Fiscal year ended 2024-01-28"
+     }
+    ],
+    "rows": [
+     {
+      "member": "country:US",
+      "label": "US",
+      "values": [
+       {
+        "period_start": "2025-01-27",
+        "period_end": "2026-01-25",
+        "value": 149617000000.0,
+        "unit": "USD",
+        "shown": "149,617",
+        "display": "149,617",
+        "change": 93.09904235822513,
+        "change_display": "+93.1%",
+        "change_formula": "(149,617 − 77,482) ÷ 77,482 = +93.1%: the change from the fiscal year ended 2025-01-26, in USD millions"
+       },
+       {
+        "period_start": "2024-01-29",
+        "period_end": "2025-01-26",
+        "value": 77482000000.0,
+        "unit": "USD",
+        "shown": "77,482",
+        "display": "77,482",
+        "change": 145.7171851710906,
+        "change_display": "+145.7%",
+        "change_formula": "(77,482 − 31,533) ÷ 31,533 = +145.7%: the change from the fiscal year ended 2024-01-28, in USD millions"
+       },
+       {
+        "period_start": "2023-01-30",
+        "period_end": "2024-01-28",
+        "value": 31533000000.0,
+        "unit": "USD",
+        "shown": "31,533",
+        "display": "31,533",
+        "change": null,
+        "change_display": "",
+        "change_formula": "No value for the same period one year earlier is tagged."
+       }
+      ]
+     },
+     {
+      "member": "country:TW",
+      "label": "TW",
+      "values": [
+       {
+        "period_start": "2025-01-27",
+        "period_end": "2026-01-25",
+        "value": 42345000000.0,
+        "unit": "USD",
+        "shown": "42,345",
+        "display": "42,345",
+        "change": 79.42796610169492,
+        "change_display": "+79.4%",
+        "change_formula": "(42,345 − 23,600) ÷ 23,600 = +79.4%: the change from the fiscal year ended 2025-01-26, in USD millions"
+       },
+       {
+        "period_start": "2024-01-29",
+        "period_end": "2025-01-26",
+        "value": 23600000000.0,
+        "unit": "USD",
+        "shown": "23,600",
+        "display": "23,600",
+        "change": 58.26180257510729,
+        "change_display": "+58.3%",
+        "change_formula": "(23,600 − 14,912) ÷ 14,912 = +58.3%: the change from the fiscal year ended 2024-01-28, in USD millions"
+       },
+       {
+        "period_start": "2023-01-30",
+        "period_end": "2024-01-28",
+        "value": 14912000000.0,
+        "unit": "USD",
+        "shown": "14,912",
+        "display": "14,912",
+        "change": null,
+        "change_display": "",
+        "change_formula": "No value for the same period one year earlier is tagged."
+       }
+      ]
+     },
+     {
+      "member": "nvda:ChinaIncludingHongKongMember",
+      "label": "China Including Hong Kong",
+      "values": [
+       {
+        "period_start": "2025-01-27",
+        "period_end": "2026-01-25",
+        "value": 19677000000.0,
+        "unit": "USD",
+        "shown": "19,677",
+        "display": "19,677",
+        "change": -21.44282976684765,
+        "change_display": "-21.4%",
+        "change_formula": "(19,677 − 25,048) ÷ 25,048 = -21.4%: the change from the fiscal year ended 2025-01-26, in USD millions"
+       },
+       {
+        "period_start": "2024-01-29",
+        "period_end": "2025-01-26",
+        "value": 25048000000.0,
+        "unit": "USD",
+        "shown": "25,048",
+        "display": "25,048",
+        "change": 103.14679643146796,
+        "change_display": "+103.1%",
+        "change_formula": "(25,048 − 12,330) ÷ 12,330 = +103.1%: the change from the fiscal year ended 2024-01-28, in USD millions"
+       },
+       {
+        "period_start": "2023-01-30",
+        "period_end": "2024-01-28",
+        "value": 12330000000.0,
+        "unit": "USD",
+        "shown": "12,330",
+        "display": "12,330",
+        "change": null,
+        "change_display": "",
+        "change_formula": "No value for the same period one year earlier is tagged."
+       }
+      ]
+     },
+     {
+      "member": "nvda:OtherCountriesMember",
+      "label": "Other Countries",
+      "values": [
+       {
+        "period_start": "2025-01-27",
+        "period_end": "2026-01-25",
+        "value": 4299000000.0,
+        "unit": "USD",
+        "shown": "4,299",
+        "display": "4,299",
+        "change": -1.557133043279139,
+        "change_display": "-1.6%",
+        "change_formula": "(4,299 − 4,367) ÷ 4,367 = -1.6%: the change from the fiscal year ended 2025-01-26, in USD millions"
+       },
+       {
+        "period_start": "2024-01-29",
+        "period_end": "2025-01-26",
+        "value": 4367000000.0,
+        "unit": "USD",
+        "shown": "4,367",
+        "display": "4,367",
+        "change": 103.40009315323708,
+        "change_display": "+103.4%",
+        "change_formula": "(4,367 − 2,147) ÷ 2,147 = +103.4%: the change from the fiscal year ended 2024-01-28, in USD millions"
+       },
+       {
+        "period_start": "2023-01-30",
+        "period_end": "2024-01-28",
+        "value": 2147000000.0,
+        "unit": "USD",
+        "shown": "2,147",
+        "display": "2,147",
+        "change": null,
+        "change_display": "",
+        "change_formula": "No value for the same period one year earlier is tagged."
+       }
+      ]
+     }
+    ],
+    "total": [
+     {
+      "period_start": "2025-01-27",
+      "period_end": "2026-01-25",
+      "value": 215938000000.0,
+      "unit": "USD",
+      "shown": "215,938",
+      "display": "215,938",
+      "change": 65.4735357900948,
+      "change_display": "+65.5%",
+      "change_formula": "(215,938 − 130,497) ÷ 130,497 = +65.5%: the change from the fiscal year ended 2025-01-26, in USD millions"
+     },
+     {
+      "period_start": "2024-01-29",
+      "period_end": "2025-01-26",
+      "value": 130497000000.0,
+      "unit": "USD",
+      "shown": "130,497",
+      "display": "130,497",
+      "change": 114.20340763599357,
+      "change_display": "+114.2%",
+      "change_formula": "(130,497 − 60,922) ÷ 60,922 = +114.2%: the change from the fiscal year ended 2024-01-28, in USD millions"
+     },
+     {
+      "period_start": "2023-01-30",
+      "period_end": "2024-01-28",
+      "value": 60922000000.0,
+      "unit": "USD",
+      "shown": "60,922",
+      "display": "60,922",
+      "change": null,
+      "change_display": "",
+      "change_formula": "No value for the same period one year earlier is tagged."
+     }
+    ],
+    "adds_up": true,
+    "notes": [
+     "The members add up to the tagged total in each of the 3 period(s) checked, within the rounding the tags declare.",
+     "Labels are derived from each member's tag name (the \"Member\" suffix dropped and the words split); they are not the company's own labels."
+    ]
+   },
+   {
+    "id": "revenue_concentration_by_customer",
+    "title": "Share of revenue by major customer",
+    "concept": "us-gaap:ConcentrationRiskPercentage1",
+    "axis": "srt:MajorCustomersAxis",
+    "period_kind": "fiscal year",
+    "unit_label": "percent of revenue",
+    "periods": [
+     {
+      "period_start": "2025-01-27",
+      "period_end": "2026-01-25",
+      "label": "Fiscal year ended 2026-01-25"
+     },
+     {
+      "period_start": "2024-01-29",
+      "period_end": "2025-01-26",
+      "label": "Fiscal year ended 2025-01-26"
+     },
+     {
+      "period_start": "2023-01-30",
+      "period_end": "2024-01-28",
+      "label": "Fiscal year ended 2024-01-28"
+     }
+    ],
+    "rows": [
+     {
+      "member": "nvda:CustomerOneMember",
+      "label": "Customer One · Compute and Networking Segment",
+      "values": [
+       {
+        "period_start": "2025-01-27",
+        "period_end": "2026-01-25",
+        "value": 0.22,
+        "unit": "pure",
+        "shown": "22",
+        "display": "22.0%",
+        "change": null,
+        "change_display": "",
+        "change_formula": "Not computed: a customer member names a position in the filing's list (such as Customer One), which the tags do not show to be the same customer in each period."
+       },
+       {
+        "period_start": "2024-01-29",
+        "period_end": "2025-01-26",
+        "value": 0.12,
+        "unit": "pure",
+        "shown": "12",
+        "display": "12.0%",
+        "change": null,
+        "change_display": "",
+        "change_formula": "Not computed: a customer member names a position in the filing's list (such as Customer One), which the tags do not show to be the same customer in each period."
+       },
+       {
+        "period_start": "2023-01-30",
+        "period_end": "2024-01-28",
+        "value": 0.13,
+        "unit": "pure",
+        "shown": "13",
+        "display": "13.0%",
+        "change": null,
+        "change_display": "",
+        "change_formula": "Not computed: a customer member names a position in the filing's list (such as Customer One), which the tags do not show to be the same customer in each period."
+       }
+      ]
+     },
+     {
+      "member": "nvda:CustomerTwoMember",
+      "label": "Customer Two · Compute and Networking Segment",
+      "values": [
+       {
+        "period_start": "2025-01-27",
+        "period_end": "2026-01-25",
+        "value": 0.14,
+        "unit": "pure",
+        "shown": "14",
+        "display": "14.0%",
+        "change": null,
+        "change_display": "",
+        "change_formula": "Not computed: a customer member names a position in the filing's list (such as Customer One), which the tags do not show to be the same customer in each period."
+       },
+       {
+        "period_start": "2024-01-29",
+        "period_end": "2025-01-26",
+        "value": 0.11,
+        "unit": "pure",
+        "shown": "11",
+        "display": "11.0%",
+        "change": null,
+        "change_display": "",
+        "change_formula": "Not computed: a customer member names a position in the filing's list (such as Customer One), which the tags do not show to be the same customer in each period."
+       }
+      ]
+     }
+    ],
+    "total": [],
+    "adds_up": null,
+    "notes": [
+     "Each value is one customer's share of revenue (benchmark us-gaap:SalesRevenueNetMember on us-gaap:ConcentrationRiskByBenchmarkAxis), as a fraction: 0.22 is 22%. Only the customers the filing discloses are tagged (usually those of 10% or more), so the shares have no total.",
+     "Rows marked with · are also tagged with a business segment (us-gaap:StatementBusinessSegmentsAxis = nvda:ComputeAndNetworkingSegmentMember); the label after the · names it. The tags do not say whether such a share is of total revenue or of the segment's revenue; the filing's text does. Shares tagged with any other dimension (a geography, a product) are left out: they are shares of something else.",
+     "Labels are derived from each member's tag name (the \"Member\" suffix dropped and the words split); they are not the company's own labels."
+    ]
+   },
+   {
+    "id": "receivables_concentration_by_customer",
+    "title": "Share of accounts receivable by major customer",
+    "concept": "us-gaap:ConcentrationRiskPercentage1",
+    "axis": "srt:MajorCustomersAxis",
+    "period_kind": "fiscal year",
+    "unit_label": "percent of accounts receivable",
+    "periods": [
+     {
+      "period_start": "2025-01-27",
+      "period_end": "2026-01-25",
+      "label": "Fiscal year ended 2026-01-25"
+     },
+     {
+      "period_start": "2024-01-29",
+      "period_end": "2025-01-26",
+      "label": "Fiscal year ended 2025-01-26"
+     }
+    ],
+    "rows": [
+     {
+      "member": "nvda:CustomerOneMember",
+      "label": "Customer One",
+      "values": [
+       {
+        "period_start": "2025-01-27",
+        "period_end": "2026-01-25",
+        "value": 0.25,
+        "unit": "pure",
+        "shown": "25",
+        "display": "25.0%",
+        "change": null,
+        "change_display": "",
+        "change_formula": "Not computed: a customer member names a position in the filing's list (such as Customer One), which the tags do not show to be the same customer in each period."
+       },
+       {
+        "period_start": "2024-01-29",
+        "period_end": "2025-01-26",
+        "value": 0.17,
+        "unit": "pure",
+        "shown": "17",
+        "display": "17.0%",
+        "change": null,
+        "change_display": "",
+        "change_formula": "Not computed: a customer member names a position in the filing's list (such as Customer One), which the tags do not show to be the same customer in each period."
+       }
+      ]
+     },
+     {
+      "member": "nvda:CustomerTwoMember",
+      "label": "Customer Two",
+      "values": [
+       {
+        "period_start": "2025-01-27",
+        "period_end": "2026-01-25",
+        "value": 0.18,
+        "unit": "pure",
+        "shown": "18",
+        "display": "18.0%",
+        "change": null,
+        "change_display": "",
+        "change_formula": "Not computed: a customer member names a position in the filing's list (such as Customer One), which the tags do not show to be the same customer in each period."
+       },
+       {
+        "period_start": "2024-01-29",
+        "period_end": "2025-01-26",
+        "value": 0.16,
+        "unit": "pure",
+        "shown": "16",
+        "display": "16.0%",
+        "change": null,
+        "change_display": "",
+        "change_formula": "Not computed: a customer member names a position in the filing's list (such as Customer One), which the tags do not show to be the same customer in each period."
+       }
+      ]
+     },
+     {
+      "member": "nvda:CustomerThreeMember",
+      "label": "Customer Three",
+      "values": [
+       {
+        "period_start": "2025-01-27",
+        "period_end": "2026-01-25",
+        "value": 0.13,
+        "unit": "pure",
+        "shown": "13",
+        "display": "13.0%",
+        "change": null,
+        "change_display": "",
+        "change_formula": "Not computed: a customer member names a position in the filing's list (such as Customer One), which the tags do not show to be the same customer in each period."
+       }
+      ]
+     }
+    ],
+    "total": [],
+    "adds_up": null,
+    "notes": [
+     "Each value is one customer's share of accounts receivable (benchmark us-gaap:AccountsReceivableMember on us-gaap:ConcentrationRiskByBenchmarkAxis), as a fraction: 0.22 is 22%. Only the customers the filing discloses are tagged (usually those of 10% or more), so the shares have no total.",
+     "Kept apart from the share of revenue: a share of receivables at a date says who owes the company money, not who it sells most to.",
+     "Labels are derived from each member's tag name (the \"Member\" suffix dropped and the words split); they are not the company's own labels."
+    ]
+   }
+  ],
+  "facts_read": 1127,
+  "facts_unparsed": 0,
+  "notes": [
+   "Every value is placed by its context's start and end dates; the filing's fiscal-year fields are not read."
+  ]
+ }
+}

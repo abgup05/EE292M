@@ -3493,7 +3493,8 @@ function drawTimeline(container, run) {
   const data = timelineData(run);
   const width = Math.max(Math.round(container.clientWidth || 880), 300);
   const narrow = width < 560;
-  const H = narrow ? 186 : 196;
+  // Without 8-Ks the space below the axis holds only the gap's label and the months.
+  const H = data.events.length ? (narrow ? 186 : 196) : Number.isFinite(data.newest) ? 176 : 132;
   const axisY = 84;
   const left = 10;
   const right = 14;
@@ -4359,6 +4360,11 @@ function initSpecimen() {
     return;
   }
   // The note is the page's own run view, drawn by the same code from the made-up record.
+  // ?only=<part> shows one part of the specimen (a capture is limited in height).
+  const only = new URLSearchParams(location.search).get("only");
+  if (only && /^[a-z0-9]{1,20}$/.test(only)) {
+    for (const part of document.querySelectorAll(".spec-section[data-part]")) part.hidden = part.dataset.part !== only;
+  }
   state.sample = true;
   state.sampleName = "specimen";
   state.meta = data.meta;
@@ -4367,6 +4373,8 @@ function initSpecimen() {
   state.review = data.review && data.review.run_id === data.run.id ? data.review : null;
   state.comparison = data.comparison ?? null;
   renderRun(data.run);
+  // Open the first claims, so the specimen shows findings with their quotes in the margin.
+  for (const docket of [...document.querySelectorAll("#claim-list details.claim")].slice(0, 3)) docket.open = true;
   watchTimelineWidth();
 
   const v13 = data.v13;

@@ -39,6 +39,10 @@ data:
   the latest report of its period is flagged restated and says so.
 - Gross profit is ``GrossProfit`` where reported, otherwise revenue minus cost
   of revenue for the same period, marked derived.
+- As of a date (``FactBook(payload, as_of=day)``), a fact filed after that day
+  does not exist: every value, derivation and restated flag is what a reader
+  could have computed that day (:func:`filed_by`). Without a date every fact is
+  read, exactly as before.
 
 Malformed input: a body that is not the expected shape raises
 :class:`FactsError`. A single malformed fact inside an otherwise sound body is
@@ -232,6 +236,21 @@ class Fact:
             restated=restated,
             note=note,
         )
+
+
+def filed_by(raw: object, as_of: date | None) -> bool:
+    """True when the raw entry ``raw`` had been filed on or before ``as_of``.
+
+    Always True without a date. An entry whose filing date cannot be read is kept,
+    so that it is reported as malformed rather than silently dropped.
+    """
+    if as_of is None or not isinstance(raw, dict):
+        return True
+    text = raw.get("filed")
+    try:
+        return date.fromisoformat(text) <= as_of if isinstance(text, str) else True
+    except ValueError:
+        return True
 
 
 def _date_field(raw: dict[str, Any], name: str) -> date:
@@ -492,17 +511,19 @@ class FactBook:
     Malformed single facts are skipped and described in :attr:`problems`.
     """
 
-    def __init__(self, companyfacts: object) -> None:
+    def __init__(self, companyfacts: object, *, as_of: date | None = None) -> None:
         payload = _require_object(companyfacts)
         gaap = _us_gaap(payload)
         self.cik: int = _cik(payload)
         self.name: str = _name(payload)
+        # Facts filed after this day are not read at all (None: every fact is read).
+        self.as_of: date | None = as_of
         skipped: Counter[str] = Counter()
         self._durations: dict[str, dict[tuple[date, date], PeriodValue]] = {}
         self._instants: dict[str, dict[date, PeriodValue]] = {}
         self._reports: dict[str, dict[Period, list[Fact]]] = {}
         for group in GROUPS.values():
-            by_concept = self._group_reports(gaap, group, skipped)
+            by_concept = self._group_reports(gaap, group, skipped, as_of)
             self._reports[group.key] = self._pooled(by_concept)
             selected = {
                 period: PeriodValue(group.key, period[0], period[1], ref.value, (ref,))
@@ -523,13 +544,15 @@ class FactBook:
 
     @staticmethod
     def _group_reports(
-        gaap: dict[str, Any], group: ConceptGroup, skipped: Counter[str]
+        gaap: dict[str, Any], group: ConceptGroup, skipped: Counter[str], as_of: date | None
     ) -> list[dict[Period, list[Fact]]]:
-        """Every valid report of each concept of the group, by period, in concept order."""
+        """Every valid report of each concept of the group filed by ``as_of``, by period."""
         result: list[dict[Period, list[Fact]]] = []
         for concept in group.concepts:
             by_period: dict[Period, list[Fact]] = defaultdict(list)
             for raw in _raw_facts(gaap, concept, group.unit):
+                if not filed_by(raw, as_of):
+                    continue
                 try:
                     parsed = parse_fact(concept, group.unit, raw)
                 except FactsError as exc:

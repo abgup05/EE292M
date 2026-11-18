@@ -1,0 +1,30 @@
+{
+  "alive": true,
+  "note": "The watcher finished a cycle 0 seconds ago.",
+  "worker": "watch-7f3a",
+  "started_at": "2026-11-18T09:00:00Z",
+  "last_cycle_at": "2026-11-18T11:06:00Z",
+  "interval_seconds": 900,
+  "stale_after_seconds": 1860,
+  "last_cycle": {
+    "started_at": "2026-11-18T11:06:00.000000Z",
+    "finished_at": "2026-11-18T11:06:00.000000Z",
+    "companies": 1,
+    "index_errors": 0,
+    "jobs_queued": 1,
+    "jobs_done": 1,
+    "jobs_retried": 0,
+    "jobs_failed": 0,
+    "leases_expired": 0,
+    "errors": []
+  },
+  "jobs": {
+    "queued": 0,
+    "running": 0,
+    "done": 5,
+    "failed": 1
+  },
+  "queue_depth": 0,
+  "waiting_runs": 1,
+  "watches": 1
+}

@@ -1,0 +1,27 @@
+{
+  "watches": [
+    {
+      "thesis_id": "th-090c6b0da873",
+      "thesis_name": "Jane Smith is gone",
+      "ticker": "NVDA",
+      "company_name": "NVIDIA CORP",
+      "policy": "ask",
+      "policy_label": "Ask before running",
+      "watching_since": "2026-11-18T09:00:00Z",
+      "last_check_at": "2026-11-18T11:06:00Z",
+      "next_check_at": "2026-11-18T11:21:00Z",
+      "next_check_note": "",
+      "last_error": "",
+      "last_job_error": "The run failed: The filing index could not be read: EDGAR answered HTTP 503 for the filing index; No source could be retrieved and read; no brief was produced",
+      "jobs": {
+        "queued": 0,
+        "running": 0,
+        "done": 5,
+        "failed": 1
+      },
+      "unread": 6,
+      "waiting_runs": 1
+    }
+  ],
+  "interval_seconds": 900
+}

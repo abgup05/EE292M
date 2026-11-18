@@ -247,10 +247,13 @@ ORDINAL_QUARTERS = {"first": 1, "second": 2, "third": 3, "fourth": 4}
 
 # Comparison words, longest first.
 COMPARATORS: tuple[tuple[str, Op], ...] = (
+    ("at or above", ">="),
+    ("at or below", "<="),
     ("no more than", "<="),
     ("no less than", ">="),
     ("more than", ">"),
     ("greater than", ">"),
+    ("better than", ">"),
     ("in excess of", ">"),
     ("at least", ">="),
     ("at most", "<="),
@@ -260,6 +263,8 @@ COMPARATORS: tuple[tuple[str, Op], ...] = (
     ("exceeds", ">"),
     ("exceed", ">"),
     ("topped", ">"),
+    ("reached", ">="),
+    ("hit", ">="),
     ("tops", ">"),
     ("above", ">"),
     ("over", ">"),
@@ -364,6 +369,7 @@ TRAPS: tuple[tuple[re.Pattern[str], str], ...] = (
     (
         re.compile(
             r"\b(?:debt|dividends?|buybacks?|repurchases?|returned\b.*\bto shareholders|"
+            r"marketable securities|short-term investments|"
             r"headcount|employees?|shares outstanding|goodwill|total assets|assets|"
             r"accounts payable|payables|tax(?:es)?|backlog|deferred revenues?|"
             r"return on (?:equity|assets|invested capital)|roe|roic|inventory turns|"
@@ -415,7 +421,7 @@ NAMED_QUARTER = re.compile(
 )
 NAMED_YEAR = re.compile(r"\b(?:fiscal(?: year)?\s*|fy\s?)(?P<year>\d{4})\b")
 OVER_YEARS = re.compile(
-    rf"\b(?:over|in|during|across) the (?:last|past|previous) (?P<n>{_W}) years\b"
+    rf"\b(?:over|in|during|across) the (?:last|past|previous) (?P<n>{_W}) (?:fiscal )?years\b"
 )
 ANNUAL = re.compile(
     r"\bannual(?:ly)?\b|\bfiscal year\b|\blast (?:fiscal )?year\b|\bper year\b|"
@@ -440,15 +446,29 @@ ACCELERATION = re.compile(
 COMPOUND = re.compile(r"\bcompound(?:ed|ing|s)?\b|\bcagr\b")
 COMPOUND_YEARS = re.compile(
     rf"\b(?P<a>{_W})[- ]year\b|\bfor (?P<b>{_W}) years\b|"
-    rf"\b(?:over|in|during) the (?:last|past|previous) (?P<c>{_W}) years\b"
+    rf"\b(?:over|in|during) the (?:last|past|previous) (?P<c>{_W}) (?:fiscal )?years\b"
 )
 DOUBLED = re.compile(r"\b(?P<more>more than )?(?P<times>doubled|tripled)\b")
 SHARE = re.compile(
     rf"^(?:the )?(?P<subject>.+?) (?:is|are|was|were|accounts? for|accounted for|"
     rf"represents?|represented|makes? up|made up|comprises?|comprised) "
     rf"(?P<cmp>{CMP}) (?P<num>-?\d+(?:\.\d+)?\s*(?:%|percent)|half|a half|a quarter|a third)"
-    r" of (?:total |the company's |its |all |net )?(?:revenues?|sales)$"
+    r" of (?:(?:total |the company's |its |all |net )?(?:net )?(?:revenues?|sales)|the total)$"
 )
+# "iPad sales", "revenue from the United States": the part, without the revenue words.
+SHARE_SUBJECT_REVENUE = re.compile(
+    r"^(?:(?:net )?(?:revenues?|sales) (?:from|in) (?P<before>.+)|(?P<after>.+?)(?:'s)?"
+    r" (?:net )?(?:revenues?|sales))$"
+)
+# A condition held in each of several periods ("for the last four quarters", "every year",
+# "in all four quarters"): one test of one period would be half the claim.
+EACH_PERIOD = re.compile(
+    rf"\b(?:in |for )?(?:each|every|all) (?:of )?(?:the )?(?:last |past |previous )?"
+    rf"(?:(?P<n>{_W}) )?(?:fiscal )?(?P<unit>quarters?|years?)\b|"
+    rf"\bfor the (?:last|past|previous) (?P<n2>{_W}) (?:fiscal )?(?P<unit2>quarters|years)\b"
+)
+# Two statements joined by a contrast: one test would be half the claim.
+CONTRAST = re.compile(r"(?:,| )but\b|\b(?:although|though|despite|whereas)\b")
 CUSTOMER_SUBJECT = re.compile(
     r"^(?P<neg>no|not one)? ?(?:a |one |any |the largest |the biggest |a single |single )?"
     r"(?:single )?customer$|^(?:the )?(?:largest|biggest) customer$"
@@ -528,6 +548,9 @@ def _share(text: str) -> ClaimTest | NotNumeric | None:
     if match is None:
         return None
     subject = match["subject"].strip()
+    revenue_of = SHARE_SUBJECT_REVENUE.match(subject)
+    if revenue_of is not None and not _metrics(revenue_of["before"] or revenue_of["after"]):
+        subject = (revenue_of["before"] or revenue_of["after"]).strip()
     raw = match["num"].replace("percent", "%").replace(" ", "")
     value = FRACTIONS[match["num"]] if match["num"] in FRACTIONS else float(raw.rstrip("%"))
     op = OP_OF[match["cmp"]]
@@ -579,6 +602,26 @@ def _streak(text: str, metric: str, match: re.Match[str]) -> ClaimTest | NotNume
     unit = match["u1"] or match["u2"] or match["u3"]
     period = Period("Q" if unit == "quarters" else "FY")
     return ClaimTest("streak", Term("streak", metric, period), ">=", Number(count, "count"))
+
+
+def _each_period(text: str, metric: str, match: re.Match[str]) -> ClaimTest | NotNumeric:
+    """A rise in each of the last N periods is a streak; any other condition held over
+    several periods is not a form this version computes."""
+    held = NotNumeric(
+        "a condition held in each of several periods: this version tests one period, "
+        "or rises in a row (the streak form)"
+    )
+    count = match["n"] or match["n2"]
+    unit = (match["unit"] or match["unit2"]).rstrip("s")
+    rises = UP_RE.search(text) and not DOWN_RE.search(text)
+    stated = PERCENT.search(text) or AMOUNT.search(text) or BARE_PERCENT.search(text)
+    if count is None or not rises or stated or FASTER.search(text) or ACCELERATION.search(text):
+        return held
+    if unit == "quarter" and not SEQUENTIAL.search(text):
+        # "grew in each of the last six quarters" could be year over year or sequential.
+        return held
+    period = Period("Q" if unit == "quarter" else "FY")
+    return ClaimTest("streak", Term("streak", metric, period), ">=", Number(_count(count), "count"))
 
 
 def _faster(text: str, first: str, match: re.Match[str]) -> ClaimTest | NotNumeric:
@@ -696,6 +739,11 @@ def compile_claim(text: str) -> ClaimTest | NotNumeric:
         return NotNumeric("does not say which margin (gross, operating, net or free cash flow)")
     if JUDGEMENT.search(claim):
         return NotNumeric("a judgement, not a quantity")
+    if CONTRAST.search(claim):
+        return NotNumeric(
+            "two statements joined by a contrast: one test would be half the claim; "
+            "state each as a claim of its own"
+        )
     share = _share(claim)
     if share is not None:
         return share
@@ -710,6 +758,9 @@ def compile_claim(text: str) -> ClaimTest | NotNumeric:
             return NotNumeric("does not say growth of what")
         return NotNumeric("does not name a measure in the metric set")
     metric = named[0][2]
+    each = EACH_PERIOD.search(claim)
+    if each is not None:
+        return _each_period(claim, metric, each)
     faster = FASTER.search(claim)
     if faster is not None:
         return _faster(claim, metric, faster)

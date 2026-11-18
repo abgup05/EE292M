@@ -159,3 +159,52 @@ def test_the_scorer_counts_exact_matches_and_lists_each_mismatch(tmp_path: Path)
     assert result.compiled_expected == 2 and result.compiled_right == 1
     text = render(result, "development")
     assert "1 of 2" in text and "d2" in text and "gross_margin[Q] > 0%" in text
+
+
+# Rules added after scoring the foreign development half (odd ids of
+# eval/claim-tests-foreign.json); the sentences here are new, written for the rules.
+
+FOREIGN_DEVELOPMENT_COMPILED = [
+    ("Revenue rose sequentially in each of the last five quarters.", "streak(revenue)[Q] >= 5"),
+    ("Net income grew in each of the last three years.", "streak(net_income)[FY] >= 3"),
+    ("Operating margin hit 40% last quarter.", "operating_margin[Q] >= 40%"),
+    ("Gross margin was at or above 60% in fiscal 2025.", "gross_margin[FY2025] >= 60%"),
+    ("Net margin stayed at or below 20%.", "net_margin[Q] <= 20%"),
+    (
+        "Revenue compounded at better than 12% over the last four fiscal years.",
+        "cagr(revenue, 4y)[FY] > 12%",
+    ),
+    ("Mac sales are less than 15% of the total.", 'share(segment "Mac")[filing] < 15%'),
+    (
+        "Revenue from Europe is more than a quarter of total revenue.",
+        'share(geography "Europe")[filing] > 25%',
+    ),
+]
+
+FOREIGN_DEVELOPMENT_NOT_NUMERIC = [
+    ("Gross margin has been above 60% for the last three quarters.", "each of several periods"),
+    (
+        "Operating income grew year over year in every quarter this fiscal year.",
+        "each of several periods",
+    ),
+    ("Revenue grew in each of the last six quarters.", "each of several periods"),
+    ("Revenue growth fell in each of the last two quarters.", "each of several periods"),
+    ("Receivables have grown, but more slowly than revenue.", "contrast"),
+    ("Net income rose despite higher costs.", "contrast"),
+    ("Cash and marketable securities exceeded $20 billion.", "not in the metric set"),
+    ("Cash and short-term investments are above $10 billion.", "not in the metric set"),
+]
+
+
+@pytest.mark.parametrize(("claim", "canonical"), FOREIGN_DEVELOPMENT_COMPILED)
+def test_a_rule_from_the_foreign_development_half_compiles(claim: str, canonical: str) -> None:
+    result = compile_claim(claim)
+    assert not isinstance(result, NotNumeric), result.reason
+    assert result.canonical == canonical
+
+
+@pytest.mark.parametrize(("claim", "words"), FOREIGN_DEVELOPMENT_NOT_NUMERIC)
+def test_a_rule_from_the_foreign_development_half_refuses(claim: str, words: str) -> None:
+    result = compile_claim(claim)
+    assert isinstance(result, NotNumeric), result.canonical
+    assert words in result.reason

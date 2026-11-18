@@ -1,0 +1,133 @@
+Claim compiler on the foreign claims (judged by the grammar's author)
+
+all: 120 claims
+  numeric (author's label) 83: compiled and right 22, compiled and wrong 11, not compiled 50 (metric 28, form 18, period 1, phrasing 3)
+  not_numeric (author's label) 37: not compiled 37, compiled wrongly 0, compiled rightly (the author's label is wrong) 0
+development: 60 claims
+  numeric (author's label) 43: compiled and right 14, compiled and wrong 0, not compiled 29 (metric 19, form 10, period 0, phrasing 0)
+  not_numeric (author's label) 17: not compiled 17, compiled wrongly 0, compiled rightly (the author's label is wrong) 0
+held_out: 60 claims
+  numeric (author's label) 40: compiled and right 8, compiled and wrong 11, not compiled 21 (metric 9, form 8, period 1, phrasing 3)
+  not_numeric (author's label) 20: not compiled 20, compiled wrongly 0, compiled rightly (the author's label is wrong) 0
+
+id | half | company | kind | reading | cause | canonical | claim | why
+f001 | development | NVDA | numeric | right |  | yoy(revenue)[FY2024] > 100% | NVIDIA's revenue more than doubled in fiscal 2024. | 'more than doubled in fiscal 2024' is growth over 100% in FY2024 against FY2023
+f002 | held_out | NVDA | numeric | not_compiled | period | none | Data Center revenue made up over 80% of total revenue last fiscal year. | a share is read from the newest filing only; 'last fiscal year' needs the newest 10-K's figures, which the share form cannot place
+f003 | development | NVDA | numeric | not_compiled | form | none | Gross margin has stayed above 70% for the last four quarters. | a condition held in each of the last four quarters is not a form; the new rule refuses it rather than test one quarter
+f004 | held_out | NVDA | numeric | right |  | yoy(operating_income)[FY2025] > yoy(revenue)[FY2025] | Operating income grew faster than revenue in fiscal 2025. | growth of operating income against growth of revenue in FY2025
+f005 | development | NVDA | numeric | right |  | net_income[FY] > $50B | Net income exceeded $50 billion in the most recent fiscal year. | 'most recent fiscal year' is FY; $50 billion is the threshold
+f006 | held_out | NVDA | numeric | not_compiled | form | none | Free cash flow has risen every year since fiscal 2023. | a rise in each year since a named year is not a form the grammar places; refused by the each-period rule (made from odd ids)
+f007 | development | NVDA | numeric | right |  | streak(revenue)[Q] >= 6 | Quarterly revenue grew sequentially in each of the last six quarters. | six sequential quarterly rises in a row: the streak form counts exactly that
+f008 | held_out | NVDA | numeric | not_compiled | phrasing | none | R&D spending as a share of revenue fell below 15% in fiscal 2025. | R&D as a share of revenue exists (rnd_ratio); 'fell below 15% in fiscal 2025' is a threshold the grammar misses
+f009 | development | NVDA | numeric | not_compiled | form | none | Diluted EPS was more than three times its fiscal 2023 level. | a multiple of an earlier named year's level (EPS now more than 3x FY2023) is not a form
+f010 | held_out | NVDA | numeric | not_compiled | metric | none | The Compute & Networking segment accounts for the vast majority of operating income. | a segment's operating income is not in the facts the tool reads
+f011 | development | NVDA | numeric | not_compiled | form | none | Inventory has grown, but more slowly than revenue. | two statements joined by 'but' (it grew; more slowly than revenue); no conjunction form
+f012 | held_out | NVDA | numeric | right |  | yoy(receivables)[Q] > yoy(revenue)[Q] | Accounts receivable rose faster than sales last quarter, which is worth watching. | receivables growth against revenue growth, year over year in the latest quarter; 'which is worth watching' is commentary
+f013 | development | NVDA | numeric | not_compiled | metric | none | Cash and marketable securities topped $40 billion at fiscal year-end. | marketable securities are not in the metric set; no longer read as cash and cash equivalents
+f014 | held_out | NVDA | numeric | not_compiled | metric | none | Long-term debt is under $10 billion. | long-term debt is not in the metric set
+f015 | development | NVDA | numeric | not_compiled | metric | none | Share repurchases exceeded $20 billion over the trailing twelve months. | share repurchases are not in the metric set
+f016 | held_out | NVDA | numeric | wrong |  | yoy(capex)[FY2024] >= 100% | Capital expenditures at least doubled between fiscal 2024 and fiscal 2025. | 'between fiscal 2024 and fiscal 2025' is FY2025 growth over FY2024; the test binds FY2024
+f017 | development | NVDA | numeric | right |  | max(share(customer))[filing] > 10% | A single customer accounted for more than 10% of revenue. | the largest single customer's share of revenue above 10%, from the newest filing's tags
+f018 | held_out | NVDA | numeric | not_compiled | phrasing | none | Gaming revenue is now less than 10% of the total. | a product or segment share is a supported form; 'less than 10% of the total' is not read
+f019 | development | NVDA | numeric | not_compiled | form | none | Revenue growth is slowing: the year-over-year rate fell in each of the last three quarters. | a deceleration in each of three quarters is not a form
+f020 | held_out | NVDA | numeric | wrong |  | operating_margin[Q] > operating_margin[Q-4] | Operating margin expanded by more than ten points year over year. | drops 'by more than ten points': any expansion would hold
+f021 | development | NVDA | numeric | not_compiled | form | none | Operating cash flow was above net income in the latest fiscal year. | comparing the levels of two different measures (operating cash flow against net income) is not a form
+f022 | held_out | NVDA | numeric | not_compiled | phrasing | none | The two-year revenue CAGR from fiscal 2023 is north of 80%. | the compound form exists; 'two-year revenue CAGR from fiscal 2023 is north of 80%' is not read
+f023 | development | NVDA | numeric | right |  | net_margin[Q] >= 55% | Net margin hit 55% last quarter. | 'hit 55% last quarter': the latest quarter's net margin at least 55%
+f024 | held_out | NVDA | numeric | right |  | yoy(operating_expenses)[Q] < yoy(gross_profit)[Q] | Operating expenses are growing slower than gross profit. | operating expenses (the house definition, gross profit less operating income) growing more slowly than gross profit
+f025 | development | NVDA | numeric | not_compiled | metric | none | Diluted share count has fallen year over year despite stock compensation. | the diluted share count is not in the metric set
+f026 | held_out | NVDA | numeric | not_compiled | form | none | Automotive revenue is tiny, barely 2% of sales. | 'barely 2%' is an approximate value, not a bound; no form tests 'about N%'
+f027 | development | NVDA | numeric | not_compiled | metric | none | Total assets more than tripled over the past three fiscal years. | total assets are not in the metric set
+f028 | held_out | NVDA | not_numeric | not_compiled |  | none | CUDA's software ecosystem gives NVIDIA a durable moat that rivals cannot replicate. | not numeric, as the author marked it; not compiled
+f029 | development | NVDA | not_numeric | not_compiled |  | none | At 30 times forward earnings the stock is still reasonably priced for its growth. | not numeric, as the author marked it; not compiled
+f030 | held_out | NVDA | not_numeric | not_compiled |  | none | Jensen Huang is the best product-focused CEO in semiconductors. | not numeric, as the author marked it; not compiled
+f031 | development | NVDA | not_numeric | not_compiled |  | none | AMD's MI series will take meaningful share of AI accelerators by 2027. | not numeric, as the author marked it; not compiled
+f032 | held_out | NVDA | not_numeric | not_compiled |  | none | Export restrictions on China are the biggest risk to the thesis. | not numeric, as the author marked it; not compiled
+f033 | development | NVDA | not_numeric | not_compiled |  | none | We expect revenue to reach $300 billion by fiscal 2028. | not numeric, as the author marked it; not compiled
+f034 | held_out | NVDA | not_numeric | not_compiled |  | none | The Blackwell platform is a generational leap over Hopper. | not numeric, as the author marked it; not compiled
+f035 | development | NVDA | not_numeric | not_compiled |  | none | Hyperscalers building their own custom chips will cap NVIDIA's pricing power. | not numeric, as the author marked it; not compiled
+f036 | held_out | NVDA | not_numeric | not_compiled |  | none | The shares trade at a premium to the semiconductor group's average multiple. | not numeric, as the author marked it; not compiled
+f037 | development | NVDA | not_numeric | not_compiled |  | none | Sovereign AI is a multi-hundred-billion-dollar opportunity. | not numeric, as the author marked it; not compiled
+f038 | held_out | NVDA | not_numeric | not_compiled |  | none | Our price target of $200 implies 25% upside from here. | not numeric, as the author marked it; not compiled
+f039 | development | NVDA | not_numeric | not_compiled |  | none | Networking, through NVLink and InfiniBand, is an underappreciated growth driver. | not numeric, as the author marked it; not compiled
+f040 | held_out | NVDA | not_numeric | not_compiled |  | none | Management has been disciplined about not overbuilding supply. | not numeric, as the author marked it; not compiled
+f041 | development | AAPL | numeric | right |  | revenue[FY2024] > $390B | Apple's total net sales were above $390 billion in fiscal 2024. | FY2024 revenue above $390 billion
+f042 | held_out | AAPL | numeric | not_compiled | metric | none | Services revenue has grown double digits for three consecutive years. | a segment's growth over years: breakdowns come from one filing and have no history in the facts
+f043 | development | AAPL | numeric | not_compiled | form | none | iPhone still generates roughly half of net sales. | 'roughly half' is an approximate share, not a bound
+f044 | held_out | AAPL | numeric | not_compiled | form | none | Gross margin expanded to over 46% in the latest fiscal year. | two tests in one sentence (margin rose, and it is above 46%); no conjunction form
+f045 | development | AAPL | numeric | not_compiled | metric | none | Services gross margin is well above Products gross margin. | gross margin by segment is not in the facts the tool reads
+f046 | held_out | AAPL | numeric | not_compiled | metric | none | Apple repurchased more than $90 billion of its stock last fiscal year. | share repurchases are not in the metric set
+f047 | development | AAPL | numeric | not_compiled | metric | none | The diluted share count has shrunk every year for the past five years. | the diluted share count is not in the metric set
+f048 | held_out | AAPL | numeric | right |  | free_cash_flow[FY] > $100B | Free cash flow exceeded $100 billion. | free cash flow of the latest fiscal year above $100 billion; the claim names no period and FY is a fair reading
+f049 | development | AAPL | numeric | not_compiled | metric | none | Greater China net sales fell year over year in fiscal 2024. | a geography's growth: breakdowns come from one filing and have no history in the facts
+f050 | held_out | AAPL | numeric | wrong |  | revenue[Q] < revenue[Q-4] | Wearables, Home and Accessories revenue has declined for several periods. | a product line's revenue read as the company's total revenue
+f051 | development | AAPL | numeric | not_compiled | form | none | R&D expense grew about 5% last year, slower than sales growth. | an approximate growth rate joined to a faster_than comparison; neither 'about N%' nor a conjunction is a form
+f052 | held_out | AAPL | numeric | not_compiled | form | none | Operating margin has been above 30% in each of the last three fiscal years. | above 30% in each of three fiscal years is not a form; refused by the each-period rule (made from odd ids)
+f053 | development | AAPL | numeric | right |  | yoy(eps_diluted)[FY2025] > 10% | EPS rose by more than 10% in fiscal 2025. | diluted EPS growth in FY2025 above 10%
+f054 | held_out | AAPL | numeric | not_compiled | metric | none | Total debt has been declining, and term debt is now under $100 billion. | debt is not in the metric set
+f055 | development | AAPL | numeric | not_compiled | metric | none | Cash plus marketable securities is roughly $150 billion. | marketable securities are not in the metric set (and 'roughly' is approximate)
+f056 | held_out | AAPL | numeric | not_compiled | metric | none | Capex stays modest at under 3% of revenue. | capital expenditure as a share of revenue is not in the metric set
+f057 | development | AAPL | numeric | not_compiled | metric | none | Mac revenue grew last quarter after two quarters of decline. | a product line's quarterly history: breakdowns come from one filing
+f058 | held_out | AAPL | numeric | wrong |  | yoy(revenue)[Q] > yoy(revenue)[Q-1] | Revenue growth accelerated in the September quarter compared with the June quarter. | the named 'September quarter' and 'June quarter' are ignored; it tests whatever the latest quarter is
+f059 | development | AAPL | numeric | right |  | share(segment "Ipad")[filing] < 10% | iPad sales are less than 10% of the total. | the iPad product line's share of total revenue below 10%, from the newest filing's tags (segment covers segments and products)
+f060 | held_out | AAPL | numeric | wrong |  | inventory[Q] < $10B | Inventory is under $10 billion and has barely moved in three years. | tests only the level under $10 billion; drops 'has barely moved in three years'
+f061 | development | AAPL | numeric | not_compiled | form | none | Americas is the biggest geographic segment, bringing in over 40% of net sales. | 'the biggest geographic segment' is a rank among members; the share part alone would be half the claim
+f062 | held_out | AAPL | numeric | right |  | net_income[FY2023] < net_income[FY2022] | Net income was down in fiscal 2023 versus 2022. | FY2023 net income below FY2022
+f063 | development | AAPL | numeric | not_compiled | metric | none | Operating cash flow covers dividends and buybacks combined. | dividends and buybacks are not in the metric set
+f064 | held_out | AAPL | numeric | wrong |  | yoy(gross_profit)[Q] < yoy(gross_profit)[Q] | SG&A is growing more slowly than gross profit. | SG&A is not a measure; the test compares gross profit's growth with itself, which always fails
+f065 | development | AAPL | numeric | not_compiled | metric | none | Services revenue is up 3x over the last six fiscal years. | a segment's growth over years: breakdowns come from one filing
+f066 | held_out | AAPL | numeric | not_compiled | metric | none | Dividends paid have gone up every year since fiscal 2021. | dividends paid are not in the metric set
+f067 | development | AAPL | numeric | right |  | net_margin[TTM] >= 24% | Net margin has held at or above 24% for the trailing twelve months. | trailing-twelve-month net margin at or above 24%
+f068 | held_out | AAPL | numeric | wrong |  | yoy(receivables)[Q] > yoy(revenue)[Q] | Accounts receivable plus vendor non-trade receivables grew faster than revenue. | drops vendor non-trade receivables: the claim's measure is a different, larger sum
+f069 | development | AAPL | numeric | not_compiled | metric | none | Products revenue was flat across fiscal 2023 to 2025. | a product category's history (Products revenue) is not in the facts the tool reads by year
+f070 | held_out | AAPL | not_numeric | not_compiled |  | none | Apple Intelligence will drive a multi-year iPhone upgrade supercycle. | not numeric, as the author marked it; not compiled
+f071 | development | AAPL | not_numeric | not_compiled |  | none | The App Store faces serious regulatory risk in the EU and the US. | not numeric, as the author marked it; not compiled
+f072 | held_out | AAPL | not_numeric | not_compiled |  | none | Apple's ecosystem lock-in is the strongest in consumer tech. | not numeric, as the author marked it; not compiled
+f073 | development | AAPL | not_numeric | not_compiled |  | none | The stock deserves a 30x P/E given its quality and capital returns. | not numeric, as the author marked it; not compiled
+f074 | held_out | AAPL | not_numeric | not_compiled |  | none | The Google search payments could be disallowed by the courts, hitting Services. | not numeric, as the author marked it; not compiled
+f075 | development | AAPL | not_numeric | not_compiled |  | none | The Vision Pro is a product ahead of its time that will struggle for years. | not numeric, as the author marked it; not compiled
+f076 | held_out | AAPL | not_numeric | not_compiled |  | none | Tim Cook's succession is an underpriced risk. | not numeric, as the author marked it; not compiled
+f077 | development | AAPL | not_numeric | not_compiled |  | none | We forecast iPhone unit shipments of 240 million next year. | not numeric, as the author marked it; not compiled
+f078 | held_out | AAPL | not_numeric | not_compiled |  | none | Tariffs on China-made devices could erode margins. | not numeric, as the author marked it; not compiled
+f079 | development | AAPL | not_numeric | not_compiled |  | none | Apple has no credible entry into generative AI platforms. | not numeric, as the author marked it; not compiled
+f080 | held_out | AAPL | not_numeric | not_compiled |  | none | A foldable iPhone would reignite premium segment growth. | not numeric, as the author marked it; not compiled
+f081 | development | MSFT | numeric | right |  | yoy(revenue)[FY2025] > 14% | Microsoft's revenue grew more than 14% in fiscal 2025. | FY2025 revenue growth above 14%
+f082 | held_out | MSFT | numeric | not_compiled | form | none | Intelligent Cloud is now the largest segment by revenue. | 'the largest segment' is a rank among members
+f083 | development | MSFT | numeric | right |  | operating_margin[FY] > 44% | Operating margin was above 44% last fiscal year. | operating margin of the latest fiscal year above 44%
+f084 | held_out | MSFT | numeric | not_compiled | form | none | Capital expenditures have grown by at least 50% in each of the last two years. | annual growth of at least 50% in each of two years is not a form; refused by the each-period rule (made from odd ids)
+f085 | development | MSFT | numeric | not_compiled | form | none | Free cash flow is lagging net income because of data center spending. | free cash flow below net income compares the levels of two measures; 'because of' is a cause
+f086 | held_out | MSFT | numeric | right |  | net_income[FY2025] > $100B | Net income topped $100 billion in fiscal 2025. | FY2025 net income above $100 billion
+f087 | development | MSFT | numeric | right |  | cagr(eps_diluted, 3y)[FY] > 15% | Diluted EPS compounded at better than 15% over the past three fiscal years. | diluted EPS compound growth over three fiscal years above 15%
+f088 | held_out | MSFT | numeric | right |  | share(segment "More Personal Computing")[filing] < 25% | More Personal Computing revenue is under 25% of the total. | the segment's share of total revenue below 25%, from the newest filing's tags
+f089 | development | MSFT | numeric | not_compiled | metric | none | Productivity and Business Processes grew every quarter this fiscal year. | a segment's quarterly history: breakdowns come from one filing
+f090 | held_out | MSFT | numeric | not_compiled | form | none | Gross margin percentage slipped for the second straight year as AI costs rose. | a streak of declines is not a form (and 'as AI costs rose' is a cause)
+f091 | development | MSFT | numeric | right |  | rnd[FY] > $30B | R&D expense exceeded $30 billion. | R&D of the latest fiscal year above $30 billion; no period named, FY is a fair reading
+f092 | held_out | MSFT | numeric | right |  | yoy(operating_expenses)[Q] < yoy(revenue)[Q] | Operating expenses grew slower than revenue, producing operating leverage. | operating expenses (house definition) growing more slowly than revenue
+f093 | development | MSFT | numeric | not_compiled | metric | none | Cash and short-term investments exceed total debt. | short-term investments and debt are not in the metric set
+f094 | held_out | MSFT | numeric | not_compiled | metric | none | Share count fell by about 1% last year. | the share count is not in the metric set
+f095 | development | MSFT | numeric | not_compiled | metric | none | Microsoft returned over $30 billion to shareholders through buybacks and dividends. | buybacks and dividends are not in the metric set
+f096 | held_out | MSFT | numeric | not_compiled | metric | none | Unearned revenue keeps climbing, up each quarter for the last two years. | unearned revenue is not in the metric set (and a rise in each quarter for two years is not a form); refused by the each-period rule, not because the grammar knows the measure
+f097 | development | MSFT | numeric | not_compiled | metric | none | Cloud revenue growth decelerated sequentially last quarter. | a segment's growth: breakdowns come from one filing
+f098 | held_out | MSFT | numeric | wrong |  | operating_cash_flow[FY] > $120B | Operating cash flow was over $120 billion on a trailing basis. | 'on a trailing basis' is the trailing twelve months; the test binds the fiscal year
+f099 | development | MSFT | numeric | right |  | share(geography "United States")[filing] > 50% | Revenue from the United States is above half of the total. | the United States' share of total revenue above half, from the newest filing's tags
+f100 | held_out | MSFT | numeric | not_compiled | form | none | Net margin has sat in the mid-30s for three years running. | 'in the mid-30s for three years running' is an approximate range held over years
+f101 | development | MSFT | numeric | not_compiled | metric | none | Property and equipment, net more than doubled in two years. | property and equipment are not in the metric set
+f102 | held_out | MSFT | numeric | wrong |  | receivables[Q] > receivables[Q-4] | Accounts receivable grew roughly in line with revenue. | tests only that receivables grew; the claim is that they grew about as fast as revenue
+f103 | development | MSFT | numeric | not_compiled | metric | none | Gaming revenue jumped after the Activision acquisition closed. | a segment's history around an acquisition: breakdowns come from one filing
+f104 | held_out | MSFT | numeric | wrong |  | yoy(operating_income)[Q] > yoy(revenue)[Q] | Intelligent Cloud operating income grew faster than its revenue. | a segment's operating income and revenue read as the company's totals
+f105 | development | MSFT | numeric | not_compiled | metric | none | Goodwill increased by more than $20 billion in fiscal 2024. | goodwill is not in the metric set
+f106 | held_out | MSFT | numeric | wrong |  | revenue[Q] < revenue[Q-4] | Sales and marketing expense as a percent of revenue is shrinking. | sales and marketing expense is not a measure; the test reads revenue shrinking
+f107 | development | MSFT | numeric | not_compiled | form | none | Year-over-year growth in operating income beat revenue growth in all four quarters. | a comparison held in each of four quarters is not a form
+f108 | held_out | MSFT | not_numeric | not_compiled |  | none | Copilot will become the default interface for knowledge work. | not numeric, as the author marked it; not compiled
+f109 | development | MSFT | not_numeric | not_compiled |  | none | The OpenAI partnership is a strategic asset but also a concentration risk. | not numeric, as the author marked it; not compiled
+f110 | held_out | MSFT | not_numeric | not_compiled |  | none | Satya Nadella has been an exceptional capital allocator. | not numeric, as the author marked it; not compiled
+f111 | development | MSFT | not_numeric | not_compiled |  | none | Azure will keep gaining share against AWS and Google Cloud. | not numeric, as the author marked it; not compiled
+f112 | held_out | MSFT | not_numeric | not_compiled |  | none | The shares look expensive at 33 times earnings. | not numeric, as the author marked it; not compiled
+f113 | development | MSFT | not_numeric | not_compiled |  | none | Teams bundling invites more antitrust scrutiny in Europe. | not numeric, as the author marked it; not compiled
+f114 | held_out | MSFT | not_numeric | not_compiled |  | none | We think fiscal 2027 revenue will land near $350 billion. | not numeric, as the author marked it; not compiled
+f115 | development | MSFT | not_numeric | not_compiled |  | none | GitHub is the dominant developer platform and an AI distribution channel. | not numeric, as the author marked it; not compiled
+f116 | held_out | MSFT | not_numeric | not_compiled |  | none | Security is a durable growth vector as enterprises consolidate vendors. | not numeric, as the author marked it; not compiled
+f117 | development | MSFT | not_numeric | not_compiled |  | none | Windows is a mature franchise with little room for upside. | not numeric, as the author marked it; not compiled
+f118 | held_out | MSFT | not_numeric | not_compiled |  | none | Power and chip supply shortages could throttle the AI buildout. | not numeric, as the author marked it; not compiled
+f119 | development | MSFT | not_numeric | not_compiled |  | none | A 25% upside to our target makes this a top pick for the year. | not numeric, as the author marked it; not compiled
+f120 | held_out | MSFT | not_numeric | not_compiled |  | none | LinkedIn has the stickiest professional network and will keep monetizing it. | not numeric, as the author marked it; not compiled

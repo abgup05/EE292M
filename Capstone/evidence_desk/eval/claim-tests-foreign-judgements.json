@@ -888,6 +888,119 @@
       "reading": "not_compiled",
       "why": "not numeric, as the author marked it; not compiled",
       "stage": "before"
+    },
+    {
+      "id": "f003",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "a condition held in each of the last four quarters is not a form; the new rule refuses it rather than test one quarter",
+      "stage": "after",
+      "cause": "form"
+    },
+    {
+      "id": "f006",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "a rise in each year since a named year is not a form the grammar places; refused by the each-period rule (made from odd ids)",
+      "stage": "after",
+      "cause": "form"
+    },
+    {
+      "id": "f007",
+      "canonical": "streak(revenue)[Q] >= 6",
+      "reading": "right",
+      "why": "six sequential quarterly rises in a row: the streak form counts exactly that",
+      "stage": "after"
+    },
+    {
+      "id": "f011",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "two statements joined by 'but' (it grew; more slowly than revenue); no conjunction form",
+      "stage": "after",
+      "cause": "form"
+    },
+    {
+      "id": "f013",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "marketable securities are not in the metric set; no longer read as cash and cash equivalents",
+      "stage": "after",
+      "cause": "metric"
+    },
+    {
+      "id": "f019",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "a deceleration in each of three quarters is not a form",
+      "stage": "after",
+      "cause": "form"
+    },
+    {
+      "id": "f023",
+      "canonical": "net_margin[Q] >= 55%",
+      "reading": "right",
+      "why": "'hit 55% last quarter': the latest quarter's net margin at least 55%",
+      "stage": "after"
+    },
+    {
+      "id": "f052",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "above 30% in each of three fiscal years is not a form; refused by the each-period rule (made from odd ids)",
+      "stage": "after",
+      "cause": "form"
+    },
+    {
+      "id": "f059",
+      "canonical": "share(segment \"Ipad\")[filing] < 10%",
+      "reading": "right",
+      "why": "the iPad product line's share of total revenue below 10%, from the newest filing's tags (segment covers segments and products)",
+      "stage": "after"
+    },
+    {
+      "id": "f067",
+      "canonical": "net_margin[TTM] >= 24%",
+      "reading": "right",
+      "why": "trailing-twelve-month net margin at or above 24%",
+      "stage": "after"
+    },
+    {
+      "id": "f084",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "annual growth of at least 50% in each of two years is not a form; refused by the each-period rule (made from odd ids)",
+      "stage": "after",
+      "cause": "form"
+    },
+    {
+      "id": "f087",
+      "canonical": "cagr(eps_diluted, 3y)[FY] > 15%",
+      "reading": "right",
+      "why": "diluted EPS compound growth over three fiscal years above 15%",
+      "stage": "after"
+    },
+    {
+      "id": "f088",
+      "canonical": "share(segment \"More Personal Computing\")[filing] < 25%",
+      "reading": "right",
+      "why": "the segment's share of total revenue below 25%, from the newest filing's tags",
+      "stage": "after"
+    },
+    {
+      "id": "f096",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "unearned revenue is not in the metric set (and a rise in each quarter for two years is not a form); refused by the each-period rule, not because the grammar knows the measure",
+      "stage": "after",
+      "cause": "metric"
+    },
+    {
+      "id": "f099",
+      "canonical": "share(geography \"United States\")[filing] > 50%",
+      "reading": "right",
+      "why": "the United States' share of total revenue above half, from the newest filing's tags",
+      "stage": "after"
     }
   ]
 }

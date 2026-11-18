@@ -260,6 +260,28 @@ The two measurements the referee faulted are commands, not tests (`make bench`, 
 
 The command-line tools (`tests/test_events_cli.py`, `tests/test_events_probe.py`) were written after their code and were not seen failing.
 
+## Facts with dates and computed claims (version 14)
+
+| Wrong program | Fails | Seen failing as |
+| --- | --- | --- |
+| A fact book, metrics report or fiscal calendar as of a date that reads a fact filed later | `tests/test_facts_as_of.py` (8 tests; on every periodic filing date of NVIDIA, Apple and Microsoft and the day before, 414 dates, against `tests/lookahead.py`) | written first: 278 and more problems per company before `FactBook(as_of=)` filtered; `::test_the_checks_catch_a_filter_that_reads_the_period_end_instead_of_the_filing_date` plants such a filter and both checks fire |
+| A fact store that loses a fact, keeps a fact without its filing, or duplicates a company | `tests/test_fact_store.py` (9 tests) | not seen failing in this session's log: its first recorded run passed |
+| A ledger that misses a restatement, counts an unchanged report, or sees later filings as of a date | `tests/test_restatements.py` (14 tests, NVIDIA's fiscal 2024 EPS across the split among them) | written first: ImportError |
+| A run as of a date that reads a 10-K, 10-Q, 8-K or fact filed later, or a run without a date that changes | `tests/test_as_of_run.py` (14 tests) and two in `tests/test_cli.py` | written first: every request test failed on the missing field |
+| A compiler that prints the wrong test, or compiles a forecast, a cause or a valuation | `tests/test_claimtest.py` (48 cases in 7 tests) and `make claim-labels` | written first: ModuleNotFoundError |
+| An evaluator with the wrong period, the wrong arithmetic, a leak, or a history past five years | `tests/test_claim_eval.py` (17 tests, with a planted leak) | written first: ModuleNotFoundError |
+| An evaluator that disagrees with expected values computed by another route, or a key edited by hand | `tests/test_claim_results.py` (52 cases and 2 tests) | failed on r14 (NVIDIA fiscal 2008): the oracle's year labels were wrong; the oracle was fixed, r14 alone changed |
+| A run that does not compute, counts a test wrongly, shows the summariser the new verdicts, or leaks as of a date | `tests/test_computed_run.py` (6 tests) | written first: `Claim` had no `computed`; the verdicts were all not addressed |
+| A brief without the computed tests or their history | `tests/test_computed_run.py::test_the_brief_has_a_deterministic_section_of_computed_tests` | written first, with the run tests |
+| A compiler-vs-model harness that calls before it says how many, or above the cap | `tests/test_compiler_vs_model.py` (6 tests, fake transport only) | written first: ImportError |
+| Example payloads that fall behind the code | `tests/test_examples_v14.py` | written first: ImportError |
+
+The tripwire was re-baselined on purpose (commit 62846b1): only the verdicts stage (c4 from unjudged to
+supported) and the coverage stage (four new counts) moved; the prompts stage did not, and neither did the
+replay's requests (`tests/golden/replay.json`). `tests/test_thesis_run.py::test_the_time_limit_leaves_later_claims_unassessed_and_says_so`
+failed once on the change, because a claim the time limit skipped took its computed verdict; such a claim now
+keeps none.
+
 ## How long the gate takes
 
 Measured on this laptop on 17 November 2026 at version 8, with the Docker image's layers already
@@ -272,7 +294,10 @@ gate on a fresh clone, now with seven page renders and 142 page assertions. At v
 (pytest reports 26.19 s for 1,499 tests) and 38 s for the whole gate, with 156 page assertions.
 At version 11.1: 26 s again (26.03 s for 1,580 tests) and 38 s for the whole gate, with the same
 156 page assertions. At version 12, on 18 November: 29 s (28.85 s for 1,702 tests) and 42 s for the
-whole gate, with 168 page assertions (`docs/evidence/verify-fresh.txt`).
+whole gate, with 168 page assertions (`docs/evidence/verify-fresh.txt`). At version 14, on 18 November: 87 s
+(87.35 s for 1,894 tests), measured once while other projects' containers ran on the same laptop, so not
+comparable with the figures before it; the whole gate was not run, because another app held port 8766 and
+the smoke and browser tests need it.
 
 ## What no test here can see
 

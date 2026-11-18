@@ -55,8 +55,8 @@ companies, all eight read. Fiscal years read: NVDA FY2026, AAPL FY2026, MSFT FY2
 
 **Measures most of the eight lack**, documented rather than hidden: `sales_marketing_ratio` (2 of 8), `commercial_paper` (2 of 8), `sales_marketing` (2 of 8), `general_admin` (3 of 8), `deferred_revenue_noncurrent` (4 of 8).
 Each is a line only some companies report on its own: sales and marketing and G&A are tagged
-apart by a company that reports them apart (most report SG&A as one line, or, like NVIDIA, a
-single "sales, general and administrative"); commercial paper only by an issuer of it (it counts
+apart by a company that reports them apart (six of the eight have an SG&A value, as reported
+or as the sum of the two); commercial paper only by an issuer of it (it counts
 zero inside total debt, and says so); non-current deferred revenue only where some is due after
 a year. A claim about one of them on a company that does not tag it cannot be computed, and the
 test says which concept was missing.

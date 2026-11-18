@@ -46,6 +46,17 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/core/watch_models.py, watch_policy.py   the standing watch's pure data (watch, job, triage, inbox item, what moved) and every number and sentence it uses
     src/app/core/triage.py      whether a new filing bears on each claim, by rule (8-K item categories, results, periodic reports and their changed paragraphs); an extension point, unwired; pure
     src/app/core/watch_report.py   what moved between a thesis's previous run and the one a filing caused, from core/compare; pure
+    src/app/core/view_models.py the record types of the outside view and the market view: one result shape (id, value, unit, display, formula, inputs with source and dates, assumptions, one templated reading, data origin); pure data
+    src/app/core/frames.py      SEC XBRL frames into a panel of measures by filer and year: rows placed by their dates, a concept group resolved filer by filer in the order of facts.GROUPS, which years a date admits; pure
+    src/app/core/base_rates.py  a compiled claim test read on fiscal years; how often it held among a reference class decided in the base year (the company left out), how often it held again, the nearest cases; the spread of ten-year revenue growth of filers of a size; pure
+    src/app/core/peers.py       the company's rank and percentile on a measure among its industry class, now and a year before, with its neighbours; pure
+    src/app/core/thirteenf.py   a Form 13F information table into share positions; a company matched to an issuer by name; value ÷ shares as a quarter-end price, the unit read from the table; pure
+    src/app/core/valuation.py   market value, enterprise value and multiples from a dated price and the facts filed by its date; balances of the newest balance sheet only; pure
+    src/app/core/reverse_dcf.py the constant revenue growth at which a stated cash-flow model equals a target, and its sensitivity grid; pure
+    src/app/core/price_series.py, reaction.py   daily closes read and cut at a date; a stock's move after a filing against an index and its own normal move; pure
+    src/app/sources/frames.py   SEC frames and the company list by SIC code through the EDGAR client, kept under the disposable cache
+    src/app/sources/thirteenf.py   a manager's 13F filings and tables through the EDGAR client, kept under the disposable cache; QuarterEndPrices, the price provider that reads SEC
+    src/app/sources/prices.py   PriceProvider and the user's own price; daily closes from a file, a request or FRED's S&P 500 (only when asked), with a bounded, allow-listed fetch
     src/app/sources/edgar.py    SEC EDGAR adapter: ticker, filing selection, rate-limited fetch; recent_filings lists the watched forms in one request
     src/app/sources/filing.py   splits a 10-K/10-Q into Part and Item sections
     src/app/sources/current_report.py   splits an 8-K into one section per "Item N.NN" heading, the signature block and an exhibit index after the last item apart; its own parser version
@@ -72,6 +83,9 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/services/computed.py   for a run: compiles every claim, computes the compiled ones and their histories from the facts the run read, and counts the outcomes in the verdicts after the summary; returns the compiled tests and breakdowns for the analysis
     src/app/services/analysis.py   for a run: relevance, analytics from every provider, odds, headline; the two model steps with the corollaries and the audit, and what became of each; what the analysing model is shown
     src/app/services/restatements.py   a company's restatement ledger outside a run, as of a date when given
+    src/app/services/outside_view.py   one company and one claim: the frames read, the two reference classes, the base rates and the standings
+    src/app/services/market_view.py    one company: the price from a provider, the valuation, the reverse DCF beside what the frames say of filers its size and its industry's margin, the reactions to 8-Ks
+    src/app/services/view_analytics.py   outside_analytics and market_analytics: both views as a flat list in the one analytic shape a provider list expects; nothing computed
     src/app/services/tagged_figures.py   for a run that asks: the tags of the newest annual and quarterly report it read, as figures; a filing that cannot be read is a reason, never an error
     src/app/watch/store.py      the watch's tables: WatchStore (watches, seen filings, jobs, inbox, in the record) and WatchStatus (heartbeat and checks, in the cache)
     src/app/watch/service.py    start and stop watching; the Watcher: a cycle polls each watched company once, queues a job per new (thesis, filing), and works each job (triage, then a run or a waiting run, then the inbox item); EXTRA_TRIAGE_RULES
@@ -81,10 +95,12 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/backup.py           backs up the record; checks that the newest backup restores
     src/app/wiring.py           composition root: reads the environment, builds collaborators
     src/app/api.py              HTTP routes and static files
+    src/app/analysis_routes.py  the outside view's and the market view's routes, added by create_app
     src/app/cli.py              command line onto the same use case
     src/app/demo.py, probe.py, figures.py, changes.py, breakdowns.py, record_fixtures.py, record_facts.py   live demo; live parser check; live check of the reported figures, company by company; the filing comparison and the tagged breakdowns from the command line; fixture recorders
     src/app/restatements.py, facts_load.py   a company's restatement ledger as text (`make restatements`); load companies' facts into the fact store (`make facts-load`)
     src/app/measures_probe.py   live check of the catalogue on the eight probe companies: each measure's newest fiscal year as a claim test computes it, and the parts each newest 10-K tags (`make measures-probe`)
+    src/app/outside.py, market.py, market_probe.py, market_check.py, record_market.py   the outside view and the market view as text (`make outside-view`, `make market-view`); the live probe of every outside source (`make market-probe`); both views on the eight probe companies (`make market-check`); the recorder of their fixtures (`make fixtures-market`)
     src/app/events.py, events_probe.py   a company's 8-Ks since its annual report as text (`make events`); live check of the 8-K splitter on the eight probe companies (`make events-probe`)
     src/app/evaluation/golden.py, corpus.py   load and validate the golden set; the filings it is measured on, pinned by hash
     src/app/evaluation/retrieval_eval.py  scores where the right passage ranks; the variant registry
@@ -101,6 +117,7 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     eval/                       the golden set, its pinned filings, cache/ and results/; README.md
     tests/                      offline tests, fakes.py (EDGAR, pages, engine, clock), smoke.py; replay_run.py, golden_run.py, speed_run.py; lookahead.py (the no-lookahead checks); examples_v14.py (`make examples`, docs/examples/v14; the example with two model readers only once its reads are recorded in eval/cassettes/claim-readers); examples_analysis.py (`make examples-analysis`, docs/examples/analysis) and record_analysis.py (`make record-analysis`, the only analysis code that reaches the API, capped)
     tests/live_walk.py          the live end-to-end walk over HTTP; tests/golden/ the tripwire and replayed verdicts
+    tests/market_examples.py    `make market-examples`: docs/examples/market from the recorded frames, facts and 13F tables, offline; tests/outside_fakes.py a hand-made panel of frames
     tests/watch_examples.py, watch_replay.py, watch_contention.py   the watch's example payloads (docs/examples/v13); the live replay of a year of filings against eval/watch-replay-nvda.json; a run timed alone and beside a watcher
     uitests/                    browser tests: the rendered DOM of the sample runs, the sample filing comparison and breakdowns against their JSON; test_events_dom.py the 8-Ks and the as-of line; test_run_events_dom.py the live-run sample and the time line; keys.html + test_keys_dom.py the keys and the themes; test_inbox_dom.py the recorded inbox, and watch.html (the page's code for every answer of the watch routes, with `fetch` stood in for)
 
@@ -293,6 +310,31 @@ Nothing new is installed: the queue is a SQLite table with an atomic claim and a
 library. The app starts a waiting run in its own executor, like any run, and writes what moved into the item when it
 ends.
 
+## The outside view and the market view (not part of a run yet)
+
+Two families of results that need data beyond the one company (`docs/outside-view.md`,
+`docs/market-view.md`). They are computed on demand, stored nowhere, and not called by
+`execute_run`: wiring them into a run is a later step, for which each family has an adapter
+(`services/view_analytics.outside_analytics`, `market_analytics`) returning its results in the
+analytic shape `{id, provider, data_origin, kind, label, claim_ids, measure, period, value, unit,
+display, formula, inputs[{ref_kind, id, label, value, display, accession, form, filed}], reading,
+reading_origin: "code", available, note}`.
+
+- **Outside view** (`data_origin: sec_frames`): the claim is compiled by `core/claimtest`, read on
+  fiscal years, and counted over a reference class from SEC's annual frames; the company's standing
+  among its SIC code's filers. Frames carry no filing date, so as of a date only periods that ended
+  a year before it are read.
+- **Market view** (`data_origin: market_prices`): a `PriceProvider` gives one dated price (the
+  newest quarter-end price public from a Form 13F by the date, or the user's own); the facts are
+  cut at the price's date; `core/valuation` and `core/reverse_dcf` do the arithmetic; the frames
+  give the comparisons. A reaction to an 8-K takes daily closes from the request or a file.
+- Routes, read-only, every input bounded by the schema: `GET /api/companies/{ticker}/outside`,
+  `/market`, `/analytics`, `POST /api/companies/{ticker}/market/reactions`. Payloads:
+  `docs/examples/market/`.
+- Outside hosts: `data.sec.gov` and `www.sec.gov` through the EDGAR client, and
+  `fred.stlouisfed.org` only when a request asks for the S&P 500 as an index. Bodies are kept under
+  `data/cache/frames`, `data/cache/13f` and `data/cache/prices`, all disposable.
+
 ## Patterns and interfaces
 
 - **Ports and adapters.** `core/ports.py` declares `FilingSource`, `PageFetcher`, `Analyst` and `Checker`. `sources/edgar.py`
@@ -396,6 +438,19 @@ the end of `create_app`, which takes an injectable `wall_clock`): `PUT` and `DEL
   `core/watch_policy.py`. A new watch table: `WATCH_SCHEMA` in `watch/store.py` and `WATCH_KINDS` (so backup and
   restore-check cover it); `make backup` first, `make restore-check` after. A change to a payload: `make
   watch-examples`, then `tests/test_watch_examples.py` says whether the README still names every field.
+- **A change to the outside view** (a measure, a class, which years a date admits): `core/frames.py`
+  (`MEASURES`, `admitted_years`), `core/base_rates.py`, `core/peers.py`, with `tests/test_outside_view.py`,
+  whose expected counts are made by hand from `tests/outside_fakes.py`: change the table's comments
+  with the numbers. Then `make market-check` on the eight probe companies, before and after, and
+  `make market-examples`.
+- **A change to the market view.** The price: `core/thirteenf.py` (the name match, the unit) and
+  `sources/thirteenf.MANAGERS`, with `tests/test_thirteenf.py`; another source is a class with
+  `name` and `price(company, as_of)` (`sources/prices.PriceProvider`), which must never return a
+  price dated or known after the date. The valuation: `core/valuation.py` with
+  `tests/test_valuation.py`. The model: `core/reverse_dcf.py` and the defaults at the top of
+  `services/market_view.py`; `tests/test_market_examples.py` rebuilds the example's value by two
+  routes that do not call the solver. A change to what the fixtures must hold: `make fixtures-market
+  REFRESH=1` (live, on purpose), then `make market-examples` and read the diff.
 - **A change to the breakdowns** (another axis, another revenue concept, a new shape of nested members): `core/breakdowns.py`, whose specifications and constants sit at its top, with `tests/test_breakdowns.py`; a number format the reader does not know: `sources/ixbrl.py` with `tests/test_ixbrl.py`. Start from a failing test built on a small excerpt of the real filing, then run `make breakdowns` on the eight probe companies, annual and quarterly, and check that every breakdown still adds up to its tagged total (`docs/breakdowns.md`).
 
 ## The boundary

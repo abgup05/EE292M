@@ -1,4 +1,4 @@
-.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench eval eval-validate backup restore-check up-recorded live-walk changes breakdowns sample-run-changes golden-sheet backup-status figures two-writers header-cut-check time-live events events-probe event-categories facts-load restatements claim-labels claim-results-key examples claim-foreign watch-once watch-status watch-examples watch-replay watch-contention sample-inbox sample-v14 look measures-probe readers-echo readers-check examples-analysis record-analysis
+.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench eval eval-validate backup restore-check up-recorded live-walk changes breakdowns sample-run-changes golden-sheet backup-status figures two-writers header-cut-check time-live events events-probe event-categories facts-load restatements claim-labels claim-results-key examples claim-foreign watch-once watch-status watch-examples watch-replay watch-contention sample-inbox sample-v14 look measures-probe readers-echo readers-check examples-analysis record-analysis market-probe outside-view market-view fixtures-market market-examples market-check
 
 export COMPOSE_PROJECT_NAME := ee292m-evidence-desk
 export LOCAL_UID := $(shell id -u)
@@ -21,6 +21,7 @@ READER_ECHO := python -c "import os; print('readers:', os.environ.get('EVIDENCE_
 help:
 	@echo 'Everyday: build up down verify clean (verify-fresh: clone the committed branch under results/ and verify it)'
 	@echo 'Claim readers for one command: up, up-recorded or run with READERS=models (or model, grammar); without it .env decides. readers-check tests that inside the containers'
+	@echo 'Outside and market views (live EDGAR, no key): outside-view T=NVDA CLAIM="..." [AS_OF=], market-view T=NVDA [PRICE= PRICE_DATE=] [AS_OF=] [PRICES=closes.csv INDEX=fred], market-check (both on the eight probe companies), market-probe (every outside source asked once); fixtures-market (live, on purpose) and market-examples (offline) write docs/examples/market'
 	@echo 'Recorded demo: up-recorded (the app with model answers replayed from demo/cassettes/nvda-example: Load example, then Test the thesis; needs EDGAR, no key)'
 	@echo 'Live walk: live-walk (the running app over HTTP with live EDGAR and recorded answers: a run, decisions, the reviewed brief, a saved thesis run twice, the comparison)'
 	@echo 'Development: test lint fmt smoke logs shell (test T=tests/test_x.py; lint/fmt FILES="src/app/x.py")'
@@ -387,3 +388,32 @@ watch-replay:
 
 watch-contention:
 	$(RUN) python -m tests.watch_contention $(if $(PAIRS),--pairs $(PAIRS),)
+
+# The outside view and the market view (docs/outside-view.md, docs/market-view.md).
+market-probe:
+	$(RUN) python -m app.market_probe $(ARGS)
+
+outside-view:
+	$(RUN) python -m app.outside $(or $(T),NVDA) --claim "$(CLAIM)" $(if $(AS_OF),--as-of "$(AS_OF)",) $(ARGS)
+
+# The price is the newest quarter-end price SEC's 13F filings give (docs/market-view.md);
+# PRICE=... PRICE_DATE=YYYY-MM-DD gives your own instead. AS_OF=YYYY-MM-DD reads as of a day.
+# PRICES=path/to/closes.csv adds the reactions to the 8-Ks of the claim's categories; INDEX=fred
+# (FRED's S&P 500, read live) or INDEX=path/to/index.csv is the index they are measured against.
+market-view:
+	$(RUN) python -m app.market $(or $(T),NVDA) --claim "$(CLAIM)" $(if $(PRICE),--price "$(PRICE)" --price-date "$(PRICE_DATE)",) $(if $(AS_OF),--as-of "$(AS_OF)",) $(if $(PRICES),--prices "$(PRICES)",) $(if $(INDEX),--index "$(INDEX)",) $(ARGS)
+
+# Live, on purpose: the frames, SIC list and company facts the offline example reads
+# (tests/fixtures/frames/manifest.json says what and when). REFRESH=1 writes over them.
+fixtures-market:
+	$(RUN) python -m app.record_market $(if $(filter 1,$(REFRESH)),--refresh,)
+
+# Offline: docs/examples/market from the recorded fixtures; tests/test_market_examples.py
+# fails when they are out of date.
+market-examples:
+	$(RUN) python -m tests.market_examples $(ARGS)
+
+# Live: both views on the eight probe companies, with the 13F quarter-end price and what
+# each could not compute. Writes results/market-check-<UTC>.md. TICKERS="..." for others.
+market-check:
+	$(RUN) python -m app.market_check $(TICKERS) $(ARGS)

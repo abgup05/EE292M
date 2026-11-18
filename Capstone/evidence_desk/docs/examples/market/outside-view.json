@@ -1,0 +1,2286 @@
+{
+  "company": {
+    "cik": 1045810,
+    "ticker": "NVDA",
+    "name": "NVIDIA CORP"
+  },
+  "claim": "Revenue grew more than 50% year over year in fiscal 2026",
+  "sic": "3674",
+  "sic_description": "Semiconductors & Related Devices",
+  "as_of": "2026-11-18",
+  "test": "yoy(revenue)[FY2026] > 50%",
+  "test_measures": [
+    "revenue"
+  ],
+  "compile_note": "",
+  "base_rates": [
+    {
+      "id": "base_rate:NVDA:size:yoy(revenue)[t] > 50%:2026-11-18",
+      "kind": "base_rate",
+      "label": "Base rate of yoy(revenue)[t] > 50% among filers with revenue of at least $100.00B",
+      "outcome": "computed",
+      "reason": "",
+      "value": 1.092896174863388,
+      "unit": "percent",
+      "display": "4 of 366 (1.1%)",
+      "formula": "held ÷ computable = 4 ÷ 366",
+      "inputs": [
+        {
+          "label": "Revenue: every filer's row, by the first concept that has one",
+          "value": null,
+          "display": "",
+          "source": "SEC XBRL frame us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax|Revenues|SalesRevenueNet|RevenueFromContractWithCustomerIncludingAssessedTax|RevenuesNetOfInterestExpense/USD/CY2010 to CY2025",
+          "date": "CY2010 to CY2025",
+          "filed": "",
+          "url": ""
+        }
+      ],
+      "assumptions": [
+        "Class: every filer in SEC's annual frames whose revenue in the test's base year was at least $100.00B (half the company's newest revenue, rounded down to 1, 2 or 5 times a power of ten)",
+        "Each year t is a calendar-year frame: SEC places in it, for each filer, the fiscal year that best fits the calendar year; t-1 is the frame a year earlier, and the two periods must end a whole number of years apart.",
+        "Frames carry no filing date: a value restated later is the restated value.",
+        "The company itself is not counted: the rate is of the other filers of the class, and the years in which the test held for the company are listed apart.",
+        "A filer in the class in the base year with no value in year t (it was bought, went under, stopped filing, or changed its tags) is in the class but not computable: the rate is of the filers that can still be read.",
+        "A parent and a subsidiary that both file are two filers; a filer that reports in another currency is in no USD frame.",
+        "The SIC code is the filer's code today, not the code it had in year t."
+      ],
+      "reading": "Among filers with revenue of at least $100.00B (the company left out), yoy(revenue)[t] > 50% held in 4 of 366 company-years from 2011 to 2025; of the 4 that held and could be read a year later, 0 still held.",
+      "data_origin": "sec_frames",
+      "as_of": "2026-11-18",
+      "note": "",
+      "test": "yoy(revenue)[FY2026] > 50%",
+      "annual_test": "yoy(revenue)[t] > 50%",
+      "class_name": "filers with revenue of at least $100.00B",
+      "class_definition": "every filer in SEC's annual frames whose revenue in the test's base year was at least $100.00B (half the company's newest revenue, rounded down to 1, 2 or 5 times a power of ten)",
+      "years": [
+        {
+          "year": 2011,
+          "in_class": 16,
+          "computable": 15,
+          "held": 0
+        },
+        {
+          "year": 2012,
+          "in_class": 18,
+          "computable": 18,
+          "held": 0
+        },
+        {
+          "year": 2013,
+          "in_class": 18,
+          "computable": 17,
+          "held": 0
+        },
+        {
+          "year": 2014,
+          "in_class": 18,
+          "computable": 18,
+          "held": 0
+        },
+        {
+          "year": 2015,
+          "in_class": 17,
+          "computable": 17,
+          "held": 0
+        },
+        {
+          "year": 2016,
+          "in_class": 19,
+          "computable": 19,
+          "held": 0
+        },
+        {
+          "year": 2017,
+          "in_class": 20,
+          "computable": 20,
+          "held": 0
+        },
+        {
+          "year": 2018,
+          "in_class": 24,
+          "computable": 23,
+          "held": 0
+        },
+        {
+          "year": 2019,
+          "in_class": 26,
+          "computable": 26,
+          "held": 0
+        },
+        {
+          "year": 2020,
+          "in_class": 28,
+          "computable": 28,
+          "held": 0
+        },
+        {
+          "year": 2021,
+          "in_class": 27,
+          "computable": 27,
+          "held": 1
+        },
+        {
+          "year": 2022,
+          "in_class": 34,
+          "computable": 34,
+          "held": 3
+        },
+        {
+          "year": 2023,
+          "in_class": 35,
+          "computable": 35,
+          "held": 0
+        },
+        {
+          "year": 2024,
+          "in_class": 35,
+          "computable": 35,
+          "held": 0
+        },
+        {
+          "year": 2025,
+          "in_class": 35,
+          "computable": 34,
+          "held": 0
+        }
+      ],
+      "held": 4,
+      "computable": 366,
+      "persisted": 0,
+      "persist_base": 4,
+      "cases": [
+        {
+          "name": "Exxon Mobil Corporation",
+          "cik": 34088,
+          "year": 2021,
+          "period_end": "2021-12-31",
+          "value": 54.94528878784145,
+          "display": "54.9%",
+          "revenue": 276692000000.0,
+          "revenue_display": "$276.69B",
+          "next_year": "did not hold"
+        },
+        {
+          "name": "VALERO ENERGY CORP/TX",
+          "cik": 1035002,
+          "year": 2022,
+          "period_end": "2022-12-31",
+          "value": 54.753151951709555,
+          "display": "54.8%",
+          "revenue": 176383000000.0,
+          "revenue_display": "$176.38B",
+          "next_year": "did not hold"
+        },
+        {
+          "name": "Phillips 66",
+          "cik": 1534701,
+          "year": 2022,
+          "period_end": "2022-12-31",
+          "value": 52.490222110588824,
+          "display": "52.5%",
+          "revenue": 169990000000.0,
+          "revenue_display": "$169.99B",
+          "next_year": "did not hold"
+        },
+        {
+          "name": "Chevron Corp",
+          "cik": 93410,
+          "year": 2022,
+          "period_end": "2022-12-31",
+          "value": 51.48323329434598,
+          "display": "51.5%",
+          "revenue": 235717000000.0,
+          "revenue_display": "$235.72B",
+          "next_year": "did not hold"
+        }
+      ],
+      "own": [
+        {
+          "name": "NVIDIA CORP",
+          "cik": 1045810,
+          "year": 2020,
+          "period_end": "2021-01-31",
+          "value": 52.729437625938814,
+          "display": "52.7%",
+          "revenue": 16675000000.0,
+          "revenue_display": "$16.68B",
+          "next_year": "held"
+        },
+        {
+          "name": "NVIDIA CORP",
+          "cik": 1045810,
+          "year": 2021,
+          "period_end": "2022-01-30",
+          "value": 61.403298350824585,
+          "display": "61.4%",
+          "revenue": 26914000000.0,
+          "revenue_display": "$26.91B",
+          "next_year": "did not hold"
+        },
+        {
+          "name": "NVIDIA CORP",
+          "cik": 1045810,
+          "year": 2023,
+          "period_end": "2024-01-28",
+          "value": 125.85452658115221,
+          "display": "125.9%",
+          "revenue": 60922000000.0,
+          "revenue_display": "$60.92B",
+          "next_year": "held"
+        },
+        {
+          "name": "NVIDIA CORP",
+          "cik": 1045810,
+          "year": 2024,
+          "period_end": "2025-01-26",
+          "value": 114.20340763599357,
+          "display": "114.2%",
+          "revenue": 130497000000.0,
+          "revenue_display": "$130.50B",
+          "next_year": "held"
+        },
+        {
+          "name": "NVIDIA CORP",
+          "cik": 1045810,
+          "year": 2025,
+          "period_end": "2026-01-25",
+          "value": 65.4735357900948,
+          "display": "65.5%",
+          "revenue": 215938000000.0,
+          "revenue_display": "$215.94B",
+          "next_year": ""
+        }
+      ],
+      "resolution": [
+        {
+          "group": "revenue",
+          "year": 2010,
+          "filers": 232,
+          "several": 35,
+          "differing": 13,
+          "scale_breaks": 0,
+          "rule": "Per filer and year, the first concept of the group with a row is taken, in the order the app's own metrics use (RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet, RevenueFromContractWithCustomerIncludingAssessedTax, RevenuesNetOfInterestExpense); the others are counted, not used, except that two concepts differing by a factor near a thousand (one number tagged at two scales) leave the filer without a value that year."
+        },
+        {
+          "group": "revenue",
+          "year": 2011,
+          "filers": 236,
+          "several": 42,
+          "differing": 15,
+          "scale_breaks": 0,
+          "rule": "Per filer and year, the first concept of the group with a row is taken, in the order the app's own metrics use (RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet, RevenueFromContractWithCustomerIncludingAssessedTax, RevenuesNetOfInterestExpense); the others are counted, not used, except that two concepts differing by a factor near a thousand (one number tagged at two scales) leave the filer without a value that year."
+        },
+        {
+          "group": "revenue",
+          "year": 2012,
+          "filers": 223,
+          "several": 41,
+          "differing": 19,
+          "scale_breaks": 0,
+          "rule": "Per filer and year, the first concept of the group with a row is taken, in the order the app's own metrics use (RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet, RevenueFromContractWithCustomerIncludingAssessedTax, RevenuesNetOfInterestExpense); the others are counted, not used, except that two concepts differing by a factor near a thousand (one number tagged at two scales) leave the filer without a value that year."
+        },
+        {
+          "group": "revenue",
+          "year": 2013,
+          "filers": 223,
+          "several": 37,
+          "differing": 15,
+          "scale_breaks": 0,
+          "rule": "Per filer and year, the first concept of the group with a row is taken, in the order the app's own metrics use (RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet, RevenueFromContractWithCustomerIncludingAssessedTax, RevenuesNetOfInterestExpense); the others are counted, not used, except that two concepts differing by a factor near a thousand (one number tagged at two scales) leave the filer without a value that year."
+        },
+        {
+          "group": "revenue",
+          "year": 2014,
+          "filers": 220,
+          "several": 35,
+          "differing": 14,
+          "scale_breaks": 0,
+          "rule": "Per filer and year, the first concept of the group with a row is taken, in the order the app's own metrics use (RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet, RevenueFromContractWithCustomerIncludingAssessedTax, RevenuesNetOfInterestExpense); the others are counted, not used, except that two concepts differing by a factor near a thousand (one number tagged at two scales) leave the filer without a value that year."
+        },
+        {
+          "group": "revenue",
+          "year": 2015,
+          "filers": 208,
+          "several": 29,
+          "differing": 14,
+          "scale_breaks": 0,
+          "rule": "Per filer and year, the first concept of the group with a row is taken, in the order the app's own metrics use (RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet, RevenueFromContractWithCustomerIncludingAssessedTax, RevenuesNetOfInterestExpense); the others are counted, not used, except that two concepts differing by a factor near a thousand (one number tagged at two scales) leave the filer without a value that year."
+        },
+        {
+          "group": "revenue",
+          "year": 2016,
+          "filers": 213,
+          "several": 117,
+          "differing": 22,
+          "scale_breaks": 0,
+          "rule": "Per filer and year, the first concept of the group with a row is taken, in the order the app's own metrics use (RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet, RevenueFromContractWithCustomerIncludingAssessedTax, RevenuesNetOfInterestExpense); the others are counted, not used, except that two concepts differing by a factor near a thousand (one number tagged at two scales) leave the filer without a value that year."
+        },
+        {
+          "group": "revenue",
+          "year": 2017,
+          "filers": 209,
+          "several": 135,
+          "differing": 32,
+          "scale_breaks": 0,
+          "rule": "Per filer and year, the first concept of the group with a row is taken, in the order the app's own metrics use (RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet, RevenueFromContractWithCustomerIncludingAssessedTax, RevenuesNetOfInterestExpense); the others are counted, not used, except that two concepts differing by a factor near a thousand (one number tagged at two scales) leave the filer without a value that year."
+        },
+        {
+          "group": "revenue",
+          "year": 2018,
+          "filers": 208,
+          "several": 66,
+          "differing": 21,
+          "scale_breaks": 0,
+          "rule": "Per filer and year, the first concept of the group with a row is taken, in the order the app's own metrics use (RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet, RevenueFromContractWithCustomerIncludingAssessedTax, RevenuesNetOfInterestExpense); the others are counted, not used, except that two concepts differing by a factor near a thousand (one number tagged at two scales) leave the filer without a value that year."
+        },
+        {
+          "group": "revenue",
+          "year": 2019,
+          "filers": 208,
+          "several": 48,
+          "differing": 20,
+          "scale_breaks": 0,
+          "rule": "Per filer and year, the first concept of the group with a row is taken, in the order the app's own metrics use (RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet, RevenueFromContractWithCustomerIncludingAssessedTax, RevenuesNetOfInterestExpense); the others are counted, not used, except that two concepts differing by a factor near a thousand (one number tagged at two scales) leave the filer without a value that year."
+        },
+        {
+          "group": "revenue",
+          "year": 2020,
+          "filers": 208,
+          "several": 43,
+          "differing": 17,
+          "scale_breaks": 0,
+          "rule": "Per filer and year, the first concept of the group with a row is taken, in the order the app's own metrics use (RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet, RevenueFromContractWithCustomerIncludingAssessedTax, RevenuesNetOfInterestExpense); the others are counted, not used, except that two concepts differing by a factor near a thousand (one number tagged at two scales) leave the filer without a value that year."
+        },
+        {
+          "group": "revenue",
+          "year": 2021,
+          "filers": 207,
+          "several": 44,
+          "differing": 21,
+          "scale_breaks": 0,
+          "rule": "Per filer and year, the first concept of the group with a row is taken, in the order the app's own metrics use (RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet, RevenueFromContractWithCustomerIncludingAssessedTax, RevenuesNetOfInterestExpense); the others are counted, not used, except that two concepts differing by a factor near a thousand (one number tagged at two scales) leave the filer without a value that year."
+        },
+        {
+          "group": "revenue",
+          "year": 2022,
+          "filers": 205,
+          "several": 45,
+          "differing": 20,
+          "scale_breaks": 1,
+          "rule": "Per filer and year, the first concept of the group with a row is taken, in the order the app's own metrics use (RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet, RevenueFromContractWithCustomerIncludingAssessedTax, RevenuesNetOfInterestExpense); the others are counted, not used, except that two concepts differing by a factor near a thousand (one number tagged at two scales) leave the filer without a value that year."
+        },
+        {
+          "group": "revenue",
+          "year": 2023,
+          "filers": 204,
+          "several": 49,
+          "differing": 18,
+          "scale_breaks": 2,
+          "rule": "Per filer and year, the first concept of the group with a row is taken, in the order the app's own metrics use (RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet, RevenueFromContractWithCustomerIncludingAssessedTax, RevenuesNetOfInterestExpense); the others are counted, not used, except that two concepts differing by a factor near a thousand (one number tagged at two scales) leave the filer without a value that year."
+        },
+        {
+          "group": "revenue",
+          "year": 2024,
+          "filers": 206,
+          "several": 46,
+          "differing": 17,
+          "scale_breaks": 1,
+          "rule": "Per filer and year, the first concept of the group with a row is taken, in the order the app's own metrics use (RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet, RevenueFromContractWithCustomerIncludingAssessedTax, RevenuesNetOfInterestExpense); the others are counted, not used, except that two concepts differing by a factor near a thousand (one number tagged at two scales) leave the filer without a value that year."
+        },
+        {
+          "group": "revenue",
+          "year": 2025,
+          "filers": 200,
+          "several": 40,
+          "differing": 16,
+          "scale_breaks": 1,
+          "rule": "Per filer and year, the first concept of the group with a row is taken, in the order the app's own metrics use (RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet, RevenueFromContractWithCustomerIncludingAssessedTax, RevenuesNetOfInterestExpense); the others are counted, not used, except that two concepts differing by a factor near a thousand (one number tagged at two scales) leave the filer without a value that year."
+        }
+      ]
+    },
+    {
+      "id": "base_rate:NVDA:industry:yoy(revenue)[t] > 50%:2026-11-18",
+      "kind": "base_rate",
+      "label": "Base rate of yoy(revenue)[t] > 50% among SIC 3674 filers with revenue of at least $100.0M",
+      "outcome": "computed",
+      "reason": "",
+      "value": 7.751196172248803,
+      "unit": "percent",
+      "display": "81 of 1045 (7.8%)",
+      "formula": "held ÷ computable = 81 ÷ 1045",
+      "inputs": [
+        {
+          "label": "Revenue: every filer's row, by the first concept that has one",
+          "value": null,
+          "display": "",
+          "source": "SEC XBRL frame us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax|Revenues|SalesRevenueNet|RevenueFromContractWithCustomerIncludingAssessedTax|RevenuesNetOfInterestExpense/USD/CY2010 to CY2025",
+          "date": "CY2010 to CY2025",
+          "filed": "",
+          "url": ""
+        }
+      ],
+      "assumptions": [
+        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
+        "Each year t is a calendar-year frame: SEC places in it, for each filer, the fiscal year that best fits the calendar year; t-1 is the frame a year earlier, and the two periods must end a whole number of years apart.",
+        "Frames carry no filing date: a value restated later is the restated value.",
+        "The company itself is not counted: the rate is of the other filers of the class, and the years in which the test held for the company are listed apart.",
+        "A filer in the class in the base year with no value in year t (it was bought, went under, stopped filing, or changed its tags) is in the class but not computable: the rate is of the filers that can still be read.",
+        "A parent and a subsidiary that both file are two filers; a filer that reports in another currency is in no USD frame.",
+        "The SIC code is the filer's code today, not the code it had in year t."
+      ],
+      "reading": "Among SIC 3674 filers with revenue of at least $100.0M (the company left out), yoy(revenue)[t] > 50% held in 81 of 1045 company-years from 2011 to 2025; of the 69 that held and could be read a year later, 13 still held.",
+      "data_origin": "sec_frames",
+      "as_of": "2026-11-18",
+      "note": "",
+      "test": "yoy(revenue)[FY2026] > 50%",
+      "annual_test": "yoy(revenue)[t] > 50%",
+      "class_name": "SIC 3674 filers with revenue of at least $100.0M",
+      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
+      "years": [
+        {
+          "year": 2011,
+          "in_class": 94,
+          "computable": 88,
+          "held": 6
+        },
+        {
+          "year": 2012,
+          "in_class": 99,
+          "computable": 88,
+          "held": 4
+        },
+        {
+          "year": 2013,
+          "in_class": 93,
+          "computable": 89,
+          "held": 1
+        },
+        {
+          "year": 2014,
+          "in_class": 94,
+          "computable": 82,
+          "held": 8
+        },
+        {
+          "year": 2015,
+          "in_class": 87,
+          "computable": 71,
+          "held": 10
+        },
+        {
+          "year": 2016,
+          "in_class": 75,
+          "computable": 66,
+          "held": 8
+        },
+        {
+          "year": 2017,
+          "in_class": 75,
+          "computable": 68,
+          "held": 6
+        },
+        {
+          "year": 2018,
+          "in_class": 71,
+          "computable": 63,
+          "held": 2
+        },
+        {
+          "year": 2019,
+          "in_class": 68,
+          "computable": 63,
+          "held": 4
+        },
+        {
+          "year": 2020,
+          "in_class": 66,
+          "computable": 61,
+          "held": 3
+        },
+        {
+          "year": 2021,
+          "in_class": 67,
+          "computable": 61,
+          "held": 11
+        },
+        {
+          "year": 2022,
+          "in_class": 67,
+          "computable": 64,
+          "held": 9
+        },
+        {
+          "year": 2023,
+          "in_class": 65,
+          "computable": 61,
+          "held": 1
+        },
+        {
+          "year": 2024,
+          "in_class": 60,
+          "computable": 59,
+          "held": 3
+        },
+        {
+          "year": 2025,
+          "in_class": 63,
+          "computable": 61,
+          "held": 5
+        }
+      ],
+      "held": 81,
+      "computable": 1045,
+      "persisted": 13,
+      "persist_base": 69,
+      "cases": [
+        {
+          "name": "TESSERA TECHNOLOGIES INC",
+          "cik": 1261694,
+          "year": 2014,
+          "period_end": "2014-12-31",
+          "value": 65.15926094863487,
+          "display": "65.2%",
+          "revenue": 278807000.0,
+          "revenue_display": "$278.8M",
+          "next_year": "did not hold"
+        },
+        {
+          "name": "DAQO NEW ENERGY CORP.",
+          "cik": 1477641,
+          "year": 2017,
+          "period_end": "2017-12-31",
+          "value": 64.71367586176027,
+          "display": "64.7%",
+          "revenue": 323199694.0,
+          "revenue_display": "$323.2M",
+          "next_year": "did not hold"
+        },
+        {
+          "name": "Ultra Clean Holdings, Inc.",
+          "cik": 1275014,
+          "year": 2017,
+          "period_end": "2017-12-29",
+          "value": 64.26214418605478,
+          "display": "64.3%",
+          "revenue": 924400000.0,
+          "revenue_display": "$924.4M",
+          "next_year": "did not hold"
+        },
+        {
+          "name": "Analog Devices, Inc.",
+          "cik": 6281,
+          "year": 2022,
+          "period_end": "2022-10-29",
+          "value": 64.1634803559194,
+          "display": "64.2%",
+          "revenue": 12013953000.0,
+          "revenue_display": "$12.01B",
+          "next_year": "did not hold"
+        },
+        {
+          "name": "TOWER SEMICONDUCTOR LTD.",
+          "cik": 928876,
+          "year": 2014,
+          "period_end": "2014-12-31",
+          "value": 63.959058155399205,
+          "display": "64.0%",
+          "revenue": 828008000.0,
+          "revenue_display": "$828.0M",
+          "next_year": "did not hold"
+        }
+      ],
+      "own": [
+        {
+          "name": "NVIDIA CORP",
+          "cik": 1045810,
+          "year": 2020,
+          "period_end": "2021-01-31",
+          "value": 52.729437625938814,
+          "display": "52.7%",
+          "revenue": 16675000000.0,
+          "revenue_display": "$16.68B",
+          "next_year": "held"
+        },
+        {
+          "name": "NVIDIA CORP",
+          "cik": 1045810,
+          "year": 2021,
+          "period_end": "2022-01-30",
+          "value": 61.403298350824585,
+          "display": "61.4%",
+          "revenue": 26914000000.0,
+          "revenue_display": "$26.91B",
+          "next_year": "did not hold"
+        },
+        {
+          "name": "NVIDIA CORP",
+          "cik": 1045810,
+          "year": 2023,
+          "period_end": "2024-01-28",
+          "value": 125.85452658115221,
+          "display": "125.9%",
+          "revenue": 60922000000.0,
+          "revenue_display": "$60.92B",
+          "next_year": "held"
+        },
+        {
+          "name": "NVIDIA CORP",
+          "cik": 1045810,
+          "year": 2024,
+          "period_end": "2025-01-26",
+          "value": 114.20340763599357,
+          "display": "114.2%",
+          "revenue": 130497000000.0,
+          "revenue_display": "$130.50B",
+          "next_year": "held"
+        },
+        {
+          "name": "NVIDIA CORP",
+          "cik": 1045810,
+          "year": 2025,
+          "period_end": "2026-01-25",
+          "value": 65.4735357900948,
+          "display": "65.5%",
+          "revenue": 215938000000.0,
+          "revenue_display": "$215.94B",
+          "next_year": ""
+        }
+      ],
+      "resolution": [
+        {
+          "group": "revenue",
+          "year": 2010,
+          "filers": 232,
+          "several": 35,
+          "differing": 13,
+          "scale_breaks": 0,
+          "rule": "Per filer and year, the first concept of the group with a row is taken, in the order the app's own metrics use (RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet, RevenueFromContractWithCustomerIncludingAssessedTax, RevenuesNetOfInterestExpense); the others are counted, not used, except that two concepts differing by a factor near a thousand (one number tagged at two scales) leave the filer without a value that year."
+        },
+        {
+          "group": "revenue",
+          "year": 2011,
+          "filers": 236,
+          "several": 42,
+          "differing": 15,
+          "scale_breaks": 0,
+          "rule": "Per filer and year, the first concept of the group with a row is taken, in the order the app's own metrics use (RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet, RevenueFromContractWithCustomerIncludingAssessedTax, RevenuesNetOfInterestExpense); the others are counted, not used, except that two concepts differing by a factor near a thousand (one number tagged at two scales) leave the filer without a value that year."
+        },
+        {
+          "group": "revenue",
+          "year": 2012,
+          "filers": 223,
+          "several": 41,
+          "differing": 19,
+          "scale_breaks": 0,
+          "rule": "Per filer and year, the first concept of the group with a row is taken, in the order the app's own metrics use (RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet, RevenueFromContractWithCustomerIncludingAssessedTax, RevenuesNetOfInterestExpense); the others are counted, not used, except that two concepts differing by a factor near a thousand (one number tagged at two scales) leave the filer without a value that year."
+        },
+        {
+          "group": "revenue",
+          "year": 2013,
+          "filers": 223,
+          "several": 37,
+          "differing": 15,
+          "scale_breaks": 0,
+          "rule": "Per filer and year, the first concept of the group with a row is taken, in the order the app's own metrics use (RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet, RevenueFromContractWithCustomerIncludingAssessedTax, RevenuesNetOfInterestExpense); the others are counted, not used, except that two concepts differing by a factor near a thousand (one number tagged at two scales) leave the filer without a value that year."
+        },
+        {
+          "group": "revenue",
+          "year": 2014,
+          "filers": 220,
+          "several": 35,
+          "differing": 14,
+          "scale_breaks": 0,
+          "rule": "Per filer and year, the first concept of the group with a row is taken, in the order the app's own metrics use (RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet, RevenueFromContractWithCustomerIncludingAssessedTax, RevenuesNetOfInterestExpense); the others are counted, not used, except that two concepts differing by a factor near a thousand (one number tagged at two scales) leave the filer without a value that year."
+        },
+        {
+          "group": "revenue",
+          "year": 2015,
+          "filers": 208,
+          "several": 29,
+          "differing": 14,
+          "scale_breaks": 0,
+          "rule": "Per filer and year, the first concept of the group with a row is taken, in the order the app's own metrics use (RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet, RevenueFromContractWithCustomerIncludingAssessedTax, RevenuesNetOfInterestExpense); the others are counted, not used, except that two concepts differing by a factor near a thousand (one number tagged at two scales) leave the filer without a value that year."
+        },
+        {
+          "group": "revenue",
+          "year": 2016,
+          "filers": 213,
+          "several": 117,
+          "differing": 22,
+          "scale_breaks": 0,
+          "rule": "Per filer and year, the first concept of the group with a row is taken, in the order the app's own metrics use (RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet, RevenueFromContractWithCustomerIncludingAssessedTax, RevenuesNetOfInterestExpense); the others are counted, not used, except that two concepts differing by a factor near a thousand (one number tagged at two scales) leave the filer without a value that year."
+        },
+        {
+          "group": "revenue",
+          "year": 2017,
+          "filers": 209,
+          "several": 135,
+          "differing": 32,
+          "scale_breaks": 0,
+          "rule": "Per filer and year, the first concept of the group with a row is taken, in the order the app's own metrics use (RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet, RevenueFromContractWithCustomerIncludingAssessedTax, RevenuesNetOfInterestExpense); the others are counted, not used, except that two concepts differing by a factor near a thousand (one number tagged at two scales) leave the filer without a value that year."
+        },
+        {
+          "group": "revenue",
+          "year": 2018,
+          "filers": 208,
+          "several": 66,
+          "differing": 21,
+          "scale_breaks": 0,
+          "rule": "Per filer and year, the first concept of the group with a row is taken, in the order the app's own metrics use (RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet, RevenueFromContractWithCustomerIncludingAssessedTax, RevenuesNetOfInterestExpense); the others are counted, not used, except that two concepts differing by a factor near a thousand (one number tagged at two scales) leave the filer without a value that year."
+        },
+        {
+          "group": "revenue",
+          "year": 2019,
+          "filers": 208,
+          "several": 48,
+          "differing": 20,
+          "scale_breaks": 0,
+          "rule": "Per filer and year, the first concept of the group with a row is taken, in the order the app's own metrics use (RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet, RevenueFromContractWithCustomerIncludingAssessedTax, RevenuesNetOfInterestExpense); the others are counted, not used, except that two concepts differing by a factor near a thousand (one number tagged at two scales) leave the filer without a value that year."
+        },
+        {
+          "group": "revenue",
+          "year": 2020,
+          "filers": 208,
+          "several": 43,
+          "differing": 17,
+          "scale_breaks": 0,
+          "rule": "Per filer and year, the first concept of the group with a row is taken, in the order the app's own metrics use (RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet, RevenueFromContractWithCustomerIncludingAssessedTax, RevenuesNetOfInterestExpense); the others are counted, not used, except that two concepts differing by a factor near a thousand (one number tagged at two scales) leave the filer without a value that year."
+        },
+        {
+          "group": "revenue",
+          "year": 2021,
+          "filers": 207,
+          "several": 44,
+          "differing": 21,
+          "scale_breaks": 0,
+          "rule": "Per filer and year, the first concept of the group with a row is taken, in the order the app's own metrics use (RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet, RevenueFromContractWithCustomerIncludingAssessedTax, RevenuesNetOfInterestExpense); the others are counted, not used, except that two concepts differing by a factor near a thousand (one number tagged at two scales) leave the filer without a value that year."
+        },
+        {
+          "group": "revenue",
+          "year": 2022,
+          "filers": 205,
+          "several": 45,
+          "differing": 20,
+          "scale_breaks": 1,
+          "rule": "Per filer and year, the first concept of the group with a row is taken, in the order the app's own metrics use (RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet, RevenueFromContractWithCustomerIncludingAssessedTax, RevenuesNetOfInterestExpense); the others are counted, not used, except that two concepts differing by a factor near a thousand (one number tagged at two scales) leave the filer without a value that year."
+        },
+        {
+          "group": "revenue",
+          "year": 2023,
+          "filers": 204,
+          "several": 49,
+          "differing": 18,
+          "scale_breaks": 2,
+          "rule": "Per filer and year, the first concept of the group with a row is taken, in the order the app's own metrics use (RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet, RevenueFromContractWithCustomerIncludingAssessedTax, RevenuesNetOfInterestExpense); the others are counted, not used, except that two concepts differing by a factor near a thousand (one number tagged at two scales) leave the filer without a value that year."
+        },
+        {
+          "group": "revenue",
+          "year": 2024,
+          "filers": 206,
+          "several": 46,
+          "differing": 17,
+          "scale_breaks": 1,
+          "rule": "Per filer and year, the first concept of the group with a row is taken, in the order the app's own metrics use (RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet, RevenueFromContractWithCustomerIncludingAssessedTax, RevenuesNetOfInterestExpense); the others are counted, not used, except that two concepts differing by a factor near a thousand (one number tagged at two scales) leave the filer without a value that year."
+        },
+        {
+          "group": "revenue",
+          "year": 2025,
+          "filers": 200,
+          "several": 40,
+          "differing": 16,
+          "scale_breaks": 1,
+          "rule": "Per filer and year, the first concept of the group with a row is taken, in the order the app's own metrics use (RevenueFromContractWithCustomerExcludingAssessedTax, Revenues, SalesRevenueNet, RevenueFromContractWithCustomerIncludingAssessedTax, RevenuesNetOfInterestExpense); the others are counted, not used, except that two concepts differing by a factor near a thousand (one number tagged at two scales) leave the filer without a value that year."
+        }
+      ]
+    }
+  ],
+  "peers": [
+    {
+      "id": "peer:NVDA:revenue:2025:2026-11-18",
+      "kind": "peer_standing",
+      "label": "Revenue among SIC 3674 filers with revenue of at least $100.0M",
+      "outcome": "computed",
+      "reason": "",
+      "value": 100.0,
+      "unit": "percent",
+      "display": "rank 1 of 63",
+      "formula": "percentile = 100 × lower ÷ (n − 1) = 100 × 62 ÷ 62",
+      "inputs": [
+        {
+          "label": "Revenue: every class member's row",
+          "value": null,
+          "display": "",
+          "source": "SEC XBRL frame us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax|Revenues|SalesRevenueNet|RevenueFromContractWithCustomerIncludingAssessedTax|RevenuesNetOfInterestExpense/USD/CY2024 and CY2025",
+          "date": "CY2024 and CY2025",
+          "filed": "",
+          "url": ""
+        }
+      ],
+      "assumptions": [
+        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
+        "Measure: Revenue as tagged.",
+        "Rank 1 is the highest value; the percentile is the share of the other members with a lower value.",
+        "Frames carry no filing date: a value restated later is the restated value."
+      ],
+      "reading": "Revenue ranks 1 of 63 in 2025 at $215.94B (above 100% of the others; class median $1.34B) among SIC 3674 filers with revenue of at least $100.0M; a year earlier it ranks 1 of 64 in 2024 at $130.50B (above 100% of the others; class median $1.05B).",
+      "data_origin": "sec_frames",
+      "as_of": "2026-11-18",
+      "note": "",
+      "measure": "revenue",
+      "class_name": "SIC 3674 filers with revenue of at least $100.0M",
+      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
+      "now": {
+        "year": 2025,
+        "period_end": "2026-01-25",
+        "n": 63,
+        "rank": 1,
+        "percentile": 100.0,
+        "value": 215938000000.0,
+        "display": "$215.94B",
+        "median": 1335116000.0,
+        "median_display": "$1.34B",
+        "above": [],
+        "below": [
+          {
+            "rank": 2,
+            "name": "Broadcom Inc.",
+            "cik": 1730168,
+            "value": 63887000000.0,
+            "display": "$63.89B"
+          },
+          {
+            "rank": 3,
+            "name": "INTEL CORP",
+            "cik": 50863,
+            "value": 52853000000.0,
+            "display": "$52.85B"
+          }
+        ],
+        "reason": ""
+      },
+      "year_before": {
+        "year": 2024,
+        "period_end": "2025-01-26",
+        "n": 64,
+        "rank": 1,
+        "percentile": 100.0,
+        "value": 130497000000.0,
+        "display": "$130.50B",
+        "median": 1051690000.0,
+        "median_display": "$1.05B",
+        "above": [],
+        "below": [
+          {
+            "rank": 2,
+            "name": "INTEL CORP",
+            "cik": 50863,
+            "value": 53101000000.0,
+            "display": "$53.10B"
+          },
+          {
+            "rank": 3,
+            "name": "Broadcom Inc.",
+            "cik": 1730168,
+            "value": 51574000000.0,
+            "display": "$51.57B"
+          }
+        ],
+        "reason": ""
+      }
+    },
+    {
+      "id": "peer:NVDA:revenue_growth:2025:2026-11-18",
+      "kind": "peer_standing",
+      "label": "Revenue growth, year over year among SIC 3674 filers with revenue of at least $100.0M",
+      "outcome": "computed",
+      "reason": "",
+      "value": 91.93548387096774,
+      "unit": "percent",
+      "display": "rank 6 of 63",
+      "formula": "percentile = 100 × lower ÷ (n − 1) = 100 × 57 ÷ 62",
+      "inputs": [
+        {
+          "label": "Revenue: every class member's row",
+          "value": null,
+          "display": "",
+          "source": "SEC XBRL frame us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax|Revenues|SalesRevenueNet|RevenueFromContractWithCustomerIncludingAssessedTax|RevenuesNetOfInterestExpense/USD/CY2024 and CY2025",
+          "date": "CY2024 and CY2025",
+          "filed": "",
+          "url": ""
+        }
+      ],
+      "assumptions": [
+        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
+        "Measure: Revenue as tagged.",
+        "Rank 1 is the highest value; the percentile is the share of the other members with a lower value.",
+        "Frames carry no filing date: a value restated later is the restated value."
+      ],
+      "reading": "Revenue growth, year over year ranks 6 of 63 in 2025 at 65.5% (above 92% of the others; class median 13.0%) among SIC 3674 filers with revenue of at least $100.0M; a year earlier it ranks 4 of 61 in 2024 at 114.2% (above 95% of the others; class median -2.1%).",
+      "data_origin": "sec_frames",
+      "as_of": "2026-11-18",
+      "note": "",
+      "measure": "revenue_growth",
+      "class_name": "SIC 3674 filers with revenue of at least $100.0M",
+      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
+      "now": {
+        "year": 2025,
+        "period_end": "2026-01-25",
+        "n": 63,
+        "rank": 6,
+        "percentile": 91.93548387096774,
+        "value": 65.4735357900948,
+        "display": "65.5%",
+        "median": 13.049037785307846,
+        "median_display": "13.0%",
+        "above": [
+          {
+            "rank": 4,
+            "name": "Astera Labs, Inc.",
+            "cik": 1736297,
+            "value": 115.12654873955941,
+            "display": "115.1%"
+          },
+          {
+            "rank": 5,
+            "name": "Applied Optoelectronics, Inc.",
+            "cik": 1158114,
+            "value": 82.75018547109659,
+            "display": "82.8%"
+          }
+        ],
+        "below": [
+          {
+            "rank": 7,
+            "name": "SiTime Corporation",
+            "cik": 1451809,
+            "value": 61.15680054465532,
+            "display": "61.2%"
+          },
+          {
+            "rank": 8,
+            "name": "Micron Technology, Inc.",
+            "cik": 723125,
+            "value": 48.85110111106686,
+            "display": "48.9%"
+          }
+        ],
+        "reason": ""
+      },
+      "year_before": {
+        "year": 2024,
+        "period_end": "2025-01-26",
+        "n": 61,
+        "rank": 4,
+        "percentile": 95.0,
+        "value": 114.20340763599357,
+        "display": "114.2%",
+        "median": -2.0782621523935974,
+        "median_display": "-2.1%",
+        "above": [
+          {
+            "rank": 2,
+            "name": "TOYO Co., Ltd",
+            "cik": 1985273,
+            "value": 183.68793243834023,
+            "display": "183.7%"
+          },
+          {
+            "rank": 3,
+            "name": "CREDO TECHNOLOGY GROUP HOLDING LTD",
+            "cik": 1807794,
+            "value": 126.3434730787169,
+            "display": "126.3%"
+          }
+        ],
+        "below": [
+          {
+            "rank": 5,
+            "name": "NETLIST INC",
+            "cik": 1282631,
+            "value": 112.56123112491872,
+            "display": "112.6%"
+          },
+          {
+            "rank": 6,
+            "name": "Micron Technology, Inc.",
+            "cik": 723125,
+            "value": 61.589446589446595,
+            "display": "61.6%"
+          }
+        ],
+        "reason": ""
+      }
+    },
+    {
+      "id": "peer:NVDA:gross_margin:2025:2026-11-18",
+      "kind": "peer_standing",
+      "label": "Gross margin among SIC 3674 filers with revenue of at least $100.0M",
+      "outcome": "computed",
+      "reason": "",
+      "value": 95.16129032258064,
+      "unit": "percent",
+      "display": "rank 4 of 63",
+      "formula": "percentile = 100 × lower ÷ (n − 1) = 100 × 59 ÷ 62",
+      "inputs": [
+        {
+          "label": "Gross profit: every class member's row",
+          "value": null,
+          "display": "",
+          "source": "SEC XBRL frame us-gaap/GrossProfit/USD/CY2024 and CY2025",
+          "date": "CY2024 and CY2025",
+          "filed": "",
+          "url": ""
+        },
+        {
+          "label": "Revenue: every class member's row",
+          "value": null,
+          "display": "",
+          "source": "SEC XBRL frame us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax|Revenues|SalesRevenueNet|RevenueFromContractWithCustomerIncludingAssessedTax|RevenuesNetOfInterestExpense/USD/CY2024 and CY2025",
+          "date": "CY2024 and CY2025",
+          "filed": "",
+          "url": ""
+        },
+        {
+          "label": "Cost of revenue: every class member's row",
+          "value": null,
+          "display": "",
+          "source": "SEC XBRL frame us-gaap/CostOfRevenue|CostOfGoodsAndServicesSold|CostOfGoodsSold/USD/CY2024 and CY2025",
+          "date": "CY2024 and CY2025",
+          "filed": "",
+          "url": ""
+        }
+      ],
+      "assumptions": [
+        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
+        "Measure: Gross profit ÷ revenue.",
+        "Rank 1 is the highest value; the percentile is the share of the other members with a lower value.",
+        "Frames carry no filing date: a value restated later is the restated value."
+      ],
+      "reading": "Gross margin ranks 4 of 63 in 2025 at 71.1% (above 95% of the others; class median 41.2%) among SIC 3674 filers with revenue of at least $100.0M; a year earlier it ranks 4 of 64 in 2024 at 75.0% (above 95% of the others; class median 41.3%).",
+      "data_origin": "sec_frames",
+      "as_of": "2026-11-18",
+      "note": "",
+      "measure": "gross_margin",
+      "class_name": "SIC 3674 filers with revenue of at least $100.0M",
+      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
+      "now": {
+        "year": 2025,
+        "period_end": "2026-01-25",
+        "n": 63,
+        "rank": 4,
+        "percentile": 95.16129032258064,
+        "value": 71.06808435754708,
+        "display": "71.1%",
+        "median": 41.15833516846509,
+        "median_display": "41.2%",
+        "above": [
+          {
+            "rank": 2,
+            "name": "RAMBUS INC",
+            "cik": 917273,
+            "value": 79.5917357941297,
+            "display": "79.6%"
+          },
+          {
+            "rank": 3,
+            "name": "Astera Labs, Inc.",
+            "cik": 1736297,
+            "value": 75.6882202867951,
+            "display": "75.7%"
+          }
+        ],
+        "below": [
+          {
+            "rank": 5,
+            "name": "Lattice Semiconductor Corporation",
+            "cik": 855658,
+            "value": 68.21496688083599,
+            "display": "68.2%"
+          },
+          {
+            "rank": 6,
+            "name": "CREDO TECHNOLOGY GROUP HOLDING LTD",
+            "cik": 1807794,
+            "value": 68.03521192166075,
+            "display": "68.0%"
+          }
+        ],
+        "reason": ""
+      },
+      "year_before": {
+        "year": 2024,
+        "period_end": "2025-01-26",
+        "n": 64,
+        "rank": 4,
+        "percentile": 95.23809523809524,
+        "value": 74.98869705816992,
+        "display": "75.0%",
+        "median": 41.297992951607476,
+        "median_display": "41.3%",
+        "above": [
+          {
+            "rank": 2,
+            "name": "RAMBUS INC",
+            "cik": 917273,
+            "value": 80.21878323608037,
+            "display": "80.2%"
+          },
+          {
+            "rank": 3,
+            "name": "Astera Labs, Inc.",
+            "cik": 1736297,
+            "value": 76.38320421913245,
+            "display": "76.4%"
+          }
+        ],
+        "below": [
+          {
+            "rank": 5,
+            "name": "Lattice Semiconductor Corporation",
+            "cik": 855658,
+            "value": 66.82358299257362,
+            "display": "66.8%"
+          },
+          {
+            "rank": 6,
+            "name": "CREDO TECHNOLOGY GROUP HOLDING LTD",
+            "cik": 1807794,
+            "value": 64.77225115906359,
+            "display": "64.8%"
+          }
+        ],
+        "reason": ""
+      }
+    },
+    {
+      "id": "peer:NVDA:operating_margin:2025:2026-11-18",
+      "kind": "peer_standing",
+      "label": "Operating margin among SIC 3674 filers with revenue of at least $100.0M",
+      "outcome": "computed",
+      "reason": "",
+      "value": 100.0,
+      "unit": "percent",
+      "display": "rank 1 of 62",
+      "formula": "percentile = 100 × lower ÷ (n − 1) = 100 × 61 ÷ 61",
+      "inputs": [
+        {
+          "label": "Operating income: every class member's row",
+          "value": null,
+          "display": "",
+          "source": "SEC XBRL frame us-gaap/OperatingIncomeLoss/USD/CY2024 and CY2025",
+          "date": "CY2024 and CY2025",
+          "filed": "",
+          "url": ""
+        },
+        {
+          "label": "Revenue: every class member's row",
+          "value": null,
+          "display": "",
+          "source": "SEC XBRL frame us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax|Revenues|SalesRevenueNet|RevenueFromContractWithCustomerIncludingAssessedTax|RevenuesNetOfInterestExpense/USD/CY2024 and CY2025",
+          "date": "CY2024 and CY2025",
+          "filed": "",
+          "url": ""
+        }
+      ],
+      "assumptions": [
+        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
+        "Measure: Operating income ÷ revenue.",
+        "Rank 1 is the highest value; the percentile is the share of the other members with a lower value.",
+        "Frames carry no filing date: a value restated later is the restated value."
+      ],
+      "reading": "Operating margin ranks 1 of 62 in 2025 at 60.4% (above 100% of the others; class median 5.6%) among SIC 3674 filers with revenue of at least $100.0M; a year earlier it ranks 1 of 63 in 2024 at 62.4% (above 100% of the others; class median 5.0%).",
+      "data_origin": "sec_frames",
+      "as_of": "2026-11-18",
+      "note": "",
+      "measure": "operating_margin",
+      "class_name": "SIC 3674 filers with revenue of at least $100.0M",
+      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
+      "now": {
+        "year": 2025,
+        "period_end": "2026-01-25",
+        "n": 62,
+        "rank": 1,
+        "percentile": 100.0,
+        "value": 60.38168363141272,
+        "display": "60.4%",
+        "median": 5.584692520984842,
+        "median_display": "5.6%",
+        "above": [],
+        "below": [
+          {
+            "rank": 2,
+            "name": "Broadcom Inc.",
+            "cik": 1730168,
+            "value": 39.889179332258514,
+            "display": "39.9%"
+          },
+          {
+            "rank": 3,
+            "name": "RAMBUS INC",
+            "cik": 917273,
+            "value": 36.77317242061529,
+            "display": "36.8%"
+          }
+        ],
+        "reason": ""
+      },
+      "year_before": {
+        "year": 2024,
+        "period_end": "2025-01-26",
+        "n": 63,
+        "rank": 1,
+        "percentile": 100.0,
+        "value": 62.417526839697466,
+        "display": "62.4%",
+        "median": 5.006882797058053,
+        "median_display": "5.0%",
+        "above": [],
+        "below": [
+          {
+            "rank": 2,
+            "name": "TEXAS INSTRUMENTS INC",
+            "cik": 97476,
+            "value": 34.9402212134774,
+            "display": "34.9%"
+          },
+          {
+            "rank": 3,
+            "name": "First Solar, Inc.",
+            "cik": 1274494,
+            "value": 33.15083675895784,
+            "display": "33.2%"
+          }
+        ],
+        "reason": ""
+      }
+    },
+    {
+      "id": "peer:NVDA:net_margin:2025:2026-11-18",
+      "kind": "peer_standing",
+      "label": "Net margin among SIC 3674 filers with revenue of at least $100.0M",
+      "outcome": "computed",
+      "reason": "",
+      "value": 100.0,
+      "unit": "percent",
+      "display": "rank 1 of 62",
+      "formula": "percentile = 100 × lower ÷ (n − 1) = 100 × 61 ÷ 61",
+      "inputs": [
+        {
+          "label": "Net income: every class member's row",
+          "value": null,
+          "display": "",
+          "source": "SEC XBRL frame us-gaap/NetIncomeLoss/USD/CY2024 and CY2025",
+          "date": "CY2024 and CY2025",
+          "filed": "",
+          "url": ""
+        },
+        {
+          "label": "Revenue: every class member's row",
+          "value": null,
+          "display": "",
+          "source": "SEC XBRL frame us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax|Revenues|SalesRevenueNet|RevenueFromContractWithCustomerIncludingAssessedTax|RevenuesNetOfInterestExpense/USD/CY2024 and CY2025",
+          "date": "CY2024 and CY2025",
+          "filed": "",
+          "url": ""
+        }
+      ],
+      "assumptions": [
+        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
+        "Measure: Net income ÷ revenue.",
+        "Rank 1 is the highest value; the percentile is the share of the other members with a lower value.",
+        "Frames carry no filing date: a value restated later is the restated value."
+      ],
+      "reading": "Net margin ranks 1 of 62 in 2025 at 55.6% (above 100% of the others; class median 4.7%) among SIC 3674 filers with revenue of at least $100.0M; a year earlier it ranks 2 of 63 in 2024 at 55.8% (above 98% of the others; class median 3.1%).",
+      "data_origin": "sec_frames",
+      "as_of": "2026-11-18",
+      "note": "",
+      "measure": "net_margin",
+      "class_name": "SIC 3674 filers with revenue of at least $100.0M",
+      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
+      "now": {
+        "year": 2025,
+        "period_end": "2026-01-25",
+        "n": 62,
+        "rank": 1,
+        "percentile": 100.0,
+        "value": 55.60253406070261,
+        "display": "55.6%",
+        "median": 4.671375458898206,
+        "median_display": "4.7%",
+        "above": [],
+        "below": [
+          {
+            "rank": 2,
+            "name": "CREDO TECHNOLOGY GROUP HOLDING LTD",
+            "cik": 1807794,
+            "value": 35.37363045608022,
+            "display": "35.4%"
+          },
+          {
+            "rank": 3,
+            "name": "MARVELL TECHNOLOGY, INC",
+            "cik": 1835632,
+            "value": 32.58365264930564,
+            "display": "32.6%"
+          }
+        ],
+        "reason": ""
+      },
+      "year_before": {
+        "year": 2024,
+        "period_end": "2025-01-26",
+        "n": 63,
+        "rank": 2,
+        "percentile": 98.38709677419355,
+        "value": 55.848027157712444,
+        "display": "55.8%",
+        "median": 3.098243797538927,
+        "median_display": "3.1%",
+        "above": [
+          {
+            "rank": 1,
+            "name": "MONOLITHIC POWER SYSTEMS, INC.",
+            "cik": 1280452,
+            "value": 72.13347831996738,
+            "display": "72.1%"
+          }
+        ],
+        "below": [
+          {
+            "rank": 3,
+            "name": "RAMBUS INC",
+            "cik": 917273,
+            "value": 32.30564977435396,
+            "display": "32.3%"
+          },
+          {
+            "rank": 4,
+            "name": "First Solar, Inc.",
+            "cik": 1274494,
+            "value": 30.716957394035454,
+            "display": "30.7%"
+          }
+        ],
+        "reason": ""
+      }
+    },
+    {
+      "id": "peer:NVDA:rnd_ratio:2025:2026-11-18",
+      "kind": "peer_standing",
+      "label": "R&D as a share of revenue among SIC 3674 filers with revenue of at least $100.0M",
+      "outcome": "computed",
+      "reason": "",
+      "value": 28.571428571428573,
+      "unit": "percent",
+      "display": "rank 41 of 57",
+      "formula": "percentile = 100 × lower ÷ (n − 1) = 100 × 16 ÷ 56",
+      "inputs": [
+        {
+          "label": "Research and development: every class member's row",
+          "value": null,
+          "display": "",
+          "source": "SEC XBRL frame us-gaap/ResearchAndDevelopmentExpense/USD/CY2024 and CY2025",
+          "date": "CY2024 and CY2025",
+          "filed": "",
+          "url": ""
+        },
+        {
+          "label": "Revenue: every class member's row",
+          "value": null,
+          "display": "",
+          "source": "SEC XBRL frame us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax|Revenues|SalesRevenueNet|RevenueFromContractWithCustomerIncludingAssessedTax|RevenuesNetOfInterestExpense/USD/CY2024 and CY2025",
+          "date": "CY2024 and CY2025",
+          "filed": "",
+          "url": ""
+        }
+      ],
+      "assumptions": [
+        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
+        "Measure: Research and development ÷ revenue.",
+        "Rank 1 is the highest value; the percentile is the share of the other members with a lower value.",
+        "Frames carry no filing date: a value restated later is the restated value."
+      ],
+      "reading": "R&D as a share of revenue ranks 41 of 57 in 2025 at 8.6% (above 29% of the others; class median 17.3%) among SIC 3674 filers with revenue of at least $100.0M; a year earlier it ranks 42 of 59 in 2024 at 9.9% (above 29% of the others; class median 16.0%).",
+      "data_origin": "sec_frames",
+      "as_of": "2026-11-18",
+      "note": "",
+      "measure": "rnd_ratio",
+      "class_name": "SIC 3674 filers with revenue of at least $100.0M",
+      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
+      "now": {
+        "year": 2025,
+        "period_end": "2026-01-25",
+        "n": 57,
+        "rank": 41,
+        "percentile": 28.571428571428573,
+        "value": 8.565884652076058,
+        "display": "8.6%",
+        "median": 17.302245932951326,
+        "median_display": "17.3%",
+        "above": [
+          {
+            "rank": 39,
+            "name": "DIODES INC",
+            "cik": 29002,
+            "value": 10.942443455889151,
+            "display": "10.9%"
+          },
+          {
+            "rank": 40,
+            "name": "Micron Technology, Inc.",
+            "cik": 723125,
+            "value": 10.161057306436941,
+            "display": "10.2%"
+          }
+        ],
+        "below": [
+          {
+            "rank": 42,
+            "name": "QNITY ELECTRONICS, INC.",
+            "cik": 2058873,
+            "value": 7.446360959192259,
+            "display": "7.4%"
+          },
+          {
+            "rank": 43,
+            "name": "PENGUIN SOLUTIONS, INC.",
+            "cik": 1616533,
+            "value": 5.83002263306239,
+            "display": "5.8%"
+          }
+        ],
+        "reason": ""
+      },
+      "year_before": {
+        "year": 2024,
+        "period_end": "2025-01-26",
+        "n": 59,
+        "rank": 42,
+        "percentile": 29.310344827586206,
+        "value": 9.896012935163261,
+        "display": "9.9%",
+        "median": 15.968852761724413,
+        "median_display": "16.0%",
+        "above": [
+          {
+            "rank": 40,
+            "name": "IPG PHOTONICS CORP",
+            "cik": 1111928,
+            "value": 11.235204178751328,
+            "display": "11.2%"
+          },
+          {
+            "rank": 41,
+            "name": "DIODES INC",
+            "cik": 29002,
+            "value": 10.224159497223747,
+            "display": "10.2%"
+          }
+        ],
+        "below": [
+          {
+            "rank": 43,
+            "name": "Maxeon Solar Technologies, Ltd",
+            "cik": 1796898,
+            "value": 7.3765145919441775,
+            "display": "7.4%"
+          },
+          {
+            "rank": 44,
+            "name": "QNITY ELECTRONICS, INC.",
+            "cik": 2058873,
+            "value": 7.243367935409458,
+            "display": "7.2%"
+          }
+        ],
+        "reason": ""
+      }
+    },
+    {
+      "id": "peer:NVDA:operating_cash_flow:2025:2026-11-18",
+      "kind": "peer_standing",
+      "label": "Operating cash flow among SIC 3674 filers with revenue of at least $100.0M",
+      "outcome": "computed",
+      "reason": "",
+      "value": 100.0,
+      "unit": "percent",
+      "display": "rank 1 of 63",
+      "formula": "percentile = 100 × lower ÷ (n − 1) = 100 × 62 ÷ 62",
+      "inputs": [
+        {
+          "label": "Operating cash flow: every class member's row",
+          "value": null,
+          "display": "",
+          "source": "SEC XBRL frame us-gaap/NetCashProvidedByUsedInOperatingActivities/USD/CY2024 and CY2025",
+          "date": "CY2024 and CY2025",
+          "filed": "",
+          "url": ""
+        }
+      ],
+      "assumptions": [
+        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
+        "Measure: NetCashProvidedByUsedInOperatingActivities.",
+        "Rank 1 is the highest value; the percentile is the share of the other members with a lower value.",
+        "Frames carry no filing date: a value restated later is the restated value."
+      ],
+      "reading": "Operating cash flow ranks 1 of 63 in 2025 at $102.72B (above 100% of the others; class median $163.1M) among SIC 3674 filers with revenue of at least $100.0M; a year earlier it ranks 1 of 64 in 2024 at $64.09B (above 100% of the others; class median $138.8M).",
+      "data_origin": "sec_frames",
+      "as_of": "2026-11-18",
+      "note": "",
+      "measure": "operating_cash_flow",
+      "class_name": "SIC 3674 filers with revenue of at least $100.0M",
+      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
+      "now": {
+        "year": 2025,
+        "period_end": "2026-01-25",
+        "n": 63,
+        "rank": 1,
+        "percentile": 100.0,
+        "value": 102718000000.0,
+        "display": "$102.72B",
+        "median": 163069000.0,
+        "median_display": "$163.1M",
+        "above": [],
+        "below": [
+          {
+            "rank": 2,
+            "name": "Broadcom Inc.",
+            "cik": 1730168,
+            "value": 27537000000.0,
+            "display": "$27.54B"
+          },
+          {
+            "rank": 3,
+            "name": "Micron Technology, Inc.",
+            "cik": 723125,
+            "value": 17525000000.0,
+            "display": "$17.52B"
+          }
+        ],
+        "reason": ""
+      },
+      "year_before": {
+        "year": 2024,
+        "period_end": "2025-01-26",
+        "n": 64,
+        "rank": 1,
+        "percentile": 100.0,
+        "value": 64089000000.0,
+        "display": "$64.09B",
+        "median": 138776000.0,
+        "median_display": "$138.8M",
+        "above": [],
+        "below": [
+          {
+            "rank": 2,
+            "name": "Broadcom Inc.",
+            "cik": 1730168,
+            "value": 19962000000.0,
+            "display": "$19.96B"
+          },
+          {
+            "rank": 3,
+            "name": "APPLIED MATERIALS INC /DE",
+            "cik": 6951,
+            "value": 8677000000.0,
+            "display": "$8.68B"
+          }
+        ],
+        "reason": ""
+      }
+    },
+    {
+      "id": "peer:NVDA:capex:2025:2026-11-18",
+      "kind": "peer_standing",
+      "label": "Capital expenditure among SIC 3674 filers with revenue of at least $100.0M",
+      "outcome": "computed",
+      "reason": "",
+      "value": 96.72131147540983,
+      "unit": "percent",
+      "display": "rank 3 of 62",
+      "formula": "percentile = 100 × lower ÷ (n − 1) = 100 × 59 ÷ 61",
+      "inputs": [
+        {
+          "label": "Capital expenditure: every class member's row",
+          "value": null,
+          "display": "",
+          "source": "SEC XBRL frame us-gaap/PaymentsToAcquirePropertyPlantAndEquipment|PaymentsToAcquireProductiveAssets/USD/CY2024 and CY2025",
+          "date": "CY2024 and CY2025",
+          "filed": "",
+          "url": ""
+        }
+      ],
+      "assumptions": [
+        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
+        "Measure: PaymentsToAcquirePropertyPlantAndEquipment (else PaymentsToAcquireProductiveAssets).",
+        "Rank 1 is the highest value; the percentile is the share of the other members with a lower value.",
+        "Frames carry no filing date: a value restated later is the restated value."
+      ],
+      "reading": "Capital expenditure ranks 3 of 62 in 2025 at $6.04B (above 97% of the others; class median $56.2M) among SIC 3674 filers with revenue of at least $100.0M; a year earlier it ranks 4 of 63 in 2024 at $3.24B (above 95% of the others; class median $43.4M).",
+      "data_origin": "sec_frames",
+      "as_of": "2026-11-18",
+      "note": "",
+      "measure": "capex",
+      "class_name": "SIC 3674 filers with revenue of at least $100.0M",
+      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
+      "now": {
+        "year": 2025,
+        "period_end": "2026-01-25",
+        "n": 62,
+        "rank": 3,
+        "percentile": 96.72131147540983,
+        "value": 6042000000.0,
+        "display": "$6.04B",
+        "median": 56180500.0,
+        "median_display": "$56.2M",
+        "above": [
+          {
+            "rank": 1,
+            "name": "Micron Technology, Inc.",
+            "cik": 723125,
+            "value": 15857000000.0,
+            "display": "$15.86B"
+          },
+          {
+            "rank": 2,
+            "name": "INTEL CORP",
+            "cik": 50863,
+            "value": 14646000000.0,
+            "display": "$14.65B"
+          }
+        ],
+        "below": [
+          {
+            "rank": 4,
+            "name": "TEXAS INSTRUMENTS INC",
+            "cik": 97476,
+            "value": 4550000000.0,
+            "display": "$4.55B"
+          },
+          {
+            "rank": 5,
+            "name": "APPLIED MATERIALS INC /DE",
+            "cik": 6951,
+            "value": 2260000000.0,
+            "display": "$2.26B"
+          }
+        ],
+        "reason": ""
+      },
+      "year_before": {
+        "year": 2024,
+        "period_end": "2025-01-26",
+        "n": 63,
+        "rank": 4,
+        "percentile": 95.16129032258064,
+        "value": 3236000000.0,
+        "display": "$3.24B",
+        "median": 43406000.0,
+        "median_display": "$43.4M",
+        "above": [
+          {
+            "rank": 2,
+            "name": "Micron Technology, Inc.",
+            "cik": 723125,
+            "value": 8386000000.0,
+            "display": "$8.39B"
+          },
+          {
+            "rank": 3,
+            "name": "TEXAS INSTRUMENTS INC",
+            "cik": 97476,
+            "value": 4820000000.0,
+            "display": "$4.82B"
+          }
+        ],
+        "below": [
+          {
+            "rank": 5,
+            "name": "First Solar, Inc.",
+            "cik": 1274494,
+            "value": 1526076000.0,
+            "display": "$1.53B"
+          },
+          {
+            "rank": 6,
+            "name": "WOLFSPEED, INC",
+            "cik": 895419,
+            "value": 1271400000.0,
+            "display": "$1.27B"
+          }
+        ],
+        "reason": ""
+      }
+    },
+    {
+      "id": "peer:NVDA:capex_ratio:2025:2026-11-18",
+      "kind": "peer_standing",
+      "label": "Capital expenditure as a share of revenue among SIC 3674 filers with revenue of at least $100.0M",
+      "outcome": "computed",
+      "reason": "",
+      "value": 24.59016393442623,
+      "unit": "percent",
+      "display": "rank 47 of 62",
+      "formula": "percentile = 100 × lower ÷ (n − 1) = 100 × 15 ÷ 61",
+      "inputs": [
+        {
+          "label": "Capital expenditure: every class member's row",
+          "value": null,
+          "display": "",
+          "source": "SEC XBRL frame us-gaap/PaymentsToAcquirePropertyPlantAndEquipment|PaymentsToAcquireProductiveAssets/USD/CY2024 and CY2025",
+          "date": "CY2024 and CY2025",
+          "filed": "",
+          "url": ""
+        },
+        {
+          "label": "Revenue: every class member's row",
+          "value": null,
+          "display": "",
+          "source": "SEC XBRL frame us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax|Revenues|SalesRevenueNet|RevenueFromContractWithCustomerIncludingAssessedTax|RevenuesNetOfInterestExpense/USD/CY2024 and CY2025",
+          "date": "CY2024 and CY2025",
+          "filed": "",
+          "url": ""
+        }
+      ],
+      "assumptions": [
+        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
+        "Measure: Capital expenditure ÷ revenue.",
+        "Rank 1 is the highest value; the percentile is the share of the other members with a lower value.",
+        "Frames carry no filing date: a value restated later is the restated value."
+      ],
+      "reading": "Capital expenditure as a share of revenue ranks 47 of 62 in 2025 at 2.8% (above 25% of the others; class median 4.8%) among SIC 3674 filers with revenue of at least $100.0M; a year earlier it ranks 48 of 63 in 2024 at 2.5% (above 24% of the others; class median 5.0%).",
+      "data_origin": "sec_frames",
+      "as_of": "2026-11-18",
+      "note": "",
+      "measure": "capex_ratio",
+      "class_name": "SIC 3674 filers with revenue of at least $100.0M",
+      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
+      "now": {
+        "year": 2025,
+        "period_end": "2026-01-25",
+        "n": 62,
+        "rank": 47,
+        "percentile": 24.59016393442623,
+        "value": 2.7980253591308615,
+        "display": "2.8%",
+        "median": 4.806570503854726,
+        "median_display": "4.8%",
+        "above": [
+          {
+            "rank": 45,
+            "name": "NXP Semiconductors N.V.",
+            "cik": 1413447,
+            "value": 3.2357975385116964,
+            "display": "3.2%"
+          },
+          {
+            "rank": 46,
+            "name": "ADVANCED MICRO DEVICES, INC",
+            "cik": 2488,
+            "value": 2.811859464765149,
+            "display": "2.8%"
+          }
+        ],
+        "below": [
+          {
+            "rank": 48,
+            "name": "ENPHASE ENERGY, INC.",
+            "cik": 1463101,
+            "value": 2.758955454400418,
+            "display": "2.8%"
+          },
+          {
+            "rank": 49,
+            "name": "MaxLinear, Inc.",
+            "cik": 1288469,
+            "value": 2.6939468523931818,
+            "display": "2.7%"
+          }
+        ],
+        "reason": ""
+      },
+      "year_before": {
+        "year": 2024,
+        "period_end": "2025-01-26",
+        "n": 63,
+        "rank": 48,
+        "percentile": 24.193548387096776,
+        "value": 2.479750492348483,
+        "display": "2.5%",
+        "median": 5.033531997815607,
+        "median_display": "5.0%",
+        "above": [
+          {
+            "rank": 46,
+            "name": "VIAVI SOLUTIONS INC.",
+            "cik": 912093,
+            "value": 2.5638660887208338,
+            "display": "2.6%"
+          },
+          {
+            "rank": 47,
+            "name": "ENPHASE ENERGY, INC.",
+            "cik": 1463101,
+            "value": 2.525889161241537,
+            "display": "2.5%"
+          }
+        ],
+        "below": [
+          {
+            "rank": 49,
+            "name": "ADVANCED MICRO DEVICES, INC",
+            "cik": 2488,
+            "value": 2.4665503199534613,
+            "display": "2.5%"
+          },
+          {
+            "rank": 50,
+            "name": "SYNAPTICS Inc",
+            "cik": 817720,
+            "value": 2.4015638089919014,
+            "display": "2.4%"
+          }
+        ],
+        "reason": ""
+      }
+    },
+    {
+      "id": "peer:NVDA:free_cash_flow:2025:2026-11-18",
+      "kind": "peer_standing",
+      "label": "Free cash flow among SIC 3674 filers with revenue of at least $100.0M",
+      "outcome": "computed",
+      "reason": "",
+      "value": 100.0,
+      "unit": "percent",
+      "display": "rank 1 of 62",
+      "formula": "percentile = 100 × lower ÷ (n − 1) = 100 × 61 ÷ 61",
+      "inputs": [
+        {
+          "label": "Operating cash flow: every class member's row",
+          "value": null,
+          "display": "",
+          "source": "SEC XBRL frame us-gaap/NetCashProvidedByUsedInOperatingActivities/USD/CY2024 and CY2025",
+          "date": "CY2024 and CY2025",
+          "filed": "",
+          "url": ""
+        },
+        {
+          "label": "Capital expenditure: every class member's row",
+          "value": null,
+          "display": "",
+          "source": "SEC XBRL frame us-gaap/PaymentsToAcquirePropertyPlantAndEquipment|PaymentsToAcquireProductiveAssets/USD/CY2024 and CY2025",
+          "date": "CY2024 and CY2025",
+          "filed": "",
+          "url": ""
+        }
+      ],
+      "assumptions": [
+        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
+        "Measure: Operating cash flow − capital expenditure (the app's house definition).",
+        "Rank 1 is the highest value; the percentile is the share of the other members with a lower value.",
+        "Frames carry no filing date: a value restated later is the restated value."
+      ],
+      "reading": "Free cash flow ranks 1 of 62 in 2025 at $96.68B (above 100% of the others; class median $96.1M) among SIC 3674 filers with revenue of at least $100.0M; a year earlier it ranks 1 of 63 in 2024 at $60.85B (above 100% of the others; class median $63.9M).",
+      "data_origin": "sec_frames",
+      "as_of": "2026-11-18",
+      "note": "",
+      "measure": "free_cash_flow",
+      "class_name": "SIC 3674 filers with revenue of at least $100.0M",
+      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
+      "now": {
+        "year": 2025,
+        "period_end": "2026-01-25",
+        "n": 62,
+        "rank": 1,
+        "percentile": 100.0,
+        "value": 96676000000.0,
+        "display": "$96.68B",
+        "median": 96131500.0,
+        "median_display": "$96.1M",
+        "above": [],
+        "below": [
+          {
+            "rank": 2,
+            "name": "Broadcom Inc.",
+            "cik": 1730168,
+            "value": 26914000000.0,
+            "display": "$26.91B"
+          },
+          {
+            "rank": 3,
+            "name": "ADVANCED MICRO DEVICES, INC",
+            "cik": 2488,
+            "value": 6735000000.0,
+            "display": "$6.74B"
+          }
+        ],
+        "reason": ""
+      },
+      "year_before": {
+        "year": 2024,
+        "period_end": "2025-01-26",
+        "n": 63,
+        "rank": 1,
+        "percentile": 100.0,
+        "value": 60853000000.0,
+        "display": "$60.85B",
+        "median": 63895000.0,
+        "median_display": "$63.9M",
+        "above": [],
+        "below": [
+          {
+            "rank": 2,
+            "name": "Broadcom Inc.",
+            "cik": 1730168,
+            "value": 19414000000.0,
+            "display": "$19.41B"
+          },
+          {
+            "rank": 3,
+            "name": "APPLIED MATERIALS INC /DE",
+            "cik": 6951,
+            "value": 7487000000.0,
+            "display": "$7.49B"
+          }
+        ],
+        "reason": ""
+      }
+    },
+    {
+      "id": "peer:NVDA:fcf_margin:2025:2026-11-18",
+      "kind": "peer_standing",
+      "label": "Free cash flow margin among SIC 3674 filers with revenue of at least $100.0M",
+      "outcome": "computed",
+      "reason": "",
+      "value": 98.36065573770492,
+      "unit": "percent",
+      "display": "rank 2 of 62",
+      "formula": "percentile = 100 × lower ÷ (n − 1) = 100 × 60 ÷ 61",
+      "inputs": [
+        {
+          "label": "Operating cash flow: every class member's row",
+          "value": null,
+          "display": "",
+          "source": "SEC XBRL frame us-gaap/NetCashProvidedByUsedInOperatingActivities/USD/CY2024 and CY2025",
+          "date": "CY2024 and CY2025",
+          "filed": "",
+          "url": ""
+        },
+        {
+          "label": "Capital expenditure: every class member's row",
+          "value": null,
+          "display": "",
+          "source": "SEC XBRL frame us-gaap/PaymentsToAcquirePropertyPlantAndEquipment|PaymentsToAcquireProductiveAssets/USD/CY2024 and CY2025",
+          "date": "CY2024 and CY2025",
+          "filed": "",
+          "url": ""
+        },
+        {
+          "label": "Revenue: every class member's row",
+          "value": null,
+          "display": "",
+          "source": "SEC XBRL frame us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax|Revenues|SalesRevenueNet|RevenueFromContractWithCustomerIncludingAssessedTax|RevenuesNetOfInterestExpense/USD/CY2024 and CY2025",
+          "date": "CY2024 and CY2025",
+          "filed": "",
+          "url": ""
+        }
+      ],
+      "assumptions": [
+        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
+        "Measure: (Operating cash flow − capital expenditure) ÷ revenue.",
+        "Rank 1 is the highest value; the percentile is the share of the other members with a lower value.",
+        "Frames carry no filing date: a value restated later is the restated value."
+      ],
+      "reading": "Free cash flow margin ranks 2 of 62 in 2025 at 44.8% (above 98% of the others; class median 8.9%) among SIC 3674 filers with revenue of at least $100.0M; a year earlier it ranks 1 of 63 in 2024 at 46.6% (above 100% of the others; class median 5.7%).",
+      "data_origin": "sec_frames",
+      "as_of": "2026-11-18",
+      "note": "",
+      "measure": "fcf_margin",
+      "class_name": "SIC 3674 filers with revenue of at least $100.0M",
+      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
+      "now": {
+        "year": 2025,
+        "period_end": "2026-01-25",
+        "n": 62,
+        "rank": 2,
+        "percentile": 98.36065573770492,
+        "value": 44.770258129648326,
+        "display": "44.8%",
+        "median": 8.861880194961902,
+        "median_display": "8.9%",
+        "above": [
+          {
+            "rank": 1,
+            "name": "RAMBUS INC",
+            "cik": 917273,
+            "value": 47.083504091121064,
+            "display": "47.1%"
+          }
+        ],
+        "below": [
+          {
+            "rank": 3,
+            "name": "Broadcom Inc.",
+            "cik": 1730168,
+            "value": 42.127506378449446,
+            "display": "42.1%"
+          },
+          {
+            "rank": 4,
+            "name": "Analog Devices, Inc.",
+            "cik": 6281,
+            "value": 38.82725738533701,
+            "display": "38.8%"
+          }
+        ],
+        "reason": ""
+      },
+      "year_before": {
+        "year": 2024,
+        "period_end": "2025-01-26",
+        "n": 63,
+        "rank": 1,
+        "percentile": 100.0,
+        "value": 46.63172333463604,
+        "display": "46.6%",
+        "median": 5.717974730240708,
+        "median_display": "5.7%",
+        "above": [],
+        "below": [
+          {
+            "rank": 2,
+            "name": "Skyworks Solutions, Inc.",
+            "cik": 4127,
+            "value": 39.9162278602202,
+            "display": "39.9%"
+          },
+          {
+            "rank": 3,
+            "name": "Broadcom Inc.",
+            "cik": 1730168,
+            "value": 37.642998410051575,
+            "display": "37.6%"
+          }
+        ],
+        "reason": ""
+      }
+    },
+    {
+      "id": "peer:NVDA:cash_conversion:2025:2026-11-18",
+      "kind": "peer_standing",
+      "label": "Cash conversion among SIC 3674 filers with revenue of at least $100.0M",
+      "outcome": "computed",
+      "reason": "",
+      "value": 16.216216216216218,
+      "unit": "percent",
+      "display": "rank 32 of 38",
+      "formula": "percentile = 100 × lower ÷ (n − 1) = 100 × 6 ÷ 37",
+      "inputs": [
+        {
+          "label": "Operating cash flow: every class member's row",
+          "value": null,
+          "display": "",
+          "source": "SEC XBRL frame us-gaap/NetCashProvidedByUsedInOperatingActivities/USD/CY2024 and CY2025",
+          "date": "CY2024 and CY2025",
+          "filed": "",
+          "url": ""
+        },
+        {
+          "label": "Net income: every class member's row",
+          "value": null,
+          "display": "",
+          "source": "SEC XBRL frame us-gaap/NetIncomeLoss/USD/CY2024 and CY2025",
+          "date": "CY2024 and CY2025",
+          "filed": "",
+          "url": ""
+        }
+      ],
+      "assumptions": [
+        "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
+        "Measure: Operating cash flow ÷ net income, when net income is positive.",
+        "Rank 1 is the highest value; the percentile is the share of the other members with a lower value.",
+        "Frames carry no filing date: a value restated later is the restated value."
+      ],
+      "reading": "Cash conversion ranks 32 of 38 in 2025 at 0.86× (above 16% of the others; class median 1.76×) among SIC 3674 filers with revenue of at least $100.0M; a year earlier it ranks 31 of 36 in 2024 at 0.88× (above 14% of the others; class median 1.88×).",
+      "data_origin": "sec_frames",
+      "as_of": "2026-11-18",
+      "note": "",
+      "measure": "cash_conversion",
+      "class_name": "SIC 3674 filers with revenue of at least $100.0M",
+      "class_definition": "the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked)",
+      "now": {
+        "year": 2025,
+        "period_end": "2026-01-25",
+        "n": 38,
+        "rank": 32,
+        "percentile": 16.216216216216218,
+        "value": 0.855505675997568,
+        "display": "0.86×",
+        "median": 1.7622718707429716,
+        "median_display": "1.76×",
+        "above": [
+          {
+            "rank": 30,
+            "name": "CREDO TECHNOLOGY GROUP HOLDING LTD",
+            "cik": 1807794,
+            "value": 0.983088386314022,
+            "display": "0.98×"
+          },
+          {
+            "rank": 31,
+            "name": "Nextracker Inc.",
+            "cik": 1852131,
+            "value": 0.9607908063555352,
+            "display": "0.96×"
+          }
+        ],
+        "below": [
+          {
+            "rank": 33,
+            "name": "ENPHASE ENERGY, INC.",
+            "cik": 1463101,
+            "value": 0.7932238443529132,
+            "display": "0.79×"
+          },
+          {
+            "rank": 34,
+            "name": "MARVELL TECHNOLOGY, INC",
+            "cik": 1835632,
+            "value": 0.6555934234672859,
+            "display": "0.66×"
+          }
+        ],
+        "reason": ""
+      },
+      "year_before": {
+        "year": 2024,
+        "period_end": "2025-01-26",
+        "n": 36,
+        "rank": 31,
+        "percentile": 14.285714285714286,
+        "value": 0.8793770581778265,
+        "display": "0.88×",
+        "median": 1.8787207386820621,
+        "median_display": "1.88×",
+        "above": [
+          {
+            "rank": 29,
+            "name": "NXP Semiconductors N.V.",
+            "cik": 1413447,
+            "value": 1.1083665338645419,
+            "display": "1.11×"
+          },
+          {
+            "rank": 30,
+            "name": "First Solar, Inc.",
+            "cik": 1274494,
+            "value": 0.9426915801629047,
+            "display": "0.94×"
+          }
+        ],
+        "below": [
+          {
+            "rank": 32,
+            "name": "Silicon Motion Technology Corporation",
+            "cik": 1329394,
+            "value": 0.8638192024560499,
+            "display": "0.86×"
+          },
+          {
+            "rank": 33,
+            "name": "ARM HOLDINGS PLC /UK",
+            "cik": 1973239,
+            "value": 0.5012626262626263,
+            "display": "0.50×"
+          }
+        ],
+        "reason": ""
+      }
+    }
+  ],
+  "years_read": [
+    2010,
+    2011,
+    2012,
+    2013,
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "frames_read": 94,
+  "notes": [
+    "Frames admitted: periods ending by 2026-07-21 (120 days before today: an annual report is due within 60 to 90 days). A frame holds the latest value SEC has, so a later restatement is included.",
+    "Left out for a scale break (two concepts of one filer and year differing by a factor near a thousand): 5 filer-year(s) of revenue.",
+    "Rows dropped: 2 not a year long (350 to 380 days)."
+  ],
+  "covered_measures": [
+    "capex",
+    "capex_ratio",
+    "fcf_margin",
+    "free_cash_flow",
+    "gross_margin",
+    "gross_profit",
+    "net_income",
+    "net_margin",
+    "operating_cash_flow",
+    "operating_expenses",
+    "operating_income",
+    "operating_margin",
+    "revenue",
+    "rnd",
+    "rnd_ratio"
+  ],
+  "not_covered_measures": [
+    "accounts_payable",
+    "cash",
+    "cash_and_securities",
+    "commercial_paper",
+    "cost_of_revenue",
+    "current_debt",
+    "d_and_a",
+    "deferred_revenue",
+    "deferred_revenue_current",
+    "deferred_revenue_noncurrent",
+    "diluted_shares",
+    "dividends_paid",
+    "effective_tax_rate",
+    "eps_diluted",
+    "equity",
+    "general_admin",
+    "goodwill",
+    "income_tax",
+    "interest_expense",
+    "interest_income",
+    "inventory",
+    "long_term_debt",
+    "marketable_securities",
+    "net_cash",
+    "net_debt",
+    "opex_ratio",
+    "other_income",
+    "ppe",
+    "pretax_income",
+    "receivables",
+    "sales_marketing",
+    "sales_marketing_ratio",
+    "sbc",
+    "sbc_ratio",
+    "sga",
+    "sga_ratio",
+    "share_repurchases",
+    "shareholder_returns",
+    "total_assets",
+    "total_debt",
+    "total_liabilities",
+    "total_operating_expenses"
+  ]
+}

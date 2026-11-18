@@ -92,7 +92,8 @@ flowchart LR
     end
   end
   GITHUB["GitHub, private repository<br/>second copy of code and recorded data"]
-  SEC["SEC EDGAR<br/>the original filings and XBRL facts"]
+  SEC["SEC EDGAR<br/>the original filings and XBRL facts;<br/>XBRL frames and Form 13F tables<br/>for the outside and market views"]
+  FRED["FRED<br/>the S&P 500 level, only when a<br/>reaction asks for it as an index"]
   PAGES["Public web pages<br/>up to five a user adds to a run"]
   MODEL["Anthropic API<br/>optional"]
   REG["Registries, at build time<br/>PyPI, ghcr.io, Docker Hub"]
@@ -117,6 +118,7 @@ flowchart LR
   SEC -->|"HTTPS, one way,<br/>at most 7 requests a second"| APP
   SEC -->|"make probe, fixtures, eval"| ONEOFF
   PAGES -->|"HTTPS; private addresses refused"| APP
+  FRED -->|"HTTPS, only on request"| APP
   APP -->|"HTTPS: passages as data in,<br/>drafted findings out"| MODEL
   REG -->|"image build"| APP
   REG -->|"make lock"| LOCK
@@ -146,6 +148,30 @@ flowchart LR
 | The cassette of model answers | No | Laptop and GitHub |
 | `results/` | Disposable. One copy; what is worth keeping is copied into `demo/` or `docs/` and committed | The laptop |
 | Keys in `.env` | Yes, reissued by the provider | The laptop |
+
+## The outside view and the market view
+
+Two things a company's own filings cannot say, computed on demand and not yet part of a run
+(`docs/outside-view.md`, `docs/market-view.md`; an example on recorded SEC data, read offline, is
+in `docs/examples/market/`):
+
+- **How often has this been true of others?** `make outside-view T=NVDA CLAIM="Revenue grew more
+  than 50% year over year"` compiles the claim to a test and counts it over SEC's XBRL frames: among
+  other filers of the company's size and among its industry, in how many company-years it held, and
+  in how many of those it held again a year later, with the nearest cases by name; then the
+  company's rank among its industry on the measures the claim names.
+- **What does the price need?** `make market-view T=NVDA` reads a price from SEC itself (the
+  quarter-end close that Form 13F filings imply, confirmed by a second manager's filing; no account,
+  no key), values the company at it, and solves for the revenue growth the price needs under
+  printed assumptions, set beside what filers of its size actually did over ten years. `PRICE=...
+  PRICE_DATE=...` gives your own price instead; `AS_OF=YYYY-MM-DD` reads either view as of a day.
+  It is arithmetic under assumptions, not a forecast and not advice.
+- `make market-check` runs both on the eight probe companies; `make market-probe` asks every outside
+  source once and reports what came back; `make fixtures-market` and `make market-examples` record
+  and rewrite the example. Over HTTP: `GET /api/companies/{ticker}/outside`, `/market`, `/analytics`.
+
+There are no daily prices: no source of them may be read by a script, so the stock's move after an
+8-K is computed only from closes you supply (`docs/market-view.md`).
 
 ## Where the model answers came from
 
@@ -269,6 +295,6 @@ make watch-contention   # offline: a run timed alone and with a watcher writing 
 - **The filing comparison's one threshold has been read only by a model.** It was set on NVIDIA's reports. For Apple and Coca-Cola the pairs near it were read by the session that built it (`make changes ARGS="AAPL --form 10-K --review 0.44"` prints them): in risk factors it holds; in Coca-Cola's discussion of results, about three in ten pairs just above it join two different paragraphs built on one template. The other five companies' results are unread. A paragraph rewritten into several reads as one removed and several added. Table rows are counted and never shown, so a figure that moved inside a table is invisible. "An exact span" is a statement about the record: a reworded pair is drawn word by word, with its spacing normalised. What counts as a sub-heading depends on the filing's typography. Where a filing's body does not sit under its Item headings (JPMorgan), the Item named beside a change is not meaningful.
 - **The 8-Ks since the annual report are read by rule, not understood.** An 8-K's category is its item number (an acquisition filed under Item 8.01 is "disclosure"); a claim's category is a lexicon measured on 84 claims a model labelled and tuned on the same claims. At most eight are read per run, and only their own items: the press release attached as an exhibit is not. Nothing is known about an event until its 8-K reaches EDGAR. No recording replays an 8-K passage; one live run did (`?sample=run-events`, 18 November: 4 of its 8 excerpts quote an 8-K). See [`docs/events.md`](docs/events.md).
 - **A compiled claim can be compiled wrongly.** On claims another model wrote, 11 of 40 held-out numeric claims once compiled to a test that does not mean what the sentence says (a segment read as the company, an unknown expense read as revenue, a period misplaced, half a claim). A claim now compiles only when its test explains every word of it, which refuses all eleven, but that rule was written with those claims open and has not met claims nobody here has read. The canonical test is printed beside every outcome; read it. Up to two model readers of different models can be turned on beside the grammar (`EVIDENCE_DESK_CLAIM_READER=model` or `models`, or `READERS=models` on `make up` or `make run`): a test then counts when at least two readers reach the same test, and a third reader's different test is shown as a dissent. They are off by default; with the grammar alone, a run says it was read by one reader. They were recorded once on set C (above), under the prompt before rule 3; beside that, one live run of the app with both on (`?sample=run-live`, 18 November 2026, five claims) and the example run with two model readers (`docs/examples/v14/run-readers.json`, twelve reads recorded through the API) are recorded. Neither has a dissent or a disagreement.
-- **A claim is compiled by a grammar its author also labelled.** It reads the phrasings in `eval/claim-tests.json`; an analyst's own wording may not compile, and is then judged as before with the reason shown. "Expanding" is read against the same quarter a year earlier. A share of revenue, and a part's own revenue or operating income (read by a model reader only), come from one filing's tags (the newest 10-Q or 10-K, for its newest period or the fiscal year or quarter the claim names) and have no history. Approximate figures ("about", "double digits"), ranks and records, sums of parts and half years are refused. Some measures a claim test can name are reported by few companies (sales and marketing by 2 of the eight probe companies, commercial paper by 2, G&A by 3; `docs/evidence/measures-eight-companies.md`); a claim about one of them on a company that does not tag it cannot be computed. Peers, valuation, causes and forecasts are never computed. How a model would do on the same figures is not measured: the harness exists and has not been run.
+- **A claim is compiled by a grammar its author also labelled.** It reads the phrasings in `eval/claim-tests.json`; an analyst's own wording may not compile, and is then judged as before with the reason shown. "Expanding" is read against the same quarter a year earlier. A share of revenue, and a part's own revenue or operating income (read by a model reader only), come from one filing's tags (the newest 10-Q or 10-K, for its newest period or the fiscal year or quarter the claim names) and have no history. Approximate figures ("about", "double digits"), ranks and records, sums of parts and half years are refused. Some measures a claim test can name are reported by few companies (sales and marketing by 2 of the eight probe companies, commercial paper by 2, G&A by 3; `docs/evidence/measures-eight-companies.md`); a claim about one of them on a company that does not tag it cannot be computed. Peers and valuation are not part of a run: they are computed outside it by the outside view and the market view (below). Causes and forecasts are never computed. How a model would do on the same figures is not measured: the harness exists and has not been run.
 - **A run as of a past date reads today's EDGAR, filtered by filing date.** A document changed in place after the date would be read in its new form.
 - Only 10-K, 10-Q and 8-K filers. No PDFs, 8-K exhibits, foreign filers (6-K) or transcripts. Runs execute in a worker thread inside the API process; there is no queue and no resume after a restart.

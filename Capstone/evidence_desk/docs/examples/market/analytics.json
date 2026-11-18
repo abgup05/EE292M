@@ -1,0 +1,836 @@
+{
+  "company": {
+    "cik": 1045810,
+    "ticker": "NVDA",
+    "name": "NVIDIA CORP"
+  },
+  "claim": "Revenue grew more than 50% year over year in fiscal 2026",
+  "as_of": "2026-11-18",
+  "analytics": [
+    {
+      "id": "base_rate:NVDA:size:yoy(revenue)[t] > 50%:2026-11-18",
+      "provider": "outside_view",
+      "data_origin": "sec_frames",
+      "kind": "base_rate",
+      "label": "Base rate of yoy(revenue)[t] > 50% among filers with revenue of at least $100.00B",
+      "claim_ids": [
+        "c1"
+      ],
+      "measure": "revenue",
+      "period": "CY2011 to CY2025",
+      "value": 1.092896174863388,
+      "unit": "percent",
+      "display": "4 of 366 (1.1%)",
+      "formula": "held ÷ computable = 4 ÷ 366",
+      "inputs": [
+        {
+          "ref_kind": "frame",
+          "id": "us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax|Revenues|SalesRevenueNet|RevenueFromContractWithCustomerIncludingAssessedTax|RevenuesNetOfInterestExpense/USD/CY2010 to CY2025",
+          "label": "Revenue: every filer's row, by the first concept that has one",
+          "value": null,
+          "display": "",
+          "accession": "",
+          "form": "",
+          "filed": ""
+        }
+      ],
+      "reading": "Among filers with revenue of at least $100.00B (the company left out), yoy(revenue)[t] > 50% held in 4 of 366 company-years from 2011 to 2025; of the 4 that held and could be read a year later, 0 still held.",
+      "reading_origin": "code",
+      "available": true,
+      "note": "Class: every filer in SEC's annual frames whose revenue in the test's base year was at least $100.00B (half the company's newest revenue, rounded down to 1, 2 or 5 times a power of ten) Each year t is a calendar-year frame: SEC places in it, for each filer, the fiscal year that best fits the calendar year; t-1 is the frame a year earlier, and the two periods must end a whole number of years apart. Frames carry no filing date: a value restated later is the restated value. The company itself is not counted: the rate is of the other filers of the class, and the years in which the test held for the company are listed apart. A filer in the class in the base year with no value in year t (it was bought, went under, stopped filing, or changed its tags) is in the class but not computable: the rate is of the filers that can still be read. A parent and a subsidiary that both file are two filers; a filer that reports in another currency is in no USD frame. The SIC code is the filer's code today, not the code it had in year t."
+    },
+    {
+      "id": "base_rate:NVDA:size:yoy(revenue)[t] > 50%:2026-11-18:persistence",
+      "provider": "outside_view",
+      "data_origin": "sec_frames",
+      "kind": "persistence",
+      "label": "Persistence of yoy(revenue)[t] > 50% among filers with revenue of at least $100.00B",
+      "claim_ids": [
+        "c1"
+      ],
+      "measure": "revenue",
+      "period": "CY2011 to CY2025",
+      "value": 0.0,
+      "unit": "percent",
+      "display": "0 of 4 (0.0%)",
+      "formula": "still held a year later ÷ held and readable a year later = 0 ÷ 4",
+      "inputs": [
+        {
+          "ref_kind": "frame",
+          "id": "us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax|Revenues|SalesRevenueNet|RevenueFromContractWithCustomerIncludingAssessedTax|RevenuesNetOfInterestExpense/USD/CY2010 to CY2025",
+          "label": "Revenue: every filer's row, by the first concept that has one",
+          "value": null,
+          "display": "",
+          "accession": "",
+          "form": "",
+          "filed": ""
+        }
+      ],
+      "reading": "Of the 4 company-years among filers with revenue of at least $100.00B in which yoy(revenue)[t] > 50% held and the next year could be read, it held again in 0.",
+      "reading_origin": "code",
+      "available": true,
+      "note": "Class: every filer in SEC's annual frames whose revenue in the test's base year was at least $100.00B (half the company's newest revenue, rounded down to 1, 2 or 5 times a power of ten). A company-year whose next year cannot be read (the filer stopped filing or was bought) is in neither count."
+    },
+    {
+      "id": "base_rate:NVDA:industry:yoy(revenue)[t] > 50%:2026-11-18",
+      "provider": "outside_view",
+      "data_origin": "sec_frames",
+      "kind": "base_rate",
+      "label": "Base rate of yoy(revenue)[t] > 50% among SIC 3674 filers with revenue of at least $100.0M",
+      "claim_ids": [
+        "c1"
+      ],
+      "measure": "revenue",
+      "period": "CY2011 to CY2025",
+      "value": 7.751196172248803,
+      "unit": "percent",
+      "display": "81 of 1045 (7.8%)",
+      "formula": "held ÷ computable = 81 ÷ 1045",
+      "inputs": [
+        {
+          "ref_kind": "frame",
+          "id": "us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax|Revenues|SalesRevenueNet|RevenueFromContractWithCustomerIncludingAssessedTax|RevenuesNetOfInterestExpense/USD/CY2010 to CY2025",
+          "label": "Revenue: every filer's row, by the first concept that has one",
+          "value": null,
+          "display": "",
+          "accession": "",
+          "form": "",
+          "filed": ""
+        }
+      ],
+      "reading": "Among SIC 3674 filers with revenue of at least $100.0M (the company left out), yoy(revenue)[t] > 50% held in 81 of 1045 company-years from 2011 to 2025; of the 69 that held and could be read a year later, 13 still held.",
+      "reading_origin": "code",
+      "available": true,
+      "note": "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked) Each year t is a calendar-year frame: SEC places in it, for each filer, the fiscal year that best fits the calendar year; t-1 is the frame a year earlier, and the two periods must end a whole number of years apart. Frames carry no filing date: a value restated later is the restated value. The company itself is not counted: the rate is of the other filers of the class, and the years in which the test held for the company are listed apart. A filer in the class in the base year with no value in year t (it was bought, went under, stopped filing, or changed its tags) is in the class but not computable: the rate is of the filers that can still be read. A parent and a subsidiary that both file are two filers; a filer that reports in another currency is in no USD frame. The SIC code is the filer's code today, not the code it had in year t."
+    },
+    {
+      "id": "base_rate:NVDA:industry:yoy(revenue)[t] > 50%:2026-11-18:persistence",
+      "provider": "outside_view",
+      "data_origin": "sec_frames",
+      "kind": "persistence",
+      "label": "Persistence of yoy(revenue)[t] > 50% among SIC 3674 filers with revenue of at least $100.0M",
+      "claim_ids": [
+        "c1"
+      ],
+      "measure": "revenue",
+      "period": "CY2011 to CY2025",
+      "value": 18.84057971014493,
+      "unit": "percent",
+      "display": "13 of 69 (18.8%)",
+      "formula": "still held a year later ÷ held and readable a year later = 13 ÷ 69",
+      "inputs": [
+        {
+          "ref_kind": "frame",
+          "id": "us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax|Revenues|SalesRevenueNet|RevenueFromContractWithCustomerIncludingAssessedTax|RevenuesNetOfInterestExpense/USD/CY2010 to CY2025",
+          "label": "Revenue: every filer's row, by the first concept that has one",
+          "value": null,
+          "display": "",
+          "accession": "",
+          "form": "",
+          "filed": ""
+        }
+      ],
+      "reading": "Of the 69 company-years among SIC 3674 filers with revenue of at least $100.0M in which yoy(revenue)[t] > 50% held and the next year could be read, it held again in 13.",
+      "reading_origin": "code",
+      "available": true,
+      "note": "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked). A company-year whose next year cannot be read (the filer stopped filing or was bought) is in neither count."
+    },
+    {
+      "id": "peer:NVDA:revenue_growth:2025:2026-11-18",
+      "provider": "outside_view",
+      "data_origin": "sec_frames",
+      "kind": "peer_standing",
+      "label": "Revenue growth, year over year among SIC 3674 filers with revenue of at least $100.0M",
+      "claim_ids": [
+        "c1"
+      ],
+      "measure": "revenue_growth",
+      "period": "CY2025",
+      "value": 91.93548387096774,
+      "unit": "percent",
+      "display": "rank 6 of 63",
+      "formula": "percentile = 100 × lower ÷ (n − 1) = 100 × 57 ÷ 62",
+      "inputs": [
+        {
+          "ref_kind": "frame",
+          "id": "us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax|Revenues|SalesRevenueNet|RevenueFromContractWithCustomerIncludingAssessedTax|RevenuesNetOfInterestExpense/USD/CY2024 and CY2025",
+          "label": "Revenue: every class member's row",
+          "value": null,
+          "display": "",
+          "accession": "",
+          "form": "",
+          "filed": ""
+        }
+      ],
+      "reading": "Revenue growth, year over year ranks 6 of 63 in 2025 at 65.5% (above 92% of the others; class median 13.0%) among SIC 3674 filers with revenue of at least $100.0M; a year earlier it ranks 4 of 61 in 2024 at 114.2% (above 95% of the others; class median -2.1%).",
+      "reading_origin": "code",
+      "available": true,
+      "note": "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked) Measure: Revenue as tagged. Rank 1 is the highest value; the percentile is the share of the other members with a lower value. Frames carry no filing date: a value restated later is the restated value."
+    },
+    {
+      "id": "peer:NVDA:revenue:2025:2026-11-18",
+      "provider": "outside_view",
+      "data_origin": "sec_frames",
+      "kind": "peer_standing",
+      "label": "Revenue among SIC 3674 filers with revenue of at least $100.0M",
+      "claim_ids": [
+        "c1"
+      ],
+      "measure": "revenue",
+      "period": "CY2025",
+      "value": 100.0,
+      "unit": "percent",
+      "display": "rank 1 of 63",
+      "formula": "percentile = 100 × lower ÷ (n − 1) = 100 × 62 ÷ 62",
+      "inputs": [
+        {
+          "ref_kind": "frame",
+          "id": "us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax|Revenues|SalesRevenueNet|RevenueFromContractWithCustomerIncludingAssessedTax|RevenuesNetOfInterestExpense/USD/CY2024 and CY2025",
+          "label": "Revenue: every class member's row",
+          "value": null,
+          "display": "",
+          "accession": "",
+          "form": "",
+          "filed": ""
+        }
+      ],
+      "reading": "Revenue ranks 1 of 63 in 2025 at $215.94B (above 100% of the others; class median $1.34B) among SIC 3674 filers with revenue of at least $100.0M; a year earlier it ranks 1 of 64 in 2024 at $130.50B (above 100% of the others; class median $1.05B).",
+      "reading_origin": "code",
+      "available": true,
+      "note": "Class: the 506 filers SEC lists today under SIC 3674 (Semiconductors & Related Devices) that have filed a 10-K, with revenue of at least $100.0M in the test's base year (for a ranking, in the year ranked) Measure: Revenue as tagged. Rank 1 is the highest value; the percentile is the share of the other members with a lower value. Frames carry no filing date: a value restated later is the restated value."
+    },
+    {
+      "id": "market_value:NVDA:2026-09-30",
+      "provider": "market_view",
+      "data_origin": "market_prices",
+      "kind": "market_value",
+      "label": "Market value",
+      "claim_ids": [
+        "c1"
+      ],
+      "measure": "market_value",
+      "period": "2026-09-30",
+      "value": 5503958000000.0,
+      "unit": "USD",
+      "display": "$5.50T",
+      "formula": "$228.38 × 24,100,000,000 shares",
+      "inputs": [
+        {
+          "ref_kind": "price",
+          "id": "2026-09-30",
+          "label": "Price per share",
+          "value": 228.38,
+          "display": "$228.38",
+          "accession": "0001582202-26-000008",
+          "form": "13F-HR",
+          "filed": "2026-11-12"
+        },
+        {
+          "ref_kind": "filing",
+          "id": "0001582202-26-000008",
+          "label": "Swiss National Bank: value of the position (NVIDIA CORPORATION)",
+          "value": 14360762780.0,
+          "display": "$14,360,762,780",
+          "accession": "0001582202-26-000008",
+          "form": "13F-HR",
+          "filed": "2026-11-12"
+        },
+        {
+          "ref_kind": "filing",
+          "id": "0001582202-26-000008",
+          "label": "Swiss National Bank: shares held (NVIDIA CORPORATION)",
+          "value": 62881000.0,
+          "display": "62,881,000",
+          "accession": "0001582202-26-000008",
+          "form": "13F-HR",
+          "filed": "2026-11-12"
+        },
+        {
+          "ref_kind": "fact",
+          "id": "dei:EntityCommonStockSharesOutstanding",
+          "label": "Shares outstanding (dei:EntityCommonStockSharesOutstanding)",
+          "value": 24100000000.0,
+          "display": "24,100,000,000",
+          "accession": "0001045810-26-000075",
+          "form": "10-Q",
+          "filed": "2026-08-26"
+        }
+      ],
+      "reading": "At $228.38 on 2026-09-30, the 24,100,000,000 shares outstanding on 2026-08-21 are worth $5.50T.",
+      "reading_origin": "code",
+      "available": true,
+      "note": "The close of the last trading day of the quarter ended 2026-09-30, not a price of today; the issuer is matched by name (NVIDIA CORPORATION). Confirmed within 0.5% by the 13F of California Public Employees Retirement System (0000919079-26-000013) and of New York State Common Retirement Fund (0000810265-26-000008)."
+    },
+    {
+      "id": "enterprise_value:NVDA:2026-09-30",
+      "provider": "market_view",
+      "data_origin": "market_prices",
+      "kind": "enterprise_value",
+      "label": "Enterprise value",
+      "claim_ids": [
+        "c1"
+      ],
+      "measure": "enterprise_value",
+      "period": "2026-09-30",
+      "value": 5480738000000.0,
+      "unit": "USD",
+      "display": "$5.48T",
+      "formula": "$5.50T + $33.37B − $56.59B",
+      "inputs": [
+        {
+          "ref_kind": "price",
+          "id": "2026-09-30",
+          "label": "Price per share",
+          "value": 228.38,
+          "display": "$228.38",
+          "accession": "0001582202-26-000008",
+          "form": "13F-HR",
+          "filed": "2026-11-12"
+        },
+        {
+          "ref_kind": "fact",
+          "id": "dei:EntityCommonStockSharesOutstanding",
+          "label": "Shares outstanding (dei:EntityCommonStockSharesOutstanding)",
+          "value": 24100000000.0,
+          "display": "24,100,000,000",
+          "accession": "0001045810-26-000075",
+          "form": "10-Q",
+          "filed": "2026-08-26"
+        },
+        {
+          "ref_kind": "fact",
+          "id": "LongTermDebtNoncurrent",
+          "label": "Total debt (LongTermDebtNoncurrent)",
+          "value": 32366000000.0,
+          "display": "$32.37B",
+          "accession": "0001045810-26-000075",
+          "form": "10-Q",
+          "filed": "2026-08-26"
+        },
+        {
+          "ref_kind": "fact",
+          "id": "LongTermDebtCurrent",
+          "label": "Total debt (LongTermDebtCurrent)",
+          "value": 1000000000.0,
+          "display": "$1.00B",
+          "accession": "0001045810-26-000075",
+          "form": "10-Q",
+          "filed": "2026-08-26"
+        },
+        {
+          "ref_kind": "fact",
+          "id": "CashAndCashEquivalentsAtCarryingValue",
+          "label": "Cash and marketable securities (CashAndCashEquivalentsAtCarryingValue)",
+          "value": 22443000000.0,
+          "display": "$22.44B",
+          "accession": "0001045810-26-000075",
+          "form": "10-Q",
+          "filed": "2026-08-26"
+        },
+        {
+          "ref_kind": "fact",
+          "id": "DebtSecuritiesCurrent",
+          "label": "Marketable securities, current (DebtSecuritiesCurrent)",
+          "value": 34143000000.0,
+          "display": "$34.14B",
+          "accession": "0001045810-26-000075",
+          "form": "10-Q",
+          "filed": "2026-08-26"
+        }
+      ],
+      "reading": "Market value $5.50T plus total debt $33.37B less cash and marketable securities $56.59B (2026-07-26) is $5.48T.",
+      "reading_origin": "code",
+      "available": true,
+      "note": "Current marketable securities are read from DebtSecuritiesCurrent: the company tags none under the catalogue's concepts on this balance sheet. Enterprise value = market value + total debt − cash and marketable securities (leases, preferred stock and minority interests are left out). Both balances are of the newest balance sheet filed by the price's date; one last reported for an older date is not carried forward. Non-current marketable securities are not subtracted: for a company that holds a long-dated portfolio the enterprise value here is higher than one that counts it."
+    },
+    {
+      "id": "ev_sales:NVDA:2026-09-30",
+      "provider": "market_view",
+      "data_origin": "market_prices",
+      "kind": "ev_sales",
+      "label": "Enterprise value ÷ revenue",
+      "claim_ids": [
+        "c1"
+      ],
+      "measure": "ev_sales",
+      "period": "2026-09-30",
+      "value": 18.090095026223803,
+      "unit": "multiple",
+      "display": "18.1×",
+      "formula": "$5.48T ÷ $302.97B",
+      "inputs": [
+        {
+          "ref_kind": "fact",
+          "id": "Revenues",
+          "label": "Revenue (Revenues)",
+          "value": 96221000000.0,
+          "display": "$96.22B",
+          "accession": "0001045810-26-000075",
+          "form": "10-Q",
+          "filed": "2026-08-26"
+        },
+        {
+          "ref_kind": "fact",
+          "id": "Revenues",
+          "label": "Revenue (Revenues)",
+          "value": 81615000000.0,
+          "display": "$81.61B",
+          "accession": "0001045810-26-000052",
+          "form": "10-Q",
+          "filed": "2026-05-20"
+        },
+        {
+          "ref_kind": "fact",
+          "id": "Revenues",
+          "label": "Revenue (Revenues, derived)",
+          "value": 68127000000.0,
+          "display": "$68.13B",
+          "accession": "",
+          "form": "",
+          "filed": "2026-02-25"
+        },
+        {
+          "ref_kind": "fact",
+          "id": "Revenues",
+          "label": "Revenue (Revenues)",
+          "value": 57006000000.0,
+          "display": "$57.01B",
+          "accession": "0001045810-25-000230",
+          "form": "10-Q",
+          "filed": "2025-11-19"
+        }
+      ],
+      "reading": "Enterprise value ÷ revenue is 18.1×: $5.48T over revenue, four quarters ended 2026-07-26 of $302.97B.",
+      "reading_origin": "code",
+      "available": true,
+      "note": ""
+    },
+    {
+      "id": "pe:NVDA:2026-09-30",
+      "provider": "market_view",
+      "data_origin": "market_prices",
+      "kind": "pe",
+      "label": "Market value ÷ net income",
+      "claim_ids": [
+        "c1"
+      ],
+      "measure": "pe",
+      "period": "2026-09-30",
+      "value": 28.53580742330684,
+      "unit": "multiple",
+      "display": "28.5×",
+      "formula": "$5.50T ÷ $192.88B",
+      "inputs": [
+        {
+          "ref_kind": "fact",
+          "id": "NetIncomeLoss",
+          "label": "Net income (NetIncomeLoss)",
+          "value": 59688000000.0,
+          "display": "$59.69B",
+          "accession": "0001045810-26-000075",
+          "form": "10-Q",
+          "filed": "2026-08-26"
+        },
+        {
+          "ref_kind": "fact",
+          "id": "NetIncomeLoss",
+          "label": "Net income (NetIncomeLoss)",
+          "value": 58321000000.0,
+          "display": "$58.32B",
+          "accession": "0001045810-26-000052",
+          "form": "10-Q",
+          "filed": "2026-05-20"
+        },
+        {
+          "ref_kind": "fact",
+          "id": "NetIncomeLoss",
+          "label": "Net income (NetIncomeLoss, derived)",
+          "value": 42960000000.0,
+          "display": "$42.96B",
+          "accession": "",
+          "form": "",
+          "filed": "2026-05-12"
+        },
+        {
+          "ref_kind": "fact",
+          "id": "NetIncomeLoss",
+          "label": "Net income (NetIncomeLoss)",
+          "value": 31910000000.0,
+          "display": "$31.91B",
+          "accession": "0001045810-25-000230",
+          "form": "10-Q",
+          "filed": "2025-11-19"
+        }
+      ],
+      "reading": "Market value ÷ net income is 28.5×: $5.50T over net income, four quarters ended 2026-07-26 of $192.88B.",
+      "reading_origin": "code",
+      "available": true,
+      "note": ""
+    },
+    {
+      "id": "p_fcf:NVDA:2026-09-30",
+      "provider": "market_view",
+      "data_origin": "market_prices",
+      "kind": "p_fcf",
+      "label": "Market value ÷ free cash flow",
+      "claim_ids": [
+        "c1"
+      ],
+      "measure": "p_fcf",
+      "period": "2026-09-30",
+      "value": 43.336204588759585,
+      "unit": "multiple",
+      "display": "43.3×",
+      "formula": "$5.50T ÷ $127.01B",
+      "inputs": [
+        {
+          "ref_kind": "fact",
+          "id": "NetCashProvidedByUsedInOperatingActivities",
+          "label": "Free cash flow (NetCashProvidedByUsedInOperatingActivities, derived)",
+          "value": 24077000000.0,
+          "display": "$24.08B",
+          "accession": "",
+          "form": "",
+          "filed": "2026-08-26"
+        },
+        {
+          "ref_kind": "fact",
+          "id": "PaymentsToAcquireProductiveAssets",
+          "label": "Free cash flow (PaymentsToAcquireProductiveAssets, derived)",
+          "value": 2677000000.0,
+          "display": "$2.68B",
+          "accession": "",
+          "form": "",
+          "filed": "2026-08-26"
+        },
+        {
+          "ref_kind": "fact",
+          "id": "NetCashProvidedByUsedInOperatingActivities",
+          "label": "Free cash flow (NetCashProvidedByUsedInOperatingActivities)",
+          "value": 50344000000.0,
+          "display": "$50.34B",
+          "accession": "0001045810-26-000052",
+          "form": "10-Q",
+          "filed": "2026-05-20"
+        },
+        {
+          "ref_kind": "fact",
+          "id": "PaymentsToAcquireProductiveAssets",
+          "label": "Free cash flow (PaymentsToAcquireProductiveAssets)",
+          "value": 1757000000.0,
+          "display": "$1.76B",
+          "accession": "0001045810-26-000052",
+          "form": "10-Q",
+          "filed": "2026-05-20"
+        },
+        {
+          "ref_kind": "fact",
+          "id": "NetCashProvidedByUsedInOperatingActivities",
+          "label": "Free cash flow (NetCashProvidedByUsedInOperatingActivities, derived)",
+          "value": 36188000000.0,
+          "display": "$36.19B",
+          "accession": "",
+          "form": "",
+          "filed": "2026-02-25"
+        },
+        {
+          "ref_kind": "fact",
+          "id": "PaymentsToAcquireProductiveAssets",
+          "label": "Free cash flow (PaymentsToAcquireProductiveAssets, derived)",
+          "value": 1284000000.0,
+          "display": "$1.28B",
+          "accession": "",
+          "form": "",
+          "filed": "2026-02-25"
+        },
+        {
+          "ref_kind": "fact",
+          "id": "NetCashProvidedByUsedInOperatingActivities",
+          "label": "Free cash flow (NetCashProvidedByUsedInOperatingActivities, derived)",
+          "value": 23751000000.0,
+          "display": "$23.75B",
+          "accession": "",
+          "form": "",
+          "filed": "2026-08-26"
+        },
+        {
+          "ref_kind": "fact",
+          "id": "PaymentsToAcquireProductiveAssets",
+          "label": "Free cash flow (PaymentsToAcquireProductiveAssets, derived)",
+          "value": 1636000000.0,
+          "display": "$1.64B",
+          "accession": "",
+          "form": "",
+          "filed": "2026-08-26"
+        }
+      ],
+      "reading": "Market value ÷ free cash flow is 43.3×: $5.50T over free cash flow, four quarters ended 2026-07-26 of $127.01B.",
+      "reading_origin": "code",
+      "available": true,
+      "note": ""
+    },
+    {
+      "id": "fcf_yield:NVDA:2026-09-30",
+      "provider": "market_view",
+      "data_origin": "market_prices",
+      "kind": "fcf_yield",
+      "label": "Free cash flow yield",
+      "claim_ids": [
+        "c1"
+      ],
+      "measure": "fcf_yield",
+      "period": "2026-09-30",
+      "value": 2.307539410729515,
+      "unit": "percent",
+      "display": "2.3%",
+      "formula": "$127.01B ÷ $5.50T",
+      "inputs": [
+        {
+          "ref_kind": "fact",
+          "id": "NetCashProvidedByUsedInOperatingActivities",
+          "label": "Free cash flow (NetCashProvidedByUsedInOperatingActivities, derived)",
+          "value": 24077000000.0,
+          "display": "$24.08B",
+          "accession": "",
+          "form": "",
+          "filed": "2026-08-26"
+        },
+        {
+          "ref_kind": "fact",
+          "id": "PaymentsToAcquireProductiveAssets",
+          "label": "Free cash flow (PaymentsToAcquireProductiveAssets, derived)",
+          "value": 2677000000.0,
+          "display": "$2.68B",
+          "accession": "",
+          "form": "",
+          "filed": "2026-08-26"
+        },
+        {
+          "ref_kind": "fact",
+          "id": "NetCashProvidedByUsedInOperatingActivities",
+          "label": "Free cash flow (NetCashProvidedByUsedInOperatingActivities)",
+          "value": 50344000000.0,
+          "display": "$50.34B",
+          "accession": "0001045810-26-000052",
+          "form": "10-Q",
+          "filed": "2026-05-20"
+        },
+        {
+          "ref_kind": "fact",
+          "id": "PaymentsToAcquireProductiveAssets",
+          "label": "Free cash flow (PaymentsToAcquireProductiveAssets)",
+          "value": 1757000000.0,
+          "display": "$1.76B",
+          "accession": "0001045810-26-000052",
+          "form": "10-Q",
+          "filed": "2026-05-20"
+        },
+        {
+          "ref_kind": "fact",
+          "id": "NetCashProvidedByUsedInOperatingActivities",
+          "label": "Free cash flow (NetCashProvidedByUsedInOperatingActivities, derived)",
+          "value": 36188000000.0,
+          "display": "$36.19B",
+          "accession": "",
+          "form": "",
+          "filed": "2026-02-25"
+        },
+        {
+          "ref_kind": "fact",
+          "id": "PaymentsToAcquireProductiveAssets",
+          "label": "Free cash flow (PaymentsToAcquireProductiveAssets, derived)",
+          "value": 1284000000.0,
+          "display": "$1.28B",
+          "accession": "",
+          "form": "",
+          "filed": "2026-02-25"
+        },
+        {
+          "ref_kind": "fact",
+          "id": "NetCashProvidedByUsedInOperatingActivities",
+          "label": "Free cash flow (NetCashProvidedByUsedInOperatingActivities, derived)",
+          "value": 23751000000.0,
+          "display": "$23.75B",
+          "accession": "",
+          "form": "",
+          "filed": "2026-08-26"
+        },
+        {
+          "ref_kind": "fact",
+          "id": "PaymentsToAcquireProductiveAssets",
+          "label": "Free cash flow (PaymentsToAcquireProductiveAssets, derived)",
+          "value": 1636000000.0,
+          "display": "$1.64B",
+          "accession": "",
+          "form": "",
+          "filed": "2026-08-26"
+        }
+      ],
+      "reading": "Free cash flow, four quarters ended 2026-07-26 of $127.01B is 2.3% of the market value of $5.50T.",
+      "reading_origin": "code",
+      "available": true,
+      "note": ""
+    },
+    {
+      "id": "reverse_dcf:NVDA:2026-09-30",
+      "provider": "market_view",
+      "data_origin": "market_prices",
+      "kind": "reverse_dcf",
+      "label": "Revenue growth the price implies (reverse DCF)",
+      "claim_ids": [
+        "c1"
+      ],
+      "measure": "revenue",
+      "period": "2026-09-30",
+      "value": 13.411142935510725,
+      "unit": "percent",
+      "display": "13.4% a year for 10 years",
+      "formula": "PV(g) = enterprise value $5.48T, solved for g between −50% and +100%",
+      "inputs": [
+        {
+          "ref_kind": "computed",
+          "id": "Enterprise value (the target)",
+          "label": "Enterprise value (the target)",
+          "value": 5480738000000.0,
+          "display": "$5.48T",
+          "accession": "",
+          "form": "",
+          "filed": ""
+        },
+        {
+          "ref_kind": "fact",
+          "id": "Revenues",
+          "label": "Revenue (Revenues)",
+          "value": 96221000000.0,
+          "display": "$96.22B",
+          "accession": "0001045810-26-000075",
+          "form": "10-Q",
+          "filed": "2026-08-26"
+        },
+        {
+          "ref_kind": "fact",
+          "id": "Revenues",
+          "label": "Revenue (Revenues)",
+          "value": 81615000000.0,
+          "display": "$81.61B",
+          "accession": "0001045810-26-000052",
+          "form": "10-Q",
+          "filed": "2026-05-20"
+        },
+        {
+          "ref_kind": "fact",
+          "id": "Revenues",
+          "label": "Revenue (Revenues, derived)",
+          "value": 68127000000.0,
+          "display": "$68.13B",
+          "accession": "",
+          "form": "",
+          "filed": "2026-02-25"
+        },
+        {
+          "ref_kind": "fact",
+          "id": "Revenues",
+          "label": "Revenue (Revenues)",
+          "value": 57006000000.0,
+          "display": "$57.01B",
+          "accession": "0001045810-25-000230",
+          "form": "10-Q",
+          "filed": "2025-11-19"
+        },
+        {
+          "ref_kind": "fact",
+          "id": "OperatingIncomeLoss",
+          "label": "Operating income (OperatingIncomeLoss)",
+          "value": 63734000000.0,
+          "display": "$63.73B",
+          "accession": "0001045810-26-000075",
+          "form": "10-Q",
+          "filed": "2026-08-26"
+        },
+        {
+          "ref_kind": "fact",
+          "id": "OperatingIncomeLoss",
+          "label": "Operating income (OperatingIncomeLoss)",
+          "value": 53536000000.0,
+          "display": "$53.54B",
+          "accession": "0001045810-26-000052",
+          "form": "10-Q",
+          "filed": "2026-05-20"
+        },
+        {
+          "ref_kind": "fact",
+          "id": "OperatingIncomeLoss",
+          "label": "Operating income (OperatingIncomeLoss, derived)",
+          "value": 44299000000.0,
+          "display": "$44.30B",
+          "accession": "",
+          "form": "",
+          "filed": "2026-02-25"
+        },
+        {
+          "ref_kind": "fact",
+          "id": "OperatingIncomeLoss",
+          "label": "Operating income (OperatingIncomeLoss)",
+          "value": 36010000000.0,
+          "display": "$36.01B",
+          "accession": "0001045810-25-000230",
+          "form": "10-Q",
+          "filed": "2025-11-19"
+        }
+      ],
+      "reading": "At these assumptions the enterprise value of $5.48T needs revenue to grow 13.4% a year for 10 years, from $302.97B to $1.07T. The company's own revenue grew +100.0% a year over its last three fiscal years. The largest revenue any filer reported for 2025 is $716.92B (AMAZON.COM, INC.): the implied year-10 revenue is 1.5 times that. Of 40 ten-year spans of filers that started at its size (revenue of $151.48B to $605.94B; starts 2009 to 2015), 0 grew at least that fast (median 1.3% a year, 90th percentile 8.0%; 4 more could not be followed for ten years). With the operating margin at the industry's median of 4.2% (n = 61, 2025) instead of 65.2%, no growth from −50% to +100% a year reaches the price. With the operating margin at the industry's 90th percentile of 26.6% (n = 61, 2025) instead of 65.2%, the same price needs 28.1% a year. Across the grid (discount rate ±2 points, margin ±5 points) the implied growth runs from 6.5% to 19.7% a year (15 of 15 cells solve).",
+      "reading_origin": "code",
+      "available": true,
+      "note": "Arithmetic under stated assumptions, not a forecast and not advice: it says what constant growth the price would need if every assumption below held. Starting revenue $302.97B (Revenue, four quarters ended 2026-07-26). Operating margin 65.2%, every year: the trailing operating margin, $197.58B ÷ $302.97B. Tax on operating profit 21% (the US federal rate, a stated default). Sales-to-capital 1.47: trailing revenue $302.97B ÷ invested capital $205.76B (equity $228.98B + debt $33.37B − cash and securities $56.59B, 2026-07-26); each dollar of new revenue is assumed to need capital at this ratio. Discount rate 9% a year (a stated default, near a long-run US equity return). After 10 years, growth of 3% a year forever. Cash flow = revenue × margin × (1 − tax) − (revenue − last year's revenue) ÷ sales-to-capital; discounted at the end of each year; compared with the enterprise value."
+    },
+    {
+      "id": "reverse_dcf:NVDA:2026-09-30:peer_median",
+      "provider": "market_view",
+      "data_origin": "market_prices",
+      "kind": "reverse_dcf_peer_median_margin",
+      "label": "Implied growth if the operating margin were the industry's median",
+      "claim_ids": [
+        "c1"
+      ],
+      "measure": "revenue",
+      "period": "2026-09-30",
+      "value": null,
+      "unit": "percent",
+      "display": "n/a",
+      "formula": "",
+      "inputs": [],
+      "reading": "With the operating margin at the industry's median of 4.2% (n = 61, 2025) instead of 65.2%, no growth from −50% to +100% a year reaches the price.",
+      "reading_origin": "code",
+      "available": false,
+      "note": "The target is above the model's value at every growth from -50% to 100% a year. Operating margin 4.2%: the median of the 61 other SIC 3674 filers with revenue of at least $100.0M with an operating margin in 2025 (SEC frames); every other assumption unchanged."
+    },
+    {
+      "id": "reverse_dcf:NVDA:2026-09-30:peer_p90",
+      "provider": "market_view",
+      "data_origin": "market_prices",
+      "kind": "reverse_dcf_peer_p90_margin",
+      "label": "Implied growth if the operating margin were the industry's 90th percentile",
+      "claim_ids": [
+        "c1"
+      ],
+      "measure": "revenue",
+      "period": "2026-09-30",
+      "value": 28.10337723279372,
+      "unit": "percent",
+      "display": "28.1% a year for 10 years",
+      "formula": "PV(g) = enterprise value $5.48T with the operating margin 26.6%",
+      "inputs": [],
+      "reading": "With the operating margin at the industry's 90th percentile of 26.6% (n = 61, 2025) instead of 65.2%, the same price needs 28.1% a year.",
+      "reading_origin": "code",
+      "available": true,
+      "note": "Operating margin 26.6%: the 90th percentile of the 61 other SIC 3674 filers with revenue of at least $100.0M with an operating margin in 2025 (SEC frames); every other assumption unchanged."
+    }
+  ],
+  "notes": [
+    "Frames admitted: periods ending by 2026-07-21 (120 days before today: an annual report is due within 60 to 90 days). A frame holds the latest value SEC has, so a later restatement is included.",
+    "Left out for a scale break (two concepts of one filer and year differing by a factor near a thousand): 5 filer-year(s) of revenue.",
+    "Rows dropped: 2 not a year long (350 to 380 days).",
+    "Facts: those filed by the price's date, 2026-09-30 (what the price could know); a filing after it is not read.",
+    "No daily closes were given; no reaction to an 8-K is computed (the 13F price source has one price a quarter)."
+  ]
+}

@@ -314,6 +314,21 @@ def facts_from_env() -> FactStore:
     return FactStore(data_dir() / FACTS_PATH)
 
 
+def frames_dir() -> Path:
+    """The disposable store of SEC frames and SIC lists: ``data_dir()/cache/frames``."""
+    return data_dir() / "cache" / "frames"
+
+
+def thirteenf_dir() -> Path:
+    """The disposable store of 13F filing indexes and tables: ``data_dir()/cache/13f``."""
+    return data_dir() / "cache" / "13f"
+
+
+def prices_dir() -> Path:
+    """The disposable store of fetched price series: ``data_dir()/cache/prices``."""
+    return data_dir() / "cache" / "prices"
+
+
 # The standing watch (version 13).
 WATCH_INTERVAL_VARIABLE = "EVIDENCE_DESK_WATCH_INTERVAL_SECONDS"
 WATCH_AUTO_RUNS_VARIABLE = "EVIDENCE_DESK_WATCH_AUTO_RUNS_PER_DAY"

@@ -120,11 +120,14 @@ class AnnualTest:
 
     @property
     def reach(self) -> int:
-        """How many years before year t the test reads, at most."""
-        terms = [p.left for p in self.parts] + [
-            p.right for p in self.parts if isinstance(p.right, AnnualTerm)
-        ]
-        return max(t.reach for t in terms)
+        """How many years before year t the test reads, at most (a streak of N reads N back)."""
+        reaches = [p.right.reach for p in self.parts if isinstance(p.right, AnnualTerm)]
+        for part in self.parts:
+            reach = part.left.reach
+            if part.left.fn == "streak" and isinstance(part.right, Number):
+                reach += math.ceil(part.right.value)
+            reaches.append(reach)
+        return max(reaches)
 
     @property
     def unit(self) -> str:

@@ -42,7 +42,15 @@ def build_watcher(settings: WatchSettings | None = None) -> Watcher:
         status=WatchStatus(cache),
         filings=filings,
         cache=cache,
-        execute=run_executor(store, filings, analyst, cache, checker=checker),
+        execute=run_executor(
+            store,
+            filings,
+            analyst,
+            cache,
+            checker=checker,
+            facts_store=wiring.facts_from_env(),
+            claim_reader=wiring.claim_reader_from_env(analyst),
+        ),
         settings=settings or wiring.watch_settings_from_env(),
     )
 

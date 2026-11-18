@@ -335,3 +335,30 @@ def test_with_two_readers_a_test_counts_only_when_both_read_it_the_same(tmp_path
     brief = render_markdown(run)
     assert "- Read by: grammar and model" in brief
     assert "Readings differ: not counted" in brief
+
+
+def test_a_run_the_watch_starts_reads_its_claims_as_the_app_does(tmp_path: Path) -> None:
+    from app.store import FactStore
+    from app.watch.service import run_executor
+
+    request = ThesisRequest(
+        ticker="NVDA", decision="Whether to keep an overweight position", claims=CLAIMS[:1]
+    )
+    margin = _compiled(CLAIMS[0])
+    facts = FactStore()
+    execute = run_executor(
+        Store(tmp_path / "record.sqlite"),
+        recorded_filings(),
+        ScriptedAnalyst(lambda claim, passages: ClaimDraft()),
+        FilingCache(),
+        fetch_page=FakePages({}),
+        facts_store=facts,
+        claim_reader=ModelClaimReader(transport=Answers({CLAIMS[0]: as_reading(margin)})),
+    )
+
+    run = execute(new_run(request))
+
+    assert run.claim_readers == "grammar and model"
+    assert run.claims[0].computed is not None
+    assert run.claims[0].computed.read_by == ["grammar", "model"]
+    assert facts.companies()

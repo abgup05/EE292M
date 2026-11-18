@@ -297,6 +297,7 @@ class EdgarClient:
         if last is not None and self._monotonic() - last[0] <= INDEX_REUSE_SECONDS:
             return last[1]
         return self._index_payload(company)
+
     def recent_filings(self, company: Company, forms: Sequence[str]) -> list[FilingRef]:
         """Every filing of exactly one of ``forms`` in EDGAR's recent index, newest first.
 

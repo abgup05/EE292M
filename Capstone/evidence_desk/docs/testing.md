@@ -312,6 +312,7 @@ from two processes; nothing was planted to make it fail).
 | A claim-readers evaluation that calls before it says how many, or above the cap | `tests/test_claim_readers_eval.py` (6 tests, fake transport only) | written first: ImportError |
 | A rule taken from the foreign development half that does not hold | `tests/test_claimtest.py`, 16 new cases on new sentences | all 16 failed on the grammar before the change |
 | An inbox whose folded count the page must work out, an inbox item that says what moved but not how many of the claims, a computed test's change of outcome left unsaid (or a test read differently called one), a 404 in a shape other than the app's refusals, a thesis list that does not say which theses are watched | `tests/test_watch_api.py` (3 new tests), `tests/test_watch_report.py` (3 new tests) | written first, after the merge with version 13: all 6 failed |
+| A run the watch starts that skips the fact store or the second reader the app's runs use | `tests/test_claim_reading.py::test_a_run_the_watch_starts_reads_its_claims_as_the_app_does` | failed first: the watch's executor took neither |
 
 The tripwire was re-baselined on purpose (commit 62846b1): only the verdicts stage (c4 from unjudged to
 supported) and the coverage stage (four new counts) moved; the prompts stage did not, and neither did the
@@ -335,7 +336,7 @@ whole gate, with 168 page assertions (`docs/evidence/verify-fresh.txt`). On the 
 18 November, once: pytest reports 32.12 s for 1,781 tests. The smoke test and the page step were not run
 there (port 8766 was held by another checkout's app), so the whole gate was not timed. On the version 14
 branch, 18 November, before the watch was merged in: 87 s
-(87.35 s for 1,894 tests; 1,919 after the foreign-claims work, 88.29 s; 1,993 after the whole-sentence rule and the second reader, 87.79 s), measured once while other projects' containers ran on the same laptop, so not
+(87.35 s for 1,894 tests; 1,919 after the foreign-claims work, 88.29 s; 1,993 after the whole-sentence rule and the second reader, 87.79 s; 2,079 after version 13 was merged in, 92.96 s), measured once while other projects' containers ran on the same laptop, so not
 comparable with the figures before it; the whole gate was not run, because another app held port 8766 and
 the smoke and browser tests need it.
 

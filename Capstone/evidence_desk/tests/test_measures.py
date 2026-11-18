@@ -149,10 +149,14 @@ def test_the_panel_its_figures_and_its_recordings_are_not_widened() -> None:
         ("Share buybacks are increasing.", "share_repurchases[Q] > share_repurchases[Q-4]"),
         ("Dividends are growing.", "dividends_paid[Q] > dividends_paid[Q-4]"),
         (
-            "The company returned more than $20 billion to shareholders.",
+            # a period named: with none, rule 3 refuses a flow against an amount
+            "The company returned more than $20 billion to shareholders last fiscal year.",
             "shareholder_returns[FY] > $20B",
         ),
-        ("The company spent more than $10 billion on buybacks.", "share_repurchases[FY] > $10B"),
+        (
+            "The company spent more than $10 billion on buybacks in fiscal 2025.",
+            "share_repurchases[FY2025] > $10B",
+        ),
         ("Total debt fell below $10 billion.", "total_debt[Q] < $10B"),
         ("The company has no debt.", "total_debt[Q] <= $0"),
         ("Long-term debt is declining.", "long_term_debt[Q] < long_term_debt[Q-4]"),
@@ -278,9 +282,10 @@ def test_as_of_a_date_a_catalogue_measure_reads_nothing_filed_after_it() -> None
             "Common stock repurchased exceeded $15 billion last fiscal year.",
             "share_repurchases[FY] > $15B",
         ),
-        # a company named before its verb
+        # a company named before its verb (f095 named no period; rule 3 now refuses that)
         (
-            "Microsoft returned over $30 billion to shareholders through buybacks and dividends.",
+            "Microsoft returned over $30 billion to shareholders through buybacks and dividends "
+            "last fiscal year.",
             "shareholder_returns[FY] > $30B",
         ),
         # "over the trailing twelve months"
@@ -299,8 +304,11 @@ def test_as_of_a_date_a_catalogue_measure_reads_nothing_filed_after_it() -> None
         ),
         # "rose above 16%" is a level, not a change
         ("The effective tax rate rose above 16% last fiscal year.", "effective_tax_rate[FY] > 16%"),
-        # surpassed, passed
-        ("Income before income taxes surpassed $120 billion.", "pretax_income[FY] > $120B"),
+        # surpassed, passed (g106 named no period; rule 3 now refuses that)
+        (
+            "Income before income taxes surpassed $120 billion last fiscal year.",
+            "pretax_income[FY] > $120B",
+        ),
         ("Total assets passed $500 billion in fiscal 2025.", "total_assets[FY2025] > $500B"),
         # negative and positive are thresholds at zero
         (

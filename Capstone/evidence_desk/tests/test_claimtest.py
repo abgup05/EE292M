@@ -30,9 +30,9 @@ COMPILED = [
     ("Revenue has grown for eight consecutive quarters.", "streak(revenue)[Q] >= 8"),
     ("Net income has risen five years in a row.", "streak(net_income)[FY] >= 5"),
     ("Gross margin is above 70%.", "gross_margin[Q] > 70%"),
-    ("Revenue is over $100 billion.", "revenue[FY] > $100B"),
+    ("Annual revenue is over $100 billion.", "revenue[FY] > $100B"),
     ("Cash on hand is more than $40 billion.", "cash[Q] > $40B"),
-    ("Diluted EPS is above $3.", "eps_diluted[FY] > $3"),
+    ("Diluted EPS for the latest fiscal year is above $3.", "eps_diluted[FY] > $3"),
     ("Operating income is more than half of revenue.", "operating_margin[Q] > 50%"),
     (
         "Operating cash flow was at least $500 million in Q2 fiscal 2027.",

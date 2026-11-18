@@ -1,4 +1,4 @@
-.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe replay golden-check golden-baseline profile bench eval eval-validate golden-sheet backup restore-check up-recorded live-walk changes breakdowns lock clean data vercel-deps referee versions-up versions-down versions-status versions-logs pr pr-describe pr-merge
+.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe replay golden-check golden-baseline profile bench eval eval-validate golden-sheet backup restore-check up-recorded live-walk changes breakdowns lock clean data vercel-deps referee versions-up versions-down versions-status versions-logs pr pr-describe pr-merge site-survey site-run-v1 site-export site-index site-scan site-test site-check
 
 # make <target> runs the capstone by default; make APP=week2 <target> runs the Week 2 app.
 APP ?= capstone
@@ -77,3 +77,53 @@ pr-describe:
 
 pr-merge:
 	@gh pr merge "$$(git branch --show-current)" --merge
+
+# The website (the Week 2 app's Vercel project) serves a recorded, read-only snapshot of each
+# capstone version N at /vN/ and the table of versions at /versions. The snapshots are exported
+# from the running versions (make versions-up; version N at http://127.0.0.1:87NN) by
+# tools/snapshots/export.py, in a Python container that uses the standard library only.
+#   make site-export                     every tag capstone-vN (integers only) that is running
+#   make site-export VERSIONS="13 14"    only these; the others stay as they are
+#   make site-survey                     what each instance holds, without writing anything
+#   make site-scan                       fail on anything that looks like a secret or personal data
+#   make site-check URL=https://...      the deployed site: /, /versions and each /vN/
+SITE_DIR := Homework/Week 2/visualization/snapshots
+SITE_IMAGE := python:3.14-slim
+SITE_TAGS := $(shell git tag -l 'capstone-v*' | sed -n 's/^capstone-v\([0-9][0-9]*\)$$/\1/p' | sort -n)
+SITE_VERSIONS = $(if $(filter command line environment,$(origin VERSIONS)),$(VERSIONS),$(SITE_TAGS))
+SITE_PY := docker run --rm --user "$$(id -u):$$(id -g)" -v "$(CURDIR):/repo" -w /repo \
+	--add-host=host.docker.internal:host-gateway $(SITE_IMAGE) python -B -I
+
+site-survey:
+	@$(SITE_PY) tools/snapshots/export.py --survey --out '$(SITE_DIR)' $(SITE_VERSIONS)
+
+# Version 1's page has no sample. When its instance holds no run, this starts one live run of the
+# page's own seed example (tools/snapshots/v1-example.json, copied from its app.js) through its
+# HTTP API; with no key in that checkout it plans from a template and quotes extractively.
+site-run-v1:
+	@curl -sS -f -m 30 -X POST -H 'content-type: application/json' \
+	  --data @tools/snapshots/v1-example.json http://127.0.0.1:8701/api/research; echo
+	@for i in $$(seq 1 60); do \
+	  status=$$(curl -sS -m 10 http://127.0.0.1:8701/api/research | grep -o '"status": *"[a-z]*"' | head -1 | sed 's/.*"\([a-z]*\)"$$/\1/'); \
+	  test "$$status" != running && { echo "version 1's newest run: $$status"; exit 0; }; sleep 5; \
+	done; echo "the run is still running after 5 minutes"; exit 1
+
+site-export:
+	@$(SITE_PY) tools/snapshots/export.py --out '$(SITE_DIR)' $(SITE_VERSIONS)
+	@$(MAKE) -s site-index
+	@$(MAKE) -s site-scan
+
+site-index:
+	@$(SITE_PY) tools/snapshots/versions_page.py docs/versions.md '$(SITE_DIR)'
+
+site-scan:
+	@$(SITE_PY) tools/snapshots/scan.py '$(SITE_DIR)' docs/versions.md
+
+site-test:
+	@$(SITE_PY) -m unittest discover -s tools/snapshots -p 'test_*.py'
+	@docker run --rm -v "$(CURDIR):/repo:ro" -w /repo node:24-slim sh -c \
+	  'node --check tools/snapshots/shim.js && for f in "$(SITE_DIR)"/v*/snapshot.js; do node --check "$$f" || exit 1; done'
+
+site-check:
+	@test -n '$(URL)' || { echo 'Usage: make site-check URL=https://ee292m-visualization.vercel.app'; exit 1; }
+	@$(SITE_PY) tools/snapshots/check.py '$(URL)' '$(SITE_DIR)'

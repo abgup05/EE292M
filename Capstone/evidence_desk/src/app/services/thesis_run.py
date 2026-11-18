@@ -294,7 +294,11 @@ def execute_run(
     # The facts are recorded as a source but are not a document: they are never chunked or
     # quoted, and they do not count toward sources requested or read.
     numbers = load_numbers(
-        company, filings, source_id=f"s{len(run.sources) + 1}", facts_store=facts_store
+        company,
+        filings,
+        source_id=f"s{len(run.sources) + 1}",
+        facts_store=facts_store,
+        as_of=run.inputs.as_of,
     )
     if numbers.source is not None:
         run.sources.append(numbers.source)
@@ -572,6 +576,7 @@ def _read_events(
     """
     refs = list(ingested.filing_refs.values())
     annual = [ref.filed_date for ref in refs if ref.form.startswith("10-K")]
+    requested = run.inputs.as_of
     timeline = event_service.read_timeline(
         company,
         filings,
@@ -579,10 +584,11 @@ def _read_events(
         annual_filed=max(annual, default=None),
         periodic_filed=max((ref.filed_date for ref in refs), default=None),
         out_of_time=out_of_time,
+        filed_until=requested.isoformat() if requested is not None else None,
     )
     run.timeline = timeline.events
     read = [(ref.form, ref.filed_date, ref.url) for ref in refs]
-    run.as_of = event_service.as_of(timeline, read, run.started_at.date())
+    run.as_of = event_service.as_of(timeline, read, run.started_at.date(), requested=requested)
     return timeline
 
 

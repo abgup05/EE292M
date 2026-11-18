@@ -169,6 +169,12 @@ AS_OF_LINE = (
 AS_OF_NO_PERIODIC = "Evidence as of {date} ({form}), {days} before {when}."
 AS_OF_RUN = "this run"
 AS_OF_TODAY = "today"
+# A run as of a past date (ThesisRequest.as_of): its evidence is dated against that day.
+AS_OF_REQUESTED = "the date this run is as of"
+AS_OF_REQUESTED_NOTE = (
+    "This run is as of {date}: it read only the filings, 8-Ks and XBRL facts filed by then, "
+    "and nothing filed later."
+)
 AS_OF_NOTHING_READ = "No filing was read, so the evidence has no date."
 EVENT_COUNTS = (
     "{listed} 8-K(s) filed since the annual report of {annual}: {read} read, {failed} could not "

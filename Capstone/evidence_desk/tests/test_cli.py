@@ -99,6 +99,28 @@ def test_tagged_figures_is_an_option_of_both_commands(tmp_path: Path, command: s
     assert any("tagged figures" in limit for limit in run.coverage_limits)
 
 
+def test_as_of_is_an_option_and_reads_only_what_was_filed_by_then(tmp_path: Path) -> None:
+    from tests.replay_run import recorded_filings
+
+    out = tmp_path / "results"
+    argv = ["example", "--as-of", "2026-06-01", "--engine", "extractive", "--out", str(out)]
+    code, _ = run_cli(argv, tmp_path, recorded_filings())
+    assert code == 0
+    run = written(out)
+    assert str(run.inputs.as_of) == "2026-06-01"
+    assert run.inputs.claims == EXAMPLE_THESIS.claims
+    assert max(s.published_date or "" for s in run.sources) <= "2026-06-01"
+
+
+def test_a_date_in_the_future_is_refused_with_exit_code_2(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    argv = ["example", "--as-of", "2999-01-01", "--engine", "extractive"]
+    code, _ = run_cli(argv, tmp_path, FakeFilings.nvidia())
+    assert code == 2
+    assert "must not be in the future" in capsys.readouterr().err
+
+
 def test_without_the_option_the_example_is_the_example(tmp_path: Path) -> None:
     out = tmp_path / "results"
     argv = ["example", "--engine", "extractive", "--out", str(out)]

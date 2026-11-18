@@ -126,15 +126,26 @@ def filing_title(company: Company, ref: FilingRef) -> str:
 
 def _select_filings(run: Run, company: Company, filings: FilingSource) -> list[FilingRef] | None:
     """The filings to read, or None when the index could not be read (recorded in errors)."""
+    as_of = run.inputs.as_of
     try:
-        refs = filings.periodic_filings(company, run.inputs.filings)
+        if as_of is None:
+            refs = filings.periodic_filings(company, run.inputs.filings)
+        else:
+            refs = filings.periodic_filings(company, run.inputs.filings, as_of=as_of.isoformat())
     except SourceError as exc:
         run.errors.append(f"The filing index could not be read: {exc}")
         return None
     if len(refs) < run.inputs.filings:
+        span = (
+            "the latest annual report and the quarterly reports filed after it"
+            if as_of is None
+            else (
+                f"the newest annual report filed by {as_of.isoformat()} and the quarterly "
+                "reports filed after it up to that date"
+            )
+        )
         run.coverage_limits.append(
-            f"{run.inputs.filings} filing(s) were requested; EDGAR lists {len(refs)} "
-            "(the latest annual report and the quarterly reports filed after it)."
+            f"{run.inputs.filings} filing(s) were requested; EDGAR lists {len(refs)} ({span})."
         )
     return refs
 

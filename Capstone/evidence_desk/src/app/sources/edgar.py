@@ -116,6 +116,8 @@ class EdgarClient:
         self._tickers_loaded_at = 0.0
         self._index_lock = threading.Lock()
         self._last_index: dict[int, tuple[float, dict[str, Any]]] = {}
+        # Rows gathered from the index and its older pages for a run as of a date.
+        self._last_rows: dict[int, tuple[float, list[dict[str, str]]]] = {}
 
     @classmethod
     def from_env(cls) -> EdgarClient:
@@ -148,23 +150,47 @@ class EdgarClient:
             raise UnknownTicker(f"Ticker {key} is not in SEC's company list")
         return company
 
-    def periodic_filings(self, company: Company, limit: int) -> list[FilingRef]:
+    def periodic_filings(
+        self, company: Company, limit: int, as_of: str | None = None
+    ) -> list[FilingRef]:
         """The newest 10-K and the 10-Qs filed after it, newest first, at most ``limit``.
 
-        The 10-K is always included; amendments (10-K/A, 10-Q/A) are skipped.
+        The 10-K is always included; amendments (10-K/A, 10-Q/A) are skipped. With
+        ``as_of`` (``YYYY-MM-DD``), the newest 10-K filed on or before that day and the
+        10-Qs filed after it up to that day: the older pages of the index are read,
+        newest first, until one such 10-K is found, at most
+        :data:`MAX_OLDER_INDEX_PAGES`; none found is a :class:`SourceError` that says
+        how far the search went.
         """
         if limit < 1:
             raise ValueError("limit must be at least 1")
         payload = self._index_payload(company)
         with self._index_lock:
             self._last_index[company.cik] = (self._monotonic(), payload)
-        rows = self._rows(payload["filings"]["recent"], f"the filing index of {company.name}")
-        annual = next((row for row in rows if row["form"] == ANNUAL_FORM), None)
-        if annual is None:
-            raise SourceError(
-                f"No annual report (10-K) found for {company.name}; "
-                "this version reads 10-K and 10-Q filers only"
+        what = f"the filing index of {company.name}"
+        if as_of is None:
+            rows = self._rows(payload["filings"]["recent"], what)
+            annual = next((row for row in rows if row["form"] == ANNUAL_FORM), None)
+            if annual is None:
+                raise SourceError(
+                    f"No annual report (10-K) found for {company.name}; "
+                    "this version reads 10-K and 10-Q filers only"
+                )
+        else:
+            rows, where = self._rows_back_to(
+                company,
+                payload,
+                lambda found: any(
+                    row["form"] == ANNUAL_FORM and row["filingDate"] <= as_of for row in found
+                ),
             )
+            rows = [row for row in rows if row["filingDate"] <= as_of]
+            annual = next((row for row in rows if row["form"] == ANNUAL_FORM), None)
+            if annual is None:
+                raise SourceError(
+                    f"No annual report (10-K) filed on or before {as_of} is in {where} of "
+                    f"{company.name}"
+                )
         quarterlies = [
             row
             for row in rows
@@ -173,24 +199,78 @@ class EdgarClient:
         chosen = [*quarterlies[: limit - 1], annual]
         return [self._ref(company.cik, row) for row in chosen]
 
-    def current_reports(self, company: Company, filed_after: str) -> list[FilingRef]:
+    def _rows_back_to(
+        self,
+        company: Company,
+        payload: dict[str, Any],
+        enough: Callable[[list[dict[str, str]]], bool],
+    ) -> tuple[list[dict[str, str]], str]:
+        """The index's rows, newest first, from the recent index and as many older pages as needed.
+
+        Older pages are read, newest first, until ``enough`` says the rows read hold what
+        is wanted, or :data:`MAX_OLDER_INDEX_PAGES` have been read. The rows are kept for
+        :data:`INDEX_REUSE_SECONDS` so that listing the 8-Ks of the same span asks for
+        nothing more. Also returns a phrase saying where the rows were sought.
+        """
+        what = f"the filing index of {company.name}"
+        rows = self._rows(payload["filings"]["recent"], what)
+        where = "EDGAR's recent index"
+        if not enough(rows):
+            older = self._older_pages(payload, company, what)
+            read = 0
+            for name in older[:MAX_OLDER_INDEX_PAGES]:
+                page = self._get_json(SUBMISSIONS_PAGE_URL.format(name=name), what)
+                rows += self._rows(page, what)
+                read += 1
+                if enough(rows):
+                    break
+            if read:
+                where += f" and the {read} newest of its {len(older)} older index pages"
+            rows.sort(key=lambda row: row["filingDate"], reverse=True)
+        with self._index_lock:
+            self._last_rows[company.cik] = (self._monotonic(), rows)
+        return rows, where
+
+    def current_reports(
+        self, company: Company, filed_after: str, filed_until: str | None = None
+    ) -> list[FilingRef]:
         """The company's 8-K and 8-K/A filings filed after ``filed_after``, newest first.
 
         ``filed_after`` is a ``YYYY-MM-DD`` date; a filing of that day is not after it.
-        Each reference carries the item numbers the index lists. The rows come from
-        EDGAR's recent index, which holds at least the last year of a company's
-        filings and every filing after the newest 10-K a run reads. The index that
+        With ``filed_until``, only those filed on or before that day, read from the rows
+        :meth:`periodic_filings` gathered as of a date when they reach back far enough
+        (else from the index and its older pages again). Each reference carries the item
+        numbers the index lists. Without ``filed_until`` the rows come from EDGAR's
+        recent index, which holds at least the last year of a company's filings and
+        every filing after the newest 10-K a run reads. The index that
         :meth:`periodic_filings` fetched for the company is reused when it is at most
         :data:`INDEX_REUSE_SECONDS` old, so a run lists its 8-Ks without a request of
         their own; otherwise the index is fetched.
         """
-        payload = self._reused_index(company)
-        rows = self._rows(payload["filings"]["recent"], f"the filing index of {company.name}")
+        if filed_until is None:
+            payload = self._reused_index(company)
+            rows = self._rows(payload["filings"]["recent"], f"the filing index of {company.name}")
+        else:
+            rows = self._rows_reaching(company, filed_after)
+            rows = [row for row in rows if row["filingDate"] <= filed_until]
         chosen = [
             row for row in rows if row["form"] in CURRENT_FORMS and row["filingDate"] > filed_after
         ]
         chosen.sort(key=lambda row: (row["filingDate"], row["accessionNumber"]), reverse=True)
         return [self._ref(company.cik, row) for row in chosen]
+
+    def _rows_reaching(self, company: Company, day: str) -> list[dict[str, str]]:
+        """Index rows reaching back to ``day``: those just gathered, else gathered again."""
+        with self._index_lock:
+            last = self._last_rows.get(company.cik)
+        fresh = last is not None and self._monotonic() - last[0] <= INDEX_REUSE_SECONDS
+        if last is not None and fresh and any(row["filingDate"] <= day for row in last[1]):
+            return last[1]
+        payload = self._reused_index(company)
+        rows, _ = self._rows_back_to(
+            company, payload, lambda found: any(row["filingDate"] <= day for row in found)
+        )
+        return rows
 
     def company_profile(self, company: Company) -> CompanyProfile:
         """The company's industry code (SIC) and its title, as its submissions index gives them.

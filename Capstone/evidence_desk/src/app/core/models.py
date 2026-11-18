@@ -8,10 +8,10 @@ their limits come from :mod:`app.core.limits`.
 from __future__ import annotations
 
 import re
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from enum import StrEnum
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.core import limits
 from app.core.event_models import AsOf, Event, Predating
@@ -104,6 +104,15 @@ class ThesisRequest(BaseModel):
             "prompt, so a run without the option must ask exactly what it asked before."
         ),
     )
+    as_of: date | None = Field(
+        default=None,
+        description=(
+            "Run as of this past date (YYYY-MM-DD, not before 2009): read the newest 10-K "
+            "filed on or before it and the 10-Qs after that 10-K up to it, the 8-Ks filed "
+            "between that 10-K and the date, and only the XBRL facts filed by the date. "
+            "Without it the run reads the newest filings, as before."
+        ),
+    )
 
     @field_validator("ticker", "decision", "scope_notes", mode="before")
     @classmethod
@@ -139,6 +148,23 @@ class ThesisRequest(BaseModel):
             seen.add(key)
             cleaned.append(text)
         return cleaned
+
+    @field_validator("as_of")
+    @classmethod
+    def _as_of_usable(cls, value: date | None) -> date | None:
+        if value is not None:
+            problem = as_of_problem(value, datetime.now(UTC).date())
+            if problem:
+                raise ValueError(problem)
+        return value
+
+    @model_validator(mode="after")
+    def _no_pages_in_the_past(self) -> ThesisRequest:
+        if self.as_of is not None and self.extra_urls:
+            raise ValueError(
+                "extra pages cannot be read as of a past date: a page is read as it is today"
+            )
+        return self
 
 
 class Company(BaseModel):

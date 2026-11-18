@@ -3,7 +3,8 @@
 ``python -m app.cli run --ticker NVDA --decision "..." --claim "..." [--claim ...]``
 tests a thesis; ``python -m app.cli example`` tests the NVIDIA example; with
 ``--tagged-figures`` either also offers the engine the figures tagged in the
-filings (``ThesisRequest.tagged_figures``). Both run
+filings (``ThesisRequest.tagged_figures``), and with ``--as-of YYYY-MM-DD`` either
+reads only what had been filed by that date (``ThesisRequest.as_of``). Both run
 synchronously through :func:`app.services.thesis_run.execute_run`, print each
 claim's verdict with the policy's wording, and write ``<out>/<run-id>.json``
 (the run record) and ``<out>/<run-id>.md`` (the exported brief).
@@ -28,6 +29,7 @@ import argparse
 import json
 import sys
 from collections.abc import Sequence
+from datetime import date
 from pathlib import Path
 
 from pydantic import ValidationError
@@ -93,6 +95,14 @@ def _parser() -> argparse.ArgumentParser:
             "in the newest annual and quarterly report read (changes the engine's prompts)"
         ),
     )
+    shared.add_argument(
+        "--as-of",
+        type=date.fromisoformat,
+        help=(
+            "run as of this past date (YYYY-MM-DD): only the filings, 8-Ks and XBRL facts "
+            "filed by then are read"
+        ),
+    )
     run = commands.add_parser("run", parents=[shared], help="test a thesis")
     run.add_argument("--ticker", required=True)
     run.add_argument("--decision", required=True)
@@ -154,9 +164,13 @@ def _cassette_of(analyst: Analyst) -> CassetteTransport | None:
 
 def _thesis(args: argparse.Namespace) -> ThesisRequest:
     if args.command == "example":
-        if args.tagged_figures:
-            return EXAMPLE_THESIS.model_copy(update={"tagged_figures": True})
-        return EXAMPLE_THESIS
+        if not args.tagged_figures and args.as_of is None:
+            return EXAMPLE_THESIS
+        fields = EXAMPLE_THESIS.model_dump() | {
+            "tagged_figures": args.tagged_figures,
+            "as_of": args.as_of,
+        }
+        return ThesisRequest.model_validate(fields)
     return ThesisRequest(
         ticker=args.ticker,
         decision=args.decision,
@@ -164,6 +178,7 @@ def _thesis(args: argparse.Namespace) -> ThesisRequest:
         filings=args.filings,
         scope_notes=args.scope_notes,
         tagged_figures=args.tagged_figures,
+        as_of=args.as_of,
     )
 
 

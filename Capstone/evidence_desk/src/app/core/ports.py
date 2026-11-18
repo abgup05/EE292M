@@ -33,14 +33,23 @@ class FilingSource(Protocol):
         """Resolve a ticker. Raises :class:`UnknownTicker` or :class:`SourceError`."""
         ...
 
-    def periodic_filings(self, company: Company, limit: int) -> list[FilingRef]:
-        """The latest 10-K and the 10-Qs filed after it, newest first, at most ``limit``."""
+    def periodic_filings(
+        self, company: Company, limit: int, as_of: str | None = None
+    ) -> list[FilingRef]:
+        """The latest 10-K and the 10-Qs filed after it, newest first, at most ``limit``.
+
+        With ``as_of`` (``YYYY-MM-DD``): the newest 10-K filed on or before that day and
+        the 10-Qs after it up to that day. A run passes ``as_of`` only when it has one.
+        """
         ...
 
-    def current_reports(self, company: Company, filed_after: str) -> list[FilingRef]:
+    def current_reports(
+        self, company: Company, filed_after: str, filed_until: str | None = None
+    ) -> list[FilingRef]:
         """The 8-K and 8-K/A filings filed after a ``YYYY-MM-DD`` date, newest first.
 
-        Each carries the item numbers EDGAR's index lists. Raises :class:`SourceError`.
+        With ``filed_until``, only those filed on or before it. Each carries the item
+        numbers EDGAR's index lists. Raises :class:`SourceError`.
         """
         ...
 

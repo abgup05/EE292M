@@ -426,6 +426,11 @@ def _figure_lines(figures: Sequence[Metric]) -> str:
     )
 
 
+def figure_lines(figures: Sequence[Metric]) -> str:
+    """The reported-figure lines exactly as an assessment prompt shows them (evaluation use)."""
+    return _figure_lines(figures)
+
+
 def _parse_quotes(value: object) -> list[Quote]:
     if not isinstance(value, list):
         raise EngineError("The model returned a malformed quotes list")

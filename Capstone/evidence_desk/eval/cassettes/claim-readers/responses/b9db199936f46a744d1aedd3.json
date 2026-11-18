@@ -1,0 +1,63 @@
+{
+  "key": "b9db199936f46a744d1aedd3",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:13:34+00:00",
+  "response": {
+    "computable": true,
+    "reason": "The claim compares the last fiscal year's revenue growth of two geographic parts, Rest of Asia Pacific and Japan, which is a faster_than test on yoy at FY.",
+    "tests": [
+      {
+        "form": "faster_than",
+        "left": {
+          "fn": "yoy",
+          "subject": "revenue",
+          "member": "Rest of Asia Pacific",
+          "axis": "geography",
+          "years": 0,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "op": ">",
+        "right_term": {
+          "fn": "yoy",
+          "subject": "revenue",
+          "member": "Japan",
+          "axis": "geography",
+          "years": 0,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "right_number": {
+          "value": 0,
+          "unit": "percent"
+        },
+        "each": 0,
+        "each_since": 0
+      }
+    ]
+  }
+}

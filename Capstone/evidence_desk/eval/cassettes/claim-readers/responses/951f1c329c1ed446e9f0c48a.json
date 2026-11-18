@@ -1,0 +1,12 @@
+{
+  "key": "951f1c329c1ed446e9f0c48a",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:19:06+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim rests on a valuation assumption about an AI build's return versus cost of capital, which is a forecast/judgement and not a measurable test this tool can compute.",
+    "tests": []
+  }
+}

@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from app.core import limits
 
-CONTRACT: dict[str, int | float] = {
+CONTRACT: dict[str, int | float | str] = {
     # PROMPT.md section 3: the request
     "MIN_DECISION_CHARS": 10,
     "MAX_DECISION_CHARS": 500,
@@ -63,6 +63,17 @@ CONTRACT: dict[str, int | float] = {
     "MAX_EVENTS_READ": 8,
     "EVENT_OPENING_SENTENCES": 2,
     "EVENT_PASSAGES_PER_CLAIM": 2,
+    # Added in version 14: the earliest date a run or a ledger may be computed as of (XBRL
+    # company facts begin in 2009)
+    "EARLIEST_AS_OF": "2009-01-01",
+    # Added in version 14: a computed claim's history covers the last five years of 10-K and
+    # 10-Q filing dates, at most 24 points; a streak walks back at most 40 periods
+    "HISTORY_YEARS": 5,
+    "MAX_HISTORY_POINTS": 24,
+    "MAX_STREAK_PERIODS": 40,
+    # A test held in each of several periods (the forms round after the counting rule):
+    # at most three years of quarters.
+    "MAX_EACH_PERIODS": 12,
 }
 
 

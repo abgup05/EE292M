@@ -1,0 +1,63 @@
+{
+  "key": "96a7307ad1e423680c0beedd",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:18:23+00:00",
+  "response": {
+    "computable": true,
+    "reason": "The claim compares the operating margin of the latest quarter with the same quarter a year earlier, which is a direction test on one measure.",
+    "tests": [
+      {
+        "form": "direction",
+        "left": {
+          "fn": "value",
+          "subject": "operating_margin",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "op": ">",
+        "right_term": {
+          "fn": "value",
+          "subject": "operating_margin",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "Q",
+            "back": 4,
+            "fiscal_year": 0,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "right_number": {
+          "value": 0,
+          "unit": "percent"
+        },
+        "each": 0,
+        "each_since": 0
+      }
+    ]
+  }
+}

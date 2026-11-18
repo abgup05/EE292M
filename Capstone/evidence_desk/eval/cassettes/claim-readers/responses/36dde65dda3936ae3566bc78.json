@@ -1,0 +1,12 @@
+{
+  "key": "36dde65dda3936ae3566bc78",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:10:56+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim states an approximate comparison (\"barely moved\", \"about the same\") rather than a precise threshold or direction this tool can test.",
+    "tests": []
+  }
+}

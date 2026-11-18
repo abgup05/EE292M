@@ -1,0 +1,63 @@
+{
+  "key": "f15c5c3019ff96ff17919a0f",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:17:43+00:00",
+  "response": {
+    "computable": true,
+    "reason": "A threshold test of accounts receivable (a balance) above $50 billion at the latest fiscal year end.",
+    "tests": [
+      {
+        "form": "threshold",
+        "left": {
+          "fn": "value",
+          "subject": "receivables",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "op": ">",
+        "right_term": {
+          "fn": "value",
+          "subject": "receivables",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "right_number": {
+          "value": 50000000000,
+          "unit": "USD"
+        },
+        "each": 0,
+        "each_since": 0
+      }
+    ]
+  }
+}

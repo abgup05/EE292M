@@ -1,0 +1,8 @@
+# For `make readers-check` only: stands in for an owner's .env that sets the claim readers, so
+# the check can show that such a value stands without READERS and gives way to it with READERS,
+# without reading or changing the real .env.
+services:
+  app:
+    env_file:
+      - path: readers-check.env
+        required: true

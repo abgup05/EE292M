@@ -1,0 +1,12 @@
+{
+  "key": "7e9dd2514dbcc76634cb0f39",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:18:35+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a judgement comparing the company to peers ('best in big tech'), which this tool cannot compute.",
+    "tests": []
+  }
+}

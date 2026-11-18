@@ -1,0 +1,12 @@
+{
+  "key": "e32f14bad8a4f3b49ad59846",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:13:52+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim compares current liabilities with current assets, which are not measures this tool lists, and it adds an unsupported explanatory judgement about funding.",
+    "tests": []
+  }
+}

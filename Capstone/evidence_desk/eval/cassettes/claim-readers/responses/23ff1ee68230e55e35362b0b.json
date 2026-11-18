@@ -1,0 +1,63 @@
+{
+  "key": "23ff1ee68230e55e35362b0b",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:17:53+00:00",
+  "response": {
+    "computable": true,
+    "reason": "Unearned revenue maps to deferred_revenue (balance), tested against $60 billion at the latest fiscal year end.",
+    "tests": [
+      {
+        "form": "threshold",
+        "left": {
+          "fn": "value",
+          "subject": "deferred_revenue",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "op": ">",
+        "right_term": {
+          "fn": "value",
+          "subject": "deferred_revenue",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "right_number": {
+          "value": 60000000000,
+          "unit": "USD"
+        },
+        "each": 0,
+        "each_since": 0
+      }
+    ]
+  }
+}

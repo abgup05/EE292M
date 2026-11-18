@@ -6,6 +6,11 @@ build the report with :mod:`app.core.metrics`, read the company's fiscal calenda
 :class:`~app.core.models.Source` of kind ``sec_xbrl``. A failure is returned
 as ``error``, never raised, so a run continues from the filings alone.
 :func:`select_figures` chooses the few figures an engine is shown.
+
+As of a date, the book, the report and the calendar see only the facts filed by
+then. Given a :class:`~app.store.FactStore`, every fact read is also kept there
+with the company's industry code; a store that cannot be written is a note, never
+the end of the run.
 """
 
 from __future__ import annotations
@@ -13,11 +18,14 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import sqlite3
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
+from typing import Any
 
 from app.core import limits
+from app.core.fact_models import CompanyProfile
 from app.core.facts import FactBook, FactsError
 from app.core.metric_models import Metric, MetricsReport
 from app.core.metrics import build_report
@@ -25,10 +33,12 @@ from app.core.models import Company, ExtractionStatus, Source, SourceKind
 from app.core.periods import FiscalCalendar, fiscal_calendar
 from app.core.ports import FilingSource, SourceError
 from app.sources.xbrl import company_facts_url
+from app.store import FactStore
 
 log = logging.getLogger(__name__)
 
 PUBLISHER = "SEC EDGAR (XBRL API)"
+STORE_FAILED = "The facts were read but could not be kept in the fact store ({error})."
 # The metric keys an engine is shown for each recent quarter and fiscal year.
 FIGURE_KEYS: tuple[str, ...] = (
     "revenue",
@@ -48,7 +58,8 @@ class NumbersResult:
 
     ``calendar`` is the company's fiscal calendar, read from the newest annual report in
     the facts (:func:`app.core.periods.fiscal_calendar`); None when the facts could not be
-    read or name no annual report.
+    read or name no annual report. ``payload`` is the body EDGAR sent and ``book`` the
+    book built from it (as of ``as_of`` when one was given); both None on a failure.
     """
 
     report: MetricsReport | None
@@ -56,6 +67,9 @@ class NumbersResult:
     notes: list[str] = field(default_factory=list)
     error: str | None = None
     calendar: FiscalCalendar | None = None
+    payload: dict[str, Any] | None = None
+    book: FactBook | None = None
+    as_of: date | None = None
 
 
 def facts_title(company: Company) -> str:
@@ -86,17 +100,47 @@ def _source(
     )
 
 
+def keep_facts(
+    store: FactStore,
+    company: Company,
+    filings: FilingSource,
+    payload: dict[str, Any],
+    digest: str,
+    loaded_at: datetime,
+) -> str | None:
+    """Keep ``payload`` in ``store`` with the company's industry code; the error text, or None.
+
+    The code comes from :meth:`~app.core.ports.FilingSource.company_profile`; when EDGAR
+    cannot give it, the facts are kept without one.
+    """
+    try:
+        profile = filings.company_profile(company)
+    except SourceError as exc:
+        log.warning("The industry code of CIK %s could not be read: %s", company.cik, exc)
+        profile = CompanyProfile(cik=company.cik, ticker=company.ticker, name=company.name)
+    try:
+        store.save_company(profile, payload, digest, loaded_at)
+    except sqlite3.Error as exc:
+        log.warning("The facts of CIK %s could not be stored: %s", company.cik, exc)
+        return type(exc).__name__
+    return None
+
+
 def load_numbers(
     company: Company,
     filings: FilingSource,
     *,
     source_id: str = "x1",
     now: Callable[[], datetime] = lambda: datetime.now(UTC),
+    as_of: date | None = None,
+    facts_store: FactStore | None = None,
 ) -> NumbersResult:
     """Read the company facts of ``company`` and build its metrics report.
 
     A :class:`SourceError` (EDGAR) or :class:`FactsError` (an unexpected shape)
-    is returned as ``error`` with a failed source record and no report.
+    is returned as ``error`` with a failed source record and no report. With
+    ``as_of``, only facts filed on or before that day are read. With
+    ``facts_store``, the body is kept there (all of it, whatever ``as_of`` says).
     """
     try:
         payload = filings.company_facts(company)
@@ -105,8 +149,12 @@ def load_numbers(
         return NumbersResult(None, _source(source_id, company, now(), "", error), error=error)
     retrieved_at = now()
     digest = content_hash(payload)
+    stored_error = None
+    if facts_store is not None:
+        stored_error = keep_facts(facts_store, company, filings, payload, digest, retrieved_at)
     try:
-        report = build_report(FactBook(payload))
+        book = FactBook(payload, as_of=as_of)
+        report = build_report(book)
     except FactsError as exc:
         log.warning("Company facts of CIK %s could not be read: %s", company.cik, exc)
         error = f"The XBRL company facts could not be read: {exc}"
@@ -114,8 +162,17 @@ def load_numbers(
             None, _source(source_id, company, retrieved_at, digest, error), error=error
         )
     source = _source(source_id, company, retrieved_at, digest, None)
+    notes = list(report.notes)
+    if stored_error is not None:
+        notes.append(STORE_FAILED.format(error=stored_error))
     return NumbersResult(
-        report, source, notes=list(report.notes), calendar=fiscal_calendar(payload)
+        report,
+        source,
+        notes=notes,
+        calendar=fiscal_calendar(payload, as_of=as_of),
+        payload=payload,
+        book=book,
+        as_of=as_of,
     )
 
 

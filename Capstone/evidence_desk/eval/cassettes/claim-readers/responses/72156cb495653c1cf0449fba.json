@@ -1,0 +1,63 @@
+{
+  "key": "72156cb495653c1cf0449fba",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:14:17+00:00",
+  "response": {
+    "computable": true,
+    "reason": "The claim compares free cash flow with net income for the latest fiscal year, which is a compare test of two same-kind amounts in the same period; 'above 100% of' is the same as free cash flow greater than net income.",
+    "tests": [
+      {
+        "form": "compare",
+        "left": {
+          "fn": "value",
+          "subject": "free_cash_flow",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "op": ">",
+        "right_term": {
+          "fn": "value",
+          "subject": "net_income",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "right_number": {
+          "value": 0,
+          "unit": "USD"
+        },
+        "each": 0,
+        "each_since": 0
+      }
+    ]
+  }
+}

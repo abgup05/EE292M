@@ -1,0 +1,12 @@
+{
+  "key": "c957f07b2cdfe1191f3283f7",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:11:45+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim tests capex as a percentage of operating cash flow, a ratio this tool does not compute (capex_ratio is capex divided by revenue, and compare only sets one measure's value against another's, with no percentage multiple).",
+    "tests": []
+  }
+}

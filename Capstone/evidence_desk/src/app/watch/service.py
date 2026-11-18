@@ -35,7 +35,14 @@ from app.core import watch_policy as wording
 from app.core.change_models import FilingChanges
 from app.core.documents import FetchedFiling, FilingRef
 from app.core.models import Company, Run, RunStatus, Thesis
-from app.core.ports import Analyst, Checker, FilingSource, PageFetcher, SourceError
+from app.core.ports import (
+    Analyst,
+    Checker,
+    ClaimReaders,
+    FilingSource,
+    PageFetcher,
+    SourceError,
+)
 from app.core.triage import ExtraRule, thesis_claims, triage, watched_filing
 from app.core.watch_models import (
     InboxItem,
@@ -52,13 +59,15 @@ from app.core.watch_report import what_moved
 from app.services import theses, thesis_run
 from app.services.filing_changes import compare_pair, read_pair
 from app.sources.http import fetch_page as default_fetch_page
-from app.store import FilingCache, Store
+from app.store import FactStore, FilingCache, Store
 from app.watch.store import WatchStatus, WatchStore, item_id, stamp
 
 log = logging.getLogger(__name__)
 
-# EXTENSION POINT (version 14): further triage rules, each (claims, filing) -> [(claim id,
-# reason)]. Version 14 adds "a compiled claim's computed outcome flipped" here at the merge.
+# EXTENSION POINT: further triage rules, each (claims, filing) -> [(claim id, reason)]. Left
+# empty in version 14: a compiled claim's change of outcome needs the facts the new filing
+# brings, which come only from EDGAR's company-facts API, a request triage does not make.
+# It is reported after the run instead (WhatMoved.computed, app.core.watch_report).
 EXTRA_TRIAGE_RULES: tuple[ExtraRule, ...] = ()
 
 # How many of a form's filings are listed to find the one before a new 10-K or 10-Q.
@@ -123,10 +132,14 @@ def run_executor(
     *,
     checker: Checker | None = None,
     fetch_page: PageFetcher = default_fetch_page,
+    facts_store: FactStore | None = None,
+    claim_reader: ClaimReaders = None,
 ) -> RunExecutor:
     """A function that executes a started run to its end, as the API's worker does.
 
-    A crash ends the run as failed with :data:`CRASH_MESSAGE`; a run never stays running.
+    ``facts_store`` keeps the facts the run reads and ``claim_reader`` is the model
+    parser when it is on (version 14), as for a run the app starts. A crash ends the run
+    as failed with :data:`CRASH_MESSAGE`; a run never stays running.
     """
 
     def execute(run: Run) -> Run:
@@ -139,6 +152,8 @@ def run_executor(
                 fetch_page=fetch_page,
                 cache=cache,
                 checker=checker,
+                facts_store=facts_store,
+                claim_reader=claim_reader,
             )
         except Exception:  # noqa: BLE001 - last resort: a run must never stay "running"
             log.exception("Watch run %s crashed", run.id)

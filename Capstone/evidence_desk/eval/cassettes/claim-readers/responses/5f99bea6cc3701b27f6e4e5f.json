@@ -1,0 +1,12 @@
+{
+  "key": "5f99bea6cc3701b27f6e4e5f",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:15:44+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a qualitative judgement about political goodwill and states no numeric test on a listed measure.",
+    "tests": []
+  }
+}

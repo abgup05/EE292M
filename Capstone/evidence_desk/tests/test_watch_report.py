@@ -102,3 +102,73 @@ def test_the_first_run_has_nothing_to_compare_with() -> None:
     assert not moved.moved
     assert moved.earlier_run_id is None
     assert moved.line == wording.FIRST_RUN
+
+
+# Version 14: how many claims moved, and a computed test whose outcome changed
+
+
+def test_the_report_says_how_many_of_the_claims_moved() -> None:
+    earlier = run("run-1", (Verdict.not_addressed, Verdict.unjudged))
+    later = run(
+        "run-2",
+        (Verdict.supported, Verdict.unjudged),
+        caution="The evidence for this verdict was filed before the 8-K of 12 Nov 2026.",
+    )
+
+    moved = what_moved(earlier, later)
+    still = what_moved(later, later)
+    first = what_moved(None, later)
+
+    # One claim moved twice over (its verdict and a new caution): it counts once.
+    assert (moved.claims_moved, moved.claims_total) == (1, 2)
+    assert moved.claims_line == "1 of 2 claims moved."
+    assert (still.claims_moved, still.claims_total, still.claims_line) == (
+        0,
+        2,
+        "0 of 2 claims moved.",
+    )
+    assert (first.claims_moved, first.claims_total, first.claims_line) == (0, 2, "")
+
+
+def _computed(outcome: str, canonical: str = "gross_margin[Q] > gross_margin[Q-4]"):
+    from app.core import policy
+    from app.core.claim_test_models import ComputedTest
+
+    return ComputedTest(
+        canonical=canonical,
+        form="direction",
+        bound=f"bound {outcome}",
+        outcome=outcome,  # type: ignore[arg-type]
+        outcome_label=policy.COMPUTED_LABELS[outcome],
+        comparison=">",
+        counted_as=policy.COMPUTED_COUNTS.get(outcome, ""),
+    )
+
+
+def test_a_computed_test_whose_outcome_changed_is_named_and_counts_its_claim() -> None:
+    earlier = run("run-1", (Verdict.supported, Verdict.unjudged))
+    later = run("run-2", (Verdict.supported, Verdict.unjudged))
+    earlier.claims[1].computed = _computed("holds")
+    later.claims[1].computed = _computed("fails")
+
+    moved = what_moved(earlier, later)
+
+    assert moved.moved and not moved.verdicts
+    [change] = moved.computed
+    assert change.claim == REQUEST.claims[1]
+    assert change.canonical == "gross_margin[Q] > gross_margin[Q-4]"
+    assert (change.before, change.after) == ("holds", "fails")
+    assert moved.line == "1 computed test changed its outcome."
+    assert (moved.claims_moved, moved.claims_total) == (1, 2)
+
+
+def test_a_computed_test_read_differently_is_not_called_a_change_of_outcome() -> None:
+    earlier = run("run-1", (Verdict.unjudged, Verdict.unjudged))
+    later = run("run-2", (Verdict.unjudged, Verdict.unjudged))
+    earlier.claims[1].computed = _computed("holds")
+    later.claims[1].computed = _computed("fails", canonical="gross_margin[Q] > gross_margin[Q-1]")
+    newly = run("run-3", (Verdict.unjudged, Verdict.unjudged))
+    newly.claims[1].computed = _computed("fails")
+
+    assert what_moved(earlier, later).computed == []
+    assert what_moved(run("run-0", (Verdict.unjudged, Verdict.unjudged)), newly).computed == []

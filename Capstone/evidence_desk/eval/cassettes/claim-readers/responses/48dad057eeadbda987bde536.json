@@ -1,0 +1,12 @@
+{
+  "key": "48dad057eeadbda987bde536",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:12:49+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a judgement about insider selling, which is not a measure this tool computes and states no numeric test.",
+    "tests": []
+  }
+}

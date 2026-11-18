@@ -1,0 +1,63 @@
+{
+  "key": "bd1c4cc0c0e1e1a67495905c",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:12:04+00:00",
+  "response": {
+    "computable": true,
+    "reason": "Net income growth in fiscal 2024 on the prior year is tested against a tripling, which is growth above 200%.",
+    "tests": [
+      {
+        "form": "growth_threshold",
+        "left": {
+          "fn": "yoy",
+          "subject": "net_income",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 2024,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "op": ">",
+        "right_term": {
+          "fn": "yoy",
+          "subject": "net_income",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 2024,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "right_number": {
+          "value": 200,
+          "unit": "percent"
+        },
+        "each": 0,
+        "each_since": 0
+      }
+    ]
+  }
+}

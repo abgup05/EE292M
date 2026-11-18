@@ -1,0 +1,12 @@
+{
+  "key": "94d703bf1425736116399c6a",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:10:09+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim compares deferred revenue (a balance) to annual revenue as a ratio, which is not a measure or form this tool offers, and \"a rounding error\" is a vague judgement.",
+    "tests": []
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "key": "2d0c49627f28bbb3a85bea60",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:19:05+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a qualitative interpretation of management strategy and intent, not a numeric test on a listed measure.",
+    "tests": []
+  }
+}

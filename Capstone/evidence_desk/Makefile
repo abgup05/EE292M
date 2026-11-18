@@ -1,4 +1,4 @@
-.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench eval eval-validate backup restore-check up-recorded live-walk changes breakdowns sample-run-changes golden-sheet backup-status figures two-writers header-cut-check time-live events events-probe event-categories watch-once watch-status watch-examples watch-replay watch-contention sample-inbox
+.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench eval eval-validate backup restore-check up-recorded live-walk changes breakdowns sample-run-changes golden-sheet backup-status figures two-writers header-cut-check time-live events events-probe event-categories facts-load restatements claim-labels claim-results-key examples claim-foreign watch-once watch-status watch-examples watch-replay watch-contention sample-inbox sample-v14 look measures-probe readers-echo readers-check
 
 export COMPOSE_PROJECT_NAME := ee292m-evidence-desk
 export LOCAL_UID := $(shell id -u)
@@ -6,16 +6,30 @@ export LOCAL_GID := $(shell id -g)
 COMPOSE := docker compose -f docker/compose.yaml
 RUN := $(COMPOSE) run --rm --no-deps app
 
+# The claim readers for one command, without editing .env: `make run READERS=models ARGS=...`,
+# `make up READERS=models` (grammar, model or models). Given, it is passed into the containers
+# through docker/readers.yaml; not given, that file is not loaded and EVIDENCE_DESK_CLAIM_READER
+# in .env stands. READER_FILES is for `make readers-check`, which tests both.
+READERS_VALUES := grammar model models
+ifneq ($(filter-out $(READERS_VALUES),$(READERS)),)
+$(error READERS is one of: $(READERS_VALUES))
+endif
+READER_FILES ?=
+WITH_READERS = $(if $(READERS),EVIDENCE_DESK_CLAIM_READER=$(READERS) )$(COMPOSE) $(READER_FILES) $(if $(READERS),-f docker/readers.yaml)
+READER_ECHO := python -c "import os; print('readers:', os.environ.get('EVIDENCE_DESK_CLAIM_READER', '(unset)'))"
+
 help:
 	@echo 'Everyday: build up down verify clean (verify-fresh: clone the committed branch under results/ and verify it)'
+	@echo 'Claim readers for one command: up, up-recorded or run with READERS=models (or model, grammar); without it .env decides. readers-check tests that inside the containers'
 	@echo 'Recorded demo: up-recorded (the app with model answers replayed from demo/cassettes/nvda-example: Load example, then Test the thesis; needs EDGAR, no key)'
 	@echo 'Live walk: live-walk (the running app over HTTP with live EDGAR and recorded answers: a run, decisions, the reviewed brief, a saved thesis run twice, the comparison)'
 	@echo 'Development: test lint fmt smoke logs shell (test T=tests/test_x.py; lint/fmt FILES="src/app/x.py")'
 	@echo "Command line: run ARGS='example' or ARGS='run --ticker NVDA --decision \"...\" --claim \"...\"' (synchronous; writes results/<run-id>.json and .md)"
 	@echo 'Dependencies: lock'
 	@echo 'Demonstration: demo (live NVIDIA example through the HTTP API: real EDGAR, configured engine; writes results/demo-<UTC>.json and .md)'
-	@echo 'Screenshots: screenshots (headless Chromium renders the first screen, the samples, the recorded inbox and the specimen page, in the Paper and Terminal themes and at phone width, into docs/screenshots)'
-	@echo 'Browser test: uitest (headless Chromium renders the sample records and the recorded inbox, drives the keys and themes in uitests/keys.html and every answer of the watch routes in uitests/watch.html; pytest uitests checks the DOM against the JSON)'
+	@echo 'Screenshots: screenshots (headless Chromium renders the first screen, the samples, the recorded inbox, the computed claims, the as-of run, the restatement ledger and the specimen page, in the Paper and Terminal themes and at phone width, into docs/screenshots)'
+	@echo 'Looking while changing the page: look (captures the pages LOOK names, each name@width,height@query, into results/; nothing committed)'
+	@echo 'Browser test: uitest (headless Chromium renders the sample records, the recorded inbox and the version 14 examples, drives the keys and themes in uitests/keys.html, every answer of the watch routes in uitests/watch.html and the version 14 variants in uitests/v14.html; pytest uitests checks the DOM against the JSON)'
 	@echo "Replay: replay ARGS='--out demo' (the example thesis on recorded filings with model answers from the cassette; no network, no key)"
 	@echo 'Tripwire: golden-check (the offline example run against tests/golden/golden.json; names the first stage that moved)'
 	@echo 'Tripwire: golden-baseline (rewrite tests/golden/golden.json, and replay.json when the replay has nothing pending; read the diff before committing a new baseline)'
@@ -26,9 +40,18 @@ help:
 	@echo 'Tagged facts: breakdowns ARGS="NVDA --form 10-K" (segments, geographies and customers from a filing'\''s inline XBRL)'
 	@echo 'Current reports: events T=NVDA (live: the 8-Ks filed since the annual report, their items, opening sentences and the roles a 5.02 names; writes results/events-<ticker>-<UTC>.txt and .json)'
 	@echo 'Current reports: event-categories (offline: precision and recall of the claim-category rule on eval/claim-categories.json)'
-	@echo 'Fixtures: fixtures-facts (record XBRL company facts of NVDA, AAPL, MSFT under tests/fixtures/edgar; REFRESH=1 to overwrite)'
+	@echo "Facts: restatements T=NVDA (live: every metric and period whose value differs between the company's filings, with each filing and the change; ARGS='--as-of 2020-01-01'; writes results/restatements-<ticker>-<UTC>.txt and .json)"
+	@echo "Claims: claim-labels (offline: the claim compiler against eval/claim-tests.json, development set; ARGS='--set held_out' scores the held-out set, at most twice ever)"
+	@echo "Claims: claim-results-key (offline: the expected results of eval/claim-results.json from the raw facts, by a route that never calls the evaluator; ARGS='--write' writes them)"
+	@echo "Claims: claim-foreign (offline: the claim compiler on 120 claims another model wrote, eval/claim-tests-foreign.json, against the judgements in eval/claim-tests-foreign-judgements.json, for all and for each half; ARGS='--write eval/results/FILE.txt' records it; exits 1 while a reading is unjudged)"
+	@echo "Claims: eval ARGS='compiler-vs-model' (the claim compiler and a model, given the same reported-figure lines, scored on eval/claim-results.json; prints the calls it would make first; ARGS='compiler-vs-model --record --max-calls 70' asks the API for missing answers, refusing above the cap)"
+	@echo "Claims: eval ARGS='claim-readers --set eval/claim-tests-foreign.json' (the grammar's and the model parser's reading of each claim, and whether they agree, one row per claim to eval/results/claim-readers-<set>.csv for a judge; prints the calls first; --record --max-calls N asks the API for missing answers, refusing above the cap)"
+	@echo 'Facts: facts-load TICKERS="NVDA AAPL" (live: every us-gaap fact of each company, with the filing that reported it and its SIC code, into data/facts/facts.sqlite; disposable)'
+	@echo 'Fixtures: fixtures-facts(record XBRL company facts of NVDA, AAPL, MSFT under tests/fixtures/edgar; REFRESH=1 to overwrite)'
 	@echo 'Fixtures: fixtures (record SEC EDGAR responses for NVIDIA under tests/fixtures/edgar; REFRESH=1 to overwrite)'
+	@echo 'Examples: examples (offline: the version 14 payloads in docs/examples/v14, made from the recorded fixtures with the extractive engine; tests/test_examples_v14.py fails when they are out of date), sample-v14 (copies run.json, as-of-run.json, restatements.json and run-readers.json, unedited, into the page'"'"'s samples ?sample=computed, ?sample=as-of, ?sample=restatements and ?sample=readers)'
 	@echo 'Diagnostics: figures TICKERS="COST AMZN" (live: each company'"'"'s quarters as a run sees them; MISSING=1 lists every metric without a value); header-cut-check TICKERS="..." (live: each filing parsed with and without the header cut, the whole documents compared)'
+	@echo 'Diagnostics: measures-probe TICKERS="..." (live, the eight probe companies by default: each claim-test measure'"'"'s newest fiscal year, how many have it and why the rest do not, and the parts each newest 10-K tags; writes results/measures-<UTC>.md)'
 	@echo 'Diagnostics: probe TICKERS="AAPL MSFT" (live: parse each company'"'"'s latest 10-K and 10-Q, report Item coverage; writes results/probe-<UTC>.md)'
 	@echo 'Diagnostics: events-probe TICKERS="..." (live: every 8-K of the last 12 months of the eight probe companies, each listed item found or missed by the splitter; writes results/events-probe-<UTC>.md)'
 	@echo 'Backup: backup (the record, online, to backups/record-<UTC>.sqlite with its .sha256, and backups/decisions-<UTC>.jsonl)'
@@ -42,11 +65,26 @@ build:
 	$(COMPOSE) build app
 
 up:
-	$(COMPOSE) up --build --force-recreate -d app watch
+	$(WITH_READERS) up --build --force-recreate -d app watch
 	@-$(COMPOSE) exec -T app python -m app.backup status
 
 up-recorded:
-	EVIDENCE_DESK_CASSETTE=demo/cassettes/nvda-example $(COMPOSE) up --build --force-recreate -d app
+	EVIDENCE_DESK_CASSETTE=demo/cassettes/nvda-example $(WITH_READERS) up --build --force-recreate -d app
+
+# What the readers setting is inside a container started the way run and up start one.
+readers-echo:
+	@$(WITH_READERS) run --rm --no-deps -T app $(READER_ECHO)
+
+# The compose behaviour READERS relies on, against docker/readers-check.env standing in for an
+# owner's .env that says "model": without READERS it stands; with READERS it gives way.
+readers-check:
+	@out=$$($(MAKE) -s --no-print-directory readers-echo READERS= READER_FILES="-f docker/readers-check.yaml" 2>/dev/null | tail -1); \
+	echo "without READERS: $$out"; test "$$out" = "readers: model"
+	@out=$$($(MAKE) -s --no-print-directory readers-echo READERS=models READER_FILES="-f docker/readers-check.yaml" 2>/dev/null | tail -1); \
+	echo "READERS=models:  $$out"; test "$$out" = "readers: models"
+	@out=$$($(MAKE) -s --no-print-directory readers-echo READERS=grammar READER_FILES="-f docker/readers-check.yaml" 2>/dev/null | tail -1); \
+	echo "READERS=grammar: $$out"; test "$$out" = "readers: grammar"
+	@echo "readers-check: PASS"
 
 live-walk:
 	EVIDENCE_DESK_CASSETTE=demo/cassettes/nvda-example $(COMPOSE) up --build --force-recreate -d app
@@ -101,11 +139,17 @@ uitest:
 	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=inbox" > results/dom-inbox.html 2> results/dom-inbox.log && \
 	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=inbox-page-2&theme=terminal" > results/dom-inbox-page-2.html 2> results/dom-inbox-page-2.log && \
 	$(COMPOSE) run --rm -T shots $(KEYS_FLAGS) --dump-dom "file:///work/uitests/keys.html" > results/dom-keys.html 2> results/dom-keys.log && \
-	$(COMPOSE) run --rm -T shots $(KEYS_FLAGS) --dump-dom "file:///work/uitests/watch.html" > results/dom-watch.html 2> results/dom-watch.log
+	$(COMPOSE) run --rm -T shots $(KEYS_FLAGS) --dump-dom "file:///work/uitests/watch.html" > results/dom-watch.html 2> results/dom-watch.log && \
+	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=computed" > results/dom-computed.html 2> results/dom-computed.log && \
+	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=as-of&theme=terminal" > results/dom-as-of.html 2> results/dom-as-of.log && \
+	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=restatements" > results/dom-restatements.html 2> results/dom-restatements.log && \
+	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=run-live" > results/dom-run-live.html 2> results/dom-run-live.log && \
+	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=readers&theme=terminal" > results/dom-readers.html 2> results/dom-readers.log && \
+	$(COMPOSE) run --rm -T shots $(KEYS_FLAGS) --dump-dom "file:///work/uitests/v14.html" > results/dom-v14.html 2> results/dom-v14.log
 	$(RUN) pytest -q -p no:cacheprovider uitests
 
 run:
-	$(RUN) python -m app.cli $(ARGS)
+	$(WITH_READERS) run --rm --no-deps app python -m app.cli $(ARGS)
 
 demo: build
 	$(COMPOSE) up --force-recreate -d app
@@ -118,7 +162,10 @@ demo: build
 SHOTS := first-screen sample-run sample-run-phone sample-synthetic sample-changes sample-changes-phone sample-breakdowns tagged-figures \
 	first-screen-terminal sample-run-terminal sample-run-phone-terminal sample-events sample-events-terminal sample-events-phone \
 	sample-synthetic-terminal sample-changes-terminal sample-breakdowns-terminal specimen specimen-terminal specimen-v14 specimen-note specimen-note-terminal specimen-views specimen-phone \
-	sample-inbox sample-inbox-terminal sample-inbox-phone
+	sample-inbox sample-inbox-terminal sample-inbox-phone \
+	sample-computed sample-computed-terminal sample-computed-phone specimen-v14-terminal specimen-v14-phone \
+	sample-as-of sample-as-of-terminal sample-restatements sample-restatements-terminal \
+	sample-live sample-live-terminal sample-live-phone computed-readers computed-readers-terminal
 screenshots:
 	@mkdir -p docs/screenshots results
 	@touch results/.screenshots-started
@@ -151,10 +198,37 @@ screenshots:
 	$(COMPOSE) run --rm shots --window-size=390,3000 --screenshot=/work/docs/screenshots/specimen-phone.png "http://app:8000/specimen.html?theme=paper" && \
 	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-inbox.png "http://app:8000/?sample=inbox&theme=paper" && \
 	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-inbox-terminal.png "http://app:8000/?sample=inbox&theme=terminal" && \
-	$(COMPOSE) run --rm shots --window-size=390,3400 --screenshot=/work/docs/screenshots/sample-inbox-phone.png "http://app:8000/?sample=inbox&theme=paper"
+	$(COMPOSE) run --rm shots --window-size=390,3400 --screenshot=/work/docs/screenshots/sample-inbox-phone.png "http://app:8000/?sample=inbox&theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-computed.png "http://app:8000/?sample=computed&theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-computed-terminal.png "http://app:8000/?sample=computed&theme=terminal" && \
+	$(COMPOSE) run --rm shots --window-size=390,3600 --screenshot=/work/docs/screenshots/sample-computed-phone.png "http://app:8000/?sample=computed&theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/specimen-v14-terminal.png "http://app:8000/specimen.html?theme=terminal&only=v14" && \
+	$(COMPOSE) run --rm shots --window-size=390,3600 --screenshot=/work/docs/screenshots/specimen-v14-phone.png "http://app:8000/specimen.html?theme=paper&only=v14" && \
+	$(COMPOSE) run --rm shots --window-size=1280,2400 --screenshot=/work/docs/screenshots/sample-as-of.png "http://app:8000/?sample=as-of&theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=1280,2400 --screenshot=/work/docs/screenshots/sample-as-of-terminal.png "http://app:8000/?sample=as-of&theme=terminal" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3000 --screenshot=/work/docs/screenshots/sample-restatements.png "http://app:8000/?sample=restatements&theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3000 --screenshot=/work/docs/screenshots/sample-restatements-terminal.png "http://app:8000/?sample=restatements&theme=terminal" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-live.png "http://app:8000/?sample=run-live&theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-live-terminal.png "http://app:8000/?sample=run-live&theme=terminal" && \
+	$(COMPOSE) run --rm shots --window-size=390,3600 --screenshot=/work/docs/screenshots/sample-live-phone.png "http://app:8000/?sample=run-live&theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=1280,1500 --screenshot=/work/docs/screenshots/computed-readers.png "http://app:8000/specimen.html?theme=paper&only=v14" && \
+	$(COMPOSE) run --rm shots --window-size=1280,1500 --screenshot=/work/docs/screenshots/computed-readers-terminal.png "http://app:8000/specimen.html?theme=terminal&only=v14"
 	@for name in $(SHOTS); do \
 		test docs/screenshots/$$name.png -nt results/.screenshots-started \
 		|| { echo "screenshots: docs/screenshots/$$name.png was not written"; exit 1; }; \
+	done
+
+# Captures for looking at the page while changing it, into results/ (disposable, not committed):
+# make look LOOK='live@1280,3600@?sample=run-live&theme=paper live-phone@390,3600@?sample=run-live'
+LOOK ?= look@1280,3600@?sample=run-live&theme=paper
+look:
+	@mkdir -p results
+	$(COMPOSE) up --force-recreate -d app
+	@trap '$(COMPOSE) down' EXIT; \
+	$(COMPOSE) exec -T app python uitests/wait_ready.py && \
+	for spec in $(foreach l,$(LOOK),'$(l)'); do \
+	  name=$${spec%%@*}; rest=$${spec#*@}; size=$${rest%%@*}; url=$${rest#*@}; \
+	  $(COMPOSE) run --rm shots --window-size=$$size --screenshot=/work/results/$$name.png "http://app:8000/$$url" 2>/dev/null && echo "results/$$name.png"; \
 	done
 
 fixtures:
@@ -162,6 +236,9 @@ fixtures:
 
 replay:
 	$(RUN) python -m tests.replay_run $(ARGS)
+
+examples:
+	$(RUN) python -m tests.examples_v14 $(ARGS)
 
 eval-validate:
 	$(RUN) python -m app.evaluation validate $(ARGS)
@@ -214,6 +291,24 @@ event-categories:
 figures:
 	$(RUN) python -m app.figures $(if $(filter 1,$(MISSING)),--missing,) $(or $(TICKERS),NVDA)
 
+measures-probe:
+	$(RUN) python -m app.measures_probe $(or $(TICKERS),NVDA AAPL MSFT KO JPM TSLA COST AMZN)
+
+facts-load:
+	$(RUN) python -m app.facts_load $(or $(TICKERS),NVDA)
+
+restatements:
+	$(RUN) python -m app.restatements $(or $(T),NVDA) $(ARGS)
+
+claim-labels:
+	$(RUN) python -m app.evaluation.claim_tests $(ARGS)
+
+claim-foreign:
+	$(RUN) python -m app.evaluation.foreign_claims $(ARGS)
+
+claim-results-key:
+	$(RUN) python -m app.evaluation.claim_oracle $(ARGS)
+
 header-cut-check:
 	$(RUN) python -m tests.header_cut_check $(or $(TICKERS),NVDA)
 
@@ -264,6 +359,16 @@ sample-inbox:
 	@for name in $(INBOX_SAMPLES); do \
 	  case $$name in inbox|inbox-page-2) out=sample-$$name.json ;; *) out=sample-inbox-$$name.json ;; esac; \
 	  cp docs/examples/v13/$$name.json src/web/$$out && echo "src/web/$$out <- docs/examples/v13/$$name.json"; \
+	done
+
+# The page's version 14 samples (?sample=computed, as-of, restatements, readers): the payloads
+# `make examples` wrote, copied unedited. Run it after examples; uitests/test_v14_dom.py fails while
+# a copy differs.
+V14_SAMPLES := run:computed as-of-run:as-of restatements:restatements run-readers:readers
+sample-v14:
+	@for pair in $(V14_SAMPLES); do \
+	  src=$${pair%%:*}; out=sample-$${pair##*:}.json; \
+	  cp docs/examples/v14/$$src.json src/web/$$out && echo "src/web/$$out <- docs/examples/v14/$$src.json"; \
 	done
 
 watch-replay:

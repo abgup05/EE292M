@@ -1,0 +1,12 @@
+{
+  "key": "202f44189b650cb5a6314b97",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:18:28+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim covers only the quarters of fiscal 2026 elapsed \"so far\", and the tool cannot fix how many quarters that is, so the period is not placed.",
+    "tests": []
+  }
+}

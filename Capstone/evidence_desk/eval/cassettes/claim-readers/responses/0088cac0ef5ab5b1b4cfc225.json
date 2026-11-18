@@ -1,0 +1,12 @@
+{
+  "key": "0088cac0ef5ab5b1b4cfc225",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:17:19+00:00",
+  "response": {
+    "computable": false,
+    "reason": "This compares two parts of the company (product lines) against each other, but the compare form is for measures of the whole company and a part's figures cannot be set against another part's in a test.",
+    "tests": []
+  }
+}

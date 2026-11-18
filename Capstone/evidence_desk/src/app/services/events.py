@@ -134,9 +134,11 @@ def read_timeline(
     periodic_filed: str | None,
     out_of_time: Callable[[], bool] = lambda: False,
     cap: int = limits.MAX_EVENTS_READ,
+    filed_until: str | None = None,
 ) -> Timeline:
     """List the 8-Ks filed after ``annual_filed`` and read the ones the rule picks.
 
+    With ``filed_until`` (a run as of a past date), only those filed on or before it.
     ``periodic_filed`` is the filing date of the newest periodic report read. The
     index failing, or no annual report, gives an empty timeline with the reason in
     ``index_error``; a document that cannot be read gives its event status
@@ -149,7 +151,10 @@ def read_timeline(
         timeline.counts.line = policy.EVENTS_NO_ANNUAL
         return timeline
     try:
-        refs = filings.current_reports(company, annual_filed)
+        if filed_until is None:
+            refs = filings.current_reports(company, annual_filed)
+        else:
+            refs = filings.current_reports(company, annual_filed, filed_until=filed_until)
     except SourceError as exc:
         timeline.index_error = str(exc)
         timeline.counts = rules.count_events([], cap, annual_filed)
@@ -182,8 +187,12 @@ def as_of(
     started: date,
     *,
     in_run: bool = True,
+    requested: date | None = None,
 ) -> AsOf:
-    """The as-of block: the periodic reports read (form, date, URL) and the 8-Ks read."""
+    """The as-of block: the periodic reports read (form, date, URL) and the 8-Ks read.
+
+    ``requested`` is the date a run was asked to be as of, if any.
+    """
     return rules.build_as_of(
         filings=[*filings_read, *timeline.read_filings()],
         annual_filed=timeline.annual_filed,
@@ -191,6 +200,7 @@ def as_of(
         counts=timeline.counts,
         index_error=timeline.index_error,
         in_run=in_run,
+        requested=requested,
     )
 
 

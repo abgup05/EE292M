@@ -1,0 +1,12 @@
+{
+  "key": "828ab06cdabd9407b1b7b8ef",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:13:00+00:00",
+  "response": {
+    "computable": false,
+    "reason": "This is a qualitative judgement about strategy and its benefit, not a numeric test on a listed measure.",
+    "tests": []
+  }
+}

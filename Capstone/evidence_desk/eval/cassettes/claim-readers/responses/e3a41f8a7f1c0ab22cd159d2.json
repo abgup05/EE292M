@@ -1,0 +1,12 @@
+{
+  "key": "e3a41f8a7f1c0ab22cd159d2",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:14:48+00:00",
+  "response": {
+    "computable": false,
+    "reason": "Services is a segment or product line, whose figures come from a single filing with no history, so growth in fiscal 2025 cannot be compared with growth in fiscal 2024.",
+    "tests": []
+  }
+}

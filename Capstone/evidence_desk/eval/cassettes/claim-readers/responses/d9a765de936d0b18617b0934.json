@@ -1,0 +1,63 @@
+{
+  "key": "d9a765de936d0b18617b0934",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:13:20+00:00",
+  "response": {
+    "computable": true,
+    "reason": "The claim states one threshold test: iPhone (a product line, so a segment) revenue in fiscal 2025 above $200 billion, with 'cleared' read as greater than.",
+    "tests": [
+      {
+        "form": "threshold",
+        "left": {
+          "fn": "value",
+          "subject": "revenue",
+          "member": "iPhone",
+          "axis": "segment",
+          "years": 0,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 2025,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "op": ">",
+        "right_term": {
+          "fn": "value",
+          "subject": "revenue",
+          "member": "iPhone",
+          "axis": "segment",
+          "years": 0,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 2025,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "right_number": {
+          "value": 200000000000,
+          "unit": "USD"
+        },
+        "each": 0,
+        "each_since": 0
+      }
+    ]
+  }
+}

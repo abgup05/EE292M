@@ -1,0 +1,63 @@
+{
+  "key": "1de87af9ae2267c0a10747b2",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:11:48+00:00",
+  "response": {
+    "computable": true,
+    "reason": "The claim states one growth test: cost of revenue's year-over-year growth in named fiscal year 2025 exceeds 50%.",
+    "tests": [
+      {
+        "form": "growth_threshold",
+        "left": {
+          "fn": "yoy",
+          "subject": "cost_of_revenue",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 2025,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "op": ">",
+        "right_term": {
+          "fn": "yoy",
+          "subject": "cost_of_revenue",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 2025,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "right_number": {
+          "value": 50,
+          "unit": "percent"
+        },
+        "each": 0,
+        "each_since": 0
+      }
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "key": "0af653d6577c5c6111ca2c12",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:12:42+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a forecast about supply from a third party (SK Hynix) by mid-year, which this tool cannot test against the company's reported figures.",
+    "tests": []
+  }
+}

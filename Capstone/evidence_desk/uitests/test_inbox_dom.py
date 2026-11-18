@@ -114,15 +114,26 @@ def _glyph(article: Tag) -> str:
     return glyph.get_text() if glyph else ""
 
 
-def test_the_folded_line_counts_the_items_folded_on_this_page() -> None:
+def test_the_folded_line_carries_the_backends_folded_count() -> None:
     soup = page("inbox")
-    items = payload("sample-inbox.json")["items"]
+    inbox = payload("sample-inbox.json")
     line = soup.select_one("#inbox-collapsed details.inbox-folded")
     assert line is not None and not line.has_attr("open")
-    folded_items = [i for i in items if i["collapsed"]]
-    assert line.select_one('[data-folded="count"]').get_text() == str(len(folded_items))
+    # Version 14: the count is the backend's `folded` (of the whole inbox), not the items drawn here.
+    assert line.select_one('[data-folded="count"]').get_text() == str(inbox["folded"])
+    assert [a["data-item-id"] for a in line.select("article.inbox-item")] == [i["id"] for i in inbox["items"] if i["collapsed"]]
     label = payload("sample-inbox-meta.json")["kind_labels"]["not_relevant"]
     assert label in words(line.select_one("summary"))
+
+
+def test_a_page_without_folded_items_still_says_how_many_the_inbox_folds() -> None:
+    soup = page("inbox-page-2")
+    second = payload("sample-inbox-page-2.json")
+    assert not any(i["collapsed"] for i in second["items"]) and second["folded"] > 0
+    line = soup.select_one("#inbox-collapsed .inbox-folded")
+    assert line is not None and line.name == "p"
+    assert line.select_one('[data-folded="count"]').get_text() == str(second["folded"])
+    assert "none on this page" in words(line)
 
 
 def test_the_unread_number_is_the_apis() -> None:
@@ -188,6 +199,10 @@ def test_what_moved_is_the_records_and_the_comparison_is_one_click_away() -> Non
         assert compare is not None and not compare.has_attr("open")
         links = [a.get("href") for a in article.select(".moved-events a")]
         assert links == [e["url"] for e in moved["new_events"]]
+        # Version 14: the backend's claims line, and each computed outcome that changed (none here).
+        line = article.select_one("[data-claims-line]")
+        assert (words(line) if line else "") == moved.get("claims_line", "")
+        assert len(article.select("[data-moved-computed]")) == len(moved.get("computed", []))
 
 
 def test_a_finished_or_failed_items_run_opens_in_the_note() -> None:

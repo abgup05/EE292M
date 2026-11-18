@@ -1,0 +1,63 @@
+{
+  "key": "234b0f13e952fab9fad1d2b2",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:10:48+00:00",
+  "response": {
+    "computable": true,
+    "reason": "Diluted EPS growth from FY2024 to FY2025 exceeding 100% is a growth_threshold test using change with base FY2024.",
+    "tests": [
+      {
+        "form": "growth_threshold",
+        "left": {
+          "fn": "change",
+          "subject": "eps_diluted",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 2025,
+            "quarter": 0
+          },
+          "base": {
+            "used": true,
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 2024,
+            "quarter": 0
+          }
+        },
+        "op": ">",
+        "right_term": {
+          "fn": "change",
+          "subject": "eps_diluted",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 2025,
+            "quarter": 0
+          },
+          "base": {
+            "used": true,
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 2024,
+            "quarter": 0
+          }
+        },
+        "right_number": {
+          "value": 100,
+          "unit": "percent"
+        },
+        "each": 0,
+        "each_since": 0
+      }
+    ]
+  }
+}

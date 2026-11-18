@@ -1,0 +1,12 @@
+{
+  "key": "2dc3152835f02281263c35ea",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:52:43+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim joins a growth threshold with a comparison against every other market platform (a rank), which is more than one computable test and not a single test the tool can place.",
+    "tests": []
+  }
+}

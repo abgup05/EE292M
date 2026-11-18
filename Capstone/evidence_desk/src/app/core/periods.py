@@ -126,6 +126,19 @@ class FiscalCalendar:
                 return year + self.label_offset
         raise AssertionError("unreachable: a day is never past the next year's end")
 
+    def fiscal_quarter(self, day: date) -> int:
+        """The quarter (1 to 4) of its fiscal year that a quarter ending ``day`` is.
+
+        Counted back from the end of the fiscal year containing ``day`` in steps of
+        about 91 days, so a 13- or 14-week quarter of a 52/53-week year is placed.
+        """
+        year = self.fiscal_year(day)
+        end = self._nominal_end(year - self.label_offset)
+        if self.year_end is not None and self.year_end.year + self.label_offset == year:
+            end = self.year_end
+        left = round((end - day).days / 91.3)
+        return min(4, max(1, 4 - left))
+
 
 def _iso_date(value: object) -> date | None:
     if not isinstance(value, str) or len(value) != 10:
@@ -181,7 +194,7 @@ def _entries(companyfacts: object) -> Iterator[object]:
                     yield from entries
 
 
-def fiscal_calendar(companyfacts: object) -> FiscalCalendar | None:
+def fiscal_calendar(companyfacts: object, *, as_of: date | None = None) -> FiscalCalendar | None:
     """The fiscal calendar of the newest annual report in an SEC company-facts body.
 
     Among year-long duration facts whose form starts with one of
@@ -191,9 +204,14 @@ def fiscal_calendar(companyfacts: object) -> FiscalCalendar | None:
     year. An amendment that reports no year-long period (a cover page, Part III)
     is passed over. None when there is no such report, or its ``fy`` is more
     than :data:`MAX_LABEL_OFFSET` from the year its period ends in. Never
-    raises on a malformed body: what cannot be read is skipped.
+    raises on a malformed body: what cannot be read is skipped. With ``as_of``,
+    only facts filed on or before that day are read.
     """
-    annual = [found for raw in _entries(companyfacts) if (found := _annual_fact(raw))]
+    annual = [
+        found
+        for raw in _entries(companyfacts)
+        if (found := _annual_fact(raw)) and (as_of is None or found.filed <= as_of)
+    ]
     if not annual:
         return None
     newest = max((fact.filed, fact.accession) for fact in annual)

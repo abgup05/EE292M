@@ -1,0 +1,12 @@
+{
+  "key": "4da9498c727b1ecb7bff4651",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:13:58+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim compares accounts payable to ten times inventory, and the compare form can only compare two measures directly, with no multiplier.",
+    "tests": []
+  }
+}

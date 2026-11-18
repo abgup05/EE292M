@@ -1,0 +1,63 @@
+{
+  "key": "a1e51bebf2db280fe8bc8942",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:16:31+00:00",
+  "response": {
+    "computable": true,
+    "reason": "The claim states one threshold test: company operating income for fiscal 2025 above $125 billion, read as a strict greater-than comparison.",
+    "tests": [
+      {
+        "form": "threshold",
+        "left": {
+          "fn": "value",
+          "subject": "operating_income",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 2025,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "op": ">",
+        "right_term": {
+          "fn": "value",
+          "subject": "operating_income",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 2025,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "right_number": {
+          "value": 125000000000,
+          "unit": "USD"
+        },
+        "each": 0,
+        "each_since": 0
+      }
+    ]
+  }
+}

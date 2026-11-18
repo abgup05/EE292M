@@ -1,0 +1,12 @@
+{
+  "key": "01e92139bee19b68a10773ee",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:13:29+00:00",
+  "response": {
+    "computable": false,
+    "reason": "A share of revenue rising in each year since fiscal 2022 is a trend of a segment's share over history, but a part's figures come from one filing with no history and share has no each or each_since option.",
+    "tests": []
+  }
+}

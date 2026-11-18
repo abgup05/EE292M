@@ -1,0 +1,63 @@
+{
+  "key": "a5b4ed2de8dbcd3b2fd82c6c",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:11:09+00:00",
+  "response": {
+    "computable": true,
+    "reason": "Year-over-year growth of accounts payable compared with year-over-year growth of cost of revenue in the latest quarter.",
+    "tests": [
+      {
+        "form": "faster_than",
+        "left": {
+          "fn": "yoy",
+          "subject": "accounts_payable",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "op": ">",
+        "right_term": {
+          "fn": "yoy",
+          "subject": "cost_of_revenue",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "right_number": {
+          "value": 0,
+          "unit": "percent"
+        },
+        "each": 0,
+        "each_since": 0
+      }
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "key": "e0c3ab4875ffe68d2821ca16",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:12:40+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a judgement ('no longer the story') joined by a contrast ('but') and names no measurable test a segment or company measure can state exactly.",
+    "tests": []
+  }
+}

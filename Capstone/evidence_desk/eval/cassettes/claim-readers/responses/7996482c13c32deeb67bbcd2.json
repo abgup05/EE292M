@@ -1,0 +1,12 @@
+{
+  "key": "7996482c13c32deeb67bbcd2",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:13:53+00:00",
+  "response": {
+    "computable": false,
+    "reason": "Current liabilities and current assets are not measures in the list, and the claim also adds an explanatory judgement about how the company funds itself.",
+    "tests": []
+  }
+}

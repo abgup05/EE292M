@@ -1,0 +1,63 @@
+{
+  "key": "b69ba741abb4c9f650cff7df",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:18:26+00:00",
+  "response": {
+    "computable": true,
+    "reason": "Direction test: operating margin in the latest quarter versus the same quarter a year earlier (Q vs Q-4).",
+    "tests": [
+      {
+        "form": "direction",
+        "left": {
+          "fn": "value",
+          "subject": "operating_margin",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "op": ">",
+        "right_term": {
+          "fn": "value",
+          "subject": "operating_margin",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "Q",
+            "back": 4,
+            "fiscal_year": 0,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "right_number": {
+          "value": 0,
+          "unit": "percent"
+        },
+        "each": 0,
+        "each_since": 0
+      }
+    ]
+  }
+}

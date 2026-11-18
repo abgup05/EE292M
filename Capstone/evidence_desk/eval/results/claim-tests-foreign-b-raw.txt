@@ -1,0 +1,136 @@
+Claim compiler on the foreign claims (judged by the grammar's author)
+
+all: 120 claims
+  numeric (author's label) 0: compiled and right 0, compiled and wrong 0, not compiled 0 (metric 0, form 0, period 0, phrasing 0)
+  not_numeric (author's label) 0: not compiled 0, compiled wrongly 0, compiled rightly (the author's label is wrong) 0
+  unjudged readings: 120
+development: 60 claims
+  numeric (author's label) 0: compiled and right 0, compiled and wrong 0, not compiled 0 (metric 0, form 0, period 0, phrasing 0)
+  not_numeric (author's label) 0: not compiled 0, compiled wrongly 0, compiled rightly (the author's label is wrong) 0
+  unjudged readings: 60
+held_out: 60 claims
+  numeric (author's label) 0: compiled and right 0, compiled and wrong 0, not compiled 0 (metric 0, form 0, period 0, phrasing 0)
+  not_numeric (author's label) 0: not compiled 0, compiled wrongly 0, compiled rightly (the author's label is wrong) 0
+  unjudged readings: 60
+
+id | half | company | kind | reading | cause | canonical | claim | why | the compiler's refusal
+g001 | development | NVDA | numeric | unjudged |  | none | We note that fiscal 2026 revenue rose by well over 50% from fiscal 2025, extending a run of exceptional growth. |  | not compiled: 'we note', 'well', 'fiscal 2025 extending a run of exceptional' are not understood
+g002 | held_out | NVDA | numeric | unjudged |  | none | Q/Q revenue up again last quarter. |  | not compiled: 'again' is not understood
+g003 | development | NVDA | numeric | unjudged |  | none | Data Center compute revenue was larger than Networking revenue in every quarter of fiscal 2025. |  | 'compute' names a part of the company (a segment, a product or a geography), whose revenue is not the company's: only a part's share of revenue is read, from the newest filing's tags, and it has no history in the facts
+g004 | held_out | NVDA | numeric | unjudged |  | gross_profit[FY2026] > $100B | Gross profit came in above $100 billion in fiscal 2026. |  | 
+g005 | development | NVDA | numeric | unjudged |  | none | Honestly the margins are absurd, net income is more than half of revenue. |  | does not say which margin (gross, operating, net or free cash flow)
+g006 | held_out | NVDA | numeric | unjudged |  | none | Net cash provided by operating activities exceeded $60 billion in fiscal 2025. |  | not compiled: 'net', 'provided by operating activities' are not understood
+g007 | development | NVDA | numeric | unjudged |  | none | Research and development expense rose more than 40% year over year in fiscal 2025, while SG&A grew more slowly. |  | not compiled: 'while sg&a', 'more slowly' are not understood
+g008 | held_out | NVDA | numeric | unjudged |  | none | Purchases of property and equipment and intangible assets ran above $3 billion in fiscal 2025. |  | names a measure that is not in the metric set this version computes
+g009 | development | NVDA | numeric | unjudged |  | none | Total shareholders' equity more than doubled from fiscal 2024 to fiscal 2025. |  | does not name a measure in the metric set
+g010 | held_out | NVDA | numeric | unjudged |  | none | Inventories ended the year at over twice the prior-year balance. |  | states no direction, threshold or comparison that can be computed
+g011 | development | NVDA | numeric | unjudged |  | none | Two direct customers each accounted for more than 10% of revenue in fiscal 2025. |  | a percent threshold on an amount: say what it is a percent of
+g012 | held_out | NVDA | numeric | unjudged |  | none | Professional Visualization is a rounding error, under 3% of sales. |  | a percent threshold on an amount: say what it is a percent of
+g013 | development | NVDA | numeric | unjudged |  | none | Diluted EPS for FY25 was above $2.50. |  | not compiled: 'fy25' is not understood
+g014 | held_out | NVDA | numeric | unjudged |  | none | Operating expenses were under 15% of revenue in the most recent quarter. |  | a percent threshold on an amount: say what it is a percent of
+g015 | development | NVDA | numeric | unjudged |  | none | Net income grew faster than revenue in each of the last two fiscal years. |  | a condition held in each of several periods: this version tests one period, or rises in a row (the streak form)
+g016 | held_out | NVDA | numeric | unjudged |  | none | The company bought back roughly ten times as much stock as it paid in dividends during fiscal 2025. |  | names a measure that is not in the metric set this version computes
+g017 | development | NVDA | numeric | unjudged |  | none | Cash, equivalents and marketable securities are more than three times total debt. |  | names a measure that is not in the metric set this version computes
+g018 | held_out | NVDA | numeric | unjudged |  | none | The income tax provision was above 13% of pre-tax income last year. |  | names a measure that is not in the metric set this version computes
+g019 | development | NVDA | numeric | unjudged |  | none | Revenue in the first half of fiscal 2026 exceeded the whole of fiscal 2024. |  | states no direction, threshold or comparison that can be computed
+g020 | held_out | NVDA | numeric | unjudged |  | none | Cost of revenue is rising more slowly than revenue, which is why gross margin is widening. |  | not compiled: 'cost', 'which is why gross margin is widening' are not understood
+g021 | development | NVDA | numeric | unjudged |  | none | Sequential growth slowed last quarter relative to the quarter before. |  | does not say growth of what
+g022 | held_out | NVDA | numeric | unjudged |  | none | Accounts payable has risen four quarters in a row. |  | names a measure that is not in the metric set this version computes
+g023 | development | NVDA | numeric | unjudged |  | none | Interest income exceeded interest expense by more than $1 billion last fiscal year. |  | does not name a measure in the metric set
+g024 | held_out | NVDA | numeric | unjudged |  | none | Goodwill is small, under $6 billion. |  | names a measure that is not in the metric set this version computes
+g025 | development | NVDA | numeric | unjudged |  | fcf_margin[TTM] > 40% | FCF margin above 40% on a trailing twelve month basis. |  | 
+g026 | held_out | NVDA | numeric | unjudged |  | none | Gaming revenue still grew year over year in fiscal 2025 even as Data Center ballooned. |  | 'gaming' names a part of the company (a segment, a product or a geography), whose revenue is not the company's: only a part's share of revenue is read, from the newest filing's tags, and it has no history in the facts
+g027 | development | NVDA | numeric | unjudged |  | none | Stock-based compensation topped $4 billion in fiscal 2025. |  | names a measure that is not in the metric set this version computes
+g028 | held_out | NVDA | not_numeric | unjudged |  | none | NVIDIA remains the default choice for frontier model training, and that is unlikely to change soon. |  | does not name a measure in the metric set
+g029 | development | NVDA | not_numeric | unjudged |  | none | Honestly, the stock needs a pullback before I would add. |  | a forecast or a conditional: filed facts are past
+g030 | held_out | NVDA | not_numeric | unjudged |  | none | Our twelve-month target rests on a 28x multiple applied to fiscal 2027 earnings. |  | a valuation: it needs the share price, which is not filed
+g031 | development | NVDA | not_numeric | unjudged |  | none | Rubin should arrive on schedule and keep the annual product cadence intact. |  | a forecast or a conditional: filed facts are past
+g032 | held_out | NVDA | not_numeric | unjudged |  | none | Gross margin guidance for next year looks conservative to us. |  | a forecast or a conditional: filed facts are past
+g033 | development | NVDA | not_numeric | unjudged |  | none | Dependence on a handful of hyperscalers is a structural vulnerability if AI budgets are cut. |  | does not name a measure in the metric set
+g034 | held_out | NVDA | not_numeric | unjudged |  | none | Advanced packaging capacity at TSMC is the real bottleneck, not demand. |  | does not name a measure in the metric set
+g035 | development | NVDA | not_numeric | unjudged |  | none | Inference demand will eventually outgrow training demand. |  | a forecast or a conditional: filed facts are past
+g036 | held_out | NVDA | not_numeric | unjudged |  | none | Management's capital return framework is shareholder friendly. |  | does not name a measure in the metric set
+g037 | development | NVDA | not_numeric | unjudged |  | none | Buyers pay up for the whole rack-scale system, not just the chip. |  | does not name a measure in the metric set
+g038 | held_out | NVDA | not_numeric | unjudged |  | none | The Street is too bullish on 2027 numbers. |  | does not name a measure in the metric set
+g039 | development | NVDA | not_numeric | unjudged |  | none | A market cap of several trillion dollars leaves little margin of safety. |  | does not say which margin (gross, operating, net or free cash flow)
+g040 | held_out | NVDA | not_numeric | unjudged |  | none | Robotics and physical AI could become the next leg of growth. |  | a forecast or a conditional: filed facts are past
+g041 | development | AAPL | numeric | unjudged |  | none | Net sales rose in fiscal 2025 for the second consecutive year. |  | not compiled: 'second consecutive year' is not understood
+g042 | held_out | AAPL | numeric | unjudged |  | none | Services net sales exceeded $100 billion in fiscal 2025. |  | 'services' names a part of the company (a segment, a product or a geography), whose revenue is not the company's: only a part's share of revenue is read, from the newest filing's tags, and it has no history in the facts
+g043 | development | AAPL | numeric | unjudged |  | none | Products gross margin percentage stayed below 40% in each of the last three fiscal years. |  | a condition held in each of several periods: this version tests one period, or rises in a row (the streak form)
+g044 | held_out | AAPL | numeric | unjudged |  | none | Services made up more than a quarter of total net sales last year. |  | not compiled: 'services made', 'more than a quarter' are not understood
+g045 | development | AAPL | numeric | unjudged |  | none | Europe grew faster than the Americas in fiscal 2025. |  | does not name a measure in the metric set
+g046 | held_out | AAPL | numeric | unjudged |  | share(segment "Japan And Rest Of Asia Pacific Together")[filing] < 15% | Japan and Rest of Asia Pacific together are less than 15% of net sales. |  | 
+g047 | development | AAPL | numeric | unjudged |  | none | Operating income was higher than $120 billion last fiscal year. |  | states an exact figure: this version tests a threshold (more than, at least, under) or a direction
+g048 | held_out | AAPL | numeric | unjudged |  | none | Cash generated by operating activities exceeded $110 billion in FY25. |  | not compiled: 'generated by operating activities', 'fy25' are not understood
+g049 | development | AAPL | numeric | unjudged |  | none | Payments for acquisition of property, plant and equipment rose year over year last fiscal year. |  | does not name a measure in the metric set
+g050 | held_out | AAPL | numeric | unjudged |  | none | Total cash and marketable securities, current and non-current, fell below $140 billion at the end of fiscal 2025. |  | names a measure that is not in the metric set this version computes
+g051 | development | AAPL | numeric | unjudged |  | none | Commercial paper outstanding is down from a year ago. |  | does not name a measure in the metric set
+g052 | held_out | AAPL | numeric | unjudged |  | none | Diluted shares down roughly 3% y/y. |  | does not name a measure in the metric set
+g053 | development | AAPL | numeric | unjudged |  | none | R&D as a percentage of net sales rose in fiscal 2025. |  | not compiled: 'percentage of net sales' is not understood
+g054 | held_out | AAPL | numeric | unjudged |  | none | More than $15 billion was paid out in dividends over the year. |  | names a measure that is not in the metric set this version computes
+g055 | development | AAPL | numeric | unjudged |  | none | Total shareholders' equity remains below $100 billion. |  | does not name a measure in the metric set
+g056 | held_out | AAPL | numeric | unjudged |  | none | iPhone revenue grew year over year in the December quarter. |  | 'iphone' names a part of the company (a segment, a product or a geography), whose revenue is not the company's: only a part's share of revenue is read, from the newest filing's tags, and it has no history in the facts
+g057 | development | AAPL | numeric | unjudged |  | none | Services growth beat Products growth in every quarter of fiscal 2025. |  | does not say growth of what
+g058 | held_out | AAPL | numeric | unjudged |  | none | Earnings per diluted share set a record in fiscal 2025. |  | states no direction, threshold or comparison that can be computed
+g059 | development | AAPL | numeric | unjudged |  | none | Vendor non-trade receivables are bigger than trade accounts receivable. |  | states no direction, threshold or comparison that can be computed
+g060 | held_out | AAPL | numeric | unjudged |  | none | Gross profit grew faster than operating expenses over fiscal 2023 to 2025. |  | not compiled: 'over', '2025' are not understood
+g061 | development | AAPL | numeric | unjudged |  | none | Honestly Mac and iPad together are only about a fifth of sales. |  | states no direction, threshold or comparison that can be computed
+g062 | held_out | AAPL | numeric | unjudged |  | none | The effective tax rate rose above 16% last fiscal year. |  | names a measure that is not in the metric set this version computes
+g063 | development | AAPL | numeric | unjudged |  | none | Total liabilities exceed $260 billion. |  | does not name a measure in the metric set
+g064 | held_out | AAPL | numeric | unjudged |  | none | Apple repurchased more stock in fiscal 2025 than in fiscal 2024. |  | a valuation: it needs the share price, which is not filed
+g065 | development | AAPL | numeric | unjudged |  | none | Wearables, Home and Accessories has fallen as a share of net sales over the last three years. |  | not compiled: 'wearables home and accessories', 'share' are not understood
+g066 | held_out | AAPL | numeric | unjudged |  | share(geography "Greater China")[filing] < 20% | Greater China is under 20% of net sales. |  | 
+g067 | development | AAPL | numeric | unjudged |  | none | Net sales compounded at less than 3% a year from fiscal 2022 to fiscal 2025. |  | a compound rate needs a number of years
+g068 | held_out | AAPL | not_numeric | unjudged |  | none | Apple's brand is the one thing competitors cannot buy. |  | about peers, the market or expectations, which one company's filed facts do not hold
+g069 | development | AAPL | not_numeric | unjudged |  | none | Siri's AI upgrade is late, and that hurts the narrative. |  | does not name a measure in the metric set
+g070 | held_out | AAPL | not_numeric | unjudged |  | none | At roughly 35 times earnings the multiple already prices in a Services re-rating. |  | a valuation: it needs the share price, which is not filed
+g071 | development | AAPL | not_numeric | unjudged |  | none | I would not be surprised if the Epic ruling forces a change in App Store commissions. |  | a forecast or a conditional: filed facts are past
+g072 | held_out | AAPL | not_numeric | unjudged |  | none | The size of the buyback signals a lack of better places to reinvest. |  | names a measure that is not in the metric set this version computes
+g073 | development | AAPL | not_numeric | unjudged |  | none | Shifting assembly to India reduces supply chain concentration risk. |  | does not name a measure in the metric set
+g074 | held_out | AAPL | not_numeric | unjudged |  | none | We see iPhone 17 demand as stronger than consensus. |  | about peers, the market or expectations, which one company's filed facts do not hold
+g075 | development | AAPL | not_numeric | unjudged |  | none | The dividend yield is too low to matter for income investors. |  | names a measure that is not in the metric set this version computes
+g076 | held_out | AAPL | not_numeric | unjudged |  | none | Wearables is a mature category and growth is not coming back. |  | does not say growth of what
+g077 | development | AAPL | not_numeric | unjudged |  | none | Apple has the pricing power to pass through higher memory costs. |  | does not name a measure in the metric set
+g078 | held_out | AAPL | not_numeric | unjudged |  | none | Smart glasses are the next big hardware cycle. |  | does not name a measure in the metric set
+g079 | development | AAPL | not_numeric | unjudged |  | none | Apple Pay and the card tie-in deepen the ecosystem. |  | does not name a measure in the metric set
+g080 | held_out | AAPL | not_numeric | unjudged |  | none | The next CEO needs to prove he can ship a hit product. |  | does not name a measure in the metric set
+g081 | development | MSFT | numeric | unjudged |  | revenue[FY2025] > $270B | Revenue was above $270 billion in fiscal 2025. |  | 
+g082 | held_out | MSFT | numeric | unjudged |  | none | Microsoft Cloud revenue topped $150 billion in fiscal 2025. |  | 'cloud' names a part of the company (a segment, a product or a geography), whose revenue is not the company's: only a part's share of revenue is read, from the newest filing's tags, and it has no history in the facts
+g083 | development | MSFT | numeric | unjudged |  | none | Productivity and Business Processes earned more operating income than More Personal Computing in fiscal 2025. |  | states no direction, threshold or comparison that can be computed
+g084 | held_out | MSFT | numeric | unjudged |  | none | Server products and cloud services revenue grew over 20% last year. |  | 'services' names a part of the company (a segment, a product or a geography), whose revenue is not the company's: only a part's share of revenue is read, from the newest filing's tags, and it has no history in the facts
+g085 | development | MSFT | numeric | unjudged |  | none | Additions to property and equipment exceeded $60 billion in fiscal 2025. |  | does not name a measure in the metric set
+g086 | held_out | MSFT | numeric | unjudged |  | none | Operating income grew by double digits in both fiscal 2024 and fiscal 2025. |  | not compiled: 'double digits in both', 'fiscal 2025' are not understood
+g087 | development | MSFT | numeric | unjudged |  | net_margin[FY2025] > 35% | Net margin was above 35% in fiscal 2025. |  | 
+g088 | held_out | MSFT | numeric | unjudged |  | none | Operating cash flow growth outpaced revenue growth in fiscal 2025. |  | states no direction, threshold or comparison that can be computed
+g089 | development | MSFT | numeric | unjudged |  | none | Long-term debt is down year over year. |  | names a measure that is not in the metric set this version computes
+g090 | held_out | MSFT | numeric | unjudged |  | none | Weighted average diluted shares came in under 7.5 billion last fiscal year. |  | does not name a measure in the metric set
+g091 | development | MSFT | numeric | unjudged |  | none | Dividends paid were about $24 billion in fiscal 2025. |  | names a measure that is not in the metric set this version computes
+g092 | held_out | MSFT | numeric | unjudged |  | none | Common stock repurchased exceeded $15 billion last fiscal year. |  | a valuation: it needs the share price, which is not filed
+g093 | development | MSFT | numeric | unjudged |  | none | Gross margin dollars grew about 16% in fiscal 2025. |  | states an exact figure: this version tests a threshold (more than, at least, under) or a direction
+g094 | held_out | MSFT | numeric | unjudged |  | none | Cost of revenue growth outpaced revenue growth last year, which is the AI build showing up. |  | not compiled: 'cost', 'growth outpaced', 'growth', 'which is the ai build showing' are not understood
+g095 | development | MSFT | numeric | unjudged |  | none | LinkedIn revenue grew by 9% or more. |  | states an exact figure: this version tests a threshold (more than, at least, under) or a direction
+g096 | held_out | MSFT | numeric | unjudged |  | none | Dynamics revenue growth stayed above 15% in each quarter. |  | a condition held in each of several periods: this version tests one period, or rises in a row (the streak form)
+g097 | development | MSFT | numeric | unjudged |  | none | Windows and Devices revenue was down year over year last quarter. |  | not compiled: 'windows and devices' is not understood
+g098 | held_out | MSFT | numeric | unjudged |  | none | Unearned revenue rose by more than $5 billion over the year. |  | not compiled: 'unearned', 'rose', 'over the year' are not understood
+g099 | development | MSFT | numeric | unjudged |  | none | Cash, equivalents and short-term investments exceeded $90 billion at the June 2025 year end. |  | names a measure that is not in the metric set this version computes
+g100 | held_out | MSFT | numeric | unjudged |  | none | Total assets passed $500 billion in fiscal 2025. |  | names a measure that is not in the metric set this version computes
+g101 | development | MSFT | numeric | unjudged |  | none | Other income and expense, net, was negative in fiscal 2025. |  | does not name a measure in the metric set
+g102 | held_out | MSFT | numeric | unjudged |  | none | Search and news advertising revenue grew more slowly than total revenue. |  | 'advertising' names a part of the company (a segment, a product or a geography), whose revenue is not the company's: only a part's share of revenue is read, from the newest filing's tags, and it has no history in the facts
+g103 | development | MSFT | numeric | unjudged |  | none | The fourth quarter was the biggest revenue quarter of fiscal 2025. |  | states no direction, threshold or comparison that can be computed
+g104 | held_out | MSFT | numeric | unjudged |  | none | Research and development, sales and marketing, and G&A together grew less than 8% in fiscal 2025. |  | not compiled: 'sales and marketing and g&a together' is not understood
+g105 | development | MSFT | numeric | unjudged |  | none | The effective tax rate was close to 18%. |  | names a measure that is not in the metric set this version computes
+g106 | held_out | MSFT | numeric | unjudged |  | none | Income before income taxes surpassed $120 billion. |  | names a measure that is not in the metric set this version computes
+g107 | development | MSFT | not_numeric | unjudged |  | none | Azure's AI capacity constraints are the main limit on near-term growth. |  | does not say growth of what
+g108 | held_out | MSFT | not_numeric | unjudged |  | none | Microsoft is the best-positioned enterprise AI vendor. |  | does not name a measure in the metric set
+g109 | development | MSFT | not_numeric | unjudged |  | none | The stock is not cheap, but quality deserves a premium. |  | a valuation: it needs the share price, which is not filed
+g110 | held_out | MSFT | not_numeric | unjudged |  | none | OpenAI's restructuring reduces Microsoft's long-run exposure to model risk. |  | does not name a measure in the metric set
+g111 | development | MSFT | not_numeric | unjudged |  | none | Our fiscal 2028 EPS estimate of $20 sits above consensus. |  | about peers, the market or expectations, which one company's filed facts do not hold
+g112 | held_out | MSFT | not_numeric | unjudged |  | none | Xbox hardware is on its way out and management knows it. |  | does not name a measure in the metric set
+g113 | development | MSFT | not_numeric | unjudged |  | none | Defender and Entra give Microsoft a strong cross-sell into security budgets. |  | does not name a measure in the metric set
+g114 | held_out | MSFT | not_numeric | unjudged |  | none | Spending at this intensity could eventually compress returns on capital. |  | a forecast or a conditional: filed facts are past
+g115 | development | MSFT | not_numeric | unjudged |  | none | Enterprise customers are reluctant to pay $30 a seat for Copilot. |  | does not name a measure in the metric set
+g116 | held_out | MSFT | not_numeric | unjudged |  | none | Dynamics will never be a serious rival to Salesforce. |  | a forecast or a conditional: filed facts are past
+g117 | development | MSFT | not_numeric | unjudged |  | none | Competition from Anthropic and Google could pressure Azure pricing. |  | a forecast or a conditional: filed facts are past
+g118 | held_out | MSFT | not_numeric | unjudged |  | none | The 2027 free cash flow yield looks thin versus treasuries. |  | a valuation: it needs the share price, which is not filed
+g119 | development | MSFT | not_numeric | unjudged |  | none | The leadership team has executed well on the Activision integration. |  | does not name a measure in the metric set
+g120 | held_out | MSFT | not_numeric | unjudged |  | none | Gaming content deals will matter more than consoles. |  | a forecast or a conditional: filed facts are past

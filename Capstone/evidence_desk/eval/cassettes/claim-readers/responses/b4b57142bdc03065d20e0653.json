@@ -1,0 +1,12 @@
+{
+  "key": "b4b57142bdc03065d20e0653",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:12:29+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a forecast about external hyperscaler capex budgets for 2027 and a judgement about share price drivers, which this tool cannot compute from the company's own filings.",
+    "tests": []
+  }
+}

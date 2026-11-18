@@ -1,0 +1,12 @@
+{
+  "key": "478fd0e9996dcf7e747128f4",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:14:08+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim uses the approximate qualifier \"about\" for a 3% decline, and the rules treat approximate comparisons as not computable.",
+    "tests": []
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "key": "55bfee48885b419178e59abc",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:15:52+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim rests on a valuation judgement (free cash flow yield, price) and a vague comparison ('near 3%', 'adds little'), which this tool cannot test.",
+    "tests": []
+  }
+}

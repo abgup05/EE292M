@@ -1,0 +1,63 @@
+{
+  "key": "2d8e95f187d2423f49f124d1",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:11:25+00:00",
+  "response": {
+    "computable": true,
+    "reason": "The claim states one threshold test: SG&A as a share of revenue is below 4% in the latest quarter, and \"a sliver\" is just the descriptive framing of that threshold.",
+    "tests": [
+      {
+        "form": "threshold",
+        "left": {
+          "fn": "value",
+          "subject": "sga_ratio",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "op": "<",
+        "right_term": {
+          "fn": "value",
+          "subject": "sga_ratio",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "right_number": {
+          "value": 4,
+          "unit": "percent"
+        },
+        "each": 0,
+        "each_since": 0
+      }
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "key": "cdd1e4bf24a43db5cda254f8",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:13:41+00:00",
+  "response": {
+    "computable": false,
+    "reason": "\"Term debt\" is not a measure in this tool's list; the nearest measures, long_term_debt and total_debt, are different balances, so the claim cannot be tested as written.",
+    "tests": []
+  }
+}

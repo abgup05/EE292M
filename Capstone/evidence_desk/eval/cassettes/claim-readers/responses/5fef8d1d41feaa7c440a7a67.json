@@ -1,0 +1,12 @@
+{
+  "key": "5fef8d1d41feaa7c440a7a67",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:12:30+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a judgement about third-party capex budgets and share price sensitivity, not a numeric test of a company measure.",
+    "tests": []
+  }
+}

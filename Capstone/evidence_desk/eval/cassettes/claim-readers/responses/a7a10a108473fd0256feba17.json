@@ -1,0 +1,12 @@
+{
+  "key": "a7a10a108473fd0256feba17",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:10:40+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim compares a sub-segment's revenue ('Data Center compute') with the company's total fiscal 2024 revenue, and the member name is too uncertain to tie to a filing breakdown, so the tool cannot place it without guessing.",
+    "tests": []
+  }
+}

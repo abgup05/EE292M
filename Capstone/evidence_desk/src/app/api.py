@@ -16,7 +16,7 @@ import time
 from collections.abc import AsyncIterator, Callable
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -24,13 +24,15 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from pydantic import BaseModel
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app import __version__, wiring
-from app.core import limits, policy
+from app.core import limits, policy, watch_policy
 from app.core.breakdown_models import BreakdownReport
 from app.core.change_models import FilingChanges
 from app.core.claim_change_models import RunChanges
 from app.core.events import CATEGORY_LABELS, SUBSTANTIVE
+from app.core.fact_models import RestatementLedger
 from app.core.metric_models import MetricsReport
 from app.core.models import (
     TICKER_PATTERN,
@@ -45,10 +47,12 @@ from app.core.models import (
     Thesis,
     ThesisCreate,
     ThesisRequest,
+    as_of_problem,
 )
 from app.core.ports import (
     Analyst,
     Checker,
+    ClaimReaders,
     FilingSource,
     PageFetcher,
     SourceError,
@@ -66,10 +70,12 @@ from app.services.export import render_markdown
 from app.services.filing_changes import FORMS as CHANGE_FORMS
 from app.services.filing_changes import filing_changes
 from app.services.numbers import load_numbers
+from app.services.restatements import company_restatements
 from app.sources.http import fetch_page as default_fetch_page
 from app.sources.urls import canonicalize, validate_public_url
-from app.store import FilingCache, Store
+from app.store import FactStore, FilingCache, Store
 from app.watch import routes as watch_routes
+from app.watch.store import WatchStore
 
 WEB_DIR = Path(__file__).resolve().parents[1] / "web"
 RUN_WORKERS = 2
@@ -127,8 +133,17 @@ class RunList(BaseModel):
     runs: list[RunSummary]
 
 
+class ThesisWatchState(BaseModel):
+    """A watched thesis's watch, as the saved-thesis list shows it: None when not watched."""
+
+    policy: str
+    policy_label: str
+    unread: int
+    waiting_runs: int
+
+
 class ThesisSummary(BaseModel):
-    """One line of the saved-thesis list."""
+    """One line of the saved-thesis list; ``watch`` is None when the thesis is not watched."""
 
     id: str
     name: str
@@ -138,6 +153,7 @@ class ThesisSummary(BaseModel):
     runs: int
     last_run_id: str | None
     last_status: str | None
+    watch: ThesisWatchState | None = None
 
 
 class ThesisList(BaseModel):
@@ -162,7 +178,7 @@ class Conflict(Exception):
     """A request that is valid but cannot be carried out in the current state (409)."""
 
 
-def public_limits() -> dict[str, int | float]:
+def public_limits() -> dict[str, int | float | str]:
     """Every public constant of :mod:`app.core.limits`, by name."""
     return {name: getattr(limits, name) for name in dir(limits) if name.isupper()}
 
@@ -239,6 +255,7 @@ MetricsCache = TimedCache[int, MetricsReport]
 ChangesCache = TimedCache[tuple[int, str], FilingChanges]
 RunChangesCache = TimedCache[str, RunChanges]
 BreakdownsCache = TimedCache[tuple[int, str], BreakdownReport]
+LedgerCache = TimedCache[tuple[int, date | None], RestatementLedger]
 
 
 def create_app(
@@ -249,6 +266,8 @@ def create_app(
     monotonic: Callable[[], float] = time.monotonic,
     cache: FilingCache | None = None,
     checker: Checker | None = None,
+    facts_store: FactStore | None = None,
+    claim_reader: ClaimReaders = None,
     wall_clock: Callable[[], datetime] | None = None,
 ) -> FastAPI:
     """Build the application. Collaborators not given are built by :mod:`app.wiring`.
@@ -258,8 +277,14 @@ def create_app(
     store is the configured one, otherwise one in memory for this application.
     ``checker`` reads every run's findings again: the configured one when the
     engine is the configured one, otherwise none unless one is given.
+    ``facts_store`` keeps every XBRL fact a run or a company route reads: the
+    configured one when the store is, otherwise one in memory for this application.
+    ``claim_reader`` is the model parser: the configured one (off by default) when the
+    engine is the configured one, otherwise none unless one is given.
     ``wall_clock`` is the time the standing watch's routes use (injectable for tests).
     """
+    if facts_store is None:
+        facts_store = wiring.facts_from_env() if store is None else FactStore()
     if cache is None:
         cache = wiring.cache_from_env() if store is None else FilingCache()
     store = store or wiring.store_from_env()
@@ -267,12 +292,14 @@ def create_app(
     if analyst is None:
         analyst = wiring.analyst_from_env()
         checker = checker or wiring.checker_from_env(analyst)
+        claim_reader = claim_reader or wiring.claim_reader_from_env(analyst)
     checker = checker or NoChecker()
     executor = ThreadPoolExecutor(max_workers=RUN_WORKERS, thread_name_prefix="run")
     metrics_cache = MetricsCache(monotonic)
     changes_cache = ChangesCache(monotonic)
     run_changes_cache = RunChangesCache(monotonic)
     breakdowns_cache = BreakdownsCache(monotonic)
+    ledger_cache = LedgerCache(monotonic)
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
@@ -288,6 +315,15 @@ def create_app(
     @app.exception_handler(RequestRefused)
     async def check_refused(_: Request, exc: RequestRefused) -> JSONResponse:
         return _refusal(exc.problems)
+
+    @app.exception_handler(StarletteHTTPException)
+    async def http_refused(_: Request, exc: StarletteHTTPException) -> JSONResponse:
+        # One shape for every refusal: {"error": ...}, as the 409, 422 and 503 answers have.
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"error": str(exc.detail)},
+            headers=getattr(exc, "headers", None),
+        )
 
     @app.exception_handler(SourceError)
     async def source_unavailable(_: Request, exc: SourceError) -> JSONResponse:
@@ -307,6 +343,8 @@ def create_app(
                 fetch_page=fetch_page,
                 cache=cache,
                 checker=checker,
+                facts_store=facts_store,
+                claim_reader=claim_reader,
             )
         except Exception:  # noqa: BLE001 - last resort: a run must never stay "running"
             log.exception("Run %s crashed", run.id)
@@ -452,9 +490,21 @@ def create_app(
 
     @app.get("/api/theses")
     def list_theses() -> ThesisList:
-        """Saved theses, newest first, each with its run count and latest run."""
+        """Saved theses, newest first, each with its run count, latest run and watch."""
+        watch_store = WatchStore(store)
+        watched = {watch.thesis_id: watch for watch in watch_store.list_watches()}
         summaries = []
         for thesis in store.list_theses():
+            watch = watched.get(thesis.id)
+            state = None
+            if watch is not None:
+                unread, waiting = watch_store.inbox_counts(thesis.id)
+                state = ThesisWatchState(
+                    policy=watch.policy.value,
+                    policy_label=watch_policy.POLICY_LABELS[watch.policy],
+                    unread=unread,
+                    waiting_runs=waiting,
+                )
             last = store.get_run(thesis.run_ids[0]) if thesis.run_ids else None
             summaries.append(
                 ThesisSummary(
@@ -466,6 +516,7 @@ def create_app(
                     runs=len(thesis.run_ids),
                     last_run_id=thesis.run_ids[0] if thesis.run_ids else None,
                     last_status=last.status if last else None,
+                    watch=state,
                 )
             )
         return ThesisList(theses=summaries)
@@ -522,11 +573,33 @@ def create_app(
         cached = metrics_cache.get(company.cik)
         if cached is not None:
             return cached
-        result = load_numbers(company, filings)
+        result = load_numbers(company, filings, facts_store=facts_store)
         if result.report is None:
             raise SourceError(result.error or "The XBRL company facts could not be read")
         metrics_cache.put(company.cik, result.report)
         return result.report
+
+    @app.get("/api/companies/{ticker}/restatements")
+    def company_ledger(ticker: str, as_of: date | None = None) -> RestatementLedger:
+        """Every metric and period whose value differs between the company's filings.
+
+        From its XBRL company facts: the first value of each period and its filing,
+        each later value that differs by more than the tolerance, its filing and the
+        change. ``as_of`` (YYYY-MM-DD, not in the future, not before 2009) reads only
+        the facts filed by then. 422 for a malformed or unknown ticker or such a date;
+        503 when EDGAR cannot give the facts. Cached per company and date for 15 minutes.
+        """
+        if as_of is not None:
+            problem = as_of_problem(as_of, datetime.now(UTC).date())
+            if problem:
+                raise RequestRefused([Problem(field="as_of", message=problem)])
+        company = resolve(ticker)
+        cached = ledger_cache.get((company.cik, as_of))
+        if cached is not None:
+            return cached
+        result = company_restatements(company, filings, facts_store=facts_store, as_of=as_of)
+        ledger_cache.put((company.cik, as_of), result)
+        return result
 
     @app.get("/api/companies/{ticker}/changes")
     def company_filing_changes(ticker: str, form: str = "10-K") -> FilingChanges:

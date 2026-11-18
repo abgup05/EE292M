@@ -1,0 +1,12 @@
+{
+  "key": "e2fead651757fee884ff87a4",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:14:04+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim attributes a cause (a one-time State Aid charge) and uses a vague, unquantified word ('jumped'), so it does not state a single computable numeric test.",
+    "tests": []
+  }
+}

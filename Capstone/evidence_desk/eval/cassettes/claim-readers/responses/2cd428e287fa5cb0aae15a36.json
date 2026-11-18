@@ -1,0 +1,12 @@
+{
+  "key": "2cd428e287fa5cb0aae15a36",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:16:11+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a judgement ('best consumer product of the decade') about a product, not a numeric test the tool can compute.",
+    "tests": []
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "key": "8ce27e330c8aa0e60b0c0598",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:11:33+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim compares the largest customer's share of revenue across two years, but the tool reads customer shares from one filing with no history and has no form that compares max_share against an earlier period.",
+    "tests": []
+  }
+}

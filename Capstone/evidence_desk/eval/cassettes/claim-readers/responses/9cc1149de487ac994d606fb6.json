@@ -1,0 +1,12 @@
+{
+  "key": "9cc1149de487ac994d606fb6",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:12:22+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a vague, judgement-based comparison ('wider than most investors appreciate') with no stated measure, threshold, or period, so no numeric test can be written.",
+    "tests": []
+  }
+}

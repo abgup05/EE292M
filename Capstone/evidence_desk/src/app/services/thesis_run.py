@@ -54,6 +54,7 @@ from app.core.ports import (
     Analyst,
     Checker,
     ClaimDraft,
+    ClaimReaders,
     FilingSource,
     PageFetcher,
     SourceError,
@@ -65,11 +66,17 @@ from app.engines.fallback import FallbackAnalyst
 from app.retrieval.chunk import chunk_document
 from app.retrieval.search import PassageIndex
 from app.services import events as event_service
+from app.services.computed import compute_claims, count_computed
 from app.services.ingest import Ingested, ingest
 from app.services.numbers import NumbersResult, load_numbers, select_figures
-from app.services.tagged_figures import load_tagged_figures
+from app.services.tagged_figures import (
+    FOR_CLAIMS,
+    load_tagged_figures,
+    newest_reports,
+    read_reports,
+)
 from app.sources.http import fetch_page as default_fetch_page
-from app.store import FilingCache, Store
+from app.store import FactStore, FilingCache, Store
 
 log = logging.getLogger(__name__)
 MAX_UNKNOWNS = 12
@@ -206,6 +213,8 @@ def execute_run(
     concurrency: int = limits.MAX_CONCURRENT_ASSESSMENTS,
     cache: FilingCache | None = None,
     checker: Checker | None = None,
+    facts_store: FactStore | None = None,
+    claim_reader: ClaimReaders = None,
 ) -> Run:
     """Execute ``run`` to completion, persisting progress, and return the final record.
 
@@ -215,6 +224,9 @@ def execute_run(
     ``checker`` reads each claim's verified findings again, after the gate and
     before the verdict, in the worker that assessed the claim; without one (or
     with :class:`~app.engines.checker.NoChecker`) every finding stays unchecked.
+    ``facts_store`` keeps every XBRL fact the run reads (none kept without one).
+    ``claim_reader`` is the model parser, a second reader of each claim's test; without
+    one (the default) the grammar reads them alone.
     """
     if concurrency < 1:
         raise ValueError("concurrency must be at least 1")
@@ -291,7 +303,13 @@ def execute_run(
     _stage(run, store, "numbers")
     # The facts are recorded as a source but are not a document: they are never chunked or
     # quoted, and they do not count toward sources requested or read.
-    numbers = load_numbers(company, filings, source_id=f"s{len(run.sources) + 1}")
+    numbers = load_numbers(
+        company,
+        filings,
+        source_id=f"s{len(run.sources) + 1}",
+        facts_store=facts_store,
+        as_of=run.inputs.as_of,
+    )
     if numbers.source is not None:
         run.sources.append(numbers.source)
     if numbers.report is not None:
@@ -319,6 +337,25 @@ def execute_run(
         tagged_errors = tagged.errors
         run.coverage.tagged_figures_offered = len(tagged.figures)
     offered_figures = {figure.id: figure for figure in figures}
+    # Computed tests: compiled from the claim text, computed from the facts just read. The
+    # engine is never asked about them; their outcomes enter the verdicts after the summary.
+    newest = newest_reports(ingested.filing_refs.values())
+    compute_claims(
+        run,
+        numbers,
+        lambda: read_reports(
+            company, filings, newest, cache=cache, html_by_accession=ingested.filing_html
+        )[:2],
+        claim_reader,
+        lambda: read_reports(
+            company,
+            filings,
+            newest,
+            cache=cache,
+            html_by_accession=ingested.filing_html,
+            specs=FOR_CLAIMS,
+        )[:2],
+    )
 
     _stage(run, store, "planning")
     queries = engine.plan(run.inputs, company)
@@ -505,6 +542,8 @@ def execute_run(
             run.errors.append(policy.SUMMARY_REPLACED.format(numbers=", ".join(unsupported)))
             summary = deterministic.summarize(run.inputs, company, run.claims, run.findings)
             model_wrote_summary = False
+    # The summariser was shown the verdicts of the findings; now the computed tests count.
+    count_computed(run, {claim.id for claim in unassessed})
     run.errors.extend(failures.messages())
     unknowns, dropped = _drop_unverified_numbers(unknowns, run)
     next_steps, dropped_steps = _drop_unverified_numbers(summary.next_steps, run)
@@ -568,6 +607,7 @@ def _read_events(
     """
     refs = list(ingested.filing_refs.values())
     annual = [ref.filed_date for ref in refs if ref.form.startswith("10-K")]
+    requested = run.inputs.as_of
     timeline = event_service.read_timeline(
         company,
         filings,
@@ -575,10 +615,11 @@ def _read_events(
         annual_filed=max(annual, default=None),
         periodic_filed=max((ref.filed_date for ref in refs), default=None),
         out_of_time=out_of_time,
+        filed_until=requested.isoformat() if requested is not None else None,
     )
     run.timeline = timeline.events
     read = [(ref.form, ref.filed_date, ref.url) for ref in refs]
-    run.as_of = event_service.as_of(timeline, read, run.started_at.date())
+    run.as_of = event_service.as_of(timeline, read, run.started_at.date(), requested=requested)
     return timeline
 
 

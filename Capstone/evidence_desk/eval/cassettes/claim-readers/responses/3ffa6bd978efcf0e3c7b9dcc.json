@@ -1,0 +1,12 @@
+{
+  "key": "3ffa6bd978efcf0e3c7b9dcc",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:14:10+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim states an approximate decline ('slipped about 3%'), which is a vague, approximate comparison rather than an exact threshold this tool can test.",
+    "tests": []
+  }
+}

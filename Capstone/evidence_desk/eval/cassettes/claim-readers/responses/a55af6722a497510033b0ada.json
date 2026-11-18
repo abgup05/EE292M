@@ -1,0 +1,12 @@
+{
+  "key": "a55af6722a497510033b0ada",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:16:15+00:00",
+  "response": {
+    "computable": false,
+    "reason": "This is a qualitative judgement about competitive differentiation with no numeric measure, threshold or period that the tool can test.",
+    "tests": []
+  }
+}

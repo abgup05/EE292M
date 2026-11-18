@@ -88,7 +88,7 @@ assert status == 422 and [p["field"] for p in json.loads(body)["details"]] == ["
 status, body, _ = request("/api/companies/NVDA/breakdowns?form=8-K")
 assert status == 422 and [p["field"] for p in json.loads(body)["details"]] == ["form"]
 status, body, _ = request("/api/runs/run-does-not-exist/changes")
-assert status == 404 and json.loads(body) == {"detail": "Run not found"}
+assert status == 404 and json.loads(body) == {"error": "Run not found"}
 
 valid = {"ticker": "NVDA", "decision": DECISION, "claims": [CLAIM]}
 assert refused_fields(valid | {"ticker": "nv da$"}) == ["ticker"]
@@ -98,7 +98,7 @@ assert refused_fields(valid | {"extra_urls": ["http://127.0.0.1/secret"]}) == ["
 
 for path in ("/api/runs/run-does-not-exist", "/api/runs/run-does-not-exist/export.md"):
     status, body, _ = request(path)
-    assert status == 404 and json.loads(body) == {"detail": "Run not found"}, path
+    assert status == 404 and json.loads(body) == {"error": "Run not found"}, path
 
 status, body, _ = request("/api/runs")
 assert status == 200 and isinstance(json.loads(body)["runs"], list)

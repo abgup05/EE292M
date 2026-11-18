@@ -1,0 +1,12 @@
+{
+  "key": "2ec0b841d43316bb37fbe3a8",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:13:43+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim states an absolute dollar decline in 'term debt' (not a listed measure by that name), and this tool can only test growth as a percent, not a dollar change in a balance.",
+    "tests": []
+  }
+}

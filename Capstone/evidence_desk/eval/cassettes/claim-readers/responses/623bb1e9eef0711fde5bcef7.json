@@ -1,0 +1,12 @@
+{
+  "key": "623bb1e9eef0711fde5bcef7",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:13:47+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim uses approximate language (\"about equal\", \"close to zero\") that this tool cannot express as an exact numeric threshold or comparison.",
+    "tests": []
+  }
+}

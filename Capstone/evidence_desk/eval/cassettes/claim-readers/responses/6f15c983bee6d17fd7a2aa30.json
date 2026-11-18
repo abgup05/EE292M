@@ -1,0 +1,12 @@
+{
+  "key": "6f15c983bee6d17fd7a2aa30",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:16:05+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a forecast about tariff exemptions and a judgement that risk is overstated, which the tool cannot test against reported figures.",
+    "tests": []
+  }
+}

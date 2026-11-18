@@ -1,0 +1,12 @@
+{
+  "key": "397ca82e87c66010f9b18cdc",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:10:42+00:00",
+  "response": {
+    "computable": false,
+    "reason": "It compares a segment's revenue (Data Center compute) with the whole company's revenue in a different period (fiscal 2024), and a part's figures come from a single filing with no history, so the tool cannot place this cross-period comparison.",
+    "tests": []
+  }
+}

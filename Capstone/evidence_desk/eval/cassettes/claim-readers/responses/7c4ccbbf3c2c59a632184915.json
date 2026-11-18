@@ -1,0 +1,12 @@
+{
+  "key": "7c4ccbbf3c2c59a632184915",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:09:29+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim adds a rank ('outpacing every other market platform'), which this tool cannot test, so the claim is not fully accounted for by a single growth test.",
+    "tests": []
+  }
+}

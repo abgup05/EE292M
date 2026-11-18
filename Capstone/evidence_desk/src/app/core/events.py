@@ -701,17 +701,27 @@ def build_as_of(
     counts: EventCounts,
     index_error: str,
     in_run: bool = True,
+    requested: date | None = None,
 ) -> AsOf:
     """The as-of block from every filing read, as (form, filing date, URL).
 
     The newest of any form, the newest periodic report (10-K or 10-Q), and the
     days from the newest to ``started``: the start of the run, or today outside one
-    (``in_run`` False), which the line says.
+    (``in_run`` False), which the line says. For a run as of a past date
+    (``requested``), the days are counted to that date instead, and the block says
+    what the run read.
     """
     when = policy.AS_OF_RUN if in_run else policy.AS_OF_TODAY
+    if requested is not None:
+        started, when = requested, policy.AS_OF_REQUESTED
     dated = sorted((filing for filing in filings if filing[1]), key=lambda f: f[1], reverse=True)
     periodic = [filing for filing in dated if filing[0] in PERIODIC_FORMS]
     as_of = AsOf(annual_filed=annual_filed, counts=counts, index_error=index_error)
+    if requested is not None:
+        as_of.requested = requested.isoformat()
+        as_of.requested_note = policy.AS_OF_REQUESTED_NOTE.format(
+            date=day_label(requested.isoformat())
+        )
     if not dated:
         as_of.line = policy.AS_OF_NOTHING_READ
         return as_of

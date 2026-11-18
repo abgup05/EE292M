@@ -1,0 +1,923 @@
+{
+  "about": "Judgements of the claim compiler's reading of each claim in eval/claim-tests-foreign-b.json (set B), scored once with the grammar of 10425c0 (unchanged at 0f8a25c and after): one entry per claim and canonical test printed ('none' when refused). reading: right, wrong (a test that does not mean what the sentence says), or not_compiled; for a claim its author marked numeric, cause says why it did not compile (metric the tool does not have, form it does not have, period it cannot place, phrasing of something it supports). The raw readings were committed first (eval/results/claim-tests-foreign-b-raw.txt) and the grammar was not changed after reading the set. Readings added on 18 November 2026, after the measure catalogue (app.core.measures) widened the grammar, are judged by the same session that wrote the catalogue and say so ('catalogue, 18 November 2026'); no earlier judgement was changed. Readings added on 18 November 2026 by the forms round (a test held in each of several periods, a change over a span, two measures compared, two tests joined by 'and', a share for a named period) are judged by the same session that wrote those forms and say so ('forms, 18 November 2026'); no earlier judgement was changed. Readings added on 18 November 2026 by rule 3 (made after set C was read: a flow against an amount in a sentence that names no period is refused, 'names no period: a quarter's amount or a year's?') say so ('rule 3, 18 November 2026'); where the claim had printed none before for another cause, the new entry carries 'revision' and counts in place of the earlier one, which stays. No earlier judgement was changed.",
+  "judge": "the grammar's author (Claude Opus 5.5 session), 18 November 2026; an independent judge's file is eval/results/claim-foreign-b-for-judge.md",
+  "judgements": [
+    {
+      "id": "g001",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "phrasing",
+      "why": "yoy(revenue)[FY2026] > 50% is a supported test; 'well over' and the trailing comment 'extending a run of exceptional growth' are not explained"
+    },
+    {
+      "id": "g002",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "phrasing",
+      "why": "sequential revenue growth is supported, but 'again' says it also rose the quarter before (a streak of two), which the grammar does not read"
+    },
+    {
+      "id": "g003",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "a sub-segment's revenue (Data Center compute against networking) in every quarter: no such measure, and the each-period form is not supported either"
+    },
+    {
+      "id": "g004",
+      "canonical": "gross_profit[FY2026] > $100B",
+      "reading": "right",
+      "why": "gross profit above $100 billion in fiscal 2026: exactly the sentence"
+    },
+    {
+      "id": "g005",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "phrasing",
+      "why": "net_margin > 50% is supported; the opening comment 'the margins are absurd' made the compiler stop at an unnamed margin (its stated reason misleads)"
+    },
+    {
+      "id": "g006",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "phrasing",
+      "why": "'net cash provided by operating activities' is operating cash flow under its statement name, which the grammar does not know"
+    },
+    {
+      "id": "g007",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "two statements; the second needs SG&A, which is not in the metric set"
+    },
+    {
+      "id": "g008",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "purchases of property and equipment AND intangible assets is broader than capex; no such measure"
+    },
+    {
+      "id": "g009",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "shareholders' equity is not in the metric set"
+    },
+    {
+      "id": "g010",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "phrasing",
+      "why": "inventory more than doubling over the year is a supported growth threshold on inventory; 'ended the year at over twice the prior-year balance' is not read"
+    },
+    {
+      "id": "g011",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "form",
+      "why": "how many customers exceed 10% is a count of tagged customers, not a form; only the largest customer's share is read"
+    },
+    {
+      "id": "g012",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "phrasing",
+      "why": "a segment's share under 3% is the supported share form; the opening comment 'is a rounding error,' breaks the anchored share sentence"
+    },
+    {
+      "id": "g013",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "period",
+      "why": "diluted EPS above $2.50 is supported; the two-digit period 'FY25' is not placed"
+    },
+    {
+      "id": "g014",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "operating expenses as a share of revenue is not in the metric set (only R&D's share is)"
+    },
+    {
+      "id": "g015",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "form",
+      "why": "faster growth in each of the last two fiscal years: the each-period form is not supported"
+    },
+    {
+      "id": "g016",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "buybacks and dividends are not in the metric set"
+    },
+    {
+      "id": "g017",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "cash plus marketable securities, and debt, are not in the metric set"
+    },
+    {
+      "id": "g018",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "the tax provision and pre-tax income are not in the metric set"
+    },
+    {
+      "id": "g019",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "period",
+      "why": "a half year (first half of fiscal 2026) is not a period this version places"
+    },
+    {
+      "id": "g020",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "cost of revenue is not in the metric set; a causal comment follows"
+    },
+    {
+      "id": "g021",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "phrasing",
+      "why": "says growth slowed without saying growth of what; the refusal is right, the claim is underspecified"
+    },
+    {
+      "id": "g022",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "accounts payable is not in the metric set"
+    },
+    {
+      "id": "g023",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "interest income and interest expense are not in the metric set"
+    },
+    {
+      "id": "g024",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "goodwill is not in the metric set"
+    },
+    {
+      "id": "g025",
+      "canonical": "fcf_margin[TTM] > 40%",
+      "reading": "right",
+      "why": "free cash flow margin above 40% over the trailing twelve months"
+    },
+    {
+      "id": "g026",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "a segment's revenue growth: breakdowns have no history in the facts"
+    },
+    {
+      "id": "g027",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "stock-based compensation is not in the metric set"
+    },
+    {
+      "id": "g028",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g029",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g030",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g031",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g032",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g033",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g034",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g035",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g036",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g037",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g038",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g039",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused (the stated reason, an unnamed margin, comes from 'margin of safety')"
+    },
+    {
+      "id": "g040",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g041",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "phrasing",
+      "why": "a rise in fiscal 2025 and fiscal 2024 is a streak of two years ending FY2025, a supported form; 'second consecutive year' is not read"
+    },
+    {
+      "id": "g042",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "a segment's revenue level (Services): no history in the facts, and only shares are read"
+    },
+    {
+      "id": "g043",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "a segment's gross margin (Products) in each of three years: neither the measure nor the each-period form is supported"
+    },
+    {
+      "id": "g044",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "period",
+      "why": "a share of net sales, but 'last year' asks for the last fiscal year and the share form reads only the newest filing; 'made up' and 'a quarter' are not read either"
+    },
+    {
+      "id": "g045",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "geographic segments' growth: breakdowns have no history in the facts"
+    },
+    {
+      "id": "g046",
+      "canonical": "share(segment \"Japan And Rest Of Asia Pacific Together\")[filing] < 15%",
+      "reading": "wrong",
+      "why": "two segments summed ('together') read as one segment named 'Japan And Rest Of Asia Pacific Together', a member no filing tags: the anchored share sentence is exempt from the whole-sentence rule, and its free-text subject let 'and ... together' through"
+    },
+    {
+      "id": "g047",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "phrasing",
+      "why": "operating income above $120 billion last fiscal year is a supported threshold; 'higher than' is not a known comparator (the stated reason, an exact figure, is wrong)"
+    },
+    {
+      "id": "g048",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "phrasing",
+      "why": "'cash generated by operating activities' is operating cash flow under its statement name, and 'FY25' is a two-digit period"
+    },
+    {
+      "id": "g049",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "phrasing",
+      "why": "'payments for acquisition of property, plant and equipment' is capex under its statement name"
+    },
+    {
+      "id": "g050",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "cash and marketable securities together is not in the metric set"
+    },
+    {
+      "id": "g051",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "commercial paper is not in the metric set"
+    },
+    {
+      "id": "g052",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "the diluted share count is not in the metric set"
+    },
+    {
+      "id": "g053",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "phrasing",
+      "why": "R&D's share of revenue rising in fiscal 2025 is supported; 'as a percentage of net sales' is not read"
+    },
+    {
+      "id": "g054",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "dividends are not in the metric set"
+    },
+    {
+      "id": "g055",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "shareholders' equity is not in the metric set"
+    },
+    {
+      "id": "g056",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "a product's revenue (iPhone): not in the facts"
+    },
+    {
+      "id": "g057",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "segments' growth (Services, Products) in every quarter: no history, and no each-period form"
+    },
+    {
+      "id": "g058",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "form",
+      "why": "a record (the highest of all years) is not a form"
+    },
+    {
+      "id": "g059",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "vendor non-trade receivables are not in the metric set"
+    },
+    {
+      "id": "g060",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "form",
+      "why": "faster growth over a span of fiscal years (2023 to 2025) is not the faster-than form, which compares one period's growth"
+    },
+    {
+      "id": "g061",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "form",
+      "why": "an approximate share ('about a fifth') of two products together: no approximate form, and no sum of members"
+    },
+    {
+      "id": "g062",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "the effective tax rate is not in the metric set"
+    },
+    {
+      "id": "g063",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "total liabilities are not in the metric set"
+    },
+    {
+      "id": "g064",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "share repurchases are not in the metric set (the stated reason, a valuation, is wrong)"
+    },
+    {
+      "id": "g065",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "a segment's share over three years: shares have no history in the facts"
+    },
+    {
+      "id": "g066",
+      "canonical": "share(geography \"Greater China\")[filing] < 20%",
+      "reading": "right",
+      "why": "Greater China's share of net sales below 20%, from the newest filing's tags (Apple reports Greater China as a geographic segment; whether the evaluator finds it under the geography axis is a computation question, not a reading one)"
+    },
+    {
+      "id": "g067",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "phrasing",
+      "why": "cagr(revenue, 3y)[FY2025] < 3% is the supported compound form; the span 'from fiscal 2022 to fiscal 2025' is not read as three years"
+    },
+    {
+      "id": "g068",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g069",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g070",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g071",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g072",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g073",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g074",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g075",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g076",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g077",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g078",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g079",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g080",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g081",
+      "canonical": "revenue[FY2025] > $270B",
+      "reading": "right",
+      "why": "revenue above $270 billion in fiscal 2025"
+    },
+    {
+      "id": "g082",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "Microsoft Cloud revenue is a disclosed figure, not in the metric set"
+    },
+    {
+      "id": "g083",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "segments' operating income is not in the facts"
+    },
+    {
+      "id": "g084",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "a product line's revenue growth is not in the facts"
+    },
+    {
+      "id": "g085",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "phrasing",
+      "why": "'additions to property and equipment' is capex under its statement name"
+    },
+    {
+      "id": "g086",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "form",
+      "why": "double-digit growth in each of two named years: no each-period form, and 'double digits' is not a threshold it reads"
+    },
+    {
+      "id": "g087",
+      "canonical": "net_margin[FY2025] > 35%",
+      "reading": "right",
+      "why": "net margin above 35% in fiscal 2025"
+    },
+    {
+      "id": "g088",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "phrasing",
+      "why": "operating cash flow growing faster than revenue in fiscal 2025 is a supported faster-than; 'outpaced' is not read (the stated reason misleads)"
+    },
+    {
+      "id": "g089",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "long-term debt is not in the metric set"
+    },
+    {
+      "id": "g090",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "the diluted share count is not in the metric set"
+    },
+    {
+      "id": "g091",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "dividends are not in the metric set"
+    },
+    {
+      "id": "g092",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "share repurchases are not in the metric set (the stated reason, a valuation, is wrong)"
+    },
+    {
+      "id": "g093",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "form",
+      "why": "'about 16%' is an approximate value, not a threshold"
+    },
+    {
+      "id": "g094",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "cost of revenue is not in the metric set; a causal comment follows"
+    },
+    {
+      "id": "g095",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "a product's revenue (LinkedIn) is not in the facts"
+    },
+    {
+      "id": "g096",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "a product's revenue growth (Dynamics) in each quarter: neither is supported"
+    },
+    {
+      "id": "g097",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "a segment's revenue (Windows and Devices) growth is not in the facts"
+    },
+    {
+      "id": "g098",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "unearned revenue is not in the metric set"
+    },
+    {
+      "id": "g099",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "cash plus short-term investments is not in the metric set"
+    },
+    {
+      "id": "g100",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "total assets are not in the metric set"
+    },
+    {
+      "id": "g101",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "other income and expense is not in the metric set"
+    },
+    {
+      "id": "g102",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "a product line's revenue (search and news advertising) is not in the facts"
+    },
+    {
+      "id": "g103",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "form",
+      "why": "the biggest quarter of a year is a rank, not a form"
+    },
+    {
+      "id": "g104",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "phrasing",
+      "why": "R&D, sales and marketing and G&A together are operating expenses, which the tool derives; yoy(operating_expenses)[FY2025] < 8% is supported, but the list of parts is not read as that measure"
+    },
+    {
+      "id": "g105",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "the effective tax rate is not in the metric set; 'close to' is approximate too"
+    },
+    {
+      "id": "g106",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "metric",
+      "why": "income before income taxes is not in the metric set"
+    },
+    {
+      "id": "g107",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g108",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g109",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g110",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g111",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g112",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g113",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g114",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g115",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g116",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g117",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g118",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g119",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g120",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "not numeric, as the author marked it; refused"
+    },
+    {
+      "id": "g009",
+      "canonical": "yoy(equity)[FY2025] > 100%",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: shareholders' equity at the end of fiscal 2025 more than double its value a year earlier"
+    },
+    {
+      "id": "g014",
+      "canonical": "opex_ratio[Q] < 15%",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: operating expenses as a share of revenue in the latest quarter under 15%"
+    },
+    {
+      "id": "g018",
+      "canonical": "effective_tax_rate[FY] > 13%",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: income tax over pre-tax income for the latest fiscal year above 13%"
+    },
+    {
+      "id": "g022",
+      "canonical": "streak(accounts_payable)[Q] >= 4",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: accounts payable higher than the quarter before in each of four quarters in a row"
+    },
+    {
+      "id": "g027",
+      "canonical": "sbc[FY2025] > $4B",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: stock-based compensation in fiscal 2025 above $4 billion"
+    },
+    {
+      "id": "g051",
+      "canonical": "commercial_paper[Q] < commercial_paper[Q-4]",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: commercial paper on the latest balance sheet below a year earlier"
+    },
+    {
+      "id": "g055",
+      "canonical": "equity[Q] < $100B",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: shareholders' equity on the latest balance sheet below $100 billion"
+    },
+    {
+      "id": "g062",
+      "canonical": "effective_tax_rate[FY] > 16%",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: the effective tax rate of the latest fiscal year above 16%; 'rose above' is read as the level reached (the rise itself is not tested)"
+    },
+    {
+      "id": "g063",
+      "canonical": "total_liabilities[Q] > $260B",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: total liabilities on the latest balance sheet above $260 billion"
+    },
+    {
+      "id": "g089",
+      "canonical": "long_term_debt[Q] < long_term_debt[Q-4]",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: long-term debt (non-current) lower than a year earlier"
+    },
+    {
+      "id": "g092",
+      "canonical": "share_repurchases[FY] > $15B",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: repurchases of common stock in the latest fiscal year above $15 billion"
+    },
+    {
+      "id": "g100",
+      "canonical": "total_assets[FY2025] > $500B",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: total assets at the end of fiscal 2025 above $500 billion; 'passed' is read as the level reached"
+    },
+    {
+      "id": "g101",
+      "canonical": "other_income[FY2025] < $0",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: other income and expense, net, of fiscal 2025 below zero"
+    },
+    {
+      "id": "g106",
+      "canonical": "pretax_income[FY] > $120B",
+      "reading": "right",
+      "why": "catalogue, 18 November 2026: income before income taxes of the latest fiscal year above $120 billion; no period named, FY is a fair reading of an amount"
+    },
+    {
+      "id": "g015",
+      "canonical": "each(2): yoy(net_income)[FY] > yoy(revenue)[FY]",
+      "reading": "right",
+      "why": "forms, 18 November 2026: net income growth above revenue growth in each of the latest two fiscal years"
+    },
+    {
+      "id": "g041",
+      "canonical": "each(2): revenue[FY2025] > revenue[FY2024]",
+      "reading": "right",
+      "why": "forms, 18 November 2026: net sales higher than the year before in fiscal 2025 and in fiscal 2024; 'second' also implies fiscal 2023 was no rise, which the test does not check (it is the two rises the claim asserts)"
+    },
+    {
+      "id": "g044",
+      "canonical": "share(segment \"Services\")[FY] > 25%",
+      "reading": "right",
+      "why": "forms, 18 November 2026: Services' share of net sales in the latest fiscal year above 25%; 'last year' is the latest fiscal year, and a product line is read on the segment axis"
+    },
+    {
+      "id": "g067",
+      "canonical": "cagr(revenue, 3y)[FY2025] < 3%",
+      "reading": "right",
+      "why": "forms, 18 November 2026: compound annual growth of net sales from fiscal 2022 to fiscal 2025 (three years) below 3%"
+    },
+    {
+      "id": "g046",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "form",
+      "why": "forms, 18 November 2026: refused by a rule, not a patch: a share whose subject says 'together', 'combined' or 'collectively', or joins names with 'and' before 'are', is a sum of several parts, which no filing tags; the earlier wrong reading stays judged above"
+    },
+    {
+      "id": "g106",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "cause": "period",
+      "why": "rule 3, 18 November 2026: refused, names no period: a quarter's income before income taxes or a year's; the earlier reading of the latest fiscal year stays judged above",
+      "revision": "rule 3, 18 November 2026: refused for its period, no longer for a missing measure"
+    }
+  ]
+}

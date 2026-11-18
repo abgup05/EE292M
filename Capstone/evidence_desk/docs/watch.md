@@ -16,12 +16,13 @@ Example payloads of every route, with a README naming every field:
 | --- | --- |
 | Put a thesis on watch | `PUT /api/theses/{id}/watch` `{"policy": "ask"}` or `"auto"`. 201 when new, 200 when only the policy changed |
 | Take it off | `DELETE /api/theses/{id}/watch`. Its inbox and jobs stay |
-| The watches | `GET /api/watch`: policy, last and next check, last error, jobs, unread |
-| The inbox | `GET /api/inbox?limit=20&offset=0&thesis_id=` (unread first, then newest first); `GET /api/inbox/{id}`; `POST /api/inbox/read` `{"ids": [...], "read": true}` |
+| The watches | `GET /api/watch`: policy, last and next check, last error, jobs, unread. `GET /api/theses` also gives each saved thesis's `watch` (policy, unread, waiting runs; `null` when not watched) |
+| The inbox | `GET /api/inbox?limit=20&offset=0&thesis_id=` (unread first, then newest first; `total`, `unread` and `folded`, the "seen, not relevant" items, are counted over the whole inbox); `GET /api/inbox/{id}`; `POST /api/inbox/read` `{"ids": [...], "read": true}` |
 | Start a waiting run | `POST /api/inbox/{id}/run` (202; 409 if nothing waits) |
 | Is the watcher alive | `GET /api/watch/health`; `make watch-status` prints the same and each watch |
 | One cycle by hand | `make watch-once` |
 | The labels the page uses | `GET /api/watch/meta` |
+| A refusal | 404 for an unknown thesis or item and 409 for a state that forbids the request answer `{"error": "..."}`, as every refusal of the app does (version 14; version 13's 404s answered `{"detail": "..."}`); 422 adds `details` |
 
 `make up` starts the watcher as the `watch` service of `docker/compose.yaml`
 (`python -m app.watch`), beside the app, on the same data directory and with no
@@ -69,12 +70,19 @@ of an hour of SEC listing it.
    - an 8-K of a substantive item that no claim is about bears on nothing;
    - an 8-K whose index lists no items bears on every claim, to be safe.
 
-   **The extension point for version 14** is `EXTRA_TRIAGE_RULES` in
-   `app/watch/service.py`, passed to `triage(..., extra_rules=...)` and marked
-   `# EXTENSION POINT (version 14)` in `core/triage.py`. A rule there is given the
-   claims and the filing and returns (claim id, reason) pairs; a claim it names
-   bears, under the rule `extension`. It is meant for "a compiled claim's computed
-   outcome flipped" and is empty today.
+   **The extension point** is `EXTRA_TRIAGE_RULES` in `app/watch/service.py`, passed
+   to `triage(..., extra_rules=...)` and marked `# EXTENSION POINT` in
+   `core/triage.py`. A rule there is given the claims and the filing and returns
+   (claim id, reason) pairs; a claim it names bears, under the rule `extension`. It
+   was meant for "a compiled claim's computed outcome flipped", and version 14 left
+   it empty on purpose: the facts a new 10-K or 10-Q brings reach the app only
+   through EDGAR's company-facts API, which triage does not call (it reads the filing
+   index and the two filings it compares), and a periodic report bears on every claim
+   already. Where the change is honestly known is after the run: the run computes
+   each compiled claim from the facts as of its date, and the inbox item's
+   `moved.computed` names each claim whose test, the same canonical test as in the
+   previous run, changed its outcome; `moved.claims_line` says how many of the
+   claims moved in any way.
 3. **Nothing bears:** the inbox gets a collapsed "seen, not relevant" item with the
    reason. No run.
 4. **It bears:** with policy `auto` and the day's cap not reached, the thesis is run

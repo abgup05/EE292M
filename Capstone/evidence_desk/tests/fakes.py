@@ -20,8 +20,9 @@ from pathlib import Path
 from typing import Any
 
 from app.core.documents import FetchedFiling, FilingRef, Passage
+from app.core.fact_models import CompanyProfile
 from app.core.metric_models import Metric
-from app.core.models import Claim, Company, Finding, ThesisRequest
+from app.core.models import Claim, Company, Finding, ThesisRequest, Verdict
 from app.core.ports import (
     CheckItem,
     ClaimDraft,
@@ -203,6 +204,7 @@ class FakeFilings:
     current: list[FilingRef] = field(default_factory=list)
     current_error: SourceError | None = None
     current_calls: list[str] = field(default_factory=list)
+    profile_calls: int = 0
     index_calls: int = 0
 
     @classmethod
@@ -240,18 +242,40 @@ class FakeFilings:
             raise UnknownTicker(f"Ticker {key} is not in SEC's company list")
         return self.companies[key]
 
-    def periodic_filings(self, company: Company, limit: int) -> list[FilingRef]:
-        """The configured refs, at most ``limit``."""
+    def periodic_filings(
+        self, company: Company, limit: int, as_of: str | None = None
+    ) -> list[FilingRef]:
+        """The configured refs, at most ``limit``.
+
+        With ``as_of``, as EDGAR would choose among them: the newest 10-K filed on or
+        before that day and the 10-Qs filed after it up to the day, newest first.
+        """
         if self.index_error is not None:
             raise self.index_error
-        return self.refs[:limit]
+        if as_of is None:
+            return self.refs[:limit]
+        known = sorted(
+            (ref for ref in self.refs if ref.filed_date <= as_of),
+            key=lambda ref: ref.filed_date,
+            reverse=True,
+        )
+        annual = next((ref for ref in known if ref.form == "10-K"), None)
+        if annual is None:
+            raise SourceError(
+                f"No annual report (10-K) filed on or before {as_of} is in the recorded index"
+            )
+        later = [r for r in known if r.form == "10-Q" and r.filed_date > annual.filed_date]
+        return [*later[: limit - 1], annual]
 
-    def current_reports(self, company: Company, filed_after: str) -> list[FilingRef]:
-        """The configured 8-Ks filed after ``filed_after``, newest first, or the failure."""
+    def current_reports(
+        self, company: Company, filed_after: str, filed_until: str | None = None
+    ) -> list[FilingRef]:
+        """The configured 8-Ks filed after ``filed_after`` (up to ``filed_until``), newest first."""
         self.current_calls.append(filed_after)
         if self.current_error is not None:
             raise self.current_error
-        chosen = [ref for ref in self.current if ref.filed_date > filed_after]
+        until = filed_until or "9999-12-31"
+        chosen = [ref for ref in self.current if filed_after < ref.filed_date <= until]
         return sorted(chosen, key=lambda ref: (ref.filed_date, ref.accession), reverse=True)
 
     def recent_filings(self, company: Company, forms: Sequence[str]) -> list[FilingRef]:
@@ -278,6 +302,22 @@ class FakeFilings:
         if isinstance(document, SourceError):
             raise document
         return FetchedFiling(ref=ref, html=document, retrieved_at=RETRIEVED_AT)
+
+    def company_profile(self, company: Company) -> CompanyProfile:
+        """The company's industry code: NVIDIA's from the recorded index, none for another."""
+        self.profile_calls += 1
+        if self.index_error is not None:
+            raise self.index_error
+        if company.cik != NVIDIA.cik:
+            return CompanyProfile(cik=company.cik, ticker=company.ticker, name=company.name)
+        payload = json.loads((EDGAR / f"submissions-CIK{NVIDIA.cik:010d}.json").read_text())
+        return CompanyProfile(
+            cik=company.cik,
+            ticker=company.ticker,
+            name=company.name,
+            sic=payload["sic"],
+            sic_description=payload["sicDescription"],
+        )
 
     def company_facts(self, company: Company) -> dict[str, Any]:
         """The configured facts, the recorded facts of the company, or the configured failure."""
@@ -383,6 +423,8 @@ class ScriptedAnalyst:
         self._extractive = ExtractiveAnalyst()
         self.offered: dict[str, list[str]] = {}
         self.figures: dict[str, list[Metric]] = {}
+        # The verdict of each claim (by id) as the summariser was shown it.
+        self.summarized: dict[str, Verdict | None] = {}
 
     def _maybe_fail(self, step: str) -> None:
         if step in self._fail_on:
@@ -417,6 +459,7 @@ class ScriptedAnalyst:
     ) -> SummaryDraft:
         """A fixed summary naming how many findings it was given."""
         self._maybe_fail("summarize")
+        self.summarized = {claim.id: claim.verdict for claim in claims}
         return SummaryDraft(
             summary=self._summary or f"Scripted summary of {len(findings)} finding(s).",
             next_steps=list(self._next_steps or ["Read the filings."]),

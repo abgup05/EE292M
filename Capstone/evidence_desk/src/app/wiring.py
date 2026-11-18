@@ -6,8 +6,9 @@ configuration. Nothing here runs at import time: each function builds its
 object when it is called.
 
 The data directory (``$EVIDENCE_DESK_DATA_DIR``, default ``data``) holds
-``record/record.sqlite`` (the record: back it up) and ``cache/filings.sqlite``
-(disposable). A version 3 database at ``runs/runs.sqlite`` is left alone, not read.
+``record/record.sqlite`` (the record: back it up), ``cache/filings.sqlite`` and
+``facts/facts.sqlite`` (both disposable). A version 3 database at
+``runs/runs.sqlite`` is left alone, not read.
 """
 
 from __future__ import annotations
@@ -18,14 +19,15 @@ import os
 from pathlib import Path
 
 from app.core import watch_policy
-from app.core.ports import Analyst, Checker
+from app.core.ports import Analyst, Checker, ClaimReader
 from app.engines.cassette import CassetteTransport
 from app.engines.checker import ClaudeChecker, NoChecker, configured_check_model
+from app.engines.claim_reader import ModelClaimReader, first_model, second_model, second_reader
 from app.engines.claude import ClaudeAnalyst
 from app.engines.extractive import ExtractiveAnalyst
-from app.engines.transport import AnthropicTransport
+from app.engines.transport import AnthropicTransport, Transport
 from app.sources.edgar import EdgarClient
-from app.store import FilingCache, Store
+from app.store import FactStore, FilingCache, Store
 from app.watch.service import WatchSettings, clamp_interval
 
 log = logging.getLogger(__name__)
@@ -33,10 +35,13 @@ DATA_DIR_VARIABLE = "EVIDENCE_DESK_DATA_DIR"
 DEFAULT_DATA_DIR = "data"
 RECORD_PATH = Path("record") / "record.sqlite"
 CACHE_PATH = Path("cache") / "filings.sqlite"
+FACTS_PATH = Path("facts") / "facts.sqlite"
 VERSION_3_DATABASE = Path("runs") / "runs.sqlite"
 KEY_VARIABLE = "ANTHROPIC_API_KEY"
 CASSETTE_VARIABLE = "EVIDENCE_DESK_CASSETTE"
 RECORD_VARIABLE = "EVIDENCE_DESK_CASSETTE_RECORD"
+READER_VARIABLE = "EVIDENCE_DESK_CLAIM_READER"
+READER_CHOICES = ("grammar", "model", "models")
 ENGINE_CHOICES = ("auto", "claude", "extractive", "cassette")
 
 
@@ -165,6 +170,56 @@ def checker_named(engine: str, analyst: Analyst) -> Checker:
     return NoChecker()
 
 
+def claim_reader_from_env(
+    analyst: Analyst | None = None,
+) -> ClaimReader | tuple[ClaimReader, ClaimReader] | None:
+    """The model readers of each claim's test beside the grammar, or None (the default).
+
+    ``EVIDENCE_DESK_CLAIM_READER=model`` turns one model reader on, with
+    ``ANTHROPIC_READER_MODEL``; ``models`` turns on two, the second with
+    ``ANTHROPIC_READER_MODEL_2`` and its own cassette step. With ``EVIDENCE_DESK_CASSETTE``
+    set they answer from that cassette (beside ``analyst``'s own when it replays one),
+    recording as the engine does; otherwise over the API, which needs
+    ``ANTHROPIC_API_KEY``. Raises :class:`ConfigurationError` for an unknown value or a
+    model reader with neither.
+    """
+    choice = os.environ.get(READER_VARIABLE, "").strip() or "grammar"
+    if choice not in READER_CHOICES:
+        raise ConfigurationError(
+            f"{READER_VARIABLE} is {choice!r}; choose one of {', '.join(READER_CHOICES)}"
+        )
+    if choice == "grammar":
+        return None
+    first = _model_reader(analyst, first_model(), second=False)
+    if choice == "model":
+        return first
+    return first, _model_reader(analyst, second_model(), second=True)
+
+
+def _model_reader(analyst: Analyst | None, model: str, *, second: bool) -> ClaimReader:
+    """One model reader of ``model``: from the cassette when one is set, else the API."""
+    choice = os.environ.get(READER_VARIABLE, "").strip()
+
+    def made(transport: Transport | None) -> ModelClaimReader:
+        if second:
+            return second_reader(transport, model)
+        return ModelClaimReader(transport, model)
+
+    cassette = os.environ.get(CASSETTE_VARIABLE, "").strip()
+    if cassette:
+        shared = _cassette_of(analyst)
+        record = model_key_present() and os.environ.get(RECORD_VARIABLE, "").strip() == "1"
+        live = AnthropicTransport(model=model) if record else None
+        if shared is not None:
+            return made(shared.sibling(live=live))
+        return made(CassetteTransport(Path(cassette), live=live))
+    if not model_key_present():
+        raise ConfigurationError(
+            f"{READER_VARIABLE}={choice} needs {KEY_VARIABLE} or {CASSETTE_VARIABLE} to be set"
+        )
+    return made(None)
+
+
 def filings_from_env() -> EdgarClient:
     """An EDGAR client identifying itself with ``SEC_USER_AGENT`` (or the default)."""
     return EdgarClient.from_env()
@@ -199,7 +254,12 @@ def cache_from_env() -> FilingCache:
     return FilingCache(data_dir() / CACHE_PATH)
 
 
-# Version 13, the standing watch.
+def facts_from_env() -> FactStore:
+    """The disposable fact store at ``data_dir()/facts/facts.sqlite``, created if needed."""
+    return FactStore(data_dir() / FACTS_PATH)
+
+
+# The standing watch (version 13).
 WATCH_INTERVAL_VARIABLE = "EVIDENCE_DESK_WATCH_INTERVAL_SECONDS"
 WATCH_AUTO_RUNS_VARIABLE = "EVIDENCE_DESK_WATCH_AUTO_RUNS_PER_DAY"
 

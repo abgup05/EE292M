@@ -1,0 +1,12 @@
+{
+  "key": "e28642235201b40320f28410",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:15:40+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a forecast about a future product's commercial success and a price judgement, not a numeric test on reported financial measures.",
+    "tests": []
+  }
+}

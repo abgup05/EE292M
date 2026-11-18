@@ -59,19 +59,25 @@
           <div class="intro-samples">
             <h2 class="rail-title">Recorded samples</h2>
             <ul id="sample-nav" class="sample-nav">
+              <li><a id="live-link" class="sample-button" href="?sample=run-live">See a live run read by three readers</a> <span class="sample-what">NVIDIA on 18 Nov 2026, answered by the Anthropic API: verdicts, computed tests and who read them</span></li>
               <li><a id="sample-link" class="sample-button" href="?sample">See a recorded run</a> <span class="sample-what">NVIDIA, five claims, model answers replayed from a recording</span></li>
               <li><a id="events-link" class="sample-button" href="?sample=run-events">See a live run that an 8-K postdates</a> <span class="sample-what">NVIDIA on 18 Nov 2026, answered by the Anthropic API</span></li>
               <li><a id="tagged-link" class="sample-button" href="?sample=run-tagged">See the same run with tagged figures offered</a> <span class="sample-what">segment, product and customer figures a finding can cite</span></li>
               <li><a id="changes-link" class="sample-button" href="?sample=changes">See a recorded filing comparison</a> <span class="sample-what">NVIDIA's two latest 10-Ks, paragraph by paragraph</span></li>
               <li><a id="breakdowns-link" class="sample-button" href="?sample=breakdowns">See recorded segments and customers</a> <span class="sample-what">the tables a 10-K tags, with their changes</span></li>
               <li><a id="inbox-link" class="sample-button" href="?sample=inbox">See a recorded inbox of the standing watch</a> <span class="sample-what">six kinds of item on made-up NVIDIA filings, scripted verdicts</span></li>
+              <li><a id="computed-link" class="sample-button" href="?sample=computed">See claims computed from the facts, over time</a> <span class="sample-what">NVIDIA, five claims, no model: tests that hold, fail or cannot be computed</span></li>
+              <li><a id="readers-link" class="sample-button" href="?sample=readers">See claims only the model readers could read</a> <span class="sample-what">six claims, two models agreeing where the grammar refused, answers recorded through the API</span></li>
+              <li><a id="as-of-link" class="sample-button" href="?sample=as-of">See the same run as of 1 Mar 2026</a> <span class="sample-what">only what was filed by that date</span></li>
+              <li><a id="ledger-link" class="sample-button" href="?sample=restatements">See a recorded restatement ledger</a> <span class="sample-what">NVIDIA: values a later filing reported differently</span></li>
             </ul>
           </div>
         </div>
         <div class="howto-run">
           <h2 class="rail-title">How to read a run</h2>
           <p id="distinction" class="distinction">Each verdict follows by a fixed rule from the findings that passed their checks. <strong>Checked:</strong> every quote was found word for word in the stored filing, and numbers were matched to quotes and reported figures. <strong>Not checked:</strong> whether a quote supports or challenges the claim is the engine's reading of it. Read the quotes before you rely on a verdict.</p>
-          <p class="howto-para">The tape under the company's name is the newest period's reported figures, each with the line of its series. The time line puts the run on one axis of dates: bars above it are the annual (10-K) and quarterly (10-Q) reports the run read, with a dot where a verified quote comes from one; below it are the 8-Ks the record lists since the annual report, filled diamonds for those with an item of a substantive category and small circles for routine ones; the hatched band runs from the newest filing read to the run, and nothing filed in it is in the record. Hover over or focus a mark to read it; select it to open the filing.</p>
+          <p class="howto-para" id="howto-readers">Each claim is read into a test before anything is computed: by the grammar (a fixed rule, no model) and, when the model readers are on, by one or two models. A computed test shows one mark per reader: ● read this test, ≠ read another test (a dissent, when the test still counts), ○ read no test; hover over or focus a mark for what the reader read or why it read nothing. The board says how many readers agreed. <span id="howto-reading-rule" hidden></span></p>
+          <p class="howto-para">The tape under the company's name is the newest period's reported figures, each with the line of its series. The time line puts the run on one axis of dates: bars above it are the annual (10-K) and quarterly (10-Q) reports the run read, with a dot where a verified quote comes from one; below it are the 8-Ks the record lists since the annual report, filled diamonds for those with an item of a substantive category and small circles for routine ones; the hatched band runs from the newest filing read to the run, and nothing filed in it is in the record. Hover over or focus a mark to read it; select it to open the filing. Under the time line, the thesis over time follows each claim that compiles to a test, computed from the company's facts with no model, as of every filing date of five years: a ring marks a flip.</p>
           <p class="howto-para">The page's marks are explained in the legend at the end of the note. Keys: <kbd>/</kbd> ticker, <kbd>e</kbd> your thesis, <kbd>i</kbd> the inbox, <kbd>j</kbd> <kbd>k</kbd> claims, <kbd>t</kbd> theme, <kbd>?</kbd> all keys. Printing gives the whole note.</p>
         </div>
       </div>
@@ -100,6 +106,13 @@
           <p id="claims-hint" class="hint">One claim per line, in plain words. <span id="claims-count" class="count" aria-live="polite"></span></p>
           <textarea id="claims" name="claims" rows="6" aria-describedby="claims-hint err-claims" required></textarea>
           <p id="err-claims" class="field-error" hidden></p>
+        </div>
+
+        <div class="field asof-control">
+          <label for="as_of">As of a past date <span class="optional">optional</span></label>
+          <p id="as-of-hint" class="hint">Read the record as it stood that day: only the filings, 8-Ks and XBRL facts filed by then. Leave it empty for the newest filings. The server refuses a date in the future, one before 2009, or a date with extra pages.</p>
+          <input id="as_of" name="as_of" type="date" min="2009-01-01" aria-describedby="as-of-hint err-as_of">
+          <p id="err-as_of" class="field-error" hidden></p>
         </div>
 
         <details id="advanced" class="advanced">
@@ -169,10 +182,11 @@
               <option value="10-Q">latest quarterly report (10-Q)</option>
             </select>
           </span>
+          <button type="button" id="restatements" class="secondary">Restated values</button>
         </div>
         <p id="err-changes_form" class="field-error" hidden></p>
         <p id="err-breakdowns_form" class="field-error" hidden></p>
-        <p class="hint actions-hint">These need just the ticker. "Reported figures only" shows the company's reported numbers; "What changed in the filings" compares its two latest annual or quarterly reports, paragraph by paragraph; "Segments and customers" shows the numbers its latest report tags by segment, product, geography and customer. None starts a run.</p>
+        <p class="hint actions-hint">These need just the ticker. "Reported figures only" shows the company's reported numbers; "What changed in the filings" compares its two latest annual or quarterly reports, paragraph by paragraph; "Segments and customers" shows the numbers its latest report tags by segment, product, geography and customer; "Restated values" lists every period whose value a later filing reported differently, as of the date above when one is set. None starts a run.</p>
         <p id="form-note" class="hint form-note" hidden></p>
       </form>
 
@@ -250,6 +264,20 @@
         </details>
       </div>
 
+      <div id="ledger-view" hidden>
+        <div id="ledger-head" class="run-head"></div>
+        <div id="ledger-body"></div>
+        <details id="ledger-legend" class="legend" open>
+          <summary>How to read the ledger</summary>
+          <dl class="legend-list">
+            <div><dt>What this is</dt><dd>Every period of every metric that at least two filings reported, compared filing by filing: the first value, then each later value that differed by more than the tolerance, each with the filing that reported it and the change. The counts, values and changes are the record's; this page computes none of them.</dd></div>
+            <div><dt><span class="ledger-flag">back to an earlier value</span></dt><dd>A later value goes back to one the period had before: more often a filing in between that tagged the wrong period than two restatements.</dd></div>
+            <div><dt><span class="ledger-flag">tagged with another concept later</span></dt><dd>A later filing tagged the period with another XBRL concept.</dd></div>
+            <div><dt>Not read</dt><dd>Nobody has read these periods against the filings to say which are restatements and which are tagging errors. A per-share value changed by a whole-number factor is most likely a stock split.</dd></div>
+          </dl>
+        </details>
+      </div>
+
       <div id="thesis-view" hidden>
         <div id="thesis-head" class="run-head"></div>
         <section class="block" aria-labelledby="thesis-runs-title">
@@ -287,6 +315,7 @@
       </div>
 
       <div id="run-view" hidden>
+        <div id="asof-banner" class="asof-banner" role="note" aria-label="A run as of a past date" hidden></div>
         <div id="run-head" class="run-head"></div>
 
         <div id="status-banner" class="banner" role="status" aria-live="polite"></div>
@@ -309,6 +338,11 @@
         <section id="timeline-section" class="block timeline-block" aria-labelledby="timeline-title" hidden>
           <h3 id="timeline-title" class="block-title" data-code="TL">The record on a time line</h3>
           <div id="timeline" class="timeline"></div>
+        </section>
+
+        <section id="tot-section" class="block tot-block" aria-labelledby="tot-title" hidden>
+          <h3 id="tot-title" class="block-title" data-code="TOT">The thesis over time</h3>
+          <div id="tot" class="tot"></div>
         </section>
 
         <section id="changes-section" class="block" aria-labelledby="changes-title" tabindex="-1" hidden>
@@ -410,6 +444,11 @@
             <div><dt><span class="mark-reject"><span class="glyph g-reject" aria-hidden="true">!</span> Refused</span></dt><dd>The server refused your input; the message says how to fix it.</dd></div>
             <div data-legend="dashed"><dt><span class="legend-dashed">dashed border</span></dt><dd>Not final. A dashed border marks one of three things: a claim no engine judged (Not judged); a decision you have still to make (Undecided, not reviewed yet); a run still in progress, with its claims not yet decided.</dd></div>
             <div data-legend="claim-changes"><dt><span class="rule-mark"><span class="glyph g-rule" aria-hidden="true">ƒ</span><span class="rule-label">Fixed rule</span></span> <span class="chg-mark c-added"><span class="glyph g-chg" aria-hidden="true">+</span><span class="chg-label">Added</span></span> <span class="chg-mark c-removed"><span class="glyph g-chg" aria-hidden="true">−</span><span class="chg-label">Removed</span></span> <span class="chg-mark c-reworded"><span class="glyph g-chg" aria-hidden="true">~</span><span class="chg-label">Reworded</span></span> <span class="chg-mark c-numbers_only"><span class="glyph g-chg" aria-hidden="true">#</span><span class="chg-label">Numbers only</span></span></dt><dd>Under each claim of a finished run: paragraphs that changed between the newest annual and the newest quarterly report the run read and the filing of the same form filed before each (fetched for the comparison; the run may not have read it), and that share words with the claim or the search queries the run wrote for it. Listed by a fixed rule (ƒ: computed by a fixed rule; not checked by a person); no model chose or judged them, they are not findings, and none counts toward the verdict. In a reworded pair, <del class="seg seg-del">struck through</del> was dropped and <ins class="seg seg-add">underlined</ins> was added.</dd></div>
+            <div data-legend="computed"><dt><span class="ct-outcome o-holds"><span class="glyph" aria-hidden="true">⊨</span><span>Holds</span></span> <span class="ct-outcome o-fails"><span class="glyph" aria-hidden="true">⊭</span><span>Fails</span></span> <span class="ct-outcome o-cannot_compute"><span class="glyph" aria-hidden="true">⊘</span><span>Cannot be computed</span></span></dt><dd>A computed test: the claim compiled to a test and the test was computed from the company's XBRL facts by a fixed rule, with no model. A test that holds counts as one piece of support in the verdict, one that fails as a challenge, one that cannot be computed as nothing. These are never a verdict's marks.</dd></div>
+            <div data-legend="readers"><dt><span class="reader-marks"><span class="reader-mark rm-same"><span class="glyph" aria-hidden="true">●</span><span class="reader-short">Read this test</span></span> <span class="reader-mark rm-dissent"><span class="glyph" aria-hidden="true">≠</span><span class="reader-short">Another test</span></span> <span class="reader-mark rm-refused"><span class="glyph" aria-hidden="true">○</span><span class="reader-short">No test</span></span></span></dt><dd>Who read a claim into a test: one mark per reader (the grammar, and up to two model readers). With several readers, a test counts when at least two reach the same test; a different test from the third is a dissent and the test still counts; a refusal is not a dissent.</dd></div>
+            <div data-legend="readings"><dt><span class="ct-counted c-differ"><span class="glyph g-limit" aria-hidden="true">▲</span> Readings differ: not counted</span></dt><dd>No two readers reached the same test: every reading is shown, the grammar's test (if it read one) is computed and shown, and it counts as nothing.</dd></div>
+            <div data-legend="tot"><dt><svg class="legend-tl" viewBox="0 0 64 20" aria-hidden="true" focusable="false"><path d="M4 6 H30 V14 H60" class="tot-step"/><circle cx="30" cy="14" r="6" class="tot-flip"/></svg> Thesis over time</dt><dd>A compiled claim's test as of each 10-K and 10-Q filing date, from the facts filed by then: holds above, fails below; a ring is a filing where the outcome flipped.</dd></div>
+            <div data-legend="as-of"><dt><span class="asof-legend">◷ As of a past date</span></dt><dd>A run made as of a past date read only what was filed by then; the banner at the top of the note says so, on screen and on paper.</dd></div>
             <div data-legend="status"><dt><span class="status-word st-complete"><span class="glyph" aria-hidden="true">◇</span> Complete</span></dt><dd>The run's status, at the top of a result: an open diamond when complete, three dots while running, the limit mark when partial or failed. A status is never a filled tag.</dd></div>
             <div data-legend="timeline"><dt><svg class="legend-tl" viewBox="0 0 64 20" aria-hidden="true" focusable="false"><line x1="2" x2="62" y1="10" y2="10" class="tl-axis"/><path d="M14 4 L19 10 L14 16 L9 10 Z" class="tl-8k is-substantive"/><circle cx="32" cy="10" r="3.5" class="tl-8k is-routine"/><rect x="46" y="3" width="3" height="14" class="tl-filing"/></svg> Time line</dt><dd>One axis of dates from the record: tall bars are the annual and quarterly reports the run read (a dot above one means a quote comes from it); filled diamonds are 8-Ks with an item of a substantive category, small circles routine ones; the hatched band is the time between the newest filing read and the run. Hover over or focus a mark to read it and open the filing.</dd></div>
             <div><dt><span class="page-tag">Sample record</span></dt><dd>A grey tag is a label about the page itself.</dd></div>
@@ -439,6 +478,8 @@
         <dt>Filed</dt><dd>The date the company submitted the filing to the SEC. "Retrieved" is when this run downloaded it, in UTC.</dd>
         <dt>Accession number</dt><dd>The SEC's identifier for one filing; hover over a form to see it.</dd>
         <dt>Derived, restated</dt><dd>A derived value was worked out from reported ones (for example a fourth quarter as the year less nine months). A restated value was reported differently by a later filing.</dd>
+        <dt>Computed test</dt><dd>A claim compiled to arithmetic on the company's reported figures (gross margin this quarter against a year earlier, say) and computed from its XBRL facts by a fixed rule. It holds, fails, or cannot be computed, with the reason.</dd>
+        <dt>As of</dt><dd>A run as of a past date reads only the filings and facts filed by then, as the company stood that day.</dd>
         <dt>CIK</dt><dd>The SEC's numeric identifier for a company.</dd>
         <dt>EDGAR</dt><dd>The SEC's public filing system, where the filings linked on this page are published.</dd>
       </dl>

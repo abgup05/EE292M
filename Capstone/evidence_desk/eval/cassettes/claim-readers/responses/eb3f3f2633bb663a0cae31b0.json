@@ -1,0 +1,12 @@
+{
+  "key": "eb3f3f2633bb663a0cae31b0",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:16:08+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a valuation judgement about a price target, which this tool cannot test.",
+    "tests": []
+  }
+}

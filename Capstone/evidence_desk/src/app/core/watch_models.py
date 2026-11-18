@@ -163,13 +163,28 @@ class VerdictMove(BaseModel):
     after: Verdict | None
 
 
+class ComputedMove(BaseModel):
+    """One claim whose computed test (the same canonical test) changed its outcome."""
+
+    claim: str
+    canonical: str
+    before: str
+    after: str
+    before_label: str
+    after_label: str
+
+
 class WhatMoved(BaseModel):
     """What a watch-triggered run changed, against the previous finished run of the thesis.
 
-    ``moved`` is True when a verdict moved, a caution or an 8-K note is new, or an 8-K
-    is new on the timeline. ``line`` says it in one sentence ("Nothing moved." when
-    nothing did). ``comparison`` is the full claim-by-claim comparison, None when the
-    thesis had no earlier finished run.
+    ``moved`` is True when a verdict moved, a caution or an 8-K note is new, an 8-K is
+    new on the timeline, or a computed test changed its outcome (``computed``: the same
+    canonical test in both runs, from the facts each read; version 14). ``line`` says it
+    in one sentence ("Nothing moved." when nothing did). ``claims_moved`` of
+    ``claims_total`` claims moved in any of these ways, each claim counted once, and
+    ``claims_line`` says so ("1 of 5 claims moved."; "" for a first run).
+    ``comparison`` is the full claim-by-claim comparison, None when the thesis had no
+    earlier finished run.
     """
 
     earlier_run_id: str | None = None
@@ -180,7 +195,11 @@ class WhatMoved(BaseModel):
     new_notes: list[ClaimNote] = Field(default_factory=list)
     new_events: list[NewEvent] = Field(default_factory=list)
     sources_added: list[str] = Field(default_factory=list)
+    computed: list[ComputedMove] = Field(default_factory=list)
     line: str = ""
+    claims_moved: int = 0
+    claims_total: int = 0
+    claims_line: str = ""
     claims: list[ClaimChange] = Field(default_factory=list)
     comparison_note: str = ""
 

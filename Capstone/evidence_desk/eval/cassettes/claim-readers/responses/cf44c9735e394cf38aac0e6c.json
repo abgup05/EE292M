@@ -1,0 +1,12 @@
+{
+  "key": "cf44c9735e394cf38aac0e6c",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:18:47+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim concerns consensus estimates, which is an expectation rather than a measured figure, so it cannot be computed from the company's filings.",
+    "tests": []
+  }
+}

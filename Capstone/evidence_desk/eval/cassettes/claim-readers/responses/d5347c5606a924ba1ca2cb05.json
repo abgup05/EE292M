@@ -1,0 +1,63 @@
+{
+  "key": "d5347c5606a924ba1ca2cb05",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:13:11+00:00",
+  "response": {
+    "computable": true,
+    "reason": "The claim is a single yoy test on the Products product line (a segment) for the named fiscal year 2023, read as a fall, which is a yoy below 0 percent.",
+    "tests": [
+      {
+        "form": "growth_threshold",
+        "left": {
+          "fn": "yoy",
+          "subject": "revenue",
+          "member": "Products",
+          "axis": "segment",
+          "years": 0,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 2023,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "op": "<",
+        "right_term": {
+          "fn": "yoy",
+          "subject": "revenue",
+          "member": "Products",
+          "axis": "segment",
+          "years": 0,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 2023,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "right_number": {
+          "value": 0,
+          "unit": "percent"
+        },
+        "each": 0,
+        "each_since": 0
+      }
+    ]
+  }
+}

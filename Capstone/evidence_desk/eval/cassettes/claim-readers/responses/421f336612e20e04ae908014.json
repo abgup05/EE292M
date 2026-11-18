@@ -1,0 +1,12 @@
+{
+  "key": "421f336612e20e04ae908014",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:14:00+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim measures taxes paid on net share settlement of equity awards, which is not among the measures this tool can compute.",
+    "tests": []
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "key": "a96f9f5fbb6eea560fd10181",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:12:53+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a forecast and a causal judgement about data center build speed, not a numeric test of a reported measure over a period.",
+    "tests": []
+  }
+}

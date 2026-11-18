@@ -1,0 +1,12 @@
+{
+  "key": "c7766d819fcfbbf14ab5232a",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:09:37+00:00",
+  "response": {
+    "computable": false,
+    "reason": "\"Far faster\" is a vague comparison with no threshold, so the claim is not fully captured by a single computable test.",
+    "tests": []
+  }
+}

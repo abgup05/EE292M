@@ -50,7 +50,7 @@ from __future__ import annotations
 import math
 import re
 from collections import Counter, defaultdict
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 from itertools import combinations
@@ -226,6 +226,19 @@ SPECS: tuple[BreakdownSpec, ...] = (
         sums_to_total=False,
         changes=False,
         share_of="accounts receivable",
+    ),
+)
+
+# Breakdowns only a claim test reads (app.core.claim_eval, a segment's operating income):
+# built on request, never in the report a run shows or offers figures from.
+CLAIM_SPECS: tuple[BreakdownSpec, ...] = (
+    BreakdownSpec(
+        "operating_income_by_segment",
+        "Operating income by business segment",
+        SEGMENT_AXIS,
+        ("us-gaap:OperatingIncomeLoss",),
+        allowed={CONSOLIDATION_AXIS: OPERATING_SEGMENTS},
+        reconciling_axis=CONSOLIDATION_AXIS,
     ),
 )
 
@@ -972,12 +985,14 @@ def _absent_note(spec: BreakdownSpec) -> str:
     return f"No {spec.title.lower()} is tagged (looked for {looked} on {spec.axis}{extra})."
 
 
-def build_breakdowns(facts: TaggedFacts, *, annual: bool) -> tuple[list[Breakdown], list[str]]:
-    """Every breakdown the facts hold, and a note for each one they do not."""
+def build_breakdowns(
+    facts: TaggedFacts, *, annual: bool, specs: Sequence[BreakdownSpec] = SPECS
+) -> tuple[list[Breakdown], list[str]]:
+    """Every breakdown of ``specs`` the facts hold, and a note for each one they do not."""
     index = _Index.of(facts)
     breakdowns: list[Breakdown] = []
     absent: list[str] = []
-    for spec in SPECS:
+    for spec in specs:
         item = build_breakdown(spec, index, annual=annual)
         if item is None:
             absent.append(_absent_note(spec))
@@ -995,11 +1010,18 @@ def _is_annual(form: str) -> bool:
     raise ValueError(f"form must be a 10-K or a 10-Q, not {form!r}")
 
 
-def build_report(facts: TaggedFacts, *, company: Company, filing: FilingInfo) -> BreakdownReport:
+def build_report(
+    facts: TaggedFacts,
+    *,
+    company: Company,
+    filing: FilingInfo,
+    specs: Sequence[BreakdownSpec] = SPECS,
+) -> BreakdownReport:
     """The breakdowns of one filing's tagged facts, with notes on what was not read or found.
 
     ``filing.form`` decides the periods: full years for a 10-K, the quarter for
-    a 10-Q (anything else is ValueError).
+    a 10-Q (anything else is ValueError). ``specs`` are the breakdowns built: those a
+    run shows, unless a claim test asks for :data:`CLAIM_SPECS` too.
     """
     annual = _is_annual(filing.form)
     notes: list[str] = []
@@ -1013,7 +1035,7 @@ def build_report(facts: TaggedFacts, *, company: Company, filing: FilingInfo) ->
         notes.append(unread)
     breakdowns: list[Breakdown] = []
     if facts.facts:
-        breakdowns, absent = build_breakdowns(facts, annual=annual)
+        breakdowns, absent = build_breakdowns(facts, annual=annual, specs=specs)
         notes += absent
         notes.append(PLACEMENT_NOTE)
     return BreakdownReport(

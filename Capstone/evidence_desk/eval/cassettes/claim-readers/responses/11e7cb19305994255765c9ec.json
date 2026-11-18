@@ -1,0 +1,12 @@
+{
+  "key": "11e7cb19305994255765c9ec",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:15:51+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is about the uncertain survival of a contract and an approximate value to Apple, a judgement and forecast rather than a numeric test on a listed measure.",
+    "tests": []
+  }
+}

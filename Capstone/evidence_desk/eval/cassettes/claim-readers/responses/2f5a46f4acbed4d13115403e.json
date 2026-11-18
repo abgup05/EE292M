@@ -1,0 +1,12 @@
+{
+  "key": "2f5a46f4acbed4d13115403e",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:12:13+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim tests days of sales outstanding, which is a measure not in this tool's list; receivables alone is a balance, not a day count.",
+    "tests": []
+  }
+}

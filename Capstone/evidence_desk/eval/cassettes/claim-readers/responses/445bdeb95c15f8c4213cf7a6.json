@@ -1,0 +1,12 @@
+{
+  "key": "445bdeb95c15f8c4213cf7a6",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:15:59+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a forecast about customer behaviour and ecosystem lock-in, not a numeric test of a reported measure over a period.",
+    "tests": []
+  }
+}

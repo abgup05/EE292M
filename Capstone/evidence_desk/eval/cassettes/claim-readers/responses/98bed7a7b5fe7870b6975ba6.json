@@ -1,0 +1,12 @@
+{
+  "key": "98bed7a7b5fe7870b6975ba6",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:18:56+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a judgement about lease cancellation reports and demand, not a numeric test on any measure in the list.",
+    "tests": []
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "key": "d68e057396589caaca6fcdb0",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:10:11+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim measures prepaid supply and capacity agreements, which is not a measure this tool computes, and its closing clause is an interpretive judgement.",
+    "tests": []
+  }
+}

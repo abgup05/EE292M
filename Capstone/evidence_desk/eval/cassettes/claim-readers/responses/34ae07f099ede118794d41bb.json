@@ -1,0 +1,12 @@
+{
+  "key": "34ae07f099ede118794d41bb",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:18:32+00:00",
+  "response": {
+    "computable": false,
+    "reason": "\"So far\" in fiscal 2026 does not say how many quarters have elapsed, so the number of periods the test must hold in cannot be fixed from the claim.",
+    "tests": []
+  }
+}

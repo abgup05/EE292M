@@ -12,6 +12,14 @@ parsed result, so a filing fetched and parsed once is not fetched again.
 Deleting it loses nothing: the next run fetches and parses again. Source text
 is never copied into the record; :meth:`FilingCache.source_texts` is the one
 way to read the stored text of a run's sources.
+
+:class:`FactStore` is **disposable** too (``<data dir>/facts/facts.sqlite``):
+every us-gaap fact of each company whose XBRL company facts were loaded, with the
+filing (accession, form, filed date) that reported it, and a row per company
+with its ticker, name and industry code. It is persistence and queries only:
+:meth:`FactStore.payload` gives the facts back in EDGAR's own shape, and
+:class:`app.core.facts.FactBook` remains the one place that places them in
+periods. Deleting it loses nothing that EDGAR cannot give again.
 """
 
 from __future__ import annotations
@@ -19,6 +27,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import math
 import sqlite3
 import threading
 from collections.abc import Iterator, Sequence
@@ -30,6 +39,7 @@ from typing import Final
 
 from pydantic import BaseModel, ValidationError
 
+from app.core.fact_models import CompanyProfile, StoredCompany, StoredFiling
 from app.core.models import Decision, ExtractionStatus, Run, RunStatus, Thesis
 
 logger = logging.getLogger(__name__)
@@ -92,6 +102,39 @@ CREATE TABLE IF NOT EXISTS tagged (
     PRIMARY KEY (accession, reader_version)
 );
 """
+
+
+FACTS_SCHEMA = """
+CREATE TABLE IF NOT EXISTS companies (
+    cik INTEGER PRIMARY KEY,
+    ticker TEXT NOT NULL,
+    name TEXT NOT NULL,
+    sic TEXT NOT NULL,
+    sic_description TEXT NOT NULL,
+    facts INTEGER NOT NULL,
+    skipped INTEGER NOT NULL,
+    payload_sha256 TEXT NOT NULL,
+    loaded_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS facts (
+    cik INTEGER NOT NULL,
+    concept TEXT NOT NULL,
+    unit TEXT NOT NULL,
+    start TEXT,
+    end TEXT NOT NULL,
+    value REAL NOT NULL,
+    accession TEXT NOT NULL,
+    form TEXT NOT NULL,
+    filed TEXT NOT NULL,
+    fy INTEGER,
+    fp TEXT,
+    frame TEXT
+);
+CREATE INDEX IF NOT EXISTS facts_by_concept ON facts (cik, concept, unit);
+CREATE INDEX IF NOT EXISTS facts_by_filed ON facts (cik, filed);
+"""
+# The taxonomy a company-facts body keeps its US GAAP concepts under: the one stored.
+GAAP = "us-gaap"
 
 
 def text_hash(text: str) -> str:
@@ -523,3 +566,211 @@ class FilingCache:
             if text is not None:
                 texts[source.id] = text
         return texts
+
+
+def _fact_row(cik: int, concept: str, unit: str, raw: object) -> tuple[object, ...] | None:
+    """One raw company-facts entry as a ``facts`` row; None when a required field is unusable.
+
+    Required: ``end``, ``val`` (a finite number), ``accn``, ``form`` and ``filed``, as
+    :func:`app.core.facts.parse_fact` requires them; ``start``, ``fy``, ``fp`` and
+    ``frame`` are kept when present.
+    """
+    if not isinstance(raw, dict):
+        return None
+    val = raw.get("val")
+    if isinstance(val, bool) or not isinstance(val, int | float) or not math.isfinite(val):
+        return None
+    texts = [raw.get(name) for name in ("end", "accn", "form", "filed")]
+    if not all(isinstance(text, str) and text for text in texts):
+        return None
+    start = raw.get("start")
+    fy = raw.get("fy")
+    fp = raw.get("fp")
+    frame = raw.get("frame")
+    return (
+        cik,
+        concept,
+        unit,
+        start if isinstance(start, str) else None,
+        texts[0],
+        float(val),
+        texts[1],
+        texts[2],
+        texts[3],
+        fy if isinstance(fy, int) and not isinstance(fy, bool) else None,
+        fp if isinstance(fp, str) else None,
+        frame if isinstance(frame, str) else None,
+    )
+
+
+def _fact_rows(cik: int, payload: dict[str, object]) -> tuple[list[tuple[object, ...]], int]:
+    """Every us-gaap fact of a company-facts body as rows, and how many entries were unusable."""
+    facts = payload.get("facts")
+    gaap = facts.get(GAAP) if isinstance(facts, dict) else None
+    rows: list[tuple[object, ...]] = []
+    skipped = 0
+    if not isinstance(gaap, dict):
+        return rows, skipped
+    for concept, entry in gaap.items():
+        units = entry.get("units") if isinstance(entry, dict) else None
+        if not isinstance(units, dict):
+            continue
+        for unit, entries in units.items():
+            if not isinstance(entries, list):
+                continue
+            for raw in entries:
+                row = _fact_row(cik, str(concept), str(unit), raw)
+                if row is None:
+                    skipped += 1
+                else:
+                    rows.append(row)
+    return rows, skipped
+
+
+class FactStore:
+    """Disposable: every us-gaap fact of each loaded company, and the companies themselves.
+
+    Thread-safe. ``path`` may be ``":memory:"``. A company is replaced whole when
+    it is loaded again with different facts; loading the same body again (same
+    SHA-256) changes nothing but its profile.
+    """
+
+    def __init__(self, path: Path | str = MEMORY) -> None:
+        """Open (creating if needed) the fact store at ``path``."""
+        self._db = _Database(path, FACTS_SCHEMA)
+        self.path = self._db.path
+
+    def close(self) -> None:
+        """Close the database connection."""
+        self._db.close()
+
+    def save_company(
+        self,
+        profile: CompanyProfile,
+        payload: dict[str, object],
+        payload_sha256: str,
+        loaded_at: datetime,
+    ) -> StoredCompany:
+        """Keep every us-gaap fact of ``payload`` under ``profile.cik``; return what is stored.
+
+        ``payload_sha256`` identifies the body (:func:`app.services.numbers.content_hash`):
+        when the company is already stored with it, the facts are left as they are.
+        Entries without a usable end, value, accession, form or filing date are not
+        stored and are counted in ``skipped``.
+        """
+        known = self.company(profile.cik)
+        with self._db.transaction() as connection:
+            if known is None or known.payload_sha256 != payload_sha256:
+                rows, skipped = _fact_rows(profile.cik, payload)
+                connection.execute("DELETE FROM facts WHERE cik = ?", (profile.cik,))
+                connection.executemany(
+                    "INSERT INTO facts (cik, concept, unit, start, end, value, accession, form, "
+                    "filed, fy, fp, frame) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    rows,
+                )
+                count, stamp = len(rows), loaded_at.isoformat()
+            else:
+                count, skipped, stamp = known.facts, known.skipped, known.loaded_at
+            connection.execute(
+                "INSERT OR REPLACE INTO companies (cik, ticker, name, sic, sic_description, "
+                "facts, skipped, payload_sha256, loaded_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    profile.cik,
+                    profile.ticker,
+                    profile.name,
+                    profile.sic,
+                    profile.sic_description,
+                    count,
+                    skipped,
+                    payload_sha256,
+                    stamp,
+                ),
+            )
+        stored = self.company(profile.cik)
+        assert stored is not None
+        return stored
+
+    def company(self, cik: int) -> StoredCompany | None:
+        """The stored company with ``cik``, or None."""
+        rows = self._db.query(
+            "SELECT cik, ticker, name, sic, sic_description, facts, skipped, payload_sha256, "
+            "loaded_at FROM companies WHERE cik = ?",
+            (cik,),
+        )
+        return _stored_company(rows[0]) if rows else None
+
+    def company_by_ticker(self, ticker: str) -> StoredCompany | None:
+        """The stored company whose ticker is ``ticker`` (any case), or None."""
+        rows = self._db.query(
+            "SELECT cik, ticker, name, sic, sic_description, facts, skipped, payload_sha256, "
+            "loaded_at FROM companies WHERE upper(ticker) = upper(?) ORDER BY cik LIMIT 1",
+            (ticker,),
+        )
+        return _stored_company(rows[0]) if rows else None
+
+    def companies(self) -> list[StoredCompany]:
+        """Every stored company, by ticker."""
+        rows = self._db.query(
+            "SELECT cik, ticker, name, sic, sic_description, facts, skipped, payload_sha256, "
+            "loaded_at FROM companies ORDER BY ticker, cik"
+        )
+        return [_stored_company(row) for row in rows]
+
+    def payload(self, cik: int) -> dict[str, object] | None:
+        """The stored facts of ``cik`` in EDGAR's company-facts shape (us-gaap only), or None.
+
+        Entries keep EDGAR's field names (``start``, ``end``, ``val``, ``accn``, ``form``,
+        ``filed``, and ``fy``, ``fp``, ``frame`` when known), in the order stored.
+        """
+        company = self.company(cik)
+        if company is None:
+            return None
+        rows = self._db.query(
+            "SELECT concept, unit, start, end, value, accession, form, filed, fy, fp, frame "
+            "FROM facts WHERE cik = ? ORDER BY rowid",
+            (cik,),
+        )
+        gaap: dict[str, dict[str, dict[str, list[dict[str, object]]]]] = {}
+        for concept, unit, start, end, value, accession, form, filed, fy, fp, frame in rows:
+            entry: dict[str, object] = {}
+            if start is not None:
+                entry["start"] = start
+            entry.update(end=end, val=value, accn=accession, form=form, filed=filed)
+            for name, extra in (("fy", fy), ("fp", fp), ("frame", frame)):
+                if extra is not None:
+                    entry[name] = extra
+            units = gaap.setdefault(concept, {"units": {}})["units"]
+            units.setdefault(unit, []).append(entry)
+        return {"cik": cik, "entityName": company.name, "facts": {GAAP: gaap}}
+
+    def filings(self, cik: int, forms: Sequence[str] = ()) -> list[StoredFiling]:
+        """Every filing a stored fact of ``cik`` came from, oldest first; ``forms`` filters."""
+        rows = self._db.query(
+            "SELECT DISTINCT accession, form, filed FROM facts WHERE cik = ? "
+            "ORDER BY filed, accession, form",
+            (cik,),
+        )
+        return [
+            StoredFiling(accession=accession, form=form, filed=filed)
+            for accession, form, filed in rows
+            if not forms or form in forms
+        ]
+
+    def fact_count(self, cik: int) -> int:
+        """How many facts of ``cik`` are stored."""
+        return int(self._db.query("SELECT COUNT(*) FROM facts WHERE cik = ?", (cik,))[0][0])
+
+
+def _stored_company(row: tuple) -> StoredCompany:
+    cik, ticker, name, sic, description, facts, skipped, digest, loaded_at = row
+    return StoredCompany(
+        cik=cik,
+        ticker=ticker,
+        name=name,
+        sic=sic,
+        sic_description=description,
+        facts=facts,
+        skipped=skipped,
+        payload_sha256=digest,
+        loaded_at=loaded_at,
+    )

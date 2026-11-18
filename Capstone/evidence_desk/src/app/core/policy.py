@@ -7,8 +7,10 @@ to every view, so the page and the Markdown export cannot disagree.
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
+from dataclasses import dataclass
 
+from app.core.claim_test_models import ComputedTest
 from app.core.models import (
     Claim,
     DecisionValue,
@@ -169,7 +171,153 @@ AS_OF_LINE = (
 AS_OF_NO_PERIODIC = "Evidence as of {date} ({form}), {days} before {when}."
 AS_OF_RUN = "this run"
 AS_OF_TODAY = "today"
+# A run as of a past date (ThesisRequest.as_of): its evidence is dated against that day.
+AS_OF_REQUESTED = "the date this run is as of"
+AS_OF_REQUESTED_NOTE = (
+    "This run is as of {date}: it read only the filings, 8-Ks and XBRL facts filed by then, "
+    "and nothing filed later."
+)
 AS_OF_NOTHING_READ = "No filing was read, so the evidence has no date."
+
+# Computed claims (app.core.claimtest, app.core.claim_eval). A compiled claim's outcome is
+# verified evidence computed from the facts: it holds (counts as support), fails (counts as
+# a challenge) or cannot be computed (counts as nothing, and says why).
+COMPUTED_LABELS: dict[str, str] = {
+    "holds": "Holds",
+    "fails": "Fails",
+    "cannot_compute": "Cannot be computed",
+}
+COMPUTED_COUNTS: dict[str, str] = {"holds": "supports", "fails": "challenges"}
+COMPUTED_NO_HISTORY = (
+    "A share of revenue is read from the newest filing's tagged breakdowns, which have no "
+    "history in the company facts; no history is drawn."
+)
+COMPUTED_HISTORY_NOTE = (
+    "The outcome as of each of the {points} 10-K and 10-Q filing dates in the {years} years to "
+    "{last}, each from the facts filed by that date{capped}; it flipped {flips} time(s)."
+)
+COMPUTED_NOT_NUMERIC = "Not a numeric claim this version computes: {reason}."
+
+# Who read a claim's test, and when a computed test may count toward a verdict. The grammar
+# (app.core.claimtest) compiles a claim only when its test explains every content word of
+# the sentence. With the grammar alone, a computed test counts when the grammar compiled
+# it: one reader, and the run says so. With up to two model readers beside it
+# (app.engines.claim_reader, different models), a computed test counts when at least two
+# readers reach the same normal form (app.core.claim_normal); when the grammar and one
+# model agree and the other model writes a different test, it counts, marked as counted
+# with one dissenting reading, and the dissent is shown (a refusal is not a dissent). When
+# no two readers agree, the claim shows every reading, the test counts as nothing and the
+# verdict rests on the findings alone.
+GRAMMAR_READER = "grammar"
+MODEL_READER = "model"
+SECOND_MODEL_READER = "model_2"
+NO_TEST = "none"
+READER_WORDS = {
+    GRAMMAR_READER: "the grammar",
+    MODEL_READER: "the model",
+    SECOND_MODEL_READER: "the second model",
+}
+COMPUTED_READINGS_DIFFER = (
+    "Readings differ: not counted. {readings}. The verdict rests on the findings alone."
+)
+COMPUTED_DISSENT = "Counted, with one dissenting reading: {readings}."
+COMPUTED_READER_FAILED = "the model reader could not read the claim: {why}"
+READER_ERROR = "The model reader could not read claim {claim_id}: {why}"
+READING_RULE_ONE = (
+    "One reader: the grammar. A computed test counts when the grammar compiles the whole "
+    "sentence; no second reading checks it."
+)
+READING_RULE_SEVERAL = (
+    "{count} readers ({readers}): a computed test counts when at least two of them reach the "
+    "same test (in one normal form). A different test from the third is shown as a dissent "
+    "and the test still counts; a refusal is not a dissent. When no two agree, every reading "
+    "is shown and nothing counts."
+)
+READER_COUNT_WORDS = {2: "Two", 3: "Three"}
+
+# What the rule concluded for one claim's readings (ComputedTest.agreement). Whether the
+# test then counts toward the verdict also needs an outcome: a test that cannot be computed
+# counts as nothing, whoever read it.
+ONE_READER = "one_reader"
+AGREED = "agreed"
+AGREED_WITH_DISSENT = "agreed_with_dissent"
+NOT_AGREED = "not_agreed"
+NO_TEST_READ = "no_test"
+AGREEMENT_LABELS = {
+    ONE_READER: "one reader: the grammar",
+    AGREED: "at least two readers agree",
+    AGREED_WITH_DISSENT: "counted, with one dissenting reading",
+    NOT_AGREED: "not counted: no two readers agree",
+    NO_TEST_READ: "no test read",
+}
+
+
+@dataclass(frozen=True)
+class Agreement:
+    """The counting rule's conclusion for one claim.
+
+    ``form`` is the normal form two readers reached ("" when none); ``agreeing`` the
+    readers that reached it, in reading order; ``dissenting`` those that wrote a
+    different test (never one that refused).
+    """
+
+    conclusion: str
+    form: str = ""
+    agreeing: tuple[str, ...] = ()
+    dissenting: tuple[str, ...] = ()
+
+    @property
+    def counts(self) -> bool:
+        """True when the computed test counts toward the claim's verdict."""
+        return self.conclusion in (ONE_READER, AGREED, AGREED_WITH_DISSENT)
+
+
+def reading_agreement(forms: Mapping[str, str]) -> Agreement:
+    """The rule on each reader's normal form (:data:`NO_TEST` for a refusal), by reader.
+
+    The grammar alone: its test counts when it read one. Several readers: a form at least
+    two reached counts; any other test is a dissent; with none, nothing counts.
+    """
+    if len(forms) == 1:
+        [(reader, form)] = forms.items()
+        if form == NO_TEST:
+            return Agreement(NO_TEST_READ)
+        return Agreement(ONE_READER, form, (reader,))
+    tests = {reader: form for reader, form in forms.items() if form != NO_TEST}
+    if not tests:
+        return Agreement(NO_TEST_READ)
+    for form in dict.fromkeys(tests.values()):
+        agreeing = tuple(reader for reader, other in tests.items() if other == form)
+        if len(agreeing) >= 2:
+            dissenting = tuple(reader for reader, other in tests.items() if other != form)
+            conclusion = AGREED_WITH_DISSENT if dissenting else AGREED
+            return Agreement(conclusion, form, agreeing, dissenting)
+    return Agreement(NOT_AGREED)
+
+
+def reading_rule(readers: Sequence[str]) -> str:
+    """The rule in words, for the run record: one reader, or how several are counted."""
+    if len(readers) <= 1:
+        return READING_RULE_ONE
+    names = [*readers[:-1]]
+    listed = f"{', '.join(names)} and {readers[-1]}"
+    count = READER_COUNT_WORDS.get(len(readers), str(len(readers)))
+    return READING_RULE_SEVERAL.format(count=count, readers=listed)
+
+
+def reading_counts(grammar: str, model: str | None) -> bool:
+    """True when a computed test may count toward the claim's verdict.
+
+    ``grammar`` and ``model`` are each reader's canonical test, :data:`NO_TEST` when it
+    read none; ``model`` is None when the model parser is off. With the grammar alone a
+    test counts when the grammar compiled the whole sentence (it compiles nothing less);
+    with both readers, only when they read the same test.
+    """
+    if grammar == NO_TEST:
+        return False
+    return model is None or model == grammar
+
+
 EVENT_COUNTS = (
     "{listed} 8-K(s) filed since the annual report of {annual}: {read} read, {failed} could not "
     "be read, {capped} not read because of the cap of {cap} per run, {index_only} routine 8-K(s) "
@@ -238,15 +386,19 @@ def mark_counted(findings: Iterable[Finding]) -> None:
         finding.count_note = FIGURE_ONLY_NOTE if demoted else ""
 
 
-def claim_verdict(findings: list[Finding]) -> Verdict:
-    """The verdict for one claim, from its verified findings alone.
+def claim_verdict(findings: list[Finding], computed: ComputedTest | None = None) -> Verdict:
+    """The verdict for one claim, from its verified findings and its computed test.
 
     A model proposes a stance per finding; it never sets the verdict. Findings
     that did not survive the citation gate do not count, and each verified one
-    counts as :func:`counted_stance` says.
+    counts as :func:`counted_stance` says. A computed test (``Claim.computed``) is
+    verified evidence computed from the facts: one that holds counts as support, one
+    that fails as a challenge, and one that cannot be computed counts as nothing.
     """
     verified = [finding for finding in findings if finding.verified]
     stances = [counted_stance(finding) for finding in verified]
+    if computed is not None and computed.counted_as in COMPUTED_COUNTS.values():
+        stances.append(Stance(computed.counted_as))
     supports = Stance.supports in stances
     challenges = Stance.challenges in stances
     if supports and challenges:
@@ -255,7 +407,7 @@ def claim_verdict(findings: list[Finding]) -> Verdict:
         return Verdict.supported
     if challenges:
         return Verdict.challenged
-    if verified:
+    if stances:
         return Verdict.unjudged
     return Verdict.not_addressed
 

@@ -1,0 +1,12 @@
+{
+  "key": "ebe23da0cffb17f2212d6866",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:14:02+00:00",
+  "response": {
+    "computable": false,
+    "reason": "Taxes paid on net share settlement of equity awards is not a measure in the tool's list.",
+    "tests": []
+  }
+}

@@ -37,8 +37,16 @@ data:
   that is consistent: neither period was reported with another value, under
   any concept of the group, between the two filing dates. An input that is not
   the latest report of its period is flagged restated and says so.
+- A book also reads the concept groups only a claim test uses (:data:`CLAIM_GROUPS`:
+  buybacks, dividends, debt, tax and the others of :mod:`app.core.measures`), by the
+  same rules; their malformed facts are listed in :attr:`FactBook.claim_problems`, so
+  :attr:`FactBook.problems` and every report built from it are unchanged.
 - Gross profit is ``GrossProfit`` where reported, otherwise revenue minus cost
   of revenue for the same period, marked derived.
+- As of a date (``FactBook(payload, as_of=day)``), a fact filed after that day
+  does not exist: every value, derivation and restated flag is what a reader
+  could have computed that day (:func:`filed_by`). Without a date every fact is
+  read, exactly as before.
 
 Malformed input: a body that is not the expected shape raises
 :class:`FactsError`. A single malformed fact inside an otherwise sound body is
@@ -137,8 +145,144 @@ ALL_CONCEPTS: frozenset[str] = frozenset(
     concept for group in GROUPS.values() for concept in group.concepts
 )
 
-# Keys whose per-share values cannot be differenced (share counts differ by period).
-NOT_DIFFERENCEABLE: frozenset[str] = frozenset({"eps_diluted"})
+
+def _claim_group(key: str, label: str, *concepts: str, instant: bool = False) -> ConceptGroup:
+    unit = "shares" if key == "diluted_shares" else "USD"
+    return ConceptGroup(key, label, concepts, unit, instant)
+
+
+# The concept groups only a claim test reads (the catalogue, app.core.measures), beside
+# GROUPS. A book reads them too, but nothing else does: they are not on the metrics panel,
+# not in the restatements report, not offered as figures, and not kept by record_facts
+# (ALL_CONCEPTS is GROUPS' alone), so every report and recording stays as it was.
+CLAIM_GROUPS: dict[str, ConceptGroup] = {
+    group.key: group
+    for group in (
+        _claim_group(
+            "share_repurchases", "Share repurchases", "PaymentsForRepurchaseOfCommonStock"
+        ),
+        _claim_group(
+            "dividends_paid",
+            "Dividends paid",
+            "PaymentsOfDividends",
+            "PaymentsOfDividendsCommonStock",
+        ),
+        _claim_group(
+            "long_term_debt",
+            "Long-term debt (non-current)",
+            "LongTermDebtNoncurrent",
+            "LongTermDebtAndCapitalLeaseObligations",
+            instant=True,
+        ),
+        _claim_group(
+            "current_debt",
+            "Current portion of long-term debt",
+            "LongTermDebtCurrent",
+            "DebtCurrent",
+            "LongTermDebtAndCapitalLeaseObligationsCurrent",
+            instant=True,
+        ),
+        _claim_group("commercial_paper", "Commercial paper", "CommercialPaper", instant=True),
+        _claim_group(
+            "marketable_securities",
+            "Marketable securities (current)",
+            "MarketableSecuritiesCurrent",
+            "ShortTermInvestments",
+            "AvailableForSaleSecuritiesDebtSecuritiesCurrent",
+            instant=True,
+        ),
+        _claim_group(
+            "diluted_shares",
+            "Diluted weighted-average shares",
+            "WeightedAverageNumberOfDilutedSharesOutstanding",
+        ),
+        _claim_group("reported_operating_expenses", "Operating expenses", "OperatingExpenses"),
+        _claim_group(
+            "reported_sga",
+            "Selling, general and administrative expense",
+            "SellingGeneralAndAdministrativeExpense",
+        ),
+        _claim_group(
+            "sales_marketing", "Sales and marketing expense", "SellingAndMarketingExpense"
+        ),
+        _claim_group(
+            "general_admin", "General and administrative expense", "GeneralAndAdministrativeExpense"
+        ),
+        _claim_group(
+            "sbc",
+            "Stock-based compensation",
+            "ShareBasedCompensation",
+            "AllocatedShareBasedCompensationExpense",
+        ),
+        _claim_group("income_tax", "Income tax expense", "IncomeTaxExpenseBenefit"),
+        _claim_group(
+            "pretax_income",
+            "Income before income taxes",
+            "IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest",
+            "IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments",
+        ),
+        _claim_group(
+            "interest_expense",
+            "Interest expense",
+            "InterestExpense",
+            "InterestExpenseNonoperating",
+            "InterestExpenseDebt",
+        ),
+        _claim_group("interest_income", "Interest income", "InvestmentIncomeInterest"),
+        _claim_group(
+            "other_income",
+            "Other income and expense",
+            "NonoperatingIncomeExpense",
+            "OtherNonoperatingIncomeExpense",
+        ),
+        _claim_group(
+            "d_and_a",
+            "Depreciation and amortization",
+            "DepreciationDepletionAndAmortization",
+            "DepreciationAmortizationAndAccretionNet",
+            "DepreciationAndAmortization",
+        ),
+        _claim_group(
+            "deferred_revenue_current",
+            "Deferred revenue (current)",
+            "ContractWithCustomerLiabilityCurrent",
+            "DeferredRevenueCurrent",
+            instant=True,
+        ),
+        _claim_group(
+            "deferred_revenue_noncurrent",
+            "Deferred revenue (non-current)",
+            "ContractWithCustomerLiabilityNoncurrent",
+            "DeferredRevenueNoncurrent",
+            instant=True,
+        ),
+        _claim_group("total_assets", "Total assets", "Assets", instant=True),
+        _claim_group("total_liabilities", "Total liabilities", "Liabilities", instant=True),
+        _claim_group(
+            "equity",
+            "Shareholders' equity",
+            "StockholdersEquity",
+            "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest",
+            instant=True,
+        ),
+        _claim_group("goodwill", "Goodwill", "Goodwill", instant=True),
+        _claim_group(
+            "ppe", "Property and equipment, net", "PropertyPlantAndEquipmentNet", instant=True
+        ),
+        _claim_group(
+            "accounts_payable",
+            "Accounts payable",
+            "AccountsPayableCurrent",
+            instant=True,
+        ),
+    )
+}
+# Every group a book reads.
+BOOK_GROUPS: dict[str, ConceptGroup] = {**GROUPS, **CLAIM_GROUPS}
+
+# Keys whose values cannot be differenced: per-share values and weighted-average share
+# counts (the share count differs by period).
+NOT_DIFFERENCEABLE: frozenset[str] = frozenset({"eps_diluted", "diluted_shares"})
 
 # Period lengths in days from start to end, inclusive bounds; cumulative order within a
 # fiscal year. The names are the usual ones; the bounds also take the periods of companies
@@ -232,6 +376,21 @@ class Fact:
             restated=restated,
             note=note,
         )
+
+
+def filed_by(raw: object, as_of: date | None) -> bool:
+    """True when the raw entry ``raw`` had been filed on or before ``as_of``.
+
+    Always True without a date. An entry whose filing date cannot be read is kept,
+    so that it is reported as malformed rather than silently dropped.
+    """
+    if as_of is None or not isinstance(raw, dict):
+        return True
+    text = raw.get("filed")
+    try:
+        return date.fromisoformat(text) <= as_of if isinstance(text, str) else True
+    except ValueError:
+        return True
 
 
 def _date_field(raw: dict[str, Any], name: str) -> date:
@@ -492,17 +651,21 @@ class FactBook:
     Malformed single facts are skipped and described in :attr:`problems`.
     """
 
-    def __init__(self, companyfacts: object) -> None:
+    def __init__(self, companyfacts: object, *, as_of: date | None = None) -> None:
         payload = _require_object(companyfacts)
         gaap = _us_gaap(payload)
         self.cik: int = _cik(payload)
         self.name: str = _name(payload)
+        # Facts filed after this day are not read at all (None: every fact is read).
+        self.as_of: date | None = as_of
         skipped: Counter[str] = Counter()
         self._durations: dict[str, dict[tuple[date, date], PeriodValue]] = {}
         self._instants: dict[str, dict[date, PeriodValue]] = {}
         self._reports: dict[str, dict[Period, list[Fact]]] = {}
-        for group in GROUPS.values():
-            by_concept = self._group_reports(gaap, group, skipped)
+        claim_skipped: Counter[str] = Counter()
+        for group in BOOK_GROUPS.values():
+            counter = skipped if group.key in GROUPS else claim_skipped
+            by_concept = self._group_reports(gaap, group, counter, as_of)
             self._reports[group.key] = self._pooled(by_concept)
             selected = {
                 period: PeriodValue(group.key, period[0], period[1], ref.value, (ref,))
@@ -520,16 +683,24 @@ class FactBook:
             f"Skipped {count} malformed fact(s) of {what}"
             for what, count in sorted(skipped.items())
         ]
+        # The same for the groups only a claim test reads, kept apart so that the metrics
+        # and restatements reports, which show ``problems``, say exactly what they said.
+        self.claim_problems: list[str] = [
+            f"Skipped {count} malformed fact(s) of {what}"
+            for what, count in sorted(claim_skipped.items())
+        ]
 
     @staticmethod
     def _group_reports(
-        gaap: dict[str, Any], group: ConceptGroup, skipped: Counter[str]
+        gaap: dict[str, Any], group: ConceptGroup, skipped: Counter[str], as_of: date | None
     ) -> list[dict[Period, list[Fact]]]:
-        """Every valid report of each concept of the group, by period, in concept order."""
+        """Every valid report of each concept of the group filed by ``as_of``, by period."""
         result: list[dict[Period, list[Fact]]] = []
         for concept in group.concepts:
             by_period: dict[Period, list[Fact]] = defaultdict(list)
             for raw in _raw_facts(gaap, concept, group.unit):
+                if not filed_by(raw, as_of):
+                    continue
                 try:
                     parsed = parse_fact(concept, group.unit, raw)
                 except FactsError as exc:
@@ -567,6 +738,10 @@ class FactBook:
     def instants(self, key: str) -> dict[date, PeriodValue]:
         """Every selected instant (balance-sheet) value of a group, keyed by date."""
         return dict(self._instants[key])
+
+    def periods(self, key: str) -> list[Period]:
+        """Every period any concept of the group was reported for, by end then start."""
+        return sorted(self._reports[key], key=lambda p: (p[1], p[0] or date.min))
 
     def reports(self, key: str, start: date | None, end: date) -> list[FactRef]:
         """Every report of one period under any concept of the group, oldest filing first."""

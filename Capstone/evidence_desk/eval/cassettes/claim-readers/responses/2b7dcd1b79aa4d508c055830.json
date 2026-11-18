@@ -1,0 +1,12 @@
+{
+  "key": "2b7dcd1b79aa4d508c055830",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:16:59+00:00",
+  "response": {
+    "computable": false,
+    "reason": "\"About a third\" is an approximate comparison rather than an exact threshold, so it cannot be written as a single precise numeric test.",
+    "tests": []
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "key": "35534a456ab7d5cef88675fa",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:15:38+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a judgement about stickiness and a valuation multiple, not a numeric test on a listed measure.",
+    "tests": []
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "key": "8780649e30f3e6567a6420fd",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:12:45+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim states a valuation (a DCF fair value per share), which this tool does not compute.",
+    "tests": []
+  }
+}

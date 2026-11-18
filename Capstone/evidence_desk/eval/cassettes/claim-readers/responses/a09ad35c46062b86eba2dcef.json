@@ -1,0 +1,12 @@
+{
+  "key": "a09ad35c46062b86eba2dcef",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:18:55+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a forecast about a causal driver of a PC refresh cycle and states no numeric test on a listed measure.",
+    "tests": []
+  }
+}

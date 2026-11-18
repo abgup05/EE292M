@@ -1,0 +1,12 @@
+{
+  "key": "33c30d848197ea7ccf7d75e0",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:13:56+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim compares accounts payable to inventory as a ten-times multiple, and the tool's compare form tests one measure against another with no multiplier, so the stated ten-times threshold cannot be written as a test.",
+    "tests": []
+  }
+}

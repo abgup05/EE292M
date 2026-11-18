@@ -8,12 +8,13 @@ their limits come from :mod:`app.core.limits`.
 from __future__ import annotations
 
 import re
-from datetime import datetime
+from datetime import UTC, date, datetime
 from enum import StrEnum
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.core import limits
+from app.core.claim_test_models import ClaimReading, ComputedTest
 from app.core.event_models import AsOf, Event, Predating
 from app.core.metric_models import Metric, Series
 
@@ -60,6 +61,19 @@ class ExtractionStatus(StrEnum):
     failed = "failed"
 
 
+def as_of_problem(day: date, today: date) -> str | None:
+    """Why ``day`` cannot be an as-of date (later than ``today``, or before the facts begin).
+
+    None when it can. The earliest is :data:`app.core.limits.EARLIEST_AS_OF`.
+    """
+    earliest = date.fromisoformat(limits.EARLIEST_AS_OF)
+    if day > today:
+        return f"as_of must not be in the future (today is {today.isoformat()})"
+    if day < earliest:
+        return f"as_of must be on or after {earliest.isoformat()}: XBRL company facts begin in 2009"
+    return None
+
+
 # One to six characters, optionally a class suffix: NVDA, BRK.B, BF-B.
 TICKER_PATTERN = re.compile(r"^[A-Z][A-Z0-9]{0,5}(?:[.-][A-Z]{1,2})?$")
 
@@ -89,6 +103,15 @@ class ThesisRequest(BaseModel):
             "in the newest annual and quarterly report read. Off by default: the figures change "
             "the engine's assessment prompt, and recorded model answers are keyed by the exact "
             "prompt, so a run without the option must ask exactly what it asked before."
+        ),
+    )
+    as_of: date | None = Field(
+        default=None,
+        description=(
+            "Run as of this past date (YYYY-MM-DD, not before 2009): read the newest 10-K "
+            "filed on or before it and the 10-Qs after that 10-K up to it, the 8-Ks filed "
+            "between that 10-K and the date, and only the XBRL facts filed by the date. "
+            "Without it the run reads the newest filings, as before."
         ),
     )
 
@@ -127,6 +150,23 @@ class ThesisRequest(BaseModel):
             cleaned.append(text)
         return cleaned
 
+    @field_validator("as_of")
+    @classmethod
+    def _as_of_usable(cls, value: date | None) -> date | None:
+        if value is not None:
+            problem = as_of_problem(value, datetime.now(UTC).date())
+            if problem:
+                raise ValueError(problem)
+        return value
+
+    @model_validator(mode="after")
+    def _no_pages_in_the_past(self) -> ThesisRequest:
+        if self.as_of is not None and self.extra_urls:
+            raise ValueError(
+                "extra pages cannot be read as of a past date: a page is read as it is today"
+            )
+        return self
+
 
 class Company(BaseModel):
     """A filer as SEC EDGAR identifies it."""
@@ -145,6 +185,14 @@ class Claim(BaseModel):
     ``event_note`` says what the 8-Ks since the annual report do and do not report on
     the claim's categories (:func:`app.core.events.events_note`). Neither changes
     the verdict. All three are empty in runs recorded before version 12.
+
+    ``computed`` is the claim compiled to a typed test and computed from the run's dated
+    facts (:mod:`app.core.claimtest`, :mod:`app.core.claim_eval`); its outcome counts in
+    the verdict (:func:`app.core.policy.claim_verdict`). When the claim does not compile,
+    ``computed`` is None and ``compile_note`` says why. Both are empty before version 14.
+    ``readings`` is each reader's reading of the claim's test, the grammar's first, then
+    the model readers' when they are on (:func:`app.core.policy.reading_agreement`);
+    empty before version 14.
     """
 
     id: str
@@ -158,6 +206,9 @@ class Claim(BaseModel):
     categories: list[str] = Field(default_factory=list)
     caution: str = ""
     event_note: str = ""
+    computed: ComputedTest | None = None
+    compile_note: str = ""
+    readings: list[ClaimReading] = Field(default_factory=list)
 
 
 class Source(BaseModel):
@@ -327,7 +378,11 @@ class DecisionRequest(BaseModel):
 
 
 class ReviewedClaim(BaseModel):
-    """One claim after review. ``reviewed_verdict`` counts accepted findings only."""
+    """One claim after review.
+
+    ``reviewed_verdict`` counts accepted findings only, and the claim's computed test
+    (``Claim.computed``), which a reviewer does not decide.
+    """
 
     claim_id: str
     engine_verdict: Verdict | None
@@ -437,6 +492,11 @@ class Coverage(BaseModel):
     # asked for them (ThesisRequest.tagged_figures); the engine saw the sum of the two.
     # figures_cited counts citations of either kind.
     tagged_figures_offered: int = 0
+    # Claims compiled to a computed test (app.core.claimtest), and how the tests came out.
+    claims_compiled: int = 0
+    computed_holds: int = 0
+    computed_fails: int = 0
+    computed_cannot: int = 0
     figures_cited: int = 0
     numbers_checked: int = 0
     numbers_unmatched: int = 0
@@ -475,6 +535,12 @@ class Run(BaseModel):
     # The second model that checked the findings' meaning; "none" when nothing checked them.
     checker: str = "none"
     checker_detail: str = ""
+    # Who read each claim's test: "grammar", or "grammar and model" with the model parser on,
+    # or "grammar, model and model_2" with two model readers; the counting rule in words
+    # ("" before the rule was stated on the run).
+    claim_readers: str = ""
+    claim_reader_detail: str = ""
+    claim_reading_rule: str = ""
     claims: list[Claim] = Field(default_factory=list)
     sources: list[Source] = Field(default_factory=list)
     evidence: list[Evidence] = Field(default_factory=list)

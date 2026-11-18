@@ -1,0 +1,63 @@
+{
+  "key": "b0294926502a921604a662a4",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:15:22+00:00",
+  "response": {
+    "computable": true,
+    "reason": "Cost of revenue year-over-year growth is below revenue growth in each of the last two fiscal years.",
+    "tests": [
+      {
+        "form": "faster_than",
+        "left": {
+          "fn": "yoy",
+          "subject": "cost_of_revenue",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "op": "<",
+        "right_term": {
+          "fn": "yoy",
+          "subject": "revenue",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          },
+          "base": {
+            "used": false,
+            "kind": "Q",
+            "back": 0,
+            "fiscal_year": 0,
+            "quarter": 0
+          }
+        },
+        "right_number": {
+          "value": 0,
+          "unit": "percent"
+        },
+        "each": 2,
+        "each_since": 0
+      }
+    ]
+  }
+}

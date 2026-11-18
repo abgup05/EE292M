@@ -1,0 +1,12 @@
+{
+  "key": "738042d66645e66e11fe1550",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:16:06+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a judgement and forecast about tariff risk and exemptions, not a numeric test on a listed measure.",
+    "tests": []
+  }
+}

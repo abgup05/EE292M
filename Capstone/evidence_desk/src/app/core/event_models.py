@@ -107,7 +107,10 @@ class AsOf(BaseModel):
     ``days_since_newest`` is the number of days from the newest filing read to the day
     the run started (to the day the list was made, outside a run). ``index_error`` says
     why the 8-Ks could not be listed; the timeline is then empty and says nothing.
-    ``line`` is the one sentence the page and the brief show.
+    ``line`` is the one sentence the page and the brief show. ``requested`` is the date a
+    run was asked to be as of (``ThesisRequest.as_of``; None for a run of the newest
+    filings); the days are then counted to it, and ``requested_note`` says what the run
+    read. Both are empty in runs recorded before version 14.
     """
 
     newest_form: str | None = None
@@ -120,6 +123,8 @@ class AsOf(BaseModel):
     counts: EventCounts = Field(default_factory=EventCounts)
     index_error: str = ""
     line: str = ""
+    requested: str | None = None
+    requested_note: str = ""
 
 
 class Predating(BaseModel):

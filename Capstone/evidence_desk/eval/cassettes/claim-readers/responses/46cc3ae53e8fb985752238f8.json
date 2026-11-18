@@ -1,0 +1,12 @@
+{
+  "key": "46cc3ae53e8fb985752238f8",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:13:48+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim uses the approximate qualifier \"about\", which the rules do not allow for a threshold test, so the claim cannot be computed exactly.",
+    "tests": []
+  }
+}

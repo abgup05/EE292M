@@ -3,7 +3,8 @@
 ``python -m app.cli run --ticker NVDA --decision "..." --claim "..." [--claim ...]``
 tests a thesis; ``python -m app.cli example`` tests the NVIDIA example; with
 ``--tagged-figures`` either also offers the engine the figures tagged in the
-filings (``ThesisRequest.tagged_figures``). Both run
+filings (``ThesisRequest.tagged_figures``), and with ``--as-of YYYY-MM-DD`` either
+reads only what had been filed by that date (``ThesisRequest.as_of``). Both run
 synchronously through :func:`app.services.thesis_run.execute_run`, print each
 claim's verdict with the policy's wording, and write ``<out>/<run-id>.json``
 (the run record) and ``<out>/<run-id>.md`` (the exported brief).
@@ -28,6 +29,7 @@ import argparse
 import json
 import sys
 from collections.abc import Sequence
+from datetime import date
 from pathlib import Path
 
 from pydantic import ValidationError
@@ -44,7 +46,7 @@ from app.services.examples import EXAMPLE_THESIS
 from app.services.export import render_markdown
 from app.services.thesis_run import execute_run, new_run
 from app.sources.http import fetch_page as default_fetch_page
-from app.store import FilingCache, Store
+from app.store import FactStore, FilingCache, Store
 
 DEFAULT_OUT = Path("results")
 NOT_ASSESSED = "Not assessed"
@@ -91,6 +93,14 @@ def _parser() -> argparse.ArgumentParser:
         help=(
             "also offer the engine the segment, product, geography and customer figures tagged "
             "in the newest annual and quarterly report read (changes the engine's prompts)"
+        ),
+    )
+    shared.add_argument(
+        "--as-of",
+        type=date.fromisoformat,
+        help=(
+            "run as of this past date (YYYY-MM-DD): only the filings, 8-Ks and XBRL facts "
+            "filed by then are read"
         ),
     )
     run = commands.add_parser("run", parents=[shared], help="test a thesis")
@@ -154,9 +164,13 @@ def _cassette_of(analyst: Analyst) -> CassetteTransport | None:
 
 def _thesis(args: argparse.Namespace) -> ThesisRequest:
     if args.command == "example":
-        if args.tagged_figures:
-            return EXAMPLE_THESIS.model_copy(update={"tagged_figures": True})
-        return EXAMPLE_THESIS
+        if not args.tagged_figures and args.as_of is None:
+            return EXAMPLE_THESIS
+        fields = EXAMPLE_THESIS.model_dump() | {
+            "tagged_figures": args.tagged_figures,
+            "as_of": args.as_of,
+        }
+        return ThesisRequest.model_validate(fields)
     return ThesisRequest(
         ticker=args.ticker,
         decision=args.decision,
@@ -164,6 +178,7 @@ def _thesis(args: argparse.Namespace) -> ThesisRequest:
         filings=args.filings,
         scope_notes=args.scope_notes,
         tagged_figures=args.tagged_figures,
+        as_of=args.as_of,
     )
 
 
@@ -196,12 +211,14 @@ def main(
     store: Store | None = None,
     fetch_page: PageFetcher = default_fetch_page,
     cache: FilingCache | None = None,
+    facts_store: FactStore | None = None,
 ) -> int:
     """Run the command in ``argv`` and return the exit code.
 
     ``filings`` and ``store`` default to :mod:`app.wiring`; tests pass fakes.
-    ``cache`` defaults to the configured filing cache when ``store`` does too;
-    a test that passes its own store and no cache gets a cache for that run only.
+    ``cache`` and ``facts_store`` default to the configured ones when ``store`` does
+    too; a test that passes its own store gets a cache for that run only and no
+    fact store.
     """
     args = _parser().parse_args(argv)
     if args.command == "cassette":
@@ -209,6 +226,7 @@ def main(
     try:
         thesis = _thesis(args)
         analyst = _analyst(args)
+        claim_reader = wiring.claim_reader_from_env(analyst)
     except ValidationError as exc:
         for error in exc.errors():
             field = ".".join(str(part) for part in error["loc"]) or "thesis"
@@ -232,6 +250,7 @@ def main(
     if store is None:
         store = wiring.store_from_env()
         cache = cache or wiring.cache_from_env()
+        facts_store = facts_store or wiring.facts_from_env()
     run = new_run(thesis)
     store.save_run(run)
     checker = wiring.checker_named(args.engine, analyst)
@@ -240,6 +259,10 @@ def main(
     print(f"{run.id}: testing {len(thesis.claims)} claim(s) on {thesis.ticker} with {engine}")
     if not isinstance(checker, NoChecker):
         print(f"{run.id}: meaning checked by {checker.name} ({checker.detail})")
+    if claim_reader is not None:
+        models = claim_reader if isinstance(claim_reader, tuple) else (claim_reader,)
+        details = "; ".join(f"{reader.name}: {reader.detail}" for reader in models)
+        print(f"{run.id}: claims read by the grammar and {len(models)} model(s) ({details})")
     run = execute_run(
         run,
         store,
@@ -248,6 +271,8 @@ def main(
         fetch_page=fetch_page,
         cache=cache,
         checker=checker,
+        facts_store=facts_store,
+        claim_reader=claim_reader,
     )
 
     cassette = _cassette_of(analyst)

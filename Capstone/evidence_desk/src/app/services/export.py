@@ -39,6 +39,7 @@ from app.core.models import (
     Stance,
 )
 from app.core.policy import (
+    COMPUTED_LABELS,
     DECISION_LABELS,
     EVENT_KIND_LABELS,
     EVENT_STATUS_LABELS,
@@ -336,6 +337,62 @@ def _reported_figures(run: Run) -> list[str]:
     return lines
 
 
+COMPUTED_HEADING_MD = "## Computed tests"
+COMPUTED_NOTE_MD = (
+    "Each claim compiled to a typed test and computed from the dated XBRL facts, by "
+    "arithmetic written out below; no model wrote these lines. A test that holds counts "
+    "as support in the verdict, one that fails as a challenge, one that cannot be "
+    "computed as nothing."
+)
+
+
+def _computed_test(claim: Claim) -> list[str]:
+    computed = claim.computed
+    lines = [f"### {_text(claim.id)}: {_text(claim.text)}", ""]
+    if computed is None:
+        return [*lines, _text(claim.compile_note, line_start=True), ""]
+    counted = {"supports": " (counts as support)", "challenges": " (counts as a challenge)"}
+    margin = f", by {_text(computed.margin_display)}" if computed.margin_display else ""
+    lines += [
+        f"- Test: `{computed.canonical}`, computed as `{computed.bound}`",
+        f"- Outcome: {_text(computed.outcome_label)}{counted.get(computed.counted_as, '')}{margin}",
+    ]
+    if computed.read_by:
+        lines.append(f"- Read by: {_text(' and '.join(computed.read_by))}")
+    if computed.reason:
+        lines.append(f"- Why: {_text(computed.reason)}")
+    if computed.as_of:
+        lines.append(f"- As of {_text(computed.as_of)}: only the facts filed by then")
+    if computed.note:
+        lines.append(f"- Note: {_text(computed.note)}")
+    lines += ["- Arithmetic:", *(f"  - {_text(step)}" for step in computed.arithmetic), ""]
+    lines += [_text(computed.history_note, line_start=True), ""]
+    if computed.history:
+        lines += [
+            "| Filed | Form | Outcome | Left | Right | Flipped |",
+            "|---|---|---|---|---|---|",
+        ]
+        for point in computed.history:
+            label = COMPUTED_LABELS[point.outcome]
+            lines.append(
+                f"| {_cell(point.filed)} | {_cell(point.form)} | {_cell(label)} | "
+                f"{_cell(point.left_display)} | {_cell(point.right_display)} | "
+                f"{'flipped' if point.flipped else ''} |"
+            )
+        lines.append("")
+    return lines
+
+
+def _computed_tests(run: Run) -> list[str]:
+    """Each claim's computed test, its arithmetic and its history; runs from version 14."""
+    if not any(claim.computed is not None or claim.compile_note for claim in run.claims):
+        return []
+    lines = [COMPUTED_HEADING_MD, "", COMPUTED_NOTE_MD, ""]
+    for claim in run.claims:
+        lines += _computed_test(claim)
+    return lines
+
+
 def _checks_line(finding: Finding) -> str:
     """ "quote: found in the filing; numbers: 2 of 2 matched".
 
@@ -629,6 +686,7 @@ def render_markdown(
         ]
     lines += _reported_figures(run)
     lines += _events(run)
+    lines += _computed_tests(run)
     lines += _claims(run, review)
     if changes is not None:
         lines += _reading_list(run, changes)

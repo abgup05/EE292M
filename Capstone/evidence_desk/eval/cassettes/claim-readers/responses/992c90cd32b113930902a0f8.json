@@ -1,0 +1,12 @@
+{
+  "key": "992c90cd32b113930902a0f8",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:19:00+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a subjective judgement ('overhyped') about market share gains of products, with no numeric threshold or measurable test this tool can compute.",
+    "tests": []
+  }
+}

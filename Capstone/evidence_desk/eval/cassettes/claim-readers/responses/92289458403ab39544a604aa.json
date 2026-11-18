@@ -1,0 +1,12 @@
+{
+  "key": "92289458403ab39544a604aa",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:12:50+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a judgement about the credibility of management's stated order visibility, not a numeric test the tool can compute.",
+    "tests": []
+  }
+}

@@ -1,15 +1,17 @@
 {
   "note": "A recorded run of the NVIDIA example thesis on three recorded filings and the 8-Ks NVIDIA filed after the annual report, as recorded on 17 November 2026. The model answers are replayed from the cassette demo/cassettes/nvda-example; see its README for how they were produced.",
   "meta": {
-    "version": "0.13.0",
+    "version": "0.14.0",
     "figures_note": "Reported figures are computed by the backend from the XBRL facts the company filed with the SEC; each shows the facts it used and its arithmetic.",
     "limits": {
       "CONTEXT_CHARS": 240,
       "DEFAULT_FILINGS": 3,
+      "EARLIEST_AS_OF": "2009-01-01",
       "EVENT_OPENING_SENTENCES": 2,
       "EVENT_PASSAGES_PER_CLAIM": 2,
       "FIGURE_QUARTERS": 3,
       "FIGURE_YEARS": 2,
+      "HISTORY_YEARS": 5,
       "MAX_CLAIMS": 6,
       "MAX_CLAIM_CHARS": 400,
       "MAX_CONCURRENT_ASSESSMENTS": 3,
@@ -20,10 +22,12 @@
       "MAX_FIGURES_OFFERED": 40,
       "MAX_FILINGS": 5,
       "MAX_FINDINGS_PER_CLAIM": 4,
+      "MAX_HISTORY_POINTS": 24,
       "MAX_NOTE_CHARS": 500,
       "MAX_PASSAGES_PER_SOURCE": 5,
       "MAX_QUERIES_PER_CLAIM": 4,
       "MAX_SCOPE_CHARS": 2000,
+      "MAX_STREAK_PERIODS": 40,
       "MAX_SUPPORT_REASON_CHARS": 300,
       "MAX_TAGGED_FIGURES_OFFERED": 40,
       "MAX_THESIS_NAME_CHARS": 80,
@@ -90,7 +94,8 @@
       "scope_notes": "",
       "filings": 3,
       "extra_urls": [],
-      "tagged_figures": false
+      "tagged_figures": false,
+      "as_of": null
     },
     "events": {
       "heading": "Since the annual report",
@@ -134,7 +139,7 @@
     }
   },
   "run": {
-    "id": "run-8d4f4f19d19f",
+    "id": "run-75a7c998e70d",
     "inputs": {
       "ticker": "NVDA",
       "decision": "Whether to keep an overweight position in NVIDIA into the next earnings report",
@@ -148,14 +153,15 @@
       "scope_notes": "",
       "filings": 3,
       "extra_urls": [],
-      "tagged_figures": false
+      "tagged_figures": false,
+      "as_of": null
     },
     "thesis_id": null,
     "status": "complete",
     "stage": "done",
     "stage_detail": "",
-    "started_at": "2026-11-18T10:30:08.759515Z",
-    "finished_at": "2026-11-18T10:30:09.198277Z",
+    "started_at": "2026-11-18T11:14:06.384842Z",
+    "finished_at": "2026-11-18T11:14:07.127258Z",
     "company": {
       "cik": 1045810,
       "ticker": "NVDA",
@@ -165,6 +171,8 @@
     "engine_detail": "replayed from cassette nvda-example: 12 responses recorded via Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the rules and Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17 with claude-haiku-5-5 and claude-sonnet-5-5, 2026-11-17 to 2026-11-17",
     "checker": "claude",
     "checker_detail": "replayed from cassette nvda-example: 12 responses recorded via Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the rules and Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17 with claude-haiku-5-5 and claude-sonnet-5-5, 2026-11-17 to 2026-11-17",
+    "claim_readers": "grammar",
+    "claim_reader_detail": "",
     "claims": [
       {
         "id": "c1",
@@ -186,7 +194,16 @@
         "assessed_by": "claude",
         "categories": [],
         "caution": "",
-        "event_note": ""
+        "event_note": "",
+        "computed": null,
+        "compile_note": "Not a numeric claim this version computes: 'data center' names a part of the company (a segment, a product or a geography), whose revenue is not the company's: only a part's share of revenue is read, from the newest filing's tags, and it has no history in the facts.",
+        "readings": [
+          {
+            "reader": "grammar",
+            "canonical": "none",
+            "reason": "'data center' names a part of the company (a segment, a product or a geography), whose revenue is not the company's: only a part's share of revenue is read, from the newest filing's tags, and it has no history in the facts"
+          }
+        ]
       },
       {
         "id": "c2",
@@ -209,7 +226,16 @@
         "assessed_by": "claude",
         "categories": [],
         "caution": "",
-        "event_note": ""
+        "event_note": "",
+        "computed": null,
+        "compile_note": "Not a numeric claim this version computes: states no direction, threshold or comparison that can be computed.",
+        "readings": [
+          {
+            "reader": "grammar",
+            "canonical": "none",
+            "reason": "states no direction, threshold or comparison that can be computed"
+          }
+        ]
       },
       {
         "id": "c3",
@@ -232,7 +258,16 @@
         "assessed_by": "claude",
         "categories": [],
         "caution": "",
-        "event_note": ""
+        "event_note": "",
+        "computed": null,
+        "compile_note": "Not a numeric claim this version computes: a cause, not only arithmetic: the facts can test a change, not why it happened.",
+        "readings": [
+          {
+            "reader": "grammar",
+            "canonical": "none",
+            "reason": "a cause, not only arithmetic: the facts can test a change, not why it happened"
+          }
+        ]
       },
       {
         "id": "c4",
@@ -255,7 +290,450 @@
         "assessed_by": "claude",
         "categories": [],
         "caution": "",
-        "event_note": ""
+        "event_note": "",
+        "computed": {
+          "canonical": "gross_margin[Q] > gross_margin[Q-4]",
+          "form": "direction",
+          "bound": "gross_margin[Q2 FY2027] > gross_margin[Q2 FY2026]",
+          "outcome": "holds",
+          "outcome_label": "Holds",
+          "reason": "",
+          "comparison": ">",
+          "left": {
+            "term": "gross_margin[Q2 FY2027]",
+            "label": "Gross margin, quarter ended 2026-07-26",
+            "value": 74.97531723844068,
+            "unit": "percent",
+            "display": "75.0%",
+            "formula": "72,142 ÷ 96,221; USD millions",
+            "inputs": [
+              {
+                "concept": "GrossProfit",
+                "unit": "USD",
+                "start": "2026-04-27",
+                "end": "2026-07-26",
+                "value": 72142000000.0,
+                "accession": "0001045810-26-000075",
+                "form": "10-Q",
+                "filed": "2026-08-26",
+                "derived": false,
+                "restated": false,
+                "note": ""
+              },
+              {
+                "concept": "Revenues",
+                "unit": "USD",
+                "start": "2026-04-27",
+                "end": "2026-07-26",
+                "value": 96221000000.0,
+                "accession": "0001045810-26-000075",
+                "form": "10-Q",
+                "filed": "2026-08-26",
+                "derived": false,
+                "restated": false,
+                "note": ""
+              }
+            ],
+            "note": ""
+          },
+          "right": {
+            "term": "gross_margin[Q2 FY2026]",
+            "label": "Gross margin, quarter ended 2025-07-27",
+            "value": 72.4236784117408,
+            "unit": "percent",
+            "display": "72.4%",
+            "formula": "33,853 ÷ 46,743; USD millions",
+            "inputs": [
+              {
+                "concept": "GrossProfit",
+                "unit": "USD",
+                "start": "2025-04-28",
+                "end": "2025-07-27",
+                "value": 33853000000.0,
+                "accession": "0001045810-26-000075",
+                "form": "10-Q",
+                "filed": "2026-08-26",
+                "derived": false,
+                "restated": false,
+                "note": ""
+              },
+              {
+                "concept": "Revenues",
+                "unit": "USD",
+                "start": "2025-04-28",
+                "end": "2025-07-27",
+                "value": 46743000000.0,
+                "accession": "0001045810-26-000075",
+                "form": "10-Q",
+                "filed": "2026-08-26",
+                "derived": false,
+                "restated": false,
+                "note": ""
+              }
+            ],
+            "note": ""
+          },
+          "operands": [
+            {
+              "term": "gross_margin[Q2 FY2027]",
+              "label": "Gross margin, quarter ended 2026-07-26",
+              "value": 74.97531723844068,
+              "unit": "percent",
+              "display": "75.0%",
+              "formula": "72,142 ÷ 96,221; USD millions",
+              "inputs": [
+                {
+                  "concept": "GrossProfit",
+                  "unit": "USD",
+                  "start": "2026-04-27",
+                  "end": "2026-07-26",
+                  "value": 72142000000.0,
+                  "accession": "0001045810-26-000075",
+                  "form": "10-Q",
+                  "filed": "2026-08-26",
+                  "derived": false,
+                  "restated": false,
+                  "note": ""
+                },
+                {
+                  "concept": "Revenues",
+                  "unit": "USD",
+                  "start": "2026-04-27",
+                  "end": "2026-07-26",
+                  "value": 96221000000.0,
+                  "accession": "0001045810-26-000075",
+                  "form": "10-Q",
+                  "filed": "2026-08-26",
+                  "derived": false,
+                  "restated": false,
+                  "note": ""
+                }
+              ],
+              "note": ""
+            },
+            {
+              "term": "gross_margin[Q2 FY2026]",
+              "label": "Gross margin, quarter ended 2025-07-27",
+              "value": 72.4236784117408,
+              "unit": "percent",
+              "display": "72.4%",
+              "formula": "33,853 ÷ 46,743; USD millions",
+              "inputs": [
+                {
+                  "concept": "GrossProfit",
+                  "unit": "USD",
+                  "start": "2025-04-28",
+                  "end": "2025-07-27",
+                  "value": 33853000000.0,
+                  "accession": "0001045810-26-000075",
+                  "form": "10-Q",
+                  "filed": "2026-08-26",
+                  "derived": false,
+                  "restated": false,
+                  "note": ""
+                },
+                {
+                  "concept": "Revenues",
+                  "unit": "USD",
+                  "start": "2025-04-28",
+                  "end": "2025-07-27",
+                  "value": 46743000000.0,
+                  "accession": "0001045810-26-000075",
+                  "form": "10-Q",
+                  "filed": "2026-08-26",
+                  "derived": false,
+                  "restated": false,
+                  "note": ""
+                }
+              ],
+              "note": ""
+            }
+          ],
+          "arithmetic": [
+            "gross_margin[Q2 FY2027] = 72,142 ÷ 96,221; USD millions = 75.0%",
+            "gross_margin[Q2 FY2026] = 33,853 ÷ 46,743; USD millions = 72.4%",
+            "75.0% > 72.4%: holds"
+          ],
+          "margin": 2.551638826699886,
+          "margin_display": "+2.6 points",
+          "counted_as": "supports",
+          "note": "",
+          "as_of": "",
+          "history": [
+            {
+              "filed": "2021-11-22",
+              "form": "10-Q",
+              "accession": "0001045810-21-000163",
+              "outcome": "holds",
+              "bound": "gross_margin[Q3 FY2022] > gross_margin[Q3 FY2021]",
+              "left": 65.19780374489652,
+              "left_display": "65.2%",
+              "right": 62.632247143461704,
+              "right_display": "62.6%",
+              "flipped": false,
+              "reason": ""
+            },
+            {
+              "filed": "2022-03-18",
+              "form": "10-K",
+              "accession": "0001045810-22-000036",
+              "outcome": "holds",
+              "bound": "gross_margin[Q4 FY2022] > gross_margin[Q4 FY2021]",
+              "left": 65.40625408870862,
+              "left_display": "65.4%",
+              "right": 63.08215070957426,
+              "right_display": "63.1%",
+              "flipped": false,
+              "reason": ""
+            },
+            {
+              "filed": "2022-05-27",
+              "form": "10-Q",
+              "accession": "0001045810-22-000079",
+              "outcome": "holds",
+              "bound": "gross_margin[Q1 FY2023] > gross_margin[Q1 FY2022]",
+              "left": 65.5284749034749,
+              "left_display": "65.5%",
+              "right": 64.10528175234057,
+              "right_display": "64.1%",
+              "flipped": false,
+              "reason": ""
+            },
+            {
+              "filed": "2022-08-31",
+              "form": "10-Q",
+              "accession": "0001045810-22-000147",
+              "outcome": "fails",
+              "bound": "gross_margin[Q2 FY2023] > gross_margin[Q2 FY2022]",
+              "left": 43.48150357995227,
+              "left_display": "43.5%",
+              "right": 64.77639465191332,
+              "right_display": "64.8%",
+              "flipped": true,
+              "reason": ""
+            },
+            {
+              "filed": "2022-11-18",
+              "form": "10-Q",
+              "accession": "0001045810-22-000166",
+              "outcome": "fails",
+              "bound": "gross_margin[Q3 FY2023] > gross_margin[Q3 FY2022]",
+              "left": 53.566009104704094,
+              "left_display": "53.6%",
+              "right": 65.19780374489652,
+              "right_display": "65.2%",
+              "flipped": false,
+              "reason": ""
+            },
+            {
+              "filed": "2023-02-24",
+              "form": "10-K",
+              "accession": "0001045810-23-000017",
+              "outcome": "fails",
+              "bound": "gross_margin[Q4 FY2023] > gross_margin[Q4 FY2022]",
+              "left": 63.34490166914559,
+              "left_display": "63.3%",
+              "right": 65.40625408870862,
+              "right_display": "65.4%",
+              "flipped": false,
+              "reason": ""
+            },
+            {
+              "filed": "2023-05-26",
+              "form": "10-Q",
+              "accession": "0001045810-23-000093",
+              "outcome": "fails",
+              "bound": "gross_margin[Q1 FY2024] > gross_margin[Q1 FY2023]",
+              "left": 64.62736373748609,
+              "left_display": "64.6%",
+              "right": 65.5284749034749,
+              "right_display": "65.5%",
+              "flipped": false,
+              "reason": ""
+            },
+            {
+              "filed": "2023-08-28",
+              "form": "10-Q",
+              "accession": "0001045810-23-000175",
+              "outcome": "holds",
+              "bound": "gross_margin[Q2 FY2024] > gross_margin[Q2 FY2023]",
+              "left": 70.0525653364922,
+              "left_display": "70.1%",
+              "right": 43.48150357995227,
+              "right_display": "43.5%",
+              "flipped": true,
+              "reason": ""
+            },
+            {
+              "filed": "2023-11-21",
+              "form": "10-Q",
+              "accession": "0001045810-23-000227",
+              "outcome": "holds",
+              "bound": "gross_margin[Q3 FY2024] > gross_margin[Q3 FY2023]",
+              "left": 73.9514348785872,
+              "left_display": "74.0%",
+              "right": 53.566009104704094,
+              "right_display": "53.6%",
+              "flipped": false,
+              "reason": ""
+            },
+            {
+              "filed": "2024-02-21",
+              "form": "10-K",
+              "accession": "0001045810-24-000029",
+              "outcome": "holds",
+              "bound": "gross_margin[Q4 FY2024] > gross_margin[Q4 FY2023]",
+              "left": 75.9670632945754,
+              "left_display": "76.0%",
+              "right": 63.34490166914559,
+              "right_display": "63.3%",
+              "flipped": false,
+              "reason": ""
+            },
+            {
+              "filed": "2024-05-29",
+              "form": "10-Q",
+              "accession": "0001045810-24-000124",
+              "outcome": "holds",
+              "bound": "gross_margin[Q1 FY2025] > gross_margin[Q1 FY2024]",
+              "left": 78.35201965903855,
+              "left_display": "78.4%",
+              "right": 64.62736373748609,
+              "right_display": "64.6%",
+              "flipped": false,
+              "reason": ""
+            },
+            {
+              "filed": "2024-08-28",
+              "form": "10-Q",
+              "accession": "0001045810-24-000264",
+              "outcome": "holds",
+              "bound": "gross_margin[Q2 FY2025] > gross_margin[Q2 FY2024]",
+              "left": 75.14647137150466,
+              "left_display": "75.1%",
+              "right": 70.0525653364922,
+              "right_display": "70.1%",
+              "flipped": false,
+              "reason": ""
+            },
+            {
+              "filed": "2024-11-20",
+              "form": "10-Q",
+              "accession": "0001045810-24-000316",
+              "outcome": "holds",
+              "bound": "gross_margin[Q3 FY2025] > gross_margin[Q3 FY2024]",
+              "left": 74.55675275069837,
+              "left_display": "74.6%",
+              "right": 73.9514348785872,
+              "right_display": "74.0%",
+              "flipped": false,
+              "reason": ""
+            },
+            {
+              "filed": "2025-02-26",
+              "form": "10-K",
+              "accession": "0001045810-25-000023",
+              "outcome": "fails",
+              "bound": "gross_margin[Q4 FY2025] > gross_margin[Q4 FY2024]",
+              "left": 73.02890849457171,
+              "left_display": "73.0%",
+              "right": 75.9670632945754,
+              "right_display": "76.0%",
+              "flipped": true,
+              "reason": ""
+            },
+            {
+              "filed": "2025-05-28",
+              "form": "10-Q",
+              "accession": "0001045810-25-000116",
+              "outcome": "fails",
+              "bound": "gross_margin[Q1 FY2026] > gross_margin[Q1 FY2025]",
+              "left": 60.52380736235305,
+              "left_display": "60.5%",
+              "right": 78.35201965903855,
+              "right_display": "78.4%",
+              "flipped": false,
+              "reason": ""
+            },
+            {
+              "filed": "2025-08-27",
+              "form": "10-Q",
+              "accession": "0001045810-25-000209",
+              "outcome": "fails",
+              "bound": "gross_margin[Q2 FY2026] > gross_margin[Q2 FY2025]",
+              "left": 72.4236784117408,
+              "left_display": "72.4%",
+              "right": 75.14647137150466,
+              "right_display": "75.1%",
+              "flipped": false,
+              "reason": ""
+            },
+            {
+              "filed": "2025-11-19",
+              "form": "10-Q",
+              "accession": "0001045810-25-000230",
+              "outcome": "fails",
+              "bound": "gross_margin[Q3 FY2026] > gross_margin[Q3 FY2025]",
+              "left": 73.41157071185489,
+              "left_display": "73.4%",
+              "right": 74.55675275069837,
+              "right_display": "74.6%",
+              "flipped": false,
+              "reason": ""
+            },
+            {
+              "filed": "2026-02-25",
+              "form": "10-K",
+              "accession": "0001045810-26-000021",
+              "outcome": "holds",
+              "bound": "gross_margin[Q4 FY2026] > gross_margin[Q4 FY2025]",
+              "left": 74.99669734466511,
+              "left_display": "75.0%",
+              "right": 73.02890849457171,
+              "right_display": "73.0%",
+              "flipped": true,
+              "reason": ""
+            },
+            {
+              "filed": "2026-05-20",
+              "form": "10-Q",
+              "accession": "0001045810-26-000052",
+              "outcome": "holds",
+              "bound": "gross_margin[Q1 FY2027] > gross_margin[Q1 FY2026]",
+              "left": 74.9335293757275,
+              "left_display": "74.9%",
+              "right": 60.52380736235305,
+              "right_display": "60.5%",
+              "flipped": false,
+              "reason": ""
+            },
+            {
+              "filed": "2026-08-26",
+              "form": "10-Q",
+              "accession": "0001045810-26-000075",
+              "outcome": "holds",
+              "bound": "gross_margin[Q2 FY2027] > gross_margin[Q2 FY2026]",
+              "left": 74.97531723844068,
+              "left_display": "75.0%",
+              "right": 72.4236784117408,
+              "right_display": "72.4%",
+              "flipped": false,
+              "reason": ""
+            }
+          ],
+          "history_note": "The outcome as of each of the 20 10-K and 10-Q filing dates in the 5 years to 2026-08-26, each from the facts filed by that date; it flipped 4 time(s).",
+          "read_by": [
+            "grammar"
+          ]
+        },
+        "compile_note": "",
+        "readings": [
+          {
+            "reader": "grammar",
+            "canonical": "gross_margin[Q] > gross_margin[Q-4]",
+            "reason": ""
+          }
+        ]
       },
       {
         "id": "c5",
@@ -277,7 +755,16 @@
         "assessed_by": "claude",
         "categories": [],
         "caution": "",
-        "event_note": ""
+        "event_note": "",
+        "computed": null,
+        "compile_note": "Not a numeric claim this version computes: does not name a measure in the metric set.",
+        "readings": [
+          {
+            "reader": "grammar",
+            "canonical": "none",
+            "reason": "does not name a measure in the metric set"
+          }
+        ]
       }
     ],
     "sources": [
@@ -349,7 +836,7 @@
         "accession": null,
         "period_end": null,
         "published_date": null,
-        "retrieved_at": "2026-11-18T10:30:09.106605Z",
+        "retrieved_at": "2026-11-18T11:14:06.749994Z",
         "content_hash": "f6870031195cd1dc226506fcf891f4096679d400ac6139b9909a117dc9648f9b",
         "extraction_status": "extracted",
         "sections": 0,
@@ -1172,6 +1659,10 @@
       "metrics_computed": 156,
       "figures_offered": 37,
       "tagged_figures_offered": 0,
+      "claims_compiled": 1,
+      "computed_holds": 1,
+      "computed_fails": 0,
+      "computed_cannot": 0,
       "figures_cited": 9,
       "numbers_checked": 25,
       "numbers_unmatched": 0,
@@ -10110,7 +10601,9 @@
         "line": "11 8-K(s) filed since the annual report of 25 Feb 2026: 7 read, 0 could not be read, 0 not read because of the cap of 8 per run, 4 routine 8-K(s) filed before the newest periodic report listed from the index only."
       },
       "index_error": "",
-      "line": "Evidence as of 12 Nov 2026 (8-K), 6 days before this run. Newest periodic report: 10-Q filed 26 Aug 2026."
+      "line": "Evidence as of 12 Nov 2026 (8-K), 6 days before this run. Newest periodic report: 10-Q filed 26 Aug 2026.",
+      "requested": null,
+      "requested_note": ""
     }
   }
 }

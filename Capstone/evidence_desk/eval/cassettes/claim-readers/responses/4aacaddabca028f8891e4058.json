@@ -1,0 +1,12 @@
+{
+  "key": "4aacaddabca028f8891e4058",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:18:41+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim states a valuation (price-to-earnings multiple) and a personal opinion, which this tool does not compute.",
+    "tests": []
+  }
+}

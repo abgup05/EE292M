@@ -1,0 +1,12 @@
+{
+  "key": "f4979a1f3765b517db89bac4",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:13:27+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim compares Services' share of net sales across several fiscal years, but this tool only reads one filing's segment breakdown with no history, and it cannot test a rising share year over year.",
+    "tests": []
+  }
+}

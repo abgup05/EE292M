@@ -1,0 +1,12 @@
+{
+  "key": "73d5969ba1772c08bb8e0101",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:13:05+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim compares two segment gross margins and uses the vague phrase 'well under 40%', and segment gross margin is not a measure in the tool's list, so it cannot be expressed as a single computable test.",
+    "tests": []
+  }
+}

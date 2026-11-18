@@ -1,0 +1,12 @@
+{
+  "key": "7a5f423d1bec711a592fa154",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:18:49+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a judgement about consensus expectations for a future fiscal year, not a numeric test on reported figures.",
+    "tests": []
+  }
+}

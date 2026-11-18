@@ -1,0 +1,12 @@
+{
+  "key": "dccbad5fda3c9987e727defb",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:09:45+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim's qualifier \"even after the ten-for-one split\" is a corporate event that no test in this tool accounts for, so not every word of the claim is covered by the test.",
+    "tests": []
+  }
+}

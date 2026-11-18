@@ -1,6 +1,6 @@
 # Architecture
 
-Evidence Desk (version 0.13.0) tests an equity analyst's thesis claims against the company's own SEC filings and shows,
+Evidence Desk (version 0.14.0) tests an equity analyst's thesis claims against the company's own SEC filings and shows,
 per claim, the verbatim passages and figures that support or challenge it. A reviewer can accept or reject each
 finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the brief; `docs/reviews/` the review.
 
@@ -24,7 +24,13 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/core/filing_diff.py what was added, removed, reworded or renumbered between two filings, Item by Item; change_models.py is its pure data
     src/app/core/claim_changes.py   which changed paragraphs of a run's filings share words with each claim (BM25 and a rule of two shared terms; no model); claim_change_models.py is its pure data
     src/app/core/breakdowns.py  builds revenue by segment, product and geography and customers' shares from one filing's tagged facts; checks members against the tagged total; breakdown_models.py is its pure data
-    src/app/core/facts.py       FactBook: values from XBRL company facts, placed by their dates; a quarter is 12 to 17 weeks, and a fiscal year is a year-long period an annual report reported
+    src/app/core/facts.py       FactBook: values from XBRL company facts, placed by their dates; a quarter is 12 to 17 weeks, and a fiscal year is a year-long period an annual report reported; as of a date it reads only facts filed by then
+    src/app/core/restatements.py   the restatement ledger: each metric and period whose value differs between filings, with both filings and the change; fact_models.py is its pure data (and the fact store's)
+    src/app/core/claimtest.py   the claim compiler: claim text to a typed test of nine forms (held in one period or in each of several, alone or two joined by "and") with a canonical printed form, or the reason it is not numeric; compiles only when the test explains every word, and refuses a flow against an amount in a sentence that names no period (rule 3, applied to every reader's test); pure, no model
+    src/app/core/claim_reading.py  a typed test as JSON, and the strict validation of a model reader's answer into it; pure
+    src/app/core/measures.py    the measure catalogue: every measure a claim test can name, how a claim names it and how it is computed (a concept group of facts.CLAIM_GROUPS, or a formula), and a part's measures; pure
+    src/app/core/claim_normal.py  one normal form for a claim test, so that two readers' writings of one test compare equal; pure
+    src/app/core/claim_eval.py  evaluates a compiled claim against a FactBook (as of a date) with its arithmetic, and its history over the 10-K and 10-Q filing dates of five years; claim_test_models.py is its pure data
     src/app/core/tagged_figures.py  turns a filing's tagged breakdowns into figures a finding can cite (ids starting "tagged:") and chooses the ones offered; pure
     src/app/core/metrics.py     computes the metrics report from facts; metric_models.py is its pure data
     src/app/core/numcheck.py    the numeric check: each number a statement writes is in what it cites
@@ -32,7 +38,7 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/core/meaning.py     the meaning check's pure half: what the checker is shown, and applying its judgements
     src/app/core/events.py      the rules about 8-Ks: SEC's table of items with a category each, an item's opening sentences and the officer roles a 5.02 names, a claim's categories (lexicon and a name-and-leaving pattern), which 8-Ks a run reads, which postdate a finding, a claim's caution and note, the as-of block; event_models.py is its pure data
     src/app/core/watch_models.py, watch_policy.py   the standing watch's pure data (watch, job, triage, inbox item, what moved) and every number and sentence it uses
-    src/app/core/triage.py      whether a new filing bears on each claim, by rule (8-K item categories, results, periodic reports and their changed paragraphs); the version 14 extension point; pure
+    src/app/core/triage.py      whether a new filing bears on each claim, by rule (8-K item categories, results, periodic reports and their changed paragraphs); an extension point, unwired; pure
     src/app/core/watch_report.py   what moved between a thesis's previous run and the one a filing caused, from core/compare; pure
     src/app/sources/edgar.py    SEC EDGAR adapter: ticker, filing selection, rate-limited fetch; recent_filings lists the watched forms in one request
     src/app/sources/filing.py   splits a 10-K/10-Q into Part and Item sections
@@ -44,6 +50,7 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/retrieval/search.py ranks a run's passages for one claim (top 8; at most 5 per source when there are several)
     src/app/engines/claude.py   Claude engine: builds each request and parses each answer
     src/app/engines/checker.py  the meaning checker: a second model judges each verified finding (NoChecker: none)
+    src/app/engines/claim_reader.py  the model readers of each claim's test, one or two of different models, off by default (steps "read" and "read_2"); the prompt is built from the catalogue; a reading that breaks rule 3 is refused whatever period the model wrote
     src/app/engines/transport.py, cassette.py   the Transport port and its API adapter; answers recorded once, replayed by key
     src/app/engines/extractive.py, fallback.py   deterministic engine, no stance; a primary engine falling back to it
     src/app/services/ingest.py  select, read (cache or EDGAR), parse, deduplicate, record the sources
@@ -55,17 +62,21 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/services/claim_changes.py   for a run: the filing before the newest annual and the newest quarterly report it read, the two comparisons, the ranking per claim; a comparison that cannot be made is a note, never an error
     src/app/services/breakdowns.py   the latest filing of a form, fetched and read into breakdowns
     src/app/services/events.py  a company's 8-Ks after its newest annual report: listed from the index, the ones the rule picks read through the cache and split; a document that cannot be read is a reason on its event, never an error; the item sections offered to a claim
+    src/app/services/computed.py   for a run: compiles every claim, computes the compiled ones and their histories from the facts the run read, and counts the outcomes in the verdicts after the summary
+    src/app/services/restatements.py   a company's restatement ledger outside a run, as of a date when given
     src/app/services/tagged_figures.py   for a run that asks: the tags of the newest annual and quarterly report it read, as figures; a filing that cannot be read is a reason, never an error
     src/app/watch/store.py      the watch's tables: WatchStore (watches, seen filings, jobs, inbox, in the record) and WatchStatus (heartbeat and checks, in the cache)
     src/app/watch/service.py    start and stop watching; the Watcher: a cycle polls each watched company once, queues a job per new (thesis, filing), and works each job (triage, then a run or a waiting run, then the inbox item); EXTRA_TRIAGE_RULES
     src/app/watch/views.py, routes.py   the watch list and the watcher's health, shared by the API and `make watch-status`; the watch's HTTP routes, added by create_app
     src/app/watch/__main__.py   the watcher process: `python -m app.watch [run | once | status]`
-    src/app/store.py            SQLite: Store (the record) and FilingCache (disposable)
+    src/app/store.py            SQLite: Store (the record), FilingCache and FactStore (both disposable)
     src/app/backup.py           backs up the record; checks that the newest backup restores
     src/app/wiring.py           composition root: reads the environment, builds collaborators
     src/app/api.py              HTTP routes and static files
     src/app/cli.py              command line onto the same use case
     src/app/demo.py, probe.py, figures.py, changes.py, breakdowns.py, record_fixtures.py, record_facts.py   live demo; live parser check; live check of the reported figures, company by company; the filing comparison and the tagged breakdowns from the command line; fixture recorders
+    src/app/restatements.py, facts_load.py   a company's restatement ledger as text (`make restatements`); load companies' facts into the fact store (`make facts-load`)
+    src/app/measures_probe.py   live check of the catalogue on the eight probe companies: each measure's newest fiscal year as a claim test computes it, and the parts each newest 10-K tags (`make measures-probe`)
     src/app/events.py, events_probe.py   a company's 8-Ks since its annual report as text (`make events`); live check of the 8-K splitter on the eight probe companies (`make events-probe`)
     src/app/evaluation/golden.py, corpus.py   load and validate the golden set; the filings it is measured on, pinned by hash
     src/app/evaluation/retrieval_eval.py  scores where the right passage ranks; the variant registry
@@ -74,16 +85,20 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/evaluation/mismatch_eval.py   plants real quotes under statements they do not belong to and scores what the meaning check says
     src/app/evaluation/reading_sheet.py   lays the golden cases out for a person to read (`make golden-sheet`)
     src/app/evaluation/claim_categories.py   scores the claim-category rule on eval/claim-categories.json (`make event-categories`)
-    src/web/                    index.html, app.js, styles.css (one layout, two themes: docs/design.md), specimen.html (every component on made-up data, served at /specimen.html), sample-run.json, sample-run-events.json (a live run, copied unedited), sample-synthetic.json, sample-changes.json, sample-run-changes.json, sample-run-tagged.json, sample-breakdowns.json, sample-breakdowns-gap.json (synthetic), sample-inbox.json, sample-inbox-page-2.json, sample-inbox-watches.json, sample-inbox-health.json, sample-inbox-meta.json (the watch's example payloads of docs/examples/v13, copied unedited by `make sample-inbox`)
+    src/app/evaluation/claim_tests.py   scores the claim compiler on eval/claim-tests.json (`make claim-labels`; the held-out set at most twice)
+    src/app/evaluation/claim_oracle.py   the expected results of eval/claim-results.json from the raw facts, by a route that never calls the evaluator (`make claim-results-key`)
+    src/app/evaluation/compiler_vs_model.py   the compiler and a model given the same figure lines, scored on eval/claim-results.json (`make eval ARGS='compiler-vs-model'`)
+    src/app/evaluation/claim_readers.py   each reader's normal form of each claim of a set, the agreeing pairs and the counting rule's conclusion, one row per claim for a judge; and the judge's file of the readings that would count (`make eval ARGS='claim-readers --set FILE [--judge]'`)
+    src/web/                    index.html, app.js, styles.css (one layout, two themes: docs/design.md), specimen.html (every component on made-up data, served at /specimen.html), sample-run.json, sample-run-events.json (a live run, copied unedited), sample-synthetic.json, sample-changes.json, sample-run-changes.json, sample-run-tagged.json, sample-breakdowns.json, sample-breakdowns-gap.json (synthetic), sample-inbox.json, sample-inbox-page-2.json, sample-inbox-watches.json, sample-inbox-health.json, sample-inbox-meta.json (the watch's example payloads of docs/examples/v13, copied unedited by `make sample-inbox`), sample-computed.json, sample-as-of.json, sample-restatements.json, sample-readers.json (version 14's example run, as-of run, restatement ledger and run with two model readers of docs/examples/v14, copied unedited by `make sample-v14`), sample-run-live.json (a live run with three claim readers, copied unedited)
     eval/                       the golden set, its pinned filings, cache/ and results/; README.md
-    tests/                      offline tests, fakes.py (EDGAR, pages, engine, clock), smoke.py; replay_run.py, golden_run.py, speed_run.py
+    tests/                      offline tests, fakes.py (EDGAR, pages, engine, clock), smoke.py; replay_run.py, golden_run.py, speed_run.py; lookahead.py (the no-lookahead checks); examples_v14.py (`make examples`, docs/examples/v14; the example with two model readers only once its reads are recorded in eval/cassettes/claim-readers)
     tests/live_walk.py          the live end-to-end walk over HTTP; tests/golden/ the tripwire and replayed verdicts
     tests/watch_examples.py, watch_replay.py, watch_contention.py   the watch's example payloads (docs/examples/v13); the live replay of a year of filings against eval/watch-replay-nvda.json; a run timed alone and beside a watcher
     uitests/                    browser tests: the rendered DOM of the sample runs, the sample filing comparison and breakdowns against their JSON; test_events_dom.py the 8-Ks and the as-of line; test_run_events_dom.py the live-run sample and the time line; keys.html + test_keys_dom.py the keys and the themes; test_inbox_dom.py the recorded inbox, and watch.html (the page's code for every answer of the watch routes, with `fetch` stood in for)
 
-## Storage: the record and the cache
+## Storage: the record, the cache and the fact store
 
-Two SQLite files under the data directory (`EVIDENCE_DESK_DATA_DIR`; `data/`, gitignored), both in `store.py`.
+Three SQLite files under the data directory (`EVIDENCE_DESK_DATA_DIR`; `data/`, gitignored), all in `store.py`.
 
 - **The record**, `data/record/record.sqlite`, class `Store`: `runs` (each run as JSON), `decisions` (one per run and
   finding) and `theses` (saved requests and their run ids). Nothing can rebuild it: a later run meets a different
@@ -111,8 +126,21 @@ Two SQLite files under the data directory (`EVIDENCE_DESK_DATA_DIR`; `data/`, gi
   running, done or failed, with attempts, a lease and the error) and `inbox`. They are backed up and compared by
   `restore-check` like the other tables. In the cache, because they change every cycle and are worth nothing
   tomorrow: `watcher_beats` (the heartbeat) and `watch_checks` (each company's last and next check and error).
+- **The fact store**, `data/facts/facts.sqlite`, class `FactStore`: `companies` (CIK, ticker, name, SIC code and its
+  description from the submissions index, how many facts were kept and skipped, the SHA-256 of the body) and `facts`
+  (every us-gaap fact: concept, unit, start, end, value, and the accession, form and filing date of the filing that
+  reported it, with XBRL's `fy`, `fp` and `frame` kept as given). A run keeps the facts it reads there, and so does
+  the ledger route; `make facts-load TICKERS="..."` loads companies outside a run. A company is replaced whole when
+  its body changes. Disposable: every row comes again from EDGAR (`docs/facts.md`). Nothing reads it to answer a run
+  yet; it is where peer comparisons would start.
+- Version 14 added `ThesisRequest.as_of`, `AsOf.requested` and `requested_note`, `Claim.computed` and
+  `compile_note`, and four `Coverage` counts, each with a default, so runs recorded before load.
 
 ## The pipeline (`services/thesis_run.execute_run`)
+
+A run may be **as of a date** (`ThesisRequest.as_of`): it then reads the newest 10-K filed on or before the date,
+the 10-Qs and 8-Ks filed after it up to the date, and only the XBRL facts filed by the date (`FactBook(as_of=)`);
+nothing filed later reaches any stage, which `tests/lookahead.py` checks (`docs/facts.md`).
 
 1. **Resolve.** `FilingSource.company` maps the ticker to CIK and name; the API and the CLI do it before a run starts,
    so an unknown ticker is refused, not a failed run.
@@ -137,6 +165,20 @@ Two SQLite files under the data directory (`EVIDENCE_DESK_DATA_DIR`; `data/`, gi
    quarterly report the run read and adds up to `MAX_TAGGED_FIGURES_OFFERED` (40) figures after these, with ids
    starting `tagged:`; they are recorded with the run's other metrics, so every later stage treats a citation of one
    like any other. They change the assessment prompts, which is why a run must ask for them (`docs/tagged-figures.md`).
+   Then **compute** (`services/computed`): every claim is compiled (`core/claimtest`); a compiled claim is evaluated
+   from the run's FactBook with its arithmetic, and given its history as of each 10-K and 10-Q filing date of the
+   last five years from the same facts, with no extra request; a share of revenue reads the newest filings' tagged
+   breakdowns from the cache, for the newest period or the fiscal year or quarter the claim names. A test held in
+   each of several periods, or two joined by "and", is computed part by part and holds only when every part does. A claim that does not compile gets `compile_note`. A claim compiles only when its
+   test explains every content word of the sentence. No engine is asked anything. A claim test may name any
+   measure of the catalogue (`core/measures`), not only the panel's; a part's figure (a segment's revenue or
+   operating income) reads the newest filings with the claim-only breakdowns, cached apart. With model readers
+   on (`EVIDENCE_DESK_CLAIM_READER=model` or `models`, off by default) each claim is also read by one or two
+   models (`engines/claim_reader`, steps `read` and `read_2`, through the engine's transport or cassette), each
+   answer validated into the same type (`core/claim_reading`); every reading is put in one normal form
+   (`core/claim_normal`) and a test counts when at least two readers reach the same one, with a third reader's
+   different test shown as a dissent (`policy.reading_agreement`). With the grammar alone a compiled test counts
+   and the run says that is one reader (`Run.claim_reading_rule`; `docs/claim-tests.md`).
 5. **Plan.** The engine writes up to four queries per claim.
 6. **Retrieve.** All passages of the run go into one BM25 index; each claim is searched with its own text and queries.
    8-K sections never enter the index: a claim with a substantive category is also offered up to
@@ -168,7 +210,9 @@ Two SQLite files under the data directory (`EVIDENCE_DESK_DATA_DIR`; `data/`, gi
    in the finding's excerpts, its cited figures and the period of each filing quoted, with the company's fiscal
    calendar (read with the facts, `NumbersResult.calendar`). The result is recorded on the finding and counted in
    `Run.coverage`. It withholds nothing and changes no verdict or status (`docs/period-check.md`).
-10. **Decide.** `policy.claim_verdict` sets each verdict from verified findings only; a finding that rests on
+10. **Decide.** `policy.claim_verdict` sets each verdict from verified findings only, and after the summary from the
+   claim's computed test too (a test that holds counts as support, one that fails as a challenge, one that cannot be
+   computed as nothing), so the summariser is shown the verdicts of the findings alone; a finding that rests on
    reported figures alone counts as its stance only when the meaning check passed it, and as context otherwise
    (`Finding.counted_as`, `count_note`). `policy.run_status` sets complete, partial (with each reason and its
    denominator) or failed; a filing mostly outside numbered Items (`Source.item_coverage` below
@@ -187,8 +231,8 @@ can lose an unfinished run, never corrupt the file. `new_run(request, thesis_id)
 ties it to a saved thesis.
 
 After a run, outside `execute_run`: **review** (`core/review.build_review`): a reviewer accepts or rejects a verified
-finding; a claim's reviewed verdict is `policy.claim_verdict` over its accepted findings, so reviewer and engine follow
-one rule; other decisions are ignored; the review is computed per request, not stored. **Compare**
+finding; a claim's reviewed verdict is `policy.claim_verdict` over its accepted findings and its computed test, so
+reviewer and engine follow one rule; other decisions are ignored; the review is computed per request, not stored. **Compare**
 (`core/compare.compare_runs`): two runs of one thesis, claims matched by text: verdict moved or not, excerpts added and
 dropped, filings new or gone.
 
@@ -277,6 +321,19 @@ the end of `create_app`, which takes an injectable `wall_clock`): `PUT` and `DEL
 - **A change to how reported periods are placed** (the length of a quarter, what is a fiscal year, another revenue concept): `core/facts.py` and `core/metrics.py`. Run `make figures` on the eight probe companies before and after and read which lines moved (`docs/evidence/figures-eight-companies.md`); a change that moves a company's figures invalidates the recorded answers of its golden cases.
 - **A change to what counts as a year, or to what evidence carries one**: `core/periods.py`, with `tests/test_periods.py`. What is a year and what is a quantity is decided once, in `core/numcheck.py`, and the period check reads it from there. Measure before and after with the checked evaluation, which also plants wrong years (`eval/README.md`); a rule that starts withholding findings is a change to `core/policy.py` and to every recorded verdict.
 - **A change to which tagged figures a run offers** (the cap, the order, another breakdown): `core/tagged_figures.py` and `MAX_TAGGED_FIGURES_OFFERED` in `core/limits.py`, with `tests/test_tagged_figures.py`. It changes the prompts of every run that asks for them, so `demo/cassettes/nvda-example-tagged` must be recorded again.
+- **A change to the claim compiler** (a phrase, a form, a metric): `core/claimtest.py` with `tests/test_claimtest.py`
+  and `tests/test_whole_sentence.py`; a phrase the grammar reads must also be among the words its test explains
+  (`_explaining`), or the whole-sentence rule refuses the claim. A new form or measure also goes into the model
+  parser's validation (`core/claim_reading.py`) and prompt (`engines/claim_reader.py`), the normal form
+  (`core/claim_normal.py`), and golden cases worked out by the oracle (`evaluation/claim_oracle.py`);
+  `tests/test_forms.py` shows the pattern.
+  Score `make claim-labels` before and after on the development labels; the held-out labels have been scored twice
+  and may not be scored again. A change to how a test is computed: `core/claim_eval.py`, checked against
+  `eval/claim-results.json` (`tests/test_claim_results.py`), whose expected values come from
+  `evaluation/claim_oracle.py`; never edit an expected value. Either moves verdicts: `make golden-baseline` and
+  `make examples`, and read both diffs.
+- **A change to which facts a date admits**: `facts.filed_by` in `core/facts.py`. `tests/test_facts_as_of.py` checks
+  the metrics on every periodic filing date of three companies against a payload pruned independently.
 - **A change to the 8-K rules** (an item's category, what counts as substantive, the claim lexicon, how many 8-Ks are
   read or offered): `core/events.py` and the three `EVENT`/`MAX_EVENTS_READ` limits in `core/limits.py`, with
   `tests/test_events.py`. A change to the claim lexicon is scored with `make event-categories` on the labels in
@@ -287,7 +344,9 @@ the end of `create_app`, which takes an injectable `wall_clock`): `PUT` and `DEL
 - **A change to the standing watch.** What bears on a claim: `core/triage.py` with `tests/test_triage.py`; the
   categories it reads are the 8-K rules above, shared with the run. Measure a change with `make watch-replay` (live,
   no model) against the labels in `eval/watch-replay-nvda.json`, before and after, and never change a label to fit.
-  A rule for version 14's compiled claims goes in `EXTRA_TRIAGE_RULES` (`watch/service.py`). Numbers and wording:
+  A further triage rule goes in `EXTRA_TRIAGE_RULES` (`watch/service.py`); it is empty, because a compiled claim's
+  change of outcome needs the company facts, which triage does not fetch; that change is reported after the run, in
+  `WhatMoved.computed` (`core/watch_report.py`). Numbers and wording:
   `core/watch_policy.py`. A new watch table: `WATCH_SCHEMA` in `watch/store.py` and `WATCH_KINDS` (so backup and
   restore-check cover it); `make backup` first, `make restore-check` after. A change to a payload: `make
   watch-examples`, then `tests/test_watch_examples.py` says whether the README still names every field.
@@ -296,13 +355,14 @@ the end of `create_app`, which takes an injectable `wall_clock`): `PUT` and `DEL
 ## The boundary
 
 The backend computes every result: verified excerpts, verdicts, status, every count in `Run.coverage`, the reviewed
-verdicts and the comparison. The frontend collects input and decisions, polls, and draws the record with the wording
+verdicts and the comparison, and each computed test with its arithmetic, margin and history. The frontend collects input and decisions, polls, and draws the record with the wording
 from `/api/meta`; it computes no verdict and no excerpt context. Placing record dates on the time line, a series' values in
 a sparkline, and setting a negative number in its colour by the sign of the record's value are drawing; the page has two
-themes, Paper and Terminal, over one layout (`docs/design.md`). The same holds for the three records that are not
+themes, Paper and Terminal, over one layout (`docs/design.md`). The same holds for the records that are not
 part of a run (the comparison of two filings, the changed paragraphs listed under each claim, the tagged breakdowns,
-a company's 8-Ks since its annual report, `GET /api/companies/{ticker}/events`, and the watch's list, health and
-inbox, whose headlines, labels, counts and comparisons the backend writes):
+a company's 8-Ks since its annual report, `GET /api/companies/{ticker}/events`, a company's restatement ledger,
+`GET /api/companies/{ticker}/restatements`, and the watch's list, health and inbox, whose headlines, labels, counts
+and comparisons the backend writes):
 each arrives with its counts, its links and what they open, its column headings, its cells and its changes already
 computed and formatted, and the page only places them. Requests are validated at the API: the schema in
 `core/models`, extra URLs (public, distinct) in `api.py`, the ticker against EDGAR. Refusals are 422 `{"error",
@@ -317,7 +377,7 @@ what counts. Filings come only from `www.sec.gov` and `data.sec.gov` (7 requests
   (no internet), and `make uitest` (headless Chromium renders the sample runs, the sample filing comparison and the breakdowns; `uitests/`
   checks the DOM against their JSON; `uitests/keys.html`, loaded from disk with the same-origin rule off for that page
   only, presses the page's keys in a frame and records what happened; `uitests/watch.html` does the same for the inbox and the watch
-  controls, answering the page's watch requests with the example payloads and the README's refusal shapes). Offline tests use `tests/fakes.py`; `make fixtures` re-records EDGAR responses.
+  controls, answering the page's watch requests with the example payloads and the README's refusal shapes; `uitests/v14.html` drives the version 14 states the examples do not show: three readers with a dissent, a disagreement and a refusal, a test of two parts joined by "and", the ledger lookup's answers, a run sent as of a date, the watch API's version 14 fields). Offline tests use `tests/fakes.py`; `make fixtures` re-records EDGAR responses.
 - `make golden-check` compares the offline example run with `tests/golden/golden.json` and names the first stage that
   moved; `make golden-baseline` rewrites it. `make profile` and `make bench` time the offline run (`docs/testing.md`,
   `docs/speed.md`).
@@ -330,6 +390,9 @@ what counts. Filings come only from `www.sec.gov` and `data.sec.gov` (7 requests
   write one record from two processes at once.
 - `make up` serves `http://127.0.0.1:8766` and starts the watcher; `make up-recorded` replays model answers from
   `demo/cassettes/nvda-example` (EDGAR, no key; compose passes `EVIDENCE_DESK_CASSETTE` through). `make run
-  ARGS='example'` runs the CLI; `make demo` runs the example live.
+  ARGS='example'` runs the CLI; `make demo` runs the example live. `READERS=models` (or `model`, `grammar`) on
+  `make up`, `up-recorded` or `run` adds `docker/readers.yaml`, which sets `EVIDENCE_DESK_CLAIM_READER` for that
+  command (compose's `environment` wins over its `env_file`); without it that file is not loaded and `.env` decides.
+  `make readers-check` tests both, with `docker/readers-check.yaml` and `docker/readers-check.env` standing in for an owner's setting.
 - `make live-walk`: the app recorded, then `tests/live_walk.py` over HTTP with live EDGAR: a run, decisions, the
   reviewed brief, a thesis run twice (the second from the cache) and the comparison.

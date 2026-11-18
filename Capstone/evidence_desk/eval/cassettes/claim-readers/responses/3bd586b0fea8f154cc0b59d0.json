@@ -1,0 +1,63 @@
+{
+  "key": "3bd586b0fea8f154cc0b59d0",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:10:45+00:00",
+  "response": {
+    "computable": true,
+    "reason": "Diluted EPS growth from fiscal 2024 to fiscal 2025 is a change over a named span, tested against more than doubling (above 100%).",
+    "tests": [
+      {
+        "form": "growth_threshold",
+        "left": {
+          "fn": "change",
+          "subject": "eps_diluted",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 2025,
+            "quarter": 0
+          },
+          "base": {
+            "used": true,
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 2024,
+            "quarter": 0
+          }
+        },
+        "op": ">",
+        "right_term": {
+          "fn": "change",
+          "subject": "eps_diluted",
+          "member": "",
+          "axis": "",
+          "years": 0,
+          "period": {
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 2025,
+            "quarter": 0
+          },
+          "base": {
+            "used": true,
+            "kind": "FY",
+            "back": 0,
+            "fiscal_year": 2024,
+            "quarter": 0
+          }
+        },
+        "right_number": {
+          "value": 100,
+          "unit": "percent"
+        },
+        "each": 0,
+        "each_since": 0
+      }
+    ]
+  }
+}

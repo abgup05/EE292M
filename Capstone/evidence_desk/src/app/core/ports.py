@@ -12,7 +12,9 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Protocol
 
+from app.core.claimtest import ClaimTest, NotNumeric
 from app.core.documents import FetchedFiling, FilingRef, Passage
+from app.core.fact_models import CompanyProfile
 from app.core.metric_models import Metric
 from app.core.models import Claim, Company, Confidence, Finding, Stance, ThesisRequest
 
@@ -32,14 +34,23 @@ class FilingSource(Protocol):
         """Resolve a ticker. Raises :class:`UnknownTicker` or :class:`SourceError`."""
         ...
 
-    def periodic_filings(self, company: Company, limit: int) -> list[FilingRef]:
-        """The latest 10-K and the 10-Qs filed after it, newest first, at most ``limit``."""
+    def periodic_filings(
+        self, company: Company, limit: int, as_of: str | None = None
+    ) -> list[FilingRef]:
+        """The latest 10-K and the 10-Qs filed after it, newest first, at most ``limit``.
+
+        With ``as_of`` (``YYYY-MM-DD``): the newest 10-K filed on or before that day and
+        the 10-Qs after it up to that day. A run passes ``as_of`` only when it has one.
+        """
         ...
 
-    def current_reports(self, company: Company, filed_after: str) -> list[FilingRef]:
+    def current_reports(
+        self, company: Company, filed_after: str, filed_until: str | None = None
+    ) -> list[FilingRef]:
         """The 8-K and 8-K/A filings filed after a ``YYYY-MM-DD`` date, newest first.
 
-        Each carries the item numbers EDGAR's index lists. Raises :class:`SourceError`.
+        With ``filed_until``, only those filed on or before it. Each carries the item
+        numbers EDGAR's index lists. Raises :class:`SourceError`.
         """
         ...
 
@@ -49,6 +60,10 @@ class FilingSource(Protocol):
 
     def company_facts(self, company: Company) -> dict:
         """The company's XBRL facts as EDGAR serves them. Raises :class:`SourceError`."""
+        ...
+
+    def company_profile(self, company: Company) -> CompanyProfile:
+        """The company's industry code from EDGAR's index. Raises :class:`SourceError`."""
         ...
 
 
@@ -208,3 +223,24 @@ class Checker(Protocol):
 
 # A page fetcher for the optional extra URLs: URL in, FetchedPage out, FetchError on failure.
 PageFetcher = Callable[[str], "object"]
+
+
+class ClaimReader(Protocol):
+    """A second reader of a claim's typed test, beside the grammar (:mod:`app.core.claimtest`).
+
+    ``name`` and ``detail`` are recorded on the run. ``read`` returns the test the reader
+    finds in the claim, validated into the grammar's own type, or a
+    :class:`~app.core.claimtest.NotNumeric` saying why there is none; it raises when the
+    reader could not be asked, and the run then records that it read nothing.
+    """
+
+    name: str
+    detail: str
+
+    def read(self, claim: str) -> ClaimTest | NotNumeric:
+        """The test in ``claim``, or why there is none."""
+        ...
+
+
+# The model readers a run is given beside the grammar: none, one, or two of different models.
+type ClaimReaders = ClaimReader | Sequence[ClaimReader] | None

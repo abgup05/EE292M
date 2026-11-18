@@ -1,0 +1,12 @@
+{
+  "key": "2f832049234d2b62fdc1962e",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:12:09+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim uses the approximate phrase 'around a quarter of a billion', a vague comparison ('trivial'), and an unmeasured judgement about the cash pile, so it is not a single exact numeric test.",
+    "tests": []
+  }
+}

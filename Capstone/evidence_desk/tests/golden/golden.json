@@ -192,8 +192,12 @@
   },
   "coverage": {
     "counts": {
+      "claims_compiled": 1,
       "claims_total": 5,
       "claims_with_evidence": 5,
+      "computed_cannot": 0,
+      "computed_fails": 0,
+      "computed_holds": 1,
       "engine_fallbacks": 0,
       "excerpts_verified": 15,
       "figures_cited": 0,
@@ -480,24 +484,29 @@
   "limits": {
     "CONTEXT_CHARS": 240,
     "DEFAULT_FILINGS": 3,
+    "EARLIEST_AS_OF": "2009-01-01",
     "EVENT_OPENING_SENTENCES": 2,
     "EVENT_PASSAGES_PER_CLAIM": 2,
     "FIGURE_QUARTERS": 3,
     "FIGURE_YEARS": 2,
+    "HISTORY_YEARS": 5,
     "MAX_CLAIMS": 6,
     "MAX_CLAIM_CHARS": 400,
     "MAX_CONCURRENT_ASSESSMENTS": 3,
     "MAX_DECISION_CHARS": 500,
+    "MAX_EACH_PERIODS": 12,
     "MAX_EVENTS_READ": 8,
     "MAX_EXCERPT_CHARS": 600,
     "MAX_EXTRA_URLS": 5,
     "MAX_FIGURES_OFFERED": 40,
     "MAX_FILINGS": 5,
     "MAX_FINDINGS_PER_CLAIM": 4,
+    "MAX_HISTORY_POINTS": 24,
     "MAX_NOTE_CHARS": 500,
     "MAX_PASSAGES_PER_SOURCE": 5,
     "MAX_QUERIES_PER_CLAIM": 4,
     "MAX_SCOPE_CHARS": 2000,
+    "MAX_STREAK_PERIODS": 40,
     "MAX_SUPPORT_REASON_CHARS": 300,
     "MAX_TAGGED_FIGURES_OFFERED": 40,
     "MAX_THESIS_NAME_CHARS": 80,
@@ -726,7 +735,7 @@
     ],
     "passages_indexed": 636
   },
-  "sha256": "0c25aacad54387d8cd167bde35c82b188a87661e72815081392e8f1a29056879",
+  "sha256": "d95de9bd16bf8e5bb03bd9b68af3282e288677f25e6ee2b332e3573e2e5061e4",
   "sources": [
     {
       "characters": 151303,
@@ -808,7 +817,7 @@
         "f12"
       ],
       "id": "c4",
-      "verdict": "unjudged"
+      "verdict": "supported"
     },
     {
       "finding_ids": [

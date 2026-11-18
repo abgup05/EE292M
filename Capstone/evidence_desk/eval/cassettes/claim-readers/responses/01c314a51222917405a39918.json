@@ -1,0 +1,12 @@
+{
+  "key": "01c314a51222917405a39918",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:17:03+00:00",
+  "response": {
+    "computable": false,
+    "reason": "\"Double-digit\" is a vague comparison rather than a specific threshold, and the claim does not name a precise numeric test.",
+    "tests": []
+  }
+}

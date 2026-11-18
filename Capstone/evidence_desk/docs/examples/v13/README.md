@@ -32,8 +32,9 @@ is `""`, absent lists are `[]`.
 | `mark-read.json` | `POST /api/inbox/read` `{"ids": [one id, "ib-gone"]}` | |
 | `unwatch.json` | `DELETE /api/theses/{id}/watch` | |
 
-Other answers: 404 `{"detail": "Thesis not found"}` or `{"detail": "Inbox item
-not found"}`; 409 `{"error": "..."}` (a thesis not watched, a run not waiting, a
+Other answers: 404 `{"error": "Thesis not found"}` or `{"error": "Inbox item
+not found"}` (since version 14 every 404 of the app has this shape; version 13 answered
+`{"detail": ...}`); 409 `{"error": "..."}` (a thesis not watched, a run not waiting, a
 ticker gone from SEC's list); 503 `{"error": ...}` when EDGAR cannot be read to
 start a watch (nothing is saved).
 
@@ -61,8 +62,10 @@ policy changed (200). Each watch:
 ## An inbox page (`inbox.json`, `inbox-page-2.json`)
 
 `items` (unread first, then newest first), `total` and `unread` (of the whole inbox,
-or of one thesis with `?thesis_id=`), `limit`, `offset`, and `next_offset` (the
-offset of the next page; `null` on the last).
+or of one thesis with `?thesis_id=`), `folded` (version 14: how many items of the whole
+inbox, or of the thesis, are of a kind drawn folded, `meta.collapsed_kinds`: seen, not
+relevant; counted by the backend, whichever page is drawn), `limit`, `offset`, and
+`next_offset` (the offset of the next page; `null` on the last).
 
 ## An inbox item
 
@@ -109,7 +112,8 @@ Decided by rules, without a model (`app/core/triage.py`).
   `event_category` (an 8-K item's category is one of a claim's), `no_items` (an 8-K
   listing no items bears on every claim, to be safe), `routine` (only exhibits, a
   vote and the like), `no_match` (a substantive item no claim is about), `extension`
-  (reserved for version 14's compiled claims; unused).
+  (a further rule; none is wired: a computed claim's change of outcome is reported
+  under `moved.computed` once the run has read the new facts, see below).
 - `summary`: the decision in one sentence.
 - `notes`: anything else worth saying about the filing; usually `[]`.
 - `claims`: one entry per claim of the thesis:
@@ -135,12 +139,19 @@ Compared with the thesis's previous finished run.
 
 - `earlier_run_id` (`null` when this is the thesis's first run), `later_run_id`.
 - `moved`: anything below changed. `line`: it in one sentence.
+- `claims_moved` of `claims_total` claims moved in any of the ways below, each claim
+  counted once; `claims_line` says it ("1 of 2 claims moved."; `""` for a first run).
+  Version 14.
 - `verdicts`: each verdict that changed: `claim`, `before`, `after`.
 - `new_cautions`: cautions a claim has now and did not have: `claim`, `text`.
 - `new_notes`: 8-K notes on a claim that had none: `claim`, `text`.
 - `new_events`: 8-Ks new on the run's timeline: `accession`, `form`, `filed_date`,
   `items` (numbers), `url`, `label`.
 - `sources_added`: the filings the later run read that the earlier did not.
+- `computed` (version 14): each claim whose computed test, the same canonical test in
+  both runs, changed its outcome from the facts the later run read: `claim`,
+  `canonical`, `before` and `after` (`holds`, `fails`, `cannot_compute`), with
+  `before_label` and `after_label` in words.
 - `claims`: every claim, compared: `claim`, `before`, `after`, `moved`, `change`
   (`moved`, `unchanged`, ...), `reviewed_before` and `reviewed_after` (the second
   reading's verdict when there was one, else `null`), `excerpts_added`,

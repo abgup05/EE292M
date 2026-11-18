@@ -1,0 +1,12 @@
+{
+  "key": "d16d60941601ec66acb223df",
+  "step": "read_2",
+  "via": "the Anthropic API",
+  "model": "claude-sonnet-5-5",
+  "recorded_at": "2026-11-18T13:12:41+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a qualitative judgement about a segment's importance and states no numeric test with a measure, threshold or period.",
+    "tests": []
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "key": "cba1b3bf9ecf31808aa8ab5f",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:12:06+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim concerns a current ratio (current assets to current liabilities), and this tool has no current assets or current liabilities measure.",
+    "tests": []
+  }
+}

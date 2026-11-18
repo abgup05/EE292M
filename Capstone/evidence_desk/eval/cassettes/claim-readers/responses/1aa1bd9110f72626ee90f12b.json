@@ -1,0 +1,12 @@
+{
+  "key": "1aa1bd9110f72626ee90f12b",
+  "step": "read",
+  "via": "the Anthropic API",
+  "model": "claude-haiku-5-5",
+  "recorded_at": "2026-11-18T13:12:35+00:00",
+  "response": {
+    "computable": false,
+    "reason": "The claim is a judgement about a long-term competitive threat from a named competitor, which is not a numeric test this tool can compute.",
+    "tests": []
+  }
+}

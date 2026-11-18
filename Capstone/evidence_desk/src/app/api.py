@@ -79,6 +79,8 @@ WITHHELD_MESSAGE = "This finding was withheld, so it cannot be decided"
 STATIC_FILES = {
     "/app.js": ("app.js", "text/javascript"),
     "/styles.css": ("styles.css", "text/css"),
+    # Every component once, on made-up data (docs/design.md); it reads no record.
+    "/specimen.html": ("specimen.html", "text/html"),
 }
 # Sample records the page can load: src/web/sample-<name>.json, served at /sample-<name>.json.
 SAMPLE_NAME = re.compile(r"[a-z0-9-]{1,40}")

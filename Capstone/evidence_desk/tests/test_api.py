@@ -379,6 +379,7 @@ def test_health(client: TestClient) -> None:
         ("/", "text/html", "Evidence Desk"),
         ("/app.js", "text/javascript", "/api/meta"),
         ("/styles.css", "text/css", "{"),
+        ("/specimen.html", "text/html", "Specimen: made-up data"),
         ("/sample-run.json", "application/json", '"run"'),
         ("/sample-changes.json", "application/json", '"changes"'),
     ],

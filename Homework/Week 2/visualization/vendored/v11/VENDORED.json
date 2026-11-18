@@ -1,0 +1,25 @@
+{
+  "commit": "ff14e72620af06bb139be625eb904b2c311cda92",
+  "package": "ed_v11",
+  "python_files": 78,
+  "ref": "capstone-v11",
+  "renamed_imports": 316,
+  "renamed_strings": {
+    "services/thesis_run.py": [
+      "app. -> ed_v11."
+    ]
+  },
+  "version": 11,
+  "web_files": [
+    "app.js",
+    "index.html",
+    "sample-breakdowns-gap.json",
+    "sample-breakdowns.json",
+    "sample-changes.json",
+    "sample-run-changes.json",
+    "sample-run-tagged.json",
+    "sample-run.json",
+    "sample-synthetic.json",
+    "styles.css"
+  ]
+}

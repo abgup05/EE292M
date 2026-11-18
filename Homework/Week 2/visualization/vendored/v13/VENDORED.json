@@ -1,0 +1,35 @@
+{
+  "commit": "d61dca2558dbb8cfc9c52f0be6d68ecdd0d63fd3",
+  "package": "ed_v13",
+  "python_files": 95,
+  "ref": "capstone-v13",
+  "renamed_imports": 407,
+  "renamed_strings": {
+    "services/thesis_run.py": [
+      "app. -> ed_v13."
+    ],
+    "watch/__main__.py": [
+      "app.watch -> ed_v13.watch"
+    ]
+  },
+  "version": 13,
+  "web_files": [
+    "app.js",
+    "index.html",
+    "sample-breakdowns-gap.json",
+    "sample-breakdowns.json",
+    "sample-changes.json",
+    "sample-inbox-health.json",
+    "sample-inbox-meta.json",
+    "sample-inbox-page-2.json",
+    "sample-inbox-watches.json",
+    "sample-inbox.json",
+    "sample-run-changes.json",
+    "sample-run-events.json",
+    "sample-run-tagged.json",
+    "sample-run.json",
+    "sample-synthetic.json",
+    "specimen.html",
+    "styles.css"
+  ]
+}

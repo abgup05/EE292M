@@ -1,0 +1,22 @@
+{
+  "commit": "bd879268adf4f683b3a4af8aca614687a2a02758",
+  "package": "ed_v8",
+  "python_files": 68,
+  "ref": "capstone-v8",
+  "renamed_imports": 268,
+  "renamed_strings": {
+    "services/thesis_run.py": [
+      "app. -> ed_v8."
+    ]
+  },
+  "version": 8,
+  "web_files": [
+    "app.js",
+    "index.html",
+    "sample-changes.json",
+    "sample-run-changes.json",
+    "sample-run.json",
+    "sample-synthetic.json",
+    "styles.css"
+  ]
+}

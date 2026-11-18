@@ -1,0 +1,21 @@
+{
+  "commit": "c028400f6c33d92758e3bfa5e50cb11f21e2ea0d",
+  "package": "ed_v6",
+  "python_files": 64,
+  "ref": "capstone-v6",
+  "renamed_imports": 238,
+  "renamed_strings": {
+    "services/thesis_run.py": [
+      "app. -> ed_v6."
+    ]
+  },
+  "version": 6,
+  "web_files": [
+    "app.js",
+    "index.html",
+    "sample-changes.json",
+    "sample-run.json",
+    "sample-synthetic.json",
+    "styles.css"
+  ]
+}

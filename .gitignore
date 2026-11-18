@@ -32,3 +32,6 @@ data/processed/**
 # Secrets and local overrides
 .env
 docker/compose.override.yaml
+
+# Pictures of the live pages under the emulation (make site-live-shots)
+.live-shots/

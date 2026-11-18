@@ -1,0 +1,14 @@
+{
+  "commit": "45ff843138e0b266f017d0c8fbd124bc0f76552f",
+  "package": "ed_v1",
+  "python_files": 15,
+  "ref": "capstone-v1",
+  "renamed_imports": 28,
+  "renamed_strings": {},
+  "version": 1,
+  "web_files": [
+    "app.js",
+    "index.html",
+    "styles.css"
+  ]
+}

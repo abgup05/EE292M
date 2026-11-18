@@ -1,4 +1,4 @@
-.PHONY: help build up down verify test lint fmt smoke lock clean logs shell data vercel-deps
+.PHONY: help build up down verify test lint fmt smoke lock clean logs shell data vercel-deps live-imports live-up live-down live-test live-logs live-runs
 
 export COMPOSE_PROJECT_NAME := ee292m-week2-radius
 export LOCAL_UID := $(shell id -u)
@@ -27,7 +27,7 @@ down:
 verify: build lint test smoke
 
 test:
-	$(COMPOSE) run --rm --no-deps app pytest -q -p no:cacheprovider tests
+	$(COMPOSE) run --rm --no-deps app pytest -q -p no:cacheprovider $(or $(TESTS),tests)
 
 lint:
 	$(COMPOSE) run --rm --no-deps app ruff check --no-cache src tests main.py
@@ -57,3 +57,29 @@ shell:
 
 clean:
 	$(COMPOSE) down --rmi local --remove-orphans
+
+# Every vendored capstone version (vendored/, written by make site-vendor at the repository
+# root) imports whole under its new name and answers its page and first API address.
+live-imports:
+	$(COMPOSE) run --rm --no-deps app pytest -q -p no:cacheprovider tests/test_live_vendored.py
+
+# The function as Vercel runs it, on 127.0.0.1:8790 (the services live and live-fresh in
+# docker/compose.yaml): read-only source tree, writable /tmp only, no key, EDGAR out of reach.
+live-up:
+	$(COMPOSE) up --build --force-recreate -d live live-fresh
+
+live-down:
+	$(COMPOSE) rm -sf live live-fresh
+
+live-logs:
+	$(COMPOSE) logs --no-log-prefix --tail $(or $(TAIL),80) live
+
+# Every version (or VERSIONS="2 14"): its page, a no-key run through the shim on one process,
+# then the finished run from the shim's cache against a process that never saw it.
+live-test: live-up
+	@trap '$(COMPOSE) rm -sf live live-fresh > /dev/null 2>&1' EXIT; \
+	$(COMPOSE) run --rm --no-deps livetest node tools/live/live_test.mjs http://live:8000 http://live-fresh:8000 $(VERSIONS)
+
+# One finished no-key run of each version's example on the running function: "VERSION RUN_ID".
+live-runs:
+	@$(COMPOSE) run --rm --no-deps livetest node tools/live/start_run.mjs http://live:8000 $(VERSIONS) 2> /dev/null

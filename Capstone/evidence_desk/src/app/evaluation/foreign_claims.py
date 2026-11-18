@@ -107,15 +107,23 @@ def load_claims(path: Path = CLAIMS) -> list[Claim]:
 
 
 def load_judgements(path: Path = JUDGEMENTS) -> dict[tuple[str, str], dict[str, object]]:
-    """Every judged reading, keyed by (claim id, canonical test or "none")."""
+    """Every judged reading, keyed by (claim id, canonical test or "none").
+
+    The file is only appended to. A reading judged a second time (a later rule made the
+    compiler print it again, for another cause) needs ``revision``, saying what changed; the
+    later judgement counts and the earlier one stays in the file.
+    """
     if not path.exists():
         return {}
     payload = json.loads(path.read_text(encoding="utf-8"))
     judged: dict[tuple[str, str], dict[str, object]] = {}
     for entry in payload["judgements"]:
         key = (str(entry["id"]), str(entry["canonical"]))
-        if key in judged:
+        revision = str(entry.get("revision", "")).strip()
+        if key in judged and not revision:
             raise ValueError(f"{key} is judged twice")
+        if revision and key not in judged:
+            raise ValueError(f"{key}: a revision revises nothing judged before it")
         reading = entry["reading"]
         if reading not in ("right", "wrong", "not_compiled"):
             raise ValueError(f"{key}: unknown reading {reading!r}")

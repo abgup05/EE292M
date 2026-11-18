@@ -51,9 +51,13 @@ DOCUMENTS = (
 # different sector, with "Item 1A—Risk Factors" headings (an em dash, not a full stop).
 LOOKED_UP_DOCUMENTS = (("cost-10k-20260830.htm.gz", "COST", "0000909832-26-000093"),)
 
-# (fixture file, CIK, accession number, primary document) of 8-Ks of other companies: a
-# second filer's layout of an officer's departure (Item 5.02).
-OTHER_CURRENT_REPORTS: tuple[tuple[str, int, str, str], ...] = ()
+# (fixture file, CIK, accession number, primary document) of 8-Ks of other companies, each a
+# layout the 8-K splitter missed in `make events-probe`: Coca-Cola's "Item 9.01(d)." and
+# JPMorgan's "Item 5.02(e) Departure ...", a sub-item letter after the number.
+OTHER_CURRENT_REPORTS: tuple[tuple[str, int, str, str], ...] = (
+    ("ko-8k-0001628280-26-067403.htm.gz", 21344, "0001628280-26-067403", "ko-20261027.htm"),
+    ("jpm-8k-0000019617-26-000052.htm.gz", 19617, "0000019617-26-000052", "jpm-20260120.htm"),
+)
 NVIDIA_ANNUAL_FORM = "10-K"
 CURRENT_FORMS = ("8-K", "8-K/A")
 

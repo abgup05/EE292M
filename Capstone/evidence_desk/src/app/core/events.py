@@ -237,6 +237,34 @@ _SENTENCE_END = re.compile(r"[.!?][\"'”’)\]]*$")
 MIN_OPENING_WORDS = 4
 
 
+# A full stop after one of these is not the end of a sentence (8-Ks name officers by title).
+_TITLE_END = re.compile(r"(?<![\w-])(?:Mr|Ms|Mrs|Dr|Messrs)\.$")
+# A span that starts in lower case or with an opening bracket continues the one before it,
+# as after "SB Energy Corp." in "SB Energy Corp. (collectively with its affiliates ...".
+_CONTINUES = re.compile(r"^[a-z(\[]")
+
+
+def _joined_spans(text: str) -> list[tuple[int, int]]:
+    """The sentence spans of ``text``, rejoined where a split fell after a title or suffix."""
+    spans: list[tuple[int, int]] = []
+    for start, end in sentence_spans(text):
+        if spans:
+            previous_start, previous_end = spans[-1]
+            between = text[previous_end:start]
+            if (
+                not between.strip()
+                and "\n" not in between
+                and (
+                    _TITLE_END.search(text[previous_start:previous_end])
+                    or _CONTINUES.match(text[start:end])
+                )
+            ):
+                spans[-1] = (previous_start, end)
+                continue
+        spans.append((start, end))
+    return spans
+
+
 def opening_sentences(text: str, limit: int = limits.EVENT_OPENING_SENTENCES) -> list[str]:
     """The first ``limit`` sentences of an item's text, each an exact slice of it.
 
@@ -245,7 +273,7 @@ def opening_sentences(text: str, limit: int = limits.EVENT_OPENING_SENTENCES) ->
     :data:`MIN_OPENING_WORDS` words.
     """
     kept: list[str] = []
-    for start, end in sentence_spans(text):
+    for start, end in _joined_spans(text):
         sentence = text[start:end]
         if len(sentence.split()) < MIN_OPENING_WORDS or not _SENTENCE_END.search(sentence):
             continue

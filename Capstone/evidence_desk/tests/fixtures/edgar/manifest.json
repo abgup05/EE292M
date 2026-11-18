@@ -11,6 +11,18 @@
     "sha256": "dfe52a0780336d45cf79afdf17d18b2143ce805a7137af17b6bf7676adb63b19",
     "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983226000093/cost-20260830.htm"
   },
+  "jpm-8k-0000019617-26-000052.htm.gz": {
+    "bytes": 52521,
+    "retrieved_at": "2026-11-18T08:13:16.304782+00:00",
+    "sha256": "a1c412f392b26c6104a53551ed4cb8c1bf7f3044b70f394b9e5e6df8a639cd56",
+    "url": "https://www.sec.gov/Archives/edgar/data/19617/000001961726000052/jpm-20260120.htm"
+  },
+  "ko-8k-0001628280-26-067403.htm.gz": {
+    "bytes": 50865,
+    "retrieved_at": "2026-11-18T08:13:16.242473+00:00",
+    "sha256": "9371535d528ede38832e34b68f164ede9cc91dbea443a48f24493bf7aa2b7789",
+    "url": "https://www.sec.gov/Archives/edgar/data/21344/000162828026067403/ko-20261027.htm"
+  },
   "nvda-10k-20260125.htm.gz": {
     "bytes": 1968291,
     "retrieved_at": "2026-11-17T11:08:51.748534+00:00",

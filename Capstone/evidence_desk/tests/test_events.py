@@ -388,3 +388,27 @@ def test_event_items_are_described_from_the_table() -> None:
     assert isinstance(item, EventItem)
     assert item.category == "leadership"
     assert item.title.startswith("Departure of Directors")
+
+
+def test_an_opening_sentence_is_not_cut_after_a_title_or_a_company_suffix() -> None:
+    """Seen live in NVIDIA's 8-Ks: "Mr. Huang's resignation" split after "Mr."."""
+    text = (
+        "On November 11, 2026, the Board accepted the resignation of Jen-Hsun Huang. "
+        "In connection with Mr. Huang's resignation, the Board appointed Colette M. Kress "
+        "as interim Chief Executive Officer. Ms. Kress, age 59, will continue as CFO."
+    )
+    assert events.opening_sentences(text, 3) == [
+        "On November 11, 2026, the Board accepted the resignation of Jen-Hsun Huang.",
+        "In connection with Mr. Huang's resignation, the Board appointed Colette M. Kress "
+        "as interim Chief Executive Officer.",
+        "Ms. Kress, age 59, will continue as CFO.",
+    ]
+    deal = (
+        "On August 17, 2026, NVIDIA announced a partnership with SB Energy Corp. "
+        "(collectively with its affiliates, “SB Energy”) to build a campus. "
+        "NVIDIA agreed to acquire Hugging Face, Inc. Hugging Face operates a platform."
+    )
+    sentences = events.opening_sentences(deal, 3)
+    assert sentences[0].endswith("to build a campus.")
+    assert sentences[1] == "NVIDIA agreed to acquire Hugging Face, Inc."
+    assert all(sentence in deal for sentence in sentences)

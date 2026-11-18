@@ -48,9 +48,12 @@ MAX_DOTTED_TITLE_CHARS = 60
 MAX_TITLE_WORDS = 25
 
 ITEM_NUMBER = r"\d{1,2}\.\d{1,2}"
+# A sub-item letter some filers write after the number: "Item 9.01(d).", "Item 5.02(e) ...".
+SUB_ITEM = r"(?:\s?\([a-z]\))?"
 # "Item 5.02.", "ITEM 5.02 -", "Item 5.02:", "Items 2.02 and 9.01.", "Item 2.02, 7.01 and 9.01".
 HEADING_LINE = re.compile(
-    rf"^items?\s*({ITEM_NUMBER}(?:\s*(?:,\s*and|,|and|&)\s*{ITEM_NUMBER})*)"
+    rf"^items?\s*({ITEM_NUMBER}{SUB_ITEM}"
+    rf"(?:\s*(?:,\s*and|,|and|&)\s*{ITEM_NUMBER}{SUB_ITEM})*)"
     r"(?:\s*([.:\-–—])\s*|\s+|$)(.*)$",
     re.IGNORECASE,
 )
@@ -58,6 +61,10 @@ NUMBER = re.compile(ITEM_NUMBER)
 # What ends the last item: the signature block, or an exhibit index, as a heading line.
 TRAILER_LINE = re.compile(
     r"^(?:signatures?|exhibit index|index to exhibits|exhibits index|list of exhibits)\s*[.:]?$",
+    re.IGNORECASE,
+)
+EXHIBIT_INDEX_LINE = re.compile(
+    r"^(?:exhibit index|index to exhibits|exhibits index|list of exhibits)\s*[.:]?$",
     re.IGNORECASE,
 )
 SIGNATURE_SENTENCE = re.compile(
@@ -165,7 +172,12 @@ def _sections(lines: list[_Line]) -> list[Section]:
     texts = [line.text for line in lines]
     if not headings:
         return [Section(heading=FALLBACK_HEADING, text="\n".join(texts))] if texts else []
-    trailer = _trailer_start(lines, headings[-1].body_start)
+    last_body = headings[-1].body_start
+    trailer = _trailer_start(lines, last_body)
+    if trailer == last_body < len(lines) and EXHIBIT_INDEX_LINE.match(lines[trailer].text):
+        # An exhibit index directly under the last item ("Item 9.01(d)." then "EXHIBIT INDEX",
+        # as Coca-Cola files) is that item's body; the signature block still ends it.
+        trailer = _trailer_start(lines, last_body + 1)
     ends = [heading.line for heading in headings[1:]] + [trailer]
     bodies = [
         (heading, "\n".join(texts[heading.body_start : end]))

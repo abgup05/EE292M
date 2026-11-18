@@ -18,10 +18,15 @@ from tests.fakes import recorded_html
 URL = "https://www.sec.gov/Archives/edgar/data/1045810/x/nvda.htm"
 # Items 5.02 and 9.01: the resignation of the chief executive (filed 12 November 2026).
 RESIGNATION = "nvda-8k-0001045810-26-000082.htm.gz"
-# Items 1.01, 2.03, 7.01 and 9.01: a credit agreement (filed 17 August 2026).
+# Items 1.01, 2.03, 7.01 and 9.01: a partnership agreement with SB Energy (filed 17 August
+# 2026; the index lists the first three).
 SEVERAL_ITEMS = "nvda-8k-0001045810-26-000069.htm.gz"
 # Items 8.01 and 9.01, each title on the line after its number (filed by an agent, 18 June 2026).
 TITLE_ON_NEXT_LINE = "nvda-8k-0001193125-26-275783.htm.gz"
+# Coca-Cola, Items 2.02 and 9.01: "Item 9.01(d)." with the exhibit index directly under it.
+SUB_ITEM_EXHIBITS = "ko-8k-0001628280-26-067403.htm.gz"
+# JPMorgan, Items 5.02 and 9.01: "Item 5.02(e) Departure of Directors ..." (20 January 2026).
+SUB_ITEM_OFFICERS = "jpm-8k-0000019617-26-000052.htm.gz"
 
 
 def parse(html: str) -> Document:
@@ -163,3 +168,58 @@ def test_item_numbers_are_written_as_the_index_writes_them(raw: str, number: str
 
 def test_the_splitter_has_a_version_of_its_own() -> None:
     assert parser_version().startswith("8k-")
+
+
+def test_a_sub_item_letter_after_the_number_still_heads_the_item() -> None:
+    """Seen live: Coca-Cola writes "Item 9.01(d).", JPMorgan "Item 5.02(e) Departure ..."."""
+    document = parse(
+        made_up(
+            "Item 5.02(e) Departure of Directors or Certain Officers.",
+            "On January 20, 2026, the Compensation Committee approved awards.",
+            "Item 9.01(d). Financial Statements and Exhibits.",
+            "Exhibit 99.1 Press release.",
+            "SIGNATURES",
+            "By: /s/ A Person",
+        )
+    )
+    assert headings(document) == [
+        "Item 5.02. Departure of Directors or Certain Officers",
+        "Item 9.01. Financial Statements and Exhibits",
+        TRAILER_HEADING,
+    ]
+
+
+def test_an_exhibit_index_directly_under_item_9_01_is_its_body() -> None:
+    """Seen live in all eight Coca-Cola 8-Ks of the last year: the 9.01 heading had no body."""
+    document = parse(recorded_html(SUB_ITEM_EXHIBITS))
+    labels = headings(document)
+    assert labels[1:] == [
+        "Item 2.02. Results of Operations and Financial Condition",
+        "Item 9.01. Financial Statements and Exhibits",
+        TRAILER_HEADING,
+    ]
+    exhibits = document.sections[2].text
+    assert exhibits.startswith("EXHIBIT INDEX") and "99.1" in exhibits
+    assert "Pursuant to the requirements" not in exhibits
+
+
+def test_a_second_filers_5_02_with_a_sub_item_letter_is_found() -> None:
+    document = parse(recorded_html(SUB_ITEM_OFFICERS))
+    labels = headings(document)
+    assert any(label.startswith("Item 5.02. Departure of Directors") for label in labels)
+    for section in document.sections:
+        assert section.text in document.text
+
+
+def test_a_signature_block_directly_under_the_last_item_is_never_its_body() -> None:
+    document = parse(
+        made_up(
+            "Item 5.07. Submission of Matters to a Vote of Security Holders.",
+            "The annual meeting was held on June 24, 2026.",
+            "Item 9.01. Financial Statements and Exhibits.",
+            "SIGNATURES",
+            "Pursuant to the requirements of the Securities Exchange Act of 1934, signed.",
+        )
+    )
+    assert headings(document)[-1] == TRAILER_HEADING
+    assert all("Pursuant" not in s.text for s in document.sections[:-1])

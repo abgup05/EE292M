@@ -13,6 +13,7 @@ Outputs that the README, the check-in and the hand-ins cite, kept here because t
 | `../speed/live-timing-v10.txt`, `../speed/live-timing-v11.txt` | `make time-live` | A live run without a key timed stage by stage inside the run, five runs under each of four conditions, before and after a run stopped fetching two filings twice for their tags |
 | `two-writers.txt` | `make two-writers ARGS="--rounds 2000"` | The app and a one-off container writing one scratch record at the same time: no failed write, SQLite's integrity check, every row present and readable |
 | `header-cut-fourteen-filings.md` | `make header-cut-check TICKERS="NVDA AAPL MSFT KO JPM TSLA COST AMZN"` | Each of 14 live filings parsed with and without the parser's header cut, the two documents compared whole |
+| `events-probe-before.md`, `events-probe-after.md` | `make events-probe` | Every 8-K the eight probe companies filed in the last 12 months: for each item EDGAR's index lists, whether the 8-K splitter found a section headed with it (190 of 200 before two fixes, 200 of 200 after), and each miss with its accession and reason |
 | `probe-before-header-cut.md` | `make probe TICKERS="NVDA AAPL MSFT KO JPM TSLA COST AMZN" OUTLINE=1` | The structure of 14 filings as parsed before the parser's one speed change; `../speed/probe-v4.md` is the same probe after it |
 
 These are single runs on one laptop. A file here shows that a command produced that output once; it does not show that it will again.

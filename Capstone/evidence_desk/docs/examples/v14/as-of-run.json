@@ -697,7 +697,9 @@
         ],
         "agreement": "one_reader",
         "agreement_label": "one reader: the grammar",
-        "dissent": []
+        "dissent": [],
+        "combines": "",
+        "parts": []
       },
       "compile_note": "",
       "readings": [
@@ -1215,7 +1217,9 @@
         ],
         "agreement": "one_reader",
         "agreement_label": "one reader: the grammar",
-        "dissent": []
+        "dissent": [],
+        "combines": "",
+        "parts": []
       },
       "compile_note": "",
       "readings": [
@@ -1397,7 +1401,9 @@
         ],
         "agreement": "one_reader",
         "agreement_label": "one reader: the grammar",
-        "dissent": []
+        "dissent": [],
+        "combines": "",
+        "parts": []
       },
       "compile_note": "",
       "readings": [
@@ -1771,7 +1777,9 @@
         ],
         "agreement": "one_reader",
         "agreement_label": "one reader: the grammar",
-        "dissent": []
+        "dissent": [],
+        "combines": "",
+        "parts": []
       },
       "compile_note": "",
       "readings": [

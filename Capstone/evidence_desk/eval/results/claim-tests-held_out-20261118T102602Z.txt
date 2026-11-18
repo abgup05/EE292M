@@ -1,0 +1,3 @@
+Claim compiler on the held_out labels: 60 of 60 exact.
+  expected to compile: 30 of 30 exact
+  expected none:       30 of 30 exact

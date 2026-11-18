@@ -81,6 +81,7 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/services/breakdowns.py   the latest filing of a form, fetched and read into breakdowns
     src/app/services/events.py  a company's 8-Ks after its newest annual report: listed from the index, the ones the rule picks read through the cache and split; a document that cannot be read is a reason on its event, never an error; the item sections offered to a claim
     src/app/services/computed.py   for a run: compiles every claim, computes the compiled ones and their histories from the facts the run read, and counts the outcomes in the verdicts after the summary; returns the compiled tests and breakdowns for the analysis
+    src/app/services/view_providers.py   the outside view and the market view as analytics providers of a run: which of their results a run keeps, the question each answers, the claims each is tied to, each provider's time budget; run_providers
     src/app/services/analysis.py   for a run: relevance, analytics from every provider, odds, headline; the two model steps with the corollaries and the audit, and what became of each; what the analysing model is shown
     src/app/services/restatements.py   a company's restatement ledger outside a run, as of a date when given
     src/app/services/outside_view.py   one company and one claim: the frames read, the two reference classes, the base rates and the standings
@@ -267,7 +268,12 @@ nothing filed later reaches any stage, which `tests/lookahead.py` checks (`docs/
    fetch (`ingest` keeps a fetched filing's HTML until then). Every analytic (`core/analytics`, one
    `AnalyticsProvider`, "facts") answers a stated question about a claim on the claim's own basis, with its
    id, formula, inputs with their filings and a templated reading; none is computed for the thesis at large,
-   and one the facts cannot give stays on the record with why. The odds a quarterly test holds in each of the
+   and one the facts cannot give stays on the record with why. A run that can reach EDGAR also asks two
+   providers that read it (`services/view_providers`): the outside view (the base rate of each computed claim's
+   test among other filers, the company's standing in its industry) and the market view (price to earnings, the
+   free cash flow yield and the growth the last 13F price implies, about the company as a whole). Each has a
+   time budget (20 s and 15 s); one that runs out, or that EDGAR does not answer, is named in
+   `Run.analysis.providers_failed` with its reason and the run carries on. Both honour `as_of`. The odds a quarterly test holds in each of the
    next four quarters (`core/persistence`, 10,000 resampled paths, seed 20261118). Then, with an analysing
    model (`engines/analyser`, `ANTHROPIC_ANALYSIS_MODEL`, default the engine's model, the engine's transport
    or cassette): one `propose` request for every claim's corollaries, read by the grammar and the proposer's
@@ -383,8 +389,9 @@ the end of `create_app`, which takes an injectable `wall_clock`): `PUT` and `DEL
   from the definition (`tests/test_analytics.py`) and, where the facts allow, from a company's raw facts
   (`tests/test_analytics_recorded.py`). If no claim would ask its question, it does not belong. The count in
   the tripwire's coverage stage moves: `make golden-baseline`, `make examples-analysis`, read both diffs.
-  Analytics from another source (peers, prices): a second `AnalyticsProvider` in `DEFAULT_PROVIDERS`
-  (`services/analysis.py`), with its own `provider` and `data_origin`.
+  Analytics from another source: an `AnalyticsProvider` added in `services/view_providers.run_providers`,
+  with its own `provider`, `data_origin` and, if it reads a network, `budget_seconds`; which of the outside
+  or market view's results a run keeps is decided there too.
 - **A change to the analysis prompts or schemas** (`engines/analyser.py`): the recorded `propose` and
   `analyse` answers no longer match, and a replay falls back to the computed analysis. `make record-analysis`
   (API), read the answers, then `make examples-analysis` and `make golden-baseline`.

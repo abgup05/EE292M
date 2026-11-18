@@ -1,14 +1,14 @@
 """The outside and market views on the eight probe companies (``make market-check``).
 
-Live: SEC's frames (through the disposable cache), each company's industry list and its
-XBRL facts. For each company it prints what the views computed and what they could not:
-the two base rates of one fixed test (:data:`CLAIM`), the revenue peer standing, and every
-input the valuation and the reverse DCF read from the facts (shares outstanding, debt,
-cash, equity, trailing revenue, operating income, net income, free cash flow). No price
-is read: there is no source (``docs/market-view.md``), so the market value and the
-multiples are not checked here, only the facts they are built from.
+Live: SEC's frames (through the disposable cache), each company's industry list, its
+XBRL facts, and the 13F filings the quarter-end price is read from. For each company it
+prints what the views computed and what they could not: the price with its source and
+whether a second manager's filing confirms it, the valuation, what the price implies,
+the base rates of one fixed test (:data:`CLAIM`) and three peer standings with the
+neighbours' names, so that a reader can judge whether the industry class is sensible.
 
-Writes the table to ``results/market-check-<UTC>.md``.
+Writes the table to ``results/market-check-<UTC>.md``. Exit code 1 when a company's
+views could not be made at all; a result that cannot be computed is a line, not a failure.
 """
 
 from __future__ import annotations
@@ -16,77 +16,70 @@ from __future__ import annotations
 import argparse
 import sys
 from collections.abc import Sequence
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 from app import wiring
-from app.core.claim_eval import Measures
-from app.core.facts import FactBook, FactsError
-from app.core.metrics import usd_text
-from app.core.periods import fiscal_calendar
-from app.core.ports import SourceError, UnknownTicker
-from app.core.valuation import Figure, balance, shares_outstanding, trailing
+from app.core.ports import FilingSource, SourceError, UnknownTicker
+from app.services.market_view import market_view
 from app.services.outside_view import outside_view
+from app.services.view_analytics import DEFAULT_PEER_MEASURES
 from app.sources.frames import FramesSource
+from app.sources.prices import PriceProvider
+from app.sources.thirteenf import QuarterEndPrices, ThirteenFSource
 
 TICKERS = ("NVDA", "AAPL", "MSFT", "KO", "JPM", "TSLA", "COST", "AMZN")
 CLAIM = "Revenue grew more than 10% year over year"
 RESULTS = Path("results")
 
 
-def _figure(figure: Figure) -> str:
-    if figure.value is None:
-        return f"n/a ({figure.note[:60]})"
-    return f"{usd_text(figure.value)} ({figure.period})"
-
-
-def check(ticker: str, edgar: object, frames: FramesSource, today: datetime) -> list[str]:
+def check(
+    ticker: str,
+    edgar: FilingSource,
+    frames: FramesSource,
+    prices: PriceProvider,
+    today: date,
+    as_of: date | None,
+) -> list[str]:
     """One company's lines of the table."""
-    company = edgar.company(ticker)  # type: ignore[attr-defined]
-    view = outside_view(company, CLAIM, edgar, frames, today=today.date())  # type: ignore[arg-type]
-    lines = [f"## {company.ticker}: {company.name} (SIC {view.sic} {view.sic_description})", ""]
-    for rate in view.base_rates:
+    company = edgar.company(ticker)
+    outside = outside_view(company, CLAIM, edgar, frames, today=today, as_of=as_of)
+    market = market_view(company, edgar, frames, prices=prices, today=today, as_of=as_of)
+    lines = [
+        f"## {company.ticker}: {company.name} (SIC {outside.sic} {outside.sic_description})",
+        "",
+        f"- price: {market.price_source or 'none'}",
+    ]
+    if market.price_note:
+        lines.append(f"  - {market.price_note}")
+    for result in market.valuation:
+        lines.append(f"- {result.label}: {result.display}; {result.reading or result.reason}")
+        if result.note and result.kind != "market_value":
+            lines.append(f"  - {result.note}")
+    dcf = market.reverse_dcf
+    if dcf is not None:
+        lines.append(f"- {dcf.label}: {dcf.display}; {dcf.reading or dcf.reason}")
+        lines.extend(f"  - {a}" for a in dcf.assumptions[:6])
+        if dcf.note:
+            lines.append(f"  - {dcf.note}")
+    for rate in outside.base_rates:
         lines.append(f"- base rate, {rate.class_name}: {rate.display or rate.reason}")
         if rate.reading:
             lines.append(f"  - {rate.reading}")
-    for peer in view.peers:
-        if peer.measure == "revenue" and peer.now is not None:
-            now = peer.now
+        if rate.cases:
             lines.append(
-                f"- revenue standing ({peer.class_name}), {now.year}: "
-                + (f"rank {now.rank} of {now.n}, {now.display}" if now.rank else now.reason)
+                "  - nearest: "
+                + "; ".join(f"{c.name} {c.year} {c.display}" for c in rate.cases[:3])
             )
-    payload = edgar.company_facts(company)  # type: ignore[attr-defined]
-    day = today.date()
-    try:
-        book = FactBook(payload, as_of=day)
-    except FactsError as exc:
-        return [*lines, f"- facts: could not be read ({exc})", ""]
-    measures = Measures(book, fiscal_calendar(payload, as_of=day))
-    shares = shares_outstanding(payload, day)
-    lines.append(
-        "- shares outstanding: "
-        + (
-            shares
-            if isinstance(shares, str)
-            else f"{shares.value:,.0f} on {shares.day} ({shares.concept}, {shares.form} "
-            f"filed {shares.filed}, {shares.classes} class(es))"
-        )
-    )
-    for metric, label in (
-        ("total_debt", "total debt"),
-        ("cash_and_securities", "cash and securities"),
-        ("equity", "equity"),
-    ):
-        lines.append(f"- {label}: {_figure(balance(measures, metric, label))}")
-    for metric, label in (
-        ("revenue", "trailing revenue"),
-        ("operating_income", "trailing operating income"),
-        ("net_income", "trailing net income"),
-        ("free_cash_flow", "trailing free cash flow"),
-    ):
-        figure = trailing(measures, metric, label)
-        lines.append(f"- {label}: {_figure(figure)}" + (f"; {figure.note}" if figure.note else ""))
+    for peer in outside.peers:
+        if peer.measure not in ("revenue", *DEFAULT_PEER_MEASURES):
+            continue
+        lines.append(f"- {peer.reading}")
+        if peer.now is not None and peer.now.rank is not None:
+            near = [*peer.now.above, *peer.now.below]
+            named = "; ".join(f"{n.rank}. {n.name} {n.display}" for n in near)
+            lines.append(f"  - next to it: {named}")
+    lines.extend(f"- note: {note}" for note in market.notes)
     lines.append("")
     return lines
 
@@ -95,19 +88,31 @@ def main(argv: Sequence[str] | None = None) -> int:
     """Check every ticker; print and write the table."""
     parser = argparse.ArgumentParser(prog="market-check")
     parser.add_argument("tickers", nargs="*", default=list(TICKERS))
+    parser.add_argument("--as-of", type=date.fromisoformat, default=None)
     args = parser.parse_args(argv)
     now = datetime.now(UTC)
-    lines = [f"# Market check, {now.isoformat(timespec='seconds')}", "", f"Test: {CLAIM}", ""]
+    lines = [
+        f"# Market check, {now.isoformat(timespec='seconds')}"
+        + (f", as of {args.as_of.isoformat()}" if args.as_of else ""),
+        "",
+        f"Test: {CLAIM}",
+        "",
+    ]
     failed = 0
     with wiring.filings_from_env() as edgar:
         frames = FramesSource(edgar.get, wiring.frames_dir())
-        for ticker in args.tickers:
+        thirteenf = ThirteenFSource(edgar.get, wiring.thirteenf_dir())
+        prices = QuarterEndPrices(thirteenf)
+        for ticker in args.tickers or TICKERS:
             try:
-                lines += check(ticker, edgar, frames, now)
+                lines += check(ticker, edgar, frames, prices, now.date(), args.as_of)
             except (SourceError, UnknownTicker) as exc:
                 failed += 1
                 lines += [f"## {ticker}", "", f"- failed: {exc}", ""]
-        lines.append(f"{frames.requests} frame or list request(s).")
+        lines.append(
+            f"{frames.requests} frame or list request(s), {thirteenf.requests} 13F request(s); "
+            f"{failed} of {len(args.tickers or TICKERS)} companies failed."
+        )
     text = "\n".join(lines)
     print(text)
     RESULTS.mkdir(exist_ok=True)

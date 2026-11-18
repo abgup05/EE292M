@@ -4,6 +4,8 @@ Live. One request to each candidate, never more than one a second, and a report 
 what came back: the HTTP status, the content type, the size, the first line, and
 whether the body is the shape the reader expects. It decides nothing by itself; the
 findings are written down in ``docs/market-view.md`` and ``docs/outside-view.md``.
+``--thirteenf`` looks only at the 13F managers the quarter-end price is read from;
+``--concepts TICKER:REGEX`` lists what a company tags on its newest balance sheet.
 
 SEC hosts are asked through the app's own EDGAR client (its User-Agent and rate
 limit). Every other host is asked with a generic User-Agent that names the tool and
@@ -17,15 +19,19 @@ candidate that fails is a finding, not an error.
 from __future__ import annotations
 
 import argparse
+import re
 import time
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from app import wiring
 from app.core.ports import SourceError
+from app.core.thirteenf import parse_information_table
 from app.sources.prices import PriceFetchError, fetch_public_csv
+from app.sources.thirteenf import MANAGERS, ThirteenFSource
 
 RESULTS = Path("results")
 PAUSE_SECONDS = 1.0
@@ -160,13 +166,22 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--save", action="store_true", help="keep each body under results/")
     parser.add_argument("--sic", default="", help="only page SEC's company list for this code")
     parser.add_argument("--count", type=int, default=100, help="page size for --sic")
+    parser.add_argument("--thirteenf", action="store_true", help="only the 13F managers")
+    parser.add_argument(
+        "--concepts", default="", help="TICKER:REGEX[:DATE], its concepts on a balance sheet"
+    )
     args = parser.parse_args(argv)
     now = datetime.now(UTC)
     lines = [f"# Market and outside-data probe, {now.strftime('%Y-%m-%d %H:%M UTC')}", ""]
     with wiring.filings_from_env() as edgar:
         if args.sic:
             lines += sic_paging(args.sic, edgar.get, args.count)
-        for probe in PROBES if not args.sic else ():
+        if args.thirteenf:
+            lines += thirteenf_probe(edgar.get)
+        if args.concepts:
+            ticker, pattern, day = (*args.concepts.split(":"), "")[:3]
+            lines += concepts_probe(edgar.company_facts(edgar.company(ticker)), pattern, day)
+        for probe in PROBES if not (args.sic or args.thirteenf or args.concepts) else ():
             if args.only and args.only.lower() not in probe.name.lower():
                 continue
             save = RESULTS / "market-probe-bodies" if args.save else None
@@ -179,6 +194,53 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(text)
     print(f"market-probe: written to {out}")
     return 0
+
+
+def thirteenf_probe(sec_get: Callable[[str], bytes]) -> list[str]:
+    """Each 13F manager the price source reads: its newest filing and what its table holds."""
+    source = ThirteenFSource(sec_get, wiring.thirteenf_dir())
+    lines: list[str] = []
+    for cik, manager in MANAGERS:
+        filings = source.filings(cik, manager)
+        if not filings:
+            lines.append(f"- **{manager}** (CIK {cik}): no 13F-HR in its recent index")
+            continue
+        newest = filings[0]
+        text = source.table(newest) or ""
+        table = parse_information_table(text)
+        counts = sorted(table.skipped.items())
+        skipped = "; ".join(f"{count:,} {reason}" for reason, count in counts)
+        lines.append(
+            f"- **{manager}** (CIK {cik}): {len(filings)} 13F-HR in its recent index; newest "
+            f"{newest.accession} for {newest.period}, filed {newest.filed} "
+            f"({(newest.filed - newest.period).days} days after the quarter's end); table "
+            f"{len(text):,} characters, {len(table.holdings):,} share positions of "
+            f"{len({h.cusip for h in table.holdings}):,} securities; not read: {skipped or 'none'}"
+        )
+    lines.append(f"- {source.requests} request(s) to SEC")
+    return lines
+
+
+def concepts_probe(payload: dict[str, Any], pattern: str, day: str = "") -> list[str]:
+    """The us-gaap USD concepts matching ``pattern`` at ``day`` (default: the newest ``Assets``)."""
+    gaap: dict[str, Any] = payload["facts"]["us-gaap"]
+    newest = day or max(row["end"] for row in gaap["Assets"]["units"]["USD"])
+    lines = [f"- balance sheet read: {newest}"]
+    for concept in sorted(gaap):
+        if not re.search(pattern, concept):
+            continue
+        rows = gaap[concept].get("units", {}).get("USD", [])
+        at = [row for row in rows if row.get("end") == newest and "start" not in row]
+        last = max((row["end"] for row in rows), default="-")
+        lines.append(
+            f"- {concept}: "
+            + (
+                f"{at[-1]['val']:,} at {newest} ({at[-1].get('form')} filed {at[-1].get('filed')})"
+                if at
+                else f"none (last {last})"
+            )
+        )
+    return lines
 
 
 if __name__ == "__main__":

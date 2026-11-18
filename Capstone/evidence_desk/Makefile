@@ -1,4 +1,4 @@
-.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench eval eval-validate backup restore-check up-recorded live-walk changes breakdowns sample-run-changes golden-sheet backup-status figures two-writers header-cut-check time-live events events-probe event-categories facts-load restatements claim-labels claim-results-key examples claim-foreign watch-once watch-status watch-examples watch-replay watch-contention sample-inbox sample-v14 look measures-probe readers-echo readers-check examples-analysis record-analysis market-probe outside-view market-view fixtures-market market-examples market-check
+.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench eval eval-validate backup restore-check up-recorded live-walk changes breakdowns sample-run-changes golden-sheet backup-status figures two-writers header-cut-check time-live events events-probe event-categories facts-load restatements claim-labels claim-results-key examples claim-foreign watch-once watch-status watch-examples watch-replay watch-contention sample-inbox sample-v14 look measures-probe readers-echo readers-check examples-analysis record-analysis market-probe outside-view market-view fixtures-market market-examples market-check reference-pack time-analysis
 
 export COMPOSE_PROJECT_NAME := ee292m-evidence-desk
 export LOCAL_UID := $(shell id -u)
@@ -403,6 +403,17 @@ outside-view:
 # (FRED's S&P 500, read live) or INDEX=path/to/index.csv is the index they are measured against.
 market-view:
 	$(RUN) python -m app.market $(or $(T),NVDA) --claim "$(CLAIM)" $(if $(PRICE),--price "$(PRICE)" --price-date "$(PRICE_DATE)",) $(if $(AS_OF),--as-of "$(AS_OF)",) $(if $(PRICES),--prices "$(PRICES)",) $(if $(INDEX),--index "$(INDEX)",) $(ARGS)
+
+# Offline: one run of five claims with stand-ins that wait as model requests do, its
+# timings, and the same requests in the old order. SCALE=0.1 for a quick look.
+time-analysis:
+	$(RUN) python -m tests.timing_run --scale $(or $(SCALE),1)
+
+# Live, on purpose, and slow the first time (one request for each of several thousand filers'
+# industry codes; everything fetched is kept, so a second run is quick): the reference pack of
+# SEC frames and 13F tables that ships in src/app/reference (docs/reference-pack.md).
+reference-pack:
+	$(RUN) python -m app.build_reference $(ARGS)
 
 # Live, on purpose: the frames, SIC list and company facts the offline example reads
 # (tests/fixtures/frames/manifest.json says what and when). REFRESH=1 writes over them.

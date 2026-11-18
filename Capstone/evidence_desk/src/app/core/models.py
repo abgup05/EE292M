@@ -576,6 +576,21 @@ class Coverage(BaseModel):
     analysis_lean_flags: int = 0
 
 
+class StageTiming(BaseModel):
+    """How long one part of a run took, by the run's clock, in seconds.
+
+    ``background`` is True for work that ran beside other stages (a provider reading EDGAR,
+    the request for the corollaries), whose seconds therefore overlap theirs and do not add
+    to the run's length. ``note`` says what the part was (how many requests, at most how many
+    at once) or that it ran out of time.
+    """
+
+    stage: str
+    seconds: float
+    background: bool = False
+    note: str = ""
+
+
 class Run(BaseModel):
     """The full persisted record of one thesis run."""
 
@@ -618,6 +633,9 @@ class Run(BaseModel):
     # Relevance, analytics, corollaries, odds and the argued analysis (app.services.analysis);
     # None in runs recorded before version 0.14.2.
     analysis: Analysis | None = None
+    # How long each part of the run took (a view may draw them); empty before 0.14.2. They
+    # differ between two runs of one thesis, like the clock times.
+    timings: list[StageTiming] = Field(default_factory=list)
 
 
 class CompanyEvents(BaseModel):

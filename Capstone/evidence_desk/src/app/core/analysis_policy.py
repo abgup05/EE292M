@@ -26,6 +26,18 @@ PROVIDER_FAILED_ERROR = (
     "The analytics provider {name} gave nothing ({why}); its analytics are missing from the record."
 )
 
+# The claims' arguments are separate requests with nothing shared; this many are sent at once.
+MAX_CONCURRENT_ARGUMENTS = 6
+# The claim readers' requests (one a claim and reader) are sent this many at once.
+MAX_CONCURRENT_READS = 6
+PEER_CLAIM_NOTE = (
+    "This claim compares the company with other companies. Its rank among the filers of its "
+    "SEC industry code on the measure is computed apart from you and shown with the claim. "
+    "The claim-test language states nothing about other companies, so do not propose the "
+    "comparison itself: propose what would be true of the company's own figures if it were "
+    "the one pulling ahead."
+)
+
 # The headline (app.core.relevance): at most this many figures.
 MAX_HEADLINE = 12
 

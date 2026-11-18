@@ -376,7 +376,7 @@ class _SlowEngine(ScriptedAnalyst):
 
 def _comparable(run: Run) -> dict[str, object]:
     """The record without what differs between any two runs: ids and timestamps."""
-    record = run.model_dump(mode="json", exclude={"id", "started_at", "finished_at"})
+    record = run.model_dump(mode="json", exclude={"id", "started_at", "finished_at", "timings"})
     for source in record["sources"]:
         source.pop("retrieved_at")
     return record

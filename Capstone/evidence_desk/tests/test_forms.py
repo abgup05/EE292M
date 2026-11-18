@@ -364,3 +364,24 @@ def test_the_normal_form_of_the_new_forms() -> None:
     first = ClaimTest(once.form, once.left, once.op, once.right, also=a)
     second = ClaimTest(a.form, a.left, a.op, a.right, also=once)
     assert normal_form(first) == normal_form(second)
+
+
+# A run: the filing's tags are read when any part of a test needs them
+
+
+def test_a_run_reads_the_tags_for_a_share_in_the_second_part_of_an_and(tmp_path) -> None:
+    from tests.test_reading_rule import _readers, _run
+
+    claim = "The company is doing well on two counts."
+    both = ClaimTest(
+        "threshold", v("gross_margin"), ">", pct(10), also=share(Period("FY", fiscal_year=2026))
+    )
+    reading = as_reading(both)
+    run = _run(tmp_path, [claim], _readers({claim: reading}, {claim: reading}))
+
+    computed = run.claims[0].computed
+    assert computed is not None and computed.combines == "and"
+    second = computed.parts[1]
+    assert second.outcome != "cannot_compute", second.reason
+    assert second.left is not None and second.left.inputs[0].form == "10-K"
+    assert computed.history == [] and computed.history_note

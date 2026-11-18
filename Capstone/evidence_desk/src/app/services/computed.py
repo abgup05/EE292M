@@ -173,9 +173,10 @@ def compute_claims(
         return
     reports: list[BreakdownReport] = []
     report_errors: list[str] = []
-    if any(read.test.left.axis for read in tests.values()):
+    terms = [term for read in tests.values() for term in read.test.terms]
+    if any(term.axis for term in terms):
         reports, report_errors = (read_part_reports or read_reports)()
-    elif any(read.test.left.fn in SHARES for read in tests.values()):
+    elif any(term.fn in SHARES for term in terms):
         reports, report_errors = read_reports()
     books = HistoryBooks(numbers.payload) if numbers.payload is not None else None
     for claim in run.claims:
@@ -189,8 +190,7 @@ def compute_claims(
         else:
             result = evaluate(test, numbers.book, calendar=numbers.calendar, reports=reports)
             history, note = claim_history(test, books.payload, as_of=numbers.as_of, books=books)
-            from_filing = test.left.fn in SHARES or bool(test.left.axis)
-            extra = " ".join(report_errors) if from_filing and report_errors else ""
+            extra = " ".join(report_errors) if test.from_filing and report_errors else ""
             claim.computed = result.model_copy(
                 update={
                     "history": history,

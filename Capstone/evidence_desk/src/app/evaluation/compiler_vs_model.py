@@ -63,7 +63,7 @@ NAMES = {"NVDA": "NVIDIA CORP", "AAPL": "Apple Inc.", "MSFT": "MICROSOFT CORP"}
 
 
 def _shares(test: ClaimTest) -> bool:
-    return test.left.fn in ("share", "max_share")
+    return test.from_filing
 
 
 def build_requests(cases: Sequence[dict[str, Any]]) -> list[tuple[dict[str, Any], ModelRequest]]:

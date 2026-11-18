@@ -49,7 +49,7 @@ def test_the_evaluator_agrees_with_the_key(case: dict[str, Any], payloads) -> No
     assert test.canonical == case["canonical"]
     day = date.fromisoformat(case["as_of"])
     payload = payloads[case["ticker"]]
-    shares = test.left.fn in ("share", "max_share")
+    shares = test.from_filing
     result = evaluate(
         test,
         FactBook(payload, as_of=day),

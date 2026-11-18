@@ -1,4 +1,4 @@
-.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench eval eval-validate backup restore-check up-recorded live-walk changes breakdowns sample-run-changes golden-sheet backup-status figures two-writers header-cut-check time-live events events-probe event-categories facts-load restatements claim-labels claim-results-key examples claim-foreign watch-once watch-status watch-examples watch-replay watch-contention sample-inbox sample-v14 look measures-probe readers-echo readers-check market-probe outside-view market-view
+.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench eval eval-validate backup restore-check up-recorded live-walk changes breakdowns sample-run-changes golden-sheet backup-status figures two-writers header-cut-check time-live events events-probe event-categories facts-load restatements claim-labels claim-results-key examples claim-foreign watch-once watch-status watch-examples watch-replay watch-contention sample-inbox sample-v14 look measures-probe readers-echo readers-check market-probe outside-view market-view fixtures-market market-examples
 
 export COMPOSE_PROJECT_NAME := ee292m-evidence-desk
 export LOCAL_UID := $(shell id -u)
@@ -389,3 +389,13 @@ outside-view:
 # (FRED's S&P 500, read live) or INDEX=path/to/index.csv is the index they are measured against.
 market-view:
 	$(RUN) python -m app.market $(or $(T),NVDA) --price "$(PRICE)" --price-date "$(PRICE_DATE)" --claim "$(CLAIM)" $(if $(PRICES),--prices "$(PRICES)",) $(if $(INDEX),--index "$(INDEX)",) $(ARGS)
+
+# Live, on purpose: the frames, SIC list and company facts the offline example reads
+# (tests/fixtures/frames/manifest.json says what and when). REFRESH=1 writes over them.
+fixtures-market:
+	$(RUN) python -m app.record_market $(if $(filter 1,$(REFRESH)),--refresh,)
+
+# Offline: docs/examples/market from the recorded fixtures; tests/test_market_examples.py
+# fails when they are out of date.
+market-examples:
+	$(RUN) python -m tests.market_examples $(ARGS)

@@ -116,7 +116,9 @@ def fetch_public_csv(
                         current, response.headers.get("content-type", ""), b"".join(chunks)
                     )
             except httpx.TimeoutException as exc:
-                raise PriceFetchError(f"The price source timed out after {TIMEOUT_SECONDS:.0f} s") from exc
+                raise PriceFetchError(
+                    f"The price source timed out after {TIMEOUT_SECONDS:.0f} s"
+                ) from exc
             except httpx.HTTPError as exc:
                 raise PriceFetchError(
                     f"The price source could not be reached ({exc.__class__.__name__})"
@@ -177,7 +179,9 @@ class FredSeries:
 
     name = "FRED"
 
-    def __init__(self, cache_dir: Path | None = None, fetch: Callable[[str], FetchedBody] = fetch_public_csv) -> None:
+    def __init__(
+        self, cache_dir: Path | None = None, fetch: Callable[[str], FetchedBody] = fetch_public_csv
+    ) -> None:
         self._cache_dir = cache_dir
         self._fetch = fetch
 

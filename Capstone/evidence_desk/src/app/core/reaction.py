@@ -1,4 +1,4 @@
-"""The market's reading of an event: the stock's move after a filing, against an index and its normal move.
+"""The stock's move after a filing, against an index and against its own normal move.
 
 Pure. :func:`event_reaction` takes the stock's and an index's daily closes, the day an
 8-K was filed, a number of trading days and the as-of date, and returns two windows:
@@ -82,7 +82,9 @@ def _window(
         index_return = (finish / begin - 1) * 100
     excess = stock_return - (index_return or 0.0)
     against = "against the index" if index_return is not None else "with no index to compare"
-    head = f"{percent_text(excess, signed=True)} {against} over {days} trading day{'s' * (days != 1)}"
+    head = (
+        f"{percent_text(excess, signed=True)} {against} over {days} trading day{'s' * (days != 1)}"
+    )
     if sigma is None:
         return ReactionWindow(
             name=name,
@@ -141,9 +143,19 @@ def event_reaction(
     windows: list[ReactionWindow] = []
     if start + days < len(closes):
         windows.append(
-            _window(f"{days} trading days", closes, index_closes, start, start + days, sigma, len(returns))
+            _window(
+                f"{days} trading days",
+                closes,
+                index_closes,
+                start,
+                start + days,
+                sigma,
+                len(returns),
+            )
         )
     windows.append(
-        _window("to the latest close", closes, index_closes, start, len(closes) - 1, sigma, len(returns))
+        _window(
+            "to the latest close", closes, index_closes, start, len(closes) - 1, sigma, len(returns)
+        )
     )
     return windows

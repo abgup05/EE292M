@@ -1,0 +1,701 @@
+{
+  "company": {
+    "cik": 1045810,
+    "ticker": "NVDA",
+    "name": "NVIDIA CORP"
+  },
+  "claim": "The chief executive is leaving",
+  "as_of": "2026-11-18",
+  "price_source": "price supplied on the request for 2026-11-17",
+  "valuation": [
+    {
+      "id": "market_value:NVDA:2026-11-17",
+      "kind": "market_value",
+      "label": "Market value",
+      "outcome": "computed",
+      "reason": "",
+      "value": 3615000000000.0,
+      "unit": "USD",
+      "display": "$3615.00B",
+      "formula": "$150.00 × 24,100,000,000 shares",
+      "inputs": [
+        {
+          "label": "Price per share",
+          "value": 150.0,
+          "display": "$150.00",
+          "source": "price supplied on the request for 2026-11-17",
+          "date": "2026-11-17",
+          "filed": "",
+          "url": ""
+        },
+        {
+          "label": "Shares outstanding (dei:EntityCommonStockSharesOutstanding)",
+          "value": 24100000000.0,
+          "display": "24,100,000,000",
+          "source": "SEC company facts, 10-Q 0001045810-26-000075",
+          "date": "2026-08-21",
+          "filed": "2026-08-26",
+          "url": ""
+        }
+      ],
+      "assumptions": [],
+      "reading": "At $150.00 on 2026-11-17, the 24,100,000,000 shares outstanding on 2026-08-21 are worth $3615.00B.",
+      "data_origin": "market_prices",
+      "as_of": "2026-11-18",
+      "note": ""
+    },
+    {
+      "id": "enterprise_value:NVDA:2026-11-17",
+      "kind": "enterprise_value",
+      "label": "Enterprise value",
+      "outcome": "computed",
+      "reason": "",
+      "value": 3625923000000.0,
+      "unit": "USD",
+      "display": "$3625.92B",
+      "formula": "$3615.00B + $33.37B − $22.44B",
+      "inputs": [
+        {
+          "label": "Price per share",
+          "value": 150.0,
+          "display": "$150.00",
+          "source": "price supplied on the request for 2026-11-17",
+          "date": "2026-11-17",
+          "filed": "",
+          "url": ""
+        },
+        {
+          "label": "Shares outstanding (dei:EntityCommonStockSharesOutstanding)",
+          "value": 24100000000.0,
+          "display": "24,100,000,000",
+          "source": "SEC company facts, 10-Q 0001045810-26-000075",
+          "date": "2026-08-21",
+          "filed": "2026-08-26",
+          "url": ""
+        },
+        {
+          "label": "Total debt (LongTermDebtNoncurrent)",
+          "value": 32366000000.0,
+          "display": "$32.37B",
+          "source": "SEC company facts, 10-Q 0001045810-26-000075",
+          "date": "2026-07-26",
+          "filed": "2026-08-26",
+          "url": ""
+        },
+        {
+          "label": "Total debt (LongTermDebtCurrent)",
+          "value": 1000000000.0,
+          "display": "$1.00B",
+          "source": "SEC company facts, 10-Q 0001045810-26-000075",
+          "date": "2026-07-26",
+          "filed": "2026-08-26",
+          "url": ""
+        },
+        {
+          "label": "Cash and marketable securities (CashAndCashEquivalentsAtCarryingValue)",
+          "value": 22443000000.0,
+          "display": "$22.44B",
+          "source": "SEC company facts, 10-Q 0001045810-26-000075",
+          "date": "2026-07-26",
+          "filed": "2026-08-26",
+          "url": ""
+        }
+      ],
+      "assumptions": [
+        "Enterprise value = market value + total debt − cash and marketable securities (leases, preferred stock and minority interests are left out)."
+      ],
+      "reading": "Market value $3615.00B plus total debt $33.37B less cash and marketable securities $22.44B (2026-07-26) is $3625.92B.",
+      "data_origin": "market_prices",
+      "as_of": "2026-11-18",
+      "note": ""
+    },
+    {
+      "id": "ev_sales:NVDA:2026-11-17",
+      "kind": "ev_sales",
+      "label": "Enterprise value ÷ revenue",
+      "outcome": "computed",
+      "reason": "",
+      "value": 11.967967019728091,
+      "unit": "multiple",
+      "display": "12.0×",
+      "formula": "$3625.92B ÷ $302.97B",
+      "inputs": [
+        {
+          "label": "Revenue (Revenues)",
+          "value": 96221000000.0,
+          "display": "$96.22B",
+          "source": "SEC company facts, 10-Q 0001045810-26-000075",
+          "date": "2026-07-26",
+          "filed": "2026-08-26",
+          "url": ""
+        },
+        {
+          "label": "Revenue (Revenues)",
+          "value": 81615000000.0,
+          "display": "$81.61B",
+          "source": "SEC company facts, 10-Q 0001045810-26-000052",
+          "date": "2026-04-26",
+          "filed": "2026-05-20",
+          "url": ""
+        },
+        {
+          "label": "Revenue (Revenues, derived)",
+          "value": 68127000000.0,
+          "display": "$68.13B",
+          "source": "SEC company facts, derived (fiscal year 215,938,000,000 (0001045810-26-000021) − nine months year to date 147,811,000,000 (0001045810-25-000230))",
+          "date": "2026-01-25",
+          "filed": "2026-02-25",
+          "url": ""
+        },
+        {
+          "label": "Revenue (Revenues)",
+          "value": 57006000000.0,
+          "display": "$57.01B",
+          "source": "SEC company facts, 10-Q 0001045810-25-000230",
+          "date": "2025-10-26",
+          "filed": "2025-11-19",
+          "url": ""
+        }
+      ],
+      "assumptions": [],
+      "reading": "Enterprise value ÷ revenue on revenue, four quarters ended 2026-07-26 is 12.0×.",
+      "data_origin": "market_prices",
+      "as_of": "2026-11-18",
+      "note": ""
+    },
+    {
+      "id": "pe:NVDA:2026-11-17",
+      "kind": "pe",
+      "label": "Market value ÷ net income",
+      "outcome": "computed",
+      "reason": "",
+      "value": 18.742320314808765,
+      "unit": "multiple",
+      "display": "18.7×",
+      "formula": "$3615.00B ÷ $192.88B",
+      "inputs": [
+        {
+          "label": "Net income (NetIncomeLoss)",
+          "value": 59688000000.0,
+          "display": "$59.69B",
+          "source": "SEC company facts, 10-Q 0001045810-26-000075",
+          "date": "2026-07-26",
+          "filed": "2026-08-26",
+          "url": ""
+        },
+        {
+          "label": "Net income (NetIncomeLoss)",
+          "value": 58321000000.0,
+          "display": "$58.32B",
+          "source": "SEC company facts, 10-Q 0001045810-26-000052",
+          "date": "2026-04-26",
+          "filed": "2026-05-20",
+          "url": ""
+        },
+        {
+          "label": "Net income (NetIncomeLoss, derived)",
+          "value": 42960000000.0,
+          "display": "$42.96B",
+          "source": "SEC company facts, derived (fiscal year 120,067,000,000 (0001045810-26-000036) − nine months year to date 77,107,000,000 (0001045810-25-000230))",
+          "date": "2026-01-25",
+          "filed": "2026-05-12",
+          "url": ""
+        },
+        {
+          "label": "Net income (NetIncomeLoss)",
+          "value": 31910000000.0,
+          "display": "$31.91B",
+          "source": "SEC company facts, 10-Q 0001045810-25-000230",
+          "date": "2025-10-26",
+          "filed": "2025-11-19",
+          "url": ""
+        }
+      ],
+      "assumptions": [],
+      "reading": "Market value ÷ net income on net income, four quarters ended 2026-07-26 is 18.7×.",
+      "data_origin": "market_prices",
+      "as_of": "2026-11-18",
+      "note": ""
+    },
+    {
+      "id": "p_fcf:NVDA:2026-11-17",
+      "kind": "p_fcf",
+      "label": "Market value ÷ free cash flow",
+      "outcome": "computed",
+      "reason": "",
+      "value": 28.463222209974333,
+      "unit": "multiple",
+      "display": "28.5×",
+      "formula": "$3615.00B ÷ $127.01B",
+      "inputs": [
+        {
+          "label": "Free cash flow (NetCashProvidedByUsedInOperatingActivities, derived)",
+          "value": 24077000000.0,
+          "display": "$24.08B",
+          "source": "SEC company facts, derived (six months year to date 74,421,000,000 (0001045810-26-000075) − three months 50,344,000,000 (0001045810-26-000052))",
+          "date": "2026-07-26",
+          "filed": "2026-08-26",
+          "url": ""
+        },
+        {
+          "label": "Free cash flow (PaymentsToAcquireProductiveAssets, derived)",
+          "value": 2677000000.0,
+          "display": "$2.68B",
+          "source": "SEC company facts, derived (six months year to date 4,434,000,000 (0001045810-26-000075) − three months 1,757,000,000 (0001045810-26-000052))",
+          "date": "2026-07-26",
+          "filed": "2026-08-26",
+          "url": ""
+        },
+        {
+          "label": "Free cash flow (NetCashProvidedByUsedInOperatingActivities)",
+          "value": 50344000000.0,
+          "display": "$50.34B",
+          "source": "SEC company facts, 10-Q 0001045810-26-000052",
+          "date": "2026-04-26",
+          "filed": "2026-05-20",
+          "url": ""
+        },
+        {
+          "label": "Free cash flow (PaymentsToAcquireProductiveAssets)",
+          "value": 1757000000.0,
+          "display": "$1.76B",
+          "source": "SEC company facts, 10-Q 0001045810-26-000052",
+          "date": "2026-04-26",
+          "filed": "2026-05-20",
+          "url": ""
+        },
+        {
+          "label": "Free cash flow (NetCashProvidedByUsedInOperatingActivities, derived)",
+          "value": 36188000000.0,
+          "display": "$36.19B",
+          "source": "SEC company facts, derived (fiscal year 102,718,000,000 (0001045810-26-000021) − nine months year to date 66,530,000,000 (0001045810-25-000230))",
+          "date": "2026-01-25",
+          "filed": "2026-02-25",
+          "url": ""
+        },
+        {
+          "label": "Free cash flow (PaymentsToAcquireProductiveAssets, derived)",
+          "value": 1284000000.0,
+          "display": "$1.28B",
+          "source": "SEC company facts, derived (fiscal year 6,042,000,000 (0001045810-26-000021) − nine months year to date 4,758,000,000 (0001045810-25-000230))",
+          "date": "2026-01-25",
+          "filed": "2026-02-25",
+          "url": ""
+        },
+        {
+          "label": "Free cash flow (NetCashProvidedByUsedInOperatingActivities, derived)",
+          "value": 23751000000.0,
+          "display": "$23.75B",
+          "source": "SEC company facts, derived (nine months year to date 66,530,000,000 (0001045810-25-000230) − six months year to date 42,779,000,000 (0001045810-26-000075))",
+          "date": "2025-10-26",
+          "filed": "2026-08-26",
+          "url": ""
+        },
+        {
+          "label": "Free cash flow (PaymentsToAcquireProductiveAssets, derived)",
+          "value": 1636000000.0,
+          "display": "$1.64B",
+          "source": "SEC company facts, derived (nine months year to date 4,758,000,000 (0001045810-25-000230) − six months year to date 3,122,000,000 (0001045810-26-000075))",
+          "date": "2025-10-26",
+          "filed": "2026-08-26",
+          "url": ""
+        }
+      ],
+      "assumptions": [],
+      "reading": "Market value ÷ free cash flow on free cash flow, four quarters ended 2026-07-26 is 28.5×.",
+      "data_origin": "market_prices",
+      "as_of": "2026-11-18",
+      "note": ""
+    },
+    {
+      "id": "fcf_yield:NVDA:2026-11-17",
+      "kind": "fcf_yield",
+      "label": "Free cash flow yield",
+      "outcome": "computed",
+      "reason": "",
+      "value": 3.5133056708160444,
+      "unit": "percent",
+      "display": "3.5%",
+      "formula": "$127.01B ÷ $3615.00B",
+      "inputs": [
+        {
+          "label": "Free cash flow (NetCashProvidedByUsedInOperatingActivities, derived)",
+          "value": 24077000000.0,
+          "display": "$24.08B",
+          "source": "SEC company facts, derived (six months year to date 74,421,000,000 (0001045810-26-000075) − three months 50,344,000,000 (0001045810-26-000052))",
+          "date": "2026-07-26",
+          "filed": "2026-08-26",
+          "url": ""
+        },
+        {
+          "label": "Free cash flow (PaymentsToAcquireProductiveAssets, derived)",
+          "value": 2677000000.0,
+          "display": "$2.68B",
+          "source": "SEC company facts, derived (six months year to date 4,434,000,000 (0001045810-26-000075) − three months 1,757,000,000 (0001045810-26-000052))",
+          "date": "2026-07-26",
+          "filed": "2026-08-26",
+          "url": ""
+        },
+        {
+          "label": "Free cash flow (NetCashProvidedByUsedInOperatingActivities)",
+          "value": 50344000000.0,
+          "display": "$50.34B",
+          "source": "SEC company facts, 10-Q 0001045810-26-000052",
+          "date": "2026-04-26",
+          "filed": "2026-05-20",
+          "url": ""
+        },
+        {
+          "label": "Free cash flow (PaymentsToAcquireProductiveAssets)",
+          "value": 1757000000.0,
+          "display": "$1.76B",
+          "source": "SEC company facts, 10-Q 0001045810-26-000052",
+          "date": "2026-04-26",
+          "filed": "2026-05-20",
+          "url": ""
+        },
+        {
+          "label": "Free cash flow (NetCashProvidedByUsedInOperatingActivities, derived)",
+          "value": 36188000000.0,
+          "display": "$36.19B",
+          "source": "SEC company facts, derived (fiscal year 102,718,000,000 (0001045810-26-000021) − nine months year to date 66,530,000,000 (0001045810-25-000230))",
+          "date": "2026-01-25",
+          "filed": "2026-02-25",
+          "url": ""
+        },
+        {
+          "label": "Free cash flow (PaymentsToAcquireProductiveAssets, derived)",
+          "value": 1284000000.0,
+          "display": "$1.28B",
+          "source": "SEC company facts, derived (fiscal year 6,042,000,000 (0001045810-26-000021) − nine months year to date 4,758,000,000 (0001045810-25-000230))",
+          "date": "2026-01-25",
+          "filed": "2026-02-25",
+          "url": ""
+        },
+        {
+          "label": "Free cash flow (NetCashProvidedByUsedInOperatingActivities, derived)",
+          "value": 23751000000.0,
+          "display": "$23.75B",
+          "source": "SEC company facts, derived (nine months year to date 66,530,000,000 (0001045810-25-000230) − six months year to date 42,779,000,000 (0001045810-26-000075))",
+          "date": "2025-10-26",
+          "filed": "2026-08-26",
+          "url": ""
+        },
+        {
+          "label": "Free cash flow (PaymentsToAcquireProductiveAssets, derived)",
+          "value": 1636000000.0,
+          "display": "$1.64B",
+          "source": "SEC company facts, derived (nine months year to date 4,758,000,000 (0001045810-25-000230) − six months year to date 3,122,000,000 (0001045810-26-000075))",
+          "date": "2025-10-26",
+          "filed": "2026-08-26",
+          "url": ""
+        }
+      ],
+      "assumptions": [],
+      "reading": "Free cash flow, four quarters ended 2026-07-26 is 3.5% of the market value.",
+      "data_origin": "market_prices",
+      "as_of": "2026-11-18",
+      "note": ""
+    }
+  ],
+  "reverse_dcf": {
+    "id": "reverse_dcf:NVDA:2026-11-17",
+    "kind": "reverse_dcf",
+    "label": "Revenue growth the price implies (reverse DCF)",
+    "outcome": "computed",
+    "reason": "",
+    "value": 7.9101243182085454,
+    "unit": "percent",
+    "display": "7.9% a year for 10 years",
+    "formula": "PV(g) = enterprise value $3625.92B, solved for g between −50% and +100%",
+    "inputs": [
+      {
+        "label": "Enterprise value (the target)",
+        "value": 3625923000000.0,
+        "display": "$3625.92B",
+        "source": "computed: market value + debt − cash and securities",
+        "date": "2026-11-17",
+        "filed": "",
+        "url": ""
+      },
+      {
+        "label": "Revenue (Revenues)",
+        "value": 96221000000.0,
+        "display": "$96.22B",
+        "source": "SEC company facts, 10-Q 0001045810-26-000075",
+        "date": "2026-07-26",
+        "filed": "2026-08-26",
+        "url": ""
+      },
+      {
+        "label": "Revenue (Revenues)",
+        "value": 81615000000.0,
+        "display": "$81.61B",
+        "source": "SEC company facts, 10-Q 0001045810-26-000052",
+        "date": "2026-04-26",
+        "filed": "2026-05-20",
+        "url": ""
+      },
+      {
+        "label": "Revenue (Revenues, derived)",
+        "value": 68127000000.0,
+        "display": "$68.13B",
+        "source": "SEC company facts, derived (fiscal year 215,938,000,000 (0001045810-26-000021) − nine months year to date 147,811,000,000 (0001045810-25-000230))",
+        "date": "2026-01-25",
+        "filed": "2026-02-25",
+        "url": ""
+      },
+      {
+        "label": "Revenue (Revenues)",
+        "value": 57006000000.0,
+        "display": "$57.01B",
+        "source": "SEC company facts, 10-Q 0001045810-25-000230",
+        "date": "2025-10-26",
+        "filed": "2025-11-19",
+        "url": ""
+      },
+      {
+        "label": "Operating income (OperatingIncomeLoss)",
+        "value": 63734000000.0,
+        "display": "$63.73B",
+        "source": "SEC company facts, 10-Q 0001045810-26-000075",
+        "date": "2026-07-26",
+        "filed": "2026-08-26",
+        "url": ""
+      },
+      {
+        "label": "Operating income (OperatingIncomeLoss)",
+        "value": 53536000000.0,
+        "display": "$53.54B",
+        "source": "SEC company facts, 10-Q 0001045810-26-000052",
+        "date": "2026-04-26",
+        "filed": "2026-05-20",
+        "url": ""
+      },
+      {
+        "label": "Operating income (OperatingIncomeLoss, derived)",
+        "value": 44299000000.0,
+        "display": "$44.30B",
+        "source": "SEC company facts, derived (fiscal year 130,387,000,000 (0001045810-26-000021) − nine months year to date 86,088,000,000 (0001045810-25-000230))",
+        "date": "2026-01-25",
+        "filed": "2026-02-25",
+        "url": ""
+      },
+      {
+        "label": "Operating income (OperatingIncomeLoss)",
+        "value": 36010000000.0,
+        "display": "$36.01B",
+        "source": "SEC company facts, 10-Q 0001045810-25-000230",
+        "date": "2025-10-26",
+        "filed": "2025-11-19",
+        "url": ""
+      }
+    ],
+    "assumptions": [
+      "Starting revenue $302.97B (Revenue, four quarters ended 2026-07-26).",
+      "Operating margin 65.2%, every year: the trailing operating margin, $197.58B ÷ $302.97B.",
+      "Tax on operating profit 21% (the US federal rate, a stated default).",
+      "Sales-to-capital 1.26: trailing revenue $302.97B ÷ invested capital $239.91B (equity $228.98B + debt $33.37B − cash and securities $22.44B, 2026-07-26); each dollar of new revenue is assumed to need capital at this ratio.",
+      "Discount rate 9% a year (a stated default, near a long-run US equity return).",
+      "After 10 years, growth of 3% a year forever.",
+      "Cash flow = revenue × margin × (1 − tax) − (revenue − last year's revenue) ÷ sales-to-capital; discounted at the end of each year; compared with the enterprise value."
+    ],
+    "reading": "At these assumptions the enterprise value of $3625.92B needs revenue to grow 7.9% a year for 10 years; the company's own revenue grew +100.0% a year over its last three fiscal years; of 40 ten-year spans of companies of its size, 4 grew at least that fast (median 1.3%).",
+    "data_origin": "market_prices",
+    "as_of": "2026-11-18",
+    "note": "",
+    "target": "enterprise value $3625.92B",
+    "grid": [
+      {
+        "discount_rate": 7.0,
+        "operating_margin": 60.21426284537361,
+        "implied_growth": 3.3434188016690314,
+        "display": "3.3%"
+      },
+      {
+        "discount_rate": 7.0,
+        "operating_margin": 65.21426284537361,
+        "implied_growth": 2.2607846683822572,
+        "display": "2.3%"
+      },
+      {
+        "discount_rate": 7.0,
+        "operating_margin": 70.21426284537361,
+        "implied_growth": 1.2674570609815419,
+        "display": "1.3%"
+      },
+      {
+        "discount_rate": 8.0,
+        "operating_margin": 60.21426284537361,
+        "implied_growth": 6.3884607520885766,
+        "display": "6.4%"
+      },
+      {
+        "discount_rate": 8.0,
+        "operating_margin": 65.21426284537361,
+        "implied_growth": 5.245282794814557,
+        "display": "5.2%"
+      },
+      {
+        "discount_rate": 8.0,
+        "operating_margin": 70.21426284537361,
+        "implied_growth": 4.197498371358961,
+        "display": "4.2%"
+      },
+      {
+        "discount_rate": 9.0,
+        "operating_margin": 60.21426284537361,
+        "implied_growth": 9.110561857465655,
+        "display": "9.1%"
+      },
+      {
+        "discount_rate": 9.0,
+        "operating_margin": 65.21426284537361,
+        "implied_growth": 7.9101243182085454,
+        "display": "7.9%"
+      },
+      {
+        "discount_rate": 9.0,
+        "operating_margin": 70.21426284537361,
+        "implied_growth": 6.811089541297406,
+        "display": "6.8%"
+      },
+      {
+        "discount_rate": 10.0,
+        "operating_margin": 60.21426284537361,
+        "implied_growth": 11.612538137007505,
+        "display": "11.6%"
+      },
+      {
+        "discount_rate": 10.0,
+        "operating_margin": 65.21426284537361,
+        "implied_growth": 10.356908879708499,
+        "display": "10.4%"
+      },
+      {
+        "discount_rate": 10.0,
+        "operating_margin": 70.21426284537361,
+        "implied_growth": 9.208699822891504,
+        "display": "9.2%"
+      },
+      {
+        "discount_rate": 11.0,
+        "operating_margin": 60.21426284537361,
+        "implied_growth": 13.955996391829103,
+        "display": "14.0%"
+      },
+      {
+        "discount_rate": 11.0,
+        "operating_margin": 65.21426284537361,
+        "implied_growth": 12.646492554340512,
+        "display": "12.6%"
+      },
+      {
+        "discount_rate": 11.0,
+        "operating_margin": 70.21426284537361,
+        "implied_growth": 11.450488828588277,
+        "display": "11.5%"
+      }
+    ],
+    "comparisons": [
+      {
+        "id": "revenue_growth_1y:1045810:2026-01-25",
+        "kind": "revenue_growth_1y",
+        "label": "Revenue growth, newest fiscal year",
+        "outcome": "computed",
+        "reason": "",
+        "value": 65.47353579009479,
+        "unit": "percent",
+        "display": "+65.5%",
+        "formula": "($215.94B ÷ $130.50B)^(1/1) − 1",
+        "inputs": [
+          {
+            "label": "Revenue (Revenues)",
+            "value": 215938000000.0,
+            "display": "$215.94B",
+            "source": "SEC company facts, 10-K 0001045810-26-000021",
+            "date": "2026-01-25",
+            "filed": "2026-02-25",
+            "url": ""
+          },
+          {
+            "label": "Revenue (Revenues)",
+            "value": 130497000000.0,
+            "display": "$130.50B",
+            "source": "SEC company facts, 10-K 0001045810-26-000021",
+            "date": "2025-01-26",
+            "filed": "2026-02-25",
+            "url": ""
+          }
+        ],
+        "assumptions": [],
+        "reading": "Revenue growth, newest fiscal year: +65.5% a year, from fiscal year ended 2025-01-26 to 2026-01-25.",
+        "data_origin": "market_prices",
+        "as_of": "2026-11-18",
+        "note": ""
+      },
+      {
+        "id": "revenue_cagr_3y:1045810:2026-01-25",
+        "kind": "revenue_cagr_3y",
+        "label": "Revenue, compound annual growth over 3 fiscal years",
+        "outcome": "computed",
+        "reason": "",
+        "value": 100.04509499443964,
+        "unit": "percent",
+        "display": "+100.0%",
+        "formula": "($215.94B ÷ $26.97B)^(1/3) − 1",
+        "inputs": [
+          {
+            "label": "Revenue (Revenues)",
+            "value": 215938000000.0,
+            "display": "$215.94B",
+            "source": "SEC company facts, 10-K 0001045810-26-000021",
+            "date": "2026-01-25",
+            "filed": "2026-02-25",
+            "url": ""
+          },
+          {
+            "label": "Revenue (Revenues)",
+            "value": 26974000000.0,
+            "display": "$26.97B",
+            "source": "SEC company facts, 10-K 0001045810-25-000023",
+            "date": "2023-01-29",
+            "filed": "2025-02-26",
+            "url": ""
+          }
+        ],
+        "assumptions": [],
+        "reading": "Revenue, compound annual growth over 3 fiscal years: +100.0% a year, from fiscal year ended 2023-01-29 to 2026-01-25.",
+        "data_origin": "market_prices",
+        "as_of": "2026-11-18",
+        "note": ""
+      }
+    ],
+    "distribution": {
+      "n": 40,
+      "percentiles": {
+        "p10": -5.113265490799819,
+        "p25": -1.4959173925448266,
+        "p50": 1.281579278514433,
+        "p75": 3.359394179101338,
+        "p90": 7.951976510420955
+      },
+      "displays": {
+        "p10": "-5.1%",
+        "p25": "-1.5%",
+        "p50": "1.3%",
+        "p75": "3.4%",
+        "p90": "8.0%"
+      },
+      "at_least": 4,
+      "at_least_of": 7.9101243182085454,
+      "dropped": 4,
+      "definition": "Compound annual revenue growth over 10 years of filers whose revenue in the start year was $151.48B to $605.94B (starts 2009 to 2015); survivors only."
+    },
+    "label_note": "Arithmetic under stated assumptions, not a forecast and not advice: it says what constant growth the price would need if every assumption below held."
+  },
+  "reactions": [],
+  "notes": [
+    "No daily closes were given; no reaction to an 8-K is computed."
+  ]
+}

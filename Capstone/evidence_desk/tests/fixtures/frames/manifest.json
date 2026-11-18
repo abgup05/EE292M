@@ -1,0 +1,887 @@
+{
+  "recorded_at": "2026-11-18T20:22:08+00:00",
+  "command": "make fixtures-market",
+  "trim": "Each frame keeps every row of a filer with a revenue row of at least $50B in any recorded year (any revenue concept), of a filer SEC lists under SIC 3674, and of NVDA; every other row is dropped.",
+  "cache": "A body already in the disposable cache (data/cache/frames, kept from an earlier live read) is used as it is; 'requests' counts the bodies this command fetched. The cache's files carry the time each was fetched.",
+  "frames": [
+    {
+      "file": "RevenueFromContractWithCustomerExcludingAssessedTax-USD-CY2009.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax/USD/CY2009.json",
+      "absent": true
+    },
+    {
+      "file": "RevenueFromContractWithCustomerIncludingAssessedTax-USD-CY2009.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenueFromContractWithCustomerIncludingAssessedTax/USD/CY2009.json",
+      "absent": true
+    },
+    {
+      "file": "Revenues-USD-CY2009.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/Revenues/USD/CY2009.json",
+      "original_sha256": "862366d7235bf44f044ec77fa544f742c19d56fc8066c40724b29d6b18699ac9",
+      "original_bytes": 279180,
+      "rows": 1812,
+      "rows_kept": 109
+    },
+    {
+      "file": "RevenuesNetOfInterestExpense-USD-CY2009.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenuesNetOfInterestExpense/USD/CY2009.json",
+      "original_sha256": "bf1850cc3e1d4cec70b715c70a6d14ef03168cd85c041562ab6e62ba64b88fc0",
+      "original_bytes": 2927,
+      "rows": 16,
+      "rows_kept": 1
+    },
+    {
+      "file": "SalesRevenueNet-USD-CY2009.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/SalesRevenueNet/USD/CY2009.json",
+      "original_sha256": "ac4ceed186d957bd6b690f6606ef519697f4de6434384bcc4dec5323f1ca497f",
+      "original_bytes": 206345,
+      "rows": 1357,
+      "rows_kept": 106
+    },
+    {
+      "file": "RevenueFromContractWithCustomerExcludingAssessedTax-USD-CY2010.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax/USD/CY2010.json",
+      "absent": true
+    },
+    {
+      "file": "RevenueFromContractWithCustomerIncludingAssessedTax-USD-CY2010.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenueFromContractWithCustomerIncludingAssessedTax/USD/CY2010.json",
+      "absent": true
+    },
+    {
+      "file": "Revenues-USD-CY2010.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/Revenues/USD/CY2010.json",
+      "original_sha256": "a34f426b22e8d1abf58e6571b4351fea88df3c383c9b31d625fea1b2a697c395",
+      "original_bytes": 473903,
+      "rows": 3101,
+      "rows_kept": 131
+    },
+    {
+      "file": "RevenuesNetOfInterestExpense-USD-CY2010.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenuesNetOfInterestExpense/USD/CY2010.json",
+      "original_sha256": "8fe7ae3578a39d74575c91cd7252d707e33ecc4c830f4687b7d5edb0368483b4",
+      "original_bytes": 3388,
+      "rows": 19,
+      "rows_kept": 1
+    },
+    {
+      "file": "SalesRevenueNet-USD-CY2010.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/SalesRevenueNet/USD/CY2010.json",
+      "original_sha256": "79e75efe379f8d08987c412d79cb2b01f8f4a14cc64cd1b99f0cf85d20aff603",
+      "original_bytes": 318013,
+      "rows": 2093,
+      "rows_kept": 135
+    },
+    {
+      "file": "RevenueFromContractWithCustomerExcludingAssessedTax-USD-CY2011.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax/USD/CY2011.json",
+      "absent": true
+    },
+    {
+      "file": "RevenueFromContractWithCustomerIncludingAssessedTax-USD-CY2011.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenueFromContractWithCustomerIncludingAssessedTax/USD/CY2011.json",
+      "absent": true
+    },
+    {
+      "file": "Revenues-USD-CY2011.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/Revenues/USD/CY2011.json",
+      "original_sha256": "4ea0c3d71ba930102b58e4999fa78fd66d0e564ff503b1a462a170295e2ba337",
+      "original_bytes": 589012,
+      "rows": 3858,
+      "rows_kept": 136
+    },
+    {
+      "file": "RevenuesNetOfInterestExpense-USD-CY2011.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenuesNetOfInterestExpense/USD/CY2011.json",
+      "original_sha256": "780cc50c42a769e85f6988f9d7e9e50692a590d0adbba009ac5e4376bc4aaaca",
+      "original_bytes": 4140,
+      "rows": 24,
+      "rows_kept": 2
+    },
+    {
+      "file": "SalesRevenueNet-USD-CY2011.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/SalesRevenueNet/USD/CY2011.json",
+      "original_sha256": "7fbbb5fc77a15d1686ae9930a40381f59e33ed33e609f6f12b37f276f79939b4",
+      "original_bytes": 359779,
+      "rows": 2366,
+      "rows_kept": 141
+    },
+    {
+      "file": "RevenueFromContractWithCustomerExcludingAssessedTax-USD-CY2012.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax/USD/CY2012.json",
+      "absent": true
+    },
+    {
+      "file": "RevenueFromContractWithCustomerIncludingAssessedTax-USD-CY2012.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenueFromContractWithCustomerIncludingAssessedTax/USD/CY2012.json",
+      "original_sha256": "a4d7dce699532ae76e78ae76ff4508de49b904d67373866969a83dce4522e2ce",
+      "original_bytes": 747,
+      "rows": 1,
+      "rows_kept": 0
+    },
+    {
+      "file": "Revenues-USD-CY2012.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/Revenues/USD/CY2012.json",
+      "original_sha256": "cd6ad338ad5b56b503224cedab939896d004ca5a7428890823806f4d281ed9f2",
+      "original_bytes": 592461,
+      "rows": 3879,
+      "rows_kept": 127
+    },
+    {
+      "file": "RevenuesNetOfInterestExpense-USD-CY2012.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenuesNetOfInterestExpense/USD/CY2012.json",
+      "original_sha256": "f5ee8eade1edf6a7afcc3dd129511fddf98ac6d5de949619f7ca707f1d9893ad",
+      "original_bytes": 4747,
+      "rows": 28,
+      "rows_kept": 2
+    },
+    {
+      "file": "SalesRevenueNet-USD-CY2012.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/SalesRevenueNet/USD/CY2012.json",
+      "original_sha256": "26f817c31c7ae9a54801b66743db343ddb9725d6e3c3faf6084626c50955b007",
+      "original_bytes": 351361,
+      "rows": 2309,
+      "rows_kept": 136
+    },
+    {
+      "file": "RevenueFromContractWithCustomerExcludingAssessedTax-USD-CY2013.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax/USD/CY2013.json",
+      "absent": true
+    },
+    {
+      "file": "RevenueFromContractWithCustomerIncludingAssessedTax-USD-CY2013.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenueFromContractWithCustomerIncludingAssessedTax/USD/CY2013.json",
+      "absent": true
+    },
+    {
+      "file": "Revenues-USD-CY2013.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/Revenues/USD/CY2013.json",
+      "original_sha256": "65ecdc211b148c422f283bced30ca2c6fa0a46d689f988491f1adb5788e140b7",
+      "original_bytes": 573309,
+      "rows": 3751,
+      "rows_kept": 121
+    },
+    {
+      "file": "RevenuesNetOfInterestExpense-USD-CY2013.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenuesNetOfInterestExpense/USD/CY2013.json",
+      "original_sha256": "ff3f83a09f9ae933e9c7aa1b6085a822bd20f6a16cfe3b1a945efff9b3ee3c09",
+      "original_bytes": 4724,
+      "rows": 28,
+      "rows_kept": 4
+    },
+    {
+      "file": "SalesRevenueNet-USD-CY2013.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/SalesRevenueNet/USD/CY2013.json",
+      "original_sha256": "04cebcb7cd73c29831da7e863862f6e42a4905a9a6f50c84fada0dd4587693ad",
+      "original_bytes": 345967,
+      "rows": 2271,
+      "rows_kept": 135
+    },
+    {
+      "file": "RevenueFromContractWithCustomerExcludingAssessedTax-USD-CY2014.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax/USD/CY2014.json",
+      "original_sha256": "c0d9d8a38acd7d42bff4b9eb260d8b57a42788c269d002a835c24495a5991a94",
+      "original_bytes": 756,
+      "rows": 1,
+      "rows_kept": 0
+    },
+    {
+      "file": "RevenueFromContractWithCustomerIncludingAssessedTax-USD-CY2014.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenueFromContractWithCustomerIncludingAssessedTax/USD/CY2014.json",
+      "original_sha256": "b92fd4d10b1da91e736ee1a15f02c3934a38508ea06cd465064a6ce7fac8eaba",
+      "original_bytes": 878,
+      "rows": 2,
+      "rows_kept": 0
+    },
+    {
+      "file": "Revenues-USD-CY2014.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/Revenues/USD/CY2014.json",
+      "original_sha256": "a81f109c7d1f59a4bdb022210a151a70fd0398560799a6199881d8885f68c30b",
+      "original_bytes": 550873,
+      "rows": 3600,
+      "rows_kept": 123
+    },
+    {
+      "file": "RevenuesNetOfInterestExpense-USD-CY2014.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenuesNetOfInterestExpense/USD/CY2014.json",
+      "original_sha256": "045455f2de3605d150ecf1798f4658f9b00040b810412d59afc0089c154ff59d",
+      "original_bytes": 4761,
+      "rows": 28,
+      "rows_kept": 4
+    },
+    {
+      "file": "SalesRevenueNet-USD-CY2014.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/SalesRevenueNet/USD/CY2014.json",
+      "original_sha256": "68990b1740f4b6264376433ee3afaf001f237922eb76a9bb2e988627d5707d6e",
+      "original_bytes": 336482,
+      "rows": 2207,
+      "rows_kept": 128
+    },
+    {
+      "file": "RevenueFromContractWithCustomerExcludingAssessedTax-USD-CY2015.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax/USD/CY2015.json",
+      "original_sha256": "e31ebbdc0b1dcb4b79798d4756af79798329fb2464a24a23d34f5a3259281612",
+      "original_bytes": 5571,
+      "rows": 32,
+      "rows_kept": 1
+    },
+    {
+      "file": "RevenueFromContractWithCustomerIncludingAssessedTax-USD-CY2015.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenueFromContractWithCustomerIncludingAssessedTax/USD/CY2015.json",
+      "original_sha256": "69573cf516fd37e58b86875c229b64c4b1343fd98978859770a5c9b0c516afa4",
+      "original_bytes": 2589,
+      "rows": 13,
+      "rows_kept": 0
+    },
+    {
+      "file": "Revenues-USD-CY2015.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/Revenues/USD/CY2015.json",
+      "original_sha256": "e8fa6d187b71520201f397c89c08970061d4961d7344b3cc664898fdd001e735",
+      "original_bytes": 517184,
+      "rows": 3377,
+      "rows_kept": 114
+    },
+    {
+      "file": "RevenuesNetOfInterestExpense-USD-CY2015.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenuesNetOfInterestExpense/USD/CY2015.json",
+      "original_sha256": "344347ee7f8af079af395a8840255f73c7fd8b60caee6129c453598af5f37d82",
+      "original_bytes": 4492,
+      "rows": 26,
+      "rows_kept": 5
+    },
+    {
+      "file": "SalesRevenueNet-USD-CY2015.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/SalesRevenueNet/USD/CY2015.json",
+      "original_sha256": "6f484a0339a5f0a7fe1191cd0d58ba997f62c646e1d0314f3fc497f7b9a74052",
+      "original_bytes": 317975,
+      "rows": 2085,
+      "rows_kept": 117
+    },
+    {
+      "file": "RevenueFromContractWithCustomerExcludingAssessedTax-USD-CY2016.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax/USD/CY2016.json",
+      "original_sha256": "6c1f886f9c80a4d18a1d4c7c1290b2fbb6989ce5192d8a2f60858ba10f0a19c2",
+      "original_bytes": 216985,
+      "rows": 1412,
+      "rows_kept": 72
+    },
+    {
+      "file": "RevenueFromContractWithCustomerIncludingAssessedTax-USD-CY2016.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenueFromContractWithCustomerIncludingAssessedTax/USD/CY2016.json",
+      "original_sha256": "5bd6a1fac98b95f6c9e7d515f48403313425b3e314cfde22561531858ea03e58",
+      "original_bytes": 69046,
+      "rows": 448,
+      "rows_kept": 24
+    },
+    {
+      "file": "Revenues-USD-CY2016.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/Revenues/USD/CY2016.json",
+      "original_sha256": "0e030a84ed3fae19ae09cf27038f3743a63cdf20cfe638454ff88d0da0aab763",
+      "original_bytes": 556190,
+      "rows": 3630,
+      "rows_kept": 136
+    },
+    {
+      "file": "RevenuesNetOfInterestExpense-USD-CY2016.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenuesNetOfInterestExpense/USD/CY2016.json",
+      "original_sha256": "842cf030db90c1ba37cb8cd6ae9832bd7fd2ca078c6cf9d58dc20d234afaa3ba",
+      "original_bytes": 4967,
+      "rows": 29,
+      "rows_kept": 5
+    },
+    {
+      "file": "SalesRevenueNet-USD-CY2016.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/SalesRevenueNet/USD/CY2016.json",
+      "original_sha256": "5e76277e5847fb5068e7e3c0c1ffb151dcc931d5d3ff338ce32e0a5b11865899",
+      "original_bytes": 292266,
+      "rows": 1915,
+      "rows_kept": 108
+    },
+    {
+      "file": "RevenueFromContractWithCustomerExcludingAssessedTax-USD-CY2017.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax/USD/CY2017.json",
+      "original_sha256": "4b4a1979b0742bb60c4d5079233adf4964d613ecee8cd7e00c0a4eaa9cab91c6",
+      "original_bytes": 329249,
+      "rows": 2146,
+      "rows_kept": 97
+    },
+    {
+      "file": "RevenueFromContractWithCustomerIncludingAssessedTax-USD-CY2017.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenueFromContractWithCustomerIncludingAssessedTax/USD/CY2017.json",
+      "original_sha256": "5d57f30766cecac1dc5a658f7eb851887560f4b0cac67bf58d576a6668b0fc14",
+      "original_bytes": 131357,
+      "rows": 855,
+      "rows_kept": 30
+    },
+    {
+      "file": "Revenues-USD-CY2017.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/Revenues/USD/CY2017.json",
+      "original_sha256": "9d9eea37961e10b48b0cb78eaba5179a441b54c9643fb5bbc2a61efa93586147",
+      "original_bytes": 593806,
+      "rows": 3875,
+      "rows_kept": 141
+    },
+    {
+      "file": "RevenuesNetOfInterestExpense-USD-CY2017.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenuesNetOfInterestExpense/USD/CY2017.json",
+      "original_sha256": "2398459b64e2f224233918825c27ff412a06971cc3804bee6b94cf92fc313852",
+      "original_bytes": 6425,
+      "rows": 38,
+      "rows_kept": 5
+    },
+    {
+      "file": "SalesRevenueNet-USD-CY2017.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/SalesRevenueNet/USD/CY2017.json",
+      "original_sha256": "eeb711407fb72437c1a9a884929d8ac255e9f50108d547c496428ca37554370f",
+      "original_bytes": 251918,
+      "rows": 1649,
+      "rows_kept": 100
+    },
+    {
+      "file": "RevenueFromContractWithCustomerExcludingAssessedTax-USD-CY2018.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax/USD/CY2018.json",
+      "original_sha256": "6cce0f64a749087f0578a33aabb2c09972d6a6708692f3c5a9425c757bed07e8",
+      "original_bytes": 428998,
+      "rows": 2799,
+      "rows_kept": 119
+    },
+    {
+      "file": "RevenueFromContractWithCustomerIncludingAssessedTax-USD-CY2018.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenueFromContractWithCustomerIncludingAssessedTax/USD/CY2018.json",
+      "original_sha256": "bc227700b468576cbdf975424f109a1b3a542baa5ae21addada2de5196b48769",
+      "original_bytes": 158207,
+      "rows": 1030,
+      "rows_kept": 28
+    },
+    {
+      "file": "Revenues-USD-CY2018.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/Revenues/USD/CY2018.json",
+      "original_sha256": "71914580119b5db4f441a046fbfe23c529106c31ef44747841a0e0531fc6dc23",
+      "original_bytes": 500594,
+      "rows": 3268,
+      "rows_kept": 121
+    },
+    {
+      "file": "RevenuesNetOfInterestExpense-USD-CY2018.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenuesNetOfInterestExpense/USD/CY2018.json",
+      "original_sha256": "7fd22a869fcb513a5c6f1c5a940da04d92036c555114c3ec9f3a213d580a23c0",
+      "original_bytes": 7380,
+      "rows": 44,
+      "rows_kept": 6
+    },
+    {
+      "file": "SalesRevenueNet-USD-CY2018.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/SalesRevenueNet/USD/CY2018.json",
+      "original_sha256": "78da73420dff010b69ce43afce7a3b6466783b708b92d28bc8673e092843bd31",
+      "original_bytes": 18746,
+      "rows": 121,
+      "rows_kept": 6
+    },
+    {
+      "file": "RevenueFromContractWithCustomerExcludingAssessedTax-USD-CY2019.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax/USD/CY2019.json",
+      "original_sha256": "9a7d5461d721fe68268e8115673606d4902cc8c16a007b575ee358d8a6a94836",
+      "original_bytes": 468323,
+      "rows": 3052,
+      "rows_kept": 121
+    },
+    {
+      "file": "RevenueFromContractWithCustomerIncludingAssessedTax-USD-CY2019.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenueFromContractWithCustomerIncludingAssessedTax/USD/CY2019.json",
+      "original_sha256": "a918a9bb9d31bd09a83bf717ad203ae1cf99a1ae56b7830125b39d712c5e5741",
+      "original_bytes": 135947,
+      "rows": 883,
+      "rows_kept": 26
+    },
+    {
+      "file": "Revenues-USD-CY2019.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/Revenues/USD/CY2019.json",
+      "original_sha256": "a4f678e333c43cdfb0876bca07324de5549ddd9413096e23eaa9fd054fc1c08b",
+      "original_bytes": 435709,
+      "rows": 2839,
+      "rows_kept": 106
+    },
+    {
+      "file": "RevenuesNetOfInterestExpense-USD-CY2019.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenuesNetOfInterestExpense/USD/CY2019.json",
+      "original_sha256": "cd05b150c86355a5d86601bb28dd0834951c2cfb442765eda7da88f6dcf4400d",
+      "original_bytes": 10295,
+      "rows": 63,
+      "rows_kept": 6
+    },
+    {
+      "file": "SalesRevenueNet-USD-CY2019.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/SalesRevenueNet/USD/CY2019.json",
+      "original_sha256": "dceba3b2975c390ae33de564e9f1625a2ef81924c44e28b4a8bf8f352ea7f65f",
+      "original_bytes": 481,
+      "rows": 1,
+      "rows_kept": 0
+    },
+    {
+      "file": "RevenueFromContractWithCustomerExcludingAssessedTax-USD-CY2020.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax/USD/CY2020.json",
+      "original_sha256": "b85b51bd4f13350a21b7513c85f8e157df500b141433b9e41b780409c80b1f6f",
+      "original_bytes": 484889,
+      "rows": 3163,
+      "rows_kept": 117
+    },
+    {
+      "file": "RevenueFromContractWithCustomerIncludingAssessedTax-USD-CY2020.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenueFromContractWithCustomerIncludingAssessedTax/USD/CY2020.json",
+      "original_sha256": "dde95c9873e4bc9f8ab63fd2bf9407cc352d8e0278aa826a126c2e19292ff506",
+      "original_bytes": 128741,
+      "rows": 837,
+      "rows_kept": 24
+    },
+    {
+      "file": "Revenues-USD-CY2020.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/Revenues/USD/CY2020.json",
+      "original_sha256": "d5352b52897880f5fdfb9e04e0d830b2688e054c6711e0eef5eeadd18722e157",
+      "original_bytes": 423480,
+      "rows": 2762,
+      "rows_kept": 105
+    },
+    {
+      "file": "RevenuesNetOfInterestExpense-USD-CY2020.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenuesNetOfInterestExpense/USD/CY2020.json",
+      "original_sha256": "6aff90a1c2c735c4834c9e899189126191b56f3ba6768ccf050eafe32086b794",
+      "original_bytes": 11039,
+      "rows": 68,
+      "rows_kept": 7
+    },
+    {
+      "file": "SalesRevenueNet-USD-CY2020.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/SalesRevenueNet/USD/CY2020.json",
+      "absent": true
+    },
+    {
+      "file": "RevenueFromContractWithCustomerExcludingAssessedTax-USD-CY2021.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax/USD/CY2021.json",
+      "original_sha256": "d1a1365bcc8e18b2f14fb34e17c85eeac595beeb1c98596e4f0412d357c6212e",
+      "original_bytes": 491697,
+      "rows": 3206,
+      "rows_kept": 120
+    },
+    {
+      "file": "RevenueFromContractWithCustomerIncludingAssessedTax-USD-CY2021.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenueFromContractWithCustomerIncludingAssessedTax/USD/CY2021.json",
+      "original_sha256": "eff08aa24b78470c1d263a92ed18a120c9b3035637e8c028da040b2441335c29",
+      "original_bytes": 125698,
+      "rows": 817,
+      "rows_kept": 24
+    },
+    {
+      "file": "Revenues-USD-CY2021.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/Revenues/USD/CY2021.json",
+      "original_sha256": "cd1c401d0c5367ae76dad6d6a380f2064d8e08d286350345fe1bd7c94993b6f9",
+      "original_bytes": 425914,
+      "rows": 2775,
+      "rows_kept": 102
+    },
+    {
+      "file": "RevenuesNetOfInterestExpense-USD-CY2021.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenuesNetOfInterestExpense/USD/CY2021.json",
+      "original_sha256": "42aa8a8e5e7caffd5352cc4289969e19e7c23973cf87458f2dddd9a15a31ce05",
+      "original_bytes": 13291,
+      "rows": 83,
+      "rows_kept": 8
+    },
+    {
+      "file": "SalesRevenueNet-USD-CY2021.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/SalesRevenueNet/USD/CY2021.json",
+      "absent": true
+    },
+    {
+      "file": "RevenueFromContractWithCustomerExcludingAssessedTax-USD-CY2022.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax/USD/CY2022.json",
+      "original_sha256": "1b77bc7638234ec3a0f0d9a8c5598698b3ce9a548b69f8516d2fe5ed486cacf4",
+      "original_bytes": 494892,
+      "rows": 3228,
+      "rows_kept": 121
+    },
+    {
+      "file": "RevenueFromContractWithCustomerIncludingAssessedTax-USD-CY2022.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenueFromContractWithCustomerIncludingAssessedTax/USD/CY2022.json",
+      "original_sha256": "c60ea79c8b0b131cdcb305c13504aed302fe7bf7f9788e10ffab9fb3bc92720e",
+      "original_bytes": 124480,
+      "rows": 809,
+      "rows_kept": 25
+    },
+    {
+      "file": "Revenues-USD-CY2022.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/Revenues/USD/CY2022.json",
+      "original_sha256": "a671de6d0fc5559ae14f2a1caddbb429813c54ae0c13bbe612668e1278bae202",
+      "original_bytes": 428332,
+      "rows": 2793,
+      "rows_kept": 102
+    },
+    {
+      "file": "RevenuesNetOfInterestExpense-USD-CY2022.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenuesNetOfInterestExpense/USD/CY2022.json",
+      "original_sha256": "fb5b13fef866dd484eb028fdd634d1c98e9d2e6535ae2a5cd86c1f31b784efd3",
+      "original_bytes": 13644,
+      "rows": 85,
+      "rows_kept": 6
+    },
+    {
+      "file": "SalesRevenueNet-USD-CY2022.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/SalesRevenueNet/USD/CY2022.json",
+      "absent": true
+    },
+    {
+      "file": "CostOfGoodsAndServicesSold-USD-CY2023.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/CostOfGoodsAndServicesSold/USD/CY2023.json",
+      "original_sha256": "e1702d61d5a8b0c5f73b7f07e55f64ac240222870114e890683ca338ed8b9034",
+      "original_bytes": 289355,
+      "rows": 1895,
+      "rows_kept": 93
+    },
+    {
+      "file": "CostOfGoodsSold-USD-CY2023.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/CostOfGoodsSold/USD/CY2023.json",
+      "absent": true
+    },
+    {
+      "file": "CostOfRevenue-USD-CY2023.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/CostOfRevenue/USD/CY2023.json",
+      "original_sha256": "13dc127993c2dd58c24906d8e80060eff7f63969838ea4726650502ea7579a41",
+      "original_bytes": 254120,
+      "rows": 1675,
+      "rows_kept": 70
+    },
+    {
+      "file": "GrossProfit-USD-CY2023.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/GrossProfit/USD/CY2023.json",
+      "original_sha256": "c85a13c0104ac6cfb2ede0fa45cab2acdbe3ae78aa1a5820942af347e0dc6517",
+      "original_bytes": 423523,
+      "rows": 2790,
+      "rows_kept": 121
+    },
+    {
+      "file": "NetCashProvidedByUsedInOperatingActivities-USD-CY2023.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/NetCashProvidedByUsedInOperatingActivities/USD/CY2023.json",
+      "original_sha256": "057f14922618a74cefd7209be87268671716f1eda61423b482353fe5cb05a5fe",
+      "original_bytes": 1003476,
+      "rows": 6523,
+      "rows_kept": 207
+    },
+    {
+      "file": "NetIncomeLoss-USD-CY2023.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/NetIncomeLoss/USD/CY2023.json",
+      "original_sha256": "2f1c5bc6e86b8bd6e858ff6d43721630db3c4d1fc46b104f2bde8f50a5564c59",
+      "original_bytes": 976395,
+      "rows": 6392,
+      "rows_kept": 205
+    },
+    {
+      "file": "OperatingIncomeLoss-USD-CY2023.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/OperatingIncomeLoss/USD/CY2023.json",
+      "original_sha256": "a304bc2bfef9eb318ee8fb89c68251e1d4d4323eacb28e0370aea5b5435f26a2",
+      "original_bytes": 820860,
+      "rows": 5353,
+      "rows_kept": 175
+    },
+    {
+      "file": "PaymentsToAcquireProductiveAssets-USD-CY2023.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/PaymentsToAcquireProductiveAssets/USD/CY2023.json",
+      "original_sha256": "a3ef4d3a0cd8583cb03eb676425316279929c6f27aa8ba992255588b93b39b09",
+      "original_bytes": 104678,
+      "rows": 685,
+      "rows_kept": 33
+    },
+    {
+      "file": "PaymentsToAcquirePropertyPlantAndEquipment-USD-CY2023.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/PaymentsToAcquirePropertyPlantAndEquipment/USD/CY2023.json",
+      "original_sha256": "6c2277617a067095226acbd3154e656473e294cb85e77330424c847fe66c7b37",
+      "original_bytes": 636133,
+      "rows": 4199,
+      "rows_kept": 159
+    },
+    {
+      "file": "ResearchAndDevelopmentExpense-USD-CY2023.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/ResearchAndDevelopmentExpense/USD/CY2023.json",
+      "original_sha256": "f624fec468804b780a1778c002af7745e8db660fefa299cec8bead0da2e7c077",
+      "original_bytes": 405739,
+      "rows": 2674,
+      "rows_kept": 127
+    },
+    {
+      "file": "RevenueFromContractWithCustomerExcludingAssessedTax-USD-CY2023.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax/USD/CY2023.json",
+      "original_sha256": "763d8f57df5b62719da8fd8e3137763a8283b62348fb77367870fea735a7339a",
+      "original_bytes": 481761,
+      "rows": 3143,
+      "rows_kept": 117
+    },
+    {
+      "file": "RevenueFromContractWithCustomerIncludingAssessedTax-USD-CY2023.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenueFromContractWithCustomerIncludingAssessedTax/USD/CY2023.json",
+      "original_sha256": "11a4755045772524475b47b4ce63f757a4c3608efac1ded7705305d385a367cb",
+      "original_bytes": 120353,
+      "rows": 782,
+      "rows_kept": 29
+    },
+    {
+      "file": "Revenues-USD-CY2023.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/Revenues/USD/CY2023.json",
+      "original_sha256": "3aced5eeb6af041cb2c6c8b59890b344bc4013016910a988f16cedbfd2a5c613",
+      "original_bytes": 410817,
+      "rows": 2681,
+      "rows_kept": 106
+    },
+    {
+      "file": "RevenuesNetOfInterestExpense-USD-CY2023.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenuesNetOfInterestExpense/USD/CY2023.json",
+      "original_sha256": "6f88cb9327d94fd5627dd78a14cdb093579ee3b81e3fbe10fa27ae90253e3f7d",
+      "original_bytes": 10452,
+      "rows": 64,
+      "rows_kept": 8
+    },
+    {
+      "file": "SalesRevenueNet-USD-CY2023.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/SalesRevenueNet/USD/CY2023.json",
+      "absent": true
+    },
+    {
+      "file": "CostOfGoodsAndServicesSold-USD-CY2024.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/CostOfGoodsAndServicesSold/USD/CY2024.json",
+      "original_sha256": "0445d58df1ce4d2efe34b714a19c694d61f61b633159f7e568384c824a454cad",
+      "original_bytes": 267462,
+      "rows": 1752,
+      "rows_kept": 96
+    },
+    {
+      "file": "CostOfGoodsSold-USD-CY2024.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/CostOfGoodsSold/USD/CY2024.json",
+      "absent": true
+    },
+    {
+      "file": "CostOfRevenue-USD-CY2024.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/CostOfRevenue/USD/CY2024.json",
+      "original_sha256": "6f90ad056e1b017264c56fc759c007e866425a8d4d9b04a801f079009ce0d285",
+      "original_bytes": 248257,
+      "rows": 1638,
+      "rows_kept": 70
+    },
+    {
+      "file": "GrossProfit-USD-CY2024.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/GrossProfit/USD/CY2024.json",
+      "original_sha256": "52410495350354bd7b7faecb69c14b5ad56d6f035b1f74ae9bd7bfa5ac4f4247",
+      "original_bytes": 400025,
+      "rows": 2637,
+      "rows_kept": 125
+    },
+    {
+      "file": "NetCashProvidedByUsedInOperatingActivities-USD-CY2024.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/NetCashProvidedByUsedInOperatingActivities/USD/CY2024.json",
+      "original_sha256": "5f6f09c0c4c6ba9a17dc735efe2935a7ad462483db50e0341a14ad642661e7ed",
+      "original_bytes": 955025,
+      "rows": 6209,
+      "rows_kept": 208
+    },
+    {
+      "file": "NetIncomeLoss-USD-CY2024.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/NetIncomeLoss/USD/CY2024.json",
+      "original_sha256": "13225657c077520ab971d58b9cc18fd3510d386db9ce87ba624093304cb6d085",
+      "original_bytes": 928711,
+      "rows": 6086,
+      "rows_kept": 206
+    },
+    {
+      "file": "OperatingIncomeLoss-USD-CY2024.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/OperatingIncomeLoss/USD/CY2024.json",
+      "original_sha256": "0a1a6c23e2ff7a6c7a57afc4e1749fbea316da4546e2a9ef6d9035655aa8bfa1",
+      "original_bytes": 771556,
+      "rows": 5037,
+      "rows_kept": 176
+    },
+    {
+      "file": "PaymentsToAcquireProductiveAssets-USD-CY2024.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/PaymentsToAcquireProductiveAssets/USD/CY2024.json",
+      "original_sha256": "fed49e4ec8e899dd89c42a73d3753664f1694b1a2fe2df8836c1c57981f0e22c",
+      "original_bytes": 91455,
+      "rows": 598,
+      "rows_kept": 32
+    },
+    {
+      "file": "PaymentsToAcquirePropertyPlantAndEquipment-USD-CY2024.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/PaymentsToAcquirePropertyPlantAndEquipment/USD/CY2024.json",
+      "original_sha256": "d8e60dae665213a4a989698d977fc5053fbe17fcad464d47398d42011a8f87d4",
+      "original_bytes": 599674,
+      "rows": 3961,
+      "rows_kept": 160
+    },
+    {
+      "file": "ResearchAndDevelopmentExpense-USD-CY2024.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/ResearchAndDevelopmentExpense/USD/CY2024.json",
+      "original_sha256": "db88fc90a01719984eed599ac1c5a66078d574f4ae86997b9b78d2b5b14a6331",
+      "original_bytes": 386838,
+      "rows": 2551,
+      "rows_kept": 129
+    },
+    {
+      "file": "RevenueFromContractWithCustomerExcludingAssessedTax-USD-CY2024.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax/USD/CY2024.json",
+      "original_sha256": "1b0ba1b6b6c67318a26019cf1b6ffdd81e5551aac014a87e4121a99467892bb5",
+      "original_bytes": 456048,
+      "rows": 2976,
+      "rows_kept": 120
+    },
+    {
+      "file": "RevenueFromContractWithCustomerIncludingAssessedTax-USD-CY2024.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenueFromContractWithCustomerIncludingAssessedTax/USD/CY2024.json",
+      "original_sha256": "4379ac770fd6d93019351f4a5f6c64dcba141238e84b9ef65544b2700b078c0f",
+      "original_bytes": 116678,
+      "rows": 759,
+      "rows_kept": 29
+    },
+    {
+      "file": "Revenues-USD-CY2024.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/Revenues/USD/CY2024.json",
+      "original_sha256": "6d817096f1d9e613d07f3179e5d2e68bc4250bec45a6c51b013d2b01de0c1701",
+      "original_bytes": 385054,
+      "rows": 2513,
+      "rows_kept": 101
+    },
+    {
+      "file": "RevenuesNetOfInterestExpense-USD-CY2024.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenuesNetOfInterestExpense/USD/CY2024.json",
+      "original_sha256": "850cc40e4afeeb0336e13742075047f8063e806fad661488539b737d4d4f533a",
+      "original_bytes": 8750,
+      "rows": 53,
+      "rows_kept": 7
+    },
+    {
+      "file": "SalesRevenueNet-USD-CY2024.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/SalesRevenueNet/USD/CY2024.json",
+      "absent": true
+    },
+    {
+      "file": "CostOfGoodsAndServicesSold-USD-CY2025.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/CostOfGoodsAndServicesSold/USD/CY2025.json",
+      "original_sha256": "b5d63267dc16ae2bdfb2fa0e55aca48ae3411e6e1303d4a75ed7bdfe1c9c0506",
+      "original_bytes": 241243,
+      "rows": 1580,
+      "rows_kept": 94
+    },
+    {
+      "file": "CostOfGoodsSold-USD-CY2025.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/CostOfGoodsSold/USD/CY2025.json",
+      "absent": true
+    },
+    {
+      "file": "CostOfRevenue-USD-CY2025.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/CostOfRevenue/USD/CY2025.json",
+      "original_sha256": "1bc3aa58e06af7bde9f5ea8416ab76cd8ed0b578bb95e67dbeaf96228d9be5df",
+      "original_bytes": 224895,
+      "rows": 1482,
+      "rows_kept": 66
+    },
+    {
+      "file": "GrossProfit-USD-CY2025.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/GrossProfit/USD/CY2025.json",
+      "original_sha256": "9629695d81e1766342f59e5388c080203a1b2e4271bf6e0596ad93ad9982a834",
+      "original_bytes": 370384,
+      "rows": 2441,
+      "rows_kept": 119
+    },
+    {
+      "file": "NetCashProvidedByUsedInOperatingActivities-USD-CY2025.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/NetCashProvidedByUsedInOperatingActivities/USD/CY2025.json",
+      "original_sha256": "70a4f4e61caafc5a5c3e2eac6cbaed1bfe5446e7c78de24cb24b455e8e12cd26",
+      "original_bytes": 894106,
+      "rows": 5805,
+      "rows_kept": 202
+    },
+    {
+      "file": "NetIncomeLoss-USD-CY2025.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/NetIncomeLoss/USD/CY2025.json",
+      "original_sha256": "ab5d6d119fe48938f58e28200af73b9e3675292eac0ca8c04ed1d967259d4e50",
+      "original_bytes": 873518,
+      "rows": 5720,
+      "rows_kept": 200
+    },
+    {
+      "file": "OperatingIncomeLoss-USD-CY2025.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/OperatingIncomeLoss/USD/CY2025.json",
+      "original_sha256": "15d3192a66f36290875a13965238126b59bb4fa4892ec35ede5f71e91651dc3b",
+      "original_bytes": 717530,
+      "rows": 4681,
+      "rows_kept": 168
+    },
+    {
+      "file": "PaymentsToAcquireProductiveAssets-USD-CY2025.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/PaymentsToAcquireProductiveAssets/USD/CY2025.json",
+      "original_sha256": "3b3c81bcb176719414f00d1767ebfdff45d44875edf068e7d9fa62d596cd0c70",
+      "original_bytes": 81836,
+      "rows": 535,
+      "rows_kept": 29
+    },
+    {
+      "file": "PaymentsToAcquirePropertyPlantAndEquipment-USD-CY2025.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/PaymentsToAcquirePropertyPlantAndEquipment/USD/CY2025.json",
+      "original_sha256": "bdaa4036490e250feb04ad26de9928198bf4e2732cf8db160be34db20e77612a",
+      "original_bytes": 542519,
+      "rows": 3582,
+      "rows_kept": 154
+    },
+    {
+      "file": "ResearchAndDevelopmentExpense-USD-CY2025.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/ResearchAndDevelopmentExpense/USD/CY2025.json",
+      "original_sha256": "2bde6d8f687c27db1528de1eff51267f9c9cecb4a0faa81811f05f0e05bc246b",
+      "original_bytes": 351047,
+      "rows": 2315,
+      "rows_kept": 124
+    },
+    {
+      "file": "RevenueFromContractWithCustomerExcludingAssessedTax-USD-CY2025.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenueFromContractWithCustomerExcludingAssessedTax/USD/CY2025.json",
+      "original_sha256": "c86d0b18f2b935a69478bf1fccf12bacfc9deaa8abbc544dd25de029ee1885f6",
+      "original_bytes": 416720,
+      "rows": 2718,
+      "rows_kept": 113
+    },
+    {
+      "file": "RevenueFromContractWithCustomerIncludingAssessedTax-USD-CY2025.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenueFromContractWithCustomerIncludingAssessedTax/USD/CY2025.json",
+      "original_sha256": "5705f92052327633c6ee3ac34db168f18839b7f2a7542a0e94844b0d88e94104",
+      "original_bytes": 102149,
+      "rows": 665,
+      "rows_kept": 28
+    },
+    {
+      "file": "Revenues-USD-CY2025.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/Revenues/USD/CY2025.json",
+      "original_sha256": "c7229e938e9b9e1991228e4d3b8bd32b741029925e644452003789bc97cef64a",
+      "original_bytes": 347451,
+      "rows": 2264,
+      "rows_kept": 95
+    },
+    {
+      "file": "RevenuesNetOfInterestExpense-USD-CY2025.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/RevenuesNetOfInterestExpense/USD/CY2025.json",
+      "original_sha256": "66b5b37632106b5aafb7e5da4b9e89c967f40060d11372f70faa7136983748ca",
+      "original_bytes": 7240,
+      "rows": 43,
+      "rows_kept": 6
+    },
+    {
+      "file": "SalesRevenueNet-USD-CY2025.json.gz",
+      "url": "https://data.sec.gov/api/xbrl/frames/us-gaap/SalesRevenueNet/USD/CY2025.json",
+      "absent": true
+    }
+  ],
+  "sic": {
+    "file": "sic-3674.json.gz",
+    "url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&SIC=3674&type=10-K&dateb=&owner=include&count=100&start=0&output=atom (and the pages after it)",
+    "filers": 506
+  },
+  "company_facts": {
+    "file": "../edgar/companyfacts-market-CIK0001045810.json.gz",
+    "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001045810.json",
+    "original_sha256": "c8d2deb79257bf637db44c1166c78aa5f344a138d9e9071ba49c532054ee6e6f",
+    "original_bytes": 4092966,
+    "kept": "us-gaap concepts of app.core.facts.BOOK_GROUPS and dei:EntityCommonStockSharesOutstanding"
+  },
+  "requests": 0
+}

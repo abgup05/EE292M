@@ -41,7 +41,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--index", default="", help="'fred' for FRED SP500, or a CSV path")
     parser.add_argument("--accession", default=None)
     parser.add_argument("--days", type=int, default=3)
-    for name in ("discount-rate", "terminal-growth", "tax-rate", "operating-margin", "sales-to-capital"):
+    for name in (
+        "discount-rate",
+        "terminal-growth",
+        "tax-rate",
+        "operating-margin",
+        "sales-to-capital",
+    ):
         parser.add_argument(f"--{name}", type=float, default=None)
     args = parser.parse_args(argv)
     today = datetime.now(UTC).date()
@@ -53,7 +59,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 2
     root = Path.cwd()
     try:
-        stock = CsvFilePrices(args.prices, root).series(args.ticker.upper()) if args.prices else None
+        stock = (
+            CsvFilePrices(args.prices, root).series(args.ticker.upper()) if args.prices else None
+        )
         index = None
         if args.index == "fred":
             index = FredSeries(wiring.prices_dir()).series("SP500")
@@ -62,7 +70,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     except PriceFetchError as exc:
         print(f"market-view: {exc}", file=sys.stderr)
         return 1
-    price = Price(args.price, args.price_date, f"price supplied on the command line for {args.price_date}")
+    price = Price(
+        args.price, args.price_date, f"price supplied on the command line for {args.price_date}"
+    )
     dcf = DcfInputs(
         discount_rate=args.discount_rate,
         terminal_growth=args.terminal_growth,

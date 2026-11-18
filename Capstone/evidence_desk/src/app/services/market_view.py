@@ -105,7 +105,7 @@ def reverse_dcf(
     as_of: str,
     price_day: str,
 ) -> ReverseDcf:
-    """The implied ten-year growth, its grid and its comparisons; cannot_compute when inputs lack."""
+    """The implied growth, its grid and its comparisons; cannot_compute when inputs lack."""
     rid = f"reverse_dcf:{ticker}:{price_day}"
     base = ReverseDcf(
         id=rid,
@@ -123,7 +123,10 @@ def reverse_dcf(
         text
         for ok, text in (
             (target is not None, "the enterprise value"),
-            (revenue is not None and revenue.value and revenue.value > 0, "a positive trailing revenue"),
+            (
+                revenue is not None and revenue.value and revenue.value > 0,
+                "a positive trailing revenue",
+            ),
             (income is not None and income.value is not None, "the trailing operating income"),
         )
         if not ok
@@ -143,7 +146,10 @@ def reverse_dcf(
             f"the trailing operating margin, {usd_text(income.value)} ÷ {usd_text(revenue.value)}"
         )
     s2c, s2c_text = (
-        (inputs.sales_to_capital, f"sales-to-capital {inputs.sales_to_capital:g}, stated on the request")
+        (
+            inputs.sales_to_capital,
+            f"sales-to-capital {inputs.sales_to_capital:g}, stated on the request",
+        )
         if inputs.sales_to_capital is not None
         else _sales_to_capital(found)
     )
@@ -154,7 +160,9 @@ def reverse_dcf(
             tax_rate=TAX_RATE if inputs.tax_rate is None else inputs.tax_rate,
             sales_to_capital=s2c,
             discount_rate=DISCOUNT_RATE if inputs.discount_rate is None else inputs.discount_rate,
-            terminal_growth=TERMINAL_GROWTH if inputs.terminal_growth is None else inputs.terminal_growth,
+            terminal_growth=TERMINAL_GROWTH
+            if inputs.terminal_growth is None
+            else inputs.terminal_growth,
             years=DCF_YEARS,
         )
     except ValueError as exc:
@@ -182,8 +190,13 @@ def reverse_dcf(
         + (" (the US federal rate, a stated default)." if inputs.tax_rate is None else "."),
         s2c_text[0].upper() + s2c_text[1:] + ".",
         f"Discount rate {assumptions.discount_rate:g}% a year"
-        + (" (a stated default, near a long-run US equity return)." if inputs.discount_rate is None else "."),
-        f"After {assumptions.years} years, growth of {assumptions.terminal_growth:g}% a year forever.",
+        + (
+            " (a stated default, near a long-run US equity return)."
+            if inputs.discount_rate is None
+            else "."
+        ),
+        f"After {assumptions.years} years, growth of {assumptions.terminal_growth:g}% a year "
+        "forever.",
         "Cash flow = revenue × margin × (1 − tax) − (revenue − last year's revenue) ÷ "
         "sales-to-capital; discounted at the end of each year; compared with the enterprise value.",
     ]
@@ -231,7 +244,7 @@ def reverse_dcf(
     return base
 
 
-def _reactions(
+def reactions(
     company: Company,
     filings: FilingSource,
     stock: PriceSeries,
@@ -242,6 +255,25 @@ def _reactions(
     accession: str | None,
     days: int,
 ) -> tuple[list[EventReaction], list[str]]:
+    """The reaction to each 8-K chosen (the one named, else those of the claim's categories).
+
+    The closes are cut at ``as_of`` here, whatever the caller passed.
+    """
+    stock = PriceSeries(
+        stock.symbol,
+        tuple(closes_until(stock.closes, as_of)),
+        stock.source,
+        stock.url,
+        stock.retrieved,
+    )
+    if index is not None:
+        index = PriceSeries(
+            index.symbol,
+            tuple(closes_until(index.closes, as_of)),
+            index.source,
+            index.url,
+            index.retrieved,
+        )
     notes: list[str] = []
     refs = filings.current_reports(
         company,
@@ -251,7 +283,9 @@ def _reactions(
     if accession:
         chosen = [ref for ref in refs if ref.accession == accession]
         if not chosen:
-            notes.append(f"No 8-K {accession} was filed in the {EVENT_LOOKBACK_DAYS} days to {as_of}.")
+            notes.append(
+                f"No 8-K {accession} was filed in the {EVENT_LOOKBACK_DAYS} days to {as_of}."
+            )
     else:
         wanted = {str(c) for c in event_rules.claim_categories(claim)}
         if not wanted:
@@ -284,7 +318,10 @@ def _reaction(
     result = EventReaction(
         id=f"reaction:{company.ticker}:{ref.accession}:{days}",
         kind="event_reaction",
-        label=f"The market's move after the 8-K of {ref.filed_date} (items {', '.join(ref.items) or 'none listed'})",
+        label=(
+            f"The market's move after the 8-K of {ref.filed_date} "
+            f"(items {', '.join(ref.items) or 'none listed'})"
+        ),
         unit="percent",
         data_origin="market_prices",
         as_of=as_of.isoformat(),
@@ -297,8 +334,10 @@ def _reaction(
             f"the {ESTIMATION_DAYS} trading days to the close before the filing, × √days."
         ),
         assumptions=[
-            "Start: the last close before the filing day (an 8-K filed after the close moves the next day's price).",
-            "Excess return = the stock's return − the index's over the same dates; not adjusted for beta.",
+            "Start: the last close before the filing day (an 8-K filed after the close moves "
+            "the next day's price).",
+            "Excess return = the stock's return − the index's over the same dates; not "
+            "adjusted for beta.",
             "Nothing after the as-of date is read.",
         ],
     )
@@ -319,7 +358,9 @@ def _reaction(
     result.value = first.excess
     result.display = first.line
     index_text = (
-        f" − ({index.symbol} {first.end} ÷ {first.start} − 1)" if index and first.index_return is not None else ""
+        f" − ({index.symbol} {first.end} ÷ {first.start} − 1)"
+        if index and first.index_return is not None
+        else ""
     )
     result.formula = f"({stock.symbol} {first.end} ÷ {first.start} − 1){index_text}"
     result.reading = f"After the 8-K of {ref.filed_date}: {first.line}."
@@ -419,10 +460,7 @@ def market_view(
         price_day=price.day.isoformat(),
     )
     if stock is not None:
-        stock = PriceSeries(stock.symbol, tuple(closes_until(stock.closes, day)), stock.source, stock.url, stock.retrieved)
-        if index is not None:
-            index = PriceSeries(index.symbol, tuple(closes_until(index.closes, day)), index.source, index.url, index.retrieved)
-        view.reactions, notes = _reactions(
+        view.reactions, notes = reactions(
             company, filings, stock, index, as_of=day, claim=claim, accession=accession, days=days
         )
         view.notes += notes
@@ -458,7 +496,11 @@ def describe(view: MarketView) -> list[str]:
         lines.extend(f"  - {a}" for a in dcf.assumptions)
         if dcf.grid:
             margins = sorted({c.operating_margin for c in dcf.grid})
-            lines.append("  grid (rows: discount rate; columns: operating margin " + ", ".join(f"{m:.1f}%" for m in margins) + ")")
+            lines.append(
+                "  grid (rows: discount rate; columns: operating margin "
+                + ", ".join(f"{m:.1f}%" for m in margins)
+                + ")"
+            )
             for rate in sorted({c.discount_rate for c in dcf.grid}):
                 row = [c.display for c in dcf.grid if c.discount_rate == rate]
                 lines.append(f"    {rate:g}%: " + "  ".join(row))

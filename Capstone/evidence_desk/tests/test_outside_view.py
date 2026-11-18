@@ -271,9 +271,7 @@ def test_peer_standing_ranks_by_hand() -> None:
     assert found.median == pytest.approx(15.0)
     assert [n.name for n in found.above] == ["Beta"]
     assert [(n.name, n.rank) for n in found.below] == [("Alpha", 3), ("Gamma", 3)]
-    result = peer_standing(
-        panel(), "operating_margin", OWN, 2022, ref, as_of="x", result_id="p"
-    )
+    result = peer_standing(panel(), "operating_margin", OWN, 2022, ref, as_of="x", result_id="p")
     assert result.display == "rank 2 of 4"
     assert result.year_before is not None and result.year_before.rank is None
     assert "operating_income were not read" in result.year_before.reason

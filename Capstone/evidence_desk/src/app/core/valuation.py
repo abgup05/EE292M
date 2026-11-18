@@ -63,7 +63,7 @@ class Shares:
 def _entries(facts: object, taxonomy: str, concept: str) -> list[dict[str, Any]]:
     try:
         rows = facts["facts"][taxonomy][concept]["units"]["shares"]  # type: ignore[index]
-    except (KeyError, TypeError):
+    except KeyError, TypeError:
         return []
     return [row for row in rows if isinstance(row, dict)] if isinstance(rows, list) else []
 
@@ -76,7 +76,7 @@ def _shares_from(rows: Sequence[dict[str, Any]], concept: str, as_of: date) -> S
             end = date.fromisoformat(str(row["end"]))
             value = float(row["val"])
             accession, form = str(row["accn"]), str(row.get("form", ""))
-        except (KeyError, TypeError, ValueError):
+        except KeyError, TypeError, ValueError:
             continue
         if filed <= as_of and value > 0:
             usable.append((filed, end, accession, form, value))
@@ -154,7 +154,9 @@ def trailing(measures: Measures, metric: str, label: str) -> Figure:
             notes.append(outcome.note)
             continue
         used = [value.refs[0] for value in outcome.used]
-        note = "" if period.kind == "TTM" else "Four quarters could not be summed; fiscal year used."
+        note = (
+            "" if period.kind == "TTM" else "Four quarters could not be summed; fiscal year used."
+        )
         return Figure(
             label=f"{label}, {slot.words}",
             value=outcome.value,
@@ -270,8 +272,19 @@ def valuation(
     out = Valuation(results)
     if isinstance(shares, str):
         results.append(
-            _result(f"market_value:{stamp}", "market_value", "Market value", None, "USD", "", "",
-                    [_price_input(price)], "", as_of, reason=shares)
+            _result(
+                f"market_value:{stamp}",
+                "market_value",
+                "Market value",
+                None,
+                "USD",
+                "",
+                "",
+                [_price_input(price)],
+                "",
+                as_of,
+                reason=shares,
+            )
         )
         return out
     market = price.value * shares.value
@@ -305,9 +318,7 @@ def valuation(
     out.operating_income = trailing(measures, "operating_income", "Operating income")
     net_income = trailing(measures, "net_income", "Net income")
     fcf = trailing(measures, "free_cash_flow", "Free cash flow")
-    ev_reason = next(
-        (f"{f.label}: {f.note}" for f in (out.debt, out.cash) if f.value is None), ""
-    )
+    ev_reason = next((f"{f.label}: {f.note}" for f in (out.debt, out.cash) if f.value is None), "")
     if not ev_reason:
         assert out.debt.value is not None and out.cash.value is not None
         out.enterprise_value = market + out.debt.value - out.cash.value
@@ -410,8 +421,19 @@ def trailing_growth(book: FactBook, *, years: int = 3, as_of: str) -> list[Analy
         )
         if len(ends) < span + 1:
             results.append(
-                _result(f"{key}:{book.cik}", key, label, None, "percent", "", "", [], "", as_of,
-                        reason=f"Fewer than {span + 1} fiscal years of revenue in the facts.")
+                _result(
+                    f"{key}:{book.cik}",
+                    key,
+                    label,
+                    None,
+                    "percent",
+                    "",
+                    "",
+                    [],
+                    "",
+                    as_of,
+                    reason=f"Fewer than {span + 1} fiscal years of revenue in the facts.",
+                )
             )
             continue
         now, then = annual[ends[-1]], annual[ends[-1 - span]]

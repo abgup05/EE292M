@@ -133,7 +133,7 @@ def sic_paging(sic: str, sec_get: Callable[[str], bytes], count: int) -> list[st
     lines: list[str] = []
     seen: set[int] = set()
     start = 0
-    for page in range(60):
+    for _ in range(60):  # pages
         body = sec_get(SIC_URL.format(sic=sic, count=count, start=start))
         found = parse_sic_page(body.decode("latin-1"), sic)
         entries = body.count(b"<entry>")
@@ -149,7 +149,7 @@ def sic_paging(sic: str, sec_get: Callable[[str], bytes], count: int) -> list[st
             break
         start += entries
         time.sleep(PAUSE_SECONDS)
-    lines.append(f"- {len(seen)} filers in all after {page + 1} page(s)")
+    lines.append(f"- {len(seen)} filers in all after {len(lines)} page(s)")
     return lines
 
 

@@ -251,7 +251,9 @@ def growth_value(
     if then.value <= 0:
         return Value(None, reason="the base is not positive")
     if scale_break(now.value, then.value):
-        return Value(None, reason="the two years differ by a factor near a thousand (a scale break)")
+        return Value(
+            None, reason="the two years differ by a factor near a thousand (a scale break)"
+        )
     if compound:
         if now.value <= 0:
             return Value(None, reason="the latest value is not positive")
@@ -377,11 +379,15 @@ def _tally(panel: Panel, test: AnnualTest, ref: RefClass, years: Sequence[int]) 
             if outcome:
                 count += 1
                 tally.hits.append((cik, year, shown))
-        tally.years.append(YearCount(year=year, in_class=in_class, computable=computable, held=count))
+        tally.years.append(
+            YearCount(year=year, in_class=in_class, computable=computable, held=count)
+        )
     return tally
 
 
-def _case(panel: Panel, test: AnnualTest, cik: int, year: int, shown: Value, years: Sequence[int]) -> Case:
+def _case(
+    panel: Panel, test: AnnualTest, cik: int, year: int, shown: Value, years: Sequence[int]
+) -> Case:
     revenue = panel.get("revenue", cik, year)
     following = ""
     if year + 1 in years:

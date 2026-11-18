@@ -176,7 +176,7 @@ def parse_frame(payload: object, concept: str, frame: str) -> ParsedFrame:
 
 
 def cutoff(as_of: date | None, today: date) -> date:
-    """The last period end a frame row may have: a year before ``as_of``, or 120 days before today."""
+    """The last period end a frame row may have: a year before ``as_of``, else 120 days ago."""
     if as_of is not None:
         return as_of - timedelta(days=ADMIT_LAG_DAYS_AS_OF)
     return today - timedelta(days=ADMIT_LAG_DAYS_NOW)
@@ -511,7 +511,9 @@ def _difference(first: Computed, second: Computed) -> Computed:
 
 
 def _fcf(panel: Panel, cik: int, year: int) -> Computed:
-    return _difference(_one("operating_cash_flow")(panel, cik, year), _one("capex")(panel, cik, year))
+    return _difference(
+        _one("operating_cash_flow")(panel, cik, year), _one("capex")(panel, cik, year)
+    )
 
 
 def _opex(panel: Panel, cik: int, year: int) -> Computed:
@@ -530,7 +532,9 @@ def _over(top: Computed, bottom: Computed, what: str, scale: float = 100.0) -> C
     return Computed(top.value / bottom.value * scale, (*top.used, *bottom.used), formula)
 
 
-def _ratio(numerator: Callable[[Panel, int, int], Computed]) -> Callable[[Panel, int, int], Computed]:
+def _ratio(
+    numerator: Callable[[Panel, int, int], Computed],
+) -> Callable[[Panel, int, int], Computed]:
     def compute(panel: Panel, cik: int, year: int) -> Computed:
         return _over(numerator(panel, cik, year), _one("revenue")(panel, cik, year), "revenue")
 

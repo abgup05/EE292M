@@ -85,9 +85,7 @@ def panel() -> Panel:
         parsed = {"Revenues": parse_frame(body, "Revenues", f"CY{year}")}
         values, counts = resolve_group("revenue", year, parsed)
         built.add("revenue", year, values, counts)
-    rows = [
-        row(cik, REVENUE[cik][0], 2022, value * M) for cik, value in OPERATING_2022.items()
-    ]
+    rows = [row(cik, REVENUE[cik][0], 2022, value * M) for cik, value in OPERATING_2022.items()]
     body = frame("OperatingIncomeLoss", "CY2022", rows)
     parsed = {"OperatingIncomeLoss": parse_frame(body, "OperatingIncomeLoss", "CY2022")}
     values, counts = resolve_group("operating_income", 2022, parsed)

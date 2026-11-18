@@ -144,7 +144,9 @@ def peer_standing(
         )
         for g in groups
     ]
-    definition = MEASURES["revenue"].definition if key == "revenue_growth" else MEASURES[key].definition
+    definition = (
+        MEASURES["revenue"].definition if key == "revenue_growth" else MEASURES[key].definition
+    )
     assumptions = [
         f"Class: {ref.definition}",
         f"Measure: {definition}",
@@ -154,7 +156,9 @@ def peer_standing(
     ]
     own_revenue = panel.get("revenue", cik, year)
     if own_revenue is not None and own_revenue.value < ref.floor:
-        assumptions.append("The company's own revenue is under the class floor; it is ranked anyway.")
+        assumptions.append(
+            "The company's own revenue is under the class floor; it is ranked anyway."
+        )
     computed = now.rank is not None
     reading = f"{label} {_phrase(now)} among {ref.name}; a year earlier it {_phrase(before)}."
     return PeerStanding(

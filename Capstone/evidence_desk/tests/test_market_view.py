@@ -58,7 +58,9 @@ def _dei(*entries: dict[str, object]) -> dict[str, object]:
     return {
         "cik": 1,
         "entityName": "X",
-        "facts": {"dei": {"EntityCommonStockSharesOutstanding": {"units": {"shares": list(entries)}}}},
+        "facts": {
+            "dei": {"EntityCommonStockSharesOutstanding": {"units": {"shares": list(entries)}}}
+        },
     }
 
 
@@ -191,13 +193,20 @@ def test_the_reaction_is_the_move_against_the_index_in_units_of_its_normal_move(
     found = event_reaction(stock, index, filed, days=3, as_of=days[-1])
     assert not isinstance(found, str), found
     window = found[0]
-    assert (window.start, window.end, window.days) == (days[60].isoformat(), days[63].isoformat(), 3)
+    assert (window.start, window.end, window.days) == (
+        days[60].isoformat(),
+        days[63].isoformat(),
+        3,
+    )
     assert window.stock_return == pytest.approx(-5.0)
     assert window.index_return == pytest.approx(0.0)
     normal = 0.01 * math.sqrt(60 / 59) * math.sqrt(3) * 100
     assert window.normal == pytest.approx(normal)
     assert window.ratio == pytest.approx(-5.0 / normal)
-    assert window.line == f"-5.0% against the index over 3 trading days, {5 / normal:.1f} times its normal 3-day move (down)"
+    assert (
+        window.line == "-5.0% against the index over 3 trading days, "
+        f"{5 / normal:.1f} times its normal 3-day move (down)"
+    )
     latest = found[1]
     assert latest.end == days[-1].isoformat()
     assert latest.days == 70 - 61

@@ -1,0 +1,292 @@
+{
+  "company": {
+    "cik": 1045810,
+    "ticker": "NVDA",
+    "name": "NVIDIA CORP"
+  },
+  "as_of": "2026-11-18",
+  "reactions": [
+    {
+      "id": "reaction:NVDA:0001045810-26-000082:3",
+      "kind": "event_reaction",
+      "label": "The market's move after the 8-K of 2026-11-12 (items 5.02, 9.01)",
+      "outcome": "computed",
+      "reason": "",
+      "value": 1.4105231876979207,
+      "unit": "percent",
+      "display": "+1.4% against the index over 3 trading days, 0.4 times its normal 3-day move (up)",
+      "formula": "(NVDA 2026-11-16 ÷ 2026-11-11 − 1) − (INDEX 2026-11-16 ÷ 2026-11-11 − 1)",
+      "inputs": [
+        {
+          "label": "NVDA close",
+          "value": 87.2333,
+          "display": "87.23",
+          "source": "closes supplied on the request",
+          "date": "2026-11-11",
+          "filed": "",
+          "url": ""
+        },
+        {
+          "label": "NVDA close",
+          "value": 86.8858,
+          "display": "86.89",
+          "source": "closes supplied on the request",
+          "date": "2026-11-16",
+          "filed": "",
+          "url": ""
+        },
+        {
+          "label": "INDEX close",
+          "value": 3680.5864,
+          "display": "3,680.59",
+          "source": "closes supplied on the request",
+          "date": "2026-11-11",
+          "filed": "",
+          "url": ""
+        },
+        {
+          "label": "INDEX close",
+          "value": 3614.009,
+          "display": "3,614.01",
+          "source": "closes supplied on the request",
+          "date": "2026-11-16",
+          "filed": "",
+          "url": ""
+        }
+      ],
+      "assumptions": [
+        "Start: the last close before the filing day (an 8-K filed after the close moves the next day's price).",
+        "Excess return = the stock's return − the index's over the same dates; not adjusted for beta.",
+        "Nothing after the as-of date is read."
+      ],
+      "reading": "After the 8-K of 2026-11-12: +1.4% against the index over 3 trading days, 0.4 times its normal 3-day move (up).",
+      "data_origin": "market_prices",
+      "as_of": "2026-11-18",
+      "note": "",
+      "accession": "0001045810-26-000082",
+      "filed": "2026-11-12",
+      "items": [
+        "5.02",
+        "9.01"
+      ],
+      "categories": [
+        "leadership",
+        "exhibits"
+      ],
+      "windows": [
+        {
+          "name": "3 trading days",
+          "days": 3,
+          "start": "2026-11-11",
+          "end": "2026-11-16",
+          "stock_return": -0.39835704942950967,
+          "index_return": -1.8088802371274304,
+          "excess": 1.4105231876979207,
+          "normal": 3.2691495209763035,
+          "ratio": 0.4314648744719024,
+          "line": "+1.4% against the index over 3 trading days, 0.4 times its normal 3-day move (up)"
+        },
+        {
+          "name": "to the latest close",
+          "days": 4,
+          "start": "2026-11-11",
+          "end": "2026-11-17",
+          "stock_return": -4.794270078055051,
+          "index_return": -2.897766508076005,
+          "excess": -1.8965035699790462,
+          "normal": 3.7748887119136096,
+          "ratio": -0.5023998625426096,
+          "line": "-1.9% against the index over 4 trading days, 0.5 times its normal 4-day move (down)"
+        }
+      ],
+      "estimation": "Normal move: the sample standard deviation of the stock's daily excess return over the 250 trading days to the close before the filing, × √days."
+    },
+    {
+      "id": "reaction:NVDA:0001045810-26-000060:3",
+      "kind": "event_reaction",
+      "label": "The market's move after the 8-K of 2026-07-02 (items 5.02)",
+      "outcome": "computed",
+      "reason": "",
+      "value": -4.2987032811236165,
+      "unit": "percent",
+      "display": "-4.3% against the index over 3 trading days, 1.3 times its normal 3-day move (down)",
+      "formula": "(NVDA 2026-07-06 ÷ 2026-07-01 − 1) − (INDEX 2026-07-06 ÷ 2026-07-01 − 1)",
+      "inputs": [
+        {
+          "label": "NVDA close",
+          "value": 99.7921,
+          "display": "99.79",
+          "source": "closes supplied on the request",
+          "date": "2026-07-01",
+          "filed": "",
+          "url": ""
+        },
+        {
+          "label": "NVDA close",
+          "value": 96.4371,
+          "display": "96.44",
+          "source": "closes supplied on the request",
+          "date": "2026-07-06",
+          "filed": "",
+          "url": ""
+        },
+        {
+          "label": "INDEX close",
+          "value": 4085.9336,
+          "display": "4,085.93",
+          "source": "closes supplied on the request",
+          "date": "2026-07-01",
+          "filed": "",
+          "url": ""
+        },
+        {
+          "label": "INDEX close",
+          "value": 4124.2071,
+          "display": "4,124.21",
+          "source": "closes supplied on the request",
+          "date": "2026-07-06",
+          "filed": "",
+          "url": ""
+        }
+      ],
+      "assumptions": [
+        "Start: the last close before the filing day (an 8-K filed after the close moves the next day's price).",
+        "Excess return = the stock's return − the index's over the same dates; not adjusted for beta.",
+        "Nothing after the as-of date is read."
+      ],
+      "reading": "After the 8-K of 2026-07-02: -4.3% against the index over 3 trading days, 1.3 times its normal 3-day move (down).",
+      "data_origin": "market_prices",
+      "as_of": "2026-11-18",
+      "note": "",
+      "accession": "0001045810-26-000060",
+      "filed": "2026-07-02",
+      "items": [
+        "5.02"
+      ],
+      "categories": [
+        "leadership"
+      ],
+      "windows": [
+        {
+          "name": "3 trading days",
+          "days": 3,
+          "start": "2026-07-01",
+          "end": "2026-07-06",
+          "stock_return": -3.361989576329194,
+          "index_return": 0.936713704794423,
+          "excess": -4.2987032811236165,
+          "normal": 3.1900706109529136,
+          "ratio": -1.3475260598822736,
+          "line": "-4.3% against the index over 3 trading days, 1.3 times its normal 3-day move (down)"
+        },
+        {
+          "name": "to the latest close",
+          "days": 99,
+          "start": "2026-07-01",
+          "end": "2026-11-17",
+          "stock_return": -16.77587704838359,
+          "index_return": -12.53084484779684,
+          "excess": -4.245032200586751,
+          "normal": 18.325560471498857,
+          "ratio": -0.2316454226428114,
+          "line": "-4.2% against the index over 99 trading days, 0.2 times its normal 99-day move (down)"
+        }
+      ],
+      "estimation": "Normal move: the sample standard deviation of the stock's daily excess return over the 250 trading days to the close before the filing, × √days."
+    },
+    {
+      "id": "reaction:NVDA:0001045810-26-000028:3",
+      "kind": "event_reaction",
+      "label": "The market's move after the 8-K of 2026-05-08 (items 5.02)",
+      "outcome": "computed",
+      "reason": "",
+      "value": 5.226998590728494,
+      "unit": "percent",
+      "display": "+5.2% against the index over 3 trading days, 1.7 times its normal 3-day move (up)",
+      "formula": "(NVDA 2026-05-12 ÷ 2026-05-07 − 1) − (INDEX 2026-05-12 ÷ 2026-05-07 − 1)",
+      "inputs": [
+        {
+          "label": "NVDA close",
+          "value": 90.5678,
+          "display": "90.57",
+          "source": "closes supplied on the request",
+          "date": "2026-05-07",
+          "filed": "",
+          "url": ""
+        },
+        {
+          "label": "NVDA close",
+          "value": 93.9699,
+          "display": "93.97",
+          "source": "closes supplied on the request",
+          "date": "2026-05-12",
+          "filed": "",
+          "url": ""
+        },
+        {
+          "label": "INDEX close",
+          "value": 4110.4831,
+          "display": "4,110.48",
+          "source": "closes supplied on the request",
+          "date": "2026-05-07",
+          "filed": "",
+          "url": ""
+        },
+        {
+          "label": "INDEX close",
+          "value": 4050.0349,
+          "display": "4,050.03",
+          "source": "closes supplied on the request",
+          "date": "2026-05-12",
+          "filed": "",
+          "url": ""
+        }
+      ],
+      "assumptions": [
+        "Start: the last close before the filing day (an 8-K filed after the close moves the next day's price).",
+        "Excess return = the stock's return − the index's over the same dates; not adjusted for beta.",
+        "Nothing after the as-of date is read."
+      ],
+      "reading": "After the 8-K of 2026-05-08: +5.2% against the index over 3 trading days, 1.7 times its normal 3-day move (up).",
+      "data_origin": "market_prices",
+      "as_of": "2026-11-18",
+      "note": "",
+      "accession": "0001045810-26-000028",
+      "filed": "2026-05-08",
+      "items": [
+        "5.02"
+      ],
+      "categories": [
+        "leadership"
+      ],
+      "windows": [
+        {
+          "name": "3 trading days",
+          "days": 3,
+          "start": "2026-05-07",
+          "end": "2026-05-12",
+          "stock_return": 3.756412323143543,
+          "index_return": -1.4705862675849501,
+          "excess": 5.226998590728494,
+          "normal": 3.099733010104822,
+          "ratio": 1.6862738092890572,
+          "line": "+5.2% against the index over 3 trading days, 1.7 times its normal 3-day move (up)"
+        },
+        {
+          "name": "to the latest close",
+          "days": 138,
+          "start": "2026-05-07",
+          "end": "2026-11-17",
+          "stock_return": -8.299528088349284,
+          "index_return": -13.053246709614264,
+          "excess": 4.75371862126498,
+          "normal": 21.023412134117073,
+          "ratio": 0.22611546550764622,
+          "line": "+4.8% against the index over 138 trading days, 0.2 times its normal 138-day move (up)"
+        }
+      ],
+      "estimation": "Normal move: the sample standard deviation of the stock's daily excess return over the 250 trading days to the close before the filing, × √days."
+    }
+  ],
+  "notes": []
+}

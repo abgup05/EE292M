@@ -24,7 +24,7 @@ from collections.abc import Iterable
 from datetime import date
 
 from app.core.analysis_models import OutsideView
-from app.core.base_rates import AnnualTest, AnnualTerm, RefClass, annual_test, base_rate
+from app.core.base_rates import AnnualTerm, AnnualTest, RefClass, annual_test, base_rate
 from app.core.claimtest import ClaimTest, compile_claim
 from app.core.facts import GROUPS
 from app.core.frames import (
@@ -163,8 +163,10 @@ def outside_view(
         notes.append(f"SEC lists no filer under SIC {sic}; no industry class.")
     own_year = latest_year(panel, company.cik, panel.years)
     own_revenue = panel.get("revenue", company.cik, own_year) if own_year else None
-    floor = min_revenue if min_revenue is not None else (
-        size_floor(own_revenue.value) if own_revenue else 1e9
+    floor = (
+        min_revenue
+        if min_revenue is not None
+        else (size_floor(own_revenue.value) if own_revenue else 1e9)
     )
     stamp = view.as_of
     classes: list[tuple[str, RefClass]] = [
@@ -176,8 +178,12 @@ def outside_view(
                 definition=(
                     f"every filer in SEC's annual frames whose revenue in the test's base year "
                     f"was at least {usd_text(floor)}"
-                    + ("" if min_revenue is not None else " (half the company's newest revenue, "
-                       "rounded down to 1, 2 or 5 times a power of ten)")
+                    + (
+                        ""
+                        if min_revenue is not None
+                        else " (half the company's newest revenue, "
+                        "rounded down to 1, 2 or 5 times a power of ten)"
+                    )
                 ),
             ),
         )
@@ -300,4 +306,3 @@ def describe(view: OutsideView) -> list[str]:
     lines.append(f"Catalogue measures covered by frames: {', '.join(view.covered_measures)}")
     lines.append(f"Not covered: {', '.join(view.not_covered_measures)}")
     return lines
-

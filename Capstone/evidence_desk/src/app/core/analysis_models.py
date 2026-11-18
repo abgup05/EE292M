@@ -123,9 +123,7 @@ class HeadlineFigure(BaseModel):
     claim_ids: list[str] = Field(default_factory=list)
 
 
-CorollaryStatus = Literal[
-    "agreed", "grammar_only", "proposer_only", "not_agreed", "not_computable"
-]
+CorollaryStatus = Literal["agreed", "grammar_only", "proposer_only", "not_agreed", "not_computable"]
 CorollaryResult = Literal["as_expected", "against", "cannot_tell", "not_computed"]
 
 
@@ -137,8 +135,8 @@ class Corollary(BaseModel):
     and ``proposer`` are each reader's canonical test ("none" for no test) with
     ``grammar_reason`` / ``proposer_reason`` saying why not. ``status``: "agreed" (both
     read the same test), "grammar_only", "proposer_only" (the proposing model's typed form
-    alone, labelled so), "not_agreed" (both read a test and they differ: the grammar's is
-    computed and shown, and it is not counted as agreed) or "not_computable".
+    alone, labelled so), "not_agreed" (both read a test and they differ: the proposer's is
+    computed, both are shown, and it is not counted toward the flag) or "not_computable".
     ``read_by`` says it in words. ``computed`` is the test computed from the run's facts
     with its history; ``result`` compares its outcome with ``expect``. A corollary never
     moves a verdict (``docs/analysis.md``).

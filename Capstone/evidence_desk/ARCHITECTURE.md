@@ -33,6 +33,12 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/core/claim_eval.py  evaluates a compiled claim against a FactBook (as of a date) with its arithmetic, and its history over the 10-K and 10-Q filing dates of five years; claim_test_models.py is its pure data
     src/app/core/tagged_figures.py  turns a filing's tagged breakdowns into figures a finding can cite (ids starting "tagged:") and chooses the ones offered; pure
     src/app/core/metrics.py     computes the metrics report from facts; metric_models.py is its pure data
+    src/app/core/analysis_models.py, analysis_policy.py   the analysis's pure data (analytic, relevance, headline, corollary, odds, argument, sentence) and every number and sentence it uses
+    src/app/core/relevance.py   which measures bear on each claim and why, the headline figures, the reported figures tied to no claim; pure
+    src/app/core/analytics.py   the analytics from dated facts: per measure, per computed test, bridges, earnings quality, a part's contribution from breakdowns already read; the AnalyticsProvider port and FactsProvider; pure
+    src/app/core/persistence.py the odds a quarterly test keeps holding, by resampling its own past changes (seeded); pure
+    src/app/core/corollaries.py a model's proposed implications read by the grammar and the typed form, computed and compared; the flag; pure
+    src/app/core/analysis_audit.py   what a sentence of the argument may cite, and the audit of each (ids, evidence, numbers); the lean flag; pure
     src/app/core/numcheck.py    the numeric check: each number a statement writes is in what it cites
     src/app/core/periods.py     the period check: each year or fiscal label a statement names is in its evidence (reported, never withheld); a company's fiscal calendar from its newest annual report; a planted wrong year, for measuring the check
     src/app/core/meaning.py     the meaning check's pure half: what the checker is shown, and applying its judgements
@@ -51,6 +57,7 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/engines/claude.py   Claude engine: builds each request and parses each answer
     src/app/engines/checker.py  the meaning checker: a second model judges each verified finding (NoChecker: none)
     src/app/engines/claim_reader.py  the model readers of each claim's test, one or two of different models, off by default (steps "read" and "read_2"); the prompt is built from the catalogue; a reading that breaks rule 3 is refused whatever period the model wrote
+    src/app/engines/analyser.py the analysing model: the "propose" and "analyse" requests, their schemas (no unions) and the bounded parse of each answer (NoAnalyser: none)
     src/app/engines/transport.py, cassette.py   the Transport port and its API adapter; answers recorded once, replayed by key
     src/app/engines/extractive.py, fallback.py   deterministic engine, no stance; a primary engine falling back to it
     src/app/services/ingest.py  select, read (cache or EDGAR), parse, deduplicate, record the sources
@@ -62,7 +69,8 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/services/claim_changes.py   for a run: the filing before the newest annual and the newest quarterly report it read, the two comparisons, the ranking per claim; a comparison that cannot be made is a note, never an error
     src/app/services/breakdowns.py   the latest filing of a form, fetched and read into breakdowns
     src/app/services/events.py  a company's 8-Ks after its newest annual report: listed from the index, the ones the rule picks read through the cache and split; a document that cannot be read is a reason on its event, never an error; the item sections offered to a claim
-    src/app/services/computed.py   for a run: compiles every claim, computes the compiled ones and their histories from the facts the run read, and counts the outcomes in the verdicts after the summary
+    src/app/services/computed.py   for a run: compiles every claim, computes the compiled ones and their histories from the facts the run read, and counts the outcomes in the verdicts after the summary; returns the compiled tests and breakdowns for the analysis
+    src/app/services/analysis.py   for a run: relevance, analytics from every provider, odds, headline; the two model steps with the corollaries and the audit; what the analysing model is shown
     src/app/services/restatements.py   a company's restatement ledger outside a run, as of a date when given
     src/app/services/tagged_figures.py   for a run that asks: the tags of the newest annual and quarterly report it read, as figures; a filing that cannot be read is a reason, never an error
     src/app/watch/store.py      the watch's tables: WatchStore (watches, seen filings, jobs, inbox, in the record) and WatchStatus (heartbeat and checks, in the cache)
@@ -234,6 +242,20 @@ nothing filed later reaches any stage, which `tests/lookahead.py` checks (`docs/
    predated gets a `caution`; a claim of a substantive category gets an `event_note` saying what the 8-Ks since the
    annual report do and do not report on it ("No 8-K filed since ... reports ...; anything later is not in the
    record"), never that the claim is false.
+11. **Analyse** (version 0.14.2, `services/analysis.analyse_run`, `docs/analysis.md`). After the verdicts are final,
+   while the stage stays `verifying` (its detail says what is being analysed). Code decides which measures bear
+   on each claim (`core/relevance`: test operand, cited by a finding, named in the claim, part named in the
+   claim), the headline figures and the reported figures tied to no claim; computes the analytics from the
+   run's FactBook and the breakdowns it already read (`core/analytics`, one `AnalyticsProvider`, "facts"; each
+   analytic has an id, formula, inputs with their filings, and a templated reading) and the odds a quarterly
+   test keeps holding (`core/persistence`, 10,000 resampled paths, seed 20261118). Then, with an analysing
+   model (`engines/analyser`, `ANTHROPIC_ANALYSIS_MODEL`, default `claude-opus-5-5`, the engine's transport or
+   cassette): one `propose` request for every claim's corollaries, read by the grammar and the proposer's typed
+   form and computed by code (`core/corollaries`), then one `analyse` request for the argument, every sentence
+   `{text, cites}`, audited by code (`core/analysis_audit`: ids, evidence, numbers by `core/numcheck`); an
+   unverified sentence is kept and marked. A failed request is one line in `run.errors` and a note; no model,
+   no time or a cassette without the answer leaves the computed analysis, labelled as such. It never changes a
+   verdict or the status. The watcher's runs get no analysing model.
 
 Saves: the run is saved at each stage, after each source and after each claim. A save while the status is `running`
 is a progress save, not synced to disk on its own; the final save is synced and carries those before it. A power cut

@@ -19,7 +19,8 @@ whitespace, UTF-8) of `{step, system, user, schema}`; the output-token limit is 
 A pending file holds `key`, `step`, `system`, `user`, `schema` and `how_to_answer`. A response
 file is this envelope:
 
-    {"key": "<key>", "step": "plan" | "assess" | "check" | "summarize" | "read" | "read_2",
+    {"key": "<key>", "step": "plan" | "assess" | "check" | "summarize" | "read" | "read_2" |
+              "propose" | "analyse",
      "via": "<how it was produced, e.g. the Anthropic API>",
      "model": "<the model that produced it>",
      "recorded_at": "<UTC ISO 8601, e.g. 2026-11-17T12:00:00+00:00>",
@@ -60,6 +61,15 @@ With `EVIDENCE_DESK_CASSETTE=<dir>` the API and `--engine auto` use the cassette
 `EVIDENCE_DESK_CASSETTE_RECORD=1` and `ANTHROPIC_API_KEY` sends missing requests to the API and
 records the answers (`via` "the Anthropic API", `model` the configured model name: the engine's
 `ANTHROPIC_MODEL`, or for a check `ANTHROPIC_CHECK_MODEL`, default `claude-haiku-5-5`).
+
+The analysing model (`engines/analyser.py`, version 0.14.2, `docs/analysis.md`) asks two
+requests per run after the summary: `propose` (corollaries for every claim) and then `analyse`
+(the argument, which reads the computed corollaries). Recording, they are recorded in the
+engine's cassette and run like any other step (`model` is `ANTHROPIC_ANALYSIS_MODEL`, default
+`claude-opus-5-5`). Replaying, the cassette is **read-only** for them: a missing answer is never
+written to `pending/`, so a cassette recorded before 0.14.2 still replays every other request, and
+the run records the computed analysis with a note saying the cassette holds no answer. To add the
+two answers to the example cassette, `make record-analysis` (2 API calls; see `docs/analysis.md`).
 
 ## The honesty rule
 

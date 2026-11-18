@@ -192,12 +192,26 @@
   },
   "coverage": {
     "counts": {
+      "analysis_lean_flags": 0,
+      "analysis_sentences_cut": 0,
+      "analysis_sentences_unverified": 0,
+      "analysis_sentences_verified": 0,
+      "analysis_sentences_written": 0,
+      "analysis_unverified_disallowed_id": 0,
+      "analysis_unverified_no_evidence": 0,
+      "analysis_unverified_number": 0,
+      "analysis_unverified_unknown_id": 0,
+      "analytics_computed": 27,
       "claims_compiled": 1,
       "claims_total": 5,
       "claims_with_evidence": 5,
       "computed_cannot": 0,
       "computed_fails": 0,
       "computed_holds": 1,
+      "corollaries_against": 0,
+      "corollaries_as_expected": 0,
+      "corollaries_computed": 0,
+      "corollaries_proposed": 0,
       "engine_fallbacks": 0,
       "excerpts_verified": 15,
       "figures_cited": 0,
@@ -735,7 +749,7 @@
     ],
     "passages_indexed": 636
   },
-  "sha256": "d95de9bd16bf8e5bb03bd9b68af3282e288677f25e6ee2b332e3573e2e5061e4",
+  "sha256": "5fdec5cebbe4602e648968025de8c8b29701ea917c5a6c3182bf38ae1ae65b8e",
   "sources": [
     {
       "characters": 151303,

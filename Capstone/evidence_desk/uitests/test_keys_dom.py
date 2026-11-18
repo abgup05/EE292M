@@ -38,7 +38,7 @@ def steps() -> dict[str, Tag]:
 
 def test_the_harness_ran_every_step_on_the_live_run() -> None:
     names = list(steps())
-    assert names == ["loaded", "slash", "j-while-typing", "escape-ticker", "j1", "j2", "j3", "k1", "ctrl-j", "t", "toggle-click", "question", "close"]
+    assert names == ["loaded", "slash", "j-while-typing", "escape-ticker", "j1", "j2", "j3", "k1", "ctrl-j", "t", "toggle-click", "question", "close", "e-open", "e-close"]
     assert steps()["loaded"]["data-claims"] == "2"
 
 
@@ -84,6 +84,15 @@ def test_question_mark_opens_the_list_of_keys_and_close_closes_it() -> None:
     assert s["close"]["data-docket"] == "c1", "closing the list gives the focus back"
 
 
+def test_e_opens_the_thesis_drawer_beside_a_run_and_escape_closes_it() -> None:
+    s = steps()
+    assert (s["close"]["data-drawer"], s["close"]["data-thesis-expanded"]) == ("closed", "false")
+    assert (s["e-open"]["data-drawer"], s["e-open"]["data-thesis-expanded"]) == ("open", "true")
+    assert s["e-open"]["data-active"] == "decision", "the drawer opens on its first field"
+    assert (s["e-close"]["data-drawer"], s["e-close"]["data-thesis-expanded"]) == ("closed", "false")
+    assert s["e-close"]["data-active"] == "thesis-button", "closing gives the focus back to the button"
+
+
 @cache
 def terminal() -> BeautifulSoup:
     dump = RESULTS / "dom-sample-terminal.html"
@@ -102,7 +111,7 @@ def test_theme_in_the_address_sets_the_terminal_theme_without_storing_it() -> No
 def test_the_keys_dialog_lists_every_key_the_page_answers() -> None:
     soup = terminal()
     keys = [words.get_text() for words in soup.select("#keys-dialog .keys-list dt kbd")]
-    assert keys == ["/", "j", "k", "Enter", "t", "?", "Esc"]
+    assert keys == ["/", "e", "j", "k", "Enter", "t", "?", "Esc"]
     assert soup.select_one("#ticker")["aria-keyshortcuts"] == "/"
     assert soup.select_one("#theme-toggle")["aria-keyshortcuts"] == "t"
     assert soup.select_one("#keys-button")["aria-keyshortcuts"] == "?"

@@ -36,6 +36,8 @@ function record(step, extra) {
   li.dataset.stored = stored;
   li.dataset.dialog = doc.getElementById("keys-dialog").open ? "open" : "closed";
   li.dataset.toggleLabel = doc.getElementById("theme-toggle").getAttribute("aria-label") || "";
+  li.dataset.drawer = doc.body.classList.contains("drawer-open") ? "open" : "closed";
+  li.dataset.thesisExpanded = doc.getElementById("thesis-button").getAttribute("aria-expanded") || "";
   Object.assign(li.dataset, extra || {});
   li.textContent = step;
   steps.append(li);
@@ -75,6 +77,10 @@ function run() {
   record("question");
   doc.getElementById("keys-close").click();
   record("close");
+  press(doc.activeElement, "e");
+  record("e-open");
+  press(doc.activeElement, "Escape");
+  record("e-close");
   done.dataset.done = "true";
   done.textContent = "done";
 }

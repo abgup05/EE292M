@@ -206,3 +206,118 @@ def test_the_time_line_has_a_text_alternative_for_every_mark() -> None:
     for mark in page("run-events").select("#timeline .tl-mark"):
         assert mark.get("aria-label"), mark
         assert mark.select_one("title") is not None
+
+
+# ---------------------------------------------------------------- the answer first
+
+TAPE_KEYS = ["revenue", "revenue_yoy", "gross_margin", "operating_margin", "fcf_margin", "eps_diluted"]
+
+
+def tape_metrics(run: dict[str, Any]) -> list[dict[str, Any]]:
+    """The metrics the tape should show: per key, the quarter's when the record has one, else the year's."""
+    chosen = []
+    for key in TAPE_KEYS:
+        of_key = [m for m in run.get("metrics") or [] if m.get("key") == key]
+        pick = next((m for m in of_key if m.get("period") == "quarter"), None) or next(
+            (m for m in of_key if m.get("period") == "annual"), None
+        )
+        if pick is not None:
+            chosen.append(pick)
+    return chosen
+
+
+@every_run
+def test_the_tape_shows_the_records_own_figures_in_order(name: str) -> None:
+    soup, run = page(name), record(name)
+    expected = tape_metrics(run)
+    cells = soup.select("#tape .tape-cell")
+    if not expected:
+        assert soup.select_one("#tape-section[hidden]") is not None
+        return
+    assert [c["data-tape-metric"] for c in cells] == [m["id"] for m in expected]
+    for cell, metric in zip(cells, expected, strict=True):
+        assert words(cell.select_one(".tape-label")) == metric["label"]
+        # The record's display string, character for character: the page only splits it at the point.
+        assert cell.select_one(".tape-value").get_text() == metric["display"]
+    assert expected[0]["period_label"] in words(soup.select_one("#tape .tape-head"))
+
+
+@every_run
+def test_the_run_leads_with_the_answer(name: str) -> None:
+    soup = page(name)
+    order = ["run-head", "status-banner", "tape-section", "scorecard", "timeline-section", "summary-section", "claim-list", "figures-section"]
+    every = [node.get("id") for node in soup.select("#run-view [id]")]
+    assert [i for i in every if i in order] == order
+
+
+@every_run
+def test_the_status_line_carries_the_records_counts_and_folds_the_rest(name: str) -> None:
+    soup, run = page(name), record(name)
+    coverage = run["coverage"]
+    fold = soup.select_one("#status-banner > details.banner-fold")
+    assert fold is not None and not fold.has_attr("open"), "the full counts start folded"
+    line = fold.select_one(":scope > summary")
+    shown = {node["data-coverage"]: node.get_text() for node in line.select("[data-coverage]")}
+    for field in ("sources_read", "sources_requested", "findings_verified", "findings_withheld"):
+        assert shown[field] == f"{coverage[field]:,}", field
+    assert status_word(run) in words(line)
+    # Every count of the full strip is still in the page, under the line.
+    assert fold.select_one(".banner-full .coverage-facts") is not None
+
+
+def status_word(run: dict[str, Any]) -> str:
+    return str(run["status"]).capitalize()
+
+
+@every_run
+def test_withheld_findings_start_folded_behind_their_count(name: str) -> None:
+    soup, run = page(name), record(name)
+    withheld = run.get("unsupported_findings") or []
+    if not withheld:
+        assert soup.select_one("#withheld-section[hidden]") is not None
+        return
+    fold = soup.select_one("#withheld > details.withheld-fold")
+    assert fold is not None and not fold.has_attr("open")
+    summary = fold.select_one(":scope > summary")
+    assert summary.select_one('[data-coverage="findings_withheld"]').get_text() == f"{run['coverage']['findings_withheld']:,}"
+    assert len(fold.select("li.withheld-item")) == len(withheld)
+
+
+def test_the_meaning_checks_withholdings_are_counted_on_the_fold_line() -> None:
+    run = record("run-events")
+    line = page("run-events").select_one("#withheld > details.withheld-fold > summary")
+    assert line.select_one('[data-coverage="findings_failed_meaning"]').get_text() == f"{run['coverage']['findings_failed_meaning']:,}"
+    assert "by the meaning check" in words(line)
+
+
+@every_run
+def test_standing_prose_lives_in_how_to_read_this_not_on_the_reading_path(name: str) -> None:
+    soup = page(name)
+    howto = soup.select_one("header.masthead #howto")
+    assert howto is not None and howto.has_attr("hidden"), "beside a run the guide starts closed"
+    for node_id in ("distinction", "engine-line", "takeaway"):
+        assert soup.select_one(f"#howto #{node_id}") is not None, node_id
+    assert soup.select_one(".tl-caption") is None
+    assert "hatched band" in words(howto)
+    button = soup.select_one(".cmdbar #howto-button")
+    assert button is not None and button["aria-controls"] == "howto" and not button.has_attr("hidden")
+
+
+@every_run
+def test_the_way_out_of_a_sample_and_the_thesis_drawer_are_in_the_command_bar(name: str) -> None:
+    soup = page(name)
+    leave = soup.select_one(".cmdbar a#leave-sample")
+    assert leave is not None and not leave.has_attr("hidden") and words(leave) == "Leave the sample"
+    assert soup.select_one("#sample-link[hidden]") is not None
+    thesis = soup.select_one(".cmdbar #thesis-button")
+    assert thesis is not None and not thesis.has_attr("hidden")
+    assert (thesis["aria-controls"], thesis["aria-expanded"]) == ("form-panel", "false")
+    assert "is-first" not in (soup.body.get("class") or [])
+
+
+@every_run
+def test_long_engine_names_in_the_bar_are_focusable_with_the_full_text_as_title(name: str) -> None:
+    soup = page(name)
+    for node in soup.select("[data-cmd-engine], [data-cmd-checker]"):
+        assert node.get("tabindex") == "0"
+        assert node["title"] and node["title"] in words(node)

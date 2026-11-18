@@ -49,16 +49,18 @@ def _numbers(t: foreign.Tally) -> tuple[int, ...]:
 
 # (numeric, right, wrong, not compiled: metric, form, period, phrasing,
 #  not_numeric, not_numeric compiled wrongly, not_numeric compiled with the label wrong)
-# Set A after the measure catalogue (eval/results/claim-tests-foreign-catalogue.txt); before
-# it, (83, 23, 0, 33, 21, 2, 4, 37, 0, 0) for all.
+# Set A after the forms round (eval/results/claim-tests-foreign-forms.txt); after the measure
+# catalogue (claim-tests-foreign-catalogue.txt), (83, 31, 0, 26, 21, 2, 3, 37, 0, 0) for all;
+# before it, (83, 23, 0, 33, 21, 2, 4, 37, 0, 0).
 FINAL = {
-    "all": (83, 31, 0, 26, 21, 2, 3, 37, 0, 0),
-    "development": (43, 17, 0, 16, 10, 0, 0, 17, 0, 0),
-    "held_out": (40, 14, 0, 10, 11, 2, 3, 20, 0, 0),
+    "all": (83, 42, 0, 22, 15, 1, 3, 37, 0, 0),
+    "development": (43, 23, 0, 13, 7, 0, 0, 17, 0, 0),
+    "held_out": (40, 19, 0, 9, 8, 1, 3, 20, 0, 0),
 }
-# Set B after the measure catalogue (eval/results/claim-tests-foreign-b-catalogue.txt); scored
-# once before it (eval/results/claim-tests-foreign-b.txt): (80, 5, 1, 47, 8, 3, 16, 40, 0, 0).
-FINAL_B = (80, 19, 1, 33, 8, 3, 16, 40, 0, 0)
+# Set B after the forms round (eval/results/claim-tests-foreign-b-forms.txt); after the measure
+# catalogue (claim-tests-foreign-b-catalogue.txt), (80, 19, 1, 33, 8, 3, 16, 40, 0, 0); scored
+# once before it (claim-tests-foreign-b.txt): (80, 5, 1, 47, 8, 3, 16, 40, 0, 0).
+FINAL_B = (80, 23, 0, 33, 8, 2, 14, 40, 0, 0)
 
 
 @pytest.mark.parametrize("half", list(FINAL))

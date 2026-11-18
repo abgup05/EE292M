@@ -24,7 +24,7 @@ from app.core.breakdowns import build_report
 from app.core.claim_eval import claim_history, evaluate
 from app.core.claim_normal import Newest, normal_form
 from app.core.claim_reading import as_reading, from_reading
-from app.core.claimtest import ClaimTest, NotNumeric, Number, Period, Term
+from app.core.claimtest import ClaimTest, NotNumeric, Number, Period, Term, compile_claim
 from app.core.facts import FactBook
 from app.core.periods import fiscal_calendar
 from app.evaluation.claim_oracle import load_payload, recorded_report
@@ -385,3 +385,151 @@ def test_a_run_reads_the_tags_for_a_share_in_the_second_part_of_an_and(tmp_path)
     assert second.outcome != "cannot_compute", second.reason
     assert second.left is not None and second.left.inputs[0].form == "10-K"
     assert computed.history == [] and computed.history_note
+
+
+# The grammar: the new forms it reads, whole sentence only
+
+
+READS = [
+    # each of the last N periods
+    (
+        "Gross margin has stayed above 70% for the last four quarters.",
+        "each(4): gross_margin[Q] > 70%",
+    ),
+    (
+        "Operating margin has been above 30% in each of the last three fiscal years.",
+        "each(3): operating_margin[FY] > 30%",
+    ),
+    (
+        "Capital expenditures have grown by at least 50% in each of the last two years.",
+        "each(2): yoy(capex)[FY] >= 50%",
+    ),
+    (
+        "Net income grew faster than revenue in each of the last two fiscal years.",
+        "each(2): yoy(net_income)[FY] > yoy(revenue)[FY]",
+    ),
+    (
+        "The diluted share count has shrunk every year for the past five years.",
+        "each(5): diluted_shares[FY] < diluted_shares[FY-1]",
+    ),
+    (
+        "Free cash flow has risen every year since fiscal 2023.",
+        "each(since FY2023): free_cash_flow[FY] > free_cash_flow[FY-1]",
+    ),
+    (
+        "Dividends paid have gone up every year since fiscal 2021.",
+        "each(since FY2021): dividends_paid[FY] > dividends_paid[FY-1]",
+    ),
+    (
+        "Net sales rose in fiscal 2025 for the second consecutive year.",
+        "each(2): revenue[FY2025] > revenue[FY2024]",
+    ),
+    (
+        "Gross margin was above 70% in each quarter of fiscal 2026.",
+        "each(4): gross_margin[Q4 FY2026] > 70%",
+    ),
+    # rises sequentially in each period stay a streak
+    ("Revenue grew sequentially in each of the last four quarters.", "streak(revenue)[Q] >= 4"),
+    # a change over a span, and multiples
+    (
+        "Diluted EPS was more than three times its fiscal 2023 level.",
+        "change(eps_diluted, FY2023)[FY] > 200%",
+    ),
+    (
+        "Total assets more than tripled over the past three fiscal years.",
+        "change(total_assets, FY-3)[FY] > 200%",
+    ),
+    (
+        "Revenue grew more than 100% between fiscal 2023 and fiscal 2025.",
+        "change(revenue, FY2023)[FY2025] > 100%",
+    ),
+    (
+        "Capex more than doubled between fiscal 2022 and fiscal 2024.",
+        "change(capex, FY2022)[FY2024] > 100%",
+    ),
+    ("Revenue has more than doubled since fiscal 2023.", "change(revenue, FY2023)[FY] > 100%"),
+    (
+        "Revenue quadrupled from fiscal 2023 to fiscal 2025.",
+        "change(revenue, FY2023)[FY2025] >= 300%",
+    ),
+    ("Revenue rose between fiscal 2023 and fiscal 2025.", "revenue[FY2025] > revenue[FY2023]"),
+    (
+        "Net sales compounded at less than 3% a year from fiscal 2022 to fiscal 2025.",
+        "cagr(revenue, 3y)[FY2025] < 3%",
+    ),
+    ("NVIDIA's revenue more than doubled in fiscal 2024.", "yoy(revenue)[FY2024] > 100%"),
+    # two measures compared
+    (
+        "Operating cash flow was above net income in the latest fiscal year.",
+        "operating_cash_flow[FY] > net_income[FY]",
+    ),
+    (
+        "Cash and short-term investments exceed total debt.",
+        "cash_and_securities[Q] > total_debt[Q]",
+    ),
+    # a share for a period the filing reports
+    (
+        "Data Center revenue made up over 80% of total revenue last fiscal year.",
+        'share(segment "Data Center")[FY] > 80%',
+    ),
+    (
+        "Services made up more than a quarter of total net sales last year.",
+        'share(segment "Services")[FY] > 25%',
+    ),
+    (
+        "Data Center accounts for more than 80% of revenue in fiscal 2026.",
+        'share(segment "Data Center")[FY2026] > 80%',
+    ),
+    ("Data Center is more than 80% of revenue.", 'share(segment "Data Center")[filing] > 80%'),
+    # two tests joined by "and"
+    (
+        "Revenue grew more than 50% year over year and gross margin is above 70%.",
+        "(yoy(revenue)[Q] > 50%) and (gross_margin[Q] > 70%)",
+    ),
+    (
+        "Revenue rose in fiscal 2025 and net income rose in fiscal 2025.",
+        "(revenue[FY2025] > revenue[FY2024]) and (net_income[FY2025] > net_income[FY2024])",
+    ),
+    # an "and" inside a name is not two tests
+    ("Research and development expense rose year over year.", "rnd[Q] > rnd[Q-4]"),
+]
+
+
+@pytest.mark.parametrize(("claim", "canonical"), READS, ids=[c for c, _ in READS])
+def test_the_grammar_reads_the_new_forms(claim: str, canonical: str) -> None:
+    test = compile_claim(claim)
+    assert isinstance(test, ClaimTest), test
+    assert test.canonical == canonical
+
+
+REFUSES = [
+    # "grew in each quarter": on the quarter before, or on a year earlier?
+    "Revenue grew in each of the last four quarters.",
+    # since a year, for a level: is the named year itself held?
+    "Operating margin has been above 30% every year since fiscal 2022.",
+    # a change in a percentage: points or percent?
+    "Gross margin more than doubled since fiscal 2023.",
+    # a sum of members, not one member (set B, g046)
+    "Japan and Rest of Asia Pacific together are less than 15% of net sales.",
+    "Mac and iPad combined are more than 15% of net sales.",
+    # a share with words after it that name no period
+    "Data Center revenue made up over 80% of total revenue, a record.",
+    # contrast words are still two statements
+    "Revenue grew more than 50%, but gross margin fell.",
+    "Inventory has grown, but more slowly than revenue.",
+    # a period named in one part only may be meant for both
+    "Revenue grew and gross margin was above 70% in fiscal 2025.",
+    # a half that is not a test
+    "Inventory is under $10 billion and has barely moved in three years.",
+    # growth words make a comparison of two measures ambiguous
+    "Operating income grew more than revenue.",
+    # two measures of different kinds
+    "Revenue is above gross margin.",
+    # each of more periods than the limit
+    "Gross margin has stayed above 70% for the last twenty quarters.",
+]
+
+
+@pytest.mark.parametrize("claim", REFUSES)
+def test_the_grammar_still_refuses(claim: str) -> None:
+    assert isinstance(compile_claim(claim), NotNumeric), compile_claim(claim)

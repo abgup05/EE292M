@@ -31,7 +31,9 @@ NAMED_PERIOD_IGNORED = [
     ("Revenue grew in the December quarter.", "december"),
     ("Net income rose in the second half of the year.", "second half"),
     ("Operating cash flow was above $50 billion in the first half.", "first half"),
-    ("Capex more than doubled between fiscal 2022 and fiscal 2024.", "between"),
+    # "Capex more than doubled between fiscal 2022 and fiscal 2024" is a change since the forms
+    # round (tests/test_forms.py); a span the claim names but the test does not still refuses.
+    ("Revenue grew more than 50% in fiscal 2025, between fiscal 2022 and fiscal 2023.", "2025"),
     ("Revenue grew more than 50% in fiscal 2025 and fiscal 2026.", "fiscal 2026"),
 ]
 HALF_DROPPED = [

@@ -175,6 +175,11 @@ FOREIGN_DEVELOPMENT_COMPILED = [
         "cagr(revenue, 4y)[FY] > 12%",
     ),
     ("Mac sales are less than 15% of the total.", 'share(segment "Mac")[filing] < 15%'),
+    # Refused as "a condition held in each of several periods" until the forms round.
+    (
+        "Gross margin has been above 60% for the last three quarters.",
+        "each(3): gross_margin[Q] > 60%",
+    ),
     (
         "Revenue from Europe is more than a quarter of total revenue.",
         'share(geography "Europe")[filing] > 25%',
@@ -182,13 +187,13 @@ FOREIGN_DEVELOPMENT_COMPILED = [
 ]
 
 FOREIGN_DEVELOPMENT_NOT_NUMERIC = [
-    ("Gross margin has been above 60% for the last three quarters.", "each of several periods"),
     (
         "Operating income grew year over year in every quarter this fiscal year.",
         "each of several periods",
     ),
-    ("Revenue grew in each of the last six quarters.", "each of several periods"),
-    ("Revenue growth fell in each of the last two quarters.", "each of several periods"),
+    # On the quarter before, or on a year earlier: the claim does not say.
+    ("Revenue grew in each of the last six quarters.", "each of several quarters"),
+    ("Revenue growth fell in each of the last two quarters.", "each of several quarters"),
     ("Receivables have grown, but more slowly than revenue.", "contrast"),
     ("Net income rose despite higher costs.", "contrast"),
     # Refused for a measure outside the set until the catalogue added it (tests/test_measures.py).

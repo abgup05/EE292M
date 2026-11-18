@@ -384,7 +384,7 @@ def _computed_test(claim: Claim) -> list[str]:
 
 
 def _computed_tests(run: Run) -> list[str]:
-    """Each claim's computed test, its arithmetic and its history; runs from version 13."""
+    """Each claim's computed test, its arithmetic and its history; runs from version 14."""
     if not any(claim.computed is not None or claim.compile_note for claim in run.claims):
         return []
     lines = [COMPUTED_HEADING_MD, "", COMPUTED_NOTE_MD, ""]

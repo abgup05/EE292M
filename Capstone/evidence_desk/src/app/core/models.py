@@ -189,7 +189,7 @@ class Claim(BaseModel):
     ``computed`` is the claim compiled to a typed test and computed from the run's dated
     facts (:mod:`app.core.claimtest`, :mod:`app.core.claim_eval`); its outcome counts in
     the verdict (:func:`app.core.policy.claim_verdict`). When the claim does not compile,
-    ``computed`` is None and ``compile_note`` says why. Both are empty before version 13.
+    ``computed`` is None and ``compile_note`` says why. Both are empty before version 14.
     ``readings`` is each reader's reading of the claim's test, the grammar's first, then
     the model parser's when it is on (:func:`app.core.policy.reading_counts`); empty
     before version 14.

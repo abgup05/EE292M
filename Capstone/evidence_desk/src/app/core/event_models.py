@@ -110,7 +110,7 @@ class AsOf(BaseModel):
     ``line`` is the one sentence the page and the brief show. ``requested`` is the date a
     run was asked to be as of (``ThesisRequest.as_of``; None for a run of the newest
     filings); the days are then counted to it, and ``requested_note`` says what the run
-    read. Both are empty in runs recorded before version 13.
+    read. Both are empty in runs recorded before version 14.
     """
 
     newest_form: str | None = None

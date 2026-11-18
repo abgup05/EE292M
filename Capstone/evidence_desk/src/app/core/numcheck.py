@@ -199,7 +199,8 @@ _MONTH = (
 # Spans whose digits are labels or dates, not quantities, in three groups that
 # :mod:`app.core.periods` reads too: dates, references and form names, period labels.
 _DATE_MASKS: tuple[re.Pattern[str], ...] = (
-    re.compile(rf"\b{_MONTH}\.?\s+\d{{1,2}}(?:st|nd|rd|th)?(?:,?\s+\d{{4}})?\b"),
+    # "March 15, 2026", but not "March 15%": a day of a month is never followed by "%".
+    re.compile(rf"\b{_MONTH}\.?\s+\d{{1,2}}(?:st|nd|rd|th)?(?:,?\s+\d{{4}})?\b(?!\s?%)"),
     re.compile(rf"\b{_MONTH}\.?,?\s+\d{{4}}\b"),
     re.compile(r"\b\d{4}-\d{2}-\d{2}\b"),
     re.compile(r"\b\d{1,2}/\d{1,2}/\d{2,4}\b"),
@@ -253,6 +254,8 @@ _NUMBER = re.compile(r"\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?|\.\d+")
 _CURRENCY_BEFORE = re.compile(r"(?:US\$|\$|\bUSD)\s?$")
 _SCALE_AFTER = re.compile(r"\s?(thousand|million|billion|trillion)\b", re.IGNORECASE)
 _ABBREVIATION_AFTER = re.compile(r"(K|M|B|bn|mm)\b")
+# Without a dollar sign, only the letters of millions and billions, glued to the digits.
+_GLUED_SCALE_AFTER = re.compile(r"(M|B|bn|mm)\b")
 _UNIT_AFTER: tuple[tuple[re.Pattern[str], Unit], ...] = (
     (re.compile(r"\s?%"), "percent"),
     (re.compile(r"\s?percentage[\s-]points?\b", re.IGNORECASE), "percent"),
@@ -323,7 +326,21 @@ def _scale_after(text: str, position: int, currency: bool) -> tuple[float, int]:
         match = _ABBREVIATION_AFTER.match(text, position)
         if match:
             return SCALE_ABBREVIATIONS[match.group(1)], match.end()
+        return 1.0, position
+    match = _GLUED_SCALE_AFTER.match(text, position)
+    if match and _glued_number(text, position):
+        return SCALE_ABBREVIATIONS[match.group(1)], match.end()
     return 1.0, position
+
+
+def _glued_number(text: str, end: int) -> bool:
+    """True when the digits ending at ``end`` are long enough to be an amount, not a name.
+
+    "46.7B", "2.5M" and "10M" are amounts; "3M" (a company) is a name. Only B, bn, M and mm
+    are read without a dollar sign: "4K" and "10K" are a resolution and a filing.
+    """
+    digits = re.search(r"[0-9][0-9,.]*$", text[:end])
+    return digits is not None and ("." in digits.group() or len(digits.group()) >= 2)
 
 
 def _unit_after(text: str, position: int) -> tuple[Unit | None, int]:
@@ -531,6 +548,9 @@ class _Candidate:
     rescalable: bool
     shown: str
     where: str
+    # A change the backend computed and printed with its sign ("+65.5%"): a statement whose
+    # direction word is one of decline may not match it.
+    increase: bool = False
 
 
 _COMPATIBLE: dict[Unit, frozenset[Unit]] = {
@@ -606,6 +626,7 @@ def _metric_candidates(metrics: Sequence[Metric]) -> list[_Candidate]:
                     rescalable=False,
                     shown=f"{item.display} ({item.label}, {period})",
                     where="in a cited figure",
+                    increase=item.unit == "percent" and item.display.startswith("+"),
                 )
             )
         for ref in item.inputs:
@@ -632,9 +653,11 @@ def check_numbers(
     ``statement`` allows it: for a percentage the direction word that governs it
     must be one of decline (:func:`decline_governs`), for an amount the sentence
     must have a word of decline or of an outflow (:data:`NEGATIVE_WORDS`). The
-    reverse is not checked: "fell 56%" matches a source that says "up 56%",
-    because a filing writes most declines as positive numbers with a word, and a
-    sign cannot tell the two apart.
+    reverse is checked only against a change the backend computed and printed with
+    its sign: a percentage governed by a word of decline does not match a cited
+    "+65.5%". Against a quote it is not: "fell 56%" matches a quote that says "up
+    56%", because a filing writes most declines as positive numbers with a word,
+    and a sign cannot tell the two apart.
     """
     candidates = [*_excerpt_candidates(excerpts), *_metric_candidates(metrics)]
     details: list[str] = []
@@ -647,7 +670,9 @@ def check_numbers(
             negative_allowed = decline_governs(sentence, position - begins)
         else:
             negative_allowed = says_negative(sentence)
-        hit = next((c for c in candidates if _matches(quantity, c, negative_allowed)), None)
+        # A decline may not match a computed increase (a quote's sign cannot be known).
+        usable = [c for c in candidates if not (negative_allowed and c.increase)]
+        hit = next((c for c in usable if _matches(quantity, c, negative_allowed)), None)
         if hit is None:
             unmatched.append(quantity.raw)
             details.append(f"{quantity.raw} was not found in the quotes or the cited figures")

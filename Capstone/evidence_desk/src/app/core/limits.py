@@ -59,6 +59,10 @@ EVENT_OPENING_SENTENCES = 2
 # Item sections of 8-Ks offered to a claim of the same category, beside its retrieved passages.
 EVENT_PASSAGES_PER_CLAIM = 2
 
+# Dated facts (app.core.facts, app.core.claimtest). A run or a ledger may be computed as of a
+# past date no earlier than this: XBRL company facts begin in 2009.
+EARLIEST_AS_OF = "2009-01-01"
+
 # Review and saved theses
 MAX_NOTE_CHARS = 500
 MAX_THESIS_NAME_CHARS = 80

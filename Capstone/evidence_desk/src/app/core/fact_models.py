@@ -53,7 +53,10 @@ class LedgerValue(BaseModel):
 
     The first value of a period has no change (``change`` and ``change_percent`` None).
     ``change_percent`` is None when the value before it is zero. ``concept`` is the
-    us-gaap concept the filing tagged it with.
+    us-gaap concept the filing tagged it with. ``returns_to_earlier`` is True when the
+    value is, within the tolerance, one the period had before the value it replaces: a
+    filing in between gave the period another value and a later one went back, which
+    is more often a mistagged period in that filing than two restatements.
     """
 
     value: float
@@ -66,6 +69,7 @@ class LedgerValue(BaseModel):
     change_display: str = ""
     change_percent: float | None = None
     change_percent_display: str = ""
+    returns_to_earlier: bool = False
 
 
 class LedgerEntry(BaseModel):

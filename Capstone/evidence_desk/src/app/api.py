@@ -16,7 +16,7 @@ import time
 from collections.abc import AsyncIterator, Callable
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -31,6 +31,7 @@ from app.core.breakdown_models import BreakdownReport
 from app.core.change_models import FilingChanges
 from app.core.claim_change_models import RunChanges
 from app.core.events import CATEGORY_LABELS, SUBSTANTIVE
+from app.core.fact_models import RestatementLedger
 from app.core.metric_models import MetricsReport
 from app.core.models import (
     TICKER_PATTERN,
@@ -45,6 +46,7 @@ from app.core.models import (
     Thesis,
     ThesisCreate,
     ThesisRequest,
+    as_of_problem,
 )
 from app.core.ports import (
     Analyst,
@@ -66,6 +68,7 @@ from app.services.export import render_markdown
 from app.services.filing_changes import FORMS as CHANGE_FORMS
 from app.services.filing_changes import filing_changes
 from app.services.numbers import load_numbers
+from app.services.restatements import company_restatements
 from app.sources.http import fetch_page as default_fetch_page
 from app.sources.urls import canonicalize, validate_public_url
 from app.store import FactStore, FilingCache, Store
@@ -159,7 +162,7 @@ class Conflict(Exception):
     """A request that is valid but cannot be carried out in the current state (409)."""
 
 
-def public_limits() -> dict[str, int | float]:
+def public_limits() -> dict[str, int | float | str]:
     """Every public constant of :mod:`app.core.limits`, by name."""
     return {name: getattr(limits, name) for name in dir(limits) if name.isupper()}
 
@@ -236,6 +239,7 @@ MetricsCache = TimedCache[int, MetricsReport]
 ChangesCache = TimedCache[tuple[int, str], FilingChanges]
 RunChangesCache = TimedCache[str, RunChanges]
 BreakdownsCache = TimedCache[tuple[int, str], BreakdownReport]
+LedgerCache = TimedCache[tuple[int, date | None], RestatementLedger]
 
 
 def create_app(
@@ -273,6 +277,7 @@ def create_app(
     changes_cache = ChangesCache(monotonic)
     run_changes_cache = RunChangesCache(monotonic)
     breakdowns_cache = BreakdownsCache(monotonic)
+    ledger_cache = LedgerCache(monotonic)
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
@@ -528,6 +533,28 @@ def create_app(
             raise SourceError(result.error or "The XBRL company facts could not be read")
         metrics_cache.put(company.cik, result.report)
         return result.report
+
+    @app.get("/api/companies/{ticker}/restatements")
+    def company_ledger(ticker: str, as_of: date | None = None) -> RestatementLedger:
+        """Every metric and period whose value differs between the company's filings.
+
+        From its XBRL company facts: the first value of each period and its filing,
+        each later value that differs by more than the tolerance, its filing and the
+        change. ``as_of`` (YYYY-MM-DD, not in the future, not before 2009) reads only
+        the facts filed by then. 422 for a malformed or unknown ticker or such a date;
+        503 when EDGAR cannot give the facts. Cached per company and date for 15 minutes.
+        """
+        if as_of is not None:
+            problem = as_of_problem(as_of, datetime.now(UTC).date())
+            if problem:
+                raise RequestRefused([Problem(field="as_of", message=problem)])
+        company = resolve(ticker)
+        cached = ledger_cache.get((company.cik, as_of))
+        if cached is not None:
+            return cached
+        result = company_restatements(company, filings, facts_store=facts_store, as_of=as_of)
+        ledger_cache.put((company.cik, as_of), result)
+        return result
 
     @app.get("/api/companies/{ticker}/changes")
     def company_filing_changes(ticker: str, form: str = "10-K") -> FilingChanges:

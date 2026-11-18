@@ -591,6 +591,10 @@ class FactBook:
         """Every selected instant (balance-sheet) value of a group, keyed by date."""
         return dict(self._instants[key])
 
+    def periods(self, key: str) -> list[Period]:
+        """Every period any concept of the group was reported for, by end then start."""
+        return sorted(self._reports[key], key=lambda p: (p[1], p[0] or date.min))
+
     def reports(self, key: str, start: date | None, end: date) -> list[FactRef]:
         """Every report of one period under any concept of the group, oldest filing first."""
         facts = self._reports[key].get((start, end), [])

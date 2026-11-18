@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from app.core import limits
 
-CONTRACT: dict[str, int | float] = {
+CONTRACT: dict[str, int | float | str] = {
     # PROMPT.md section 3: the request
     "MIN_DECISION_CHARS": 10,
     "MAX_DECISION_CHARS": 500,
@@ -63,6 +63,9 @@ CONTRACT: dict[str, int | float] = {
     "MAX_EVENTS_READ": 8,
     "EVENT_OPENING_SENTENCES": 2,
     "EVENT_PASSAGES_PER_CLAIM": 2,
+    # Added in version 13: the earliest date a run or a ledger may be computed as of (XBRL
+    # company facts begin in 2009)
+    "EARLIEST_AS_OF": "2009-01-01",
 }
 
 

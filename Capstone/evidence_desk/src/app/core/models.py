@@ -8,7 +8,7 @@ their limits come from :mod:`app.core.limits`.
 from __future__ import annotations
 
 import re
-from datetime import datetime
+from datetime import date, datetime
 from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -58,6 +58,19 @@ class SourceKind(StrEnum):
 class ExtractionStatus(StrEnum):
     extracted = "extracted"
     failed = "failed"
+
+
+def as_of_problem(day: date, today: date) -> str | None:
+    """Why ``day`` cannot be an as-of date (later than ``today``, or before the facts begin).
+
+    None when it can. The earliest is :data:`app.core.limits.EARLIEST_AS_OF`.
+    """
+    earliest = date.fromisoformat(limits.EARLIEST_AS_OF)
+    if day > today:
+        return f"as_of must not be in the future (today is {today.isoformat()})"
+    if day < earliest:
+        return f"as_of must be on or after {earliest.isoformat()}: XBRL company facts begin in 2009"
+    return None
 
 
 # One to six characters, optionally a class suffix: NVDA, BRK.B, BF-B.

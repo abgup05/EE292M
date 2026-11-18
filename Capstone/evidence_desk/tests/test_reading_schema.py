@@ -13,7 +13,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.core.claim_reading import READING_SCHEMA, as_reading, from_reading
-from app.core.claimtest import ClaimTest, compile_claim
+from app.core.claimtest import ClaimTest, NotNumeric, compile_claim
 
 # None remains: no test is an empty list, and a second test is a second item of it.
 MAX_UNION_PARAMETERS = 0
@@ -29,7 +29,7 @@ def union_parameters(schema: Any) -> int:
     return here + sum(union_parameters(value) for value in schema.values())
 
 
-def test_the_schema_has_at_most_two_union_typed_parameters() -> None:
+def test_the_schema_has_no_union_typed_parameter() -> None:
     assert union_parameters(READING_SCHEMA) <= MAX_UNION_PARAMETERS
 
 
@@ -55,13 +55,13 @@ def test_a_reading_written_with_values_for_absence_reads_back_as_the_same_test()
     assert len(tests) >= 3, "the grammar should read most of these sentences"
     for test in tests:
         answer = as_reading(test)
-        assert all(union_free(item) for item in answer["tests"]), "no null in a written test"
+        assert all(null_free(item) for item in answer["tests"]), "no null in a written test"
         back = from_reading(answer)
         assert isinstance(back, ClaimTest)
         assert back == test
 
 
-def union_free(test: dict[str, Any]) -> bool:
+def null_free(test: dict[str, Any]) -> bool:
     """No value inside ``test`` is null."""
 
     def nulls(value: Any) -> int:
@@ -87,3 +87,33 @@ def test_null_and_the_value_for_absence_mean_the_same() -> None:
     first, second = from_reading(answer), from_reading(with_nulls)
     assert isinstance(first, ClaimTest) and isinstance(second, ClaimTest)
     assert first == second
+
+
+def test_a_reading_in_the_earlier_shape_reads_the_same() -> None:
+    # Before the API refused it, a second test was nested in the first as and_test, and
+    # absence was null; a recorded answer in that shape still reads as the same test.
+    first = compile_claim("Gross margin is above 70%.")
+    second = compile_claim("Revenue grew more than 50% year over year.")
+    assert isinstance(first, ClaimTest) and isinstance(second, ClaimTest)
+    joined = as_reading(first)["tests"][0] | {"and_test": as_reading(second)["tests"][0]}
+    earlier = {"computable": True, "reason": "", "test": joined}
+    now = as_reading(first)
+    now["tests"].append(as_reading(second)["tests"][0])
+    assert from_reading(earlier) == from_reading(now)
+    assert isinstance(from_reading(now), ClaimTest)
+
+
+def test_a_base_whose_used_is_not_true_or_false_is_refused() -> None:
+    test = compile_claim("Revenue has more than doubled since fiscal 2023.")
+    assert isinstance(test, ClaimTest) and test.left.base is not None
+    for value in ("yes", 1, None):
+        answer = as_reading(test)
+        answer["tests"][0]["left"]["base"]["used"] = value
+        result = from_reading(answer)
+        assert isinstance(result, NotNumeric), value
+        assert "a base's used is true or false" in result.reason, value
+
+
+def test_a_computable_answer_with_no_test_is_refused() -> None:
+    result = from_reading({"computable": True, "reason": "", "tests": []})
+    assert isinstance(result, NotNumeric) and "there is none" in result.reason

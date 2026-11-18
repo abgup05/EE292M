@@ -39,7 +39,7 @@ from tests.test_claim_reading import Answers
 MARGIN = "Gross margin is expanding."
 GROWTH = "Revenue grew more than 200% year over year."
 REFUSED = "Free cash flow per employee is rising."  # the grammar reads no test
-REFUSE = {"computable": False, "reason": "not one test", "test": None}
+REFUSE = {"computable": False, "reason": "not one test", "tests": []}
 
 
 def _compiled(text: str) -> ClaimTest:

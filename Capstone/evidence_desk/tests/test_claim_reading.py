@@ -74,7 +74,7 @@ def test_every_test_the_grammar_compiles_from_the_labels_is_a_valid_reading() ->
 
 
 def test_not_a_claim_this_tool_can_compute_is_a_valid_answer() -> None:
-    answer = {"computable": False, "reason": "a valuation", "test": None}
+    answer = {"computable": False, "reason": "a valuation", "tests": []}
     result = from_reading(answer)
     assert isinstance(result, NotNumeric)
     assert result.reason == "the model reader: a valuation"
@@ -297,7 +297,7 @@ def test_with_two_readers_a_test_counts_only_when_both_read_it_the_same(tmp_path
     answers = {
         CLAIMS[0]: as_reading(margin),  # agree
         CLAIMS[1]: as_reading(other),  # differ
-        CLAIMS[2]: {"computable": False, "reason": "a segment", "test": None},  # only one
+        CLAIMS[2]: {"computable": False, "reason": "a segment", "tests": []},  # only one
         # CLAIMS[3]: the model reader fails
     }
     transport = Answers(answers)

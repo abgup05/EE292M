@@ -30,7 +30,7 @@ CLAIMS = [
     {"id": "x4", "company": "AAPL", "text": "Revenue is rising, & so is <b>margin</b>."},
     {"id": "x5", "company": "AAPL", "text": "Free cash flow per employee is rising."},
 ]
-REFUSE = {"computable": False, "reason": "not one test", "test": None}
+REFUSE = {"computable": False, "reason": "not one test", "tests": []}
 
 
 class FakeLive:

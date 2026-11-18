@@ -19,19 +19,22 @@ spaced at least :data:`MIN_SECONDS_BETWEEN` apart. Every failure is a
 from __future__ import annotations
 
 import gzip
+import math
 import re
 import threading
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Protocol
 from urllib.parse import urljoin, urlsplit
 
 import httpx
 
+from app.core.models import Company
 from app.core.price_series import Close, PriceSeries, PriceSeriesError, parse_closes
+from app.core.valuation import Price
 
 ALLOWED_HOSTS = frozenset({"stooq.com", "stooq.pl", "fred.stlouisfed.org", "api.nasdaq.com"})
 USER_AGENT = "EvidenceDesk/0.14 (research tool; daily closes for one ticker)"
@@ -43,6 +46,10 @@ MIN_SECONDS_BETWEEN = 1.0
 
 class PriceFetchError(RuntimeError):
     """A price page could not be retrieved; the message is safe to show."""
+
+
+class PriceUnavailable(RuntimeError):
+    """A price provider has no price for the company and date; the message says why."""
 
 
 @dataclass(frozen=True)
@@ -243,6 +250,47 @@ class CsvFilePrices:
         """The file's closes, labelled ``symbol``."""
         text = self._path.read_text(encoding="utf-8", errors="replace")
         return _parsed(text, symbol, f"price file {self._shown} supplied by the user", "")
+
+
+class PriceProvider(Protocol):
+    """Where one price per share for a company comes from, as of a date.
+
+    Two providers: :class:`SuppliedPrice` (the user's own, on the request) and
+    :class:`app.sources.thirteenf.QuarterEndPrices` (SEC Form 13F). The price returned
+    is never dated after ``as_of``, nor known from the source after it. Raises
+    :class:`PriceUnavailable` when there is none.
+    """
+
+    name: str
+
+    def price(self, company: Company, as_of: date) -> Price:
+        """The price of ``company``'s share the provider has as of ``as_of``."""
+        ...
+
+
+class SuppliedPrice:
+    """The price the user gave, with its date; refused when dated after the as-of date."""
+
+    name = "supplied"
+
+    def __init__(self, value: float, day: date, where: str = "on the request") -> None:
+        if not (math.isfinite(value) and value > 0):
+            raise PriceUnavailable("a supplied price must be a positive number")
+        self._value, self._day, self._where = value, day, where
+
+    def price(self, company: Company, as_of: date) -> Price:
+        """The supplied price, when its date is on or before ``as_of``."""
+        del company
+        if self._day > as_of:
+            raise PriceUnavailable(
+                f"the supplied price is dated {self._day.isoformat()}, after {as_of.isoformat()}"
+            )
+        return Price(
+            self._value,
+            self._day,
+            f"price supplied {self._where} for {self._day.isoformat()}; not checked against "
+            "any source",
+        )
 
 
 def supplied_series(symbol: str, closes: list[Close]) -> PriceSeries:

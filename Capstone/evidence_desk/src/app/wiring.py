@@ -264,6 +264,11 @@ def frames_dir() -> Path:
     return data_dir() / "cache" / "frames"
 
 
+def thirteenf_dir() -> Path:
+    """The disposable store of 13F filing indexes and tables: ``data_dir()/cache/13f``."""
+    return data_dir() / "cache" / "13f"
+
+
 def prices_dir() -> Path:
     """The disposable store of fetched price series: ``data_dir()/cache/prices``."""
     return data_dir() / "cache" / "prices"

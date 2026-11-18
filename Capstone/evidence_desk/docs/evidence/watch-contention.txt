@@ -1,0 +1,14 @@
+$ make watch-contention        (18 November 2026, 0.12.0 + the watch branch, one laptop, offline)
+pair 1: alone: 290 ms
+pair 1: with a watcher: 331 ms, 206 watcher cycles meanwhile
+pair 2: with a watcher: 306 ms, 192 watcher cycles meanwhile
+pair 2: alone: 316 ms
+pair 3: alone: 304 ms
+pair 3: with a watcher: 293 ms, 174 watcher cycles meanwhile
+pair 4: with a watcher: 391 ms, 241 watcher cycles meanwhile
+pair 4: alone: 294 ms
+pair 5: alone: 329 ms
+pair 5: with a watcher: 282 ms, 167 watcher cycles meanwhile
+pair 6: with a watcher: 483 ms, 309 watcher cycles meanwhile
+pair 6: alone: 268 ms
+median of 6: alone 299 ms (range 268 to 329); with a watcher 318 ms (range 282 to 483); watcher cycles per contended run: median 199, 167 to 309

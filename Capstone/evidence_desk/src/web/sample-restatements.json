@@ -1,0 +1,1185 @@
+{
+  "company": "NVIDIA CORP",
+  "cik": 1045810,
+  "ticker": "NVDA",
+  "as_of": "",
+  "tolerance_note": "Two values of one period count as the same when they differ by at most USD 1,000,000 (USD 0.01 for a per-share amount): most of these filings round to the million, and a total of rounded parts can be one million off.",
+  "metrics_checked": [
+    "revenue",
+    "cost_of_revenue",
+    "gross_profit",
+    "operating_income",
+    "net_income",
+    "eps_diluted",
+    "rnd",
+    "operating_cash_flow",
+    "capex",
+    "cash",
+    "inventory",
+    "receivables"
+  ],
+  "periods_checked": 922,
+  "periods_restated": 28,
+  "entries": [
+    {
+      "key": "revenue",
+      "label": "Revenue",
+      "unit": "USD",
+      "period": "half_year",
+      "start": "2017-01-30",
+      "end": "2017-07-30",
+      "period_label": "Six months year to date ended 2017-07-30",
+      "reports": 3,
+      "values": [
+        {
+          "value": 4167000000.0,
+          "display": "$4.17B",
+          "accession": "0001045810-17-000123",
+          "form": "10-Q",
+          "filed": "2017-08-23",
+          "concept": "Revenues",
+          "change": null,
+          "change_display": "",
+          "change_percent": null,
+          "change_percent_display": "",
+          "returns_to_earlier": false
+        },
+        {
+          "value": 2230000000.0,
+          "display": "$2.23B",
+          "accession": "0001045810-18-000010",
+          "form": "10-K",
+          "filed": "2018-02-28",
+          "concept": "Revenues",
+          "change": -1937000000.0,
+          "change_display": "-$1.94B",
+          "change_percent": -46.4842812574994,
+          "change_percent_display": "-46.5%",
+          "returns_to_earlier": false
+        },
+        {
+          "value": 4167000000.0,
+          "display": "$4.17B",
+          "accession": "0001045810-18-000114",
+          "form": "10-Q",
+          "filed": "2018-08-16",
+          "concept": "Revenues",
+          "change": 1937000000.0,
+          "change_display": "+$1.94B",
+          "change_percent": 86.8609865470852,
+          "change_percent_display": "+86.9%",
+          "returns_to_earlier": true
+        }
+      ],
+      "concept_changed": false
+    },
+    {
+      "key": "cost_of_revenue",
+      "label": "Cost of revenue",
+      "unit": "USD",
+      "period": "half_year",
+      "start": "2017-01-30",
+      "end": "2017-07-30",
+      "period_label": "Six months year to date ended 2017-07-30",
+      "reports": 3,
+      "values": [
+        {
+          "value": 1715000000.0,
+          "display": "$1.72B",
+          "accession": "0001045810-17-000123",
+          "form": "10-Q",
+          "filed": "2017-08-23",
+          "concept": "CostOfRevenue",
+          "change": null,
+          "change_display": "",
+          "change_percent": null,
+          "change_percent_display": "",
+          "returns_to_earlier": false
+        },
+        {
+          "value": 928000000.0,
+          "display": "$928.0M",
+          "accession": "0001045810-18-000010",
+          "form": "10-K",
+          "filed": "2018-02-28",
+          "concept": "CostOfRevenue",
+          "change": -787000000.0,
+          "change_display": "-$787.0M",
+          "change_percent": -45.88921282798834,
+          "change_percent_display": "-45.9%",
+          "returns_to_earlier": false
+        },
+        {
+          "value": 1715000000.0,
+          "display": "$1.72B",
+          "accession": "0001045810-18-000114",
+          "form": "10-Q",
+          "filed": "2018-08-16",
+          "concept": "CostOfRevenue",
+          "change": 787000000.0,
+          "change_display": "+$787.0M",
+          "change_percent": 84.80603448275862,
+          "change_percent_display": "+84.8%",
+          "returns_to_earlier": true
+        }
+      ],
+      "concept_changed": false
+    },
+    {
+      "key": "cost_of_revenue",
+      "label": "Cost of revenue",
+      "unit": "USD",
+      "period": "quarter",
+      "start": "2014-10-27",
+      "end": "2015-01-25",
+      "period_label": "Three months ended 2015-01-25",
+      "reports": 2,
+      "values": [
+        {
+          "value": 550911000.0,
+          "display": "$550.9M",
+          "accession": "0001045810-15-000036",
+          "form": "10-K",
+          "filed": "2015-03-12",
+          "concept": "CostOfRevenue",
+          "change": null,
+          "change_display": "",
+          "change_percent": null,
+          "change_percent_display": "",
+          "returns_to_earlier": false
+        },
+        {
+          "value": 552000000.0,
+          "display": "$552.0M",
+          "accession": "0001045810-16-000205",
+          "form": "10-K",
+          "filed": "2016-03-17",
+          "concept": "CostOfRevenue",
+          "change": 1089000.0,
+          "change_display": "+$1.1M",
+          "change_percent": 0.19767258232273452,
+          "change_percent_display": "+0.2%",
+          "returns_to_earlier": false
+        }
+      ],
+      "concept_changed": false
+    },
+    {
+      "key": "gross_profit",
+      "label": "Gross profit",
+      "unit": "USD",
+      "period": "half_year",
+      "start": "2017-01-30",
+      "end": "2017-07-30",
+      "period_label": "Six months year to date ended 2017-07-30",
+      "reports": 3,
+      "values": [
+        {
+          "value": 2452000000.0,
+          "display": "$2.45B",
+          "accession": "0001045810-17-000123",
+          "form": "10-Q",
+          "filed": "2017-08-23",
+          "concept": "GrossProfit",
+          "change": null,
+          "change_display": "",
+          "change_percent": null,
+          "change_percent_display": "",
+          "returns_to_earlier": false
+        },
+        {
+          "value": 1302000000.0,
+          "display": "$1.30B",
+          "accession": "0001045810-18-000010",
+          "form": "10-K",
+          "filed": "2018-02-28",
+          "concept": "GrossProfit",
+          "change": -1150000000.0,
+          "change_display": "-$1.15B",
+          "change_percent": -46.900489396411096,
+          "change_percent_display": "-46.9%",
+          "returns_to_earlier": false
+        },
+        {
+          "value": 2452000000.0,
+          "display": "$2.45B",
+          "accession": "0001045810-18-000114",
+          "form": "10-Q",
+          "filed": "2018-08-16",
+          "concept": "GrossProfit",
+          "change": 1150000000.0,
+          "change_display": "+$1.15B",
+          "change_percent": 88.32565284178187,
+          "change_percent_display": "+88.3%",
+          "returns_to_earlier": true
+        }
+      ],
+      "concept_changed": false
+    },
+    {
+      "key": "net_income",
+      "label": "Net income",
+      "unit": "USD",
+      "period": "half_year",
+      "start": "2017-01-30",
+      "end": "2017-07-30",
+      "period_label": "Six months year to date ended 2017-07-30",
+      "reports": 3,
+      "values": [
+        {
+          "value": 1091000000.0,
+          "display": "$1.09B",
+          "accession": "0001045810-17-000123",
+          "form": "10-Q",
+          "filed": "2017-08-23",
+          "concept": "NetIncomeLoss",
+          "change": null,
+          "change_display": "",
+          "change_percent": null,
+          "change_percent_display": "",
+          "returns_to_earlier": false
+        },
+        {
+          "value": 583000000.0,
+          "display": "$583.0M",
+          "accession": "0001045810-18-000010",
+          "form": "10-K",
+          "filed": "2018-02-28",
+          "concept": "NetIncomeLoss",
+          "change": -508000000.0,
+          "change_display": "-$508.0M",
+          "change_percent": -46.562786434463796,
+          "change_percent_display": "-46.6%",
+          "returns_to_earlier": false
+        },
+        {
+          "value": 1091000000.0,
+          "display": "$1.09B",
+          "accession": "0001045810-18-000114",
+          "form": "10-Q",
+          "filed": "2018-08-16",
+          "concept": "NetIncomeLoss",
+          "change": 508000000.0,
+          "change_display": "+$508.0M",
+          "change_percent": 87.13550600343054,
+          "change_percent_display": "+87.1%",
+          "returns_to_earlier": true
+        }
+      ],
+      "concept_changed": false
+    },
+    {
+      "key": "net_income",
+      "label": "Net income",
+      "unit": "USD",
+      "period": "quarter",
+      "start": "2016-05-02",
+      "end": "2016-07-31",
+      "period_label": "Three months ended 2016-07-31",
+      "reports": 5,
+      "values": [
+        {
+          "value": 253000000.0,
+          "display": "$253.0M",
+          "accession": "0001045810-16-000300",
+          "form": "10-Q",
+          "filed": "2016-08-23",
+          "concept": "NetIncomeLoss",
+          "change": null,
+          "change_display": "",
+          "change_percent": null,
+          "change_percent_display": "",
+          "returns_to_earlier": false
+        },
+        {
+          "value": 261000000.0,
+          "display": "$261.0M",
+          "accession": "0001045810-16-000353",
+          "form": "10-Q",
+          "filed": "2016-11-22",
+          "concept": "NetIncomeLoss",
+          "change": 8000000.0,
+          "change_display": "+$8.0M",
+          "change_percent": 3.1620553359683794,
+          "change_percent_display": "+3.2%",
+          "returns_to_earlier": false
+        }
+      ],
+      "concept_changed": false
+    },
+    {
+      "key": "net_income",
+      "label": "Net income",
+      "unit": "USD",
+      "period": "half_year",
+      "start": "2016-02-01",
+      "end": "2016-07-31",
+      "period_label": "Six months year to date ended 2016-07-31",
+      "reports": 4,
+      "values": [
+        {
+          "value": 449000000.0,
+          "display": "$449.0M",
+          "accession": "0001045810-16-000300",
+          "form": "10-Q",
+          "filed": "2016-08-23",
+          "concept": "NetIncomeLoss",
+          "change": null,
+          "change_display": "",
+          "change_percent": null,
+          "change_percent_display": "",
+          "returns_to_earlier": false
+        },
+        {
+          "value": 469000000.0,
+          "display": "$469.0M",
+          "accession": "0001045810-16-000353",
+          "form": "10-Q",
+          "filed": "2016-11-22",
+          "concept": "NetIncomeLoss",
+          "change": 20000000.0,
+          "change_display": "+$20.0M",
+          "change_percent": 4.4543429844097995,
+          "change_percent_display": "+4.5%",
+          "returns_to_earlier": false
+        }
+      ],
+      "concept_changed": false
+    },
+    {
+      "key": "net_income",
+      "label": "Net income",
+      "unit": "USD",
+      "period": "quarter",
+      "start": "2016-02-01",
+      "end": "2016-05-01",
+      "period_label": "Three months ended 2016-05-01",
+      "reports": 5,
+      "values": [
+        {
+          "value": 196000000.0,
+          "display": "$196.0M",
+          "accession": "0001045810-16-000275",
+          "form": "10-Q",
+          "filed": "2016-05-25",
+          "concept": "NetIncomeLoss",
+          "change": null,
+          "change_display": "",
+          "change_percent": null,
+          "change_percent_display": "",
+          "returns_to_earlier": false
+        },
+        {
+          "value": 208000000.0,
+          "display": "$208.0M",
+          "accession": "0001045810-16-000353",
+          "form": "10-Q",
+          "filed": "2016-11-22",
+          "concept": "NetIncomeLoss",
+          "change": 12000000.0,
+          "change_display": "+$12.0M",
+          "change_percent": 6.122448979591836,
+          "change_percent_display": "+6.1%",
+          "returns_to_earlier": false
+        }
+      ],
+      "concept_changed": false
+    },
+    {
+      "key": "eps_diluted",
+      "label": "Diluted EPS",
+      "unit": "USD/shares",
+      "period": "quarter",
+      "start": "2024-01-29",
+      "end": "2024-04-28",
+      "period_label": "Three months ended 2024-04-28",
+      "reports": 2,
+      "values": [
+        {
+          "value": 5.98,
+          "display": "$5.98",
+          "accession": "0001045810-24-000124",
+          "form": "10-Q",
+          "filed": "2024-05-29",
+          "concept": "EarningsPerShareDiluted",
+          "change": null,
+          "change_display": "",
+          "change_percent": null,
+          "change_percent_display": "",
+          "returns_to_earlier": false
+        },
+        {
+          "value": 0.6,
+          "display": "$0.60",
+          "accession": "0001045810-25-000116",
+          "form": "10-Q",
+          "filed": "2025-05-28",
+          "concept": "EarningsPerShareDiluted",
+          "change": -5.380000000000001,
+          "change_display": "-$5.38",
+          "change_percent": -89.9665551839465,
+          "change_percent_display": "-90.0%",
+          "returns_to_earlier": false
+        }
+      ],
+      "concept_changed": false
+    },
+    {
+      "key": "eps_diluted",
+      "label": "Diluted EPS",
+      "unit": "USD/shares",
+      "period": "annual",
+      "start": "2023-01-30",
+      "end": "2024-01-28",
+      "period_label": "Fiscal year ended 2024-01-28",
+      "reports": 3,
+      "values": [
+        {
+          "value": 11.93,
+          "display": "$11.93",
+          "accession": "0001045810-24-000029",
+          "form": "10-K",
+          "filed": "2024-02-21",
+          "concept": "EarningsPerShareDiluted",
+          "change": null,
+          "change_display": "",
+          "change_percent": null,
+          "change_percent_display": "",
+          "returns_to_earlier": false
+        },
+        {
+          "value": 1.19,
+          "display": "$1.19",
+          "accession": "0001045810-25-000023",
+          "form": "10-K",
+          "filed": "2025-02-26",
+          "concept": "EarningsPerShareDiluted",
+          "change": -10.74,
+          "change_display": "-$10.74",
+          "change_percent": -90.02514668901928,
+          "change_percent_display": "-90.0%",
+          "returns_to_earlier": false
+        }
+      ],
+      "concept_changed": false
+    },
+    {
+      "key": "eps_diluted",
+      "label": "Diluted EPS",
+      "unit": "USD/shares",
+      "period": "quarter",
+      "start": "2023-07-31",
+      "end": "2023-10-29",
+      "period_label": "Three months ended 2023-10-29",
+      "reports": 2,
+      "values": [
+        {
+          "value": 3.71,
+          "display": "$3.71",
+          "accession": "0001045810-23-000227",
+          "form": "10-Q",
+          "filed": "2023-11-21",
+          "concept": "EarningsPerShareDiluted",
+          "change": null,
+          "change_display": "",
+          "change_percent": null,
+          "change_percent_display": "",
+          "returns_to_earlier": false
+        },
+        {
+          "value": 0.37,
+          "display": "$0.37",
+          "accession": "0001045810-24-000316",
+          "form": "10-Q",
+          "filed": "2024-11-20",
+          "concept": "EarningsPerShareDiluted",
+          "change": -3.34,
+          "change_display": "-$3.34",
+          "change_percent": -90.02695417789757,
+          "change_percent_display": "-90.0%",
+          "returns_to_earlier": false
+        }
+      ],
+      "concept_changed": false
+    },
+    {
+      "key": "eps_diluted",
+      "label": "Diluted EPS",
+      "unit": "USD/shares",
+      "period": "nine_months",
+      "start": "2023-01-30",
+      "end": "2023-10-29",
+      "period_label": "Nine months year to date ended 2023-10-29",
+      "reports": 2,
+      "values": [
+        {
+          "value": 7.01,
+          "display": "$7.01",
+          "accession": "0001045810-23-000227",
+          "form": "10-Q",
+          "filed": "2023-11-21",
+          "concept": "EarningsPerShareDiluted",
+          "change": null,
+          "change_display": "",
+          "change_percent": null,
+          "change_percent_display": "",
+          "returns_to_earlier": false
+        },
+        {
+          "value": 0.7,
+          "display": "$0.70",
+          "accession": "0001045810-24-000316",
+          "form": "10-Q",
+          "filed": "2024-11-20",
+          "concept": "EarningsPerShareDiluted",
+          "change": -6.31,
+          "change_display": "-$6.31",
+          "change_percent": -90.01426533523538,
+          "change_percent_display": "-90.0%",
+          "returns_to_earlier": false
+        }
+      ],
+      "concept_changed": false
+    },
+    {
+      "key": "eps_diluted",
+      "label": "Diluted EPS",
+      "unit": "USD/shares",
+      "period": "quarter",
+      "start": "2023-05-01",
+      "end": "2023-07-30",
+      "period_label": "Three months ended 2023-07-30",
+      "reports": 2,
+      "values": [
+        {
+          "value": 2.48,
+          "display": "$2.48",
+          "accession": "0001045810-23-000175",
+          "form": "10-Q",
+          "filed": "2023-08-28",
+          "concept": "EarningsPerShareDiluted",
+          "change": null,
+          "change_display": "",
+          "change_percent": null,
+          "change_percent_display": "",
+          "returns_to_earlier": false
+        },
+        {
+          "value": 0.25,
+          "display": "$0.25",
+          "accession": "0001045810-24-000264",
+          "form": "10-Q",
+          "filed": "2024-08-28",
+          "concept": "EarningsPerShareDiluted",
+          "change": -2.23,
+          "change_display": "-$2.23",
+          "change_percent": -89.91935483870968,
+          "change_percent_display": "-89.9%",
+          "returns_to_earlier": false
+        }
+      ],
+      "concept_changed": false
+    },
+    {
+      "key": "eps_diluted",
+      "label": "Diluted EPS",
+      "unit": "USD/shares",
+      "period": "half_year",
+      "start": "2023-01-30",
+      "end": "2023-07-30",
+      "period_label": "Six months year to date ended 2023-07-30",
+      "reports": 2,
+      "values": [
+        {
+          "value": 3.3,
+          "display": "$3.30",
+          "accession": "0001045810-23-000175",
+          "form": "10-Q",
+          "filed": "2023-08-28",
+          "concept": "EarningsPerShareDiluted",
+          "change": null,
+          "change_display": "",
+          "change_percent": null,
+          "change_percent_display": "",
+          "returns_to_earlier": false
+        },
+        {
+          "value": 0.33,
+          "display": "$0.33",
+          "accession": "0001045810-24-000264",
+          "form": "10-Q",
+          "filed": "2024-08-28",
+          "concept": "EarningsPerShareDiluted",
+          "change": -2.9699999999999998,
+          "change_display": "-$2.97",
+          "change_percent": -90.0,
+          "change_percent_display": "-90.0%",
+          "returns_to_earlier": false
+        }
+      ],
+      "concept_changed": false
+    },
+    {
+      "key": "eps_diluted",
+      "label": "Diluted EPS",
+      "unit": "USD/shares",
+      "period": "annual",
+      "start": "2022-01-31",
+      "end": "2023-01-29",
+      "period_label": "Fiscal year ended 2023-01-29",
+      "reports": 3,
+      "values": [
+        {
+          "value": 1.74,
+          "display": "$1.74",
+          "accession": "0001045810-23-000017",
+          "form": "10-K",
+          "filed": "2023-02-24",
+          "concept": "EarningsPerShareDiluted",
+          "change": null,
+          "change_display": "",
+          "change_percent": null,
+          "change_percent_display": "",
+          "returns_to_earlier": false
+        },
+        {
+          "value": 0.17,
+          "display": "$0.17",
+          "accession": "0001045810-25-000023",
+          "form": "10-K",
+          "filed": "2025-02-26",
+          "concept": "EarningsPerShareDiluted",
+          "change": -1.57,
+          "change_display": "-$1.57",
+          "change_percent": -90.22988505747126,
+          "change_percent_display": "-90.2%",
+          "returns_to_earlier": false
+        }
+      ],
+      "concept_changed": false
+    },
+    {
+      "key": "eps_diluted",
+      "label": "Diluted EPS",
+      "unit": "USD/shares",
+      "period": "quarter",
+      "start": "2021-02-01",
+      "end": "2021-05-02",
+      "period_label": "Three months ended 2021-05-02",
+      "reports": 2,
+      "values": [
+        {
+          "value": 3.03,
+          "display": "$3.03",
+          "accession": "0001045810-21-000064",
+          "form": "10-Q",
+          "filed": "2021-05-26",
+          "concept": "EarningsPerShareDiluted",
+          "change": null,
+          "change_display": "",
+          "change_percent": null,
+          "change_percent_display": "",
+          "returns_to_earlier": false
+        },
+        {
+          "value": 0.76,
+          "display": "$0.76",
+          "accession": "0001045810-22-000079",
+          "form": "10-Q",
+          "filed": "2022-05-27",
+          "concept": "EarningsPerShareDiluted",
+          "change": -2.2699999999999996,
+          "change_display": "-$2.27",
+          "change_percent": -74.91749174917491,
+          "change_percent_display": "-74.9%",
+          "returns_to_earlier": false
+        }
+      ],
+      "concept_changed": false
+    },
+    {
+      "key": "eps_diluted",
+      "label": "Diluted EPS",
+      "unit": "USD/shares",
+      "period": "annual",
+      "start": "2020-01-27",
+      "end": "2021-01-31",
+      "period_label": "Fiscal year ended 2021-01-31",
+      "reports": 3,
+      "values": [
+        {
+          "value": 6.9,
+          "display": "$6.90",
+          "accession": "0001045810-21-000010",
+          "form": "10-K",
+          "filed": "2021-02-26",
+          "concept": "EarningsPerShareDiluted",
+          "change": null,
+          "change_display": "",
+          "change_percent": null,
+          "change_percent_display": "",
+          "returns_to_earlier": false
+        },
+        {
+          "value": 1.73,
+          "display": "$1.73",
+          "accession": "0001045810-22-000036",
+          "form": "10-K",
+          "filed": "2022-03-18",
+          "concept": "EarningsPerShareDiluted",
+          "change": -5.17,
+          "change_display": "-$5.17",
+          "change_percent": -74.92753623188405,
+          "change_percent_display": "-74.9%",
+          "returns_to_earlier": false
+        }
+      ],
+      "concept_changed": false
+    },
+    {
+      "key": "eps_diluted",
+      "label": "Diluted EPS",
+      "unit": "USD/shares",
+      "period": "quarter",
+      "start": "2020-07-27",
+      "end": "2020-10-25",
+      "period_label": "Three months ended 2020-10-25",
+      "reports": 2,
+      "values": [
+        {
+          "value": 2.12,
+          "display": "$2.12",
+          "accession": "0001045810-20-000189",
+          "form": "10-Q",
+          "filed": "2020-11-18",
+          "concept": "EarningsPerShareDiluted",
+          "change": null,
+          "change_display": "",
+          "change_percent": null,
+          "change_percent_display": "",
+          "returns_to_earlier": false
+        },
+        {
+          "value": 0.53,
+          "display": "$0.53",
+          "accession": "0001045810-21-000163",
+          "form": "10-Q",
+          "filed": "2021-11-22",
+          "concept": "EarningsPerShareDiluted",
+          "change": -1.59,
+          "change_display": "-$1.59",
+          "change_percent": -75.0,
+          "change_percent_display": "-75.0%",
+          "returns_to_earlier": false
+        }
+      ],
+      "concept_changed": false
+    },
+    {
+      "key": "eps_diluted",
+      "label": "Diluted EPS",
+      "unit": "USD/shares",
+      "period": "nine_months",
+      "start": "2020-01-27",
+      "end": "2020-10-25",
+      "period_label": "Nine months year to date ended 2020-10-25",
+      "reports": 2,
+      "values": [
+        {
+          "value": 4.59,
+          "display": "$4.59",
+          "accession": "0001045810-20-000189",
+          "form": "10-Q",
+          "filed": "2020-11-18",
+          "concept": "EarningsPerShareDiluted",
+          "change": null,
+          "change_display": "",
+          "change_percent": null,
+          "change_percent_display": "",
+          "returns_to_earlier": false
+        },
+        {
+          "value": 1.15,
+          "display": "$1.15",
+          "accession": "0001045810-21-000163",
+          "form": "10-Q",
+          "filed": "2021-11-22",
+          "concept": "EarningsPerShareDiluted",
+          "change": -3.44,
+          "change_display": "-$3.44",
+          "change_percent": -74.94553376906318,
+          "change_percent_display": "-74.9%",
+          "returns_to_earlier": false
+        }
+      ],
+      "concept_changed": false
+    },
+    {
+      "key": "eps_diluted",
+      "label": "Diluted EPS",
+      "unit": "USD/shares",
+      "period": "quarter",
+      "start": "2020-04-27",
+      "end": "2020-07-26",
+      "period_label": "Three months ended 2020-07-26",
+      "reports": 2,
+      "values": [
+        {
+          "value": 0.99,
+          "display": "$0.99",
+          "accession": "0001045810-20-000147",
+          "form": "10-Q",
+          "filed": "2020-08-19",
+          "concept": "EarningsPerShareDiluted",
+          "change": null,
+          "change_display": "",
+          "change_percent": null,
+          "change_percent_display": "",
+          "returns_to_earlier": false
+        },
+        {
+          "value": 0.25,
+          "display": "$0.25",
+          "accession": "0001045810-21-000131",
+          "form": "10-Q",
+          "filed": "2021-08-20",
+          "concept": "EarningsPerShareDiluted",
+          "change": -0.74,
+          "change_display": "-$0.74",
+          "change_percent": -74.74747474747475,
+          "change_percent_display": "-74.7%",
+          "returns_to_earlier": false
+        }
+      ],
+      "concept_changed": false
+    },
+    {
+      "key": "eps_diluted",
+      "label": "Diluted EPS",
+      "unit": "USD/shares",
+      "period": "half_year",
+      "start": "2020-01-27",
+      "end": "2020-07-26",
+      "period_label": "Six months year to date ended 2020-07-26",
+      "reports": 2,
+      "values": [
+        {
+          "value": 2.47,
+          "display": "$2.47",
+          "accession": "0001045810-20-000147",
+          "form": "10-Q",
+          "filed": "2020-08-19",
+          "concept": "EarningsPerShareDiluted",
+          "change": null,
+          "change_display": "",
+          "change_percent": null,
+          "change_percent_display": "",
+          "returns_to_earlier": false
+        },
+        {
+          "value": 0.62,
+          "display": "$0.62",
+          "accession": "0001045810-21-000131",
+          "form": "10-Q",
+          "filed": "2021-08-20",
+          "concept": "EarningsPerShareDiluted",
+          "change": -1.85,
+          "change_display": "-$1.85",
+          "change_percent": -74.89878542510121,
+          "change_percent_display": "-74.9%",
+          "returns_to_earlier": false
+        }
+      ],
+      "concept_changed": false
+    },
+    {
+      "key": "eps_diluted",
+      "label": "Diluted EPS",
+      "unit": "USD/shares",
+      "period": "annual",
+      "start": "2019-01-28",
+      "end": "2020-01-26",
+      "period_label": "Fiscal year ended 2020-01-26",
+      "reports": 3,
+      "values": [
+        {
+          "value": 4.52,
+          "display": "$4.52",
+          "accession": "0001045810-20-000010",
+          "form": "10-K",
+          "filed": "2020-02-20",
+          "concept": "EarningsPerShareDiluted",
+          "change": null,
+          "change_display": "",
+          "change_percent": null,
+          "change_percent_display": "",
+          "returns_to_earlier": false
+        },
+        {
+          "value": 1.13,
+          "display": "$1.13",
+          "accession": "0001045810-22-000036",
+          "form": "10-K",
+          "filed": "2022-03-18",
+          "concept": "EarningsPerShareDiluted",
+          "change": -3.3899999999999997,
+          "change_display": "-$3.39",
+          "change_percent": -75.0,
+          "change_percent_display": "-75.0%",
+          "returns_to_earlier": false
+        }
+      ],
+      "concept_changed": false
+    },
+    {
+      "key": "eps_diluted",
+      "label": "Diluted EPS",
+      "unit": "USD/shares",
+      "period": "half_year",
+      "start": "2017-01-30",
+      "end": "2017-07-30",
+      "period_label": "Six months year to date ended 2017-07-30",
+      "reports": 3,
+      "values": [
+        {
+          "value": 1.71,
+          "display": "$1.71",
+          "accession": "0001045810-17-000123",
+          "form": "10-Q",
+          "filed": "2017-08-23",
+          "concept": "EarningsPerShareDiluted",
+          "change": null,
+          "change_display": "",
+          "change_percent": null,
+          "change_percent_display": "",
+          "returns_to_earlier": false
+        },
+        {
+          "value": 0.92,
+          "display": "$0.92",
+          "accession": "0001045810-18-000010",
+          "form": "10-K",
+          "filed": "2018-02-28",
+          "concept": "EarningsPerShareDiluted",
+          "change": -0.7899999999999999,
+          "change_display": "-$0.79",
+          "change_percent": -46.198830409356724,
+          "change_percent_display": "-46.2%",
+          "returns_to_earlier": false
+        },
+        {
+          "value": 1.71,
+          "display": "$1.71",
+          "accession": "0001045810-18-000114",
+          "form": "10-Q",
+          "filed": "2018-08-16",
+          "concept": "EarningsPerShareDiluted",
+          "change": 0.7899999999999999,
+          "change_display": "+$0.79",
+          "change_percent": 85.8695652173913,
+          "change_percent_display": "+85.9%",
+          "returns_to_earlier": true
+        }
+      ],
+      "concept_changed": false
+    },
+    {
+      "key": "eps_diluted",
+      "label": "Diluted EPS",
+      "unit": "USD/shares",
+      "period": "half_year",
+      "start": "2016-02-01",
+      "end": "2016-07-31",
+      "period_label": "Six months year to date ended 2016-07-31",
+      "reports": 4,
+      "values": [
+        {
+          "value": 0.73,
+          "display": "$0.73",
+          "accession": "0001045810-16-000300",
+          "form": "10-Q",
+          "filed": "2016-08-23",
+          "concept": "EarningsPerShareDiluted",
+          "change": null,
+          "change_display": "",
+          "change_percent": null,
+          "change_percent_display": "",
+          "returns_to_earlier": false
+        },
+        {
+          "value": 0.76,
+          "display": "$0.76",
+          "accession": "0001045810-16-000353",
+          "form": "10-Q",
+          "filed": "2016-11-22",
+          "concept": "EarningsPerShareDiluted",
+          "change": 0.030000000000000027,
+          "change_display": "+$0.03",
+          "change_percent": 4.109589041095894,
+          "change_percent_display": "+4.1%",
+          "returns_to_earlier": false
+        }
+      ],
+      "concept_changed": false
+    },
+    {
+      "key": "eps_diluted",
+      "label": "Diluted EPS",
+      "unit": "USD/shares",
+      "period": "quarter",
+      "start": "2016-02-01",
+      "end": "2016-05-01",
+      "period_label": "Three months ended 2016-05-01",
+      "reports": 5,
+      "values": [
+        {
+          "value": 0.33,
+          "display": "$0.33",
+          "accession": "0001045810-16-000275",
+          "form": "10-Q",
+          "filed": "2016-05-25",
+          "concept": "EarningsPerShareDiluted",
+          "change": null,
+          "change_display": "",
+          "change_percent": null,
+          "change_percent_display": "",
+          "returns_to_earlier": false
+        },
+        {
+          "value": 0.35,
+          "display": "$0.35",
+          "accession": "0001045810-16-000353",
+          "form": "10-Q",
+          "filed": "2016-11-22",
+          "concept": "EarningsPerShareDiluted",
+          "change": 0.019999999999999962,
+          "change_display": "+$0.02",
+          "change_percent": 6.060606060606049,
+          "change_percent_display": "+6.1%",
+          "returns_to_earlier": false
+        }
+      ],
+      "concept_changed": false
+    },
+    {
+      "key": "operating_cash_flow",
+      "label": "Operating cash flow",
+      "unit": "USD",
+      "period": "half_year",
+      "start": "2016-02-01",
+      "end": "2016-07-31",
+      "period_label": "Six months year to date ended 2016-07-31",
+      "reports": 4,
+      "values": [
+        {
+          "value": 493000000.0,
+          "display": "$493.0M",
+          "accession": "0001045810-16-000300",
+          "form": "10-Q",
+          "filed": "2016-08-23",
+          "concept": "NetCashProvidedByUsedInOperatingActivities",
+          "change": null,
+          "change_display": "",
+          "change_percent": null,
+          "change_percent_display": "",
+          "returns_to_earlier": false
+        },
+        {
+          "value": 519000000.0,
+          "display": "$519.0M",
+          "accession": "0001045810-16-000353",
+          "form": "10-Q",
+          "filed": "2016-11-22",
+          "concept": "NetCashProvidedByUsedInOperatingActivities",
+          "change": 26000000.0,
+          "change_display": "+$26.0M",
+          "change_percent": 5.273833671399594,
+          "change_percent_display": "+5.3%",
+          "returns_to_earlier": false
+        }
+      ],
+      "concept_changed": false
+    },
+    {
+      "key": "operating_cash_flow",
+      "label": "Operating cash flow",
+      "unit": "USD",
+      "period": "quarter",
+      "start": "2016-02-01",
+      "end": "2016-05-01",
+      "period_label": "Three months ended 2016-05-01",
+      "reports": 4,
+      "values": [
+        {
+          "value": 309000000.0,
+          "display": "$309.0M",
+          "accession": "0001045810-16-000275",
+          "form": "10-Q",
+          "filed": "2016-05-25",
+          "concept": "NetCashProvidedByUsedInOperatingActivities",
+          "change": null,
+          "change_display": "",
+          "change_percent": null,
+          "change_percent_display": "",
+          "returns_to_earlier": false
+        },
+        {
+          "value": 318000000.0,
+          "display": "$318.0M",
+          "accession": "0001045810-16-000353",
+          "form": "10-Q",
+          "filed": "2016-11-22",
+          "concept": "NetCashProvidedByUsedInOperatingActivities",
+          "change": 9000000.0,
+          "change_display": "+$9.0M",
+          "change_percent": 2.912621359223301,
+          "change_percent_display": "+2.9%",
+          "returns_to_earlier": false
+        }
+      ],
+      "concept_changed": false
+    },
+    {
+      "key": "inventory",
+      "label": "Inventory",
+      "unit": "USD",
+      "period": "instant",
+      "start": null,
+      "end": "2013-01-27",
+      "period_label": "As of 2013-01-27",
+      "reports": 5,
+      "values": [
+        {
+          "value": 419686000.0,
+          "display": "$419.7M",
+          "accession": "0001045810-13-000008",
+          "form": "10-K",
+          "filed": "2013-03-12",
+          "concept": "InventoryNet",
+          "change": null,
+          "change_display": "",
+          "change_percent": null,
+          "change_percent_display": "",
+          "returns_to_earlier": false
+        },
+        {
+          "value": 412467000.0,
+          "display": "$412.5M",
+          "accession": "0001045810-13-000075",
+          "form": "10-Q",
+          "filed": "2013-08-21",
+          "concept": "InventoryNet",
+          "change": -7219000.0,
+          "change_display": "-$7.2M",
+          "change_percent": -1.7200954999690246,
+          "change_percent_display": "-1.7%",
+          "returns_to_earlier": false
+        }
+      ],
+      "concept_changed": false
+    }
+  ],
+  "notes": [
+    "Per-share values are restated after a stock split: a change by a whole-number factor is most likely one, a change of presentation rather than of results."
+  ]
+}

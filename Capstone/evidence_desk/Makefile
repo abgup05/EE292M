@@ -1,4 +1,4 @@
-.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench eval eval-validate backup restore-check up-recorded live-walk changes breakdowns sample-run-changes golden-sheet backup-status figures two-writers header-cut-check time-live events events-probe event-categories facts-load restatements claim-labels claim-results-key examples claim-foreign watch-once watch-status watch-examples watch-replay watch-contention sample-inbox
+.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench eval eval-validate backup restore-check up-recorded live-walk changes breakdowns sample-run-changes golden-sheet backup-status figures two-writers header-cut-check time-live events events-probe event-categories facts-load restatements claim-labels claim-results-key examples claim-foreign watch-once watch-status watch-examples watch-replay watch-contention sample-inbox sample-v14
 
 export COMPOSE_PROJECT_NAME := ee292m-evidence-desk
 export LOCAL_UID := $(shell id -u)
@@ -14,8 +14,8 @@ help:
 	@echo "Command line: run ARGS='example' or ARGS='run --ticker NVDA --decision \"...\" --claim \"...\"' (synchronous; writes results/<run-id>.json and .md)"
 	@echo 'Dependencies: lock'
 	@echo 'Demonstration: demo (live NVIDIA example through the HTTP API: real EDGAR, configured engine; writes results/demo-<UTC>.json and .md)'
-	@echo 'Screenshots: screenshots (headless Chromium renders the first screen, the samples, the recorded inbox and the specimen page, in the Paper and Terminal themes and at phone width, into docs/screenshots)'
-	@echo 'Browser test: uitest (headless Chromium renders the sample records and the recorded inbox, drives the keys and themes in uitests/keys.html and every answer of the watch routes in uitests/watch.html; pytest uitests checks the DOM against the JSON)'
+	@echo 'Screenshots: screenshots (headless Chromium renders the first screen, the samples, the recorded inbox, the computed claims, the as-of run, the restatement ledger and the specimen page, in the Paper and Terminal themes and at phone width, into docs/screenshots)'
+	@echo 'Browser test: uitest (headless Chromium renders the sample records, the recorded inbox and the version 14 examples, drives the keys and themes in uitests/keys.html, every answer of the watch routes in uitests/watch.html and the version 14 variants in uitests/v14.html; pytest uitests checks the DOM against the JSON)'
 	@echo "Replay: replay ARGS='--out demo' (the example thesis on recorded filings with model answers from the cassette; no network, no key)"
 	@echo 'Tripwire: golden-check (the offline example run against tests/golden/golden.json; names the first stage that moved)'
 	@echo 'Tripwire: golden-baseline (rewrite tests/golden/golden.json, and replay.json when the replay has nothing pending; read the diff before committing a new baseline)'
@@ -35,7 +35,7 @@ help:
 	@echo 'Facts: facts-load TICKERS="NVDA AAPL" (live: every us-gaap fact of each company, with the filing that reported it and its SIC code, into data/facts/facts.sqlite; disposable)'
 	@echo 'Fixtures: fixtures-facts(record XBRL company facts of NVDA, AAPL, MSFT under tests/fixtures/edgar; REFRESH=1 to overwrite)'
 	@echo 'Fixtures: fixtures (record SEC EDGAR responses for NVIDIA under tests/fixtures/edgar; REFRESH=1 to overwrite)'
-	@echo 'Examples: examples (offline: the version 14 payloads in docs/examples/v14, made from the recorded fixtures with the extractive engine; tests/test_examples_v14.py fails when they are out of date)'
+	@echo 'Examples: examples (offline: the version 14 payloads in docs/examples/v14, made from the recorded fixtures with the extractive engine; tests/test_examples_v14.py fails when they are out of date), sample-v14 (copies run.json, as-of-run.json and restatements.json, unedited, into the page'"'"'s samples ?sample=computed, ?sample=as-of and ?sample=restatements)'
 	@echo 'Diagnostics: figures TICKERS="COST AMZN" (live: each company'"'"'s quarters as a run sees them; MISSING=1 lists every metric without a value); header-cut-check TICKERS="..." (live: each filing parsed with and without the header cut, the whole documents compared)'
 	@echo 'Diagnostics: probe TICKERS="AAPL MSFT" (live: parse each company'"'"'s latest 10-K and 10-Q, report Item coverage; writes results/probe-<UTC>.md)'
 	@echo 'Diagnostics: events-probe TICKERS="..." (live: every 8-K of the last 12 months of the eight probe companies, each listed item found or missed by the splitter; writes results/events-probe-<UTC>.md)'
@@ -109,7 +109,11 @@ uitest:
 	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=inbox" > results/dom-inbox.html 2> results/dom-inbox.log && \
 	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=inbox-page-2&theme=terminal" > results/dom-inbox-page-2.html 2> results/dom-inbox-page-2.log && \
 	$(COMPOSE) run --rm -T shots $(KEYS_FLAGS) --dump-dom "file:///work/uitests/keys.html" > results/dom-keys.html 2> results/dom-keys.log && \
-	$(COMPOSE) run --rm -T shots $(KEYS_FLAGS) --dump-dom "file:///work/uitests/watch.html" > results/dom-watch.html 2> results/dom-watch.log
+	$(COMPOSE) run --rm -T shots $(KEYS_FLAGS) --dump-dom "file:///work/uitests/watch.html" > results/dom-watch.html 2> results/dom-watch.log && \
+	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=computed" > results/dom-computed.html 2> results/dom-computed.log && \
+	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=as-of&theme=terminal" > results/dom-as-of.html 2> results/dom-as-of.log && \
+	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=restatements" > results/dom-restatements.html 2> results/dom-restatements.log && \
+	$(COMPOSE) run --rm -T shots $(KEYS_FLAGS) --dump-dom "file:///work/uitests/v14.html" > results/dom-v14.html 2> results/dom-v14.log
 	$(RUN) pytest -q -p no:cacheprovider uitests
 
 run:
@@ -126,7 +130,9 @@ demo: build
 SHOTS := first-screen sample-run sample-run-phone sample-synthetic sample-changes sample-changes-phone sample-breakdowns tagged-figures \
 	first-screen-terminal sample-run-terminal sample-run-phone-terminal sample-events sample-events-terminal sample-events-phone \
 	sample-synthetic-terminal sample-changes-terminal sample-breakdowns-terminal specimen specimen-terminal specimen-v14 specimen-note specimen-note-terminal specimen-views specimen-phone \
-	sample-inbox sample-inbox-terminal sample-inbox-phone
+	sample-inbox sample-inbox-terminal sample-inbox-phone \
+	sample-computed sample-computed-terminal sample-computed-phone specimen-v14-terminal specimen-v14-phone \
+	sample-as-of sample-as-of-terminal sample-restatements sample-restatements-terminal
 screenshots:
 	@mkdir -p docs/screenshots results
 	@touch results/.screenshots-started
@@ -159,7 +165,16 @@ screenshots:
 	$(COMPOSE) run --rm shots --window-size=390,3000 --screenshot=/work/docs/screenshots/specimen-phone.png "http://app:8000/specimen.html?theme=paper" && \
 	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-inbox.png "http://app:8000/?sample=inbox&theme=paper" && \
 	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-inbox-terminal.png "http://app:8000/?sample=inbox&theme=terminal" && \
-	$(COMPOSE) run --rm shots --window-size=390,3400 --screenshot=/work/docs/screenshots/sample-inbox-phone.png "http://app:8000/?sample=inbox&theme=paper"
+	$(COMPOSE) run --rm shots --window-size=390,3400 --screenshot=/work/docs/screenshots/sample-inbox-phone.png "http://app:8000/?sample=inbox&theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-computed.png "http://app:8000/?sample=computed&theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-computed-terminal.png "http://app:8000/?sample=computed&theme=terminal" && \
+	$(COMPOSE) run --rm shots --window-size=390,3600 --screenshot=/work/docs/screenshots/sample-computed-phone.png "http://app:8000/?sample=computed&theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/specimen-v14-terminal.png "http://app:8000/specimen.html?theme=terminal&only=v14" && \
+	$(COMPOSE) run --rm shots --window-size=390,3600 --screenshot=/work/docs/screenshots/specimen-v14-phone.png "http://app:8000/specimen.html?theme=paper&only=v14" && \
+	$(COMPOSE) run --rm shots --window-size=1280,2400 --screenshot=/work/docs/screenshots/sample-as-of.png "http://app:8000/?sample=as-of&theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=1280,2400 --screenshot=/work/docs/screenshots/sample-as-of-terminal.png "http://app:8000/?sample=as-of&theme=terminal" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3000 --screenshot=/work/docs/screenshots/sample-restatements.png "http://app:8000/?sample=restatements&theme=paper" && \
+	$(COMPOSE) run --rm shots --window-size=1280,3000 --screenshot=/work/docs/screenshots/sample-restatements-terminal.png "http://app:8000/?sample=restatements&theme=terminal"
 	@for name in $(SHOTS); do \
 		test docs/screenshots/$$name.png -nt results/.screenshots-started \
 		|| { echo "screenshots: docs/screenshots/$$name.png was not written"; exit 1; }; \
@@ -290,6 +305,15 @@ sample-inbox:
 	@for name in $(INBOX_SAMPLES); do \
 	  case $$name in inbox|inbox-page-2) out=sample-$$name.json ;; *) out=sample-inbox-$$name.json ;; esac; \
 	  cp docs/examples/v13/$$name.json src/web/$$out && echo "src/web/$$out <- docs/examples/v13/$$name.json"; \
+	done
+
+# The page's version 14 samples (?sample=computed, as-of, restatements): the payloads `make examples`
+# wrote, copied unedited. Run it after examples; uitests/test_v14_dom.py fails while a copy differs.
+V14_SAMPLES := run:computed as-of-run:as-of restatements:restatements
+sample-v14:
+	@for pair in $(V14_SAMPLES); do \
+	  src=$${pair%%:*}; out=sample-$${pair##*:}.json; \
+	  cp docs/examples/v14/$$src.json src/web/$$out && echo "src/web/$$out <- docs/examples/v14/$$src.json"; \
 	done
 
 watch-replay:

@@ -62,14 +62,15 @@ Colour is never the only signal: every mark also carries its glyph and its words
 | `--bg` / `--surface` / `--surface-2` | #f2eee3 / #fbf9f3 / #ece6d8 | #07090c / #0d1116 / #151b22 | the page, the note's sheet, a raised row |
 | `--ink` / `--ink-2` | #1d1b17 / #57524a | #e8e3d4 / #9ba4ae | text, secondary text |
 | `--line` / `--line-strong` | #d9d1bf / #958c78 | #222b35 / #46525f | hairlines, rules |
-| `--accent` | #1f4e8c ink blue | #ffad33 amber | something you can click, and focus. Never a heading. |
+| `--accent` | #1f4e8c ink blue | #ffad33 amber | selection and focus: the rail's selected row, the tab in use, the focus ring. Never a heading, a value or a rule. |
+| `--link` | the accent | the ink, underlined | something you can click. In Terminal a link is ink, so amber stays selection. |
 | `--support` | #1d6b3f | #62d28f | ✓ supported, a supporting finding, a test that holds |
 | `--challenge` | #9a1f5a | #ff7ab8 | ✕ challenged, a challenging finding, a test that fails (± mixed shows both) |
 | `--neutral` | #575c64 | #a4acb6 | ? not judged (dashed), ∅ not addressed, • context, tags about the page |
 | `--limit` | #8a5800 | #f0dc5a | ▲ a limit of the record, including evidence an 8-K postdates |
-| `--model` | #5a3fb8 | #b9a3ff | ✎ written by a model (solid rule); ◎ ◐ a second model's reading (double rule) |
+| `--model` | #5a3fb8 | #b9a3ff | the glyph ✎ of "written by a model", and ◎ ◐ of a second model's reading; the words beside it are dim, with no box |
 | `--reject` | #b3261e | #ff6b6b | ! the server refused your input |
-| `--rule` | #586112 | #b5cc6a | ƒ computed by a fixed rule (dotted border) |
+| `--rule` | #586112 | #b5cc6a | the glyph ƒ of "computed by a fixed rule"; the words beside it are dim, with no box |
 | `--change` | #0b6670 | #5ad7e4 | # ~ + − what changed between two filings (square tags) |
 | `--neg` | #9b3412 | #ff8a65 | a negative number, which always keeps its minus sign |
 | `--mark-bg` | #f5df7a | #4d3f00 | a quote found word for word, inside its context |
@@ -80,8 +81,19 @@ The Terminal limit is sulphur yellow so that it is never confused with the amber
 **Contrast (WCAG AA).** Every token used as text was measured against `--bg`, `--surface` and
 `--surface-2`, and against its own tint background. The lowest pair is Paper `--limit` on
 `--surface-2`, at 4.85:1; the lowest in Terminal is `--reject` on its tint, at 6.03:1. All pairs
-are at or above 4.5:1. Primary buttons are 7.9:1 on Paper and 10.7:1 on Terminal. These ratios
-were computed from the hex values; they were not measured on screen.
+are at or above 4.5:1. These ratios were computed from the hex values; they were not measured
+on screen. The pairs the second pass leans on:
+
+| Pair | Ratio |
+|---|---|
+| Terminal dim text `--ink-2` #9ba4ae on `--bg`, `--surface`, `--surface-2`, the black bar | 7.89, 7.50, 6.86, 8.32 |
+| Terminal stamp text (`--surface`) on `--support`, on `--challenge` | 10.04, 7.87 |
+| Terminal selected tab: black on amber | 11.28 |
+| Paper stamp text (`--surface`) on `--support`, on `--challenge` | 6.18, 7.34 |
+| Paper dim text `--ink-2` on `--bg`, on `--surface` | 6.68, 7.36 |
+| Paper link on `--surface` | 7.89 |
+
+No text in Terminal is smaller than 11px.
 
 ## Type
 
@@ -100,21 +112,71 @@ Each kind of text is set through a role token:
 
 | Role | Paper | Terminal |
 |---|---|---|
-| `--font-prose`: claims, the summary, findings | serif | sans |
+| `--font-quote`: what was filed (a quote, an 8-K's opening sentences) and the summary | serif | sans |
+| `--font-prose`: claims, findings, headings | sans | sans |
 | `--font-ui`: body, hints | sans | sans |
-| `--font-control`: buttons, field labels, links in the bar | sans | mono |
-| `--font-label`: block titles, column heads | serif, small capitals | mono, spaced capitals |
+| `--font-control`: buttons, field labels, the bar | sans | mono |
+| `--font-label`: block titles, column heads | sans, small capitals | mono capitals, no tracking |
 | `--font-data`: counts, tables, dates | sans | mono |
-| `--font-code`: tickers, accessions, expressions | mono | mono |
+| `--font-code`: tickers, ids, accessions, expressions | mono | mono |
 
-Numbers are `tabular-nums` everywhere. The scale steps by about 1.2: 0.72, 0.8125, 0.9375,
-1.0625, 1.3125, 1.75 and 2.375 rem. Data is dense; prose has room, with 72 characters at most
-and a line height of 1.6.
+Paper is one sans, with the serif kept for what the company filed and for the summary. In
+Terminal a line is one face: a count inside a sentence takes the sentence's face ("8 of 636
+passages"), and a line of data is mono throughout. Numbers are `tabular-nums` everywhere, and a
+value is set in three columns (up to the decimal point, the decimals, the unit) so a column of
+"$96.22B", "+105.9%" and "75.0%" lines up on the point.
+
+Paper's scale steps by about 1.2: 0.72, 0.8125, 0.9375, 1.0625, 1.3125, 1.75 and 2.375 rem,
+with prose at 1.0625rem and a line height of 1.6. Terminal is a size smaller and tighter
+throughout: 13px body and prose at a line height of 1.35, 12px data, 11px labels, 22px table
+rows, and a rail whose claim rows are two lines.
 
 ## Layout: a workspace, not a document
 
 On a screen at least 641px wide the page fills the window and does not scroll; its panes scroll
 inside themselves. One command bar (one row at 1280px and wider), then the view.
+
+**The second pass** (after a review that found "one document layout recoloured twice"):
+
+- *The verdict is the loudest mark.* A verdict stamp is solid: 11px capitals on the verdict's
+  own colour (mixed is half and half; not judged is a dashed outline, not addressed a plain
+  one). The same fills make the **verdict strip**: one cell per claim in the record's order,
+  with its glyph, drawn the same in the bar, over the rail, at the head of the whole thesis's
+  Overview (there with each claim's id) and over the thesis over time. A cell selects its claim.
+  On paper stamps keep their outline, since a printer does not print fills.
+- *Provenance is dim.* "Model-written, not checked …", "ƒ By rule", a second model's reading
+  and the reader marks are words in `--ink-2` after their glyph, with no box and no fill.
+- *One stripe, two meanings.* A rule at the left edge is a finding's stance or the rail's
+  selected row, nothing else (the Events register keeps its ink rule on a substantive 8-K).
+  Commentary, the computed test, a quote, a reason, a caution and the status line are set off
+  by space or a hairline.
+- *The Overview shows the result first:* the run's date and as-of line, the verdict strip and
+  the record's count of claims with evidence; then a **verdict table** (one row per claim by
+  its id: verdict, test, margin, readers, findings; a narrow table drops columns from the
+  right) beside the newest figures, a row each; then the summary, which a model wrote, under
+  both at body size in two columns. Narrower than 36rem the three stack.
+- *Margin is a graphic:* a test's value as a bar from zero with what it is compared with as a
+  tick, from the test's own `left.value` and `right.value`, with both display strings beside
+  it. It replaces the "Compared:" sentence on screen (the sentence stays for a screen reader
+  and on paper).
+- *Evidence is quote first:* on the Evidence tab a finding leads with what was filed, in the
+  serif between quotation marks, and the model's statement is its caption.
+- *The inspector is always there.* It reads only what is behind the thing picked (a test's
+  operands and arithmetic, not its expression and outcome again; each fact as a Concept /
+  Period / Value / Filing grid). With nothing to pick on a tab it reads the run's own facts:
+  status, the status line's counts, the sources, the coverage limits.
+- *One low bar.* 32px, words not boxes, no key hints inside buttons; the guide, the theme and
+  the keys are in one **Menu**. The status line is at the head of the rail (the bar is the only
+  strip across the window); it gives the counts and does not repeat the status. Terminal's
+  footer is one hint and the run's id. One boxed shape remains on the page, the verdict stamp:
+  a stance, a test's outcome, a change mark, a kind and a page tag are coloured words.
+- *Codes are real.* In Terminal each title is preceded by a dim code (".sum"). Typed in the
+  ticker field after a full stop, then Enter, a code goes to that panel (see Keys). A code
+  that would not do that is not shown.
+- *Every view is in the frame.* A filing comparison, tagged breakdowns, the restatement
+  ledger, the inbox, a saved thesis and figures-only are laid out in the same three panes on a
+  window at least 1100px wide: sections or items in the rail, tables and lists in the centre,
+  the head, the legend and a watch's settings at the side.
 
 **A run** is the status line across the top and three panes under it:
 
@@ -145,7 +207,7 @@ inside themselves. One command bar (one row at 1280px and wider), then the view.
 
   | Tab | The whole thesis | One claim |
   |---|---|---|
-  | Overview | the tape, the summary (and the line code wrote after it), what moved, unknowns and next steps | the verdict rule, who assessed, the caution or 8-K note, the engine's commentary, the computed test, then the findings in short |
+  | Overview | the result (date, as-of line, verdict strip), the verdict table beside the newest figures, the summary (and the line code wrote after it), what moved, unknowns and next steps | the verdict rule, who assessed, the caution or 8-K note, the engine's commentary, the computed test, then the findings in short |
   | Evidence | the sources, the withheld findings (folded), which filings were compared | the findings in full (checks, cited figures, your decision, each quote) and the changed paragraphs |
   | Over time | the time line and every compiled claim's lane | the time line and that claim's lane |
   | Events | the as-of line in full, then the 8-K register | the same |
@@ -158,10 +220,9 @@ inside themselves. One command bar (one row at 1280px and wider), then the view.
   8-K whole (items, roles, opening sentences, link); a figure's formula and the reported values
   behind it. Pick by selecting the item or its button ("Read the quote in its context"). With
   nothing picked it reads the first item of the tab on show, and the item being read carries an
-  accent edge on the inspector's side. What the inspector reads is not drawn twice: in the
-  centre pane a quote is its own words cut to three lines, a test is its summary, an 8-K its
-  items. A tab with nothing to read at the side (Limits, the whole thesis's Evidence) gives the
-  inspector's width to the centre pane.
+  tinted ground. What the inspector reads is not drawn twice: in the centre pane a quote is its
+  own words, a test is its summary, an 8-K its items. On a tab with nothing to pick (Limits,
+  the whole thesis's Evidence) it reads the run's facts; the centre pane never reflows.
 - **The status line** (`#status-banner`) is one line; its full counts open over the panes and
   close again.
 - **The Run drawer** (`#run-drawer`, from the right; the status chip or `r`) holds everything
@@ -178,14 +239,17 @@ right the guide as the lead (what this is, the takeaway, the configured engine),
 and the recorded samples in a column of their own.
 
 **Any other view** (a filing comparison, tagged breakdowns, the restatement ledger, the inbox, a
-saved thesis, figures only) is one pane that scrolls inside the frame, set to a measure of 66rem
-and centred.
+saved thesis, figures only) is in the same three panes on a window at least 1100px wide
+(`VIEW_FRAMES` in `app.js`): a rail listing its sections or items, which scroll the centre
+pane to them; the centre pane with its tables and lists; and at the side what explains it (its
+head, its legend, a watch's settings). Narrower, it is one column set to a measure.
 
 **Narrower windows.** Below 1100px the rail is a strip across the top (the entry for the whole
-thesis, then the claims side by side, scrolling inside the strip) and the inspector is a sheet
+thesis, then the claims as chips of id and stamp that wrap; a chip's title is its claim) and the inspector is a sheet
 from the bottom that opens when something is picked and closes with Close or Esc; the bar takes
-a second row. Below 641px the page is one column that scrolls: the rail, the status line, then
-the selection with its tabs stuck to the top of the window; there is no inspector, and what it
+a second row. Below 641px the page is one column that scrolls: a one-row bar (the mark, the
+ticker, the menu; the other controls open with the menu), the status line, the rail, then the
+selection with its tabs stuck to the top of the window and fading at the edge they scroll past; there is no inspector, and what it
 would read (a quote's context, a test's operands, an 8-K's opening sentences) is drawn in place.
 Widths inside a pane respond to the pane's own width (container queries), not to the window's.
 
@@ -201,7 +265,9 @@ inside one.
 | The engines in the bar's second row | The Run drawer. The bar has one row. |
 | The as-of line in the bar | A chip with the date and form of the newest filing read (`as_of.newest_filed`, `newest_form`); the record's whole line is the chip's title, its text for a screen reader, the first line of the Events tab, and in the Run drawer. |
 | The claims three times (verdict board, thesis over time, dockets) | Once, in the rail. A lane of the thesis over time is named by its claim's id; a docket has no heading of its own on screen. |
-| "How to read this", the legend and the glossary | The Run drawer (**Guide**). The guide is still the lead of the first screen. |
+| "How to read this", the legend and the glossary | The Run drawer, opened on the guide from **Menu**. The guide is still the lead of the first screen. |
+| A claim's counts and "Counted as …" on its rail row | The centre pane's head and the claim's computed test when it is selected (and for a screen reader on the row). A row is its id, stamp and test mark over two lines of claim. |
+| The engine's tinted, boxed tags | Dim words after a glyph. |
 | "Assessed by" and "Read by …; computed by code:" on every row of the board | Said in full for the selected claim (its Overview and its computed test) and to a screen reader on every row; a row keeps the outcome, what it counted and the count of readers. On paper every row prints them. |
 | A reason's "Model-written" badge under a statement that has one | The statement's badge and the violet rule on both; the reason's own badge is drawn on a phone and on paper. |
 
@@ -214,9 +280,8 @@ read the claim, and the sample tag.
 
 **Command bar.** One row: the brand, the ticker (the `/` key), **Thesis** (`e`), then for a run
 the status chip (glyph and word, never filled; it opens the Run drawer) and the as-of chip (it
-opens the Events tab). At the right: the sample tag and **Leave the sample**, the watch's
-health, **Inbox**, **Guide**, the theme switch (it names the theme in use; both names from
-1520px) and **Keys**. The run's chips are hidden on every view that is not a run. The watch's
+opens the Events tab) and the verdict strip. At the right: the sample tag and **Leave the
+sample**, the watch's health, **Inbox**, and **Menu** (the guide, the theme, the keys). The run's chips are hidden on every view that is not a run. The watch's
 detail is what is cut short when the row is full.
 
 **Status line** (`#status-banner`). The status, `sources_read` of `sources_requested`,
@@ -233,13 +298,13 @@ from `run.series`. Selecting a cell reads that figure in the inspector. The row 
 cells as the record has of these figures and wraps to the pane: nothing is built around a count.
 
 **Codes.** Every pane and block title carries a short code in `data-code` (VRD, SUM, MOV, FND,
-WHD, FIG, EVT, UNK, NXT, SRC, LIM, ERR, TL, TOT, INS, RUN, GDE). Terminal draws each as an amber
-cell before the title; Paper keeps its small-capital title and hairline and does not show it.
+WHD, FIG, KEY, EVT, UNK, NXT, SRC, LIM, ERR, TL, TOT, INS, RUN, GDE). Terminal writes each dim
+before its title as what you type to go there (".fig"); Paper does not show it.
 
-**Terminal, the instrument.** Mono for every label, number and control; amber for what you can
-act on; the tabs as numbered keys with the one in use filled amber; the tape as a black board
-with amber figures; rows that highlight with an amber edge; a footer with the keys and the run
-on screen. Paper is the same frame as a typeset note: the centre pane is the sheet, the rail
+**Terminal, the instrument.** Mono for every label, number and control; amber for selection
+and focus only (the tab in use, the rail's selected row, the focus ring), values in ink and
+links in underlined ink; the tabs as numbered keys; the figures as a 22px-row list beside the
+verdict table; a footer with one hint and the run on screen. Paper is the same frame as a typeset note: the centre pane is the sheet, the rail
 and the inspector sit on the desk beside it, claims and prose are in the serif.
 
 **Time line** (`#timeline`). One SVG date axis, drawn at its pane's width and redrawn when that
@@ -262,8 +327,9 @@ record's finding and passage counts. With a review the row holds two stamps unde
 labels, the engine's and the one after your review, with the tally. The row selected carries an
 accent rule and the sheet's ground; verdict colours stay in the stamps.
 
-**Verdict stamp** (`.pill.verdict`). Square corners, capitals, a tinted fill. Use it only for a
-claim's verdict. A **stance pill** (`.pill.stance`) is round and is used only for a finding's
+**Verdict stamp** (`.pill.verdict`). Square corners, 11px capitals, a solid fill in the verdict's
+colour (an outline on paper). Use it only for a claim's verdict; `verdictStrip` draws the same
+fills as one cell per claim. A **stance pill** (`.pill.stance`) is round and is used only for a finding's
 stance.
 
 **Claim docket** (`details.claim`). One per claim, in two parts: why the verdict
@@ -544,6 +610,7 @@ specimen, on made-up data, under the heading "Not built". It is not on the page.
 | `r` | Open or close the Run drawer; Esc closes it |
 | `t` | Switch between Paper and Terminal, and remember the choice |
 | `?` | Show the keys (Esc or Close shuts the list) |
+| `.` then a code, in the ticker field, then Enter | Go to the panel with that code: `.sum` `.vrd` `.key` `.mov` `.unk` `.nxt` (Overview), `.fnd` (the selected claim's findings), `.src` `.whd` (the whole thesis's Evidence), `.tl` `.tot` (Over time), `.evt`, `.fig`, `.lim` `.err`, `.run` and `.gde` (the Run drawer), `.ins` (the inspector). A code that names nothing on the screen says so under the field. A ticker never starts with a full stop, so a code is never read as one. |
 | `Esc` | Close a drawer, the list of keys, or the inspector when it is a sheet |
 
 The keys do nothing while you type in a field or hold Ctrl, Cmd or Alt. Every control has a
@@ -565,7 +632,8 @@ tests hold the page to:
   inspector's text checked against the record (a finding's evidence ids, excerpts and links; a
   test's operands; an 8-K's opening sentences; a figure's label, value and concepts);
 - a docket that is not on show being inert and out of the tab order, at every step;
-- the Run drawer's contents, the first screen, and the strip and sheet below 1100px.
+- the Run drawer's contents, the first screen, and the strip and sheet below 1100px;
+- the second pass: the verdict strip's cells in the bar, over the rail and in the Overview against the record's verdicts, and a cell selecting its claim; a stamp filled and 11 to 12px, a model tag without a box; a rail row no taller than its id line and two lines of claim; the menu's three items and no key hint in the bar; the bar no taller than 36px; a code typed in the ticker field going to its panel and an unknown one saying so; the inspector staying on every tab and reading the run's facts (the counts, every source, every limit) when nothing is picked; the inbox laid out in the three panes with one rail entry per item; an operand with a long note staying inside the inspector.
 
 `uitests/test_print_dom.py` reads what `uitests/print.html` recorded: the live run with a claim
 and the Events tab selected in Terminal, then the page's own `beforeprint` and the stylesheet's

@@ -152,7 +152,8 @@ async function run() {
     menuItems: [...doc.querySelectorAll("#bar-menu .menu-item")].map((item) => item.id).join(" "),
     barButtonsWithHints: String([...doc.querySelectorAll(".cmdbar > .tool .key-hint, .cmd-run .key-hint")].filter(visible).length),
     stampFontPx: win.getComputedStyle(doc.querySelector("#scorecard .pill.verdict")).fontSize,
-    stampFill: win.getComputedStyle(doc.querySelector("#scorecard .pill.verdict.v-challenged")).backgroundColor,
+    // The first stamp's fill: a colour, or for a mixed verdict the two colours as a gradient.
+    stampFill: ((style) => `${style.backgroundColor} ${style.backgroundImage}`)(win.getComputedStyle(doc.querySelector("#scorecard .pill.verdict"))),
     badgeBorder: win.getComputedStyle(doc.querySelector("#summary-origin .badge-model")).borderTopWidth,
     railRowHeights: [...doc.querySelectorAll("#scorecard a.score-row")].map((row) => Math.round(row.getBoundingClientRect().height)).join(" "),
   });

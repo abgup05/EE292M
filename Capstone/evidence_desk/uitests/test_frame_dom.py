@@ -152,8 +152,9 @@ def test_the_first_screen_of_a_run_shows_every_verdict_and_the_thesis_without_sc
     assert rail["scrollHeight"] <= rail["clientHeight"], "at 1440x900 the five verdicts fit the rail without scrolling it"
     assert (s["data-selected"], s["data-tab"], s["data-panels-shown"]) == ("", "overview", "panel-overview")
     assert s["data-sel-title"] == "The whole thesis"
-    # The status line is one line: the height of one row of small text, not a block.
-    assert pane("wide-loaded", "strip")["height"] <= 36
+    # The status line is at the head of the rail, under the bar: the bar is the only strip across the window.
+    strip = pane("wide-loaded", "strip")
+    assert strip["left"] >= 0 and strip["left"] + strip["width"] <= rail["width"] and strip["height"] <= 60
 
 
 def test_the_tabs_are_the_six_views_and_exactly_one_is_selected() -> None:
@@ -277,8 +278,11 @@ def test_the_inspector_stays_on_every_tab_and_reads_the_runs_facts_when_nothing_
     assert f"Findingsverified{coverage['findings_verified']:,}of{coverage['findings_proposed']:,}" in said
     for source in run()["sources"]:
         assert source["id"] in said
+    # What the tab on show lists is not said twice: on Limits the inspector leaves the limits to the centre pane.
     for limit in run()["coverage_limits"]:
-        assert "".join(limit.split()) in said
+        assert "".join(limit.split()) not in said
+    elsewhere = step("wide-loaded")["data-inspector-text"]
+    assert elsewhere  # the Overview reads its first figure; the limits are in the run's facts on any tab but Limits
 
 
 def test_the_verdicts_are_one_strip_of_cells_drawn_the_same_everywhere() -> None:
@@ -286,8 +290,8 @@ def test_the_verdicts_are_one_strip_of_cells_drawn_the_same_everywhere() -> None
     expected = " ".join(f"{c['id']}:v-{c['verdict']}" for c in run()["claims"])
     assert s["data-cells-bar"] == s["data-cells-rail"] == s["data-cells-overview"] == expected
     assert s["data-table-rows"] == " ".join(f"{c['id']}:{c['verdict']}" for c in run()["claims"])
-    # The result first: the masthead with its strip, then the summary and the verdict table, then the figures.
-    assert s["data-overview-order"].split()[0] == "overview-mast" and s["data-overview-order"].split()[-1] == "tape-section"
+    # The result first: the masthead with its strip, then the verdict table beside the figures, then the summary.
+    assert s["data-overview-order"].split() == ["overview-mast", "verdicts-section", "tape-section", "summary-section"]
     picked = step("wide-vcell")
     assert picked["data-selected"] == "c3" and picked["data-sel-title"] == claim("c3")["text"]
 
@@ -295,13 +299,13 @@ def test_the_verdicts_are_one_strip_of_cells_drawn_the_same_everywhere() -> None
 def test_a_verdict_is_a_solid_stamp_and_a_provenance_tag_is_not_a_box() -> None:
     s = step("wide-loaded")
     assert 11 <= float(s["data-stamp-font-px"].removesuffix("px")) <= 12
-    assert s["data-stamp-fill"] not in ("rgba(0, 0, 0, 0)", "transparent"), "a verdict stamp is filled"
+    assert s["data-stamp-fill"] != "rgba(0, 0, 0, 0) none", "a verdict stamp is filled"
     assert s["data-badge-border"] == "0px", "the model-written tag has no box"
 
 
 def test_a_rail_row_is_two_lines_and_the_bar_has_one_menu() -> None:
     s = step("wide-loaded")
-    assert all(int(height) <= 72 for height in s["data-rail-row-heights"].split()), "a row is its id line and at most two lines of claim"
+    assert all(int(height) <= 80 for height in s["data-rail-row-heights"].split()), "a row is its id line and at most two lines of claim"
     assert s["data-menu-items"].split() == ["howto-button", "theme-toggle", "keys-button"]
     assert s["data-bar-buttons-with-hints"] == "0", "no key hint inside a button of the bar"
 

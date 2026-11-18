@@ -3961,7 +3961,8 @@ function drawTimeline(container, run) {
         "g",
         { "data-tl": "gap" },
         s("title", { text: `Between the newest filing read (${dateLabel(run.as_of.newest_filed)}) and ${data.asOf ? "the date this run is as of" : "this run"}${daysWord ? `: ${daysWord}` : ""}. Nothing filed in this time is in the record.` }),
-        s("rect", { x: x0, y: 18, width: Math.max(x1 - x0, 2), height: axisY + 44 - 18, class: "tl-gap" }),
+        // A band on the axis, not a block over the chart: the days the record cannot know.
+        s("rect", { x: x0, y: axisY - 7, width: Math.max(x1 - x0, 2), height: 14, class: "tl-gap" }),
       ),
     );
     if (daysWord) {
@@ -4040,11 +4041,11 @@ function drawTimeline(container, run) {
     ];
     // A category is written under its mark on one of two rows, and only where a row has room: a
     // mark without a written label still says its categories on hover, on focus and to a screen reader.
-    const row = x - labelRows[0] > 104 ? 0 : x - labelRows[1] > 104 ? 1 : -1;
+    const row = x - labelRows[0] > 120 ? 0 : x - labelRows[1] > 120 ? 1 : -1;
     if (substantive && categories.length && !narrow && row >= 0) {
       labelRows[row] = x;
       const labelX = Math.min(Math.max(x, left + 40), width - 50);
-      shape.push(s("text", { x: labelX, y: axisY + 56 + row * 13, "text-anchor": "middle", class: "tl-label is-cat", text: categories.join(", ") }));
+      shape.push(s("text", { x: labelX, y: axisY + 56 + row * 15, "text-anchor": "middle", class: "tl-label is-cat", text: categories.join(", ") }));
     }
     svg.append(timelineMark("8k", { "data-event-id": str(event.id), "data-kind": kind, "data-quoted": item.quoted ? "true" : "false" }, event.url, tip, shape, container));
   }
@@ -5181,7 +5182,8 @@ function totSvg(claim, points, { lo, hi, width }) {
     d += index === 0 ? `M ${x} ${y}` : ` H ${x} V ${y}`;
   });
   svg.append(s("path", { d, class: "tot-step" }));
-  let flipIndex = 0;
+  // A flip is labelled on one of two rows, and only where the row has room: every flip is in the list under the line.
+  const flipRows = [-Infinity, -Infinity];
   for (const point of points) {
     const key = token(point.outcome, TEST_MARK);
     const x = xAt(dayOf(point.filed));
@@ -5191,11 +5193,11 @@ function totSvg(claim, points, { lo, hi, width }) {
     svg.append(s("circle", { cx: x, cy: y, r: 3.2, class: `tot-pt o-${key}`, "data-point": str(point.filed) }, s("title", { text: words })));
     if (point.flipped === true) {
       svg.append(s("circle", { cx: x, cy: y, r: 7, class: "tot-flip", "data-flip": str(point.filed) }, s("title", { text: `Flipped: ${words}` })));
-      if (roomy) {
+      const row = x - flipRows[0] > 150 ? 0 : x - flipRows[1] > 150 ? 1 : -1;
+      if (roomy && row >= 0) {
+        flipRows[row] = x;
         const anchor = x > plotR - 50 ? "end" : x < plotL + 50 ? "start" : "middle";
-        const ly = flipIndex % 2 === 0 ? 11 : 21;
-        svg.append(s("text", { x, y: ly, "text-anchor": anchor, class: "tot-flip-label", text: `${str(point.form)} ${str(point.filed)}` }));
-        flipIndex += 1;
+        svg.append(s("text", { x, y: row === 0 ? 10 : 22, "text-anchor": anchor, class: "tot-flip-label", text: `${str(point.form)} ${str(point.filed)}` }));
       }
     }
   }
@@ -6645,7 +6647,7 @@ function onTickerKey(event) {
 const VIEW_FRAMES = [
   { id: "changes-view", aside: ["changes-head", "changes-legend"], entries: ".block-title, .chg-item-title" },
   { id: "breakdowns-view", aside: ["breakdowns-head", "breakdowns-legend"], entries: ".bd-title" },
-  { id: "ledger-view", aside: ["ledger-head", "ledger-legend"], entries: ".block-title" },
+  { id: "ledger-view", aside: ["ledger-head", "ledger-legend"], entries: ".block-title, .ledger tbody th[scope='row']" },
   { id: "inbox-view", aside: ["inbox-head", "watch-down", "watches-section"], entries: ".inbox-headline" },
   { id: "thesis-view", aside: ["thesis-head", "thesis-watch-section"], entries: ".block-title" },
   { id: "figures-view", aside: ["figures-head"], entries: ".fig-head" },
@@ -6679,7 +6681,14 @@ function frameViews() {
 
 /** The rail of such a view: one entry per section or item now in its centre pane; selecting one scrolls to it, opening what holds it. */
 function drawViewEntries(entries, scroll, selector) {
-  const nodes = [...scroll.querySelectorAll(selector)].filter((node) => node.textContent.trim() && !node.closest("[hidden]"));
+  // One entry per name: a ledger lists a metric once however many of its periods changed (the entry goes to the first).
+  const seen = new Set();
+  const nodes = [...scroll.querySelectorAll(selector)].filter((node) => {
+    const name = node.textContent.replace(/\s+/g, " ").trim();
+    if (!name || seen.has(name) || node.closest("[hidden]")) return false;
+    seen.add(name);
+    return true;
+  });
   entries.replaceChildren(
     ...nodes.map((node) =>
       h(
@@ -6688,6 +6697,7 @@ function drawViewEntries(entries, scroll, selector) {
         h("button", {
           type: "button",
           class: "view-entry",
+          title: node.textContent.replace(/\s+/g, " ").trim(),
           onclick: () => {
             for (let fold = node.closest("details"); fold; fold = fold.parentElement?.closest("details")) fold.open = true;
             node.scrollIntoView({ block: "start", behavior: reducedMotion() ? "auto" : "smooth" });
@@ -6852,7 +6862,8 @@ function inspectRunFacts() {
       Number.isFinite(c.findings_withheld) ? fact("Withheld", num(c.findings_withheld)) : "",
       str(run.as_of?.line) ? fact("As of", run.as_of.line) : "",
     ),
-    sources.length
+    // Not what the tab on show already lists: the sources on the whole thesis's Evidence, the limits on Limits.
+    sources.length && state.tab !== "evidence"
       ? h(
           "div",
           { class: "ins-block" },
@@ -6860,12 +6871,14 @@ function inspectRunFacts() {
           h("ul", { class: "ins-list" }, sources.map((source) => h("li", null, h("span", null, h("strong", { text: `${str(source.id)} ` }), kind(source)), h("span", { class: "muted", text: source.extraction_status === "extracted" ? "Read" : "Not read" })))),
         )
       : "",
-    h(
-      "div",
-      { class: "ins-block" },
-      h("p", { class: "label", text: "Coverage limits" }),
-      limits.length ? h("ul", { class: "mark-list" }, limits.map((line) => limitLine("li", String(line)))) : h("p", { class: "muted", text: run.status === "running" ? "Listed when the run finishes." : "None recorded." }),
-    ),
+    state.tab !== "limits"
+      ? h(
+          "div",
+          { class: "ins-block" },
+          h("p", { class: "label", text: "Coverage limits" }),
+          limits.length ? h("ul", { class: "mark-list" }, limits.map((line) => limitLine("li", String(line)))) : h("p", { class: "muted", text: run.status === "running" ? "Listed when the run finishes." : "None recorded." }),
+        )
+      : "",
     h("p", { class: "ins-none muted", text: "Select a finding, a computed test, an 8-K or a figure in the centre pane to read it here." }),
   ];
 }

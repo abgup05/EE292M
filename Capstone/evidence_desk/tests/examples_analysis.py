@@ -15,10 +15,15 @@ Markdown export) serves:
   corollary status, a verified and an unverified sentence, a condition, a scenario, both
   flags), and ``argument_detail`` says so. It is not an example of what a model would say,
   and its argument is not an argument;
+- ``brief-hand-built-argument.md``: its Markdown brief, to show how the export lays an
+  argument out;
+- ``run-model-argument.json`` and ``brief-model-argument.md``: the same run with a model's
+  corollaries and argument, replayed from the cassette ``demo/cassettes/analysis-example``.
+  Written only when the cassette holds both answers (and removed when stale); otherwise
+  ``make examples-analysis`` says how to record them (``make record-analysis``);
 - ``replayed-run.json``: the example thesis replayed from the cassette
   ``demo/cassettes/nvda-example``, with the analysis model's two answers when the cassette
-  holds them. Written only then (and removed when stale); otherwise ``make
-  examples-analysis`` says how to record them (``make record-analysis``).
+  holds them. Written only then (and removed when stale).
 
 Clock times are fixed at :data:`STAMP` so the files change only when a shape or a result
 does.
@@ -37,9 +42,10 @@ from typing import Any
 from app.core.claim_reading import as_reading
 from app.core.claimtest import ClaimTest, compile_claim
 from app.core.models import Run, ThesisRequest
-from app.engines.analyser import ClaudeAnalyser
+from app.engines.analyser import ClaudeAnalyser, configured_model
+from app.engines.cassette import CassetteTransport
 from app.engines.extractive import ExtractiveAnalyst
-from app.engines.transport import ModelRequest
+from app.engines.transport import ModelRequest, Transport
 from app.services.export import render_markdown
 from app.services.thesis_run import execute_run, new_run
 from app.store import FilingCache, Store
@@ -48,8 +54,15 @@ from tests.golden_run import replay_copy
 from tests.replay_run import DEFAULT_CASSETTE, recorded_filings
 
 OUT = Path("docs/examples/analysis")
-FILES = ("run.json", "brief.md", "run-hand-built-argument.json")
+FILES = (
+    "run.json",
+    "brief.md",
+    "run-hand-built-argument.json",
+    "brief-hand-built-argument.md",
+)
 REPLAYED = "replayed-run.json"
+MODEL_FILES = ("run-model-argument.json", "brief-model-argument.md")
+MODEL_CASSETTE = Path("demo/cassettes/analysis-example")
 STAMP = datetime(2026, 11, 18, 12, 0, tzinfo=UTC)
 CLOCK_FIELDS = ("finished_at", "retrieved_at", "started_at", "recorded_at")
 DECISION = "Whether to buy NVIDIA now"
@@ -229,16 +242,51 @@ def write(out: Path = OUT) -> list[Path]:
             ClaudeAnalyser(transport=HandBuilt(base), model="none"),
         )
     fixed = _fixed(base.model_dump(mode="json"))
+    fixed_built = _fixed(built.model_dump(mode="json"))
     texts = {
         "run.json": _json(fixed),
         "brief.md": render_markdown(Run.model_validate(fixed)),
-        "run-hand-built-argument.json": _json(built.model_dump(mode="json")),
+        "run-hand-built-argument.json": _json(fixed_built),
+        "brief-hand-built-argument.md": render_markdown(Run.model_validate(fixed_built)),
     }
     paths = []
     for name in FILES:
         path = out / name
         path.write_text(texts[name], encoding="utf-8")
         paths.append(path)
+    return paths
+
+
+def model_run(
+    data_dir: Path, cassette: Path = MODEL_CASSETTE, live: Transport | None = None
+) -> Run:
+    """The example run with the analysing model answering from ``cassette``: read-only, or
+    recording what ``live`` answers for a request the cassette lacks."""
+    analyser = ClaudeAnalyser(
+        transport=CassetteTransport(cassette, live=live, read_only=live is None),
+        model=configured_model(),
+    )
+    return _run("run-example-analysis-model", data_dir, analyser)
+
+
+def write_model(out: Path = OUT, cassette: Path = MODEL_CASSETTE) -> list[Path]:
+    """Write :data:`MODEL_FILES` when ``cassette`` answers both requests; else remove them."""
+    with tempfile.TemporaryDirectory() as scratch:
+        run = model_run(Path(scratch), cassette)
+    analysis = run.analysis
+    recorded = (
+        analysis is not None
+        and analysis.corollaries_step == "answered"
+        and analysis.argument_step == "answered"
+    )
+    paths = [out / name for name in MODEL_FILES]
+    if not recorded:
+        for path in paths:
+            path.unlink(missing_ok=True)
+        return []
+    fixed = _fixed(run.model_dump(mode="json"))
+    paths[0].write_text(_json(fixed), encoding="utf-8")
+    paths[1].write_text(render_markdown(Run.model_validate(fixed)), encoding="utf-8")
     return paths
 
 
@@ -273,6 +321,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     del argv
     for path in write():
         print(f"examples-analysis: wrote {path.as_posix()}")
+    model = write_model()
+    for path in model:
+        print(f"examples-analysis: wrote {path.as_posix()}")
+    if not model:
+        print(
+            f"examples-analysis: {' and '.join(MODEL_FILES)} not written: the cassette "
+            f"{MODEL_CASSETTE.as_posix()} does not hold the analysis model's two answers "
+            "under the current prompts. Record them: make record-analysis"
+        )
     written = write_replayed()
     if written is not None:
         print(f"examples-analysis: wrote {written.as_posix()}")
@@ -284,7 +341,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(
         f"examples-analysis: {REPLAYED} not written: the cassette {DEFAULT_CASSETTE.as_posix()} "
         "holds no answer to the analysis model's two requests under the current prompts. "
-        "Record them (2 API calls), then run make examples-analysis again: make record-analysis"
+        "Record them, then run make examples-analysis again: make record-analysis"
     )
     return 0
 

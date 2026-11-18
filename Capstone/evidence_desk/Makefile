@@ -50,7 +50,7 @@ help:
 	@echo 'Fixtures: fixtures-facts(record XBRL company facts of NVDA, AAPL, MSFT under tests/fixtures/edgar; REFRESH=1 to overwrite)'
 	@echo 'Fixtures: fixtures (record SEC EDGAR responses for NVIDIA under tests/fixtures/edgar; REFRESH=1 to overwrite)'
 	@echo 'Examples: examples (offline: the version 14 payloads in docs/examples/v14, made from the recorded fixtures with the extractive engine; tests/test_examples_v14.py fails when they are out of date), sample-v14 (copies run.json, as-of-run.json, restatements.json and run-readers.json, unedited, into the page'"'"'s samples ?sample=computed, ?sample=as-of, ?sample=restatements and ?sample=readers)'
-	@echo 'Analysis (0.14.2): examples-analysis (offline: docs/examples/analysis, the computed analysis of the live NVIDIA sample'"'"'s claims, a hand-built argument showing the shape, and the replayed run when its answers are recorded), record-analysis (API: the analysis model'"'"'s two answers for the example thesis into demo/cassettes/nvda-example; MAX_CALLS caps them, default 2)'
+	@echo 'Analysis (0.14.2): examples-analysis (offline: docs/examples/analysis, the computed analysis of the live NVIDIA sample'"'"'s claims, a scripted argument showing every shape, and a model'"'"'s argument when its answers are recorded), record-analysis (API: the analysis model'"'"'s answers, two for the example thesis into demo/cassettes/nvda-example and two for the analysis example into demo/cassettes/analysis-example; sends only what a cassette lacks and never more than MAX_CALLS, default 4)'
 	@echo 'Diagnostics: figures TICKERS="COST AMZN" (live: each company'"'"'s quarters as a run sees them; MISSING=1 lists every metric without a value); header-cut-check TICKERS="..." (live: each filing parsed with and without the header cut, the whole documents compared)'
 	@echo 'Diagnostics: measures-probe TICKERS="..." (live, the eight probe companies by default: each claim-test measure'"'"'s newest fiscal year, how many have it and why the rest do not, and the parts each newest 10-K tags; writes results/measures-<UTC>.md)'
 	@echo 'Diagnostics: probe TICKERS="AAPL MSFT" (live: parse each company'"'"'s latest 10-K and 10-Q, report Item coverage; writes results/probe-<UTC>.md)'
@@ -244,11 +244,12 @@ examples:
 examples-analysis:
 	$(RUN) python -m tests.examples_analysis $(ARGS)
 
-# Records the analysis model's two answers ("propose" and "analyse") for the example thesis
-# into demo/cassettes/nvda-example through the API: needs ANTHROPIC_API_KEY in .env, sends at
-# most MAX_CALLS requests (2), and replays every other answer from the cassette.
+# Records the analysis model's answers through the API: "propose" and "analyse" for the
+# example thesis (into demo/cassettes/nvda-example) and for the analysis example (into
+# demo/cassettes/analysis-example). Needs ANTHROPIC_API_KEY in .env. Only a request a
+# cassette lacks is sent, and never more than MAX_CALLS in all (default 4, which is all of them).
 record-analysis:
-	$(RUN) python -m tests.replay_run --record-analysis --max-calls $(or $(MAX_CALLS),2) $(ARGS)
+	$(RUN) python -m tests.record_analysis --max-calls $(or $(MAX_CALLS),4) $(ARGS)
 
 eval-validate:
 	$(RUN) python -m app.evaluation validate $(ARGS)

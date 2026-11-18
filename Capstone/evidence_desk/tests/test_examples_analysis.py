@@ -47,3 +47,17 @@ def test_the_replayed_example_exists_exactly_when_its_answers_are_recorded() -> 
         assert not committed.exists(), f"{committed} is stale: its answers are not recorded"
         return
     assert committed.exists(), "run make examples-analysis"
+
+
+def test_the_model_example_exists_exactly_when_its_answers_are_recorded(tmp_path: Path) -> None:
+    written = examples_analysis.write_model(tmp_path)
+    committed = [examples_analysis.OUT / name for name in examples_analysis.MODEL_FILES]
+    if not written:
+        stale = [path for path in committed if path.exists()]
+        assert not stale, f"{stale} are stale: their answers are not recorded"
+        return
+    for path, made in zip(committed, written, strict=True):
+        assert path.exists(), "run make examples-analysis"
+        assert path.read_text(encoding="utf-8") == made.read_text(encoding="utf-8"), (
+            f"{path} is out of date: run make examples-analysis and read the diff"
+        )

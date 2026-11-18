@@ -1,13 +1,16 @@
 # make backup && make restore-check && make backup-status
-# 2026-11-17T20:43:20Z, version 0.11.1, on the record the live walk had just written. Same disk, same machine.
-# The check compares every column of every row of the three tables (since version 0.11.1).
+# 2026-11-18T14:59:31Z, version 0.14.1 (the code of commit aacfb1d), on the real record. Same disk, same machine.
+# The check compares every column of every row of every table of the record (since version 0.11.1), and since
+# 0.14.1 says BEHIND (exit 2) instead of FAIL when every difference is a row written after the backup was taken.
+# "exit 0" is restore-check's exit code, printed by the shell.
 
 found a version 3 database at /work/data/runs/runs.sqlite; it is not read
-wrote backups/record-20261117T204219Z.sqlite
-wrote backups/record-20261117T204219Z.sqlite.sha256
-wrote backups/decisions-20261117T204219Z.jsonl
-the backup holds 40 runs, 20 decisions and 10 theses
+wrote backups/record-20261118T145931Z.sqlite
+wrote backups/record-20261118T145931Z.sqlite.sha256
+wrote backups/decisions-20261118T145931Z.jsonl
+the backup holds 43 runs, 20 decisions and 10 theses
 found a version 3 database at /work/data/runs/runs.sqlite; it is not read
-PASS: record-20261117T204219Z.sqlite restores to the live record: 40 runs, 20 decisions, 10 theses; taken less than a minute before this check
+PASS: record-20261118T145931Z.sqlite restores to the live record: 43 runs, 20 decisions, 10 theses; taken less than a minute before this check
+exit 0
 found a version 3 database at /work/data/runs/runs.sqlite; it is not read
-backup status: record-20261117T204219Z.sqlite, taken less than a minute ago, holds everything in the record.
+backup status: record-20261118T145931Z.sqlite, taken less than a minute ago, holds everything in the record.

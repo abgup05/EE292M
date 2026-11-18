@@ -48,7 +48,8 @@ def compute_claims(run: Run, numbers: NumbersResult, read_reports: ReportReader)
     for claim in run.claims:
         compiled = compile_claim(claim.text)
         if isinstance(compiled, NotNumeric):
-            claim.compile_note = policy.COMPUTED_NOT_NUMERIC.format(reason=compiled.reason)
+            reason = compiled.reason.removeprefix("not compiled: ")
+            claim.compile_note = policy.COMPUTED_NOT_NUMERIC.format(reason=reason)
         else:
             tests[claim.id] = compiled
     coverage = run.coverage

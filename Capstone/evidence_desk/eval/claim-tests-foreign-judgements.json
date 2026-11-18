@@ -1001,6 +1001,115 @@
       "reading": "right",
       "why": "the United States' share of total revenue above half, from the newest filing's tags",
       "stage": "after"
+    },
+    {
+      "id": "f012",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "the test it read before was right; refused now because 'which is worth watching' is commentary the parse does not explain",
+      "stage": "whole-sentence",
+      "cause": "phrasing"
+    },
+    {
+      "id": "f016",
+      "canonical": "yoy(capex)[FY2025] >= 100%",
+      "reading": "right",
+      "why": "'at least doubled between fiscal 2024 and fiscal 2025': FY2025 capex growth of at least 100%",
+      "stage": "whole-sentence"
+    },
+    {
+      "id": "f018",
+      "canonical": "share(segment \"Gaming\")[filing] < 10%",
+      "reading": "right",
+      "why": "the Gaming segment's share of total revenue below 10%, from the newest filing's tags",
+      "stage": "whole-sentence"
+    },
+    {
+      "id": "f020",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "a change of more than ten points is not a form; refused, no longer read as any expansion",
+      "stage": "whole-sentence",
+      "cause": "form"
+    },
+    {
+      "id": "f050",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "a product line's revenue history; refused, no longer read as total revenue",
+      "stage": "whole-sentence",
+      "cause": "metric"
+    },
+    {
+      "id": "f058",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "named calendar quarters (September, June) are not periods it places; refused, no longer ignored",
+      "stage": "whole-sentence",
+      "cause": "period"
+    },
+    {
+      "id": "f060",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "'and has barely moved in three years' is a second, approximate statement; refused, no longer half read",
+      "stage": "whole-sentence",
+      "cause": "form"
+    },
+    {
+      "id": "f064",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "SG&A is not in the metric set; refused, no longer compared as gross profit with itself",
+      "stage": "whole-sentence",
+      "cause": "metric"
+    },
+    {
+      "id": "f068",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "receivables plus vendor non-trade receivables is not a measure in the set; refused",
+      "stage": "whole-sentence",
+      "cause": "metric"
+    },
+    {
+      "id": "f092",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "the test it read before was right; refused now because 'producing operating leverage' is a consequence the parse does not explain",
+      "stage": "whole-sentence",
+      "cause": "phrasing"
+    },
+    {
+      "id": "f098",
+      "canonical": "operating_cash_flow[TTM] > $120B",
+      "reading": "right",
+      "why": "'on a trailing basis' is the trailing twelve months",
+      "stage": "whole-sentence"
+    },
+    {
+      "id": "f102",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "'roughly in line with' is an approximate comparison, not a form; refused",
+      "stage": "whole-sentence",
+      "cause": "form"
+    },
+    {
+      "id": "f104",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "a segment's operating income and revenue are not in the facts; refused by the part rule",
+      "stage": "whole-sentence",
+      "cause": "metric"
+    },
+    {
+      "id": "f106",
+      "canonical": "none",
+      "reading": "not_compiled",
+      "why": "sales and marketing expense as a share of revenue is not in the metric set; refused",
+      "stage": "whole-sentence",
+      "cause": "metric"
     }
   ]
 }

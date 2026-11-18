@@ -50,9 +50,9 @@ def _numbers(t: foreign.Tally) -> tuple[int, ...]:
 # (numeric, right, wrong, not compiled: metric, form, period, phrasing,
 #  not_numeric, not_numeric compiled wrongly, not_numeric compiled with the label wrong)
 FINAL = {
-    "all": (83, 22, 11, 28, 18, 1, 3, 37, 0, 0),
+    "all": (83, 23, 0, 33, 21, 2, 4, 37, 0, 0),
     "development": (43, 14, 0, 19, 10, 0, 0, 17, 0, 0),
-    "held_out": (40, 8, 11, 9, 8, 1, 3, 20, 0, 0),
+    "held_out": (40, 9, 0, 14, 11, 2, 4, 20, 0, 0),
 }
 
 

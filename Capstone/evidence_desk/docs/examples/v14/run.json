@@ -903,7 +903,7 @@
       "caution": "",
       "event_note": "",
       "computed": null,
-      "compile_note": "Not a numeric claim this version computes: a segment's or a geography's growth: breakdowns come from one filing's tags, with no history in the facts."
+      "compile_note": "Not a numeric claim this version computes: 'data center' names a part of the company (a segment, a product or a geography), whose revenue is not the company's: only a part's share of revenue is read, from the newest filing's tags, and it has no history in the facts."
     },
     {
       "id": "c4",

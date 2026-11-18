@@ -36,7 +36,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
 
-from app.evaluation.claim_tests import compiled_text
+from app.core.claimtest import NotNumeric, compile_claim
 
 CLAIMS = Path("eval/claim-tests-foreign.json")
 JUDGEMENTS = Path("eval/claim-tests-foreign-judgements.json")
@@ -70,6 +70,7 @@ class Judged:
     cause: str
     label_right: bool | None
     why: str
+    refusal: str = ""
 
 
 @dataclass
@@ -128,10 +129,12 @@ def judge(
     """Compile each claim now and attach the judgement of what it printed."""
     result = []
     for claim in claims:
-        canonical = compiled_text(claim.text)
+        compiled = compile_claim(claim.text)
+        canonical = "none" if isinstance(compiled, NotNumeric) else compiled.canonical
+        refusal = compiled.reason if isinstance(compiled, NotNumeric) else ""
         entry = judgements.get((claim.id, canonical))
         if entry is None:
-            result.append(Judged(claim, canonical, "unjudged", "", None, ""))
+            result.append(Judged(claim, canonical, "unjudged", "", None, "", refusal))
             continue
         cause = str(entry.get("cause", ""))
         if entry["reading"] == "not_compiled" and claim.kind == "numeric" and cause not in CAUSES:
@@ -147,6 +150,7 @@ def judge(
                 cause,
                 label_right if isinstance(label_right, bool) else None,
                 str(entry["why"]),
+                refusal,
             )
         )
     return result
@@ -201,12 +205,16 @@ def render(judged: Sequence[Judged]) -> str:
     lines += _summary("all", tally(judged))
     for half in HALVES:
         lines += _summary(half, tally([j for j in judged if j.claim.half == half]))
-    lines += ["", "id | half | company | kind | reading | cause | canonical | claim | why"]
+    lines += [
+        "",
+        "id | half | company | kind | reading | cause | canonical | claim | why | "
+        "the compiler's refusal",
+    ]
     for j in judged:
         cause = j.cause or ("label wrong" if j.label_right is False else "")
         lines.append(
             f"{j.claim.id} | {j.claim.half} | {j.claim.company} | {j.claim.kind} | {j.reading} | "
-            f"{cause} | {j.canonical} | {j.claim.text} | {j.why}"
+            f"{cause} | {j.canonical} | {j.claim.text} | {j.why} | {j.refusal}"
         )
     return "\n".join(lines) + "\n"
 

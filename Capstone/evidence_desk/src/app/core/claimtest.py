@@ -413,13 +413,21 @@ SEQUENTIAL = re.compile(
     r"\bfrom the (?:previous|prior|preceding) quarter\b|\bon the (?:previous|prior) quarter\b"
 )
 TTM = re.compile(
-    r"\btrailing[- ](?:twelve|12)[- ]months?\b|\blast[- ](?:twelve|12)[- ]months?\b|\bttm\b|\bltm\b"
+    r"\btrailing[- ](?:twelve|12)[- ]months?\b|\blast[- ](?:twelve|12)[- ]months?\b|"
+    r"\bttm\b|\bltm\b|"
+    r"\bon a trailing(?: (?:twelve|12)[- ]months?)? basis\b"
 )
 NAMED_QUARTER = re.compile(
     r"\b(?:q(?P<q>[1-4])|(?:the )?(?P<ord>first|second|third|fourth) quarter)\s+(?:of\s+)?"
     r"(?:fiscal(?: year)?\s*|fy\s?)(?P<year>\d{4})\b"
 )
 NAMED_YEAR = re.compile(r"\b(?:fiscal(?: year)?\s*|fy\s?)(?P<year>\d{4})\b")
+# "between fiscal 2024 and fiscal 2025", "from fiscal 2024 to fiscal 2025": the later year,
+# against the one before it.
+BETWEEN_YEARS = re.compile(
+    r"\b(?:between|from) (?:fiscal(?: year)?\s*|fy\s?)(?P<a>\d{4}) (?:and|to) "
+    r"(?:fiscal(?: year)?\s*|fy\s?)?(?P<b>\d{4})\b"
+)
 OVER_YEARS = re.compile(
     rf"\b(?:over|in|during|across) the (?:last|past|previous) (?P<n>{_W}) (?:fiscal )?years\b"
 )
@@ -448,10 +456,10 @@ COMPOUND_YEARS = re.compile(
     rf"\b(?P<a>{_W})[- ]year\b|\bfor (?P<b>{_W}) years\b|"
     rf"\b(?:over|in|during) the (?:last|past|previous) (?P<c>{_W}) (?:fiscal )?years\b"
 )
-DOUBLED = re.compile(r"\b(?P<more>more than )?(?P<times>doubled|tripled)\b")
+DOUBLED = re.compile(r"\b(?:(?P<more>more than )|at least )?(?P<times>doubled|tripled)\b")
 SHARE = re.compile(
     rf"^(?:the )?(?P<subject>.+?) (?:is|are|was|were|accounts? for|accounted for|"
-    rf"represents?|represented|makes? up|made up|comprises?|comprised) "
+    rf"represents?|represented|makes? up|made up|comprises?|comprised) (?:now |still )?"
     rf"(?P<cmp>{CMP}) (?P<num>-?\d+(?:\.\d+)?\s*(?:%|percent)|half|a half|a quarter|a third)"
     r" of (?:(?:total |the company's |its |all |net )?(?:net )?(?:revenues?|sales)|the total)$"
 )
@@ -500,6 +508,9 @@ def _metrics(text: str) -> list[tuple[int, int, str]]:
 
 
 def _named_period(text: str) -> Period | None:
+    between = BETWEEN_YEARS.search(text)
+    if between is not None and int(between["b"]) == int(between["a"]) + 1:
+        return Period("FY", fiscal_year=int(between["b"]))
     quarter = NAMED_QUARTER.search(text)
     if quarter:
         number = int(quarter["q"]) if quarter["q"] else ORDINAL_QUARTERS[quarter["ord"]]
@@ -726,8 +737,27 @@ def _direction(text: str, metric: str) -> ClaimTest | None:
 
 
 def compile_claim(text: str) -> ClaimTest | NotNumeric:
-    """The typed test a claim states, or why it is not a numeric claim this version computes."""
+    """The typed test a claim states, or why it is not a numeric claim this version computes.
+
+    A claim compiles only when the test explains every content word of it
+    (:func:`unexplained`); otherwise it is refused, naming the words left over.
+    """
     claim = _normalised(text)
+    result = _parse(claim)
+    if isinstance(result, NotNumeric) or SHARE.match(claim):
+        # A share is read by one anchored pattern, which explains the sentence whole.
+        return result
+    if isinstance(result.right, Term) and result.right.text() == result.left.text():
+        left_over = unexplained(text, result)
+        return NotNumeric(_not_understood(left_over) or "compares a measure with itself")
+    left_over = unexplained(text, result)
+    if left_over:
+        return NotNumeric(_not_understood(left_over))
+    return result
+
+
+def _parse(claim: str) -> ClaimTest | NotNumeric:
+    """The test the grammar reads in a normalised claim, before the whole-sentence check."""
     if not claim:
         return NotNumeric("an empty claim")
     if len(claim) > MAX_CLAIM_CHARS:
@@ -747,10 +777,19 @@ def compile_claim(text: str) -> ClaimTest | NotNumeric:
     share = _share(claim)
     if share is not None:
         return share
-    if PART_BEFORE_REVENUE.search(claim):
+    part = PART_BEFORE_MEASURE.search(claim)
+    if part is not None and PART_BEFORE_REVENUE.search(claim):
         return NotNumeric(
-            "a segment's or a geography's growth: breakdowns come from one filing's tags, "
-            "with no history in the facts"
+            f"'{part['part']}' names a part of the company (a segment, a product "
+            "or a geography), whose revenue is "
+            "not the company's: only a part's share of revenue is read, from the newest "
+            "filing's tags, and it has no history in the facts"
+        )
+    if part is not None:
+        return NotNumeric(
+            f"'{part['part']}' qualifies the measure, and a segment's, a product's "
+            "or a geography's figure is not the company's; only its share of revenue is read, "
+            "from the newest filing's tags"
         )
     named = _metrics(claim)
     if not named:
@@ -788,3 +827,160 @@ def compile_claim(text: str) -> ClaimTest | NotNumeric:
     if direction is not None:
         return direction
     return NotNumeric("states no direction, threshold or comparison that can be computed")
+
+
+# The whole-sentence rule
+
+# Words that carry no meaning for a test, whatever it is. Kept short on purpose: a word not
+# here must be explained by the test the claim compiled to, or the claim is refused.
+NO_MEANING = frozenset(
+    "a an the is are was were be been being has have had it its their this that of in on at "
+    "for to from by with as and than company company's still now currently total reported "
+    "also".split()
+)
+PART_BEFORE_MEASURE = re.compile(
+    rf"(?<![\w&])(?P<part>{PARTS})(?:'s)?\s+(?:{'|'.join(f'(?:{p})' for p, _ in METRIC_PHRASES)})"
+    r"(?![\w&])"
+)
+CURRENT = r"\b(?:latest|most recent|last|this|current|newest|recent|reported)\b"
+YEAR_ON_YEAR = (
+    r"\byear[- ]over[- ]year\b|\byoy\b|\by/y\b|\b(?:from|than|versus|vs\.?|compared (?:with|to)|"
+    r"on|over) (?:a|the|one) (?:year|prior year|year earlier)(?: earlier| ago| before)?\b|"
+    r"\ba year (?:earlier|ago|before)\b|"
+    r"\b(?:the )?(?:same|year-ago) quarter(?: a year (?:ago|earlier))?\b"
+)
+QUARTER_ON_QUARTER = rf"{SEQUENTIAL.pattern}|\b(?:the )?(?:previous|prior|preceding|last) quarter\b"
+YEAR_END = r"\b(?:at |as of )?(?:the )?(?:fiscal )?year[- ]end\b|\bend of the (?:fiscal )?year\b"
+COMPARING = r"\b(?:versus|vs\.?|compared (?:with|to)|against)\b"
+LEVEL_VERBS = r"\b(?:held|holds|stood|stands|came in|sits|sat|remained|remains|stayed|stays)\b"
+GROWTH_NOUNS = r"\b(?:growth|rate|grew|growing|grown)\b"
+COMPOUND_WORDS = r"\b(?:annual(?:ly)?|a year|per year|rate|growth|at)\b"
+_TOKEN = re.compile(r"¦|[^\s,;:()¦]+")
+
+
+def _period_words(term: Term, first: bool) -> list[str]:
+    """Patterns for the words that name ``term``'s period."""
+    period = term.period
+    words: list[str] = []
+    if period.fiscal_year is not None:
+        # Only the years this test is bound to are explained, never any other year named.
+        year = period.fiscal_year
+        fiscal = r"(?:fiscal(?: year)?\s*|fy\s?)"
+        if period.quarter is not None:
+            ordinal = {v: k for k, v in ORDINAL_QUARTERS.items()}[period.quarter]
+            words.append(
+                rf"\b(?:q{period.quarter}|(?:the )?{ordinal} quarter)\s+(?:of\s+)?{fiscal}{year}\b"
+            )
+            return words
+        words.append(rf"\b{fiscal}?{year}\b")
+        if term.fn == "yoy":
+            # Growth in a fiscal year is against the year before, which may be named too.
+            words.append(rf"\b(?:between|from) {fiscal}{year - 1} (?:and|to) {fiscal}?{year}\b")
+        if not first:
+            words.append(rf"\b(?:between|from) {fiscal}{year}\b")
+        return words
+    if period.kind == "TTM":
+        words.append(TTM.pattern)
+        if period.back:
+            words.append(YEAR_ON_YEAR)
+        return words
+    if period.kind == "FY":
+        words += [ANNUAL.pattern, YEAR_END]
+        if period.back == 0:
+            words.append(CURRENT)
+        else:
+            prior = r"\b(?:the )?(?:prior|previous) (?:fiscal )?year\b"
+            words += [OVER_YEARS.pattern, YEAR_ON_YEAR, prior]
+        return words
+    if period.kind == "Q":
+        words.append(QUARTERLY.pattern)
+        if period.back == 0:
+            words.append(CURRENT)
+        elif period.back == 1:
+            words.append(QUARTER_ON_QUARTER)
+        elif period.back == 4:
+            words.append(YEAR_ON_YEAR)
+    return words
+
+
+def _explaining(test: ClaimTest) -> list[str]:
+    """Every pattern whose words the test explains: measures, comparison, periods, form."""
+    terms = [test.left] + ([test.right] if isinstance(test.right, Term) else [])
+    words: list[str] = _form_words(test)
+    for index, term in enumerate(terms):
+        words += [pattern for pattern, key in METRIC_PHRASES if key == term.subject]
+        words += _period_words(term, index == 0)
+        if term.fn in ("yoy", "qoq", "cagr"):
+            words.append(GROWTH_NOUNS)
+        if term.fn == "yoy":
+            words.append(YEAR_ON_YEAR)
+        if term.fn == "qoq":
+            words.append(QUARTER_ON_QUARTER)
+    if isinstance(test.right, Term):
+        words.append(COMPARING)
+    return words
+
+
+def _form_words(test: ClaimTest) -> list[str]:
+    """The words of the test's form, longest phrases first, so they are struck out whole."""
+    words: list[str] = []
+    up_or_down = UP if test.op in (">", ">=") else DOWN
+    match test.form:
+        case "direction":
+            words.append(rf"\b(?:{up_or_down})\b")
+        case "threshold":
+            words += [PERCENT.pattern, AMOUNT.pattern, LEVEL_VERBS]
+        case "growth_threshold":
+            words += [PERCENT.pattern, DOUBLED.pattern, rf"\b(?:{UP}|{DOWN})\b", GROWTH_NOUNS]
+        case "faster_than":
+            words += [FASTER.pattern.split(" than ")[0] + " than", GROWTH_NOUNS]
+        case "acceleration":
+            words += [ACCELERATION.pattern, GROWTH_NOUNS]
+        case "compound":
+            words += [COMPOUND.pattern, COMPOUND_YEARS.pattern, PERCENT.pattern, COMPOUND_WORDS]
+        case "streak":
+            words += [STREAK.pattern, EACH_PERIOD.pattern, rf"\b(?:{UP})\b", QUARTER_ON_QUARTER]
+    return words
+
+
+def unexplained(text: str, test: ClaimTest) -> list[str]:
+    """The phrases of ``text`` that ``test`` does not explain, in order; empty when none.
+
+    Every match of a pattern the test explains (:func:`_explaining`), each found in the
+    whole claim so that the order of the patterns does not matter, is struck out; then
+    the words left are read in runs: a run with any word not in :data:`NO_MEANING` is
+    unexplained. A possessive name opening the claim ("NVIDIA's") names the company.
+    """
+    claim = _normalised(text)
+    subject = re.match(r"\s*([A-Z][\w&.-]*)(?:'s|’s)\b", text)
+    if subject is not None:
+        claim = re.sub(rf"^{re.escape(subject.group(1).casefold())}'s\b", "¦", claim)
+    covered = [False] * len(claim)
+    for pattern in _explaining(test):
+        for match in re.finditer(pattern, claim):
+            covered[match.start() : match.end()] = [True] * (match.end() - match.start())
+    claim = "".join(" ¦ " if hit else char for char, hit in zip(claim, covered, strict=True))
+    runs: list[list[str]] = [[]]
+    for token in _TOKEN.findall(claim):
+        if token == "¦":
+            runs.append([])
+        else:
+            runs[-1].append(token.strip(".'\""))
+    phrases = []
+    for run in runs:
+        words = [w for w in run if w]
+        while words and words[0] in NO_MEANING:
+            words.pop(0)
+        while words and words[-1] in NO_MEANING:
+            words.pop()
+        if words:
+            phrases.append(" ".join(words))
+    return phrases
+
+
+def _not_understood(phrases: list[str]) -> str:
+    if not phrases:
+        return ""
+    named = ", ".join(f"'{phrase}'" for phrase in phrases)
+    verb = "is" if len(phrases) == 1 else "are"
+    return f"not compiled: {named} {verb} not understood"

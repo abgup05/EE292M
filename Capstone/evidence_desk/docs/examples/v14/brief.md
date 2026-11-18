@@ -243,7 +243,7 @@ The outcome as of each of the 20 10-K and 10-Q filing dates in the 5 years to 20
 
 ### c3: Data center revenue is still growing year over year.
 
-Not a numeric claim this version computes: a segment's or a geography's growth: breakdowns come from one filing's tags, with no history in the facts.
+Not a numeric claim this version computes: 'data center' names a part of the company (a segment, a product or a geography), whose revenue is not the company's: only a part's share of revenue is read, from the newest filing's tags, and it has no history in the facts.
 
 ### c4: Data center is more than 80% of revenue.
 

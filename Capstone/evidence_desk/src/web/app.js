@@ -4234,7 +4234,7 @@ function openHashTarget() {
   if (target.kind === "thesis" && target.id !== state.thesisId) openThesis(target.id);
 }
 
-// ---------------------------------------------------------------- version 13 components
+// ---------------------------------------------------------------- version 14 components
 //
 // Drawn on the specimen page (specimen.html) from made-up data until the backend sends them.
 // Each takes the record's shape documented in docs/design.md and computes nothing: outcomes,
@@ -4499,13 +4499,13 @@ function initSpecimen() {
   for (const docket of [...document.querySelectorAll("#claim-list details.claim")].slice(0, 3)) docket.open = true;
   watchTimelineWidth();
 
-  const v13 = data.v13;
+  const v14 = data.v14;
   const width = Math.max(Math.round(document.getElementById("spec-tot")?.clientWidth || 880), 320);
-  document.getElementById("spec-compiled")?.replaceChildren(...list(v13.compiled_tests).map(compiledTest));
-  document.getElementById("spec-tot")?.replaceChildren(thesisOverTime(v13.thesis_over_time, width));
-  document.getElementById("spec-asof")?.replaceChildren(asOfControl(v13.as_of_control), h("span", { class: "spec-label", text: "The banner on a run made as of a past date" }), asOfBanner(v13.as_of_request));
-  document.getElementById("spec-ledger")?.replaceChildren(restatementLedger(v13.restatements));
-  document.getElementById("spec-peers")?.replaceChildren(peerStrip(v13.peers));
+  document.getElementById("spec-compiled")?.replaceChildren(...list(v14.compiled_tests).map(compiledTest));
+  document.getElementById("spec-tot")?.replaceChildren(thesisOverTime(v14.thesis_over_time, width));
+  document.getElementById("spec-asof")?.replaceChildren(asOfControl(v14.as_of_control), h("span", { class: "spec-label", text: "The banner on a run made as of a past date" }), asOfBanner(v14.as_of_request));
+  document.getElementById("spec-ledger")?.replaceChildren(restatementLedger(v14.restatements));
+  document.getElementById("spec-peers")?.replaceChildren(peerStrip(v14.peers));
 
   const marks = document.getElementById("spec-marks");
   if (marks) {
@@ -4520,7 +4520,7 @@ function initSpecimen() {
       h("div", { class: "spec-row" }, Object.keys(CHANGE_MARK).map(changeMark), h("ins", { class: "seg seg-add", text: "added words" }), h("del", { class: "seg seg-del", text: "removed words" })),
       h("span", { class: "spec-label", text: "Run status (never a filled tag)" }),
       h("div", { class: "spec-row" }, ["complete", "running", "partial", "failed"].map((st) => h("span", { class: `status-word st-${st}` }, statusMark(st), ` ${capitalize(st)}`))),
-      h("span", { class: "spec-label", text: "Test outcomes (version 13)" }),
+      h("span", { class: "spec-label", text: "Test outcomes (version 14)" }),
       h("div", { class: "spec-row" }, Object.keys(TEST_MARK).map((k) => testOutcome(k, ""))),
       h("span", { class: "spec-label", text: "Numbers" }),
       h("div", { class: "spec-row" }, h("span", { class: "fig-value", text: "$96.22B" }), h("span", { class: "fig-value is-neg", text: "−$1.40B" }), h("span", { class: "fig-value is-missing", text: "not reported" }), h("code", { text: "0001045810-26-000082" })),

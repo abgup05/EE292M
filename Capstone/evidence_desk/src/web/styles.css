@@ -1636,7 +1636,7 @@ p.bd-adds-yes, dt .bd-adds-yes { font-weight: 650; color: var(--ink); }
   .event > * { grid-column: 1; }
 }
 
-/* ------------------------------------------------------------ version 13 components (specimen first)
+/* ------------------------------------------------------------ version 14 components (specimen first)
  * A compiled test on a claim, the thesis over time, the as-of control and banner, the
  * restatement ledger and the peer strip. Every value, outcome, flip and percentile is the
  * record's own; these rules only place them. */

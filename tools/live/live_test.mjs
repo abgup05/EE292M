@@ -101,10 +101,32 @@ async function one(n) {
     assert.equal(reviewed.status, 200, "the kept review was not answered");
     review = ", its review too";
   }
-  return `run ${answer.id} ${run.status} in ${seconds} s; fresh process: server 404, shim 200 (${keptRun.status})${review}`;
+  // A finished run that read nothing would prove nothing: say what it holds and require some.
+  const count = (list) => (Array.isArray(list) ? list.length : 0);
+  const read = count(run.sources);
+  const findings = count(run.findings);
+  assert.ok(read > 0, `the run read no source: ${JSON.stringify(run.errors ?? []).slice(0, 300)}`);
+  assert.ok(findings > 0, `the run has no verified finding: ${JSON.stringify(run.errors ?? []).slice(0, 300)}`);
+  const why = [...(run.coverage_limits ?? []), ...(run.errors ?? [])];
+  if (process.env.LIVE_TEST_WHY) console.log(`      v${n} is ${run.status} because: ${why.join(" | ").slice(0, 900)}`);
+  return `run ${answer.id} ${run.status} (${read} sources, ${findings} findings, ${count(run.errors)} errors) in ${seconds} s; fresh process: server 404, shim 200 (${keptRun.status})${review}`;
 }
 
-const status = await (await fetch(`${first}/live/status`)).json();
+/** The function validates its workbook before it answers: give each process a minute to start. */
+async function ready(server) {
+  for (let i = 0; ; i += 1) {
+    try {
+      const response = await fetch(`${server}/live/status`);
+      if (response.ok) return response.json();
+    } catch (error) {
+      if (i >= 60) throw new Error(`${server} did not answer within a minute: ${error.cause?.code ?? error.message}`);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+}
+
+const status = await ready(first);
+await ready(fresh);
 const versions = only.length ? only.map(Number) : Object.keys(status.versions).map(Number);
 let failed = 0;
 for (const n of versions) {
@@ -113,6 +135,47 @@ for (const n of versions) {
   } catch (error) {
     failed += 1;
     console.log(`FAIL  v${String(n).padEnd(3)} ${error.message}`);
+  }
+}
+
+/** The held answer really is sent as it goes: the first line arrives before the last. */
+async function streamed(n) {
+  const meta = await (await fetch(`${first}/v${n}/api/meta`)).json();
+  const response = await fetch(`${first}/v${n}/api/runs`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-live-hold": "ndjson" },
+    body: JSON.stringify({ ...meta.example, extra_urls: [] }),
+  });
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get("content-type"), /ndjson/);
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  const began = Date.now();
+  let text = "";
+  let firstAt = null;
+  let firstChunk = "";
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    const piece = decoder.decode(value, { stream: true });
+    if (firstAt === null) { firstAt = Date.now() - began; firstChunk = piece; }
+    text += piece;
+  }
+  const kinds = text.trim().split("\n").map((line) => JSON.parse(line).kind);
+  assert.equal(kinds[0], "started");
+  assert.equal(kinds.at(-1), "finished");
+  assert.ok(!firstChunk.includes('"kind":"finished"'), "the whole answer came in one piece: nothing was streamed");
+  return `held run start, as the shim asks for it: first line after ${firstAt} ms, last after ${Date.now() - began} ms; lines: ${kinds.join(", ")}`;
+}
+
+const thesisVersions = versions.filter((n) => n >= 2);
+if (thesisVersions.length) {
+  const n = thesisVersions.at(-1);
+  try {
+    console.log(`ok    v${String(n).padEnd(3)} ${await streamed(n)}`);
+  } catch (error) {
+    failed += 1;
+    console.log(`FAIL  v${String(n).padEnd(3)} held run start: ${error.message}`);
   }
 }
 const after = await (await fetch(`${first}/live/status`)).json();

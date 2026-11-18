@@ -1,4 +1,4 @@
-.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe replay golden-check golden-baseline profile bench eval eval-validate golden-sheet backup restore-check up-recorded live-walk changes breakdowns lock clean data vercel-deps live-imports referee versions-up versions-down versions-status versions-logs pr pr-describe pr-merge site-survey site-run-v1 site-export site-index site-scan site-test site-browse site-check site-vendor site-live-up site-live-down site-live-test
+.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe replay golden-check golden-baseline profile bench eval eval-validate golden-sheet backup restore-check up-recorded live-walk changes breakdowns lock clean data vercel-deps live-imports live-up live-down live-test live-logs referee versions-up versions-down versions-status versions-logs pr pr-describe pr-merge site-survey site-run-v1 site-export site-index site-scan site-test site-browse site-check site-vendor site-live-up site-live-down site-live-test
 
 # make <target> runs the capstone by default; make APP=week2 <target> runs the Week 2 app.
 APP ?= capstone
@@ -6,7 +6,7 @@ APP_DIR_capstone := Capstone/evidence_desk
 APP_DIR_week2 := Homework/Week 2/visualization
 APP_DIR := $(APP_DIR_$(APP))
 
-help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe replay golden-check golden-baseline profile bench eval eval-validate golden-sheet backup restore-check up-recorded live-walk changes breakdowns lock clean data vercel-deps live-imports:
+help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe replay golden-check golden-baseline profile bench eval eval-validate golden-sheet backup restore-check up-recorded live-walk changes breakdowns lock clean data vercel-deps live-imports live-up live-down live-test live-logs:
 	@test -n '$(APP_DIR)' || { echo "Unknown APP '$(APP)'; use capstone or week2"; exit 1; }
 	@$(MAKE) -C '$(APP_DIR)' $@
 
@@ -122,8 +122,9 @@ site-scan:
 
 site-test:
 	@$(SITE_PY) -m unittest discover -s tools/snapshots -p 'test_*.py'
+	@$(SITE_PY) -m unittest discover -s tools/live -p 'test_*.py'
 	@docker run --rm -v "$(CURDIR):/repo:ro" -w /repo node:24-slim sh -c \
-	  'node --test tools/snapshots/test_shim.mjs && for f in "$(SITE_DIR)"/v*/snapshot.js; do node --check "$$f" || exit 1; done'
+	  'node --test tools/snapshots/test_shim.mjs tools/live/test_shim.mjs && for f in "$(SITE_DIR)"/v*/snapshot.js; do node --check "$$f" || exit 1; done'
 
 # Each snapshot as a browser renders it, served by the Week 2 app on 127.0.0.1:8765 (started
 # and stopped here): headless Chromium dumps the DOM of /vN/ and, from version 2 on, /vN/?sample,
@@ -175,3 +176,14 @@ site-vendor:
 	    | $(LIVE_PY_STDIN) tools/live/vendor.py seed --ref "$$ref" --commit "$$commit" --out '$(LIVE_DIR)'
 	@$(LIVE_PY_STDIN) tools/live/vendor.py prune --out '$(LIVE_DIR)' $$($(LIVE_LINES) | awk '{print $$1}')
 	@$(MAKE) -s APP=week2 live-imports
+
+site-live-up:
+	@$(MAKE) -s APP=week2 live-up
+	@curl -s -o /dev/null -m 5 --retry 30 --retry-delay 1 --retry-all-errors http://127.0.0.1:8790/live/status \
+	  && echo "The function as Vercel runs it: http://127.0.0.1:8790/versions"
+
+site-live-down:
+	@$(MAKE) -s APP=week2 live-down
+
+site-live-test:
+	@$(MAKE) -s APP=week2 live-test VERSIONS='$(if $(filter command line environment,$(origin VERSIONS)),$(VERSIONS),)'

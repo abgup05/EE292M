@@ -3,16 +3,20 @@
 The versions were written for one trusted person on 127.0.0.1. Online, anyone can call them and
 a model-backed run is paid by the site owner's key, so before a request reaches a version:
 
-- only GET and HEAD, and the few POST and PUT addresses a version's page uses, are let through;
-  every DELETE and every other write is refused (:data:`WRITES`);
+- only GET and HEAD, and the few writes a version's page makes, are let through; every other
+  write is refused (:data:`WRITES`). The one DELETE let through removes a watch, which the
+  page offers beside setting one; no address deletes a run, a thesis or a file;
 - a request body is at most ``LIVE_MAX_BODY_BYTES`` and a query string at most
   :data:`MAX_QUERY_BYTES`;
 - visitor-supplied URLs are refused: ``extra_urls`` must be empty, and version 1's
   ``seed_urls`` may name only the pages of its own example (:data:`V1_EXAMPLE_URLS`);
 - a run start is admitted only within the caps of :class:`Caps`; a run that would use the model
   is admitted only when no other model run is in progress on this instance;
-- reads that make the server fetch and compare filings (:data:`COSTLY_READS`) are capped per
+- reads that make the server fetch and compare filings (:func:`costly_read`) are capped per
   client and day.
+
+A visitor is told apart by the address Vercel's proxy reports, which a visitor cannot set; a
+forwarding header is believed only where Vercel runs the function (:func:`client_of`).
 
 Every count is kept in this process's memory, so every cap is per server instance: a visitor
 whose requests reach several instances can start more runs than one cap allows. Each refusal
@@ -56,10 +60,15 @@ WRITES: dict[Era, list[tuple[str, re.Pattern[str]]]] = {
         ("POST", re.compile(r"/api/inbox/read")),
         ("PUT", re.compile(r"/api/runs/[^/]+/findings/[^/]+/decision")),
         ("PUT", re.compile(r"/api/theses/[^/]+/watch")),
+        ("DELETE", re.compile(r"/api/theses/[^/]+/watch")),
     ],
 }
 #: Reads that make the server fetch and compare whole filings from EDGAR.
 COSTLY_READS = re.compile(r"/api/companies/.*|/api/runs/[^/]+/changes")
+#: A brief asked for with its changed paragraphs makes the same comparison.
+BRIEF = re.compile(r"/api/runs/[^/]+/export\.md")
+#: Set by Vercel where it runs the function; only there is a forwarding header believed.
+VERCEL_VARIABLE = "VERCEL"
 #: The two pages of version 1's own example (its app.js); no other address is fetched for it.
 V1_EXAMPLE_URLS = frozenset(
     {
@@ -84,6 +93,7 @@ class Caps:
 
     LIVE_MODEL_RUNS_PER_DAY: int = 20
     LIVE_MODEL_RUNS_PER_CLIENT_PER_DAY: int = 3
+    LIVE_RUNS_PER_DAY: int = 300
     LIVE_RUNS_PER_CLIENT_PER_DAY: int = 20
     LIVE_RUNS_AT_ONCE: int = 2
     LIVE_READS_PER_CLIENT_PER_DAY: int = 120
@@ -141,13 +151,31 @@ class Refusal:
         return json.dumps(content).encode()
 
 
-def client_of(headers: Mapping[str, str], fallback: str) -> str:
-    """The visitor's address: the one Vercel's proxy reports, else the connection's."""
-    for name in ("x-vercel-forwarded-for", "x-real-ip", "x-forwarded-for"):
-        value = headers.get(name, "").split(",")[0].strip()
-        if value:
-            return value[:64]
+def client_of(
+    headers: Mapping[str, str], fallback: str, environ: Mapping[str, str] | None = None
+) -> str:
+    """The visitor's address: on Vercel the one its proxy reports, else the connection's.
+
+    Vercel's proxy writes ``x-vercel-forwarded-for``, ``x-real-ip`` and ``x-forwarded-for``
+    itself, over whatever the visitor sent. Anywhere else nothing stands between the visitor
+    and this process, so a header would be the visitor's own word and is not read.
+    """
+    environ = os.environ if environ is None else environ
+    if environ.get(VERCEL_VARIABLE, "").strip():
+        for name in ("x-vercel-forwarded-for", "x-real-ip", "x-forwarded-for"):
+            value = headers.get(name, "").split(",")[0].strip()
+            if value:
+                return value[:64]
     return fallback
+
+
+def costly_read(method: str, path: str, query: bytes) -> bool:
+    """True for a read that makes the server fetch and compare filings from EDGAR."""
+    if method != "GET":
+        return False
+    if COSTLY_READS.fullmatch(path):
+        return True
+    return bool(BRIEF.fullmatch(path)) and b"changes" in query
 
 
 def run_start(era: Era, method: str, path: str) -> str | None:
@@ -272,6 +300,12 @@ class Guard:
                     429,
                     f"{self.held} runs are in progress on this server, its limit at once. "
                     "Try again in a few minutes.",
+                )
+            if self.runs_today >= caps.LIVE_RUNS_PER_DAY:
+                return Refusal(
+                    429,
+                    f"This server has started its {caps.LIVE_RUNS_PER_DAY} runs for today "
+                    "(UTC). Try again tomorrow, or run the version locally.",
                 )
             if model:
                 if self.model_held >= 1:

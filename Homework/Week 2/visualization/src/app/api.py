@@ -18,9 +18,10 @@ from live.site import LiveVersionApp, Site
 
 WEB_DIR = Path(__file__).resolve().parents[1] / "web"
 # The capstone's versions (docs/site-live.md at the repository root): version N runs live at
-# /vN/ from vendored/vN (src/live), and the table of versions is at /versions. A version that
-# has no vendored copy but a recorded snapshot (tools/snapshots/export.py) is served from
-# snapshots/vN as recorded, read-only static files.
+# /vN/ from vendored/vN (src/live), and the table of versions is at /versions. The recorded
+# snapshot of a version (snapshots/vN, read-only static files written by
+# tools/snapshots/export.py) is served in its place when the version has no vendored copy, or
+# when its vendored copy cannot be built on this server.
 SNAPSHOT_DIR = Path(__file__).resolve().parents[2] / "snapshots"
 SNAPSHOT_NAME = re.compile(r"v[0-9]{1,3}")
 LIVE = Site()
@@ -202,7 +203,12 @@ for _number in LIVE.versions:
     app.add_api_route(
         f"/{_name}", _to_directory(_name), methods=["GET", "HEAD"], include_in_schema=False
     )
-    app.mount(f"/{_name}", LiveVersionApp(LIVE, _number), name=f"live-{_name}")
+    _recorded = (
+        StaticFiles(directory=SNAPSHOT_DIR / _name, html=True)
+        if (SNAPSHOT_DIR / _name / "index.html").is_file()
+        else None
+    )
+    app.mount(f"/{_name}", LiveVersionApp(LIVE, _number, _recorded), name=f"live-{_name}")
 for _name in recorded_names():
     app.add_api_route(
         f"/{_name}", _to_directory(_name), methods=["GET", "HEAD"], include_in_schema=False

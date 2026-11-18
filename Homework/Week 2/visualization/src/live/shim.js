@@ -37,10 +37,23 @@
   function keep(key, entry) {
     memory.set(key, entry);
     if (!entry.done) return;
+    const text = JSON.stringify(entry);
     try {
-      window.sessionStorage.setItem(LIVE.storage + key, JSON.stringify(entry));
+      window.sessionStorage.setItem(LIVE.storage + key, text);
     } catch {
-      /* too large or storage off: kept for this page only */
+      // Full (a run record is some hundreds of kilobytes): drop this version's older kept runs
+      // and try once more; if that fails too, the run is kept for this page only.
+      try {
+        const names = [];
+        for (let i = 0; i < window.sessionStorage.length; i += 1) {
+          const name = window.sessionStorage.key(i);
+          if (name && name.startsWith(LIVE.storage)) names.push(name);
+        }
+        for (const name of names) window.sessionStorage.removeItem(name);
+        window.sessionStorage.setItem(LIVE.storage + key, text);
+      } catch {
+        /* storage off or the run alone is too large */
+      }
     }
   }
 

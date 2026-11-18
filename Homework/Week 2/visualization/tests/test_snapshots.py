@@ -30,8 +30,17 @@ def call(
     }
     messages: list[dict] = []
 
+    sent = False
+
     async def receive() -> dict:
-        return {"type": "http.request", "body": body, "more_body": False}
+        # The body once; after it the client stays connected and says nothing more (a
+        # response that listens for a disconnect while it sends must not be given one).
+        nonlocal sent
+        if not sent:
+            sent = True
+            return {"type": "http.request", "body": body, "more_body": False}
+        await asyncio.sleep(3600)
+        return {"type": "http.disconnect"}
 
     async def send(message: dict) -> None:
         messages.append(message)

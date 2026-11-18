@@ -6,6 +6,8 @@
   ``live-shim.js`` added (the vendored file itself is not changed); ``/vN/live-shim.js`` is the
   shim with this version's settings;
 - everything else passes :mod:`live.guard` and then goes to the version's own app, unchanged;
+- a version that cannot be built on this server is answered by its recorded snapshot instead
+  (``snapshots/vN``, read-only, with its own banner), and ``/live/status`` says so;
 - a request that starts a run is held open until the run has finished (or until
   ``LIVE_HOLD_SECONDS``): a serverless instance may be frozen once a response is sent, and the
   next request may reach another instance. With ``x-live-hold: ndjson`` (sent by the shim) the
@@ -33,13 +35,13 @@ from urllib.parse import quote
 import anyio
 
 from live.guard import (
-    COSTLY_READS,
     Caps,
     Guard,
     Refusal,
     check_body,
     check_request,
     client_of,
+    costly_read,
     key_present,
     run_start,
     user_agent_present,
@@ -177,9 +179,16 @@ async def call(app: Any, scope: Scope, method: str, path: str, body: bytes = b""
 class LiveVersionApp:
     """The ASGI app at ``/vN`` for one version (see the module's description)."""
 
-    def __init__(self, site: Site, number: int) -> None:
+    def __init__(self, site: Site, number: int, recorded: Any = None) -> None:
+        """``recorded`` is the ASGI app of the version's recorded snapshot, if it has one.
+
+        It answers in the live version's place when the version cannot be built on this
+        server, so a visitor gets the read-only recording and its own banner, not an error.
+        """
         self.site = site
         self.version = site.versions[number]
+        self.version.has_recording = recorded is not None
+        self.recorded = recorded
         self.info = self.version.info
         self.prefix = f"/v{number}"
 
@@ -265,6 +274,16 @@ class LiveVersionApp:
         scope.update(root_path=self.prefix, path=self.prefix + sub, raw_path=(self.prefix + sub).encode())
         method = scope["method"]
         head = method == "HEAD"
+        try:
+            app = await anyio.to_thread.run_sync(self.version.load)
+        except RuntimeError as exc:
+            if self.recorded is not None:
+                await self.recorded(scope, receive, send)
+                return
+            log.error("version %s could not be built: %s", self.info.number, exc)
+            message = f"Version {self.info.number} could not be started on this server ({exc})."
+            await _refuse(send, Refusal(503, message))
+            return
         if sub in ("", "/", "/index.html") and method in ("GET", "HEAD"):
             await _respond(send, 200, self.page(), "text/html; charset=utf-8", head)
             return
@@ -284,17 +303,10 @@ class LiveVersionApp:
         refusal = check_body(era, method, sub, body)
         headers = _headers(scope)
         client = client_of(headers, (scope.get("client") or ("unknown", 0))[0])
-        if refusal is None and method == "GET" and COSTLY_READS.fullmatch(sub):
+        if refusal is None and costly_read(method, sub, scope.get("query_string", b"")):
             refusal = self.site.guard.admit_read(client)
         if refusal:
             await _refuse(send, refusal)
-            return
-        try:
-            app = await anyio.to_thread.run_sync(self.version.load)
-        except RuntimeError as exc:
-            log.error("version %s could not be built: %s", self.info.number, exc)
-            message = f"Version {self.info.number} could not be started on this server ({exc})."
-            await _refuse(send, Refusal(503, message))
             return
         poll = run_start(era, method, sub)
         if poll is not None:

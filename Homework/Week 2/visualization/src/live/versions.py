@@ -167,6 +167,7 @@ class Version:
     seed: Seed
     app: Any = None
     error: str | None = None
+    has_recording: bool = False
     _lock: threading.Lock = field(default_factory=threading.Lock)
 
     def load(self) -> Any:
@@ -184,7 +185,14 @@ class Version:
 
     def state(self) -> dict[str, Any]:
         """For /live/status: no path, no message, only what is known."""
+        if self.app is not None:
+            serving = "live"
+        elif self.error is None:
+            serving = "not asked yet"
+        else:
+            serving = "recorded" if self.has_recording else "unavailable"
         return {
+            "serving": serving,
             "ref": self.info.ref,
             "commit": self.info.commit[:12],
             "mounted": True,

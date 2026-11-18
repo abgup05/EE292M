@@ -13,7 +13,7 @@ from test_snapshots import call
 
 import live.site as site_module
 from app.api import LIVE
-from live.guard import Caps, Guard, Refusal, check_body, check_request, client_of
+from live.guard import Caps, Guard, Refusal, check_body, check_request, client_of, costly_read
 from live.site import LiveVersionApp
 
 
@@ -30,7 +30,7 @@ def test_shim_carries_this_versions_settings():
 @pytest.mark.parametrize(
     ("method", "path"),
     [
-        ("DELETE", "/v14/api/theses/t1/watch"),
+        ("DELETE", "/v14/api/theses/t1"),
         ("DELETE", "/v4/api/runs/r1"),
         ("POST", "/v14/api/backup"),
         ("PUT", "/v14/api/runs/r1"),
@@ -112,10 +112,61 @@ def test_without_a_key_runs_are_not_model_runs_and_have_their_own_cap():
     assert isinstance(guard.admit_run("a"), Refusal)
 
 
-def test_the_client_is_the_address_vercel_reports():
-    assert client_of({"x-vercel-forwarded-for": "203.0.113.9", "x-forwarded-for": "1.2.3.4"}, "c") == "203.0.113.9"
-    assert client_of({"x-forwarded-for": "198.51.100.7, 10.0.0.1"}, "c") == "198.51.100.7"
-    assert client_of({}, "fallback") == "fallback"
+def test_the_client_is_the_address_vercel_reports_and_only_on_vercel():
+    vercel = {"VERCEL": "1"}
+    headers = {"x-vercel-forwarded-for": "203.0.113.9", "x-forwarded-for": "1.2.3.4"}
+    assert client_of(headers, "c", vercel) == "203.0.113.9"
+    assert client_of({"x-forwarded-for": "198.51.100.7, 10.0.0.1"}, "c", vercel) == "198.51.100.7"
+    assert client_of({}, "fallback", vercel) == "fallback"
+    # Off Vercel nothing stands in front of the process: a header is the visitor's own word.
+    assert client_of(headers, "192.0.2.5", {}) == "192.0.2.5"
+
+
+def test_a_spoofed_forwarding_header_does_not_buy_more_runs(held, monkeypatch):
+    monkeypatch.delenv("VERCEL", raising=False)
+    monkeypatch.setattr(LIVE.guard, "caps", Caps(LIVE_RUNS_PER_CLIENT_PER_DAY=1))
+    monkeypatch.setattr(LIVE.guard, "_client_runs", {})
+    first = asgi(held, "/v2/api/runs", "POST", b"{}", [(b"x-forwarded-for", b"198.51.100.1")])
+    again = asgi(held, "/v2/api/runs", "POST", b"{}", [(b"x-forwarded-for", b"198.51.100.2")])
+    assert first[0] == 202
+    assert again[0] == 429 and "per visitor" in json.loads(again[2])["error"]
+
+
+def test_every_run_start_address_passes_the_guard_whoever_calls_it(held, monkeypatch):
+    """Without the shim's header and whatever the address, a run start is counted."""
+    monkeypatch.setattr(LIVE.guard, "caps", Caps(LIVE_RUNS_PER_DAY=0))
+    for path in ("/v2/api/runs", "/v2/api/theses/t1/runs", "/v2/api/inbox/i1/run"):
+        status, _, body = asgi(held, path, "POST", b"{}", [])
+        assert status == 429, path
+        assert "runs for today" in json.loads(body)["error"]
+
+
+def test_removing_a_watch_is_let_through_and_nothing_else_is_deleted():
+    assert check_request("thesis", "DELETE", "/api/theses/t1/watch", b"", LIVE.caps) is None
+    for path in ("/api/theses/t1", "/api/runs/r1", "/api/inbox/i1", "/api/theses/t1/watch/"):
+        assert check_request("thesis", "DELETE", path, b"", LIVE.caps).status == 405, path
+
+
+def test_a_brief_with_its_changes_counts_as_a_costly_read():
+    assert costly_read("GET", "/api/companies/NVDA/metrics", b"")
+    assert costly_read("GET", "/api/runs/r1/export.md", b"reviewed=true&changes=true")
+    assert not costly_read("GET", "/api/runs/r1/export.md", b"reviewed=true")
+    assert not costly_read("GET", "/api/runs/r1", b"")
+
+
+def test_a_version_that_cannot_be_built_is_answered_by_its_recording(monkeypatch):
+    version = LIVE.versions[14]
+    monkeypatch.setattr(version, "app", None)
+    monkeypatch.setattr(version, "error", "ImportError")
+    status, _, body = call("/v14/")
+    assert status == 200
+    page = body.decode()
+    assert 'data-snapshot-version="14"' in page and "data-live-version" not in page
+    assert call("/v14/snapshot.js")[0] == 200
+    assert call("/v14/api/runs", "POST", b"{}")[0] == 405
+    report = json.loads(call("/live/status")[2])
+    assert report["versions"]["14"]["serving"] == "recorded"
+    assert report["versions"]["14"]["import_error"] == "ImportError"
 
 
 def test_status_reports_booleans_and_counts_never_the_values(monkeypatch):

@@ -1,0 +1,54 @@
+{
+  "kind_labels": {
+    "not_relevant": "Seen, not relevant",
+    "waiting": "Run waiting",
+    "running": "Running",
+    "moved": "Something moved",
+    "nothing_moved": "Nothing moved",
+    "failed": "Could not be completed"
+  },
+  "collapsed_kinds": [
+    "not_relevant"
+  ],
+  "policy_labels": {
+    "auto": "Run at once",
+    "ask": "Ask before running"
+  },
+  "default_policy": "ask",
+  "job_state_labels": {
+    "queued": "Queued",
+    "running": "Running",
+    "done": "Done",
+    "failed": "Failed"
+  },
+  "rule_labels": {
+    "periodic_report": "New annual or quarterly report",
+    "results_announced": "Results announced",
+    "event_category": "8-K item on a claim's subject",
+    "no_items": "8-K with no items listed",
+    "routine": "Routine 8-K",
+    "no_match": "8-K on no claim's subject",
+    "extension": "Added rule"
+  },
+  "forms": [
+    "10-K",
+    "10-Q",
+    "8-K",
+    "8-K/A"
+  ],
+  "limits": {
+    "min_interval_seconds": 300,
+    "default_interval_seconds": 900,
+    "default_auto_runs_per_day": 5,
+    "max_attempts": 4,
+    "backoff_seconds": [
+      60,
+      300,
+      1800
+    ],
+    "lease_seconds": 900,
+    "paragraphs_per_claim": 3,
+    "default_page_size": 20,
+    "max_page_size": 100
+  }
+}

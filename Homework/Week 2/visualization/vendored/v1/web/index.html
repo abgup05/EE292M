@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Evidence Desk</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="masthead">
+    <h1>Evidence Desk</h1>
+    <p>One research question, one decision, a brief whose findings trace to exact source passages.</p>
+  </header>
+
+  <main class="layout">
+    <section class="panel" id="form-panel">
+      <h2>Start a run</h2>
+      <form id="research-form" novalidate>
+        <label for="question">Research question <span class="hint">20–2,000 characters</span></label>
+        <textarea id="question" name="question" rows="3" required></textarea>
+
+        <label for="decision">Decision it informs <span class="hint">10–500 characters</span></label>
+        <input id="decision" name="decision" type="text" required>
+
+        <label for="scope_notes">Scope notes <span class="hint">optional, up to 5,000 characters</span></label>
+        <textarea id="scope_notes" name="scope_notes" rows="2"></textarea>
+
+        <label for="seed_urls">Seed URLs <span class="hint">optional, one public http(s) page per line, up to 20</span></label>
+        <textarea id="seed_urls" name="seed_urls" rows="3" spellcheck="false"></textarea>
+
+        <label for="source_budget">Source budget <span class="hint">6–15 successfully extracted pages</span></label>
+        <input id="source_budget" name="source_budget" type="number" min="6" max="15" value="10">
+
+        <ul id="form-errors" class="errors" hidden></ul>
+
+        <div class="actions">
+          <button type="submit" id="submit">Run research</button>
+          <button type="button" id="load-example" class="secondary">Load seed example</button>
+        </div>
+      </form>
+
+      <h2>Recent runs</h2>
+      <ul id="recent" class="recent"></ul>
+    </section>
+
+    <section class="panel" id="result-panel" hidden>
+      <div id="status-banner" class="banner"></div>
+      <div class="run-meta" id="run-meta"></div>
+
+      <h2>Direct answer</h2>
+      <p id="direct-answer"></p>
+
+      <h2>Findings</h2>
+      <div id="findings"></div>
+
+      <h2>Disagreements</h2>
+      <ul id="disagreements"></ul>
+
+      <h2>Unknowns and gaps</h2>
+      <ul id="unknowns"></ul>
+
+      <h2>Next research steps</h2>
+      <ul id="next-steps"></ul>
+
+      <h2>Subquestions</h2>
+      <ul id="subquestions"></ul>
+
+      <h2>Sources</h2>
+      <table id="sources">
+        <thead>
+          <tr><th>ID</th><th>Title</th><th>Publisher</th><th>Published</th><th>Retrieved (UTC)</th><th>Status</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <h2>Coverage limits</h2>
+      <ul id="coverage"></ul>
+
+      <h2>Errors</h2>
+      <ul id="run-errors"></ul>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

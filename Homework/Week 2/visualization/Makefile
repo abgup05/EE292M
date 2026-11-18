@@ -1,4 +1,4 @@
-.PHONY: help build up down verify test lint fmt smoke lock clean logs shell data vercel-deps
+.PHONY: help build up down verify test lint fmt smoke lock clean logs shell data vercel-deps live-imports
 
 export COMPOSE_PROJECT_NAME := ee292m-week2-radius
 export LOCAL_UID := $(shell id -u)
@@ -57,3 +57,8 @@ shell:
 
 clean:
 	$(COMPOSE) down --rmi local --remove-orphans
+
+# Every vendored capstone version (vendored/, written by make site-vendor at the repository
+# root) imports whole under its new name and answers its page and first API address.
+live-imports:
+	$(COMPOSE) run --rm --no-deps app pytest -q -p no:cacheprovider tests/test_live_vendored.py

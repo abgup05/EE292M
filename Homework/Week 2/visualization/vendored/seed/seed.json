@@ -1,0 +1,190 @@
+{
+  "commit": "b372c7f88a3964f74bdf4e6559dfad08d70d86a5",
+  "entries": [
+    {
+      "bytes": 429157,
+      "content_type": "application/json",
+      "file": "companyfacts-CIK0000320193.json.gz",
+      "retrieved_at": "2026-11-17T11:21:19.264185+00:00",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000320193.json",
+      "whole": false
+    },
+    {
+      "bytes": 453866,
+      "content_type": "application/json",
+      "file": "companyfacts-CIK0000789019.json.gz",
+      "retrieved_at": "2026-11-17T11:21:19.366808+00:00",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000789019.json",
+      "whole": false
+    },
+    {
+      "bytes": 403283,
+      "content_type": "application/json",
+      "file": "companyfacts-CIK0001045810.json.gz",
+      "retrieved_at": "2026-11-17T11:21:19.071582+00:00",
+      "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001045810.json",
+      "whole": false
+    },
+    {
+      "bytes": 26942,
+      "content_type": "application/json",
+      "file": "submissions-CIK0001045810.json.gz",
+      "retrieved_at": "2026-11-17T11:09:13.531769+00:00",
+      "url": "https://data.sec.gov/submissions/CIK0001045810.json",
+      "whole": false
+    },
+    {
+      "bytes": 81389,
+      "content_type": "text/html",
+      "file": "nist_ai_rmf.html.gz",
+      "retrieved_at": "2026-10-22T05:35:28.679506+00:00",
+      "url": "https://www.nist.gov/publications/artificial-intelligence-risk-management-framework-ai-rmf-10",
+      "whole": true
+    },
+    {
+      "bytes": 1968291,
+      "content_type": "text/html",
+      "file": "nvda-10k-20260125.htm.gz",
+      "retrieved_at": "2026-11-17T11:08:51.748534+00:00",
+      "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/nvda-20260125.htm",
+      "whole": true
+    },
+    {
+      "bytes": 31581,
+      "content_type": "text/html",
+      "file": "nvda-8k-0001045810-26-000024.htm.gz",
+      "retrieved_at": "2026-11-18T07:52:11.335002+00:00",
+      "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000024/nvda-20260302.htm",
+      "whole": true
+    },
+    {
+      "bytes": 22680,
+      "content_type": "text/html",
+      "file": "nvda-8k-0001045810-26-000026.htm.gz",
+      "retrieved_at": "2026-11-18T07:52:11.191324+00:00",
+      "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000026/nvda-20260424.htm",
+      "whole": true
+    },
+    {
+      "bytes": 20734,
+      "content_type": "text/html",
+      "file": "nvda-8k-0001045810-26-000028.htm.gz",
+      "retrieved_at": "2026-11-18T07:52:11.097808+00:00",
+      "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000028/nvda-20260507.htm",
+      "whole": true
+    },
+    {
+      "bytes": 27281,
+      "content_type": "text/html",
+      "file": "nvda-8k-0001045810-26-000051.htm.gz",
+      "retrieved_at": "2026-11-18T07:52:10.941744+00:00",
+      "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000051/nvda-20260520.htm",
+      "whole": true
+    },
+    {
+      "bytes": 1167528,
+      "content_type": "text/html",
+      "file": "nvda-10q-20260426.htm.gz",
+      "retrieved_at": "2026-11-17T11:49:49.944228+00:00",
+      "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000052/nvda-20260426.htm",
+      "whole": true
+    },
+    {
+      "bytes": 62325,
+      "content_type": "text/html",
+      "file": "nvda-8k-0001045810-26-000056.htm.gz",
+      "retrieved_at": "2026-11-18T07:52:10.616779+00:00",
+      "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000056/nvda-20260624.htm",
+      "whole": true
+    },
+    {
+      "bytes": 22650,
+      "content_type": "text/html",
+      "file": "nvda-8k-0001045810-26-000060.htm.gz",
+      "retrieved_at": "2026-11-18T07:52:10.569870+00:00",
+      "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000060/nvda-20260628.htm",
+      "whole": true
+    },
+    {
+      "bytes": 31896,
+      "content_type": "text/html",
+      "file": "nvda-8k-0001045810-26-000069.htm.gz",
+      "retrieved_at": "2026-11-18T07:52:10.347676+00:00",
+      "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000069/nvda-20260817.htm",
+      "whole": true
+    },
+    {
+      "bytes": 26935,
+      "content_type": "text/html",
+      "file": "nvda-8k-0001045810-26-000073.htm.gz",
+      "retrieved_at": "2026-11-18T07:52:10.182901+00:00",
+      "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000073/nvda-20260826.htm",
+      "whole": true
+    },
+    {
+      "bytes": 1517522,
+      "content_type": "text/html",
+      "file": "nvda-10q-20260726.htm.gz",
+      "retrieved_at": "2026-11-17T11:08:51.597885+00:00",
+      "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/nvda-20260726.htm",
+      "whole": true
+    },
+    {
+      "bytes": 29659,
+      "content_type": "text/html",
+      "file": "nvda-8k-0001045810-26-000078.htm.gz",
+      "retrieved_at": "2026-11-18T07:52:10.106283+00:00",
+      "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000078/nvda-20260902.htm",
+      "whole": true
+    },
+    {
+      "bytes": 23546,
+      "content_type": "text/html",
+      "file": "nvda-8k-0001045810-26-000082.htm.gz",
+      "retrieved_at": "2026-11-18T07:52:10.009047+00:00",
+      "url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000082/nvda-20261111.htm",
+      "whole": true
+    },
+    {
+      "bytes": 34647,
+      "content_type": "text/html",
+      "file": "nvda-8k-0001193125-26-275783.htm.gz",
+      "retrieved_at": "2026-11-18T07:52:10.760036+00:00",
+      "url": "https://www.sec.gov/Archives/edgar/data/1045810/000119312526275783/d48176d8k.htm",
+      "whole": true
+    },
+    {
+      "bytes": 52521,
+      "content_type": "text/html",
+      "file": "jpm-8k-0000019617-26-000052.htm.gz",
+      "retrieved_at": "2026-11-18T08:13:16.304782+00:00",
+      "url": "https://www.sec.gov/Archives/edgar/data/19617/000001961726000052/jpm-20260120.htm",
+      "whole": true
+    },
+    {
+      "bytes": 50865,
+      "content_type": "text/html",
+      "file": "ko-8k-0001628280-26-067403.htm.gz",
+      "retrieved_at": "2026-11-18T08:13:16.242473+00:00",
+      "url": "https://www.sec.gov/Archives/edgar/data/21344/000162828026067403/ko-20261027.htm",
+      "whole": true
+    },
+    {
+      "bytes": 1456959,
+      "content_type": "text/html",
+      "file": "cost-10k-20260830.htm.gz",
+      "retrieved_at": "2026-11-17T11:47:12.254756+00:00",
+      "url": "https://www.sec.gov/Archives/edgar/data/909832/000090983226000093/cost-20260830.htm",
+      "whole": true
+    },
+    {
+      "bytes": 408,
+      "content_type": "application/json",
+      "file": "company_tickers.json.gz",
+      "retrieved_at": "2026-11-17T11:08:51.366752+00:00",
+      "url": "https://www.sec.gov/files/company_tickers.json",
+      "whole": false
+    }
+  ],
+  "ref": "capstone-v14"
+}

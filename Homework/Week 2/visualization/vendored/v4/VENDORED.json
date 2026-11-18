@@ -1,0 +1,20 @@
+{
+  "commit": "2b8b79d1ba1ed85fa78b3ebd435930e4f18429c5",
+  "package": "ed_v4",
+  "python_files": 55,
+  "ref": "capstone-v4",
+  "renamed_imports": 162,
+  "renamed_strings": {
+    "services/thesis_run.py": [
+      "app. -> ed_v4."
+    ]
+  },
+  "version": 4,
+  "web_files": [
+    "app.js",
+    "index.html",
+    "sample-run.json",
+    "sample-synthetic.json",
+    "styles.css"
+  ]
+}

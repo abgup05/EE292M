@@ -1,6 +1,6 @@
 [project]
 name = "evidence-desk"
-version = "0.13.0"
+version = "0.13.1"
 description = "EE292M capstone: tests an equity thesis against SEC filings with verified quotes"
 requires-python = ">=3.14,<3.15"
 # Each dependency and why it earns its place:

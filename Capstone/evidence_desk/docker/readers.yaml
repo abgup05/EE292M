@@ -1,0 +1,12 @@
+# Loaded only when a make command is given READERS (make run READERS=models, make up
+# READERS=models): it sets the claim readers for that command. `environment` wins over the
+# env_file, so READERS overrides EVIDENCE_DESK_CLAIM_READER in .env for that command only;
+# without READERS this file is not loaded and the value in .env stands. `make readers-check`
+# tests both.
+services:
+  app:
+    environment:
+      EVIDENCE_DESK_CLAIM_READER: ${EVIDENCE_DESK_CLAIM_READER:?READERS is given on the make command line}
+  watch:
+    environment:
+      EVIDENCE_DESK_CLAIM_READER: ${EVIDENCE_DESK_CLAIM_READER:?READERS is given on the make command line}

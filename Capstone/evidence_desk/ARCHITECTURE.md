@@ -390,6 +390,9 @@ what counts. Filings come only from `www.sec.gov` and `data.sec.gov` (7 requests
   write one record from two processes at once.
 - `make up` serves `http://127.0.0.1:8766` and starts the watcher; `make up-recorded` replays model answers from
   `demo/cassettes/nvda-example` (EDGAR, no key; compose passes `EVIDENCE_DESK_CASSETTE` through). `make run
-  ARGS='example'` runs the CLI; `make demo` runs the example live.
+  ARGS='example'` runs the CLI; `make demo` runs the example live. `READERS=models` (or `model`, `grammar`) on
+  `make up`, `up-recorded` or `run` adds `docker/readers.yaml`, which sets `EVIDENCE_DESK_CLAIM_READER` for that
+  command (compose's `environment` wins over its `env_file`); without it that file is not loaded and `.env` decides.
+  `make readers-check` tests both, with `docker/readers-check.yaml` and `docker/readers-check.env` standing in for an owner's setting.
 - `make live-walk`: the app recorded, then `tests/live_walk.py` over HTTP with live EDGAR: a run, decisions, the
   reviewed brief, a thesis run twice (the second from the cache) and the comparison.

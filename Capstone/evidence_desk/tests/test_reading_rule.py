@@ -123,6 +123,7 @@ def test_the_second_reader_has_its_own_model_and_step(monkeypatch: pytest.Monkey
 def test_the_env_example_documents_the_second_reader() -> None:
     example = Path(".env.example").read_text(encoding="utf-8")
     assert "ANTHROPIC_READER_MODEL_2=" in example and '"models"' in example
+    assert "make up READERS=models" in example  # the switch for one command (make readers-check)
 
 
 def test_two_model_readers_are_chosen_by_the_environment(

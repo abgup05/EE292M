@@ -60,7 +60,8 @@ class Claim:
 
         The id's letter prefix ("f" in set A, "g" in set B) is ignored.
         """
-        return "development" if int(self.id.lstrip("abcdefghijklmnopqrstuvwxyz")) % 2 else "held_out"
+        number = int(self.id.lstrip("abcdefghijklmnopqrstuvwxyz"))
+        return "development" if number % 2 else "held_out"
 
 
 @dataclass(frozen=True)

@@ -144,6 +144,9 @@ _TEST: dict[str, Any] = {
     "required": list(_TEST_FIELDS),
     "additionalProperties": False,
 }
+# One test as a reader writes it; the proposing model's implications use it too
+# (app.engines.analyser).
+TEST_SCHEMA: dict[str, Any] = _TEST
 # ``tests`` holds no test (not computable), one, or two joined by "and". A list states the
 # test's shape once: the API also refused a schema that spelled out a second test inside the
 # first ("The compiled grammar is too large").

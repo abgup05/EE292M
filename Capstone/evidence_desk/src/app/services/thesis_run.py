@@ -19,7 +19,7 @@ import logging
 import threading
 import time
 import uuid
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Sequence
 from concurrent.futures import Future, ThreadPoolExecutor
 from contextlib import contextmanager
 from dataclasses import dataclass, field
@@ -27,6 +27,7 @@ from datetime import UTC, date, datetime
 
 from app.core import events as event_rules
 from app.core import limits, policy
+from app.core.analytics import AnalyticsProvider
 from app.core.documents import Passage
 from app.core.event_models import Event, EventItem
 from app.core.gate import GateResult, RunIds, StoredSource, gate_claim
@@ -51,6 +52,7 @@ from app.core.models import (
 from app.core.numcheck import check_numbers
 from app.core.periods import check_periods
 from app.core.ports import (
+    Analyser,
     Analyst,
     Checker,
     ClaimDraft,
@@ -60,12 +62,14 @@ from app.core.ports import (
     SourceError,
     SummaryDraft,
 )
+from app.engines.analyser import NoAnalyser
 from app.engines.checker import NoChecker
 from app.engines.extractive import ExtractiveAnalyst
 from app.engines.fallback import FallbackAnalyst
 from app.retrieval.chunk import chunk_document
 from app.retrieval.search import PassageIndex
 from app.services import events as event_service
+from app.services.analysis import DEFAULT_PROVIDERS, analyse_run
 from app.services.computed import compute_claims, count_computed
 from app.services.ingest import Ingested, ingest
 from app.services.numbers import NumbersResult, load_numbers, select_figures
@@ -215,6 +219,8 @@ def execute_run(
     checker: Checker | None = None,
     facts_store: FactStore | None = None,
     claim_reader: ClaimReaders = None,
+    analyser: Analyser | None = None,
+    analytics_providers: Sequence[AnalyticsProvider] | None = None,
 ) -> Run:
     """Execute ``run`` to completion, persisting progress, and return the final record.
 
@@ -226,7 +232,12 @@ def execute_run(
     with :class:`~app.engines.checker.NoChecker`) every finding stays unchecked.
     ``facts_store`` keeps every XBRL fact the run reads (none kept without one).
     ``claim_reader`` is the model parser, a second reader of each claim's test; without
-    one (the default) the grammar reads them alone.
+    one (the default) the grammar reads them alone. ``analyser`` proposes each claim's
+    corollaries and argues the analysis once the verdicts are final (two requests); without
+    one the run records the analysis code computes (:mod:`app.services.analysis`).
+    ``analytics_providers`` compute the analysis's analytics; without them, the run's own
+    facts alone (:data:`~app.services.analysis.DEFAULT_PROVIDERS`), and nothing is read
+    for them from EDGAR.
     """
     if concurrency < 1:
         raise ValueError("concurrency must be at least 1")
@@ -330,7 +341,6 @@ def execute_run(
             cache=cache,
             html_by_accession=ingested.filing_html,
         )
-        ingested.filing_html.clear()  # megabytes of HTML, needed for the tags and no longer
         run.metrics += tagged.figures
         run.metrics_notes += tagged.notes
         figures = [*figures, *tagged.figures]
@@ -340,7 +350,7 @@ def execute_run(
     # Computed tests: compiled from the claim text, computed from the facts just read. The
     # engine is never asked about them; their outcomes enter the verdicts after the summary.
     newest = newest_reports(ingested.filing_refs.values())
-    compute_claims(
+    computed = compute_claims(
         run,
         numbers,
         lambda: read_reports(
@@ -356,6 +366,19 @@ def execute_run(
             specs=FOR_CLAIMS,
         )[:2],
     )
+
+    # The parts the analysis may tie a claim to: the tags of the newest reports, from the
+    # cache when it keeps them, else from the HTML this run fetched (then kept for the next
+    # run). Never a fetch: a filing read from a cache that kept no tags gives a note instead.
+    part_reports, part_errors, _ = read_reports(
+        company,
+        filings,
+        newest,
+        cache=cache,
+        html_by_accession=ingested.filing_html,
+        fetch=False,
+    )
+    ingested.filing_html.clear()  # megabytes of HTML, needed for the tags and no longer
 
     _stage(run, store, "planning")
     queries = engine.plan(run.inputs, company)
@@ -560,6 +583,22 @@ def execute_run(
         # The template is written again from the final verdicts, so it cannot contradict them.
         summary = deterministic.summarize(run.inputs, company, run.claims, run.findings)
     run.errors.extend(failures.messages())
+
+    # The analysis reads the final verdicts and never changes them, nor the run's status.
+    def analysing(step: str) -> None:
+        run.stage_detail = step
+        store.save_run(run)
+
+    analyse_run(
+        run,
+        numbers,
+        computed,
+        analyser or NoAnalyser(),
+        providers=analytics_providers or DEFAULT_PROVIDERS,
+        read_reports=lambda: (part_reports, part_errors),
+        out_of_time=out_of_time,
+        on_step=analysing,
+    )
     unknowns, dropped = _drop_unverified_numbers(unknowns, run)
     next_steps, dropped_steps = _drop_unverified_numbers(summary.next_steps, run)
     if dropped + dropped_steps:

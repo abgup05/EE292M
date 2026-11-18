@@ -335,6 +335,12 @@ class Brief(BaseModel):
 
     ``provenance_note`` says where this run's evidence came from (the SEC filings, and any
     page the user added); "" in records written before it was kept.
+
+    ``verdicts_after_summary`` is written by code when a model wrote the summary: the
+    computed tests count after the summary step, and this line names each claim whose
+    verdict they then set or changed, from what to what. "" when nothing moved, when the
+    template wrote the summary (it is written from the final verdicts), and in records
+    written before version 0.14.1.
     """
 
     summary: str
@@ -344,6 +350,7 @@ class Brief(BaseModel):
     coverage_status: RunStatus
     status_note: str
     provenance_note: str = ""
+    verdicts_after_summary: str = ""
 
 
 class DecisionValue(StrEnum):

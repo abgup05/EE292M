@@ -543,7 +543,22 @@ def execute_run(
             summary = deterministic.summarize(run.inputs, company, run.claims, run.findings)
             model_wrote_summary = False
     # The summariser was shown the verdicts of the findings; now the computed tests count.
+    shown = {claim.id: claim.verdict for claim in run.claims}
     count_computed(run, {claim.id for claim in unassessed})
+    verdicts_after = ""
+    if model_wrote_summary:
+        # A model's request must stay as recorded, so its summary is kept and followed by
+        # a line, written here, naming each verdict the computed tests set or changed.
+        verdicts_after = policy.verdicts_after_summary(
+            [
+                (claim.text, shown[claim.id], claim.verdict)
+                for claim in run.claims
+                if claim.verdict != shown[claim.id]
+            ]
+        )
+    else:
+        # The template is written again from the final verdicts, so it cannot contradict them.
+        summary = deterministic.summarize(run.inputs, company, run.claims, run.findings)
     run.errors.extend(failures.messages())
     unknowns, dropped = _drop_unverified_numbers(unknowns, run)
     next_steps, dropped_steps = _drop_unverified_numbers(summary.next_steps, run)
@@ -588,6 +603,7 @@ def execute_run(
         coverage_status=status,
         status_note=policy.STATUS_NOTES[status],
         provenance_note=policy.provenance_note(run.sources),
+        verdicts_after_summary=verdicts_after,
     )
     return _finish(run, store, status)
 

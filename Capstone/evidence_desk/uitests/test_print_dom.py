@@ -67,9 +67,9 @@ def test_on_paper_every_docket_prints_open_under_its_own_heading() -> None:
 
 def test_on_paper_every_tabs_panel_prints_in_reading_order() -> None:
     printed = steps()["print"]
-    assert printed["data-panels-drawn"].split() == ["panel-overview", "panel-claim", "panel-evidence", "panel-time", "panel-events", "panel-figures", "panel-limits"]
-    # The company and the decision, the verdicts, how the run was made, the counts, then the note.
-    assert printed["data-order"].split() == ["rail-head", "scorecard", "run-info", "status-banner", "tape-section", "summary-section", "claim-list", "sources", "timeline-section", "events-section", "figures-section", "coverage-limits"]
+    assert printed["data-panels-drawn"].split() == ["panel-analysis", "panel-overview", "panel-claim", "panel-evidence", "panel-time", "panel-events", "panel-figures", "panel-method", "panel-limits"]
+    # The company and the decision, the verdicts, how the run was made, the counts, then the note: the analysis first.
+    assert printed["data-order"].split() == ["rail-head", "scorecard", "run-info", "status-banner", "analysis", "tape-section", "summary-section", "claim-list", "sources", "timeline-section", "events-section", "figures-section", "method-section", "coverage-limits"]
     assert printed["data-lanes-drawn"].split() == [c["id"] for c in run()["claims"] if c.get("computed")]
     assert int(printed["data-note-height"]) > 1000, "a document taller than the 1000px window it was laid out in, not a frame that fits it"
 
@@ -82,6 +82,36 @@ def test_on_paper_there_is_no_frame_and_nothing_to_press() -> None:
     # Printed from Terminal: the note prints as Paper, and the theme comes back after.
     assert (steps()["screen"]["data-theme"], printed["data-theme"], steps()["after"]["data-theme"]) == ("terminal", "paper", "terminal")
     assert printed["data-selected-row-background"] == "rgba(0, 0, 0, 0)", "the row selected on screen is not marked on paper"
+
+
+def test_on_paper_the_analysis_prints_whole_with_its_citations() -> None:
+    printed = steps()["print"]
+    claims = [c["id"] for c in run()["claims"]]
+    # The whole thesis's analysis, then every claim's, whichever was selected on screen.
+    assert printed["data-analysis-scopes-drawn"].split() == ["thesis", *claims]
+    coverage = run()["coverage"]
+    assert int(printed["data-sentences-drawn"]) == coverage["analysis_sentences_written"] - coverage["analysis_sentences_cut"]
+    cites = sum(len(s["cites"]) for s in _sentences(run()))
+    assert int(printed["data-chips-drawn"]) >= cites > 0, "a citation is a button on screen and a printed reference on paper"
+
+
+def _sentences(record: dict) -> list[dict]:
+    out: list[dict] = []
+
+    def walk(node: object) -> None:
+        if isinstance(node, dict):
+            if {"text", "cites", "verified"} <= node.keys():
+                out.append(node)
+            for value in node.values():
+                walk(value)
+        elif isinstance(node, list):
+            for value in node:
+                walk(value)
+
+    walk(record["analysis"].get("thesis"))
+    for claim in record["claims"]:
+        walk((claim.get("analysis") or {}).get("argument"))
+    return out
 
 
 def test_on_paper_what_the_inspector_reads_is_printed_in_place() -> None:

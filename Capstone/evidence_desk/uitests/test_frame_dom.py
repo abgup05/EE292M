@@ -38,7 +38,7 @@ WIDE = [
     "wide-loaded",
     "wide-c2",
     "wide-c2-evidence",
-    "wide-c2-pick-finding",
+    "wide-c1-pick-finding",
     "wide-c2-pick-test",
     "wide-c4",
     "wide-events",
@@ -157,10 +157,10 @@ def test_the_first_screen_of_a_run_shows_every_verdict_and_the_thesis_without_sc
     assert strip["left"] >= 0 and strip["left"] + strip["width"] <= rail["width"] and strip["height"] <= 60
 
 
-def test_the_tabs_are_the_six_views_and_exactly_one_is_selected() -> None:
+def test_the_tabs_are_the_eight_views_and_exactly_one_is_selected() -> None:
     for name in RUN_STEPS:
         s = step(name)
-        assert s["data-tab-names"].split("|") == ["Overview", "Evidence", "Over time", "Events", "Figures", "Limits"], name
+        assert s["data-tab-names"].split("|") == ["Analysis", "Overview", "Evidence", "Over time", "Events", "Figures", "Method", "Limits"], name
         assert s["data-tab-selected"] == s["data-tab"], name
 
 
@@ -200,9 +200,10 @@ def test_the_evidence_tab_reads_a_findings_quote_in_its_context_with_the_link() 
     assert (s["data-selected"], s["data-tab"], s["data-panels-shown"]) == ("c2", "evidence", "panel-claim")
     assert s["data-inspecting"] == f"finding:{s['data-first-finding']}", "with nothing picked, the first finding is read"
     assert s["data-context-drawn-in-centre"] == "0", "the context is read at the side, not twice"
-    picked = step("wide-c2-pick-finding")
+    # The live run's c2 has one finding; its c1 has several, so another than the first is picked there.
+    picked = step("wide-c1-pick-finding")
     finding = next(f for f in run()["findings"] if f["id"] == picked["data-picked-finding"])
-    assert finding["claim_id"] == "c2" and finding["id"] != s["data-first-finding"]
+    assert finding["claim_id"] == "c1" and finding["id"] != picked["data-first-of-its-claim"]
     assert picked["data-inspecting"] == picked["data-picked"] == f"finding:{finding['id']}"
     assert picked["data-inspected-evidence"].split() == finding["evidence_ids"]
     evidence = {e["id"]: e for e in run()["evidence"]}

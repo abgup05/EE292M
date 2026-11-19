@@ -1,4 +1,4 @@
-.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench eval eval-validate backup restore-check up-recorded live-walk changes breakdowns sample-run-changes golden-sheet backup-status figures two-writers header-cut-check time-live events events-probe event-categories facts-load restatements claim-labels claim-results-key examples claim-foreign watch-once watch-status watch-examples watch-replay watch-contention sample-inbox sample-v14 look measures-probe readers-echo readers-check examples-analysis record-analysis market-probe outside-view market-view fixtures-market market-examples market-check reference-pack time-analysis look-print
+.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench eval eval-validate backup restore-check up-recorded live-walk changes breakdowns sample-run-changes golden-sheet backup-status figures two-writers header-cut-check time-live events events-probe event-categories facts-load restatements claim-labels claim-results-key examples claim-foreign watch-once watch-status watch-examples watch-replay watch-contention sample-inbox sample-v14 sample-analysis look measures-probe readers-echo readers-check examples-analysis record-analysis market-probe outside-view market-view fixtures-market market-examples market-check reference-pack time-analysis look-print
 
 export COMPOSE_PROJECT_NAME := ee292m-evidence-desk
 export LOCAL_UID := $(shell id -u)
@@ -153,7 +153,10 @@ uitest:
 	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=readers&theme=terminal" > results/dom-readers.html 2> results/dom-readers.log && \
 	$(COMPOSE) run --rm -T shots $(KEYS_FLAGS) --dump-dom "file:///work/uitests/v14.html" > results/dom-v14.html 2> results/dom-v14.log && \
 	$(COMPOSE) run --rm -T shots $(KEYS_FLAGS) $(FRAME_FLAGS) --dump-dom "file:///work/uitests/frame.html" > results/dom-frame.html 2> results/dom-frame.log && \
-	$(COMPOSE) run --rm -T shots $(KEYS_FLAGS) --dump-dom "file:///work/uitests/print.html" > results/dom-print.html 2> results/dom-print.log
+	$(COMPOSE) run --rm -T shots $(KEYS_FLAGS) --dump-dom "file:///work/uitests/print.html" > results/dom-print.html 2> results/dom-print.log && \
+	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=run-costco" > results/dom-run-costco.html 2> results/dom-run-costco.log && \
+	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=analysis-shapes&theme=terminal" > results/dom-analysis-shapes.html 2> results/dom-analysis-shapes.log && \
+	$(COMPOSE) run --rm -T shots $(KEYS_FLAGS) $(FRAME_FLAGS) --dump-dom "file:///work/uitests/analysis.html" > results/dom-analysis.html 2> results/dom-analysis.log
 	$(RUN) pytest -q -p no:cacheprovider uitests
 
 run:
@@ -426,6 +429,12 @@ sample-v14:
 	  src=$${pair%%:*}; out=sample-$${pair##*:}.json; \
 	  cp docs/examples/v14/$$src.json src/web/$$out && echo "src/web/$$out <- docs/examples/v14/$$src.json"; \
 	done
+
+# The page's sample of every shape the analysis can take (?sample=analysis-shapes): the hand-built
+# example of `make examples-analysis`, copied unedited. Run it after examples-analysis;
+# uitests/test_analysis_dom.py fails while the copy differs.
+sample-analysis:
+	@cp docs/examples/analysis/run-hand-built-argument.json src/web/sample-analysis-shapes.json && echo "src/web/sample-analysis-shapes.json <- docs/examples/analysis/run-hand-built-argument.json"
 
 watch-replay:
 	$(RUN) python -m tests.watch_replay $(ARGS)

@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Analysis check</title>
+<style>iframe { border: 0; display: block; }</style>
+</head>
+<body>
+<!--
+  The analysis check. `make uitest` loads this file in headless Chromium, with the same-origin rule
+  off for this page only (KEYS_FLAGS in the Makefile), and dumps its DOM. It loads the page in a
+  frame, uses it the way a reader would (opens a sample, selects a sentence, a citation chip of
+  every kind, a claim, the Figures and Method tabs) and writes what the page did after each step
+  into the list below; uitests/test_analysis_dom.py judges it against the sample's JSON. It decides
+  nothing itself.
+
+  Three states have no recorded sample, so the last steps have the page's own code draw them from
+  the live sample changed by hand here, in the shapes docs/analysis.md gives:
+  - "made-partial": `argument_step` "partial" (4 of 5 claims argued, `thesis_step` "failed"), claim
+    c5 with no argument and an `argument_note`, the outside view in `providers_failed` with its
+    reason and its analytics gone, and no `timings`;
+  - "made-failed": `argument_step` "failed", no claim argued.
+  Nothing a model answered is changed: sentences are removed, never rewritten.
+-->
+<ol id="steps"></ol>
+<p id="done" data-done="false">running</p>
+<script>
+"use strict";
+const steps = document.getElementById("steps");
+const done = document.getElementById("done");
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function until(test, what) {
+  for (let i = 0; i < 100; i += 1) {
+    if (test()) return;
+    await sleep(50);
+  }
+  throw new Error(`timed out waiting for ${what}`);
+}
+
+async function open(url, width, height, what) {
+  document.querySelector("iframe")?.remove();
+  const frame = document.createElement("iframe");
+  frame.title = "Evidence Desk";
+  frame.width = String(width);
+  frame.height = String(height);
+  frame.src = `http://app:8000/${url}`;
+  document.body.prepend(frame);
+  await new Promise((resolve) => frame.addEventListener("load", resolve, { once: true }));
+  await until(() => {
+    const doc = frame.contentDocument;
+    const view = doc.getElementById("run-view");
+    return Boolean(view && !view.hidden && doc.querySelector("#scorecard li[data-claim-id]") && doc.querySelector('#tabs [role="tab"]'));
+  }, what);
+  await sleep(150);
+  return frame;
+}
+
+function text(node) {
+  return node ? node.textContent.replace(/\s+/g, " ").trim() : "";
+}
+
+function visible(node) {
+  if (!node || !node.isConnected) return false;
+  const box = node.getBoundingClientRect();
+  return box.width > 0 && box.height > 0 && node.ownerDocument.defaultView.getComputedStyle(node).visibility !== "hidden";
+}
+
+function press(win, target, key) {
+  target.dispatchEvent(new win.KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }));
+}
+
+/** What the page shows now. */
+function record(frame, step, extra) {
+  const win = frame.contentWindow;
+  const doc = frame.contentDocument;
+  const li = document.createElement("li");
+  const body = doc.getElementById("inspect-body");
+  const inspector = doc.getElementById("inspector");
+  li.dataset.step = step;
+  li.dataset.tab = doc.getElementById("workspace").dataset.tab || "";
+  li.dataset.tabNames = [...doc.querySelectorAll('#tabs [role="tab"]')].filter(visible).map((tab) => text(tab.querySelector(".tab-label"))).join("|");
+  li.dataset.tabSelected = [...doc.querySelectorAll('#tabs [role="tab"][aria-selected="true"]')].map((tab) => tab.dataset.tab).join(" ");
+  li.dataset.selected = (doc.querySelector("#scorecard a.score-row[aria-current='true']") || { dataset: { select: "" } }).dataset.select;
+  li.dataset.panelsShown = [...doc.querySelectorAll("#centre-scroll .tabpanel")].filter(visible).map((panel) => panel.id).join(" ");
+  li.dataset.scopesShown = [...doc.querySelectorAll("#analysis > .an-scope")].filter(visible).map((node) => node.dataset.anScope || "thesis").join(" ");
+  li.dataset.scopesInert = [...doc.querySelectorAll("#analysis > .an-scope[inert]")].map((node) => node.dataset.anScope || "thesis").join(" ");
+  li.dataset.blocksShown = [...doc.querySelectorAll("#analysis [data-an-block]")].filter(visible).map((node) => node.dataset.anBlock).join(" ");
+  li.dataset.inspecting = inspector.dataset.inspecting || "";
+  li.dataset.inspectorShown = String(visible(inspector));
+  li.dataset.inspectorPosition = win.getComputedStyle(inspector).position;
+  li.dataset.inspectKind = text(body.querySelector(".ins-kind"));
+  li.dataset.inspectAbout = text(body.querySelector(".ins-about"));
+  li.dataset.inspectLabel = text(body.querySelector(".ins-figure-label"));
+  li.dataset.inspectValue = text(body.querySelector(".ins-figure-value"));
+  li.dataset.inspectSentence = text(body.querySelector(".ins-sentence"));
+  li.dataset.inspectFormula = text(body.querySelector(".ins-formula"));
+  li.dataset.inspectNote = text(body.querySelector(".ins-note"));
+  li.dataset.inspectInputs = String(body.querySelectorAll(".ins-inputs > li").length);
+  li.dataset.inspectFilingLinks = [...body.querySelectorAll(".ins-inputs a.ext, .ct-facts a.ext")].map((a) => a.getAttribute("href")).join(" ");
+  li.dataset.inspectAudit = (body.querySelector("[data-audit]") || { dataset: {} }).dataset.audit || "";
+  li.dataset.inspectAuditText = text(body.querySelector("[data-audit]"));
+  li.dataset.inspectRests = [...body.querySelectorAll(".ins-rests > li")].map((node) => node.dataset.rest || "missing").join("|");
+  li.dataset.inspectEvidence = [...body.querySelectorAll("[data-inspected-evidence]")].map((node) => node.dataset.inspectedEvidence).join(" ");
+  li.dataset.inspectEvent = (body.querySelector("[data-inspected-event]") || { dataset: {} }).dataset.inspectedEvent || "";
+  li.dataset.inspectOperands = [...body.querySelectorAll("[data-operand]")].map((row) => row.dataset.operand).join("|");
+  li.dataset.pickedInCentre = String([...doc.querySelectorAll("#centre-scroll .is-picked")].filter(visible).length);
+  li.dataset.pageScroll = String(doc.documentElement.scrollHeight - doc.documentElement.clientHeight);
+  li.dataset.pageSideways = String(doc.documentElement.scrollWidth - doc.documentElement.clientWidth);
+  const centre = doc.getElementById("centre-scroll");
+  li.dataset.centreSideways = String(centre.scrollWidth - centre.clientWidth);
+  for (const [key, value] of Object.entries(extra || {})) li.dataset[key] = value;
+  steps.append(li);
+}
+
+function readJson(url) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", url);
+    xhr.onload = () => resolve(JSON.parse(xhr.responseText));
+    xhr.onerror = () => reject(new Error(`could not read ${url}`));
+    xhr.send();
+  });
+}
+
+async function run() {
+  // ---- the first sample, as a visitor opens it: 1440x900, nothing named in the address but the sample
+  let frame = await open("?sample=run-live&theme=paper", 1440, 900, "the live run");
+  let doc = frame.contentDocument;
+  let win = frame.contentWindow;
+  const scope = (id) => doc.querySelector(`#analysis > .an-scope[data-an-scope="${id}"]`);
+  const lead = scope("").querySelector(".an-lead [data-an-sentence]");
+  record(frame, "default", {
+    // The bottom line is the first thing drawn in the centre pane, and inside the window.
+    firstBlock: (scope("").querySelector("[data-an-block]") || { dataset: {} }).dataset.anBlock || "",
+    leadText: text(lead.querySelector(".an-text")),
+    leadTop: String(Math.round(lead.getBoundingClientRect().top)),
+    leadBottom: String(Math.round(lead.getBoundingClientRect().bottom)),
+    by: text(scope("").querySelector('[data-an-block="bottom"] .an-by')),
+    leadSentenceKey: lead.dataset.anSentence,
+  });
+
+  // A sentence the audit did not verify: selecting it says so in the inspector, with the reason.
+  const unverified = [...scope("").querySelectorAll('[data-an-sentence][data-verified="false"]')][0];
+  if (unverified) {
+    unverified.querySelector(".an-text").click();
+    await sleep(100);
+    record(frame, "sentence-unverified", { sentenceText: text(unverified.querySelector(".an-text")), sentenceCites: [...unverified.querySelectorAll("[data-cite]")].map((chip) => chip.dataset.cite).join("|"), reasonDrawn: text(unverified.querySelector("[data-unverified]")), reasonVisible: String(visible(unverified.querySelector("[data-unverified]"))) });
+  }
+  // A verified one.
+  lead.querySelector(".an-text").click();
+  await sleep(100);
+  record(frame, "sentence-verified", { sentenceCites: [...lead.querySelectorAll("[data-cite]")].map((chip) => chip.dataset.cite).join("|") });
+
+  // A citation chip of every kind the record has: each opens what it names. The whole thesis first, then each claim.
+  const seen = new Set();
+  const tryChips = async () => {
+    const shown = [...doc.querySelectorAll("#analysis > .an-scope")].find(visible);
+    for (const chip of [...shown.querySelectorAll("button.chip[data-cite]")].filter(visible)) {
+      const kind = chip.dataset.pick.slice(0, chip.dataset.pick.indexOf(":"));
+      if (seen.has(kind)) continue;
+      seen.add(kind);
+      chip.click();
+      await sleep(100);
+      record(frame, `chip-${kind}`, { cite: chip.dataset.cite, chipLabel: text(chip), chipPicked: String(chip.classList.contains("is-picked")), chipsPickedAlike: String([...shown.querySelectorAll(`button.chip[data-pick="${win.CSS.escape(chip.dataset.pick)}"]`)].every((node) => node.classList.contains("is-picked"))) });
+    }
+  };
+  await tryChips();
+  for (const row of [...doc.querySelectorAll("#scorecard a.score-row")]) {
+    row.click();
+    await sleep(120);
+    await tryChips();
+  }
+  record(frame, "chips-done", { kinds: [...seen].sort().join(" ") });
+
+  // One claim: its own analysis and no other; an analytic's row and a corollary's row read at the side.
+  doc.querySelector('#scorecard a.score-row[data-select="c3"]').click();
+  await sleep(120);
+  record(frame, "claim", { leanLine: text(scope("c3").querySelector("[data-lean-line]")), analyticsDrawn: [...scope("c3").querySelectorAll("[data-analytic]")].filter(visible).map((node) => node.dataset.analytic).join("|"), corollariesDrawn: [...scope("c3").querySelectorAll("[data-corollary]")].filter(visible).map((node) => node.dataset.corollary).join("|") });
+  // The first of its analytics that was computed from filed facts: its row is selected by its reading.
+  let analyticRow = null;
+  for (const row of [...scope("c3").querySelectorAll("li[data-analytic]")].filter(visible)) {
+    row.querySelector(".an-reading, .an-question").click();
+    await sleep(100);
+    analyticRow = row;
+    if (doc.querySelector("#inspect-body .ins-inputs a.ext")) break;
+  }
+  record(frame, "pick-analytic", { analytic: analyticRow.dataset.analytic });
+  const corRow = [...scope("c3").querySelectorAll("tr[data-corollary]")].filter(visible)[0];
+  corRow.querySelector("button.chip").click();
+  await sleep(100);
+  record(frame, "pick-corollary", { corollary: corRow.dataset.corollary });
+  // The odds, on the claim that has them.
+  const oddsBlock = doc.querySelector("#analysis [data-odds-id][data-pick]");
+  if (oddsBlock) {
+    doc.querySelector(`#scorecard a.score-row[data-select="${oddsBlock.closest(".an-scope").dataset.anScope}"]`).click();
+    await sleep(120);
+    oddsBlock.querySelector("[data-pick-button]").click();
+    await sleep(100);
+    record(frame, "pick-odds", { odds: oddsBlock.dataset.oddsId, caveatDrawn: String(visible(oddsBlock.querySelector("[data-odds-caveat]"))) });
+  }
+
+  // The Figures tab for a claim: the figures the record ties to it first, the rest behind a control that says what it holds.
+  doc.querySelector('#scorecard a.score-row[data-select="c3"]').click();
+  await sleep(100);
+  doc.getElementById("tab-figures").click();
+  await sleep(120);
+  const figures = () => ({
+    tiedDrawn: [...doc.querySelectorAll("#figures details.fig-row")].filter((row) => !row.closest("details.fig-untied")).filter(visible).map((row) => row.dataset.metricId).join("|"),
+    untiedCount: (doc.querySelector("#figures details.fig-untied") || { dataset: {} }).dataset.figUntied || "",
+    untiedOpen: String(Boolean(doc.querySelector("#figures details.fig-untied")?.open)),
+    untiedLabel: text(doc.querySelector("#figures details.fig-untied > summary")),
+    // A closed <details> keeps its rows in the layout without drawing them: what is drawn is read from whether it is open.
+    untiedRowsDrawn: String(doc.querySelector("#figures details.fig-untied")?.open ? [...doc.querySelectorAll("#figures details.fig-untied details.fig-row")].filter(visible).length : 0),
+    noneNote: text(doc.querySelector("#figures [data-fig-none]")),
+    rowsInDom: String(doc.querySelectorAll("#figures details.fig-row").length),
+  });
+  record(frame, "figures-claim", figures());
+  doc.getElementById("rail-thesis").click();
+  await sleep(120);
+  record(frame, "figures-thesis", figures());
+  doc.querySelector("#figures details.fig-untied > summary").click();
+  await sleep(100);
+  record(frame, "figures-thesis-open", figures());
+
+  // The Method tab, by its number.
+  press(win, doc.body, "7");
+  await sleep(120);
+  record(frame, "method", { nodesDrawn: String([...doc.querySelectorAll("#method .mth-node")].filter(visible).length), timesDrawn: String([...doc.querySelectorAll("#method [data-method-seconds]")].filter(visible).length) });
+  // The Overview's figures are the record's headline.
+  press(win, doc.body, "2");
+  await sleep(120);
+  record(frame, "overview", { tapeSource: doc.getElementById("tape").dataset.source || "", headlineDrawn: [...doc.querySelectorAll("#tape [data-headline]")].filter(visible).map((row) => row.dataset.headline).join("|"), tapeTitle: text(doc.getElementById("tape-title")) });
+
+  // ---- Terminal at 1280x800, a claim's analysis
+  frame = await open("?sample=run-costco&theme=terminal&claim=c4", 1280, 800, "the Costco run at 1280x800");
+  record(frame, "laptop-terminal");
+
+  // ---- a phone: one column, nothing sideways; a chip's target is read in a sheet, and Esc closes it
+  frame = await open("?sample=run-live&theme=paper", 360, 740, "the live run at 360x740");
+  doc = frame.contentDocument;
+  win = frame.contentWindow;
+  record(frame, "phone");
+  const phoneChip = [...doc.querySelectorAll('#analysis > .an-scope[data-an-scope=""] button.chip')].filter(visible)[0];
+  phoneChip.click();
+  await sleep(120);
+  record(frame, "phone-chip", { cite: phoneChip.dataset.cite, closeDrawn: String(visible(doc.getElementById("inspect-close"))) });
+  press(win, doc.activeElement || doc.body, "Escape");
+  await sleep(120);
+  record(frame, "phone-escape");
+  doc.getElementById("tab-method").click();
+  await sleep(120);
+  record(frame, "phone-method");
+
+  // ---- a claim the record ties to no measure: the Figures tab shows the record's note in place of tied figures
+  frame = await open("?sample=analysis-shapes&theme=paper&claim=c1&tab=figures", 1440, 900, "the hand-built example, c1's figures");
+  doc = frame.contentDocument;
+  record(frame, "figures-no-measure", { noneNote: text(doc.querySelector("#figures [data-fig-none]")), noneDrawn: String(visible(doc.querySelector("#figures [data-fig-none]"))), tiedCount: (doc.querySelector("#figures [data-fig-tied]") || { dataset: {} }).dataset.figTied || "", untiedCount: (doc.querySelector("#figures details.fig-untied") || { dataset: {} }).dataset.figUntied || "" });
+
+  // ---- no model: the computed analysis only
+  frame = await open("?sample=computed&theme=paper", 1440, 900, "the computed example");
+  doc = frame.contentDocument;
+  record(frame, "no-model", { stateText: text(doc.querySelector('#analysis > .an-scope[data-an-scope=""] [data-argument-step]')), stateStep: (doc.querySelector('#analysis > .an-scope[data-an-scope=""] [data-argument-step]') || { dataset: {} }).dataset.argumentStep || "", sentences: String(doc.querySelectorAll("#analysis [data-an-sentence]").length) });
+  doc.querySelector("#scorecard a.score-row").click();
+  await sleep(120);
+  record(frame, "no-model-claim", { stateText: text([...doc.querySelectorAll("#analysis [data-argument-step]")].find(visible)), analyticsDrawn: String([...doc.querySelectorAll("#analysis [data-analytic]")].filter(visible).length) });
+
+  // ---- a record made before runs kept an analysis: no Analysis tab, and it opens on the Overview
+  frame = await open("?sample=run-events&theme=paper", 1440, 900, "a record without an analysis");
+  doc = frame.contentDocument;
+  record(frame, "no-analysis", { tapeSource: doc.getElementById("tape").dataset.source || "", analysisChildren: String(doc.getElementById("analysis").childElementCount) });
+
+  // ---- states no sample has, drawn by the page's own code from the live sample changed by hand (see the comment at the top)
+  frame = await open("?sample=run-live&theme=paper", 1440, 900, "the live run, to be changed");
+  doc = frame.contentDocument;
+  win = frame.contentWindow;
+  const original = await readJson("file:///work/src/web/sample-run-live.json");
+  const partial = JSON.parse(JSON.stringify(original));
+  partial.id = "run-made-partial";
+  Object.assign(partial.analysis, {
+    argument_step: "partial",
+    argument_claims_asked: 5,
+    argument_claims_answered: 4,
+    thesis_step: "failed",
+    argument_note: "4 of 5 claims were argued; the request for the whole thesis timed out.",
+    thesis: null,
+    providers_failed: ["outside_view"],
+    provider_reasons: { outside_view: "SEC's frames did not answer within 20 seconds." },
+  });
+  partial.analysis.analytics = partial.analysis.analytics.filter((item) => item.provider !== "outside_view");
+  const gone = partial.claims.find((claim) => claim.id === "c5");
+  gone.analysis.argument = null;
+  gone.analysis.argument_note = "The request for this claim timed out; the other claims stand.";
+  delete partial.timings;
+  win.renderRun(partial);
+  await sleep(200);
+  const shown = (selector) => text([...doc.querySelectorAll(selector)].find(visible));
+  record(frame, "made-partial", {
+    stateText: shown("#analysis [data-argument-step]"),
+    argued: shown("#analysis [data-argued]"),
+    thesisStep: shown("#analysis [data-thesis-step]"),
+    failedProvider: shown('#analysis [data-provider-failed="outside_view"]'),
+    madeFailed: shown("#analysis [data-providers-failed]"),
+    sentences: String([...doc.querySelectorAll("#analysis [data-an-sentence]")].filter(visible).length),
+  });
+  doc.querySelector('#scorecard a.score-row[data-select="c5"]').click();
+  await sleep(120);
+  record(frame, "made-partial-claim", { unargued: shown("#analysis [data-claim-unargued]"), failedProvider: shown('#analysis [data-provider-failed="outside_view"]'), sentences: String([...doc.querySelectorAll("#analysis [data-an-sentence]")].filter(visible).length) });
+  doc.getElementById("tab-method").click();
+  await sleep(120);
+  const node = (stage) => doc.querySelector(`#method .mth-node[data-stage="${stage}"]`);
+  record(frame, "made-partial-method", {
+    outsideState: node("analytics: outside_view").dataset.state,
+    outsideText: text(node("analytics: outside_view")),
+    thesisState: node("argument: the thesis").dataset.state,
+    claimsState: node("argument: the claims").dataset.state,
+    timesDrawn: String(doc.querySelectorAll("#method [data-method-seconds]").length),
+    noTimings: text(doc.querySelector("#method [data-no-timings]")),
+  });
+  const failed = JSON.parse(JSON.stringify(original));
+  failed.id = "run-made-failed";
+  Object.assign(failed.analysis, { argument_step: "failed", argument_claims_asked: 5, argument_claims_answered: 0, thesis_step: "failed", argument_note: "Every request for the argument failed: the model did not answer.", thesis: null });
+  for (const claim of failed.claims) {
+    claim.analysis.argument = null;
+    claim.analysis.argument_note = "";
+  }
+  win.renderRun(failed);
+  await sleep(200);
+  record(frame, "made-failed", { stateText: shown("#analysis [data-argument-step]"), stateStep: ([...doc.querySelectorAll("#analysis [data-argument-step]")].find(visible) || { dataset: {} }).dataset.argumentStep || "", sentences: String(doc.querySelectorAll("#analysis [data-an-sentence]").length) });
+}
+
+run()
+  .catch((error) => {
+    const li = document.createElement("li");
+    li.dataset.step = "error";
+    li.textContent = String(error && error.stack ? error.stack : error);
+    steps.append(li);
+  })
+  .finally(() => {
+    done.dataset.done = "true";
+    done.textContent = "done";
+  });
+</script>
+</body>
+</html>

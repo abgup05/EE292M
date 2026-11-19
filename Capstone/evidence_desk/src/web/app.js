@@ -221,7 +221,11 @@ const BARE_SAMPLE_NOTES = {
   "run-events":
     "A live run of 18 November 2026 on NVIDIA (run run-39d0b17b5396), answered by the Anthropic API: claude-opus-5-5 read the passages and claude-haiku-5-5 checked their meaning. It is copied unedited from results/run-39d0b17b5396.json. Its first claim is about the chief executive leaving, and the 8-K of 12 Nov 2026 postdates the evidence of one of its findings.",
   "run-live":
-    "A live run of 18 November 2026 on NVIDIA (run run-7fa4a528d428), answered by the Anthropic API: claude-opus-5-5 read the passages, claude-haiku-5-5 checked their meaning, and three readers turned each claim into a test: the grammar (a fixed rule, no model), claude-haiku-5-5 and claude-sonnet-5-5. It is copied unedited from results/run-7fa4a528d428.json. Three of its five claims became tests that all three readers read alike (one of them held in each of the last four quarters); no reader could turn the other two into a test.",
+    "A live run of 19 November 2026 (UTC) on NVIDIA (run run-8a12ef614117, deciding whether to buy NVIDIA now), answered by the Anthropic API: claude-opus-5-5 read the passages, proposed the corollaries and wrote the argument; claude-haiku-5-5 checked the findings' meaning; and three readers turned each claim into a test: the grammar (a fixed rule, no model), claude-haiku-5-5 and claude-sonnet-5-5. Code computed every figure, test and analytic and audited every sentence of the argument against what it cites. It is copied unedited from results/run-8a12ef614117.json.",
+  "run-costco":
+    "A live run of 19 November 2026 (UTC) on Costco (run run-72359824897a, deciding whether to keep holding Costco at this price), answered by the Anthropic API: claude-opus-5-5 read the passages, proposed the corollaries and wrote the argument; claude-haiku-5-5 checked the findings' meaning; and three readers turned each claim into a test: the grammar (a fixed rule, no model), claude-haiku-5-5 and claude-sonnet-5-5. Code computed every figure, test and analytic and audited every sentence of the argument against what it cites. It is copied unedited from results/run-72359824897a.json.",
+  "analysis-shapes":
+    "The analysis example that shows every shape (docs/examples/analysis/run-hand-built-argument.json): five claims on NVIDIA's recorded filings with a hand-built argument. Its sentences and corollaries are scripted answers written by tests/examples_analysis.py from the run's own figures: no model wrote them, so read it for the shapes (a lean that contradicts its verdict, sentences the audit did not verify, corollaries the readers disagree on), not for the argument. Code computed the analytics and audited the sentences as it does a model's. Made offline by make examples-analysis; copied unedited by make sample-analysis.",
   readers: `Version 14's example run with two model readers (docs/examples/v14/run-readers.json): six claims of set C read by the grammar, claude-haiku-5-5 and claude-sonnet-5-5. The readers' answers were ${"replayed read-only from the cassette eval/cassettes/claim-readers, recorded through the Anthropic API on 18 Nov 2026; the findings come from the extractive engine (no model) on the recorded NVIDIA fixtures, made offline by make examples with no EDGAR request. Clock times are fixed at 2026-11-18 12:00 UTC. Copied unedited from docs/examples/v14/ by make sample-v14."}`,
 };
 
@@ -334,6 +338,9 @@ const els = {
   timeline: $("timeline"),
   tapeSection: $("tape-section"),
   tape: $("tape"),
+  tapeTitle: $("tape-title"),
+  analysis: $("analysis"),
+  method: $("method"),
   boardHead: $("board-head"),
   howto: $("howto"),
   howtoButton: $("howto-button"),
@@ -2347,7 +2354,7 @@ async function loadSample(name) {
   $("tagged-link").hidden = true;
   $("events-link").hidden = true;
   $("inbox-link").hidden = true;
-  for (const id of ["live-link", "computed-link", "readers-link", "as-of-link", "ledger-link"]) if ($(id)) $(id).hidden = true;
+  for (const id of ["live-link", "costco-link", "shapes-link", "computed-link", "readers-link", "as-of-link", "ledger-link"]) if ($(id)) $(id).hidden = true;
   hideRunView();
   if (!SAMPLE_NAME.test(name)) {
     showLoadError("That sample name is not valid: use lower-case letters, digits and hyphens.", null);
@@ -2421,6 +2428,7 @@ function renderRun(run) {
     claims: new Map(claims.map((x) => [x.id, x])),
     metrics: new Map(list(run.metrics).map((x) => [x.id, x])),
   };
+  indexAnalysis(ctx, run);
 
   els.loading.hidden = true;
   els.loadError.hidden = true;
@@ -2461,6 +2469,8 @@ function renderRun(run) {
   renderSummary(run);
   renderEvents(run);
   renderRunFigures(run);
+  renderAnalysis(run);
+  renderMethod(run);
   renderClaims(run, ctx);
   // A link to a claim's computed test (#claim-<id>-test) opens it once, when the run is first drawn.
   if (state.testHashRun !== run.id && /^#claim-.+-test$/.test(location.hash)) {
@@ -3808,6 +3818,16 @@ const TAPE_KEYS = ["revenue", "revenue_yoy", "gross_margin", "operating_margin",
  */
 function renderTape(run) {
   if (!els.tape) return;
+  // A record with an analysis names its own headline figures (`Run.analysis.headline`): those, not a fixed set.
+  const headline = hasAnalysis(run) ? headlineTable(run) : "";
+  if (els.tapeTitle) els.tapeTitle.textContent = headline ? "Headline figures" : "Newest figures";
+  if (headline) {
+    els.tapeSection.hidden = false;
+    els.tape.dataset.source = "headline";
+    els.tape.replaceChildren(headline, str(run.analysis.headline_note) ? h("p", { class: "hint", "data-headline-note": "", text: run.analysis.headline_note }) : "");
+    return;
+  }
+  els.tape.dataset.source = "metrics";
   const metrics = list(run.metrics);
   const series = list(run.series);
   const pick = (key) => metrics.find((m) => m.key === key && m.period === "quarter") ?? metrics.find((m) => m.key === key && m.period === "annual");
@@ -3845,6 +3865,8 @@ function openFigure(metricId) {
     const row = document.querySelector(`#figures details.fig-row[data-metric-id="${CSS.escape(metricId)}"]`);
     if (!row) return;
     event.preventDefault();
+    const fold = row.closest("details.fig-untied");
+    if (fold) fold.open = true;
     row.open = true;
     reveal(row, { scroll: false });
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
@@ -4105,12 +4127,44 @@ function timelineMark(kind, attrs, url, tipLines, shape, container) {
 function renderRunFigures(run) {
   const metrics = list(run.metrics);
   const notes = list(run.metrics_notes);
+  const claim = workspaceOn() && state.run === run ? selectedClaim() : null;
+  state.figuresFor = claim ? claim.id : "";
   els.figuresSection.hidden = metrics.length === 0 && notes.length === 0;
   if (els.figuresSection.hidden) {
     els.figures.replaceChildren();
     return;
   }
-  renderFigures(els.figures, { metrics, series: run.series, notes });
+  renderFigures(els.figures, { metrics, series: run.series, notes, tie: figureTie(run, claim) });
+}
+
+/**
+ * Which reported figures the record's analysis ties to the selection: for a claim, the figures
+ * of the measures it is tied to (`Claim.analysis.relevant`); for the whole thesis, every figure
+ * some claim is tied to (all but `Run.analysis.untied_metric_ids`). Null for a record with no
+ * analysis, which lists every figure as before. Selection by the record's ids, nothing more.
+ */
+function figureTie(run, claim) {
+  if (!hasAnalysis(run)) return null;
+  if (claim) {
+    const relevant = list(claim.analysis?.relevant);
+    const ids = new Set(relevant.flatMap((item) => list(item?.metric_ids).map(String)));
+    return {
+      isTied: (metric) => ids.has(metric.id),
+      earlier: true,
+      head: `Tied to claim ${claim.id}`,
+      why: relevant.map((item) => `${str(item?.label)} (${list(item?.reasons).join(", ")})`).join("; "),
+      none: str(claim.analysis?.relevance_note) || "The record ties no reported figure to this claim.",
+      rest: "Reported figures not tied to this claim",
+    };
+  }
+  const untied = new Set(list(run.analysis.untied_metric_ids).map(String));
+  return {
+    isTied: (metric) => !untied.has(metric.id),
+    head: "Tied to a claim of this thesis",
+    why: "",
+    none: "The record ties no reported figure to a claim.",
+    rest: str(run.analysis.untied_note) || "Reported figures no claim is tied to",
+  };
 }
 
 /** The latest period end of one kind; ISO dates compare as strings. Selection, not a result. */
@@ -4130,20 +4184,21 @@ function renderFigures(container, data) {
   const row = (metric) => figureRow(metric, series);
   container.replaceChildren();
   if (str(state.meta?.figures_note)) container.append(h("p", { class: "hint", text: state.meta.figures_note }));
-  if (metrics.length === 0) {
-    container.append(h("p", { class: "muted", text: "The record holds no reported figures." }));
-  } else {
-    const columns = [
-      ["quarter", "Newest quarter in the record"],
-      ["annual", "Newest fiscal year in the record"],
-    ];
+  // The newest quarter and the newest fiscal year of the whole record, whichever figures are listed.
+  const columns = [
+    ["quarter", "Newest quarter in the record"],
+    ["annual", "Newest fiscal year in the record"],
+  ];
+  const allFacts = metrics.filter((m) => !isTagged(m));
+  const ends = columns.map(([kind]) => latestEnd(allFacts, kind));
+  const figureGrid = (chosen) => {
     const grid = h("div", { class: "fig-grid" });
-    const facts = metrics.filter((m) => !isTagged(m));
-    for (const [kind, heading] of columns) {
-      const end = latestEnd(facts, kind);
-      if (!end) continue;
-      const rows = facts.filter((m) => (m.period === kind || m.period === "instant") && m.period_end === end);
-      const periodLabel = rows.find((m) => m.period === kind)?.period_label ?? end;
+    columns.forEach(([kind, heading], index) => {
+      const end = ends[index];
+      if (!end) return;
+      const rows = chosen.filter((m) => (m.period === kind || m.period === "instant") && m.period_end === end);
+      if (!rows.length) return;
+      const periodLabel = allFacts.find((m) => m.period === kind && m.period_end === end)?.period_label ?? end;
       grid.append(
         h(
           "section",
@@ -4152,10 +4207,52 @@ function renderFigures(container, data) {
           h("ul", { class: "fig-list" }, rows.map(row)),
         ),
       );
-    }
-    container.append(grid, h("p", { class: "hint", text: "Open a figure to see its arithmetic and the reported values it used. The line beside each value is its series in the record, oldest to newest, with this period circled." }));
+    });
+    return grid.childElementCount ? grid : "";
+  };
+  const hint = h("p", { class: "hint", text: "Open a figure to see its arithmetic and the reported values it used. The line beside each value is its series in the record, oldest to newest, with this period circled." });
+  const tie = data.tie ?? null;
+  if (metrics.length === 0) {
+    container.append(h("p", { class: "muted", text: "The record holds no reported figures." }));
+  } else if (!tie) {
+    container.append(figureGrid(allFacts), hint);
     const tagged = metrics.filter(isTagged);
     if (tagged.length) container.append(taggedGroup(tagged));
+  } else {
+    // Tied to the selection first; the rest of the record behind a labelled control. As before, the
+    // lists are of the newest quarter and the newest fiscal year (and the tagged figures); a tied
+    // figure of an earlier period is listed after them with its period, so none tied is left out.
+    const newest = (m) => columns.some(([kind], index) => ends[index] && (m.period === kind || m.period === "instant") && m.period_end === ends[index]);
+    const tied = metrics.filter(tie.isTied);
+    const tiedFacts = tied.filter((m) => !isTagged(m) && newest(m));
+    const tiedTagged = tied.filter(isTagged);
+    // For a claim the record names each figure; for the whole thesis it names every period of a tied measure, and the newest are listed.
+    const tiedEarlier = tie.earlier ? tied.filter((m) => !isTagged(m) && !newest(m)) : [];
+    const tiedCount = tiedFacts.length + tiedTagged.length + tiedEarlier.length;
+    const rest = metrics.filter((m) => !tie.isTied(m));
+    const restFacts = rest.filter((m) => !isTagged(m) && newest(m));
+    const restTagged = rest.filter(isTagged);
+    const restCount = restFacts.length + restTagged.length;
+    container.append(h("p", { class: "fig-tie", "data-fig-tied": String(tiedCount) }, h("span", { class: "label", text: tie.head }), tie.why ? h("span", { class: "muted", text: ` ${tie.why}` }) : ""));
+    if (tiedCount) {
+      container.append(figureGrid(tiedFacts));
+      if (tiedEarlier.length) container.append(h("ul", { class: "fig-list fig-tied-earlier" }, tiedEarlier.map((metric) => figureRow(metric, series, true))));
+      container.append(hint);
+      if (tiedTagged.length) container.append(taggedGroup(tiedTagged));
+    } else {
+      container.append(h("p", { class: "muted fig-tie-none", "data-fig-none": "", text: tie.none }));
+    }
+    if (restCount) {
+      container.append(
+        h(
+          "details",
+          { class: "fig-untied", "data-fig-untied": String(restCount) },
+          h("summary", null, h("span", { class: "fig-untied-label", text: tie.rest }), h("span", { class: "muted", text: ` (${num(restCount)} of the newest quarter and fiscal year)` })),
+          figureGrid(restFacts),
+          restTagged.length ? taggedGroup(restTagged, tiedTagged.length ? "fig-tagged-title-rest" : "fig-tagged-title") : "",
+        ),
+      );
+    }
   }
   if (notes.length) {
     const notesList = h("ul", { class: "mark-list" });
@@ -4177,11 +4274,11 @@ function figureDomId(metricId) {
 }
 
 /** The tagged figures offered to the engine, in the record's order, after the company-facts figures. */
-function taggedGroup(tagged) {
+function taggedGroup(tagged, titleId = "fig-tagged-title") {
   return h(
     "section",
-    { class: "fig-tagged", "aria-labelledby": "fig-tagged-title", "data-figure-group": "tagged" },
-    h("h4", { class: "fig-head", id: "fig-tagged-title" }, "Figures tagged in the filings ", ruleMark()),
+    { class: "fig-tagged", "aria-labelledby": titleId, "data-figure-group": "tagged" },
+    h("h4", { class: "fig-head", id: titleId }, "Figures tagged in the filings ", ruleMark()),
     h(
       "p",
       { class: "fig-tagged-source" },
@@ -4290,7 +4387,7 @@ function figureBody(metric) {
  * One figure: its label, the line of its series and its value. Selecting the row reads the
  * figure in the inspector; where there is no inspector (a phone, paper) the row opens in place.
  */
-function figureRow(metric, series = []) {
+function figureRow(metric, series = [], withPeriod = false) {
   const body = figureBody(metric);
   return h(
     "li",
@@ -4307,7 +4404,7 @@ function figureRow(metric, series = []) {
             pick({ kind: "figure", id: metric.id });
           },
         },
-        h("span", { class: "fig-label" }, h("span", { class: "fig-name", text: metric.label }), metric.period === "instant" ? h("span", { class: "fig-asof muted small" }, h("span", { class: "sep", text: " · " }), metric.period_label) : ""),
+        h("span", { class: "fig-label" }, h("span", { class: "fig-name", text: metric.label }), metric.period === "instant" || withPeriod ? h("span", { class: "fig-asof muted small" }, h("span", { class: "sep", text: " · " }), metric.period_label) : ""),
         sparkline(metric, series),
         h("span", { class: `${valueClass(metric)} dec` }, ...decimalParts(metric.display)),
       ),
@@ -6337,13 +6434,21 @@ async function loadInboxSample(name) {
  * and one `.tabpanel[data-tab]` in index.html (with `data-scope`: "thesis", "claim" or "both").
  */
 const TABS = [
+  // The analysis leads when the record has one; a record made before runs kept one opens on the Overview.
+  { id: "analysis", label: "Analysis", when: (run) => hasAnalysis(run) },
   { id: "overview", label: "Overview" },
   { id: "evidence", label: "Evidence" },
   { id: "time", label: "Over time" },
   { id: "events", label: "Events" },
   { id: "figures", label: "Figures" },
+  { id: "method", label: "Method" },
   { id: "limits", label: "Limits" },
 ];
+
+/** The tabs this run has, in order. */
+function tabsOn(run = state.run) {
+  return TABS.filter((tab) => !tab.when || tab.when(run));
+}
 
 /** The specimen page lays every part out at once: no selection, no tabs, no inspector. */
 const FLAT = document.body.dataset.page === "specimen";
@@ -6401,7 +6506,7 @@ function select(claimId, { focus = false } = {}) {
 
 /** Show one tab of the selection. */
 function setTab(tabId, { focus = false } = {}) {
-  if (!workspaceOn() || !TABS.some((tab) => tab.id === tabId)) return;
+  if (!workspaceOn() || !tabsOn().some((tab) => tab.id === tabId)) return;
   const changed = state.tab !== tabId;
   state.tab = tabId;
   // The inspector follows the tab: what was picked on another tab is let go.
@@ -6425,9 +6530,16 @@ function applySelection() {
   if (!workspaceOn() || !state.run) return;
   const run = state.run;
   if (state.selected && !list(run.claims).some((claim) => claim.id === state.selected)) state.selected = "";
-  if (!TABS.some((tab) => tab.id === state.tab)) state.tab = TABS[0].id;
+  const tabs = tabsOn(run);
+  if (!tabs.some((tab) => tab.id === state.tab)) state.tab = tabs[0].id;
   const claim = selectedClaim();
   const scope = claim ? "claim" : "thesis";
+  // The tab row is this run's: drawn again only when the set of tabs changes.
+  const tabSet = tabs.map((tab) => tab.id).join(" ");
+  if (els.tabs.dataset.set !== tabSet) {
+    els.tabs.dataset.set = tabSet;
+    els.tabs.replaceChildren(...tabs.map(tabButton));
+  }
 
   els.railThesis?.setAttribute("aria-current", String(!claim));
   for (const row of els.scorecard.querySelectorAll("a.score-row")) row.setAttribute("aria-current", String(Boolean(claim) && row.dataset.select === claim.id));
@@ -6453,6 +6565,14 @@ function applySelection() {
     docket.toggleAttribute("inert", !on);
     if (on) docket.open = true;
   }
+  // The analysis: the whole thesis's, or the selected claim's; the others are off and inert.
+  for (const part of els.analysis?.querySelectorAll(":scope > .an-scope") ?? []) {
+    const on = part.dataset.anScope === (claim ? claim.id : "");
+    part.classList.toggle("is-off", !on);
+    part.toggleAttribute("inert", !on);
+  }
+  // The reported figures put those tied to the selection first.
+  if (state.figuresFor !== (claim ? claim.id : "")) renderRunFigures(run);
   // The thesis over time: every lane for the whole thesis, one claim's own lane for that claim.
   for (const lane of els.tot?.querySelectorAll("[data-tot-claim]") ?? []) {
     const off = Boolean(claim) && lane.dataset.totClaim !== claim.id;
@@ -6729,14 +6849,16 @@ function pick(target) {
   state.picked = target;
   drawInspector();
   // A sheet covers part of the page: the focus goes with it, and Close or Esc brings the page back.
-  if (target && inspectorOn() && !inspectorDocked()) els.inspectBody?.focus({ preventScroll: true });
+  if (target && !inspectorDocked()) els.inspectBody?.focus({ preventScroll: true });
 }
 
 /** A click on a pickable item of the centre pane, or on its button, reads it in the inspector. */
 function onCentreClick(event) {
-  if (!inspectorOn() || !(event.target instanceof Element)) return;
+  if (!(event.target instanceof Element)) return;
   const host = event.target.closest("[data-pick]");
   if (!host || !els.centreScroll.contains(host)) return;
+  // A phone has no inspector pane: only what the analysis cites is read in a sheet; the rest is read in place.
+  if (!inspectorOn() && !(workspaceOn() && els.analysis?.contains(host))) return;
   const button = event.target.closest("[data-pick-button]");
   // A link, a control or a disclosure inside the item keeps its own meaning, and so does selecting its text.
   if (!button && event.target.closest("a, button, input, textarea, select, label, summary, table")) return;
@@ -6757,10 +6879,17 @@ function firstFinding(claim) {
 /** With nothing picked, a docked inspector reads the first item of the tab on show, so the pane is not empty. */
 function firstPick(run, claim) {
   const test = claim && claim.computed && typeof claim.computed === "object" ? { kind: "test", id: claim.id } : null;
+  if (state.tab === "analysis") {
+    // The first sentence of the argument, so the pane shows what a sentence rests on; with no argument, the first analytic.
+    const sentence = state.ctx?.firstSentence?.get(claim ? claim.id : "");
+    if (sentence) return { kind: "sentence", id: sentence };
+    const first = els.analysis?.querySelector(`.an-scope[data-an-scope="${CSS.escape(claim ? claim.id : "")}"] [data-pick]`);
+    return first ? parsePick(first.dataset.pick) : null;
+  }
   if (state.tab === "overview") {
     if (claim) return test ?? firstFinding(claim);
-    const cell = els.tape?.querySelector("[data-tape-metric]");
-    return cell ? { kind: "figure", id: cell.dataset.tapeMetric } : null;
+    const cell = els.tape?.querySelector("[data-pick]");
+    return cell ? parsePick(cell.dataset.pick) : null;
   }
   const newestEvent = () => {
     const first = list(run.timeline)[0];
@@ -6883,18 +7012,21 @@ function inspectRunFacts() {
   ];
 }
 
-const INSPECT = { finding: inspectFinding, test: inspectTest, event: inspectEvent, figure: inspectFigure };
+const INSPECT = { finding: inspectFinding, test: inspectTest, event: inspectEvent, figure: inspectFigure, sentence: inspectSentence, analytic: inspectAnalytic, corollary: inspectCorollary, odds: inspectOdds };
 
 /** Fill the inspector from what was picked, else from the tab's first item, and mark that item in the centre pane. */
 function drawInspector() {
   if (!els.inspectBody || !state.run || !state.ctx) return;
   const explicit = state.picked;
   const target = explicit ?? (inspectorDocked() && inspectorOn() ? firstPick(state.run, selectedClaim()) : null);
-  const content = target && inspectorOn() && Object.hasOwn(INSPECT, target.kind) ? INSPECT[target.kind](target.id) : null;
+  // At phone width there is no pane: only something picked is read, in a sheet.
+  const phone = workspaceOn() && !inspectorOn();
+  const content = target && (inspectorOn() || (phone && explicit)) && Object.hasOwn(INSPECT, target.kind) ? INSPECT[target.kind](target.id) : null;
   const key = content ? `${target.kind}:${target.id}` : "";
   for (const node of els.centreScroll.querySelectorAll("[data-pick]")) node.classList.toggle("is-picked", Boolean(key) && node.dataset.pick === key);
   els.inspector.dataset.inspecting = key;
   els.inspector.classList.toggle("is-sheet-open", Boolean(explicit) && Boolean(content));
+  els.inspector.classList.toggle("is-phone-sheet", phone && Boolean(explicit) && Boolean(content));
   // The inspector is always there: with nothing to read from the tab it shows the run's own facts.
   els.inspectBody.replaceChildren(...(content ?? inspectRunFacts()));
   els.inspectBody.scrollTop = 0;
@@ -6912,7 +7044,7 @@ function onTabKey(event) {
 
 function initWorkspace() {
   if (!els.tabs || FLAT) return;
-  els.tabs.replaceChildren(...TABS.map(tabButton));
+  els.tabs.replaceChildren(...TABS.filter((tab) => !tab.when).map(tabButton));
   for (const panel of els.centreScroll.querySelectorAll(".tabpanel")) panel.setAttribute("role", "tabpanel");
   els.tabs.addEventListener("keydown", onTabKey);
   els.railThesis?.addEventListener("click", (event) => {
@@ -6923,6 +7055,1042 @@ function initWorkspace() {
   els.inspectClose?.addEventListener("click", () => pick(null));
   // Crossing a width where the inspector docks, becomes a sheet or goes: draw it for the new width.
   for (const query of ["(min-width: 641px)", "(min-width: 1100px)"]) window.matchMedia?.(query).addEventListener?.("change", () => drawInspector());
+}
+
+// ---------------------------------------------------------------- the analysis (docs/analysis.md)
+//
+// Run.analysis and Claim.analysis drawn as a note: the argument first, each sentence with what
+// it cites; then what code computed, grouped by where its data came from. Every sentence,
+// figure, reading, count and state below is the record's own text or number. The page chooses
+// where each goes and what it opens; it computes none of them.
+
+/** The analytics providers in the order they are shown: id, the block's code, its title, and what it is. */
+const AN_PROVIDERS = [
+  ["facts", "OWN", "The company's own filings", "from the XBRL facts the company filed with the SEC"],
+  ["outside_view", "OUT", "The outside view: base rates and peers", "from SEC's frames of every filer: how often such a test held for comparable companies, and where this one ranks among them"],
+  ["market_view", "MKT", "The market view: what the price implies", "valuation arithmetic at a recorded price, under assumptions each figure states"],
+];
+/** A request's state in words (`argument_step`, `thesis_step`, `corollaries_step`). */
+const AN_STEP = { answered: "answered", partial: "answered in part", failed: "asked and failed", not_asked: "not asked" };
+/** Which way a claim's argument leans: glyph and words. Outlined, never filled: a filled stamp is a verdict. */
+const LEAN_MARK = { supports: ["✓", "supports"], challenges: ["✕", "challenges"], mixed: ["±", "mixed"], unclear: ["?", "unclear"] };
+/** A corollary's status in words. */
+const COR_STATUS = {
+  agreed: "Both readers read the same test",
+  proposer_only: "Read by the proposing model only",
+  grammar_only: "Read by the grammar only",
+  not_agreed: "The two readers read different tests",
+  not_computable: "Read into a test that could not be computed",
+  no_test: "No reader could make a test of it",
+};
+const COR_RESULT = { as_expected: "✓", against: "✕", cannot_tell: "?" };
+
+function hasAnalysis(run) {
+  return Boolean(run?.analysis) && typeof run.analysis === "object";
+}
+
+/**
+ * Index what a citation can name: the analytics (each with a short reference, A1 onward, in the
+ * record's order), the corollaries, the persistence odds and the 8-Ks. The sentences are
+ * numbered as they are drawn, in the record's order, so a redraw of the same run gives the same keys.
+ */
+function indexAnalysis(ctx, run) {
+  const analysis = hasAnalysis(run) ? run.analysis : {};
+  ctx.analytics = new Map();
+  ctx.analyticRef = new Map();
+  list(analysis.analytics).forEach((item, index) => {
+    if (!str(item?.id)) return;
+    ctx.analytics.set(item.id, item);
+    ctx.analyticRef.set(item.id, `A${index + 1}`);
+  });
+  ctx.corollaries = new Map();
+  ctx.odds = new Map();
+  for (const claim of list(run.claims)) {
+    for (const cor of list(claim.analysis?.corollaries)) if (str(cor?.id)) ctx.corollaries.set(cor.id, cor);
+    const odds = claim.analysis?.persistence;
+    if (odds && typeof odds === "object" && str(odds.id)) ctx.odds.set(odds.id, odds);
+  }
+  ctx.events = new Map(
+    list(run.timeline)
+      .filter((event) => str(event?.id))
+      .map((event) => [event.id, event]),
+  );
+  ctx.sentences = new Map();
+  ctx.firstSentence = new Map();
+}
+
+/** What a cited id names in this record: the inspector's kind and id for it, a short label and a line of words. Null when the record holds nothing under it. */
+function citeTarget(id) {
+  const ctx = state.ctx;
+  const text = str(id);
+  if (!ctx || !text) return null;
+  if (ctx.findings.has(text)) {
+    const finding = ctx.findings.get(text);
+    return { kind: "finding", id: text, label: text, what: "Finding", title: `Finding ${text} of claim ${str(finding.claim_id)}`, line: str(finding.statement) || str(finding.text) };
+  }
+  if (ctx.analytics?.has(text)) {
+    const item = ctx.analytics.get(text);
+    return { kind: "analytic", id: text, label: ctx.analyticRef.get(text), what: "Analytic", title: `${str(item.label)}: ${str(item.display)}`, line: `${str(item.label)}: ${str(item.display) || "n/a"}` };
+  }
+  if (text.startsWith("test:")) {
+    const claim = ctx.claims.get(text.slice(5));
+    const test = claim?.computed && typeof claim.computed === "object" ? claim.computed : null;
+    if (test) return { kind: "test", id: claim.id, label: `test ${claim.id}`, what: "Computed test", title: `The computed test of claim ${claim.id}: ${str(test.canonical)}`, line: `${str(test.canonical)}: ${str(test.outcome_label) || TEST_FALLBACK[test.outcome] || ""}` };
+  }
+  if (ctx.corollaries?.has(text)) {
+    const cor = ctx.corollaries.get(text);
+    return { kind: "corollary", id: text, label: text.replace(/^cor:/, "cor ").replace(":", "."), what: "Corollary", title: `Corollary of claim ${str(cor.claim_id)}: ${str(cor.sentence)}`, line: `${str(cor.sentence)} It ${str(cor.result_label) || "has no result"}.` };
+  }
+  if (ctx.odds?.has(text)) {
+    const odds = ctx.odds.get(text);
+    return { kind: "odds", id: text, label: text.replace(":", " "), what: "Persistence odds", title: `The odds that the test of claim ${str(odds.claim_id)} keeps holding`, line: str(odds.note) };
+  }
+  if (ctx.events?.has(text)) {
+    const event = ctx.events.get(text);
+    const filed = str(event.filed_label) || str(event.filed_date);
+    return { kind: "event", id: text, label: `${str(event.form) || "8-K"} ${filed}`, what: str(event.form) || "8-K", title: `${str(event.form) || "8-K"} filed ${filed}`, line: list(event.items).map((item) => `Item ${str(item?.number)} ${str(item?.title)}`).join("; ") };
+  }
+  if (ctx.metrics.has(text)) {
+    const metric = ctx.metrics.get(text);
+    return { kind: "figure", id: text, label: str(metric.label), what: "Reported figure", title: `${str(metric.label)}, ${str(metric.period_label)}: ${str(metric.display)}`, line: `${str(metric.label)}, ${str(metric.period_label)}: ${str(metric.display)}` };
+  }
+  return null;
+}
+
+/** One citation as a chip: its short label; selecting it reads what it names in the inspector. An id the record holds nothing under is shown, and says so. */
+function citeChip(id) {
+  const target = citeTarget(id);
+  if (!target) return h("span", { class: "chip chip-missing", "data-cite": String(id), title: "The record lists this id and holds nothing under it.", text: String(id) });
+  return h("button", { type: "button", class: `chip chip-${target.kind}`, "data-cite": String(id), "data-pick": `${target.kind}:${target.id}`, "data-pick-button": "", title: target.title, text: target.label });
+}
+
+/**
+ * One sentence of the argument: its text, a chip for each thing it cites, and, when the audit
+ * did not verify it, that it did not and why, in place. Selecting the sentence reads what it
+ * rests on in the inspector.
+ */
+function anSentence(sentence, where, scope) {
+  const ctx = state.ctx;
+  const key = `s${ctx.sentences.size + 1}`;
+  ctx.sentences.set(key, { sentence, where, scope });
+  if (!ctx.firstSentence.has(scope)) ctx.firstSentence.set(scope, key);
+  const verified = sentence?.verified === true;
+  const problems = list(sentence?.problems).map(String).filter(Boolean);
+  const cites = list(sentence?.cites);
+  return h(
+    "span",
+    { class: `an-s${verified ? "" : " is-unverified"}`, "data-an-sentence": key, "data-verified": String(verified), "data-pick": `sentence:${key}` },
+    h("span", { class: "an-text", text: str(sentence?.text) }),
+    cites.length ? h("span", { class: "an-cites" }, cites.map(citeChip)) : h("span", { class: "an-cites an-nocite", "data-no-cite": "", text: "cites nothing" }),
+    verified ? "" : h("span", { class: "an-unverified", "data-unverified": "" }, limitGlyph(), ` Not verified: ${problems.join("; ") || "the audit recorded no reason"}`),
+  );
+}
+
+/** Sentences set as one paragraph, in the record's order. */
+function anPara(sentences, where, scope, cls = "an-p") {
+  const items = list(sentences);
+  if (!items.length) return "";
+  const out = [];
+  items.forEach((item, index) => {
+    if (index) out.push(" ");
+    out.push(anSentence(item, where, scope));
+  });
+  return h("p", { class: cls }, out);
+}
+
+/** A leading paragraph: its first sentence stands alone, larger, and the rest follow as a paragraph. The order is the record's. */
+function anLead(sentences, where, scope) {
+  const items = list(sentences);
+  if (!items.length) return "";
+  return [h("p", { class: "an-p an-lead" }, anSentence(items[0], where, scope)), anPara(items.slice(1), where, scope)];
+}
+
+/** Sentences set as separate points, in the record's order. */
+function anPoints(sentences, where, scope, tag = "ul", cls = "an-points") {
+  const items = list(sentences);
+  if (!items.length) return h("p", { class: "muted an-none", text: "The argument gives none." });
+  return h(
+    tag,
+    { class: cls },
+    items.map((item) => h("li", null, anSentence(item, where, scope))),
+  );
+}
+
+/** A titled part of the note. */
+function anBlock(code, title, name, ...children) {
+  return h("section", { class: `an-block an-${name}`, "data-an-block": name }, h("h3", { class: "block-title", "data-code": code, text: title }), ...children);
+}
+
+/** Who made a part, in words: a model (which one, and through the API or from a cassette, as the record says), or code. */
+function anBy(kind, words) {
+  return h("p", { class: "an-by", "data-by": kind }, kind === "model" ? modelBadge(words) : ruleMark(words));
+}
+
+/** Who wrote the argument: the record's own words for the model and where its answers came from. */
+function argumentBy(analysis) {
+  const who = str(analysis.argument_detail) || (str(analysis.argument_by) && analysis.argument_by !== "none" ? analysis.argument_by : "a model");
+  return `Written by ${who}. Code checked every sentence against what it cites.`;
+}
+
+function leanPill(lean) {
+  const key = token(lean, LEAN_MARK);
+  const [glyph, label] = LEAN_MARK[lean] ?? ["·", str(lean) || "not given"];
+  return h("span", { class: `lean l-${key}`, "data-lean": str(lean) }, h("span", { class: "glyph", "aria-hidden": "true", text: glyph }), h("span", { class: "lean-label", text: ` ${label}` }));
+}
+
+/**
+ * The argument's state when it is not whole. Never asked (no model on this run) is said plainly
+ * and without a warning: it is how the run was made. Asked and failed, or answered in part, is a limit.
+ */
+function argumentState(analysis) {
+  const step = str(analysis.argument_step);
+  if (step === "answered" || step === "") return "";
+  const asked = analysis.argument_claims_asked;
+  const answered = analysis.argument_claims_answered;
+  const note = str(analysis.argument_note);
+  if (step === "not_asked") {
+    return h(
+      "div",
+      { class: "an-state an-state-none", "data-argument-step": step },
+      h("p", { class: "an-state-lead", text: "Computed analysis only: no model wrote an argument on this run." }),
+      note ? h("p", { class: "an-state-note", "data-argument-note": "", text: note }) : "",
+    );
+  }
+  const counted = Number.isFinite(asked) && Number.isFinite(answered);
+  const thesis = str(analysis.thesis_step);
+  return h(
+    "div",
+    { class: "an-state an-state-limit", "data-argument-step": step },
+    limitLine(
+      "p",
+      step === "partial" ? "The argument was answered in part" : step === "failed" ? "The argument was asked for and failed" : `The argument's state is "${step}"`,
+      counted ? [": ", h("span", { "data-argued": "", text: `${num(answered)} of ${num(asked)}` }), " claims argued"] : "",
+      thesis ? [`; the request for the whole thesis was `, h("span", { "data-thesis-step": thesis, text: AN_STEP[thesis] ?? thesis })] : "",
+      ".",
+    ),
+    note ? h("p", { class: "an-state-note", "data-argument-note": "", text: note }) : "",
+  );
+}
+
+/** A count from `run.coverage`, as the record gives it. */
+function anCount(run, field) {
+  return cov(run.coverage ?? {}, field);
+}
+
+/** The audit's own counts of the argument's sentences. */
+function auditLine(run) {
+  if (!Number.isFinite(run.coverage?.analysis_sentences_written)) return "";
+  return h(
+    "p",
+    { class: "an-audit", "data-an-audit": "" },
+    ruleMark("Audit, by code"),
+    " ",
+    anCount(run, "analysis_sentences_verified"),
+    " of ",
+    anCount(run, "analysis_sentences_written"),
+    " sentences verified against what they cite; ",
+    anCount(run, "analysis_sentences_unverified"),
+    " shown as not verified; ",
+    anCount(run, "analysis_sentences_cut"),
+    " cut.",
+  );
+}
+
+/** A link that selects a claim in the rail. */
+function claimLink(id, text = id) {
+  return h("a", {
+    class: "claim-id an-claim-link",
+    href: "#workspace",
+    title: str(state.ctx?.claims.get(id)?.text) || null,
+    "data-goto-claim": id,
+    onclick: (event) => {
+      if (!workspaceOn()) return;
+      event.preventDefault();
+      select(id);
+    },
+    text,
+  });
+}
+
+/** The headline figures of the record (`Run.analysis.headline`), one cell each; a cell reads its figure or its test in the inspector. */
+function headlineCells(run) {
+  const series = list(run.series);
+  return list(run.analysis?.headline).map((item) => {
+    const id = str(item?.id);
+    const metric = item?.source === "metric" ? state.ctx?.metrics.get(id) : null;
+    const target = item?.source === "computed_test" ? citeTarget(id) : null;
+    const pickId = metric ? `figure:${id}` : target ? `${target.kind}:${target.id}` : "";
+    const claims = list(item?.claim_ids).map(String);
+    const label = str(item?.label);
+    return h(
+      "tr",
+      { class: "hl-row", "data-headline": id, "data-headline-source": str(item?.source), "data-tape-metric": metric ? id : null, "data-pick": pickId || null },
+      h(
+        "th",
+        { scope: "row" },
+        pickId ? h("button", { type: "button", class: "linklike hl-open", "data-pick-button": "", text: label }) : h("span", { class: "hl-open", text: label }),
+        h("span", { class: "hl-period", text: str(item?.period_label) || (item?.source === "computed_test" ? "the value its computed test read" : "") }),
+      ),
+      h("td", { class: "hl-spark" }, metric ? sparkline(metric, series) : ""),
+      h("td", { class: `num hl-value fig-value${signClass(str(item?.display))}`, "data-headline-value": "", text: str(item?.display) }),
+      h("td", { class: "hl-claims", "data-th": "Claims", text: claims.join(" ") }),
+    );
+  });
+}
+
+/** The headline figures as a small ledger: the figure and its period, its series, its value, and the claims that turn on it. */
+function headlineTable(run) {
+  const rows = headlineCells(run);
+  if (!rows.length) return "";
+  return h("table", { class: "an-table hl-table" }, h("thead", { class: "visually-hidden" }, h("tr", null, ["Figure", "Series", "Value", "Claims"].map((text) => h("th", { scope: "col", text })))), h("tbody", null, rows));
+}
+
+/** One analytic: the question it answers, its value and its reading in a sentence; a note when the record has one (for an unavailable one, why). */
+function analyticRow(item) {
+  const off = item?.available === false;
+  const question = str(item?.question);
+  const display = str(item?.display) || "n/a";
+  return h(
+    "li",
+    { class: `an-row${off ? " is-na" : ""}`, "data-analytic": str(item?.id), "data-available": String(!off), "data-pick": `analytic:${str(item?.id)}` },
+    h("button", { type: "button", class: "chip chip-analytic an-ref", "data-pick-button": "", title: "Read its formula and inputs", text: state.ctx.analyticRef.get(item?.id) ?? "" }),
+    h("div", { class: "an-q" }, h("p", { class: "an-question", text: question || str(item?.label) }), question ? h("p", { class: "an-label", text: str(item?.label) }) : ""),
+    h("p", { class: `an-value${signClass(display)}`, "data-analytic-value": "", text: display }),
+    str(item?.reading) ? h("p", { class: "an-reading", "data-analytic-reading": "", text: item.reading }) : "",
+    str(item?.note) ? h("p", { class: `an-note${off ? " an-why" : ""}`, "data-analytic-note": "", text: item.note }) : "",
+  );
+}
+
+/**
+ * Analytics grouped by where their data came from, in the providers' order. A provider that
+ * gave nothing on this run is named with the record's reason, not left out.
+ */
+function analyticGroups(run, items) {
+  const analysis = run.analysis;
+  const failed = list(analysis.providers_failed).map(String);
+  const known = AN_PROVIDERS.map(([id]) => id);
+  const others = [...new Set([...items.map((item) => str(item?.provider)), ...failed])].filter((id) => id && !known.includes(id));
+  const out = [];
+  for (const [id, code, title, what] of [...AN_PROVIDERS, ...others.map((id) => [id, "ANL", id, ""])]) {
+    const mine = items.filter((item) => str(item?.provider) === id);
+    const isFailed = failed.includes(id);
+    if (!mine.length && !isFailed) continue;
+    out.push(
+      h(
+        "section",
+        { class: `an-block an-group${isFailed ? " is-failed" : ""}`, "data-an-block": "analytics", "data-provider": id },
+        h("h3", { class: "block-title", "data-code": code, text: title }),
+        h("p", { class: "an-by", "data-by": "code" }, ruleMark("Computed by code"), what ? h("span", { class: "an-what", text: ` ${what}` }) : ""),
+        isFailed ? h("p", { class: "an-failed", "data-provider-failed": id }, limitGlyph(), " Not available on this run: ", str(analysis.provider_reasons?.[id]) || "the record gives no reason.") : "",
+        mine.length ? h("ul", { class: "an-rows" }, mine.map(analyticRow)) : "",
+      ),
+    );
+  }
+  return out;
+}
+
+/** A threshold as the record gives it, with its unit's sign. Formatting only. */
+function thresholdText(item) {
+  const comparison = str(item?.comparison);
+  if (!comparison || comparison === "none" || !Number.isFinite(item?.threshold)) return "";
+  const value = item.threshold.toLocaleString("en-US", { maximumFractionDigits: 20 });
+  const unitName = str(item.unit);
+  const shown = unitName === "percent" ? `${value}%` : unitName === "USD" ? `$${value}` : unitName && unitName !== "none" ? `${value} ${unitName}` : value;
+  return `${comparison} ${shown}`;
+}
+
+/** What would change the verdict: each observable with its measure, comparison and threshold, or the category of 8-K. */
+function wouldChangeTable(items, scope) {
+  const rows = list(items);
+  if (!rows.length) return h("p", { class: "muted an-none", text: "The argument names nothing that would change the verdict." });
+  return h(
+    "div",
+    { class: "table-wrap", tabindex: "0", role: "region", "aria-label": "What would change the verdict" },
+    h(
+      "table",
+      { class: "an-table an-change" },
+      h("thead", null, h("tr", null, ["What to watch for", "Measure", "Threshold", "or an 8-K about"].map((text) => h("th", { scope: "col", text })))),
+      h(
+        "tbody",
+        null,
+        rows.map((item) =>
+          h(
+            "tr",
+            { "data-would-change": "" },
+            h("td", { class: "an-change-text" }, anSentence(item, "what would change the verdict", scope)),
+            h("td", { "data-th": "Measure" }, str(item?.measure) ? h("code", { text: item.measure }) : h("span", { class: "muted", text: "—" })),
+            h("td", { class: "num", "data-th": "Threshold", text: thresholdText(item) || "—" }),
+            h("td", { "data-th": "or an 8-K about", text: str(item?.event_category) || "—" }),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+/** A claim's corollaries: what else would be true, what was expected, how it came out, who read it, and its status in words. */
+function corollariesBlock(run, claim, ca) {
+  const analysis = run.analysis;
+  const items = list(ca.corollaries);
+  const step = str(analysis.corollaries_step);
+  const by = str(analysis.corollaries_by);
+  const head = [
+    h("p", { class: "an-by", "data-by": by ? "model" : "code" }, by ? modelBadge(`Proposed by ${by}`) : "", by ? " " : "", ruleMark("each computed by code from the facts")),
+    str(ca.corollary_flag) ? h("p", { class: "an-flag", "data-corollary-flag": "" }, limitGlyph(), ` ${ca.corollary_flag}`) : "",
+  ];
+  if (!items.length) {
+    const why = str(analysis.corollaries_note) || (step && step !== "answered" ? `The request for corollaries was ${AN_STEP[step] ?? step}.` : "None was proposed for this claim.");
+    return anBlock("COR", "Corollaries: what else would be true", "corollaries", h("p", { class: "an-none muted", "data-corollaries-note": "", text: why }));
+  }
+  return anBlock(
+    "COR",
+    "Corollaries: what else would be true",
+    "corollaries",
+    ...head,
+    h(
+      "div",
+      { class: "table-wrap", tabindex: "0", role: "region", "aria-label": `Corollaries of claim ${claim.id}` },
+      h(
+        "table",
+        { class: "an-table an-cor" },
+        h("thead", null, h("tr", null, ["If the claim is true", "Expected", "Result", "Who read it", "Status"].map((text) => h("th", { scope: "col", text })))),
+        h(
+          "tbody",
+          null,
+          items.map((cor) => {
+            const test = cor?.computed && typeof cor.computed === "object" ? cor.computed : null;
+            const result = token(cor?.result, COR_RESULT);
+            return h(
+              "tr",
+              { "data-corollary": str(cor?.id), "data-result": str(cor?.result), "data-pick": `corollary:${str(cor?.id)}` },
+              h("td", { class: "an-cor-text" }, citeChip(cor?.id), " ", h("span", { class: "an-cor-sentence", text: str(cor?.sentence) }), str(cor?.why) ? h("span", { class: "an-cor-why", text: ` ${cor.why}` }) : ""),
+              h("td", { "data-th": "Expected", text: str(cor?.expect) ? `to ${cor.expect === "holds" ? "hold" : cor.expect === "fails" ? "fail" : cor.expect}` : "—" }),
+              h(
+                "td",
+                { class: `an-cor-result r-${result}`, "data-th": "Result" },
+                test ? h("span", { class: "an-cor-sides" }, h("strong", { text: str(test.left?.display) || "—" }), ` ${str(test.comparison)} ${str(test.right?.display)} `, testOutcome(test.outcome, test.outcome_label)) : h("span", { class: "muted", text: "not computed" }),
+                h("span", { class: "an-cor-label", "data-result-label": "" }, h("span", { class: "glyph", "aria-hidden": "true", text: `${COR_RESULT[result] ?? "·"} ` }), str(cor?.result_label) || "no result"),
+              ),
+              h("td", { "data-th": "Who read it", text: str(cor?.read_by) || "—" }),
+              h("td", { "data-th": "Status", "data-status": str(cor?.status), text: COR_STATUS[cor?.status] ?? (str(cor?.status).replaceAll("_", " ") || "—") }),
+            );
+          }),
+        ),
+      ),
+    ),
+    str(analysis.corollary_rule) ? h("p", { class: "hint an-rule", text: analysis.corollary_rule }) : "",
+  );
+}
+
+/** The odds that a claim's test keeps holding, with the record's caveat always beside it; or why there are none. */
+function persistenceBlock(ca) {
+  const odds = ca.persistence;
+  if (!odds || typeof odds !== "object") return "";
+  const on = odds.applicable === true;
+  return h(
+    "section",
+    { class: `an-block an-odds${on ? "" : " is-na"}`, "data-an-block": "odds", "data-odds-id": str(odds.id), "data-pick": on ? `odds:${str(odds.id)}` : null },
+    h("h3", { class: "block-title", "data-code": "ODD", text: "Will it keep holding? The test's own history, resampled" }),
+    on
+      ? [
+          h("p", { class: "an-by", "data-by": "code" }, ruleMark("Resampled by code from the measure's own past changes")),
+          h("p", { class: "an-odds-line" }, h("span", { class: "an-odds-value", "data-odds": "", text: str(odds.display) }), h("span", { class: "an-odds-note", text: ` ${str(odds.note)}` })),
+          str(odds.warning) ? h("p", { class: "an-flag", "data-odds-warning": "" }, limitGlyph(), ` ${odds.warning}`) : "",
+          h("p", { class: "an-caveat", "data-odds-caveat": "" }, limitGlyph(), ` ${str(odds.caveat) || "A description of the measure's history; not a forecast."}`),
+          h("p", { class: "an-pick" }, pickButton("How the odds were made")),
+        ]
+      : h("p", { class: "an-none muted", "data-odds-none": "", text: str(odds.note) || "No odds were computed for this claim." }),
+  );
+}
+
+/** The whole thesis's analysis: the bottom line first, then what it leans on, the cases, the scenarios, the figures and what the price implies. */
+function analysisThesis(run) {
+  const analysis = run.analysis;
+  const scope = "";
+  const th = analysis.thesis && typeof analysis.thesis === "object" ? analysis.thesis : null;
+  const stateNote = argumentState(analysis);
+  const out = [];
+  const table = headlineTable(run);
+  const keyFigures = table
+    ? h(
+        "section",
+        { class: "an-block an-key", "data-an-block": "headline" },
+        h("h3", { class: "block-title", "data-code": "KEY", text: "The figures the claims turn on" }),
+        table,
+        str(analysis.headline_note) ? h("p", { class: "hint", "data-headline-note": "", text: analysis.headline_note }) : "",
+      )
+    : str(analysis.headline_note)
+      ? h("p", { class: "hint", "data-headline-note": "", text: analysis.headline_note })
+      : "";
+  if (stateNote) out.push(stateNote);
+  if (th) {
+    const weakest = str(th.weakest_link);
+    const leans = list(th.leans_on).map(String);
+    out.push(
+      anBlock("BTM", "Bottom line", "bottom", anBy("model", argumentBy(analysis)), anLead(th.bottom_line, "the bottom line", scope) || h("p", { class: "muted an-none", text: "The argument gives no bottom line." })),
+      keyFigures,
+      anBlock(
+        "LNS",
+        "What the thesis leans on",
+        "leans",
+        leans.length
+          ? h(
+              "ol",
+              { class: "lean-list" },
+              leans.map((id) => {
+                const claim = state.ctx.claims.get(id);
+                return h(
+                  "li",
+                  { class: `lean-row${id === weakest ? " is-weakest" : ""}`, "data-lean-claim": id },
+                  claimLink(id),
+                  claim ? verdictPill(claim.verdict) : "",
+                  claim?.analysis?.argument ? h("span", { class: "lean-arg" }, "argument ", leanPill(claim.analysis.argument.lean)) : "",
+                  claim ? "" : h("span", { class: "lean-text muted", text: "not a claim of this run" }),
+                  id === weakest ? h("span", { class: "lean-weakest", "data-weakest": "", text: "Weakest link" }) : "",
+                );
+              }),
+            )
+          : h("p", { class: "muted an-none", text: "The argument does not order the claims." }),
+        weakest ? h("h4", { class: "an-sub", text: `Why ${weakest} is the weakest link` }) : "",
+        anPara(th.weakest_why, "why it is the weakest link", scope),
+      ),
+      h(
+        "div",
+        { class: "an-versus" },
+        anBlock("FOR", "Strongest case for", "for", anPoints(th.strongest_for, "the strongest case for", scope)),
+        anBlock("AGN", "Strongest case against", "against", anPoints(th.strongest_against, "the strongest case against", scope)),
+      ),
+      anBlock(
+        "SCN",
+        "Scenarios, as conditions you can observe",
+        "scenarios",
+        list(th.scenarios).length
+          ? h(
+              "div",
+              { class: "an-scn-grid" },
+              list(th.scenarios).map((scenario) => h("article", { class: "an-scenario", "data-scenario": str(scenario?.name) }, h("h4", { class: "an-sub", text: str(scenario?.name) || "Scenario" }), anPoints(scenario?.conditions, `the scenario "${str(scenario?.name)}"`, scope, "ol", "an-conds"))),
+            )
+          : h("p", { class: "muted an-none", text: "The argument gives no scenario." }),
+      ),
+    );
+  } else {
+    out.push(keyFigures);
+  }
+  out.push(...analyticGroups(run, list(analysis.analytics).filter((item) => item?.scope === "company")));
+  const flags = list(analysis.flags).map(String);
+  if (flags.length)
+    out.push(
+      anBlock(
+        "FLG",
+        "Flags",
+        "flags",
+        h(
+          "ul",
+          { class: "mark-list" },
+          flags.map((flag) => limitLine("li", flag)),
+        ),
+      ),
+    );
+  out.push(analysisMade(run));
+  return out;
+}
+
+/** How the analysis was made, in words: who wrote the argument, who proposed the corollaries, what code computed, and the audit's counts. */
+function analysisMade(run) {
+  const analysis = run.analysis;
+  const c = run.coverage ?? {};
+  const fact = (label, ...value) => h("div", null, h("dt", { text: label }), h("dd", null, ...value));
+  const step = (value) => AN_STEP[value] ?? (str(value) || "not recorded");
+  const asked = list(analysis.providers).map(String);
+  const failed = list(analysis.providers_failed).map(String);
+  const name = (id) => AN_PROVIDERS.find(([key]) => key === id)?.[2] ?? id;
+  const notAsked = AN_PROVIDERS.map(([id]) => id).filter((id) => !asked.includes(id));
+  return anBlock(
+    "HOW",
+    "How this analysis was made",
+    "made",
+    h(
+      "dl",
+      { class: "an-made-grid" },
+      fact(
+        "The argument",
+        h("span", { "data-made": "argument" }, str(analysis.argument_step) === "not_asked" ? "No model was asked." : `${capitalize(step(analysis.argument_step))}${str(analysis.argument_detail) ? `, by ${analysis.argument_detail}` : ""}.`),
+        Number.isFinite(analysis.argument_claims_asked) && str(analysis.argument_step) !== "not_asked" ? [" ", h("span", { "data-made": "argued" }, `${num(analysis.argument_claims_answered)} of ${num(analysis.argument_claims_asked)} claims argued; the whole thesis ${step(analysis.thesis_step)}.`)] : "",
+      ),
+      Number.isFinite(c.analysis_sentences_written) && str(analysis.argument_step) !== "not_asked" ? fact("Its sentences", auditLine(run)) : "",
+      fact(
+        "The corollaries",
+        str(analysis.corollaries_step) === "not_asked" ? str(analysis.corollaries_note) || "No model was asked to propose any." : `${capitalize(step(analysis.corollaries_step))}${str(analysis.corollaries_by) ? `: proposed by ${analysis.corollaries_by}` : ""}; each computed by code.`,
+        Number.isFinite(c.corollaries_proposed) && str(analysis.corollaries_step) !== "not_asked" ? [" ", anCount(run, "corollaries_computed"), " of ", anCount(run, "corollaries_proposed"), " computed: ", anCount(run, "corollaries_as_expected"), " as the claim implies, ", anCount(run, "corollaries_against"), " against."] : "",
+      ),
+      fact(
+        "The analytics",
+        `Computed by ${str(analysis.analytics_by) || "code"}`,
+        Number.isFinite(c.analytics_computed) ? [": ", anCount(run, "analytics_computed"), " computed, ", anCount(run, "analytics_unavailable"), " not available."] : ".",
+        asked.length ? ` Asked: ${asked.map(name).join("; ")}.` : "",
+        failed.length ? h("span", { class: "an-failed", "data-providers-failed": failed.join(" ") }, " ", limitGlyph(), ` Gave nothing: ${failed.map((id) => `${name(id)} (${str(analysis.provider_reasons?.[id]) || "no reason recorded"})`).join("; ")}.`) : "",
+        notAsked.length ? h("span", { class: "muted", "data-providers-not-asked": notAsked.join(" ") }, ` Not asked on this run: ${notAsked.map(name).join("; ")}.`) : "",
+      ),
+      str(analysis.breakdowns_note) ? fact("Parts of the business", analysis.breakdowns_note) : "",
+    ),
+    h("p", { class: "an-pick an-to-method" }, h("button", { type: "button", class: "linklike", "data-goto-tab": "method", onclick: () => setTab("method", { focus: true }), text: "See the run's pipeline, stage by stage, on the Method tab" })),
+  );
+}
+
+/** One claim's analysis: how it bears on the decision, the cases, what decides it, what would change the verdict, then what code computed. */
+function analysisClaim(run, claim) {
+  const analysis = run.analysis;
+  const ca = claim.analysis && typeof claim.analysis === "object" ? claim.analysis : {};
+  const arg = ca.argument && typeof ca.argument === "object" ? ca.argument : null;
+  const scope = claim.id;
+  const out = [h("h3", { class: "an-claim-head" }, h("span", { class: "claim-id", text: claim.id }), " ", str(claim.text))];
+  if (arg) {
+    out.push(
+      anBlock(
+        "ASM",
+        "How it bears on the decision",
+        "assessment",
+        anBy("model", argumentBy(analysis)),
+        h("p", { class: "an-leanline", "data-lean-line": "" }, h("span", { class: "label", text: "Verdict " }), verdictPill(claim.verdict), h("span", { class: "label an-leanline-arg", text: " The argument " }), leanPill(arg.lean)),
+        str(arg.lean_flag) ? h("p", { class: "an-flag", "data-lean-flag": "" }, limitGlyph(), ` ${arg.lean_flag}`) : "",
+        anLead(arg.assessment, "the assessment", scope),
+      ),
+      h("div", { class: "an-versus" }, anBlock("FOR", "The case for", "for", anPoints(arg.case_for, "the case for", scope)), anBlock("AGN", "The case against", "against", anPoints(arg.case_against, "the case against", scope))),
+      anBlock("DEC", "What decides it", "decides", anPoints(arg.decides, "what decides it", scope)),
+      anBlock("CHG", "What would change the verdict", "change", wouldChangeTable(arg.would_change, scope)),
+    );
+  } else {
+    const step = str(analysis.argument_step);
+    const why = str(ca.argument_note) || str(analysis.argument_note) || "The record gives no reason.";
+    out.push(
+      step === "not_asked"
+        ? h("div", { class: "an-state an-state-none", "data-argument-step": step }, h("p", { class: "an-state-lead", text: "Computed analysis only: no model argued this claim." }), h("p", { class: "an-state-note", "data-argument-note": "", text: why }))
+        : h("div", { class: "an-state an-state-limit", "data-argument-step": step, "data-claim-unargued": claim.id }, limitLine("p", "This claim has no argument."), h("p", { class: "an-state-note", "data-argument-note": "", text: why })),
+    );
+  }
+  const mine = list(ca.analytic_ids)
+    .map((id) => state.ctx.analytics.get(id))
+    .filter(Boolean);
+  out.push(...analyticGroups(run, mine));
+  if (!mine.length && !list(analysis.providers_failed).length) out.push(h("p", { class: "an-none muted", "data-relevance-note": "", text: str(ca.relevance_note) || "No analytic is tied to this claim." }));
+  out.push(corollariesBlock(run, claim, ca), persistenceBlock(ca));
+  return out;
+}
+
+/** Draw the analysis of the whole thesis and of every claim; the selection shows one of them (`applySelection`). */
+function renderAnalysis(run) {
+  if (!els.analysis) return;
+  if (!hasAnalysis(run)) {
+    els.analysis.replaceChildren();
+    return;
+  }
+  state.ctx.sentences.clear();
+  state.ctx.firstSentence.clear();
+  els.analysis.replaceChildren(
+    h("div", { class: "an-scope", "data-an-scope": "" }, ...analysisThesis(run)),
+    ...list(run.claims).map((claim) => h("div", { class: "an-scope", "data-an-scope": claim.id }, ...analysisClaim(run, claim))),
+  );
+}
+
+// ---- the analysis in the inspector
+
+/** A sentence and what it rests on: the audit's word on it, then each thing it cites, in brief, each opening in full. */
+function inspectSentence(key) {
+  const entry = state.ctx.sentences?.get(key);
+  if (!entry) return null;
+  const { sentence, where, scope } = entry;
+  const verified = sentence?.verified === true;
+  const problems = list(sentence?.problems).map(String).filter(Boolean);
+  const cites = list(sentence?.cites);
+  return [
+    inspectHead("Sentence", `of ${where}${scope ? `, claim ${scope}` : ""}`),
+    h("blockquote", { class: "ins-sentence", text: str(sentence?.text) }),
+    verified
+      ? h("p", { class: "ins-audit", "data-audit": "verified" }, ruleMark("Verified by code"), ": every id it cites is in the record and allowed here, and every number it writes is carried by something it cites.")
+      : h("div", { class: "ins-audit is-unverified", "data-audit": "unverified" }, limitLine("p", "Not verified by the audit. It is shown, not hidden; read it as unchecked."), problems.length ? h("ul", { class: "mark-list" }, problems.map((line) => limitLine("li", line))) : ""),
+    h("p", { class: "label", text: cites.length ? "What it rests on" : "It cites nothing" }),
+    h(
+      "ul",
+      { class: "ins-rests" },
+      cites.map((id) => {
+        const target = citeTarget(id);
+        if (!target) return h("li", { class: "ins-rest is-missing" }, h("code", { text: String(id) }), h("span", { class: "muted", text: " The record holds nothing under this id." }));
+        return h(
+          "li",
+          { class: "ins-rest", "data-rest": String(id) },
+          h("p", { class: "ins-rest-head" }, h("span", { class: "ins-rest-kind", text: target.what }), " ", h("button", { type: "button", class: "linklike", onclick: () => pick({ kind: target.kind, id: target.id }), text: `Open ${target.label}` })),
+          str(target.line) ? h("p", { class: "ins-rest-line", text: target.line }) : "",
+        );
+      }),
+    ),
+  ];
+}
+
+/** One analytic whole: its value and reading, its formula, every input with the filing it came from, and its note. */
+function inspectAnalytic(id) {
+  const item = state.ctx.analytics?.get(id);
+  if (!item) return null;
+  const cik = state.run.company?.cik;
+  const provider = AN_PROVIDERS.find(([key]) => key === str(item.provider));
+  const inputs = list(item.inputs);
+  const fact = (label, ...value) => h("div", null, h("dt", { text: label }), h("dd", null, ...value));
+  const origin = { sec_xbrl_facts: "SEC XBRL facts of the company", sec_frames: "SEC frames (every filer), from the reference pack", market_prices: "A recorded price, with the company's facts" }[item.data_origin] ?? str(item.data_origin);
+  return [
+    inspectHead(`Analytic ${state.ctx.analyticRef.get(id) ?? ""}`, provider ? provider[2] : str(item.provider), ruleMark("Computed by code")),
+    h("p", { class: "ins-figure" }, h("span", { class: "ins-figure-label", text: str(item.label) }), h("span", { class: `fig-value ins-figure-value${signClass(str(item.display))}`, text: str(item.display) || "n/a" })),
+    str(item.question) ? h("p", { class: "ins-question", text: item.question }) : "",
+    str(item.reading) ? h("p", { class: "ins-reading", text: item.reading }) : "",
+    h(
+      "dl",
+      { class: "ins-grid" },
+      str(item.formula) ? fact("Formula", h("code", { class: "ins-formula", text: item.formula })) : "",
+      str(item.period) ? fact("Period", item.period) : "",
+      str(item.measure) ? fact("Measure", h("code", { text: item.measure })) : "",
+      origin ? fact("Data", origin) : "",
+      list(item.claim_ids).length ? fact("Bears on", list(item.claim_ids).join(", ")) : "",
+    ),
+    inputs.length
+      ? h(
+          "div",
+          { class: "ins-block" },
+          h("p", { class: "label", text: "What it was computed from" }),
+          h(
+            "ul",
+            { class: "ins-inputs" },
+            inputs.map((ref) =>
+              h(
+                "li",
+                null,
+                h("span", { class: "ins-input-label", text: str(ref?.label) || str(ref?.id) }),
+                h("span", { class: "ins-input-value", text: str(ref?.display) }),
+                h(
+                  "span",
+                  { class: "ins-input-src" },
+                  str(ref?.accession) ? filingRef(ref, cik) : ref?.ref_kind === "frame" ? h("code", { text: str(ref?.id) }) : str(ref?.filed) ? `${str(ref?.form) || "filed"} ${dateLabel(ref.filed)}` : ref?.ref_kind === "computed_test" ? "from the claim's computed test" : str(ref?.ref_kind).replaceAll("_", " "),
+                ),
+              ),
+            ),
+          ),
+        )
+      : "",
+    str(item.note) ? h("div", { class: "ins-block" }, h("p", { class: "label", text: item.available === false ? "Why it is not available" : "Note" }), h("p", { class: "ins-note", text: item.note })) : "",
+  ];
+}
+
+/** One corollary whole: the implication and why it follows, how each reader read it, and the test code computed with its values and arithmetic. */
+function inspectCorollary(id) {
+  const cor = state.ctx.corollaries?.get(id);
+  if (!cor) return null;
+  const test = cor.computed && typeof cor.computed === "object" ? cor.computed : null;
+  const fact = (label, ...value) => h("div", null, h("dt", { text: label }), h("dd", null, ...value));
+  const expr = (text, reason) => (str(text) ? h("code", { text }) : h("span", { class: "muted", text: str(reason) || "read no test" }));
+  return [
+    inspectHead("Corollary", `of claim ${str(cor.claim_id)}`, modelBadge("Proposed by a model"), ruleMark("computed by code")),
+    h("blockquote", { class: "ins-sentence", text: str(cor.sentence) }),
+    str(cor.why) ? h("p", { class: "ins-reading", text: cor.why }) : "",
+    h(
+      "dl",
+      { class: "ins-grid" },
+      fact("Expected", str(cor.expect) || "—"),
+      fact("Result", str(cor.result_label) || "—"),
+      fact("The grammar read", expr(cor.grammar, cor.grammar_reason)),
+      fact("The model read", expr(cor.proposer, cor.proposer_reason)),
+      fact("Who read it", str(cor.read_by) || "—"),
+    ),
+    test
+      ? h(
+          "div",
+          { class: "ct-inspected" },
+          h("p", { class: "ct-result" }, testOutcome(test.outcome, test.outcome_label), str(test.margin_display) ? h("span", { class: "muted", text: ` margin ${test.margin_display}` }) : ""),
+          str(test.reason) ? h("p", { class: "ct-reason" }, h("span", { class: "label", text: "Why it could not be computed: " }), test.reason) : "",
+          operandTable(list(test.operands), state.run.company?.cik, `Values read for the corollary`),
+          list(test.arithmetic).length ? h("div", { class: "ct-arith-block" }, h("p", { class: "label", text: "The arithmetic" }), arithmeticList(list(test.arithmetic))) : "",
+        )
+      : h("p", { class: "muted", text: "No test was computed for this corollary." }),
+  ];
+}
+
+/** The persistence odds whole: the number, what it is of, the caveat, and the method with its settings. */
+function inspectOdds(id) {
+  const odds = state.ctx.odds?.get(id);
+  if (!odds) return null;
+  const fact = (label, ...value) => h("div", null, h("dt", { text: label }), h("dd", null, ...value));
+  return [
+    inspectHead("Persistence odds", `of claim ${str(odds.claim_id)}'s test`, ruleMark("Resampled by code")),
+    h("p", { class: "ins-figure" }, h("span", { class: "ins-figure-label", text: "Share of resampled paths in which the test kept holding" }), h("span", { class: "fig-value ins-figure-value", text: str(odds.display) || "n/a" })),
+    str(odds.note) ? h("p", { class: "ins-reading", text: odds.note }) : "",
+    str(odds.caveat) ? limitLine("p", odds.caveat) : "",
+    h(
+      "dl",
+      { class: "ins-grid" },
+      str(odds.test) ? fact("The test", h("code", { text: odds.test })) : "",
+      str(odds.start_display) ? fact("Starts from", odds.start_display) : "",
+      Number.isFinite(odds.horizon) ? fact("Quarters ahead", num(odds.horizon)) : "",
+      Number.isFinite(odds.changes) ? fact("Past changes drawn from", num(odds.changes)) : "",
+      Number.isFinite(odds.paths) ? fact("Paths", num(odds.paths)) : "",
+      Number.isFinite(odds.seed) ? fact("Seed", String(odds.seed)) : "",
+    ),
+    str(odds.method) || str(state.run.analysis?.persistence_method) ? h("div", { class: "ins-block" }, h("p", { class: "label", text: "Method" }), h("p", { class: "ins-note", text: str(odds.method) || state.run.analysis.persistence_method })) : "",
+  ];
+}
+
+// ---------------------------------------------------------------- the method: this run's pipeline
+//
+// The stages a run goes through, drawn as a diagram: each marked as code or as a model (which
+// depends on how this run was made), with this run's own counts from `run.coverage` and, when
+// the record has them, each stage's wall time from `run.timings`. Drawing only.
+
+/** One count of the record on a stage. */
+function mCount(run, field) {
+  return Number.isFinite(run.coverage?.[field]) ? cov(run.coverage, field) : null;
+}
+
+/** Words and counts joined into a line; a part whose count the record lacks is left out. */
+function mLine(...parts) {
+  const out = [];
+  for (const part of parts) {
+    if (!part || part.some((piece) => piece === null)) continue;
+    if (out.length) out.push(" · ");
+    out.push(...part);
+  }
+  return out;
+}
+
+/** The stages of a run, in four phases. `stage` is the name `run.timings` gives the stage. */
+function methodPhases(run) {
+  const analysis = hasAnalysis(run) ? run.analysis : null;
+  const modelEngine = str(run.engine) !== "" && run.engine !== EXTRACTIVE;
+  const engine = modelEngine ? ["model", str(run.engine_detail) || str(run.engine)] : ["code", str(run.engine_detail) || "sentence matching, no model"];
+  const checker = str(run.checker) && run.checker !== "none" ? str(run.checker_detail) || run.checker : "";
+  const modelReaders = /model/.test(str(run.claim_readers));
+  const events = list(run.timeline).length;
+  const phases = [
+    {
+      name: "Read",
+      what: "what the company filed",
+      nodes: [
+        { stage: "company", name: "Company", does: "The ticker is matched to SEC's registrant.", by: ["code", ""], line: [[`${str(run.company?.name) || "the company"}${str(run.company?.ticker) ? ` (${run.company.ticker})` : ""}`]] },
+        { stage: "filings", name: "Filings", does: "The newest annual and quarterly reports are fetched and cut into passages.", by: ["code", ""], line: [[mCount(run, "sources_read"), " of ", mCount(run, "sources_requested"), " sources read"], [mCount(run, "passages_indexed"), " passages"]] },
+        { stage: "events", name: "Current reports", does: "The 8-Ks filed since the annual report are listed and split into items.", by: ["code", ""], line: [[h("span", { "data-method-events": "", text: num(events) }), " 8-Ks listed"]] },
+        { stage: "numbers", name: "Reported figures", does: "Figures are computed from the XBRL facts, each with its formula and inputs.", by: ["code", ""], line: [[mCount(run, "metrics_computed"), " figures"], [mCount(run, "periods_checked"), " periods checked"]] },
+      ],
+    },
+    {
+      name: "Test",
+      what: "each claim against the facts",
+      nodes: [
+        {
+          stage: "computed tests and claim readers",
+          name: "Claim readers and computed tests",
+          does: "A fixed grammar and, when the run has them, model readers turn each claim into a test; code computes it from the facts.",
+          by: [modelReaders ? "both" : "code", modelReaders ? str(run.claim_reader_detail) : "the grammar only"],
+          line: [
+            [mCount(run, "claims_compiled"), " of ", mCount(run, "claims_total"), " claims became a test"],
+            [mCount(run, "computed_holds"), " hold, ", mCount(run, "computed_fails"), " fail, ", mCount(run, "computed_cannot"), " cannot be computed"],
+          ],
+        },
+      ],
+    },
+    {
+      name: "Find",
+      what: "passages for and against",
+      nodes: [
+        { stage: "planning", name: "Planning", does: "Search queries are written for each claim.", by: engine, line: [] },
+        { stage: "retrieving", name: "Retrieving", does: "Passages are ranked against the queries by keyword.", by: ["code", ""], line: [[mCount(run, "passages_indexed"), " passages searched"]] },
+        { stage: "assessing", name: "Assessing", does: "Findings are drafted, each with a stance and the quotes it rests on.", by: engine, line: [[mCount(run, "findings_proposed"), " findings proposed"], [mCount(run, "quotes_offered"), " quotes offered"]] },
+        {
+          stage: "verifying",
+          name: "Verifying",
+          does: "Each quote is searched for word for word in its filing, each number checked against the figures. What fails is withheld.",
+          by: [checker ? "both" : "code", checker ? `meaning checked by ${checker}` : ""],
+          line: [
+            [mCount(run, "quotes_found"), " of ", mCount(run, "quotes_offered"), " quotes found"],
+            [mCount(run, "findings_verified"), " findings verified, ", mCount(run, "findings_withheld"), " withheld"],
+            [mCount(run, "numbers_checked"), " numbers checked"],
+          ],
+        },
+        { stage: "summary", name: "Summary", does: "The summary is written from the verified findings.", by: engine, line: [] },
+      ],
+    },
+  ];
+  if (!analysis) {
+    phases.push({ name: "Analyse", what: "what follows from it", nodes: [], none: "This record has no analysis: it was made before the run kept one." });
+    return phases;
+  }
+  const asked = list(analysis.providers).map(String);
+  const failed = list(analysis.providers_failed).map(String);
+  const provider = (id, name, does) => {
+    const stateOf = failed.includes(id) ? "failed" : asked.includes(id) ? "ran" : "skipped";
+    return {
+      stage: `analytics: ${id}`,
+      name,
+      does,
+      by: ["code", ""],
+      state: stateOf,
+      line: stateOf === "failed" ? [[`gave nothing: ${str(analysis.provider_reasons?.[id]) || "no reason recorded"}`]] : stateOf === "skipped" ? [["not asked on this run"]] : [[h("span", { "data-method-analytics": id, text: num(list(analysis.analytics).filter((item) => item?.provider === id).length) }), " analytics"]],
+    };
+  };
+  const stepState = (step) => (step === "not_asked" ? "skipped" : step === "failed" ? "failed" : "ran");
+  const stepWords = (step) => (step === "not_asked" ? [["not asked on this run"]] : step === "failed" ? [["asked and failed"]] : null);
+  phases.push({
+    name: "Analyse",
+    what: "what follows from it",
+    nodes: [
+      provider("facts", "Analytics: own filings", "Trends, bridges, earnings quality and the room of each test, from the company's facts."),
+      provider("outside_view", "Analytics: outside view", "Base rates of each test and the company's rank among its industry, from SEC's frames."),
+      provider("market_view", "Analytics: market view", "What a recorded price implies: earnings multiple, cash yield, reverse DCF."),
+      {
+        stage: "corollaries: proposed by the model",
+        name: "Corollaries proposed",
+        does: "For each claim, what else would be true if it were.",
+        by: ["model", str(analysis.corollaries_by)],
+        state: stepState(str(analysis.corollaries_step)),
+        line: stepWords(str(analysis.corollaries_step)) ?? [[mCount(run, "corollaries_proposed"), " proposed"]],
+      },
+      {
+        stage: "corollaries: computed",
+        name: "Corollaries computed",
+        does: "Each corollary is read into a test and computed from the facts.",
+        by: ["code", ""],
+        state: stepState(str(analysis.corollaries_step)),
+        line: stepWords(str(analysis.corollaries_step)) ?? [
+          [mCount(run, "corollaries_computed"), " computed"],
+          [mCount(run, "corollaries_as_expected"), " as implied, ", mCount(run, "corollaries_against"), " against"],
+        ],
+      },
+      {
+        stage: "argument: the claims",
+        name: "Argument: each claim",
+        does: "One request per claim: how it bears on the decision, the cases, what decides it.",
+        by: ["model", str(analysis.argument_detail)],
+        state: stepState(str(analysis.argument_step)),
+        line: stepWords(str(analysis.argument_step)) ?? [[mCount(run, "analysis_claims_answered"), " of ", mCount(run, "analysis_claims_asked"), " claims argued"]],
+      },
+      {
+        stage: "argument: the thesis",
+        name: "Argument: the thesis",
+        does: "One request for the whole: bottom line, weakest link, scenarios.",
+        by: ["model", str(analysis.argument_detail)],
+        state: stepState(str(analysis.thesis_step) || str(analysis.argument_step)),
+        line: stepWords(str(analysis.thesis_step) || str(analysis.argument_step)) ?? [[`the request was ${AN_STEP[analysis.thesis_step] ?? "answered"}`]],
+      },
+      {
+        stage: "",
+        name: "Audit of the sentences",
+        does: "Each sentence is checked: the ids it cites exist and are allowed, and something it cites carries each number it writes.",
+        by: ["code", ""],
+        state: stepState(str(analysis.argument_step)),
+        line: stepWords(str(analysis.argument_step)) ?? [
+          [mCount(run, "analysis_sentences_verified"), " of ", mCount(run, "analysis_sentences_written"), " sentences verified"],
+          [mCount(run, "analysis_sentences_unverified"), " shown as not verified, ", mCount(run, "analysis_sentences_cut"), " cut"],
+        ],
+      },
+    ],
+  });
+  return phases;
+}
+
+/** The record's wall times by stage name. Entries the page cannot read are skipped. */
+function timingsOf(run) {
+  const out = new Map();
+  for (const item of list(run.timings)) {
+    const stage = str(item?.stage) || str(item?.name) || str(item?.id);
+    const seconds = Number.isFinite(item?.seconds) ? item.seconds : Number.isFinite(item?.ms) ? item.ms / 1000 : null;
+    if (stage && seconds !== null) out.set(stage, { stage, seconds, background: item.background === true, note: str(item.note) });
+  }
+  return out;
+}
+
+/** Seconds as the record gives them. */
+function secondsText(seconds) {
+  return `${seconds.toLocaleString("en-US", { maximumFractionDigits: 3 })} s`;
+}
+
+/** A stage's time as a bar on the scale of the run's longest stage. Drawing only. */
+function timeBar(seconds, longest) {
+  const W = 60;
+  const width = longest > 0 ? Math.max((seconds / longest) * W, 0.75) : 0;
+  return s("svg", { class: "mth-bar", viewBox: `0 0 ${W} 4`, preserveAspectRatio: "none", "aria-hidden": "true", focusable: "false" }, s("rect", { x: 0, y: 0, width: W, height: 4, class: "mth-bar-bg" }), s("rect", { x: 0, y: 0, width: width.toFixed(2), height: 4, class: "mth-bar-fill" }));
+}
+
+const BY_WORDS = { code: "Code", model: "Model", both: "Code and model" };
+
+/** Whether a stage is code, a model, or both: the fixed rule's mark, the model's mark, and the word. */
+function byTag(by) {
+  return h(
+    "span",
+    { class: `mth-by by-${by}` },
+    by !== "model" ? h("span", { class: "glyph g-rule", "aria-hidden": "true", text: "ƒ" }) : "",
+    by !== "code" ? h("span", { class: "glyph g-model", "aria-hidden": "true", text: "✎" }) : "",
+    ` ${BY_WORDS[by]}`,
+  );
+}
+
+function renderMethod(run) {
+  if (!els.method) return;
+  const timings = timingsOf(run);
+  const phases = methodPhases(run);
+  const drawn = new Set(phases.flatMap((phase) => phase.nodes.map((node) => node.stage)));
+  const longest = Math.max(0, ...[...timings.values()].filter((item) => drawn.has(item.stage)).map((item) => item.seconds));
+  const node = (item) => {
+    const [by, who] = item.by;
+    const time = timings.get(item.stage);
+    const line = mLine(...list(item.line));
+    return h(
+      "li",
+      { class: `mth-node by-${by} is-${item.state ?? "ran"}`, "data-stage": item.stage || item.name, "data-by": by, "data-state": item.state ?? "ran" },
+      h("p", { class: "mth-head" }, h("span", { class: "mth-name", text: item.name }), byTag(by)),
+      h("p", { class: "mth-does", text: item.does }),
+      who ? h("p", { class: "mth-who", "data-method-who": "", text: who }) : "",
+      line.length ? h("p", { class: "mth-counts" }, line) : "",
+      time ? h("p", { class: "mth-time", "data-method-seconds": String(time.seconds) }, timeBar(time.seconds, longest), h("span", { class: "mth-secs", text: secondsText(time.seconds) }), time.background ? h("span", { class: "mth-bg", text: " in the background" }) : "") : "",
+    );
+  };
+  els.method.replaceChildren(
+    h(
+      "p",
+      { class: "mth-lede" },
+      "This run, stage by stage. ",
+      byTag("code"),
+      " is a fixed rule whose result can be recomputed; ",
+      byTag("model"),
+      " is a language model's answer, which code then checks. The counts are this run's own.",
+    ),
+    h(
+      "ol",
+      { class: "mth-flow", "aria-label": "The pipeline of this run" },
+      phases.map((phase, index) =>
+        h(
+          "li",
+          { class: "mth-phase", "data-phase": phase.name },
+          h("p", { class: "mth-phase-head" }, h("span", { class: "mth-phase-n", text: String(index + 1) }), h("span", { class: "mth-phase-name", text: phase.name }), h("span", { class: "mth-phase-what", text: phase.what })),
+          phase.nodes.length ? h("ol", { class: "mth-nodes" }, phase.nodes.map(node)) : h("p", { class: "muted mth-none", text: str(phase.none) }),
+        ),
+      ),
+    ),
+    timings.size
+      ? h(
+          "section",
+          { class: "block mth-times" },
+          h("h3", { class: "block-title", "data-code": "TIM", text: "Wall times, as the run recorded them" }),
+          h(
+            "div",
+            { class: "table-wrap", tabindex: "0", role: "region", "aria-label": "Wall times of this run" },
+            h(
+              "table",
+              { class: "an-table mth-table" },
+              h("thead", null, h("tr", null, h("th", { scope: "col", text: "Stage" }), h("th", { scope: "col", class: "num", text: "Seconds" }), h("th", { scope: "col", text: "Note" }))),
+              h(
+                "tbody",
+                null,
+                [...timings.values()].map((item) => h("tr", { "data-timing": item.stage }, h("td", { text: item.stage }), h("td", { class: "num", text: secondsText(item.seconds) }), h("td", { class: "muted", text: [item.background ? "in the background" : "", item.note].filter(Boolean).join("; ") }))),
+              ),
+            ),
+          ),
+          [...timings.values()].some((item) => item.background) ? h("p", { class: "hint", text: "Stages that ran in the background overlap the others, so the times do not add up to the run's length." }) : "",
+        )
+      : h("p", { class: "muted mth-none", "data-no-timings": "", text: "This record holds no stage times: it was made before runs recorded them." }),
+  );
 }
 
 // ---------------------------------------------------------------- the first screen, the two drawers, the guide
@@ -7138,7 +8306,7 @@ function onKey(event) {
     return;
   }
   // The inspector as a sheet over the page: Esc puts it away.
-  if (event.key === "Escape" && state.picked && inspectorOn() && !inspectorDocked() && !els.keysDialog?.open) {
+  if (event.key === "Escape" && state.picked && workspaceOn() && !inspectorDocked() && !els.keysDialog?.open) {
     event.preventDefault();
     pick(null);
     return;
@@ -7189,7 +8357,7 @@ function onKey(event) {
     case "7":
     case "8":
     case "9": {
-      const tab = TABS[Number(event.key) - 1];
+      const tab = tabsOn()[Number(event.key) - 1];
       if (!tab || !workspaceOn() || !state.run || els.runView.hidden) break;
       event.preventDefault();
       setTab(tab.id);

@@ -136,7 +136,8 @@ function record(frame, step, extra) {
 
 async function run() {
   // ---- a wide window: 1440x900, the live three-reader run
-  let frame = await open("?sample=run-live&theme=paper", 1440, 900, runReady, "the live run at 1440x900");
+  // A run with an analysis opens on its Analysis tab (uitests/analysis.html checks that); this check starts from the Overview.
+  let frame = await open("?sample=run-live&theme=paper&tab=overview", 1440, 900, runReady, "the live run at 1440x900");
   let doc = frame.contentDocument;
   let win = frame.contentWindow;
   const cells = (root) => [...doc.querySelectorAll(`${root} [data-vcell]`)].filter(visible).map((cell) => `${cell.dataset.vcell}:${[...cell.classList].find((name) => name.startsWith("v-"))}`).join(" ");
@@ -169,20 +170,25 @@ async function run() {
   const finding = [...doc.querySelectorAll("#claim-list details.claim:not(.is-off) article.finding[data-pick]")].find(visible);
   record(frame, "wide-c2-evidence", { firstFinding: finding ? finding.dataset.findingId : "", contextDrawnInCentre: String([...doc.querySelectorAll("#centre-scroll .excerpt .context")].filter(visible).length) });
 
-  // Pick its last finding by the finding's own button: the inspector reads its quote in context.
+  // The first claim has several findings: pick its last by the finding's own button, and the inspector reads its quote in context.
+  doc.querySelector('#scorecard a.score-row[data-select="c1"]').click();
+  await sleep(100);
   const findings = [...doc.querySelectorAll("#claim-list details.claim:not(.is-off) article.finding[data-pick]")].filter(visible);
   const last = findings[findings.length - 1];
   last.querySelector("[data-pick-button]").click();
   await sleep(100);
-  record(frame, "wide-c2-pick-finding", {
+  record(frame, "wide-c1-pick-finding", {
+    firstOfItsClaim: findings[0].dataset.findingId,
     pickedFinding: last.dataset.findingId,
     inspectedEvidence: [...doc.querySelectorAll("#inspect-body [data-inspected-evidence]")].map((node) => node.dataset.inspectedEvidence).join(" "),
     inspectedContext: String([...doc.querySelectorAll("#inspect-body .excerpt .context")].filter(visible).length),
     inspectedLinks: [...doc.querySelectorAll("#inspect-body .evidence-caption a.ext")].map((a) => a.getAttribute("href")).join(" "),
   });
 
+  doc.querySelector('#scorecard a.score-row[data-select="c2"]').click();
+  await sleep(100);
   // Its Overview tab: the computed test's operands and arithmetic are read in the inspector.
-  press(win, doc.body, "1");
+  press(win, doc.body, "2");
   await sleep(100);
   doc.querySelector("#claim-list details.claim:not(.is-off) .ct [data-pick-button]").click();
   await sleep(100);
@@ -204,7 +210,7 @@ async function run() {
   await sleep(100);
 
   // The Events tab reads the newest 8-K at the side; picking another reads that one.
-  press(win, doc.body, "4");
+  press(win, doc.body, "5");
   await sleep(100);
   record(frame, "wide-events", { firstEvent: (doc.querySelector("#events li.event") || { dataset: {} }).dataset.eventId || "" });
   const events = [...doc.querySelectorAll("#events li.event")];
@@ -213,15 +219,17 @@ async function run() {
   record(frame, "wide-pick-event", { pickedEvent: events[1].dataset.eventId, inspectedEvent: (doc.querySelector("#inspect-body [data-inspected-event]") || { dataset: {} }).dataset.inspectedEvent || "", openingsDrawnInCentre: String([...doc.querySelectorAll("#centre-scroll .event-opening")].filter(visible).length) });
 
   // The Figures tab: selecting a row reads its inputs at the side, and the row does not open in place.
-  press(win, doc.body, "5");
+  press(win, doc.body, "6");
   await sleep(100);
-  const rows = [...doc.querySelectorAll("#figures details.fig-row")];
-  rows[3].querySelector("summary").click();
+  // The figures tied to the claim come first; the second of them is picked.
+  const rows = [...doc.querySelectorAll("#figures details.fig-row")].filter((row) => !row.closest("details.fig-untied")).filter(visible);
+  const figureRow = rows[Math.min(1, rows.length - 1)];
+  figureRow.querySelector("summary").click();
   await sleep(100);
-  record(frame, "wide-pick-figure", { pickedFigure: rows[3].dataset.metricId, rowOpen: String(rows[3].open), inspectedLabel: text(doc.querySelector("#inspect-body .ins-figure-label")), inspectedValue: text(doc.querySelector("#inspect-body .ins-figure-value")) });
+  record(frame, "wide-pick-figure", { pickedFigure: figureRow.dataset.metricId, rowOpen: String(figureRow.open), inspectedLabel: text(doc.querySelector("#inspect-body .ins-figure-label")), inspectedValue: text(doc.querySelector("#inspect-body .ins-figure-value")) });
 
   // Over time for one claim: its own lane only. Then the whole thesis: every lane.
-  press(win, doc.body, "3");
+  press(win, doc.body, "4");
   await sleep(150);
   record(frame, "wide-c2-time");
   doc.getElementById("rail-thesis").click();
@@ -229,7 +237,7 @@ async function run() {
   record(frame, "wide-thesis-time");
 
   // Limits has nothing to read at the side: the centre pane takes the inspector's width.
-  press(win, doc.body, "6");
+  press(win, doc.body, "8");
   await sleep(100);
   record(frame, "wide-thesis-limits");
 
@@ -270,7 +278,7 @@ async function run() {
   record(frame, "wide-address", { theme: frame.contentDocument.documentElement.getAttribute("data-theme") });
 
   // ---- 1280x800, the smallest laptop the frame is drawn for
-  frame = await open("?sample=run-live&theme=terminal&claim=c1", 1280, 800, runReady, "the live run at 1280x800");
+  frame = await open("?sample=run-live&theme=terminal&claim=c1&tab=overview", 1280, 800, runReady, "the live run at 1280x800");
   record(frame, "laptop-c1");
 
   // ---- the first screen at 1440x900: the form, the guide as the lead, the samples
@@ -290,7 +298,7 @@ async function run() {
   record(frame, "mid-escape");
 
   // ---- a phone: one column, the tabs stay in view, nothing scrolls sideways
-  frame = await open("?sample=run-live&theme=paper", 360, 740, runReady, "the live run at 360x740");
+  frame = await open("?sample=run-live&theme=paper&tab=overview", 360, 740, runReady, "the live run at 360x740");
   doc = frame.contentDocument;
   win = frame.contentWindow;
   record(frame, "phone-loaded");
@@ -307,7 +315,7 @@ async function run() {
     await sleep(120);
     record(frame, name);
   }
-  frame = await open("?sample=run-live&theme=terminal", 360, 740, runReady, "the live run at 360x740, Terminal");
+  frame = await open("?sample=run-live&theme=terminal&tab=overview", 360, 740, runReady, "the live run at 360x740, Terminal");
   record(frame, "phone-terminal");
   frame = await open("?theme=paper", 360, 740, (d) => d.body.classList.contains("is-first") && d.getElementById("howto").parentElement.id === "lead-slot", "the first screen at 360x740");
   record(frame, "phone-first");

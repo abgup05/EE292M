@@ -252,6 +252,13 @@ def tape_metrics(run: dict[str, Any]) -> list[dict[str, Any]]:
 @every_run
 def test_the_tape_shows_the_records_own_figures_in_order(name: str) -> None:
     soup, run = page(name), record(name)
+    headline = (run.get("analysis") or {}).get("headline") or []
+    if headline:
+        # A record with an analysis names its own headline figures; the fixed set is not drawn beside them
+        # (uitests/test_analysis_dom.py compares each row with the record).
+        assert [row["data-headline"] for row in soup.select("#tape [data-headline]")] == [item["id"] for item in headline]
+        assert not soup.select("#tape .tape-cell")
+        return
     expected = tape_metrics(run)
     cells = soup.select("#tape .tape-cell")
     if not expected:
@@ -270,15 +277,16 @@ def test_the_run_leads_with_the_answer(name: str) -> None:
     soup = page(name)
     # In the markup (the order of a phone and of paper): the company and the decision, the verdicts,
     # the status line, then the whole thesis's result (the strip of verdicts), its summary, the verdict table and the figures, the claims' dockets and the rest.
-    order = ["rail-head", "scorecard", "status-banner", "overview-mast", "summary-section", "verdict-table", "tape-section", "claim-list", "timeline-section", "figures-section"]
+    order = ["rail-head", "scorecard", "status-banner", "analysis", "overview-mast", "summary-section", "verdict-table", "tape-section", "claim-list", "timeline-section", "figures-section"]
     every = [node.get("id") for node in soup.select("#run-view [id]")]
     assert [i for i in every if i in order] == order
     # How the run was made is one step away, in the Run drawer, not above the answer.
     assert soup.select_one("#run-view #run-head") is None and soup.select_one("#run-drawer #run-head .run-provenance") is not None
-    # A run opens on the whole thesis and its first tab: the tape and the summary are on show.
+    # A run opens on the whole thesis and its first tab: the analysis when the record has one, else the Overview.
+    first = "analysis" if record(name).get("analysis") else "overview"
     ws = soup.select_one("#workspace")
-    assert (ws["data-scope"], ws["data-tab"]) == ("thesis", "overview")
-    assert "is-off" not in (soup.select_one("#panel-overview").get("class") or [])
+    assert (ws["data-scope"], ws["data-tab"]) == ("thesis", first)
+    assert "is-off" not in (soup.select_one(f"#panel-{first}").get("class") or [])
     assert soup.select_one("#rail-thesis")["aria-current"] == "true"
 
 

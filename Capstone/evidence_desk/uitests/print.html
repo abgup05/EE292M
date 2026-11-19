@@ -54,7 +54,7 @@ function emulatePrint(win) {
 function record(step, extra) {
   const doc = frame.contentDocument;
   const top = (node) => Math.round(node.getBoundingClientRect().top + frame.contentWindow.scrollY);
-  const order = ["rail-head", "scorecard", "run-info", "status-banner", "tape-section", "summary-section", "claim-list", "sources", "timeline-section", "events-section", "figures-section", "coverage-limits"]
+  const order = ["rail-head", "scorecard", "run-info", "status-banner", "analysis", "tape-section", "summary-section", "claim-list", "sources", "timeline-section", "events-section", "figures-section", "method-section", "coverage-limits"]
     .map((id) => doc.getElementById(id))
     .filter(visible)
     .sort((a, b) => top(a) - top(b))
@@ -71,7 +71,11 @@ function record(step, extra) {
   li.dataset.chromeDrawn = ["cmdbar", "tabs", "sel-head", "inspector", "rail-thesis", "run-drawer", "statusbar", "legend", "howto"]
     .filter((id) => visible(doc.getElementById(id) || doc.querySelector(`.${id}`)))
     .join(" ");
-  li.dataset.pickButtonsDrawn = String([...doc.querySelectorAll("[data-pick-button]")].filter(visible).length);
+  // A citation chip and a headline figure's name are buttons on screen; on paper they are printed as the references they are.
+  li.dataset.pickButtonsDrawn = String([...doc.querySelectorAll("[data-pick-button]:not(.chip):not(.hl-open)")].filter(visible).length);
+  li.dataset.chipsDrawn = String([...doc.querySelectorAll("#analysis .chip")].filter(visible).length);
+  li.dataset.sentencesDrawn = String([...doc.querySelectorAll("#analysis [data-an-sentence]")].filter(visible).length);
+  li.dataset.analysisScopesDrawn = [...doc.querySelectorAll("#analysis > .an-scope")].filter(visible).map((node) => node.dataset.anScope || "thesis").join(" ");
   li.dataset.contextsDrawn = String([...doc.querySelectorAll("#claim-list .excerpt .context")].filter(visible).length);
   li.dataset.testDetailsDrawn = String([...doc.querySelectorAll("#claim-list .ct-detail")].filter(visible).length);
   li.dataset.openingsDrawn = String([...doc.querySelectorAll("#events .event-opening")].filter(visible).length);

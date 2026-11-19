@@ -321,6 +321,12 @@
             <div id="tabs" class="tabs" role="tablist" aria-label="Views of the selection"></div>
             <div id="centre-scroll" class="pane-scroll" tabindex="-1">
 
+              <!-- The analysis: the whole thesis's, and every claim's; only the selection's is shown, the others are inert. -->
+              <div id="panel-analysis" class="tabpanel" data-tab="analysis" data-scope="both">
+                <h3 id="analysis-title" class="visually-hidden">The analysis</h3>
+                <div id="analysis" class="analysis"></div>
+              </div>
+
               <div id="panel-overview" class="tabpanel" data-tab="overview" data-scope="thesis">
                 <!-- The result first: when the run was made and one cell per claim, coloured by its verdict. -->
                 <div id="overview-mast" class="overview-mast"></div>
@@ -430,6 +436,13 @@
                 <p class="panel-none muted">The record holds no reported figures.</p>
               </div>
 
+              <div id="panel-method" class="tabpanel" data-tab="method" data-scope="both">
+                <section id="method-section" class="block" aria-labelledby="method-title">
+                  <h3 id="method-title" class="block-title" data-code="MTH">How this run was made</h3>
+                  <div id="method" class="method"></div>
+                </section>
+              </div>
+
               <div id="panel-limits" class="tabpanel" data-tab="limits" data-scope="both">
                 <div class="block-pair">
                   <section id="coverage-limits" class="block" aria-labelledby="limits-title" tabindex="-1">
@@ -482,7 +495,8 @@
             <div class="intro-samples">
               <h2 class="rail-title">Recorded samples</h2>
               <ul id="sample-nav" class="sample-nav">
-                <li><a id="live-link" class="sample-button" href="?sample=run-live">See a live run read by three readers</a> <span class="sample-what">NVIDIA on 18 Nov 2026, answered by the Anthropic API: verdicts, computed tests and who read them</span></li>
+                <li><a id="live-link" class="sample-button" href="?sample=run-live">See a live run with its analysis</a> <span class="sample-what">NVIDIA on 19 Nov 2026, answered by the Anthropic API: the argument sentence by sentence, each citing the figures and filings it rests on</span></li>
+                <li><a id="costco-link" class="sample-button" href="?sample=run-costco">See another company's live run</a> <span class="sample-what">Costco on 19 Nov 2026, answered by the Anthropic API: four claims, one about its peers</span></li>
                 <li><a id="sample-link" class="sample-button" href="?sample">See a recorded run</a> <span class="sample-what">NVIDIA, five claims, model answers replayed from a recording</span></li>
                 <li><a id="events-link" class="sample-button" href="?sample=run-events">See a live run that an 8-K postdates</a> <span class="sample-what">NVIDIA on 18 Nov 2026, answered by the Anthropic API</span></li>
                 <li><a id="tagged-link" class="sample-button" href="?sample=run-tagged">See the same run with tagged figures offered</a> <span class="sample-what">segment, product and customer figures a finding can cite</span></li>
@@ -491,6 +505,7 @@
                 <li><a id="inbox-link" class="sample-button" href="?sample=inbox">See a recorded inbox of the standing watch</a> <span class="sample-what">six kinds of item on made-up NVIDIA filings, scripted verdicts</span></li>
                 <li><a id="computed-link" class="sample-button" href="?sample=computed">See claims computed from the facts, over time</a> <span class="sample-what">NVIDIA, five claims, no model: tests that hold, fail or cannot be computed</span></li>
                 <li><a id="readers-link" class="sample-button" href="?sample=readers">See claims only the model readers could read</a> <span class="sample-what">six claims, two models agreeing where the grammar refused, answers recorded through the API</span></li>
+                <li><a id="shapes-link" class="sample-button" href="?sample=analysis-shapes">See every shape the analysis can take</a> <span class="sample-what">a hand-built argument, no model: an unverified sentence, a lean against its verdict, readers that disagree</span></li>
                 <li><a id="as-of-link" class="sample-button" href="?sample=as-of">See the same run as of 1 Mar 2026</a> <span class="sample-what">only what was filed by that date</span></li>
                 <li><a id="ledger-link" class="sample-button" href="?sample=restatements">See a recorded restatement ledger</a> <span class="sample-what">NVIDIA: values a later filing reported differently</span></li>
               </ul>

@@ -117,8 +117,38 @@ enterprise value:
 Defaults, each printed on the result and each settable on the request: margin = the trailing
 operating margin; tax 21%; sales-to-capital = trailing revenue ÷ (equity + debt − cash and
 securities), or 1.5 when that is not positive; r = 9%; terminal growth 3%. A grid varies r by ±1
-and ±2 points and the margin by ±5 points. When the return on new capital (margin × (1 − tax) ×
-sales-to-capital) is under r, growth lowers the value, and the result says so.
+and ±2 points and the margin by ±5 points.
+
+**The margin's two sides are one period** (since version 14.3; the seventh referee's finding
+5). Revenue and operating income are each read over the trailing four quarters, or over the
+newest fiscal year when four quarters cannot be summed, each on its own. Until 14.3 the margin
+divided whatever the two gave, so a fiscal year's operating income could sit over four later
+quarters' revenue and the assumption line still said "trailing operating margin". Now, when
+one of them fell back, both are read over the fiscal year for the margin, and the assumption
+line names the period ("the operating margin of the fiscal year ended 2025-12-31, $209.5M ÷
+$940.0M, both sides over that year"). "The trailing operating margin" now always means four
+quarters on both sides; its wording is unchanged, because it is in the prompts the recorded
+model answers were given. The starting revenue is still the trailing figure. When the two
+cannot be had over one period, there is no implied growth, with that reason.
+
+**The value moves one way with growth, so there is one root or none.** With x = 1 + g, every
+coefficient of the value's derivative in x has the sign of margin × (1 − tax) − r ÷
+(sales-to-capital × (1 + r)). The value rises with growth when the return on new capital
+(margin × (1 − tax) × sales-to-capital) is above r ÷ (1 + r), 8.26% at r = 9%, and falls when
+below; then a higher price implies lower growth, and the result says so. The referee asked
+which root is taken when there are two: there are never two
+(`tests/test_market_view.py::test_value_moves_one_way_with_growth_so_there_is_never_a_second_root`).
+Looking found something else: until 14.3 the result's note compared the return with r itself,
+so between 8.26% and 9% it said growth lowered the value when it raised it.
+
+**The target is the enterprise value, not the market value**: market value plus debt less cash
+and current marketable securities, as the valuation above computes it (non-current securities
+and leases are not in it). The result's target, formula, first sentence and last assumption
+say "enterprise value". The two peer-margin sentences say "reaches the price" and "the same
+price needs": loose, and left, because an analytic's reading is shown to the analysing model
+and changing a word of it would leave the recorded answers of both examples unplayable (it was
+tried: `make examples-analysis` dropped the model's example). No text in the repository says
+the calculation reproduces the market value.
 
 The number alone means little, so it is set beside four things:
 

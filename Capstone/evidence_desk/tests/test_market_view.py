@@ -14,7 +14,14 @@ import pytest
 
 from app.core.price_series import Close, PriceSeriesError, closes_until, parse_closes
 from app.core.reaction import event_reaction
-from app.core.reverse_dcf import DcfAssumptions, implied_growth, present_value, sensitivity
+from app.core.reverse_dcf import (
+    HIGH,
+    LOW,
+    DcfAssumptions,
+    implied_growth,
+    present_value,
+    sensitivity,
+)
 from app.core.valuation import shares_outstanding
 
 # Prices
@@ -229,3 +236,50 @@ def test_too_short_a_history_is_said_not_guessed() -> None:
     assert not isinstance(found, str)
     assert found[0].normal is None
     assert "fewer than 60" in found[0].line
+
+
+# The curve of value against growth (seventh referee, finding 5) --------------------------------
+
+
+def _assumed(margin: float, s2c: float, rate: float = 9.0, terminal: float = 3.0) -> DcfAssumptions:
+    return DcfAssumptions(
+        revenue=100.0,
+        operating_margin=margin,
+        tax_rate=21.0,
+        sales_to_capital=s2c,
+        discount_rate=rate,
+        terminal_growth=terminal,
+    )
+
+
+def test_value_moves_one_way_with_growth_so_there_is_never_a_second_root() -> None:
+    """The referee's worry: a second crossing of the target, silently ignored.
+
+    There is none. The value is a polynomial in (1 + g) whose derivative's coefficients
+    all carry the sign of ``margin × (1 − tax) × sales-to-capital × (1 + r) − r``, so it
+    rises with growth or falls with it over the whole range, for every valid set of
+    assumptions. Checked here over a grid, at every point of the scan.
+    """
+    points = [LOW + i for i in range(int(HIGH - LOW) + 1)]
+    for margin in (-20.0, 2.0, 8.0, 10.0, 15.0, 30.0, 65.0):
+        for s2c in (0.1, 0.5, 1.0, 1.1, 2.0, 10.0):
+            for rate, terminal in ((6.0, 3.0), (9.0, 3.0), (9.0, -5.0), (20.0, 5.0)):
+                a = _assumed(margin, s2c, rate, terminal)
+                values = [present_value(g, a) for g in points]
+                steps = {b > c for b, c in zip(values[1:], values, strict=False) if b != c}
+                assert len(steps) == 1, (margin, s2c, rate, terminal)
+                rises = a.return_on_new_capital * (1 + rate / 100) > rate
+                assert steps == {rises}, (margin, s2c, rate, terminal)
+
+
+def test_the_note_on_direction_is_given_exactly_when_growth_lowers_the_value() -> None:
+    """Until version 14.3 the note compared the return on new capital with the discount
+    rate itself. Between r ÷ (1 + r) and r (8.26% to 9%) growth still raises the value,
+    and the note said it lowered it."""
+    between = _assumed(10.0, 1.1)  # 10% × 0.79 × 1.1 = 8.69%
+    assert present_value(10.0, between) > present_value(0.0, between)
+    assert implied_growth(present_value(5.0, between), between).note == ""
+    under = _assumed(10.0, 1.0)  # 7.9%, under 8.26%
+    assert present_value(10.0, under) < present_value(0.0, under)
+    note = implied_growth(present_value(5.0, under), under).note
+    assert "growth lowers the value" in note and "7.9%" in note and "8.3%" in note

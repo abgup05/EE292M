@@ -10,7 +10,7 @@
   "price_provider": "SEC Form 13F",
   "price_day": "2026-09-30",
   "price_known": "2026-11-12",
-  "price_note": "The close of the last trading day of the quarter ended 2026-09-30, not a price of today; the issuer is matched by name (NVIDIA CORPORATION). Confirmed within 0.5% by the 13F of California Public Employees Retirement System (0000919079-26-000013) and of New York State Common Retirement Fund (0000810265-26-000008).",
+  "price_note": "The manager's own valuation of its position at the quarter ended 2026-09-30, taken to be the close of the quarter's last trading day and never compared with an exchange; not a price of today. The issuer is matched by name (NVIDIA CORPORATION), not by ticker. Confirmed within 0.5% by the 13F of California Public Employees Retirement System (0000919079-26-000013) and of New York State Common Retirement Fund (0000810265-26-000008).",
   "valuation": [
     {
       "id": "market_value:NVDA:2026-09-30",
@@ -64,7 +64,7 @@
       "reading": "At $228.38 on 2026-09-30, the 24,100,000,000 shares outstanding on 2026-08-21 are worth $5.50T.",
       "data_origin": "market_prices",
       "as_of": "2026-11-18",
-      "note": "The close of the last trading day of the quarter ended 2026-09-30, not a price of today; the issuer is matched by name (NVIDIA CORPORATION). Confirmed within 0.5% by the 13F of California Public Employees Retirement System (0000919079-26-000013) and of New York State Common Retirement Fund (0000810265-26-000008)."
+      "note": "The manager's own valuation of its position at the quarter ended 2026-09-30, taken to be the close of the quarter's last trading day and never compared with an exchange; not a price of today. The issuer is matched by name (NVIDIA CORPORATION), not by ticker. Confirmed within 0.5% by the 13F of California Public Employees Retirement System (0000919079-26-000013) and of New York State Common Retirement Fund (0000810265-26-000008)."
     },
     {
       "id": "enterprise_value:NVDA:2026-09-30",
@@ -722,7 +722,7 @@
         "reading": "With the operating margin at the industry's median of 4.2% (n = 61, 2025) instead of 65.2%, no growth from −50% to +100% a year reaches the price.",
         "data_origin": "market_prices",
         "as_of": "2026-11-18",
-        "note": "At these assumptions the return on new capital (4.9%) is under the discount rate (9%): growth lowers the value, so a higher price implies lower growth."
+        "note": "At these assumptions the return on new capital (4.9%) is under the 8.3% at which growth pays for itself at a discount rate of 9%: growth lowers the value, so a higher price implies lower growth."
       },
       {
         "id": "reverse_dcf:NVDA:2026-09-30:peer_p90",

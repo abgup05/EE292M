@@ -259,7 +259,7 @@
       "reading": "At $228.38 on 2026-09-30, the 24,100,000,000 shares outstanding on 2026-08-21 are worth $5.50T.",
       "reading_origin": "code",
       "available": true,
-      "note": "The close of the last trading day of the quarter ended 2026-09-30, not a price of today; the issuer is matched by name (NVIDIA CORPORATION). Confirmed within 0.5% by the 13F of California Public Employees Retirement System (0000919079-26-000013) and of New York State Common Retirement Fund (0000810265-26-000008)."
+      "note": "The manager's own valuation of its position at the quarter ended 2026-09-30, taken to be the close of the quarter's last trading day and never compared with an exchange; not a price of today. The issuer is matched by name (NVIDIA CORPORATION), not by ticker. Confirmed within 0.5% by the 13F of California Public Employees Retirement System (0000919079-26-000013) and of New York State Common Retirement Fund (0000810265-26-000008)."
     },
     {
       "id": "enterprise_value:NVDA:2026-09-30",

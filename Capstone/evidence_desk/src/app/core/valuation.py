@@ -141,7 +141,11 @@ def shares_outstanding(companyfacts: object, as_of: date) -> Shares | str:
 
 @dataclass
 class Figure:
-    """A number read from the facts for a valuation, or None and why, with its inputs."""
+    """A number read from the facts for a valuation, or None and why, with its inputs.
+
+    ``basis`` says what a flow was summed over: "four quarters" or "fiscal year" ("" for
+    a balance, and for a flow that could not be read).
+    """
 
     label: str
     value: float | None
@@ -149,6 +153,7 @@ class Figure:
     formula: str = ""
     inputs: list[ResultInput] = field(default_factory=list)
     note: str = ""
+    basis: str = ""
 
 
 def fact_input(label: str, ref: FactRef) -> ResultInput:
@@ -166,10 +171,17 @@ def fact_input(label: str, ref: FactRef) -> ResultInput:
     )
 
 
-def trailing(measures: Measures, metric: str, label: str) -> Figure:
-    """The trailing four quarters of a flow; the newest fiscal year when they cannot be summed."""
+FOUR_QUARTERS, FISCAL_YEAR = "four quarters", "fiscal year"
+
+
+def trailing(measures: Measures, metric: str, label: str, *, year_only: bool = False) -> Figure:
+    """The trailing four quarters of a flow; the newest fiscal year when they cannot be summed.
+
+    With ``year_only`` the fiscal year is read whether or not four quarters can be summed,
+    to put a figure on the same basis as one that had to fall back.
+    """
     notes: list[str] = []
-    for period in (Period("TTM"), Period("FY")):
+    for period in (Period("FY"),) if year_only else (Period("TTM"), Period("FY")):
         slot = measures.bind(period, metric)
         if isinstance(slot, str):
             notes.append(slot)
@@ -188,9 +200,36 @@ def trailing(measures: Measures, metric: str, label: str) -> Figure:
             period=slot.end.isoformat(),
             formula=outcome.formula,
             inputs=[fact_input(label, ref) for ref in used],
-            note=note,
+            note="" if year_only else note,
+            basis=FOUR_QUARTERS if period.kind == "TTM" else FISCAL_YEAR,
         )
     return Figure(label=label, value=None, note=" ".join(n for n in notes if n))
+
+
+def margin_sides(
+    measures: Measures, revenue: Figure, income: Figure
+) -> tuple[Figure, Figure] | None:
+    """Operating income and revenue over one and the same period, for a margin; None when
+    they cannot be had so.
+
+    Each of the two is read over four quarters, or over the fiscal year when four
+    quarters cannot be summed, on its own. When one fell back and the other did not, both
+    are read over the fiscal year: a margin of a fiscal year's income over four later
+    quarters' revenue is a margin of nothing. (income, revenue).
+    """
+    if revenue.value is None or income.value is None:
+        return None
+    if revenue.basis == income.basis and revenue.period == income.period:
+        return income, revenue
+    year_income = trailing(measures, "operating_income", "Operating income", year_only=True)
+    year_revenue = trailing(measures, "revenue", "Revenue", year_only=True)
+    if (
+        year_income.value is None
+        or year_revenue.value is None
+        or year_income.period != year_revenue.period
+    ):
+        return None
+    return year_income, year_revenue
 
 
 # Totals of debt a company may tag instead of the parts the catalogue adds, in the order
@@ -354,6 +393,9 @@ class Valuation:
     enterprise_value: float | None = None
     revenue: Figure | None = None
     operating_income: Figure | None = None
+    # Operating income and revenue over one period, for the reverse DCF's margin
+    # (margin_sides); None when the two cannot be read over the same period.
+    margin: tuple[Figure, Figure] | None = None
     debt: Figure | None = None
     cash: Figure | None = None
     equity: Figure | None = None
@@ -509,6 +551,7 @@ def valuation(
     out.equity = balance(measures, "equity", "Shareholders' equity")
     out.revenue = trailing(measures, "revenue", "Revenue")
     out.operating_income = trailing(measures, "operating_income", "Operating income")
+    out.margin = margin_sides(measures, out.revenue, out.operating_income)
     net_income = trailing(measures, "net_income", "Net income")
     fcf = trailing(measures, "free_cash_flow", "Free cash flow")
     ev_reason = next((f"{f.label}: {f.note}" for f in (out.debt, out.cash) if f.value is None), "")

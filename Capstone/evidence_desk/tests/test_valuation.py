@@ -169,3 +169,82 @@ def test_the_companys_own_growth_is_compound_and_needs_consecutive_years() -> No
 def test_money_prints_trillions() -> None:
     assert money(5.5038e12) == "$5.50T" and money(-1.2e12) == "-$1.20T"
     assert money(33.37e9) == "$33.37B"
+
+
+# The reverse DCF's margin: numerator and denominator on one basis (seventh referee, finding 5) --
+
+
+def _mixed_basis() -> tuple[Any, float, float, float]:
+    """A company whose revenue sums over four quarters and whose operating income does not.
+
+    Operating income is tagged for fiscal years only; a first quarter of 2026 with revenue
+    of 500M has been filed. So trailing revenue is 230 + 240 + 250 + 500 = 1,220M, the
+    fiscal year's is 220 + 230 + 240 + 250 = 940M, and operating income is fiscal 2025's.
+    """
+    from tests.test_claim_eval import _income
+
+    payload = company(FULL)
+    gaap = payload["facts"]["us-gaap"]
+    units = gaap["OperatingIncomeLoss"]["units"]
+    units["USD"] = [entry for entry in units["USD"] if entry["form"] == "10-K"]
+    first_quarter = {"filed": "2026-05-10", "accn": "q-2026-1", "form": "10-Q", "fy": 2026}
+    gaap["Revenues"]["units"]["USD"].append(
+        fact(500 * M, "2026-03-31", "2026-01-01", fp="Q1", **first_quarter)
+    )
+    as_of = date(2026, 6, 1)
+    measures = Measures(FactBook(payload, as_of=as_of), fiscal_calendar(payload, as_of=as_of))
+    found = valuation(
+        "TEST",
+        Price(10.0, date(2026, 5, 29), "a test price"),
+        shares_outstanding(payload, as_of),
+        measures,
+        as_of.isoformat(),
+        companyfacts=payload,
+    )
+    return found, float(sum(_income(i) for i in range(12, 16))), 1220.0 * M, 940.0 * M
+
+
+def test_the_implied_growth_uses_a_margin_whose_two_sides_are_one_period() -> None:
+    from app.services.market_view import DcfInputs, Outside, reverse_dcf
+
+    found, income, trailing_revenue, year_revenue = _mixed_basis()
+    assert found.revenue is not None and found.revenue.value == trailing_revenue
+    assert found.operating_income is not None and found.operating_income.value == income
+    assert "fiscal year used" in found.operating_income.note
+    result = reverse_dcf(
+        "TEST",
+        found,
+        DcfInputs(),
+        own_growth=[],
+        outside=Outside(),
+        as_of="2026-06-01",
+        price_day="2026-05-29",
+    )
+    margin_line = next(line for line in result.assumptions if line.startswith("Operating margin"))
+    mixed, one_basis = income / trailing_revenue * 100, income / year_revenue * 100
+    assert f"Operating margin {one_basis:.1f}%" in margin_line, margin_line
+    assert f"{mixed:.1f}%" not in margin_line
+    assert "fiscal year ended 2025-12-31" in margin_line
+    assert f"{money(income)} ÷ {money(year_revenue)}" in margin_line
+    # The starting revenue is still the trailing four quarters: that is what grows.
+    assert result.assumptions[0].startswith(f"Starting revenue {money(trailing_revenue)}")
+
+
+def test_a_margin_of_four_quarters_is_worded_as_it_always_was() -> None:
+    """The usual case keeps its words to the letter: they are in the prompts the recorded
+    model answers were given, and a changed word would leave those answers unplayable."""
+    from app.services.market_view import DcfInputs, Outside, reverse_dcf
+
+    result = reverse_dcf(
+        "TEST",
+        valued(company(FULL)),
+        DcfInputs(),
+        own_growth=[],
+        outside=Outside(),
+        as_of=AS_OF.isoformat(),
+        price_day="2026-02-27",
+    )
+    margin_line = next(line for line in result.assumptions if line.startswith("Operating margin"))
+    assert margin_line == (
+        "Operating margin 22.3%, every year: the trailing operating margin, $209.5M ÷ $940.0M."
+    )

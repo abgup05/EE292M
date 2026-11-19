@@ -7,7 +7,10 @@ measure's own historical quarterly changes for each of the next
 value, and the estimate is the share of paths in which the test holds in every one of those
 quarters. A ratio steps by points (its changes are differences), an amount by relative
 changes (its changes are growth rates). For growth on a year earlier, each future quarter is
-compared with the known quarter four before it.
+compared with the known quarter four before it. A growth rate means nothing from or across
+zero (a loss "growing 10%" becomes a larger loss), so an amount whose current value, a
+year-earlier base, or any quarter of the history drawn from is zero or negative gets no
+estimate, with that reason (:func:`not_positive`).
 
 It applies to a test of a quarterly measure of the whole company against a constant: a
 threshold on its value (``gross_margin[Q] > 70%``, also held in each of several quarters) or
@@ -44,7 +47,8 @@ class Setup:
     """What the simulation needs: the start, the changes, the threshold and the test's kind.
 
     ``levels`` are the latest quarters' values, newest first (the year-earlier bases of a
-    growth test); ``changes`` the historical quarterly changes, newest first.
+    growth test); ``changes`` the historical quarterly changes, newest first; ``history``
+    every quarterly value the changes were taken between, newest first.
     """
 
     kind: str  # "value" or "yoy"
@@ -53,6 +57,28 @@ class Setup:
     changes: tuple[float, ...]
     op: str
     threshold: float
+    history: tuple[float, ...] = ()
+
+
+def not_positive(setup: Setup) -> tuple[str, float] | None:
+    """Which value keeps a growth step from meaning anything, and the value; None when none.
+
+    Only for a measure that steps by growth rates. In order: the current value
+    ("start"), a year-earlier quarter a growth test would be measured on ("base"), a
+    quarter of the history the changes are drawn from ("history").
+    """
+    if setup.step != "relative":
+        return None
+    if setup.levels and setup.levels[0] <= 0:
+        return "start", setup.levels[0]
+    if setup.kind == "yoy":
+        for base in setup.levels[1:4]:
+            if base <= 0:
+                return "base", base
+    for value in setup.history:
+        if value <= 0:
+            return "history", value
+    return None
 
 
 def holds_on_path(setup: Setup, draws: Sequence[float]) -> bool:
@@ -116,6 +142,7 @@ def _setup(test: ClaimTest, measures: Measures) -> Setup | str:
         changes=tuple(changes),
         op=test.op,
         threshold=test.right.value,
+        history=tuple(values),
     )
 
 
@@ -158,6 +185,14 @@ def persistence(
             paths=paths, horizon=horizon, changes=len(setup.changes), step=words, seed=seed
         ),
     }
+    refused = not_positive(setup)
+    if refused is not None:
+        what, value = refused
+        warning = rules.PERSISTENCE_NOT_POSITIVE.format(
+            what=rules.PERSISTENCE_NOT_POSITIVE_WHAT[what],
+            shown=display(value, unit),  # type: ignore[arg-type]
+        )
+        return record.model_copy(update={**common, "warning": warning, "display": "n/a"})
     if len(setup.changes) < rules.PERSISTENCE_MIN_CHANGES:
         warning = rules.PERSISTENCE_SHORT.format(
             changes=len(setup.changes), needed=rules.PERSISTENCE_MIN_CHANGES

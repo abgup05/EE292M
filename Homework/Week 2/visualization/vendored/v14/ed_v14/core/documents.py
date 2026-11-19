@@ -73,6 +73,21 @@ class FilingRef:
 
 
 @dataclass(frozen=True)
+class FormListing:
+    """A company's filings of one form, newest first, and how far the index was read.
+
+    ``where`` names the part of EDGAR's index that was read ("EDGAR's recent index
+    and the 2 newest of its 3 older index pages"). ``complete`` is True only when
+    every page of the index was read: only then is a filing that is not in ``refs``
+    one EDGAR does not list.
+    """
+
+    refs: list[FilingRef]
+    where: str
+    complete: bool
+
+
+@dataclass(frozen=True)
 class FetchedFiling:
     """The primary document of a filing as retrieved."""
 

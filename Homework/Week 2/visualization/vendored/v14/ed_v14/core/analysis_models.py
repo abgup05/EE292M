@@ -210,21 +210,42 @@ class Persistence(BaseModel):
     caveat: str = ""
 
 
+class RestatedThreshold(BaseModel):
+    """A number in a sentence that is a threshold, not a fact the record reports.
+
+    ``raw`` is the number as the sentence writes it. ``of`` names whose threshold it is:
+    the computed test or corollary the sentence cites ("test:c2", "cor:c2:1"), or "this
+    condition's own threshold". ``note`` says it in the words the page shows. A threshold
+    is a line somebody drew (the claim's author, the proposing model, the model writing
+    the condition); the audit does not fail a sentence for restating one and never counts
+    it as a number the evidence carries.
+    """
+
+    raw: str
+    of: str
+    note: str = ""
+
+
 class ArgSentence(BaseModel):
     """One sentence of the argued analysis: written by a model, audited by code.
 
     ``cites`` are the ids it rests on (findings, analytics, metrics, computed tests,
     corollaries, odds, 8-K events; claim ids may be named but are not evidence).
     ``verified`` is True when every cited id is in this run and of an allowed kind, at
-    least one is evidence, and every number the sentence writes is a value of something it
-    cites; otherwise ``problems`` says why, one reason each. An unverified sentence is
-    kept and marked, never removed.
+    least one is evidence, and every number the sentence writes is either a value the
+    cited evidence carries or a threshold listed in ``thresholds``; otherwise
+    ``problems`` says why, one reason each. An unverified sentence is kept and marked,
+    never removed. ``thresholds`` lists each number that was let through as a threshold
+    restated, not checked as a fact: a verified sentence with any is not plainly
+    verified, and a reader is to be told (empty in records made before version 14.3,
+    whose audit let such numbers pass unlisted).
     """
 
     text: str
     cites: list[str] = Field(default_factory=list)
     verified: bool = False
     problems: list[str] = Field(default_factory=list)
+    thresholds: list[RestatedThreshold] = Field(default_factory=list)
 
 
 class Condition(ArgSentence):
@@ -365,6 +386,7 @@ class Analysis(BaseModel):
     corollaries_by: str = ""
     corollaries_note: str = ""
     corollary_rule: str = ""
+    audit_rule: str = ""
     persistence_method: str = ""
     argument_by: Literal["model", "none"] = "none"
     argument_detail: str = ""

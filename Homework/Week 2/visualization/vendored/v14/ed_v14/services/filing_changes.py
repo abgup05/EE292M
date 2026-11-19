@@ -13,12 +13,13 @@ filing's text right after that call, and so does :func:`filing_changes`.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Protocol, cast
 
 from ed_v14.core import limits
 from ed_v14.core.change_models import FilingChanges, FilingSide
-from ed_v14.core.documents import Document, FetchedFiling, FilingRef
+from ed_v14.core.documents import Document, FetchedFiling, FilingRef, FormListing
 from ed_v14.core.filing_diff import MAX_LISTED, diff_documents, totals
 from ed_v14.core.models import Company
 from ed_v14.core.ports import SourceError
@@ -113,6 +114,66 @@ def read_filing_pair(
     finally:
         if own_cache:
             store.close()
+
+
+@dataclass(frozen=True)
+class Predecessor:
+    """A filing found in a source's listing of its form, and the one filed before it.
+
+    ``later`` is None when the filing is not in the listing; ``earlier`` is None when
+    the listing holds no filing of the form filed before it. ``listed`` counts the
+    filings of the form that were listed. ``where`` names the part of EDGAR's index
+    that was read when the source could say (else ""), and ``complete`` is True only
+    when the source read the whole index: only then is a missing filing one that
+    EDGAR does not list.
+    """
+
+    later: FilingRef | None
+    earlier: FilingRef | None
+    listed: int
+    where: str = ""
+    complete: bool = False
+
+
+def _pick(refs: Sequence[FilingRef], form: str, accession: str) -> tuple[FilingRef | None, ...]:
+    later = next((ref for ref in refs if ref.accession == accession), None)
+    if later is None:
+        return None, None
+    key = (later.filed_date, later.accession)
+    before = [
+        ref
+        for ref in refs
+        if ref.form == form
+        and ref.accession != later.accession
+        and (ref.filed_date, ref.accession) < key
+    ]
+    return later, max(before, key=lambda ref: (ref.filed_date, ref.accession), default=None)
+
+
+def find_predecessor(
+    filings: object, company: Company, form: str, accession: str, history: int
+) -> Predecessor:
+    """The filing ``accession`` of ``form`` and the filing of that form filed before it.
+
+    The source's newest ``history`` filings of the form are listed first
+    (``filings_of_form``). EDGAR's client stops reading its index once it has two
+    of the form, so that list can end at the filing asked about, or before it,
+    while EDGAR lists older ones: then, when the source can
+    (``filings_back_to``, as :class:`app.sources.edgar.EdgarClient` can), the older
+    pages of the index are read back to the filing before ``accession``. Raises
+    SourceError when the source fails.
+    """
+    lister = cast(FormFilingSource, filings)
+    refs = lister.filings_of_form(company, form, history)
+    later, earlier = _pick(refs, form, accession)
+    if later is not None and earlier is not None:
+        return Predecessor(later, earlier, len(refs))
+    deeper = getattr(filings, "filings_back_to", None)
+    if not callable(deeper):
+        return Predecessor(later, earlier, len(refs))
+    listing: FormListing = deeper(company, form, accession)
+    later, earlier = _pick(listing.refs, form, accession)
+    return Predecessor(later, earlier, len(listing.refs), listing.where, listing.complete)
 
 
 def read_pair(

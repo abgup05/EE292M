@@ -24,7 +24,7 @@ from urllib.parse import urlsplit
 
 import httpx
 
-from ed_v14.core.documents import FetchedFiling, FilingRef
+from ed_v14.core.documents import FetchedFiling, FilingRef, FormListing
 from ed_v14.core.fact_models import CompanyProfile
 from ed_v14.core.models import Company
 from ed_v14.core.ports import SourceError, UnknownTicker
@@ -60,6 +60,15 @@ OPTIONAL_INDEX_COLUMNS = ("items",)
 INDEX_REUSE_SECONDS = 60.0
 # Older index pages read, newest first, to find the filing before the latest of a form.
 MAX_OLDER_INDEX_PAGES = 12
+
+
+def _holds_predecessor(rows: list[dict[str, str]], accession: str) -> bool:
+    """True when ``rows`` hold the filing ``accession`` and a row filed before it."""
+    own = next((row for row in rows if row["accessionNumber"] == accession), None)
+    if own is None:
+        return False
+    key = (own["filingDate"], own["accessionNumber"])
+    return any((row["filingDate"], row["accessionNumber"]) < key for row in rows)
 
 
 def normalize_ticker(ticker: str) -> str:
@@ -318,6 +327,11 @@ class EdgarClient:
         index are read, newest first, until there are two or
         :data:`MAX_OLDER_INDEX_PAGES` have been read. Fewer than two after that is a
         :class:`SourceError` that says how far the search went.
+
+        ``limit`` only trims: once the recent index holds two of the form no older
+        page is read, so the list may be shorter than ``limit`` though EDGAR has more,
+        and its oldest entry is not the company's first filing of the form. To find the
+        filing before one that is not the newest, use :meth:`filings_back_to`.
         """
         if limit < 2:
             raise ValueError("limit must be at least 2")
@@ -328,6 +342,38 @@ class EdgarClient:
                 "two are needed to compare"
             )
         return [self._ref(company.cik, row) for row in rows[:limit]]
+
+    def filings_back_to(self, company: Company, form: str, accession: str) -> FormListing:
+        """The filings of exactly ``form``, newest first, back to the one before ``accession``.
+
+        For comparing a filing that is not the newest of its form (a run made a year
+        ago, a run as of a past date) with the one filed before it. The recent index
+        first; then the older pages, newest first, until the rows hold ``accession``
+        and a filing of the form filed before it, or :data:`MAX_OLDER_INDEX_PAGES` have
+        been read. The listing says how far the index was read and whether that was
+        all of it; it never raises for a filing that was not found.
+        """
+        what = f"the filing index of {company.name}"
+        payload = self._index_payload(company)
+        recent = self._rows(payload["filings"]["recent"], what)
+        rows = [row for row in recent if row["form"] == form]
+        older = self._older_pages(payload, company, what)
+        read = 0
+        for name in older[:MAX_OLDER_INDEX_PAGES]:
+            if _holds_predecessor(rows, accession):
+                break
+            page = self._get_json(SUBMISSIONS_PAGE_URL.format(name=name), what)
+            rows += [row for row in self._rows(page, what) if row["form"] == form]
+            read += 1
+        where = "EDGAR's recent index"
+        if read:
+            where += f" and the {read} newest of its {len(older)} older index pages"
+        rows.sort(key=lambda row: (row["filingDate"], row["accessionNumber"]), reverse=True)
+        return FormListing(
+            refs=[self._ref(company.cik, row) for row in rows],
+            where=where,
+            complete=read == len(older),
+        )
 
     def latest_of_form(self, company: Company, form: str) -> FilingRef:
         """The newest filing of exactly ``form`` (amendments skipped).

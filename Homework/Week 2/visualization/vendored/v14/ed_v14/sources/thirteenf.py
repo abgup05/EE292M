@@ -234,6 +234,9 @@ class QuarterEndPrices:
         newest.sort(key=lambda f: (-f.period.toordinal(), order[f.manager_cik]))
         taken: tuple[ManagerFiling, float, Matched, float] | None = None
         confirmations: list[tuple[ManagerFiling, float]] = []
+        # Tables read before the price was taken, whose spelling of the issuer did not match:
+        # they may still hold the same CUSIP, and then they confirm or contradict the price.
+        passed_over: list[tuple[ManagerFiling, Table]] = []
         for filing in newest:
             if taken is not None and filing.period != taken[0].period:
                 continue
@@ -249,9 +252,16 @@ class QuarterEndPrices:
                 matched = match_issuer(table.holdings, company.name)
                 if isinstance(matched, str):
                     reasons.append(f"{filing.manager}, quarter ended {filing.period}: {matched}")
+                    passed_over.append((filing, table))
                     continue
                 scale = value_scale(table.holdings)
                 taken = (filing, implied_price(matched.rows, scale), matched, scale)
+                for earlier, held in passed_over:
+                    rows = rows_of(held.holdings, matched.cusip)
+                    if rows and earlier.period == filing.period:
+                        confirmations.append(
+                            (earlier, implied_price(rows, value_scale(held.holdings)))
+                        )
             else:
                 rows = rows_of(table.holdings, taken[2].cusip)
                 if rows:
@@ -312,10 +322,12 @@ class QuarterEndPrices:
             known=filing.filed,
             url=f"{filing.folder}/",
             note=(
-                "The close of the last trading day of the quarter ended "
-                f"{filing.period.isoformat()}, not a price of today; the issuer is matched by "
-                f"name ({matched.issuer}). " + " ".join(checks)
+                "The manager's own valuation of its position at the quarter ended "
+                f"{filing.period.isoformat()}, taken to be the close of the quarter's last "
+                "trading day and never compared with an exchange; not a price of today. The "
+                f"issuer is matched by name ({matched.issuer}), not by ticker. " + " ".join(checks)
             ),
             inputs=inputs,
             confirmed=bool(agreeing) and not differing,
+            needs_confirmation=True,
         )

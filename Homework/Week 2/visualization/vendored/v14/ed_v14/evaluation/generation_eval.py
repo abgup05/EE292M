@@ -1433,7 +1433,7 @@ def run_generation(
     record_inputs = {**inputs, "meaning_check": checker.name} if checker else inputs
     record = build_record(
         run.outcomes,
-        models=transport.detail,
+        models=transport.describe_used(),
         inputs=record_inputs,
         figures={ticker: f.note for ticker, f in figures.items()},
         generated_at=when,

@@ -57,7 +57,7 @@ from ed_v14.core.watch_models import (
 )
 from ed_v14.core.watch_report import what_moved
 from ed_v14.services import theses, thesis_run
-from ed_v14.services.filing_changes import compare_pair, read_pair
+from ed_v14.services.filing_changes import compare_pair, find_predecessor, read_pair
 from ed_v14.sources.http import fetch_page as default_fetch_page
 from ed_v14.store import FactStore, FilingCache, Store
 from ed_v14.watch.store import WatchStatus, WatchStore, item_id, stamp
@@ -70,7 +70,8 @@ log = logging.getLogger(__name__)
 # It is reported after the run instead (WhatMoved.computed, app.core.watch_report).
 EXTRA_TRIAGE_RULES: tuple[ExtraRule, ...] = ()
 
-# How many of a form's filings are listed to find the one before a new 10-K or 10-Q.
+# The most of a form's latest filings asked for to find the one before a new 10-K or 10-Q
+# (a ceiling: see app.services.claim_changes.FORM_HISTORY).
 FORM_HISTORY = 12
 CRASH_MESSAGE = "The run stopped because of an internal error."
 
@@ -469,18 +470,15 @@ class Watcher:
             return None, ["the filing source cannot list a company's filings of one form"]
         source: FormLister = lister  # type: ignore[assignment]
         try:
-            refs = source.filings_of_form(company, filing.form, FORM_HISTORY)
-            later = next((ref for ref in refs if ref.accession == filing.accession), None)
+            found = find_predecessor(source, company, filing.form, filing.accession, FORM_HISTORY)
+            later, earlier = found.later, found.earlier
             if later is None:
                 return None, [f"EDGAR does not list {filing.label} among its {filing.form}s yet"]
-            before = [
-                ref
-                for ref in refs
-                if (ref.filed_date, ref.accession) < (later.filed_date, later.accession)
-            ]
-            if not before:
+            if earlier is None and found.complete:
                 return None, [f"EDGAR lists no {filing.form} filed before {filing.label}"]
-            earlier = max(before, key=lambda ref: (ref.filed_date, ref.accession))
+            if earlier is None:
+                where = found.where or f"the {found.listed} latest {filing.form} filings listed"
+                return None, [f"no {filing.form} filed before {filing.label} is in {where}"]
             pair = read_pair(company, earlier, later, filings=source, cache=self.cache)  # type: ignore[arg-type]
             return compare_pair(pair, max_listed=None), []
         except SourceError as exc:

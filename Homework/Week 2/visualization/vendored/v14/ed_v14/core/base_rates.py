@@ -22,7 +22,13 @@ The rules:
   revenue at least the floor there, and, for an industry class, the filer's current SIC
   code. A company-year in the class whose test cannot be computed is counted as such,
   never as a failure. Deciding it in the base year keeps the outcome out of the class: a
-  filer is not admitted because it grew.
+  filer is not admitted because it grew. A test of a *level* of revenue reads no earlier
+  year, and its outcome is the very measure the class is chosen on: decided in the year
+  read, every filer of a class whose floor is above the threshold would hold by
+  construction. So for such a test the class is decided a year earlier
+  (:attr:`AnnualTest.class_reach`), and the result says so. For a level of any other
+  measure the class is still decided in the year read: revenue admits the filer and
+  something else is tested.
 - **The company itself is left out** of every count, so that a small class is not the
   company's own history; the years in which the test held for it are listed apart.
 - **Persistence**: of the company-years for which the test held in year t, those for
@@ -61,6 +67,13 @@ from ed_v14.core.view_models import (
 )
 
 MAX_CASES = 5
+# The measure a reference class's floor is on (RefClass.admits).
+CLASS_MEASURE = "revenue"
+LEVEL_CLASS_NOTE = (
+    "The test is a level of revenue, the measure the class is chosen on, so the class is "
+    "decided a year earlier (t-1): a filer is not admitted because its revenue was already "
+    "over the line in the year read."
+)
 OPS: dict[str, Callable[[float, float], bool]] = {
     ">": operator.gt,
     ">=": operator.ge,
@@ -131,6 +144,22 @@ class AnnualTest:
                 reach += math.ceil(part.right.value)
             reaches.append(reach)
         return max(reaches)
+
+    @property
+    def class_reach(self) -> int:
+        """How many years before year t the reference class is decided.
+
+        The earliest year the test reads (:attr:`reach`), but never the year read itself
+        when a side of the test is the level of :data:`CLASS_MEASURE` in that year: then
+        a year earlier, so that the class is not chosen on the outcome.
+        """
+        terms = [part.left for part in self.parts]
+        terms += [part.right for part in self.parts if isinstance(part.right, AnnualTerm)]
+        on_class = any(
+            term.fn == "value" and term.measure == CLASS_MEASURE and term.offset == 0
+            for term in terms
+        )
+        return max(self.reach, 1) if on_class else self.reach
 
     @property
     def unit(self) -> str:
@@ -371,7 +400,7 @@ def _tally(
 ) -> _Tally:
     tally = _Tally()
     for year in years:
-        base = year - test.reach
+        base = year - test.class_reach
         in_class = computable = count = 0
         for cik in sorted(panel.filers(base)):
             if cik == leave_out or not ref.admits(panel, cik, base):
@@ -428,7 +457,7 @@ def base_rate(
     ``years`` are the years t the test is read for; each needs the years it reaches
     back to in ``panel``. Pure: the frames were read by the caller.
     """
-    usable = [y for y in years if y - test.reach in panel.years and y in panel.years]
+    usable = [y for y in years if y - test.class_reach in panel.years and y in panel.years]
     tally = _tally(panel, test, ref, usable, company_cik)
     held_total = sum(y.held for y in tally.years)
     computable = sum(y.computable for y in tally.years)
@@ -476,6 +505,8 @@ def base_rate(
             "years, so the test is read on years ("
             f"{claim_test} read as {annual})."
         )
+    if test.class_reach > test.reach:
+        assumptions.append(LEVEL_CLASS_NOTE)
     assumptions.append("The SIC code is the filer's code today, not the code it had in year t.")
     if not computable:
         return BaseRate(
@@ -566,7 +597,7 @@ def _inputs(panel: Panel, test: AnnualTest, years: Sequence[int]) -> list[Result
     groups = sorted({g for m in measures for g in MEASURES[m].groups})
     if not years:
         return []
-    span = f"CY{min(years) - test.reach} to CY{max(years)}"
+    span = f"CY{min(years) - test.class_reach} to CY{max(years)}"
     return [
         ResultInput(
             label=f"{GROUPS[group].label}: every filer's row, by the first concept that has one",

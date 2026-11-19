@@ -15,7 +15,7 @@ from __future__ import annotations
 import json
 import os
 import threading
-from collections.abc import Callable
+from collections.abc import Callable, Collection
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -30,6 +30,34 @@ API_VIA = "the Anthropic API"
 # ("propose", app.engines.analyser) and the argued analysis reads the corollaries computed
 # from them ("analyse").
 STEPS = ("plan", "assess", "check", "summarize", "propose", "analyse", "conclude")
+
+
+# The engine's own steps, and the checker's: whose answers a run's "who answered" lines name.
+ENGINE_STEPS = ("plan", "assess", "summarize")
+CHECK_STEPS = ("check",)
+
+
+def answers_mark(engine: object) -> int:
+    """A place in the answers ``engine``'s transport has given so far (0 when it keeps none).
+
+    Taken before a run's first request and passed to :func:`answered_by` after its last,
+    so that the description covers this run's answers only.
+    """
+    mark = getattr(getattr(engine, "transport", None), "mark", None)
+    return int(mark()) if callable(mark) else 0
+
+
+def answered_by(engine: object, steps: Collection[str], since: int = 0) -> str:
+    """Who answered the requests of ``steps`` that ``engine`` made since ``since``.
+
+    A transport that replays a cassette says who recorded the answers it actually gave
+    (``describe_used``); any other describes itself as before (``engine.detail``: the
+    model and the API). So a replayed run never describes answers it did not use.
+    """
+    describe = getattr(getattr(engine, "transport", None), "describe_used", None)
+    if callable(describe):
+        return str(describe(steps, since))
+    return str(getattr(engine, "detail", "") or "")
 
 
 class EngineError(RuntimeError):

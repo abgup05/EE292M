@@ -34,7 +34,7 @@ from ed_v14.core.claim_test_models import ClaimReading, ComputedTest
 from ed_v14.core.claimtest import ClaimTest, NotNumeric, compile_claim
 from ed_v14.core.models import Claim, Run
 from ed_v14.core.ports import ClaimReader
-from ed_v14.engines.transport import EngineError
+from ed_v14.engines.transport import EngineError, answered_by, answers_mark
 from ed_v14.services.numbers import NumbersResult
 
 NO_FACTS = "The run could not read the company's XBRL facts{why}, so nothing could be computed."
@@ -144,11 +144,16 @@ def read_claims(
     names = [policy.GRAMMAR_READER, *(reader.name for reader in models)]
     run.claim_readers = names[0] if len(names) == 1 else f"{', '.join(names[:-1])} and {names[-1]}"
     run.claim_reading_rule = policy.reading_rule(names)
-    if models:
-        run.claim_reader_detail = "; ".join(str(reader.detail or "") for reader in models)
+    marks = [answers_mark(reader) for reader in models]
     at = newest or Newest()
     to_compute: dict[str, ReadClaim] = {}
     read = _model_reads(run, models)
+    if models:
+        # Each reader's own answers in this run: a cassette may hold other readers' too.
+        run.claim_reader_detail = "; ".join(
+            answered_by(reader, [str(getattr(reader, "step", ""))], mark)
+            for reader, mark in zip(models, marks, strict=True)
+        )
     for claim in run.claims:
         compiled = compile_claim(claim.text)
         results: dict[str, ClaimTest | NotNumeric] = {policy.GRAMMAR_READER: compiled}

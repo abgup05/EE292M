@@ -221,9 +221,9 @@ const BARE_SAMPLE_NOTES = {
   "run-events":
     "A live run of 18 November 2026 on NVIDIA (run run-39d0b17b5396), answered by the Anthropic API: claude-opus-5-5 read the passages and claude-haiku-5-5 checked their meaning. It is copied unedited from results/run-39d0b17b5396.json. Its first claim is about the chief executive leaving, and the 8-K of 12 Nov 2026 postdates the evidence of one of its findings.",
   "run-live":
-    "A live run of 19 November 2026 (UTC) on NVIDIA (run run-8a12ef614117, deciding whether to buy NVIDIA now), answered by the Anthropic API: claude-opus-5-5 read the passages, proposed the corollaries and wrote the argument; claude-haiku-5-5 checked the findings' meaning; and three readers turned each claim into a test: the grammar (a fixed rule, no model), claude-haiku-5-5 and claude-sonnet-5-5. Code computed every figure, test and analytic and audited every sentence of the argument against what it cites. It is copied unedited from results/run-8a12ef614117.json.",
+    "A live run of 19 November 2026 (UTC) on NVIDIA (run run-b9d5f9224a25, deciding whether to buy NVIDIA now), answered by the Anthropic API: claude-opus-5-5 read the passages, proposed the corollaries and wrote the argument; claude-haiku-5-5 checked the findings' meaning; and three readers turned each claim into a test: the grammar (a fixed rule, no model), claude-haiku-5-5 and claude-sonnet-5-5. Code computed every figure, test and analytic and audited every sentence of the argument against what it cites. It is copied unedited from results/run-b9d5f9224a25.json.",
   "run-costco":
-    "A live run of 19 November 2026 (UTC) on Costco (run run-72359824897a, deciding whether to keep holding Costco at this price), answered by the Anthropic API: claude-opus-5-5 read the passages, proposed the corollaries and wrote the argument; claude-haiku-5-5 checked the findings' meaning; and three readers turned each claim into a test: the grammar (a fixed rule, no model), claude-haiku-5-5 and claude-sonnet-5-5. Code computed every figure, test and analytic and audited every sentence of the argument against what it cites. It is copied unedited from results/run-72359824897a.json.",
+    "A live run of 19 November 2026 (UTC) on Costco (run run-6f20883d8811, deciding whether to keep holding Costco at this price), answered by the Anthropic API: claude-opus-5-5 read the passages, proposed the corollaries and wrote the argument; claude-haiku-5-5 checked the findings' meaning; and three readers turned each claim into a test: the grammar (a fixed rule, no model), claude-haiku-5-5 and claude-sonnet-5-5. Code computed every figure, test and analytic and audited every sentence of the argument against what it cites. It is copied unedited from results/run-6f20883d8811.json.",
   "analysis-shapes":
     "The analysis example that shows every shape (docs/examples/analysis/run-hand-built-argument.json): five claims on NVIDIA's recorded filings with a hand-built argument. Its sentences and corollaries are scripted answers written by tests/examples_analysis.py from the run's own figures: no model wrote them, so read it for the shapes (a lean that contradicts its verdict, sentences the audit did not verify, corollaries the readers disagree on), not for the argument. Code computed the analytics and audited the sentences as it does a model's. Made offline by make examples-analysis; copied unedited by make sample-analysis.",
   readers: `Version 14's example run with two model readers (docs/examples/v14/run-readers.json): six claims of set C read by the grammar, claude-haiku-5-5 and claude-sonnet-5-5. The readers' answers were ${"replayed read-only from the cassette eval/cassettes/claim-readers, recorded through the Anthropic API on 18 Nov 2026; the findings come from the extractive engine (no model) on the recorded NVIDIA fixtures, made offline by make examples with no EDGAR request. Clock times are fixed at 2026-11-18 12:00 UTC. Copied unedited from docs/examples/v14/ by make sample-v14."}`,
@@ -6862,8 +6862,11 @@ function onCentreClick(event) {
   // A phone has no inspector pane: only what the analysis cites is read in a sheet; the rest is read in place.
   if (!inspectorOn() && !(workspaceOn() && els.analysis?.contains(host))) return;
   const button = event.target.closest("[data-pick-button]");
-  // A link, a control or a disclosure inside the item keeps its own meaning, and so does selecting its text.
-  if (!button && event.target.closest("a, button, input, textarea, select, label, summary, table")) return;
+  // A link, a control or a disclosure inside the item keeps its own meaning, and so does selecting its text. A table
+  // inside the item is for reading and selecting too; but an item that is itself inside a table (a sentence of what
+  // would change the verdict, a corollary's row) is picked like any other.
+  const inside = event.target.closest("a, button, input, textarea, select, label, summary, table");
+  if (!button && inside && !(inside.tagName === "TABLE" && inside.contains(host) && inside !== host)) return;
   if (!button && String(window.getSelection?.() ?? "")) return;
   const target = parsePick(host.dataset.pick);
   if (target) pick(target);
@@ -7184,14 +7187,31 @@ function anSentence(sentence, where, scope) {
   const verified = sentence?.verified === true;
   const problems = list(sentence?.problems).map(String).filter(Boolean);
   const cites = list(sentence?.cites);
+  const thresholds = sentenceThresholds(sentence);
   return h(
     "span",
-    { class: `an-s${verified ? "" : " is-unverified"}`, "data-an-sentence": key, "data-verified": String(verified), "data-pick": `sentence:${key}` },
+    { class: `an-s${verified ? "" : " is-unverified"}${thresholds.length ? " has-thresholds" : ""}`, "data-an-sentence": key, "data-verified": String(verified), "data-pick": `sentence:${key}` },
     h("span", { class: "an-text", text: str(sentence?.text) }),
     "\u00a0",
     cites.length ? h("span", { class: "an-cites" }, cites.map(citeChip)) : h("span", { class: "an-cites an-nocite", "data-no-cite": "", text: "cites nothing" }),
+    // A number that only restates a threshold was not checked as a fact: said on the sentence, quietly, and never as a failure.
+    thresholds.map((item) => h("span", { class: "an-threshold", "data-threshold": str(item.raw), "data-threshold-of": str(item.of), title: thresholdWords(item) }, `restates a threshold: ${str(item.raw)}`)),
     verified ? "" : h("span", { class: "an-unverified", "data-unverified": "" }, limitGlyph(), ` Not verified: ${problems.join("; ") || "the audit recorded no reason"}`),
   );
+}
+
+/** The thresholds a sentence restates (`thresholds: [{raw, of, note}]`); none on a record made before the audit listed them. */
+function sentenceThresholds(sentence) {
+  return list(sentence?.thresholds).filter((item) => item && typeof item === "object" && str(item.raw));
+}
+
+/** A restated threshold in words: the number, whose threshold it is, and that it was not checked as a fact. */
+function thresholdWords(item) {
+  const of = str(item?.of);
+  const test = /^test:(.+)$/.exec(of);
+  const cor = /^cor:([^:]+):(.+)$/.exec(of);
+  const whose = test ? `the test of ${test[1]}` : cor ? `corollary ${cor[1]}.${cor[2]}` : of || "its own condition";
+  return `Restates a threshold: ${str(item?.raw)} (${whose}). Not checked as a fact.`;
 }
 
 /** Sentences set as one paragraph, in the record's order. */
@@ -7247,7 +7267,7 @@ function anBy(kind, words) {
 /** Who wrote the argument: the record's own words for the model and where its answers came from. */
 function argumentBy(analysis) {
   const who = str(analysis.argument_detail) || (str(analysis.argument_by) && analysis.argument_by !== "none" ? analysis.argument_by : "a model");
-  return `Written by ${who}. Code checked every sentence against what it cites.`;
+  return `Written by ${who}. Audited by code, sentence by sentence.`;
 }
 
 function leanPill(lean) {
@@ -7306,7 +7326,9 @@ function auditLine(run) {
     anCount(run, "analysis_sentences_verified"),
     " of ",
     anCount(run, "analysis_sentences_written"),
-    " sentences verified against what they cite; ",
+    " sentences verified",
+    Number.isFinite(run.coverage?.analysis_sentences_restating) ? [" (", anCount(run, "analysis_sentences_restating"), " of them restating a threshold, which is not checked as a fact)"] : "",
+    "; ",
     anCount(run, "analysis_sentences_unverified"),
     " shown as not verified; ",
     anCount(run, "analysis_sentences_cut"),
@@ -7638,6 +7660,8 @@ function analysisMade(run) {
         Number.isFinite(analysis.argument_claims_asked) && str(analysis.argument_step) !== "not_asked" ? [" ", h("span", { "data-made": "argued" }, `${num(analysis.argument_claims_answered)} of ${num(analysis.argument_claims_asked)} claims argued; the whole thesis ${step(analysis.thesis_step)}.`)] : "",
       ),
       Number.isFinite(c.analysis_sentences_written) && str(analysis.argument_step) !== "not_asked" ? fact("Its sentences", auditLine(run)) : "",
+      // What "verified" means is the record's own rule, word for word.
+      str(analysis.audit_rule) && str(analysis.argument_step) !== "not_asked" ? fact("The audit's rule", h("span", { "data-audit-rule": "", text: analysis.audit_rule })) : "",
       fact(
         "The corollaries",
         str(analysis.corollaries_step) === "not_asked" ? str(analysis.corollaries_note) || "No model was asked to propose any." : `${capitalize(step(analysis.corollaries_step))}${str(analysis.corollaries_by) ? `: proposed by ${analysis.corollaries_by}` : ""}; each computed by code.`,
@@ -7730,12 +7754,21 @@ function inspectSentence(key) {
   const verified = sentence?.verified === true;
   const problems = list(sentence?.problems).map(String).filter(Boolean);
   const cites = list(sentence?.cites);
+  const thresholds = sentenceThresholds(sentence);
+  const rule = str(state.run.analysis?.audit_rule);
   return [
     inspectHead("Sentence", `of ${where}${scope ? `, claim ${scope}` : ""}`),
     h("blockquote", { class: "ins-sentence", text: str(sentence?.text) }),
     verified
-      ? h("p", { class: "ins-audit", "data-audit": "verified" }, ruleMark("Verified by code"), ": every id it cites is in the record and allowed here, and every number it writes is carried by something it cites.")
+      ? h("p", { class: "ins-audit", "data-audit": thresholds.length ? "verified-restating" : "verified" }, ruleMark("Verified by code"), thresholds.length ? ", with a threshold restated." : ".")
       : h("div", { class: "ins-audit is-unverified", "data-audit": "unverified" }, limitLine("p", "Not verified by the audit. It is shown, not hidden; read it as unchecked."), problems.length ? h("ul", { class: "mark-list" }, problems.map((line) => limitLine("li", line))) : ""),
+    thresholds.length
+      ? h(
+          "ul",
+          { class: "ins-thresholds", "data-ins-thresholds": "" },
+          thresholds.map((item) => h("li", { "data-threshold": str(item.raw), "data-threshold-of": str(item.of), text: thresholdWords(item) })),
+        )
+      : "",
     h("p", { class: "label", text: cites.length ? "What it rests on" : "It cites nothing" }),
     h(
       "ul",
@@ -7750,6 +7783,13 @@ function inspectSentence(key) {
           str(target.line) ? h("p", { class: "ins-rest-line", text: target.line }) : "",
         );
       }),
+    ),
+    // What the audit checks, and what it does not, in the record's own words: the page writes no rule of its own.
+    h(
+      "div",
+      { class: "ins-block ins-rule" },
+      h("p", { class: "label", text: "What the audit checks" }),
+      rule ? h("p", { class: "ins-note", "data-audit-rule": "", text: rule }) : h("p", { class: "ins-note muted", "data-audit-rule-missing": "", text: "This record does not carry the audit's rule: it was made before runs recorded it." }),
     ),
   ];
 }
@@ -8005,11 +8045,12 @@ function methodPhases(run) {
       {
         stage: "",
         name: "Audit of the sentences",
-        does: "Each sentence is checked: the ids it cites exist and are allowed, and something it cites carries each number it writes.",
+        does: str(analysis.audit_rule) || "Each sentence of the argument is audited by code.",
         by: ["code", ""],
         state: stepState(str(analysis.argument_step)),
         line: stepWords(str(analysis.argument_step)) ?? [
           [mCount(run, "analysis_sentences_verified"), " of ", mCount(run, "analysis_sentences_written"), " sentences verified"],
+          [mCount(run, "analysis_sentences_restating"), " restating a threshold"],
           [mCount(run, "analysis_sentences_unverified"), " shown as not verified, ", mCount(run, "analysis_sentences_cut"), " cut"],
         ],
       },

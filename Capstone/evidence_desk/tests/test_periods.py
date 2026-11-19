@@ -22,6 +22,7 @@ from app.core.metrics import build_report
 from app.core.numcheck import quantities
 from app.core.periods import (
     FiscalCalendar,
+    PeriodCheck,
     check_periods,
     fiscal_calendar,
     period_mentions,
@@ -594,3 +595,107 @@ def test_each_planted_year_is_flagged_where_the_evidence_holds_only_the_right_on
     ]
     # fiscal 2025 -> 2024 is nowhere; fiscal 2026 -> 2025 is in the quote, so it passes.
     assert flagged == [["fiscal 2024"], []]
+
+
+# A fiscal label does not pass on a calendar date in the quote (sixth referee, finding 3) ----------
+
+
+def test_a_fiscal_label_does_not_pass_on_a_calendar_date_printed_in_the_quote() -> None:
+    """The referee's input: "fiscal 2026" said of the quarter ended 26 July 2026.
+
+    That quarter is in NVIDIA's fiscal 2027. The quote prints the date "Jul 26, 2026",
+    and until version 14.3 any year a quote showed passed any mention of it.
+    """
+    quote = "Three Months Ended Jul 26, 2026: Data Center revenue was $41.1 billion."
+    quarter = [(quote, date(2026, 7, 26))]
+    wrong = check_periods(
+        "Data Center revenue was $41.1 billion in the second quarter of fiscal 2026.",
+        quarter,
+        [],
+        NVIDIA_CALENDAR,
+    )
+    assert wrong.status == "unverified" and wrong.unverified == ["fiscal 2026"]
+    assert wrong.comparative == ["fiscal 2026"]  # a year before the filing's fiscal 2027
+    right = check_periods(
+        "Data Center revenue was $41.1 billion in the second quarter of fiscal 2027.",
+        quarter,
+        [],
+        NVIDIA_CALENDAR,
+    )
+    assert right.status == "passed"
+
+
+def test_a_fiscal_label_passes_on_the_fiscal_year_of_a_date_in_the_quote() -> None:
+    """A date in a quote is evidence for the fiscal year it falls in, not for its calendar year.
+
+    A 10-Q for the quarter ended 26 July 2026 that prints last year's annual figure under
+    "January 25, 2026" is evidence for fiscal 2026, which ended that day, though the filing
+    quoted is of fiscal 2027; and it is no evidence for fiscal 2025.
+    """
+    quote = "As of January 25, 2026, inventories were $10.1 billion."
+    quarter = [(quote, date(2026, 7, 26))]
+
+    def check(label: str) -> PeriodCheck:
+        statement = f"Inventories were $10.1 billion at the end of {label}."
+        return check_periods(statement, quarter, [], NVIDIA_CALENDAR)
+
+    passed = check("fiscal 2026")
+    assert passed.status == "passed"
+    assert passed.details == [
+        "fiscal 2026 is the fiscal year of a date in a quote (January 25, 2026)"
+    ]
+    assert check("fiscal 2025").status == "unverified"
+    # A month with no day may fall on either side of a year end: both years pass, no other.
+    known_end = FiscalCalendar(end_month=1, end_day=25, label_offset=0, year_end=date(2026, 1, 25))
+    month = [("In January 2026 we announced a new platform.", None)]
+    for label, status in (
+        ("fiscal 2026", "passed"),
+        ("fiscal 2027", "passed"),
+        ("fiscal 2025", "unverified"),
+    ):
+        result = check_periods(f"The platform was announced in {label}.", month, [], known_end)
+        assert result.status == status, label
+
+
+@pytest.mark.parametrize(
+    "quote",
+    [
+        "Revenue for fiscal 2026 was $215.9 billion, up 65% from a year ago.",  # a fiscal label
+        "Revenue for fiscal year 2026 was $215.9 billion.",
+        "Revenue for FY26 was $215.9 billion.",
+        "Total net sales increased 2% during 2026 compared to 2025.",  # a bare year: either
+        "Revenue for the fiscal year ended January 25, 2026 was $215.9 billion.",  # its own date
+    ],
+)
+def test_a_true_fiscal_label_still_passes_on_a_quote_of_that_fiscal_year(quote: str) -> None:
+    """ "fiscal 2026" above a quote of the 10-K for fiscal 2026, and above one in a later 10-Q."""
+    statement = "Revenue was $215.9 billion in fiscal 2026."
+    annual = check_periods(statement, [(quote, date(2026, 1, 25))], [], NVIDIA_CALENDAR)
+    assert annual.status == "passed", annual.details
+    later = check_periods(statement, [(quote, date(2026, 7, 26))], [], NVIDIA_CALENDAR)
+    assert later.status == "passed", later.details
+
+
+def test_a_fiscal_label_passes_on_the_filing_when_the_quote_names_no_year() -> None:
+    quote = "Data Center revenue was $41.1 billion, up 56% from a year ago."
+    quarter = [(quote, date(2026, 7, 26))]
+    statement = "Data Center revenue grew 56% in fiscal 2027."
+    check = check_periods(statement, quarter, [], NVIDIA_CALENDAR)
+    assert check.details == [
+        "fiscal 2027 is the fiscal year of a filing quoted (period ended 2026-07-26)"
+    ]
+
+
+def test_without_a_calendar_a_date_in_a_quote_gives_its_own_year_or_the_next() -> None:
+    quote = "Three Months Ended Jul 26, 2026: Data Center revenue was $41.1 billion."
+    expected = {"fiscal 2026": "passed", "fiscal 2027": "passed", "fiscal 2025": "unverified"}
+    for label, status in expected.items():
+        check = check_periods(f"Revenue rose in {label}.", [(quote, None)], [], None)
+        assert check.status == status, label
+
+
+def test_a_date_or_a_bare_year_in_a_statement_still_passes_on_a_date_in_the_quote() -> None:
+    quote = "Three Months Ended Jul 26, 2026: Data Center revenue was $41.1 billion."
+    for words in ("in the quarter ended July 26, 2026", "in 2026", "in July 2026"):
+        check = check_periods(f"Revenue rose {words}.", [(quote, None)], [], NVIDIA_CALENDAR)
+        assert check.status == "passed", words

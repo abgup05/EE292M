@@ -43,7 +43,13 @@ The rules:
     "vs.", "compared to", "compared with" or "relative to", paired with
     another year ("2024 and 2025", "2023 to 2025"), or directly before a
     financial noun of :data:`YEAR_NOUNS` ("2025 revenue", "2026 net income").
-    "2000 employees" and "2025 stores" are checked;
+    "2000 employees" and "2025 stores" are checked. After "of", "for", "by" or
+    "in", which introduce a count as readily as a year, the number is a count
+    when a noun of :data:`COUNTED_NOUNS` directly follows it ("a headcount of
+    2000 employees", "in 2000 locations") and a year before anything else
+    ("for 2026 remains", "in 2026 we"): a year read as a count would withhold
+    a true finding, a count read as a year only goes unchecked, so the list
+    is short and a noun not on it ("of 2000 turbines") is still not checked;
   - a reference: a *capitalised* word such as "Note", "Item", "Part",
     "Section", "Rule" or "Form" directly followed by its own number or Roman
     numeral ("Note 5", "Item 1A", "Part II", "Rule 10b5-1"), never a
@@ -107,6 +113,39 @@ YEAR_NOUNS: tuple[str, ...] = (
     "annual report",
     "10-K",
     "10-Q",
+)
+# Things a filing counts. After "of", "for", "by" or "in" a four-digit number directly before
+# one of these is a count, not a year ("a headcount of 2000 employees"), matched as whole
+# words, case ignored. Only these: any other word there may be a verb after a year ("growth
+# in 2026 reflects"), and reading that year as a count would withhold a true finding.
+COUNTED_NOUNS: tuple[str, ...] = (
+    "employees",
+    "people",
+    "workers",
+    "engineers",
+    "developers",
+    "customers",
+    "clients",
+    "members",
+    "subscribers",
+    "users",
+    "suppliers",
+    "partners",
+    "stores",
+    "locations",
+    "warehouses",
+    "restaurants",
+    "offices",
+    "sites",
+    "facilities",
+    "countries",
+    "markets",
+    "shares",
+    "units",
+    "vehicles",
+    "patents",
+    "positions",
+    "jobs",
 )
 # Words that let a number written without a sign stand for a negative source figure, matched
 # as whole words, case ignored, in the number's own sentence. Two kinds. Words of decline
@@ -193,6 +232,10 @@ NOT_COUNTED: frozenset[str] = frozenset(
     }
 )  # fmt: skip
 
+MONTH_NAMES: tuple[str, ...] = (
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+)  # fmt: skip
 _MONTH = (
     r"(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|Aug(?:ust)?|"
     r"Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)"
@@ -239,6 +282,11 @@ _YEAR_NOUN_AFTER = re.compile(
     r"\s+(?:" + "|".join(re.escape(noun).replace(r"\ ", r"\s+") for noun in YEAR_NOUNS) + r")\b",
     re.IGNORECASE,
 )
+
+
+# The prepositions that introduce a count as readily as a year, directly before the number.
+_COUNT_OR_YEAR_BEFORE = re.compile(r"\b(?:of|for|by|in)\s+$", re.IGNORECASE)
+_COUNTED_NOUN_AFTER = re.compile(r"\s+(?:" + "|".join(COUNTED_NOUNS) + r")\b", re.IGNORECASE)
 
 
 def _whole_words(words: tuple[str, ...]) -> re.Pattern[str]:
@@ -361,12 +409,16 @@ def is_year(text: str, begin: int, end: int) -> bool:
     preposition of time, a month or a quarter label (:data:`_YEAR_BEFORE`), be
     joined to another year by "and", "to", "through", "or" or a dash, or be
     directly followed by a financial noun of :data:`YEAR_NOUNS` ("2025
-    revenue"). Before any other noun it is a count ("2025 employees").
+    revenue"). Before any other noun it is a count ("2025 employees"). After
+    "of", "for", "by" or "in" it is a count when a noun of :data:`COUNTED_NOUNS`
+    directly follows ("a headcount of 2000 employees") and a year otherwise.
     """
     digits = text[begin:end]
     if len(digits) != 4 or not digits.isdigit() or int(digits) not in YEARS:
         return False
     before = text[max(0, begin - 40) : begin]
+    if _COUNT_OR_YEAR_BEFORE.search(before) and _COUNTED_NOUN_AFTER.match(text, end):
+        return False
     return bool(
         _YEAR_BEFORE.search(before)
         or _YEAR_AFTER.match(text, end)

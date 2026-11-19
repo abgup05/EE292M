@@ -16,10 +16,16 @@ What counts as evidence for a year:
   and of the end of each of its inputs (so the base year of a year-over-year
   change is evidence).
 
-A fiscal label ("fiscal 2026", "FY26") passes when it is in a quote or is the
-fiscal year of a filing or a figure; a calendar year is not enough, because a
-fiscal label is not the calendar year of a period's end (NVIDIA's fiscal 2027
-ends in January 2027). A year inside a date ("July 26, 2026", "June 2026")
+A fiscal label ("fiscal 2026", "FY26") passes when a quote shows that year
+outside a calendar date (as a fiscal label, or bare: a filing may write its
+fiscal years bare, as Apple's "during 2025 compared to 2024" does), when it is
+the fiscal year a date in a quote falls in ("January 25, 2026" is in NVIDIA's
+fiscal 2026, "Jul 26, 2026" in its fiscal 2027), or when it is the fiscal year
+of a filing or a figure. A calendar year is not enough, whether it is the year
+of a period's end or the year of a date a quote prints: a fiscal label is not
+a calendar year (NVIDIA's fiscal 2027 ends in January 2027, and "fiscal 2026"
+said of its quarter ended 26 July 2026 is wrong though the quote prints
+2026). A year inside a date ("July 26, 2026", "June 2026")
 passes when it is in a quote or is the calendar year of a period end; the
 fiscal year is not enough, because a date names a calendar year. A bare year
 ("in 2025") passes on any of them, since it may be meant either way. A year that does not pass is
@@ -37,7 +43,8 @@ The years a statement names are read with the number check's own recognition
 of dates, labels and years (:func:`app.core.numcheck.date_spans`,
 :func:`~app.core.numcheck.period_label_spans`,
 :func:`~app.core.numcheck.year_spans`), so the two checks cannot disagree
-about what is a year and what is a quantity ("2000 employees" is not a year).
+about what is a year and what is a quantity ("2000 employees" is not a year,
+and neither is "a headcount of 2000 employees").
 
 Pure: no I/O.
 """
@@ -53,7 +60,7 @@ from typing import Any, Literal
 
 from app.core.facts import ANNUAL_FORMS, period_length
 from app.core.metric_models import Metric
-from app.core.numcheck import YEARS, date_spans, period_label_spans, year_spans
+from app.core.numcheck import MONTH_NAMES, YEARS, date_spans, period_label_spans, year_spans
 
 PeriodStatus = Literal["none", "passed", "unverified"]
 
@@ -71,6 +78,7 @@ EVIDENCE_YEARS = YEARS
 COMPARATIVE_GAPS = (1, 2)
 
 IN_QUOTE = "{raw} is in a quote"
+QUOTE_DATE_FISCAL = "{raw} is the fiscal year of a date in a quote ({date})"
 FILING_FISCAL = "{raw} is the fiscal year of a filing quoted (period ended {end})"
 FIGURE_FISCAL = "{raw} is the fiscal year of a cited figure (period ended {end})"
 FILING_YEAR = "{raw} is the calendar year of a filing quoted (period ended {end})"
@@ -388,6 +396,68 @@ def years_in(text: str) -> set[int]:
     return years
 
 
+_MONTH_NUMBERS = {name[:3].lower(): number for number, name in enumerate(MONTH_NAMES, start=1)}
+_WORDED_DATE = re.compile(
+    r"(?P<month>[A-Za-z]{3})[a-z]*\.?,?\s+(?:(?P<day>\d{1,2})(?:st|nd|rd|th)?,?\s+)?(?P<year>\d{4})$"
+)
+_ISO_DATE = re.compile(r"(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})$")
+_SLASH_DATE = re.compile(r"(?P<month>\d{1,2})/(?P<day>\d{1,2})/(?P<year>\d{4})$")
+
+
+def _days_of(raw: str) -> tuple[date, date] | None:
+    """The first and last day a written date may mean, or None when it names no year.
+
+    "January 25, 2026", "2026-01-25" and "1/25/2026" (month first, as a US filing
+    writes it) are one day; "January 2026" is its month, first day to last. "July
+    26" names no year, and a date that is not one ("2/30/2026") gives None.
+    """
+    worded = _WORDED_DATE.match(raw)
+    found = worded or _ISO_DATE.match(raw) or _SLASH_DATE.match(raw)
+    if found is None:
+        return None
+    year = int(found.group("year"))
+    named = found.group("month")
+    month = _MONTH_NUMBERS.get(named.lower()) if worded else int(named)
+    if year not in YEARS or month is None or not 1 <= month <= 12:
+        return None
+    last = gregorian.monthrange(year, month)[1]
+    if found.group("day") is None:
+        return date(year, month, 1), date(year, month, last)
+    day = int(found.group("day"))
+    if not 1 <= day <= last:
+        return None
+    return date(year, month, day), date(year, month, day)
+
+
+def dates_in(text: str) -> list[tuple[str, date, date]]:
+    """Every calendar date ``text`` prints with a year: its words, and the first and last
+    day it may mean (the same day unless only a month is given)."""
+    found: list[tuple[str, date, date]] = []
+    for begin, end in sorted(set(date_spans(text))):
+        days = _days_of(text[begin:end])
+        if days is not None:
+            found.append((text[begin:end], *days))
+    return found
+
+
+def undated_years_in(text: str) -> set[int]:
+    """The years of :func:`years_in` that ``text`` shows somewhere outside a calendar date.
+
+    "fiscal 2026", "FY26" and a bare "in 2026" count; the 2026 of "Jul 26, 2026" or
+    "2026-07-26" does not, unless the text also shows 2026 elsewhere.
+    """
+    dated = date_spans(text)
+    years = {
+        int(match.group(1))
+        for match in _EVIDENCE_YEAR.finditer(text)
+        if not any(begin <= match.start(1) and match.end(1) <= end for begin, end in dated)
+    }
+    years = {year for year in years if year in EVIDENCE_YEARS}
+    for match in _EVIDENCE_LABEL.finditer(text):
+        years.add(2000 + int(match.group(1) or match.group(2)))
+    return years
+
+
 # The check
 
 
@@ -432,6 +502,10 @@ class _Evidence:
     """The years the evidence carries, each with the period end that gives it."""
 
     quoted: set[int]
+    # The quoted years shown somewhere outside a calendar date, and the fiscal year of each
+    # date a quote prints, with the date's words.
+    quoted_undated: set[int]
+    quoted_date_fiscal: dict[int, str]
     filing_fiscal: dict[int, date]
     filing_calendar: dict[int, date]
     figure_fiscal: dict[int, date]
@@ -454,9 +528,14 @@ def _evidence(
     metrics: Sequence[Metric],
     calendar: FiscalCalendar | None,
 ) -> _Evidence:
-    found = _Evidence(set(), {}, {}, {}, {})
+    found = _Evidence(set(), set(), {}, {}, {}, {}, {})
     for text, period_end in excerpts:
         found.quoted |= years_in(text)
+        found.quoted_undated |= undated_years_in(text)
+        for words, first, last in dates_in(text):
+            for day in (first, last):
+                for year in _fiscal_years(day, calendar):
+                    found.quoted_date_fiscal.setdefault(year, words)
         if period_end is not None:
             for year in _fiscal_years(period_end, calendar):
                 found.filing_fiscal.setdefault(year, period_end)
@@ -471,7 +550,14 @@ def _evidence(
 def _passing(mention: PeriodMention, evidence: _Evidence) -> str | None:
     """The sentence saying where ``mention`` is in the evidence, or None when it is not."""
     year, raw = mention.year, mention.raw
-    if year in evidence.quoted:
+    if mention.fiscal:
+        # A calendar date in a quote is evidence for the fiscal year it falls in, not for
+        # the fiscal year that shares its number.
+        if year in evidence.quoted_undated:
+            return IN_QUOTE.format(raw=raw)
+        if year in evidence.quoted_date_fiscal:
+            return QUOTE_DATE_FISCAL.format(raw=raw, date=evidence.quoted_date_fiscal[year])
+    elif year in evidence.quoted:
         return IN_QUOTE.format(raw=raw)
     fiscals = [(evidence.filing_fiscal, FILING_FISCAL), (evidence.figure_fiscal, FIGURE_FISCAL)]
     calendars = [(evidence.filing_calendar, FILING_YEAR), (evidence.figure_calendar, FIGURE_YEAR)]

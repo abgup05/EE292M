@@ -14,6 +14,7 @@ from enum import StrEnum
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from ed_v14.core import limits
+from ed_v14.core.analysis_models import Analysis, ClaimAnalysis
 from ed_v14.core.claim_test_models import ClaimReading, ComputedTest
 from ed_v14.core.event_models import AsOf, Event, Predating
 from ed_v14.core.metric_models import Metric, Series
@@ -193,6 +194,10 @@ class Claim(BaseModel):
     ``readings`` is each reader's reading of the claim's test, the grammar's first, then
     the model readers' when they are on (:func:`app.core.policy.reading_agreement`);
     empty before version 14.
+
+    ``analysis`` is what the analysis holds for the claim: the measures that bear on it,
+    its analytics, corollaries and odds, and the model's audited argument
+    (:class:`~app.core.analysis_models.ClaimAnalysis`); None before version 0.14.2.
     """
 
     id: str
@@ -209,6 +214,7 @@ class Claim(BaseModel):
     computed: ComputedTest | None = None
     compile_note: str = ""
     readings: list[ClaimReading] = Field(default_factory=list)
+    analysis: ClaimAnalysis | None = None
 
 
 class Source(BaseModel):
@@ -335,6 +341,12 @@ class Brief(BaseModel):
 
     ``provenance_note`` says where this run's evidence came from (the SEC filings, and any
     page the user added); "" in records written before it was kept.
+
+    ``verdicts_after_summary`` is written by code when a model wrote the summary: the
+    computed tests count after the summary step, and this line names each claim whose
+    verdict they then set or changed, from what to what. "" when nothing moved, when the
+    template wrote the summary (it is written from the final verdicts), and in records
+    written before version 0.14.1.
     """
 
     summary: str
@@ -344,6 +356,7 @@ class Brief(BaseModel):
     coverage_status: RunStatus
     status_note: str
     provenance_note: str = ""
+    verdicts_after_summary: str = ""
 
 
 class DecisionValue(StrEnum):
@@ -516,6 +529,66 @@ class Coverage(BaseModel):
     periods_checked: int = 0
     periods_unverified: int = 0
     periods_comparative: int = 0
+    # The analysis (app.services.analysis, version 0.14.2). Analytics a claim asked for:
+    # computed (with a value) and unavailable (asked for, on the record with why, no value);
+    # providers that raised (their analytics are in neither count; Run.errors names them).
+    analytics_computed: int = 0
+    analytics_unavailable: int = 0
+    analytics_providers_failed: int = 0
+    # Corollaries. These counts mean something only when Run.analysis.corollaries_step is
+    # "answered"; otherwise nothing was proposed and all are 0. Every proposed corollary is
+    # in exactly one of: as_expected, against, cannot_tell (a reader read a test the facts
+    # could not compute), no_test (neither reader read a test) and not_agreed (the two
+    # readers read different tests: computed and shown, counted toward nothing).
+    # computed == as_expected + against.
+    corollaries_proposed: int = 0
+    corollaries_computed: int = 0
+    corollaries_as_expected: int = 0
+    corollaries_against: int = 0
+    corollaries_cannot_tell: int = 0
+    corollaries_no_test: int = 0
+    corollaries_not_agreed: int = 0
+    # Claims flagged because most of their counted corollaries came out against them.
+    corollary_flags: int = 0
+    # The argued analysis. These counts mean something only when
+    # Run.analysis.argument_step is "answered". Sentences the model wrote, verified and
+    # unverified (written == verified + unverified), and why each unverified one is: it
+    # cites nothing that is evidence, cites an id not in the run, cites a finding the run
+    # withheld, or states a number nothing it cites carries. A sentence with several
+    # problems counts once in unverified and once under each reason.
+    analysis_sentences_written: int = 0
+    analysis_sentences_verified: int = 0
+    analysis_sentences_unverified: int = 0
+    # Sentences over a section's cap, cut by code before the audit (not in written).
+    analysis_sentences_cut: int = 0
+    analysis_unverified_no_evidence: int = 0
+    analysis_unverified_unknown_id: int = 0
+    analysis_unverified_disallowed_id: int = 0
+    analysis_unverified_number: int = 0
+    # Claims the model wrote an assessment for (of claims_total), and claims whose model
+    # lean contradicts their verdict (the verdict is never changed).
+    analysis_claims_argued: int = 0
+    # The argument's requests: one per claim, then one for the thesis. Claims asked (a
+    # request was sent) and answered (it gave an argument); the thesis answered, 0 or 1.
+    analysis_claims_asked: int = 0
+    analysis_claims_answered: int = 0
+    analysis_thesis_answered: int = 0
+    analysis_lean_flags: int = 0
+
+
+class StageTiming(BaseModel):
+    """How long one part of a run took, by the run's clock, in seconds.
+
+    ``background`` is True for work that ran beside other stages (a provider reading EDGAR,
+    the request for the corollaries), whose seconds therefore overlap theirs and do not add
+    to the run's length. ``note`` says what the part was (how many requests, at most how many
+    at once) or that it ran out of time.
+    """
+
+    stage: str
+    seconds: float
+    background: bool = False
+    note: str = ""
 
 
 class Run(BaseModel):
@@ -557,6 +630,12 @@ class Run(BaseModel):
     # evidence is (app.services.events). Empty and None in runs recorded before version 12.
     timeline: list[Event] = Field(default_factory=list)
     as_of: AsOf | None = None
+    # Relevance, analytics, corollaries, odds and the argued analysis (app.services.analysis);
+    # None in runs recorded before version 0.14.2.
+    analysis: Analysis | None = None
+    # How long each part of the run took (a view may draw them); empty before 0.14.2. They
+    # differ between two runs of one thesis, like the clock times.
+    timings: list[StageTiming] = Field(default_factory=list)
 
 
 class CompanyEvents(BaseModel):

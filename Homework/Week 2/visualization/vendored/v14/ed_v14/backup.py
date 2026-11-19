@@ -37,7 +37,7 @@ import sys
 import tempfile
 from collections.abc import Sequence
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from ed_v14 import wiring
@@ -53,6 +53,14 @@ CHUNK_BYTES = 1 << 20
 
 class RestoreCheckFailed(Exception):
     """The backup does not restore to the live record; the message names the first difference."""
+
+
+class BackupBehind(RestoreCheckFailed):
+    """The backup holds the live record as it was when taken; rows were written since.
+
+    Not a broken backup: every row it holds matches, and every row it lacks or holds in an
+    older form has a time in the live record after the second the backup was taken.
+    """
 
 
 @dataclass(frozen=True)
@@ -231,6 +239,7 @@ WATCH_PLURALS: tuple[tuple[str, str], ...] = (
     ("inbox", "inbox items"),
 )
 MAX_NAMED = 3  # unreadable records named in a failure; the rest are counted
+BEHIND_EXIT = 2  # restore-check's exit code when the backup is only behind the live record
 
 
 RECORD_COLUMN = "record"  # the stored JSON of a row: too long to quote in a failure
@@ -259,13 +268,17 @@ def _row_difference(
     return None
 
 
-def _stored_difference(table: str, word: str, backup: Store, live: Store) -> str | None:
+def _stored_difference(
+    table: str, word: str, backup: Store, live: Store, skip: frozenset[str] = frozenset()
+) -> str | None:
     """The first row of ``table`` that the two do not hold alike, column by column, if any.
 
     Every column is compared as stored, without parsing: the record text, and the columns
     the app reads on their own (a run's ``thesis_id``, the times lists are ordered by).
+    Rows keyed in ``skip`` (written after the backup was taken) are left out of both sides.
     """
-    in_backup, in_live = backup.raw_rows(table), live.raw_rows(table)
+    in_backup = {k: v for k, v in backup.raw_rows(table).items() if k not in skip}
+    in_live = {k: v for k, v in live.raw_rows(table).items() if k not in skip}
     missing = _first_set_difference(word, list(in_backup), list(in_live))
     if missing:
         return missing
@@ -275,26 +288,112 @@ def _stored_difference(table: str, word: str, backup: Store, live: Store) -> str
     return None
 
 
-def _difference(restored: Store, live: Store) -> str | None:
+def _difference(
+    restored: Store, live: Store, skip: dict[str, frozenset[str]] | None = None
+) -> str | None:
     """The first difference between a restored backup and the live record, most telling first.
 
     Runs by id, then every decision field by field (so a changed decision is named
     with what changed), then every row of every table column by column as stored,
     which also covers runs whose content changed, records neither side can parse and
-    the columns kept beside the record (a run's thesis id, a decision's time).
+    the columns kept beside the record (a run's thesis id, a decision's time). Rows keyed
+    in ``skip``, by table, are left out of both sides.
     """
+    skip = skip or {}
+    runs, decisions = skip.get("runs", frozenset()), skip.get("decisions", frozenset())
+
+    def kept(items: list[Decision]) -> list[Decision]:
+        return [d for d in items if f"{d.run_id}/{d.finding_id}" not in decisions]
+
     return (
-        _first_set_difference("run", restored.run_ids(), live.run_ids())
-        or _decision_difference(restored.all_decisions(), live.all_decisions())
+        _first_set_difference(
+            "run",
+            [i for i in restored.run_ids() if i not in runs],
+            [i for i in live.run_ids() if i not in runs],
+        )
+        or _decision_difference(kept(restored.all_decisions()), kept(live.all_decisions()))
         or next(
             (
                 found
                 for table, word in RECORD_KINDS
-                if (found := _stored_difference(table, word, restored, live))
+                if (
+                    found := _stored_difference(
+                        table, word, restored, live, skip.get(table, frozenset())
+                    )
+                )
             ),
             None,
         )
     )
+
+
+# When a row was written: a live row the backup lacks, dated after the second the backup was
+# taken, was written after it.
+CREATED_COLUMNS: dict[str, str] = {
+    "runs": "started_at",
+    "decisions": "decided_at",
+    "theses": "created_at",
+    "watches": "created_at",
+    "watch_seen": "seen_at",
+    "watch_jobs": "created_at",
+    "inbox": "created_at",
+}
+# When a row was last changed: a row both hold that differs, changed after the backup was taken,
+# was changed after it. Runs and theses keep no such time, so a run or a thesis that differs
+# is a failure even when it was only finished or edited after the backup.
+CHANGED_COLUMNS: dict[str, str] = {
+    "decisions": "decided_at",
+    "watches": "updated_at",
+    "watch_jobs": "updated_at",
+    "inbox": "read_at",
+}
+
+
+def _after(value: object, taken: datetime) -> bool:
+    """True when the stored time ``value`` is after ``taken``; False if unreadable.
+
+    A backup's name gives its time to the second, so a row dated within that second may
+    or may not be in it: such a row is not counted as written since.
+    """
+    try:
+        when = datetime.fromisoformat(str(value))
+    except ValueError:
+        return False
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=UTC)
+    return when >= taken + timedelta(seconds=1)
+
+
+def _written_since(restored: Store, live: Store, taken: datetime) -> dict[str, list[str]]:
+    """By table, the keys of live rows the backup lacks or holds otherwise, dated after it."""
+    since: dict[str, list[str]] = {}
+    for table, _ in RECORD_KINDS:
+        held, current = restored.raw_rows(table), live.raw_rows(table)
+        created, changed = CREATED_COLUMNS[table], CHANGED_COLUMNS.get(table)
+        keys = [
+            key
+            for key, row in current.items()
+            if (key not in held and _after(row.get(created), taken))
+            or (
+                key in held
+                and held[key] != row
+                and changed is not None
+                and _after(row.get(changed), taken)
+            )
+        ]
+        if keys:
+            since[table] = sorted(keys)
+    return since
+
+
+def _since_words(since: dict[str, list[str]]) -> str:
+    """ "1 run and 2 decisions" from :func:`_written_since`'s keys."""
+    nouns = {table: (noun, plural) for table, noun, plural in STATUS_NOUNS}
+    parts = []
+    for table, keys in since.items():
+        noun, plural = nouns[table]
+        parts.append(f"{len(keys)} {noun if len(keys) == 1 else plural}")
+    return " and ".join([", ".join(parts[:-1]), parts[-1]] if len(parts) > 1 else parts)
 
 
 def backup_time(database: Path) -> datetime | None:
@@ -329,9 +428,19 @@ def restore_check(live: Store, directory: Path, now: datetime | None = None) -> 
         raise RestoreCheckFailed(f"no backup in {directory}/ (run `make backup` first)")
     verify_checksum(database)
     copy = _open_copy(database)
+    taken = backup_time(database)
+    since: dict[str, list[str]] = {}
     try:
         restored = copy.store
         difference = _difference(restored, live)
+        if difference and taken is not None:
+            # Rows written after the backup was taken do not make it wrong: compare the rest.
+            since = _written_since(restored, live, taken)
+            if since:
+                rest = _difference(
+                    restored, live, {table: frozenset(keys) for table, keys in since.items()}
+                )
+                difference = rest
         # Opening the copy as a version 13 record adds the watch tables it may lack (empty).
         restored_watch = WatchStore(restored)
         unreadable = restored.unreadable() + restored_watch.unreadable()
@@ -347,6 +456,14 @@ def restore_check(live: Store, directory: Path, now: datetime | None = None) -> 
         raise RestoreCheckFailed(
             f"{database.name}: {len(unreadable)} record(s) in it cannot be read by this version "
             f"of the app ({named}{more}); a restore would keep them in the file and show none"
+        )
+    if since:
+        first_table, first_keys = next(iter(since.items()))
+        noun = {table: noun for table, noun, _ in STATUS_NOUNS}[first_table]
+        raise BackupBehind(
+            f"{database.name} holds the live record as it was when it was taken, and the "
+            f"live record has {_since_words(since)} written since (first: {noun} "
+            f"{first_keys[0]}); run `make backup` and check again"
         )
     age = age_words(backup_time(database), now or datetime.now(UTC))
     watched = ""
@@ -436,6 +553,9 @@ def main(
         return 0
     try:
         print(restore_check(live, args.dir, now))
+    except BackupBehind as behind:
+        print(f"BEHIND: {behind}")
+        return BEHIND_EXIT
     except RestoreCheckFailed as failure:
         print(f"FAIL: {failure}")
         return 1

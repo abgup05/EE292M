@@ -189,6 +189,10 @@ CLAIM_GROUPS: dict[str, ConceptGroup] = {
             "MarketableSecuritiesCurrent",
             "ShortTermInvestments",
             "AvailableForSaleSecuritiesDebtSecuritiesCurrent",
+            # A filer that changes tag is read under the new one for the dates it tags:
+            # NVIDIA from January 2026. Last, so a filer of an earlier tag is unmoved.
+            "DebtSecuritiesCurrent",
+            "AvailableForSaleSecuritiesCurrent",
             instant=True,
         ),
         _claim_group(

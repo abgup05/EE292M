@@ -45,7 +45,11 @@ from ed_v14.engines.claude import ClaudeAnalyst
 from ed_v14.services.examples import EXAMPLE_THESIS
 from ed_v14.services.export import render_markdown
 from ed_v14.services.thesis_run import execute_run, new_run
+from ed_v14.services.view_providers import run_providers
+from ed_v14.sources.edgar import EdgarClient
+from ed_v14.sources.frames import FramesSource
 from ed_v14.sources.http import fetch_page as default_fetch_page
+from ed_v14.sources.thirteenf import ThirteenFSource
 from ed_v14.store import FactStore, FilingCache, Store
 
 DEFAULT_OUT = Path("results")
@@ -254,6 +258,7 @@ def main(
     run = new_run(thesis)
     store.save_run(run)
     checker = wiring.checker_named(args.engine, analyst)
+    analyser = wiring.analyser_named(args.engine, analyst)
     detail = getattr(analyst, "detail", "")
     engine = f"{analyst.name} ({detail})" if detail else analyst.name
     print(f"{run.id}: testing {len(thesis.claims)} claim(s) on {thesis.ticker} with {engine}")
@@ -273,6 +278,16 @@ def main(
         checker=checker,
         facts_store=facts_store,
         claim_reader=claim_reader,
+        analyser=analyser,
+        analytics_providers=(
+            run_providers(
+                filings,
+                FramesSource(filings.get, wiring.frames_dir()),
+                ThirteenFSource(filings.get, wiring.thirteenf_dir()),
+            )
+            if isinstance(filings, EdgarClient)
+            else None
+        ),
     )
 
     cassette = _cassette_of(analyst)

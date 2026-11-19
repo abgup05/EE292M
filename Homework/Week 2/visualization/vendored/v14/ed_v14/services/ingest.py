@@ -68,9 +68,10 @@ class Ingested:
     read); ``duplicates`` counts sources whose content had already been read,
     so ``requested - duplicates`` is the number of distinct sources asked for.
     ``filing_refs`` maps the source ID of each filing read to its reference.
-    ``filing_html`` holds, by accession, the HTML of each filing fetched in this run,
-    kept only when the run asked for tagged figures: the tags are in the HTML and not
-    in the parsed text, and fetching a filing twice in one run is waste.
+    ``filing_html`` holds, by accession, the HTML of each filing fetched in this run (a
+    filing read from the cache was not fetched and has none): the tags are in the HTML and
+    not in the parsed text, and fetching a filing twice in one run is waste. The run reads
+    the tags it wants and clears it (megabytes).
     """
 
     documents: dict[str, Document] = field(default_factory=dict)
@@ -192,9 +193,8 @@ def ingest(
         store.save_run(run)
         same_page = False
         if isinstance(item, FilingRef):
-            keep = result.filing_html if run.inputs.tagged_figures else None
             source, document, cached = _read_filing(
-                source_id, item, company, filings, cache, keep_html=keep
+                source_id, item, company, filings, cache, keep_html=result.filing_html
             )
             result.filings_from_cache += cached
         else:

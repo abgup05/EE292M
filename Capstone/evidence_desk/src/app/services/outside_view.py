@@ -160,7 +160,7 @@ def outside_view(
             view.compile_note = f"The claim does not compile to a test: {compiled.reason}"
     wanted: list[tuple[str, int]] = []
     if test is not None:
-        first = read_years[0] - test.reach
+        first = read_years[0] - test.class_reach
         span = [y for y in range(first, read_years[-1] + 1) if y >= admitted[0]]
         wanted += [(g, y) for g in groups_for(test_measures(test) | {"revenue"}) for y in span]
     peer_keys = ["revenue" if k == "revenue_growth" else k for k in PEER_MEASURES]

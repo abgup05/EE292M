@@ -1,6 +1,6 @@
 # Architecture
 
-Evidence Desk (version 0.14.2) tests an equity analyst's thesis claims against the company's own SEC filings and shows,
+Evidence Desk (version 0.14.3) tests an equity analyst's thesis claims against the company's own SEC filings and shows,
 per claim, the verbatim passages and figures that support or challenge it. A reviewer can accept or reject each
 finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the brief; `docs/reviews/` the review.
 

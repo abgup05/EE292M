@@ -584,7 +584,7 @@ is ignored, so additive changes to these payloads do not break the page. The fun
 The recorded samples are `?sample=run-live`, offered first on the first screen: a live NVIDIA
 run of 19 Nov 2026 (UTC) answered by the Anthropic API (claude-opus-5-5 reading, claude-haiku-5-5
 checking) with three claim readers (the grammar, claude-haiku-5-5, claude-sonnet-5-5), copied
-unedited from `results/run-a3c830947e19.json`: three tests all three readers read alike, one of
+unedited from `results/run-b9d5f9224a25.json`: three tests all three readers read alike, one of
 them held in each of the last four quarters, and two claims no reader could read.
 `?sample=readers` (`docs/examples/v14/run-readers.json`) shows what the live run does not: the
 grammar refusing while both models agree ("2 of 3 readers"), two writings of one test, and a
@@ -721,8 +721,8 @@ navigation label where a headline should be, two faces in one argument, a phone 
 screen was all claims, and stages chained by arrows that ran side by side. The page as described
 above is the answer to both. What they asked for and was not done is in the README's limits.
 
-**The samples.** `?sample=run-live` (NVIDIA, run-a3c830947e19) and `?sample=run-costco` (Costco,
-run-6560ff7f364f) are offered first: two live runs of 19 November 2026 (UTC), each answered
+**The samples.** `?sample=run-live` (NVIDIA, run-b9d5f9224a25) and `?sample=run-costco` (Costco,
+run-6f20883d8811) are offered first: two live runs of 19 November 2026 (UTC), each answered
 through the Anthropic API (claude-opus-5-5 read the passages, proposed the corollaries and wrote
 the argument; claude-haiku-5-5 checked meaning; the grammar, claude-haiku-5-5 and
 claude-sonnet-5-5 read the claims into tests) and copied unedited from the runs' records.

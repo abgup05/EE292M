@@ -324,7 +324,8 @@ _UNIT_AFTER: tuple[tuple[re.Pattern[str], Unit], ...] = (
     (re.compile(r"\s?percentage[\s-]points?\b", re.IGNORECASE), "percent"),
     (re.compile(r"\s?(?:percent|per\s+cent)\b", re.IGNORECASE), "percent"),
     (re.compile(r"\s?(?:basis\s+points?|bps|bp)\b", re.IGNORECASE), "bps"),
-    (re.compile(r"x\b"), "multiple"),
+    # "28.5x" and "28.5×": the multiplication sign is not a word character, so no \b after it.
+    (re.compile(r"(?:x\b|×)"), "multiple"),
     (re.compile(r"\s(?:times)\b", re.IGNORECASE), "multiple"),
     (re.compile(r"\s?(?:dollars|USD)\b"), "usd"),
 )

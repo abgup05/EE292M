@@ -134,7 +134,7 @@ def ref_of(run: dict[str, Any], analytic_id: str) -> str:
 
 def test_the_analysis_samples_are_copied_unedited() -> None:
     assert (WEB / "sample-analysis-shapes.json").read_bytes() == (EXAMPLES / "run-hand-built-argument.json").read_bytes(), "run `make sample-analysis`"
-    for sample, run_id in (("sample-run-live.json", "run-a3c830947e19"), ("sample-run-costco.json", "run-6560ff7f364f")):
+    for sample, run_id in (("sample-run-live.json", "run-b9d5f9224a25"), ("sample-run-costco.json", "run-6f20883d8811")):
         original = RESULTS / f"{run_id}.json"
         assert json.loads((WEB / sample).read_text(encoding="utf-8"))["id"] == run_id
         if original.is_file():  # results/ is not committed
@@ -150,8 +150,8 @@ def test_the_first_two_samples_offered_are_the_two_live_runs() -> None:
 
 
 @pytest.mark.parametrize(("name", "phrases"), [
-    ("run-live", ("live run of 19 November 2026", "run-a3c830947e19", "Anthropic API", "claude-opus-5-5", "wrote the argument", "copied unedited from results/run-a3c830947e19.json")),
-    ("run-costco", ("live run of 19 November 2026", "run-6560ff7f364f", "Costco", "Anthropic API", "claude-opus-5-5", "copied unedited from results/run-6560ff7f364f.json")),
+    ("run-live", ("live run of 19 November 2026", "run-b9d5f9224a25", "Anthropic API", "claude-opus-5-5", "wrote the argument", "copied unedited from results/run-b9d5f9224a25.json")),
+    ("run-costco", ("live run of 19 November 2026", "run-6f20883d8811", "Costco", "Anthropic API", "claude-opus-5-5", "copied unedited from results/run-6f20883d8811.json")),
     ("analysis-shapes", ("docs/examples/analysis/run-hand-built-argument.json", "hand-built", "no model", "make sample-analysis")),
 ])
 def test_a_sample_says_where_its_answers_came_from(name: str, phrases: tuple[str, ...]) -> None:

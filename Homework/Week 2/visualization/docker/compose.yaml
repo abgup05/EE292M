@@ -8,10 +8,54 @@ services:
     environment:
       PYTHONPATH: /work/src
       HOME: /tmp
+      LIVE_VERSIONS: "${LIVE_VERSIONS:-}"
     volumes:
       - ..:/work
     ports:
       - "127.0.0.1:8765:8000"
+  # The function as Vercel runs it (docs/site-live.md at the repository root): main.py with
+  # no PYTHONPATH, the source tree and the root filesystem read-only, /tmp the only writable
+  # place and not shared between the two processes, no model key and no SEC contact string.
+  # www.sec.gov, data.sec.gov and the two sites of version 1's example resolve to this
+  # container itself, so nothing is asked of them and every filing comes from the seed.
+  live: &live
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: app
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    read_only: true
+    working_dir: /work
+    environment:
+      PYTHONPATH: ""
+      HOME: /tmp
+      ANTHROPIC_API_KEY: ""
+      SEC_USER_AGENT: ""
+    extra_hosts:
+      - "www.sec.gov:127.0.0.1"
+      - "data.sec.gov:127.0.0.1"
+      - "efts.sec.gov:127.0.0.1"
+      - "www.nist.gov:127.0.0.1"
+      - "www.gao.gov:127.0.0.1"
+    volumes:
+      - ..:/work:ro
+    tmpfs:
+      - /tmp
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "127.0.0.1:8790:8000"
+  # A second process of the same function that has seen none of the first one's runs.
+  live-fresh:
+    <<: *live
+    ports: []
+  livetest:
+    image: node:24-slim
+    working_dir: /repo
+    volumes:
+      - ../../../..:/repo:ro
+    environment:
+      LIVE_TEST_WHY: "${WHY:-}"
+    command: ["node", "tools/live/live_test.mjs", "http://live:8000", "http://live-fresh:8000"]
   lock:
     build:
       context: .
@@ -28,4 +72,4 @@ services:
     working_dir: /work
     volumes:
       - ..:/work:ro
-    command: ["node", "--check", "src/web/app.js"]
+    command: ["sh", "-c", "node --check src/web/app.js && node --check src/live/shim.js"]

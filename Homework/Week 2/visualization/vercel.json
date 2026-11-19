@@ -3,7 +3,8 @@
   "framework": "fastapi",
   "functions": {
     "main.py": {
-      "excludeFiles": "{docker/**,tests/**,data/raw/NYSE_50_sector_classification.xlsx}"
+      "maxDuration": 300,
+      "excludeFiles": "{docker/**,tests/**,.live-shots/**,data/raw/NYSE_50_sector_classification.xlsx}"
     }
   }
 }

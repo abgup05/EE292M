@@ -1,0 +1,253 @@
+{
+  "items": [
+    {
+      "id": "ib-th-090c6b0da873-0008888888-26-000001",
+      "thesis_id": "th-090c6b0da873",
+      "thesis_name": "Jane Smith is gone",
+      "ticker": "NVDA",
+      "job_id": "wj-th-090c6b0da873-0008888888-26-000001",
+      "kind": "moved",
+      "created_at": "2026-11-18T09:30:00Z",
+      "updated_at": "2026-11-18T09:30:00Z",
+      "read_at": null,
+      "collapsed": false,
+      "headline": "NVDA: 8-K of 10 Mar 2026, Items 5.02 and 9.01. 1 of 2 verdicts moved; 1 new 8-K on the timeline.",
+      "filing": {
+        "accession": "0008888888-26-000001",
+        "form": "8-K",
+        "filed_date": "2026-03-10",
+        "report_date": "2026-03-09",
+        "url": "https://www.sec.gov/Archives/edgar/data/1045810/000888888826000001/current-1.htm",
+        "items": [
+          {
+            "number": "5.02",
+            "title": "Departure of Directors or Certain Officers; Election of Directors; Appointment of Certain Officers; Compensatory Arrangements of Certain Officers",
+            "category": "leadership"
+          },
+          {
+            "number": "9.01",
+            "title": "Financial Statements and Exhibits",
+            "category": "exhibits"
+          }
+        ],
+        "label": "8-K of 10 Mar 2026, Items 5.02 and 9.01"
+      },
+      "triage": {
+        "bears": true,
+        "rules": [
+          "event_category"
+        ],
+        "summary": "It bears on 1 of 2 claims.",
+        "claims": [
+          {
+            "claim_id": "c1",
+            "claim": "Buy because Jane Smith is gone.",
+            "categories": [
+              "leadership"
+            ],
+            "bears": true,
+            "reasons": [
+              "Item 5.02 reports a change of directors or officers, a subject of this claim (leadership)."
+            ],
+            "paragraphs": []
+          },
+          {
+            "claim_id": "c2",
+            "claim": "Revenue grew in the quarter as demand for systems rose.",
+            "categories": [],
+            "bears": false,
+            "reasons": [],
+            "paragraphs": []
+          }
+        ],
+        "notes": []
+      },
+      "run": {
+        "state": "finished",
+        "waiting_reason": "",
+        "run_id": "run-f2c72ad55e4f",
+        "status": "partial",
+        "started_by": "watch"
+      },
+      "moved": {
+        "earlier_run_id": "run-8de953d45baf",
+        "later_run_id": "run-f2c72ad55e4f",
+        "moved": true,
+        "verdicts": [
+          {
+            "claim": "Buy because Jane Smith is gone.",
+            "before": "challenged",
+            "after": "supported"
+          }
+        ],
+        "new_cautions": [],
+        "new_notes": [],
+        "new_events": [
+          {
+            "accession": "0008888888-26-000001",
+            "form": "8-K",
+            "filed_date": "2026-03-10",
+            "items": [
+              "5.02",
+              "9.01"
+            ],
+            "url": "https://www.sec.gov/Archives/edgar/data/1045810/000888888826000001/current-1.htm",
+            "label": "8-K of 10 Mar 2026"
+          }
+        ],
+        "sources_added": [
+          "NVIDIA CORP 8-K, filed 2026-03-10"
+        ],
+        "line": "1 of 2 verdicts moved; 1 new 8-K on the timeline.",
+        "claims": [
+          {
+            "claim": "Buy because Jane Smith is gone.",
+            "before": "challenged",
+            "after": "supported",
+            "moved": true,
+            "change": "moved",
+            "reviewed_before": null,
+            "reviewed_after": null,
+            "excerpts_added": 1,
+            "excerpts_dropped": 1
+          },
+          {
+            "claim": "Revenue grew in the quarter as demand for systems rose.",
+            "before": "not_addressed",
+            "after": "not_addressed",
+            "moved": false,
+            "change": "unchanged",
+            "reviewed_before": null,
+            "reviewed_after": null,
+            "excerpts_added": 0,
+            "excerpts_dropped": 0
+          }
+        ],
+        "comparison_note": "1 of 2 verdicts moved; 1 filing is new: NVIDIA CORP 8-K, filed 2026-03-10."
+      },
+      "error": ""
+    },
+    {
+      "id": "ib-th-090c6b0da873-0009999999-26-000003",
+      "thesis_id": "th-090c6b0da873",
+      "thesis_name": "Jane Smith is gone",
+      "ticker": "NVDA",
+      "job_id": "wj-th-090c6b0da873-0009999999-26-000003",
+      "kind": "nothing_moved",
+      "created_at": "2026-11-18T09:15:00Z",
+      "updated_at": "2026-11-18T09:15:00Z",
+      "read_at": null,
+      "collapsed": false,
+      "headline": "NVDA: 10-Q of 2 Mar 2026. Nothing moved.",
+      "filing": {
+        "accession": "0009999999-26-000003",
+        "form": "10-Q",
+        "filed_date": "2026-03-02",
+        "report_date": "2026-03-01",
+        "url": "https://www.sec.gov/Archives/edgar/data/1045810/000999999926000003/synthetic-3.htm",
+        "items": [],
+        "label": "10-Q of 2 Mar 2026"
+      },
+      "triage": {
+        "bears": true,
+        "rules": [
+          "periodic_report"
+        ],
+        "summary": "A new 10-Q: it bears on every claim (2 of 2).",
+        "claims": [
+          {
+            "claim_id": "c1",
+            "claim": "Buy because Jane Smith is gone.",
+            "categories": [
+              "leadership"
+            ],
+            "bears": true,
+            "reasons": [
+              "A new 10-Q carries new reported figures, so every claim is tested again.",
+              "No changed paragraph of it shares two words with this claim."
+            ],
+            "paragraphs": []
+          },
+          {
+            "claim_id": "c2",
+            "claim": "Revenue grew in the quarter as demand for systems rose.",
+            "categories": [],
+            "bears": true,
+            "reasons": [
+              "A new 10-Q carries new reported figures, so every claim is tested again.",
+              "1 changed paragraph of it shares words with this claim."
+            ],
+            "paragraphs": [
+              {
+                "kind": "added",
+                "item": "Item 2. Management's Discussion and Analysis",
+                "text": "Revenue grew in the quarter as demand for systems rose sharply in every region.",
+                "link": "https://www.sec.gov/Archives/edgar/data/1045810/000999999926000003/synthetic-3.htm#:~:text=Revenue%20grew%20in%20the%20quarter,rose%20sharply%20in%20every%20region.",
+                "matched_terms": [
+                  "demand",
+                  "grew",
+                  "quarter",
+                  "revenu",
+                  "ros",
+                  "system"
+                ]
+              }
+            ]
+          }
+        ],
+        "notes": []
+      },
+      "run": {
+        "state": "finished",
+        "waiting_reason": "",
+        "run_id": "run-8de953d45baf",
+        "status": "partial",
+        "started_by": "watch"
+      },
+      "moved": {
+        "earlier_run_id": "run-cb3e5bb5afcc",
+        "later_run_id": "run-8de953d45baf",
+        "moved": false,
+        "verdicts": [],
+        "new_cautions": [],
+        "new_notes": [],
+        "new_events": [],
+        "sources_added": [
+          "NVIDIA CORP 10-Q, period ended 2026-03-01"
+        ],
+        "line": "Nothing moved.",
+        "claims": [
+          {
+            "claim": "Buy because Jane Smith is gone.",
+            "before": "challenged",
+            "after": "challenged",
+            "moved": false,
+            "change": "unchanged",
+            "reviewed_before": null,
+            "reviewed_after": null,
+            "excerpts_added": 0,
+            "excerpts_dropped": 0
+          },
+          {
+            "claim": "Revenue grew in the quarter as demand for systems rose.",
+            "before": "not_addressed",
+            "after": "not_addressed",
+            "moved": false,
+            "change": "unchanged",
+            "reviewed_before": null,
+            "reviewed_after": null,
+            "excerpts_added": 0,
+            "excerpts_dropped": 0
+          }
+        ],
+        "comparison_note": "No verdict moved; 1 filing is new: NVIDIA CORP 10-Q, period ended 2026-03-01."
+      },
+      "error": ""
+    }
+  ],
+  "total": 6,
+  "unread": 6,
+  "limit": 4,
+  "offset": 4,
+  "next_offset": null
+}

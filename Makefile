@@ -1,4 +1,4 @@
-.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe replay golden-check golden-baseline profile bench eval eval-validate golden-sheet backup restore-check up-recorded live-walk changes breakdowns lock clean data vercel-deps referee versions-up versions-down versions-status versions-logs pr pr-describe pr-merge site-survey site-run-v1 site-export site-index site-scan site-test site-browse site-check
+.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe replay golden-check golden-baseline profile bench eval eval-validate golden-sheet backup restore-check up-recorded live-walk changes breakdowns lock clean data vercel-deps live-imports live-up live-down live-test live-logs live-runs referee versions-up versions-down versions-status versions-logs pr pr-describe pr-merge site-survey site-run-v1 site-export site-index site-scan site-test site-browse site-check site-vendor site-live-up site-live-down site-live-test site-live-shots site-version
 
 # make <target> runs the capstone by default; make APP=week2 <target> runs the Week 2 app.
 APP ?= capstone
@@ -6,7 +6,7 @@ APP_DIR_capstone := Capstone/evidence_desk
 APP_DIR_week2 := Homework/Week 2/visualization
 APP_DIR := $(APP_DIR_$(APP))
 
-help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe replay golden-check golden-baseline profile bench eval eval-validate golden-sheet backup restore-check up-recorded live-walk changes breakdowns lock clean data vercel-deps:
+help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe replay golden-check golden-baseline profile bench eval eval-validate golden-sheet backup restore-check up-recorded live-walk changes breakdowns lock clean data vercel-deps live-imports live-up live-down live-test live-logs live-runs:
 	@test -n '$(APP_DIR)' || { echo "Unknown APP '$(APP)'; use capstone or week2"; exit 1; }
 	@$(MAKE) -C '$(APP_DIR)' $@
 
@@ -86,7 +86,8 @@ pr-merge:
 #   make site-export VERSIONS="13 14"    only these; the others stay as they are
 #   make site-survey                     what each instance holds, without writing anything
 #   make site-scan                       fail on anything that looks like a secret or personal data
-#   make site-check URL=https://...      the deployed site: /, /versions and each /vN/
+#   make site-check URL=https://...      the deployed site: /, /versions, /live/status and each
+#                                        /vN/, reported as live or recorded
 SITE_DIR := Homework/Week 2/visualization/snapshots
 SITE_IMAGE := python:3.14-slim
 SITE_TAGS := $(shell git tag -l 'capstone-v*' | sed -n 's/^capstone-v\([0-9][0-9]*\)$$/\1/p' | sort -n)
@@ -122,10 +123,12 @@ site-scan:
 
 site-test:
 	@$(SITE_PY) -m unittest discover -s tools/snapshots -p 'test_*.py'
+	@$(SITE_PY) -m unittest discover -s tools/live -p 'test_*.py'
 	@docker run --rm -v "$(CURDIR):/repo:ro" -w /repo node:24-slim sh -c \
-	  'node --test tools/snapshots/test_shim.mjs && for f in "$(SITE_DIR)"/v*/snapshot.js; do node --check "$$f" || exit 1; done'
+	  'node --test tools/snapshots/test_shim.mjs tools/live/test_shim.mjs && for f in "$(SITE_DIR)"/v*/snapshot.js; do node --check "$$f" || exit 1; done'
 
-# Each snapshot as a browser renders it, served by the Week 2 app on 127.0.0.1:8765 (started
+# Each recorded snapshot as a browser renders it, served by the Week 2 app on 127.0.0.1:8765
+# with LIVE_VERSIONS=off, which serves the recordings in place of the live versions (started
 # and stopped here): headless Chromium dumps the DOM of /vN/ and, from version 2 on, /vN/?sample,
 # and tools/snapshots/browse_check.py checks the banner, that every call the page made on load
 # was answered, and that the recorded run is shown.
@@ -133,7 +136,7 @@ SITE_CHROME := docker run --rm --add-host=host.docker.internal:host-gateway zeni
 	--headless --no-sandbox --disable-gpu --virtual-time-budget=8000 --dump-dom
 
 site-browse:
-	@$(MAKE) -s APP=week2 up > /dev/null
+	@LIVE_VERSIONS=off $(MAKE) -s APP=week2 up > /dev/null
 	@trap '$(MAKE) -s APP=week2 down > /dev/null 2>&1' EXIT; \
 	curl -s -o /dev/null -m 5 --retry 30 --retry-delay 1 --retry-all-errors http://127.0.0.1:8765/versions || exit 1; \
 	failed=0; for n in $(SITE_VERSIONS); do \
@@ -146,7 +149,98 @@ site-browse:
 
 site-check:
 	@test -n '$(URL)' || { echo 'Usage: make site-check URL=https://ee292m-visualization.vercel.app'; exit 1; }
-	@$(SITE_PY) tools/snapshots/check.py '$(URL)' '$(SITE_DIR)'
+	@$(SITE_PY) tools/snapshots/check.py $(if $(ALLOW_RECORDED),--allow-recorded) '$(URL)' '$(SITE_DIR)' '$(LIVE_SITE)/vendored'
+
+# The website runs each capstone version live (docs/site-live.md): tools/live/versions.map names
+# the git ref of each version N; make site-vendor copies that ref's Capstone/evidence_desk/src
+# into $(LIVE_DIR)/vN with the package renamed app -> ed_vN (tools/live/vendor.py, read from
+# git, never from a working tree), writes the EDGAR seed from the last ref's recorded test
+# fixtures, removes versions no longer in the map, then imports every vendored module and asks
+# each version for its page and /api/meta under the Week 2 app's dependencies.
+#   make site-vendor                     every version in the map
+#   make site-live-up / site-live-down   the function as Vercel runs it, on 127.0.0.1:8790
+#   make site-live-test                  every version: page, a no-key run through the shim,
+#                                        the finished run again from a fresh process
+LIVE_SITE := Homework/Week 2/visualization
+LIVE_DIR := $(LIVE_SITE)/vendored
+LIVE_MAP := tools/live/versions.map
+LIVE_PY_STDIN := docker run --rm -i --user "$$(id -u):$$(id -g)" -v "$(CURDIR):/repo" -w /repo $(SITE_IMAGE) python -B -I
+LIVE_LINES := grep -Ev '^[[:space:]]*(\#|$$)' $(LIVE_MAP)
+
+site-vendor:
+	@set -e; $(LIVE_LINES) | while read -r n ref; do \
+	  commit=$$(git rev-parse -q --verify "$$ref^{commit}") || { echo "version $$n: there is no ref $$ref"; exit 1; }; \
+	  git archive --format=tar "$$commit" Capstone/evidence_desk/src \
+	    | $(LIVE_PY_STDIN) tools/live/vendor.py version "$$n" --ref "$$ref" --commit "$$commit" --out '$(LIVE_DIR)'; \
+	done
+	@set -e; ref=$$($(LIVE_LINES) | tail -1 | awk '{print $$2}'); commit=$$(git rev-parse --verify "$$ref^{commit}"); \
+	  git archive --format=tar "$$commit" Capstone/evidence_desk/tests/fixtures \
+	    | $(LIVE_PY_STDIN) tools/live/vendor.py seed --ref "$$ref" --commit "$$commit" --out '$(LIVE_DIR)'
+	@$(LIVE_PY_STDIN) tools/live/vendor.py prune --out '$(LIVE_DIR)' $$($(LIVE_LINES) | awk '{print $$1}')
+	@$(MAKE) -s APP=week2 live-imports
+
+site-live-up:
+	@$(MAKE) -s APP=week2 live-up
+	@curl -s -o /dev/null -m 5 --retry 30 --retry-delay 1 --retry-all-errors http://127.0.0.1:8790/live/status \
+	  && echo "The function as Vercel runs it: http://127.0.0.1:8790/versions"
+
+site-live-down:
+	@$(MAKE) -s APP=week2 live-down
+
+# With URL it tests the deployed site instead (tools/live/remote_test.mjs): one run per version
+# named (default 1, 8 and 14), refused when the server has a model key unless WITH_KEY=1.
+#   make site-live-test URL=https://ee292m-visualization.vercel.app VERSIONS="1 8 14"
+#   make site-live-test URL=... VERSIONS=14 COMPANY=COST    and a run outside the seed
+site-live-test:
+ifeq ($(strip $(URL)),)
+	@$(MAKE) -s APP=week2 live-test VERSIONS='$(if $(filter command line environment,$(origin VERSIONS)),$(VERSIONS),)'
+else
+	@docker run --rm -v "$(CURDIR):/repo:ro" -w /repo -e COMPANY='$(COMPANY)' -e WITH_KEY='$(WITH_KEY)' \
+	  --add-host=host.docker.internal:host-gateway node:24-slim \
+	  node tools/live/remote_test.mjs '$(URL)' $(if $(filter command line environment,$(origin VERSIONS)),$(VERSIONS),)
+endif
+
+# Each live page as a visitor sees it, for a person (or an agent) to look at: headless Chromium
+# against the emulated function writes PNG files under $(LIVE_SHOTS) (not committed): the page
+# as it opens, its sample from version 2 on, and a finished no-key run of its own example.
+#   make site-live-shots                 every version
+#   make site-live-shots VERSIONS="1 14" WIDTH=390
+LIVE_SHOTS := $(LIVE_SITE)/.live-shots
+WIDTH ?= 1280
+HEIGHT ?= 2000
+LIVE_SHOT = docker run --rm --user "$$(id -u):$$(id -g)" -e HOME=/tmp -v "$(CURDIR)/$(LIVE_SHOTS):/out" \
+	--add-host=host.docker.internal:host-gateway zenika/alpine-chrome:124 \
+	--headless --no-sandbox --disable-gpu --hide-scrollbars --virtual-time-budget=9000 \
+	--window-size=$(WIDTH),$(HEIGHT)
+
+site-live-shots:
+	@$(MAKE) -s site-live-up > /dev/null
+	@mkdir -p '$(LIVE_SHOTS)'
+	@trap '$(MAKE) -s site-live-down > /dev/null 2>&1' EXIT; \
+	$(MAKE) -s APP=week2 live-runs VERSIONS='$(if $(filter command line environment,$(origin VERSIONS)),$(VERSIONS),)' \
+	| while read -r n id; do \
+	  $(LIVE_SHOT) --screenshot="/out/v$$n-page-$(WIDTH).png" "http://host.docker.internal:8790/v$$n/" < /dev/null > /dev/null 2>&1; \
+	  if [ "$$n" -ge 2 ]; then \
+	    $(LIVE_SHOT) --screenshot="/out/v$$n-sample-$(WIDTH).png" "http://host.docker.internal:8790/v$$n/?sample" < /dev/null > /dev/null 2>&1; \
+	    $(LIVE_SHOT) --screenshot="/out/v$$n-run-$(WIDTH).png" "http://host.docker.internal:8790/v$$n/#run=$$id" < /dev/null > /dev/null 2>&1; \
+	  fi; \
+	  echo "v$$n  run $$id  $$(ls '$(LIVE_SHOTS)' | grep -c "^v$$n-.*-$(WIDTH)\.png$$") pictures"; \
+	done
+
+# A new version, or a version moved to a later point release, in one command: it points the
+# version at the ref in $(LIVE_MAP), vendors every version in the map again from git (the
+# others come out byte for byte as they are), imports them all, and runs the new version live
+# under the emulation. What is left is to commit and open the pull request.
+#   make site-version N=15                      capstone-v15
+#   make site-version N=13 REF=capstone-v13.1
+site-version:
+	@test -n '$(N)' || { echo 'Usage: make site-version N=15 [REF=capstone-v15]'; exit 1; }
+	@git rev-parse -q --verify '$(or $(REF),capstone-v$(N))^{commit}' > /dev/null \
+	  || { echo "There is no ref $(or $(REF),capstone-v$(N)) in this repository"; exit 1; }
+	@$(LIVE_PY_STDIN) tools/live/vendor.py map --map '$(LIVE_MAP)' '$(N)' '$(or $(REF),capstone-v$(N))' < /dev/null
+	@$(MAKE) -s site-vendor
+	@$(MAKE) -s site-live-test VERSIONS='$(N)'
+	@echo "Version $(N) runs live under the emulation. Commit $(LIVE_MAP) and $(LIVE_DIR), then open the pull request."
 
 # The live site's two secrets, copied from the capstone's gitignored .env into the Vercel
 # project's environment variables by a throwaway container (tools/live/push_secrets.sh), using

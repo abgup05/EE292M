@@ -1,0 +1,22 @@
+# Which git ref the website runs live as each Evidence Desk version (make site-vendor).
+#
+# One line per version: the number shown at /vN/ and the tag or branch whose
+# Capstone/evidence_desk/src is vendored for it. Point a version at a later
+# point release by changing its ref (13 capstone-v13.1); add a version with a
+# new line (15 capstone-v15). The EDGAR seed is taken from the last line's ref.
+#
+# version  ref
+1   capstone-v1
+2   capstone-v2
+3   capstone-v3
+4   capstone-v4
+5   capstone-v5
+6   capstone-v6
+7   capstone-v7
+8   capstone-v8
+9   capstone-v9
+10  capstone-v10
+11  capstone-v11
+12  capstone-v12
+13  capstone-v13.1
+14  capstone-v14

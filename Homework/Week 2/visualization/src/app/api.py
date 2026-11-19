@@ -14,12 +14,17 @@ from fastapi.staticfiles import StaticFiles
 
 from app.flow_models import FlowView
 from app.flows import explore, load_dataset
+from live.site import LiveVersionApp, Site
 
 WEB_DIR = Path(__file__).resolve().parents[1] / "web"
-# Recorded, read-only snapshots of the capstone's versions (tools/snapshots/export.py at the
-# repository root): version N at /vN/, and the table of versions at /versions.
+# The capstone's versions (docs/site-live.md at the repository root): version N runs live at
+# /vN/ from vendored/vN (src/live), and the table of versions is at /versions. The recorded
+# snapshot of a version (snapshots/vN, read-only static files written by
+# tools/snapshots/export.py) is served in its place when the version has no vendored copy, or
+# when its vendored copy cannot be built on this server.
 SNAPSHOT_DIR = Path(__file__).resolve().parents[2] / "snapshots"
-SNAPSHOT_NAME = re.compile(r"v[0-9]{1,2}")
+SNAPSHOT_NAME = re.compile(r"v[0-9]{1,3}")
+LIVE = Site()
 
 
 @asynccontextmanager
@@ -141,7 +146,7 @@ def export(
 
 
 def snapshot_names() -> list[str]:
-    """The snapshot directories present (``v1``, ``v2``, ...), in version order."""
+    """The recorded snapshot directories present (``v1``, ``v2``, ...), in version order."""
     if not SNAPSHOT_DIR.is_dir():
         return []
     names = [
@@ -152,17 +157,37 @@ def snapshot_names() -> list[str]:
     return sorted(names, key=lambda name: int(name[1:]))
 
 
+def live_names() -> list[str]:
+    """The versions that run live (``v1``, ...), in version order."""
+    return [f"v{number}" for number in LIVE.versions]
+
+
+def recorded_names() -> list[str]:
+    """The versions served as a recorded snapshot because they have no live copy."""
+    live = set(live_names())
+    return [name for name in snapshot_names() if name not in live]
+
+
 @app.get("/versions", include_in_schema=False)
 def versions() -> FileResponse:
-    """The table of the capstone's versions, with a link to each snapshot."""
+    """The table of the capstone's versions, with a link to each one."""
     page = SNAPSHOT_DIR / "versions.html"
     if not page.is_file():
         raise HTTPException(status_code=404, detail="Not Found")
     return FileResponse(page, media_type="text/html")
 
 
+@app.get("/live/status", include_in_schema=False)
+async def live_status(imports: bool = False) -> dict:
+    """What the live versions run with: booleans and counts only, never a secret.
+
+    ``imports=true`` first imports every version that has not been imported yet.
+    """
+    return await LIVE.status(imports)
+
+
 def _to_directory(name: str) -> Callable[[], RedirectResponse]:
-    """A handler that sends ``/vN`` to ``/vN/``, where the snapshot's relative links work."""
+    """A handler that sends ``/vN`` to ``/vN/``, where the page's relative links work."""
 
     def redirect() -> RedirectResponse:
         return RedirectResponse(f"/{name}/", status_code=307)
@@ -170,11 +195,31 @@ def _to_directory(name: str) -> Callable[[], RedirectResponse]:
     return redirect
 
 
-# Each snapshot is a directory of static files: /vN redirects to /vN/, which serves its
-# index.html. The paths /vN and /vN/... are used by nothing else in this app.
-for _name in snapshot_names():
+# /vN redirects to /vN/. A live version is its own ASGI app under /vN/ (src/live/site.py); a
+# recorded one is a directory of static files. The paths /vN and /vN/... are used by nothing
+# else in this app.
+for _number in LIVE.versions:
+    _name = f"v{_number}"
     app.add_api_route(
-        f"/{_name}", _to_directory(_name), methods=["GET", "HEAD"], include_in_schema=False
+        f"/{_name}",
+        _to_directory(_name),
+        methods=["GET", "HEAD"],
+        include_in_schema=False,
+    )
+    _recorded = (
+        StaticFiles(directory=SNAPSHOT_DIR / _name, html=True)
+        if (SNAPSHOT_DIR / _name / "index.html").is_file()
+        else None
+    )
+    app.mount(
+        f"/{_name}", LiveVersionApp(LIVE, _number, _recorded), name=f"live-{_name}"
+    )
+for _name in recorded_names():
+    app.add_api_route(
+        f"/{_name}",
+        _to_directory(_name),
+        methods=["GET", "HEAD"],
+        include_in_schema=False,
     )
     app.mount(
         f"/{_name}",

@@ -4,31 +4,66 @@ annotated-doc==0.0.5
     # via fastapi
 annotated-types==0.8.0
     # via pydantic
+anthropic==0.125.0
+    # via radius-dependency-explorer
 anyio==4.15.1
-    # via starlette
+    # via
+    #   anthropic
+    #   httpx
+    #   starlette
+beautifulsoup4==4.15.0
+    # via radius-dependency-explorer
+certifi==2026.10.19
+    # via
+    #   httpcore
+    #   httpx
 click==8.5.0
     # via uvicorn
+distro==1.9.0
+    # via anthropic
+docstring-parser==0.18.0
+    # via anthropic
 et-xmlfile==2.0.0
     # via openpyxl
-fastapi==0.142.2
+fastapi==0.159.1
     # via radius-dependency-explorer
 h11==0.16.0
-    # via uvicorn
+    # via
+    #   httpcore
+    #   uvicorn
+httpcore==1.0.9
+    # via httpx
+httpx==0.28.1
+    # via
+    #   anthropic
+    #   radius-dependency-explorer
 idna==3.20
-    # via anyio
+    # via
+    #   anyio
+    #   httpx
+jiter==0.17.0
+    # via anthropic
 openpyxl==3.1.5
     # via radius-dependency-explorer
-opentelemetry-api==1.45.0
+opentelemetry-api==1.45.1
     # via fastapi
-pydantic==2.13.5
-    # via fastapi
-pydantic-core==2.46.5
+pydantic==2.14.1
+    # via
+    #   anthropic
+    #   fastapi
+pydantic-core==2.50.1
     # via pydantic
-starlette==1.7.0
+sniffio==1.3.1
+    # via anthropic
+soupsieve==3.0.4
+    # via beautifulsoup4
+starlette==1.9.0
     # via fastapi
 typing-extensions==4.16.0
     # via
+    #   anthropic
     #   anyio
+    #   beautifulsoup4
     #   fastapi
     #   opentelemetry-api
     #   pydantic

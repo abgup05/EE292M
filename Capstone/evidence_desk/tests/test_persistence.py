@@ -140,3 +140,89 @@ def test_a_test_it_does_not_apply_to_says_why() -> None:
     assert not record.applicable and record.note == rules.PERSISTENCE_NOT_APPLICABLE["form"]
     none = persistence("c2", None, None, None)
     assert not none.applicable and none.note == rules.PERSISTENCE_NOT_APPLICABLE["no_test"]
+
+
+# A loss, or a year-earlier base that is not positive (seventh referee, finding 7) ---------------
+
+
+def _with_a_loss(end: str, start: str) -> dict[str, Any]:
+    """The synthetic company with the net income of one quarter turned into a loss."""
+    payload = synthetic()
+    for entry in payload["facts"]["us-gaap"]["NetIncomeLoss"]["units"]["USD"]:
+        if entry["end"] == end and entry.get("start") == start:
+            entry["val"] = -entry["val"]
+    return payload
+
+
+LATEST = ("2025-12-31", "2025-10-01")
+YEAR_BEFORE = ("2024-12-31", "2024-10-01")
+
+
+def test_a_growth_step_from_a_loss_moves_the_wrong_way() -> None:
+    """What the referee read: the step is value × (1 + change), so a loss of 100 that
+    "grows 10%" becomes a loss of 110. Every path of rises takes the loss further from a
+    line above it, and the share of paths that hold is not the odds of anything."""
+    setup = Setup("value", "relative", (-100.0,), (0.10,) * 8, ">", -105.0)
+    assert simulate(setup, 200, 4, 1) == 0.0  # each "rise" of 10% deepens the loss
+
+
+@pytest.mark.parametrize(
+    "claim",
+    [
+        "Net income was above $1 million in the latest quarter.",
+        "Net income grew more than 10% year over year.",
+    ],
+)
+def test_a_loss_now_gets_no_odds_and_the_reason(claim: str) -> None:
+    """Until version 14.3 both got a number: 0% of 10,000 paths, from a start that
+    "growth" pushes further down."""
+    measures = _measures(_with_a_loss(*LATEST))
+    record = persistence("c1", _test(claim), _Computed(), measures)  # type: ignore[arg-type]
+    assert record.applicable and record.probability is None and record.display == "n/a"
+    assert "the current value" in record.warning and "is not positive" in record.warning
+    assert "no estimate" in record.warning
+
+
+def test_a_year_earlier_base_that_is_not_positive_gets_no_odds() -> None:
+    """Profitable now, a loss in the quarter a year before the next one: growth on that
+    base is not a rate, and until version 14.3 every path simply failed (0%)."""
+    record = persistence(
+        "c1",
+        _test("Net income grew more than 10% year over year."),
+        _Computed(),  # type: ignore[arg-type]
+        _measures(_with_a_loss("2025-03-31", "2025-01-01")),
+    )
+    assert record.probability is None and record.display == "n/a"
+    assert "a year-earlier quarter" in record.warning and "no estimate" in record.warning
+
+
+def test_a_profit_still_gets_its_odds() -> None:
+    record = persistence(
+        "c1",
+        _test("Net income was above $1 million in the latest quarter."),
+        _Computed(),  # type: ignore[arg-type]
+        _measures(synthetic()),
+    )
+    assert record.probability is not None and record.warning == ""
+
+
+def test_a_loss_in_the_history_gets_no_odds_either() -> None:
+    """A change into or out of a loss is not a growth rate: -1.9 "times" is no step."""
+    level = persistence(
+        "c1",
+        _test("Net income was above $1 million in the latest quarter."),
+        _Computed(),  # type: ignore[arg-type]
+        _measures(_with_a_loss("2024-03-31", "2024-01-01")),
+    )
+    assert level.probability is None and "a quarter of the history" in level.warning
+
+
+def test_a_ratio_steps_by_points_and_may_be_negative() -> None:
+    from app.core.persistence import not_positive
+
+    assert not_positive(Setup("value", "points", (-5.0,), CHANGES, ">", -8.0, (-5.0, -4.0))) is None
+    assert not_positive(Setup("value", "relative", (5.0,), CHANGES, ">", 1.0, (5.0, 4.0))) is None
+    assert not_positive(Setup("yoy", "relative", (5.0, 4.0, 0.0, 3.0), CHANGES, ">", 1.0)) == (
+        "base",
+        0.0,
+    )

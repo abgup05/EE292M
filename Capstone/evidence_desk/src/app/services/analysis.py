@@ -527,6 +527,7 @@ def analyse_run(
         untied_note=rules.UNTIED,
         breakdowns_note=background.breakdowns_note,
         corollary_rule=rules.COROLLARY_RULE,
+        audit_rule=rules.AUDIT_RULE,
         persistence_method=rules.PERSISTENCE_METHOD.format(
             paths=rules.PERSISTENCE_PATHS,
             horizon=rules.PERSISTENCE_HORIZON,
@@ -843,6 +844,7 @@ def _argue(
     coverage.analysis_sentences_written = counts.written
     coverage.analysis_sentences_verified = counts.verified
     coverage.analysis_sentences_unverified = counts.unverified
+    coverage.analysis_sentences_restating = counts.restating
     coverage.analysis_sentences_cut = sum(d.cut for d in drafts.values()) + (
         thesis_draft.cut if thesis_draft else 0
     )

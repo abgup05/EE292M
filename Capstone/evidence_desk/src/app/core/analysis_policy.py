@@ -97,6 +97,22 @@ COROLLARY_RULE = (
     "moves a verdict; when most of a claim's computed corollaries come out against it, the "
     "claim is flagged."
 )
+# The audit of the argued analysis (app.core.analysis_audit): the rule, as the record
+# carries it (Analysis.audit_rule), and the words for a threshold a sentence restates.
+AUDIT_RULE = (
+    "A sentence is verified by code when every id it cites is in this run, at least one is "
+    "evidence, and every number it writes is carried by that evidence: a verified finding's "
+    "quotes and cited figures, an analytic's value, inputs and reading, a computed test's "
+    "operands and result, a reported figure, an 8-K event's text. The claim's own words "
+    "carry no number, and neither does the sentence a model wrote for a corollary: only what "
+    "code computed for it does. A threshold is a third thing: when a number equals the "
+    "threshold of a computed test or corollary the sentence cites, or a condition's own "
+    "threshold, the sentence is not failed for it, and it is listed as a threshold restated, "
+    "not checked as a fact. A bare year is carried by a cited item dated in that year. The "
+    "audit does not decide whether a sentence follows from what it cites."
+)
+THRESHOLD_RESTATED = "restates a threshold: {raw} ({of}); not checked as a fact"
+OWN_THRESHOLD = "this condition's own threshold"
 READ_BY = {
     "agreed": "the grammar and the proposing model read the same test",
     "grammar_only": "the grammar alone (the proposing model gave no typed test that validated)",

@@ -732,6 +732,9 @@ def _sentence_line(sentence: ArgSentence, indent: str = "") -> str:
     line = f"{indent}- {_text(sentence.text, line_start=True)}{cites}"
     if not sentence.verified:
         line += f" **Unverified:** {_text('; '.join(sentence.problems) or 'not audited')}."
+    elif sentence.thresholds:
+        notes = "; ".join(item.note or item.raw for item in sentence.thresholds)
+        line += f" *{_text(notes[:1].upper() + notes[1:])}.*"
     return line
 
 

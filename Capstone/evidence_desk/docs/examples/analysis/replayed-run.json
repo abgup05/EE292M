@@ -1042,7 +1042,8 @@
                 "f2"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Data Center is not one part among several but nearly the whole company, so the claim is in effect a claim about total revenue, and the bridge shows it supplied +102.5 percentage points of the +105.9% total growth.",
@@ -1051,7 +1052,8 @@
                 "an:bridge:growth:revenue_by_product:q"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The fiscal-year basis tells a different story from the quarterly one: annual Data Center growth slowed by 74.2 percentage points, while quarterly revenue growth has since sped up by 20.6 percentage points, so the slowdown belongs to the older annual comparison and the newest quarters point the other way.",
@@ -1060,7 +1062,8 @@
                 "an:revenue:acceleration"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "What the claim does not carry is the step to the decision: holding overweight into the next report needs the growth to continue past the newest 10-Q, and the record's only forward-looking item is the filing's own warning that faster product transitions may make revenue volatile.",
@@ -1069,7 +1072,8 @@
                 "an:part:data_center:q:growth"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The quality of the growth carries a caution, since receivables grew faster than revenue and receivable days rose to 59.6 from 54.1, a result the corollary marks as running against what the claim implies.",
@@ -1078,7 +1082,8 @@
                 "an:eq:dso"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "An 8-K filed after the newest quarter reports the CEO's resignation effective immediately with the CFO as interim CEO, an event the revenue record cannot weigh but which bears directly on holding into the next report.",
@@ -1086,7 +1091,8 @@
                 "ev-0001045810-26-000082"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "case_for": [
@@ -1096,7 +1102,8 @@
                 "an:revenue:trend8"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Data Center's share of revenue rose to 92.5% from 87.9%, meaning the segment outgrew the company it already dominates.",
@@ -1104,7 +1111,8 @@
                 "an:part:data_center:q:growth"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Sequential growth of 18% in the latest quarter, attributed to the Blackwell Ultra ramp, shows momentum within the year, not only against a weak base.",
@@ -1112,7 +1120,8 @@
                 "f1"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "case_against": [
@@ -1123,7 +1132,8 @@
                 "f3"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Receivables growing +126.8% against revenue's +105.9% means a growing part of reported sales is not yet cash, and the record has no deferred revenue to show whether orders back the next quarter.",
@@ -1132,7 +1142,8 @@
                 "cor:c1:3"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Leadership turnover has run through the year, from the chief accounting officer and the head of worldwide field operations to the CEO himself, and the record cannot say whether it touches sales execution.",
@@ -1142,7 +1153,8 @@
                 "ev-0001045810-26-000082"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "decides": [
@@ -1153,7 +1165,8 @@
                 "f3"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Whether receivable days keep climbing above 59.6, which would turn a collection lag into a question about how the growth is booked.",
@@ -1161,7 +1174,8 @@
                 "an:eq:dso"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "How the CEO's departure is reflected in the next results and any related disclosure, which this record ends before.",
@@ -1169,7 +1183,8 @@
                 "ev-0001045810-26-000082"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "would_change": [
@@ -1181,6 +1196,7 @@
               ],
               "verified": true,
               "problems": [],
+              "thresholds": [],
               "measure": "revenue",
               "comparison": "<",
               "threshold": 96220000000.0,
@@ -1195,6 +1211,7 @@
               ],
               "verified": true,
               "problems": [],
+              "thresholds": [],
               "measure": "receivables",
               "comparison": ">",
               "threshold": 63060000000.0,
@@ -1208,6 +1225,7 @@
               ],
               "verified": true,
               "problems": [],
+              "thresholds": [],
               "measure": "",
               "comparison": "none",
               "threshold": 0.0,
@@ -1391,7 +1409,8 @@
                 "f7"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The shares are shifting rather than settling: the largest single customer went from 22% for fiscal 2026 to 21% in Q1 FY2027, and the first-half figures top out at 16%, which points to a buyer set that is rotating or broadening, not to one buyer growing more dominant.",
@@ -1401,7 +1420,8 @@
                 "f6"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The Q2 FY2027 disclosure names only one direct customer, at 16%, against three in Q1, so the concentration visible in the newest quarter looks thinner than in the quarter before it.",
@@ -1410,7 +1430,8 @@
                 "f6"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The step from concentration to the overweight decision is the real question, and the record does not back it in either direction: concentration is a fragility, but in this record it sits beside revenue that more than doubled and growth that sped up by 20.6 percentage points, nearly all of it from Data Center.",
@@ -1420,7 +1441,8 @@
                 "f7"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The one place concentration might show up in the numbers is collection: receivables grew faster than revenue and receivable days rose to 59.6 from 54.1, but the record does not say which customers hold those balances.",
@@ -1428,7 +1450,8 @@
                 "an:eq:dso"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The corollaries that would size concentration directly, the largest customer's share and the hyperscale share, could not be computed, so the claim rests on the quoted disclosures alone.",
@@ -1437,7 +1460,8 @@
                 "cor:c2:2"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "case_for": [
@@ -1450,7 +1474,8 @@
                 "f7"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Because all of the disclosed customer revenue is attributed to Compute & Networking, and Data Center supplied 102.5 percentage points of growth, any pause by a few buyers would land directly on the engine of the growth.",
@@ -1460,7 +1485,8 @@
                 "an:bridge:growth:revenue_by_product:q"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Receivables rising +126.8% against revenue growth of +105.9% is consistent with large buyers taking more time to pay, which is the form concentration risk would take before revenue itself turns.",
@@ -1468,7 +1494,8 @@
                 "an:eq:dso"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "case_against": [
@@ -1480,7 +1507,8 @@
                 "f6"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Revenue rose in each of the 8 quarters while this concentration was present, so on this record it has coexisted with steady growth rather than causing visible breaks.",
@@ -1489,7 +1517,8 @@
                 "f7"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The claim is a static description of who buys, not evidence that any buyer is cutting back, so true as it is, it says little about the next earnings report on its own.",
@@ -1498,7 +1527,8 @@
                 "an:revenue:acceleration"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "decides": [
@@ -1509,7 +1539,8 @@
                 "an:revenue:acceleration"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "It also turns on whether the rise in receivable days reflects slower payment by the few large customers, which needs a customer-level receivables disclosure the record does not have.",
@@ -1517,7 +1548,8 @@
                 "an:eq:dso"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The CEO's resignation filed after the newest quarter is outside what the concentration figures can speak to, but any change in customer relationships following it would only appear in later filings.",
@@ -1525,7 +1557,8 @@
                 "ev-0001045810-26-000082"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "would_change": [
@@ -1536,6 +1569,7 @@
               ],
               "verified": true,
               "problems": [],
+              "thresholds": [],
               "measure": "receivables",
               "comparison": ">",
               "threshold": 63060000000.0,
@@ -1549,6 +1583,7 @@
               ],
               "verified": true,
               "problems": [],
+              "thresholds": [],
               "measure": "revenue",
               "comparison": "<",
               "threshold": 96220000000.0,
@@ -1562,6 +1597,7 @@
               ],
               "verified": true,
               "problems": [],
+              "thresholds": [],
               "measure": "",
               "comparison": "none",
               "threshold": 0.0,
@@ -1811,7 +1847,8 @@
                 "f9"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "What the record cannot show is the claim's causal half, that revenue is lower than it would otherwise be, because a forgone sale leaves no figure; the test that could be run, a year-over-year decline in China including Hong Kong revenue, fails with a margin of +97.7 points, which runs against the claim.",
@@ -1819,7 +1856,8 @@
                 "cor:c3:2"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Company-wide, there is no visible squeeze: revenue grew 105.9% on a year earlier and growth sped up by 20.6 percentage points over the prior quarter, almost all of it from Data Center.",
@@ -1829,7 +1867,8 @@
                 "an:bridge:growth:revenue_by_product:q"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "For an overweight position into the next report, the step from 'China is restricted' to 'results are at risk' is therefore assumed, not backed: the restriction already sits in the base the growth is measured from, and the charge it produced was a cost and inventory event rather than a revenue line.",
@@ -1838,7 +1877,8 @@
                 "an:revenue:trend8"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The claim is best read as true about a constraint and beside the point for the near-term revenue print, unless the filing's warning that controls can depress demand outside China starts to show in the numbers.",
@@ -1847,7 +1887,8 @@
                 "f11"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "case_for": [
@@ -1858,7 +1899,8 @@
                 "f9"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The filing itself says export controls have reduced and may reduce demand beyond China, in Europe, Latin America and Southeast Asia, which would widen the restriction past one geography.",
@@ -1866,7 +1908,8 @@
                 "f10"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "case_against": [
@@ -1878,7 +1921,8 @@
                 "f11"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The one computed test of a China revenue decline came out against the claim, by a margin of +97.7 points, and the share-of-revenue corollary could not be computed, so the record offers no figure showing China revenue shrinking.",
@@ -1887,7 +1931,8 @@
                 "cor:c3:1"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Receivable days rose to 59.6 from 54.1 a year before, a more pressing quality-of-growth question for the next report than China, since receivables grew +126.8% against revenue's +105.9%.",
@@ -1895,7 +1940,8 @@
                 "an:eq:dso"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "decides": [
@@ -1906,7 +1952,8 @@
                 "cor:c3:2"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Whether demand effects spread beyond China as the filing warns, which would turn a contained constraint into one that touches the Data Center growth now carrying the total.",
@@ -1915,7 +1962,8 @@
                 "an:bridge:growth:revenue_by_product:q"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "would_change": [
@@ -1926,6 +1974,7 @@
               ],
               "verified": true,
               "problems": [],
+              "thresholds": [],
               "measure": "revenue",
               "comparison": "<",
               "threshold": 96220000000.0,
@@ -1940,6 +1989,7 @@
               ],
               "verified": true,
               "problems": [],
+              "thresholds": [],
               "measure": "gross_margin",
               "comparison": "<",
               "threshold": 75.0,
@@ -1954,6 +2004,7 @@
               ],
               "verified": true,
               "problems": [],
+              "thresholds": [],
               "measure": "",
               "comparison": "none",
               "threshold": 0.0,
@@ -3884,7 +3935,8 @@
                 "an:gross_margin:trend8"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The comparison base is depressed. The prior year carried the $4.5 billion H20 charge and the shift from Hopper systems to Blackwell, which is why fiscal 2026 fell to 71.1% from 75.0% and why the full-year corollary fails.",
@@ -3894,7 +3946,8 @@
                 "cor:c4:1"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Sequentially the filing itself calls gross margin approximately flat, and a quarter-over-quarter gain of 0.04 points is not evidence of a rising trend.",
@@ -3903,7 +3956,8 @@
                 "cor:c4:3"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "For the decision, the step from this claim to staying overweight assumes margin adds upside into the next report. The record instead shows a plateau at about 75.0%, so further earnings growth would have to come from revenue, which grew +105.9%, rather than from margin.",
@@ -3913,7 +3967,8 @@
                 "f13"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Even the year-over-year reading is thin. Its room is 1.27x a typical move, and the test held in only 12 of 20 past readings.",
@@ -3922,7 +3977,8 @@
                 "an:c4:history"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Inventory now stands at 119.3 days of cost of revenue against 105.6 a year before, and the last large margin drop came from an inventory charge. The record cannot say whether the current build carries similar risk.",
@@ -3931,7 +3987,8 @@
                 "f14"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "case_for": [],
@@ -3946,6 +4003,7 @@
               ],
               "verified": true,
               "problems": [],
+              "thresholds": [],
               "measure": "gross_margin",
               "comparison": "<",
               "threshold": 72.4,
@@ -3959,6 +4017,7 @@
               ],
               "verified": true,
               "problems": [],
+              "thresholds": [],
               "measure": "gross_margin",
               "comparison": ">",
               "threshold": 75.1,
@@ -3973,6 +4032,7 @@
               ],
               "verified": true,
               "problems": [],
+              "thresholds": [],
               "measure": "",
               "comparison": "none",
               "threshold": 0.0,
@@ -4972,7 +5032,8 @@
                 "f17"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The company's claim to have expanded supplier relationships for redundancy narrows the claim without reversing it, because adding suppliers is still dependence on outside suppliers, just on more of them.",
@@ -4981,7 +5042,8 @@
                 "f17"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The capex corollary fits an outsourced model, since capital spending stays under the 5% line with a margin of -2.2 points, but that room is modest and the test shows the structure, not any strain.",
@@ -4989,7 +5051,14 @@
                 "cor:c5:1"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": [
+                {
+                  "raw": "5%",
+                  "of": "cor:c5:1",
+                  "note": "restates a threshold: 5% (cor:c5:1); not checked as a fact"
+                }
+              ]
             },
             {
               "text": "The inventory corollary cuts the other way: inventory outgrew revenue by +5.2 points, which does not fit suppliers acting as a binding limit in the latest quarter, though the record cannot say whether this reflects deliberate stockpiling or slack.",
@@ -4997,7 +5066,8 @@
                 "cor:c5:2"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "For the decision the step from dependence to risk is assumed rather than shown, because nothing in the record shows a disruption, and revenue grew +105.9% in the same quarter, so supply has not visibly capped results.",
@@ -5006,7 +5076,8 @@
                 "f16"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The claim is therefore true but mostly a standing risk-factor disclosure, and it does little to tell whether to hold an overweight position into the next report unless a supply event surfaces.",
@@ -5015,7 +5086,8 @@
                 "f18"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "case_for": [
@@ -5026,7 +5098,8 @@
                 "f17"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The low capital intensity confirms the company has no in-house fabrication to fall back on if a foundry or packager falters.",
@@ -5035,7 +5108,8 @@
                 "f17"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "case_against": [
@@ -5045,7 +5119,8 @@
                 "f18"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Inventory growing faster than revenue, alongside more than doubling revenue, points to supply keeping up with demand rather than restricting it in the newest quarter.",
@@ -5054,7 +5129,8 @@
                 "revenue_yoy:quarter:2026-07-26"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "decides": [
@@ -5065,7 +5141,8 @@
                 "gross_margin:quarter:2026-07-26"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "If inventory keeps outpacing revenue, the supplier-constraint reading weakens further; a reversal alongside slowing revenue would make it matter.",
@@ -5074,7 +5151,8 @@
                 "revenue_yoy:quarter:2026-07-26"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "would_change": [
@@ -5086,6 +5164,7 @@
               ],
               "verified": true,
               "problems": [],
+              "thresholds": [],
               "measure": "",
               "comparison": "none",
               "threshold": 0.0,
@@ -5099,6 +5178,13 @@
               ],
               "verified": true,
               "problems": [],
+              "thresholds": [
+                {
+                  "raw": "5%",
+                  "of": "cor:c5:1",
+                  "note": "restates a threshold: 5% (cor:c5:1); not checked as a fact"
+                }
+              ],
               "measure": "capex_ratio",
               "comparison": ">=",
               "threshold": 5.0,
@@ -5112,6 +5198,7 @@
               ],
               "verified": true,
               "problems": [],
+              "thresholds": [],
               "measure": "gross_margin",
               "comparison": "<",
               "threshold": 75.0,
@@ -6044,6 +6131,7 @@
     "analysis_sentences_written": 98,
     "analysis_sentences_verified": 98,
     "analysis_sentences_unverified": 0,
+    "analysis_sentences_restating": 2,
     "analysis_sentences_cut": 0,
     "analysis_unverified_no_evidence": 0,
     "analysis_unverified_unknown_id": 0,
@@ -15966,6 +16054,7 @@
     "corollaries_by": "replayed from cassette cassette: 26 responses recorded via Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the rules, Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17 and the Anthropic API with claude-haiku-5-5, claude-opus-5-5 and claude-sonnet-5-5, 2026-11-17 to 2026-11-19",
     "corollaries_note": "",
     "corollary_rule": "A corollary is an implication a model proposed and code computed. Each is read by the grammar and by the typed form the proposing model wrote: two readers, which is weaker than the two-of-three rule the thesis's own claims are read under. A corollary never moves a verdict; when most of a claim's computed corollaries come out against it, the claim is flagged.",
+    "audit_rule": "A sentence is verified by code when every id it cites is in this run, at least one is evidence, and every number it writes is carried by that evidence: a verified finding's quotes and cited figures, an analytic's value, inputs and reading, a computed test's operands and result, a reported figure, an 8-K event's text. The claim's own words carry no number, and neither does the sentence a model wrote for a corollary: only what code computed for it does. A threshold is a third thing: when a number equals the threshold of a computed test or corollary the sentence cites, or a condition's own threshold, the sentence is not failed for it, and it is listed as a threshold restated, not checked as a fact. A bare year is carried by a cited item dated in that year. The audit does not decide whether a sentence follows from what it cites.",
     "persistence_method": "Resampling with replacement: 10,000 paths of 4 quarters, each step drawn from the measure's own last N quarterly changes (differences in points for a percent, growth rates for an amount), from the current value; the share of paths in which the test holds in every one of the 4 quarters. Seed 20261118. It assumes the past changes are exchangeable: it ignores trend, seasonality and anything not in the facts. It describes the history; it is not a forecast.",
     "argument_by": "model",
     "argument_detail": "replayed from cassette cassette: 26 responses recorded via Claude Code subagent standing in for the Anthropic API (no API credit on 2026-11-17); minimal wrapper, no reminders of the rules, Claude Code subagent standing in for the Anthropic API, which refused every call for lack of credit on 2026-11-17 and the Anthropic API with claude-haiku-5-5, claude-opus-5-5 and claude-sonnet-5-5, 2026-11-17 to 2026-11-19",
@@ -15987,7 +16076,8 @@
             "an:c4:history"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         },
         {
           "text": "The comparison base is depressed by the prior year's $4.5 billion H20 charge. On a full-year basis the claim fails, by -3.9 points, which makes the expansion a recovery rather than a new gain.",
@@ -15996,7 +16086,8 @@
             "cor:c4:1"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         },
         {
           "text": "Sequentially the gain is +0.04 points, which the filing itself describes as approximately flat, so nothing in the record backs margin as a source of upside into the report.",
@@ -16005,7 +16096,8 @@
             "f13"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         }
       ],
       "strongest_for": [
@@ -16016,7 +16108,8 @@
             "an:revenue:acceleration"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         },
         {
           "text": "Data Center is outgrowing the company and its share rose to 92.5% from 87.9%, so the line the thesis depends on is gaining weight, not losing it.",
@@ -16024,7 +16117,8 @@
             "an:part:data_center:q:growth"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         },
         {
           "text": "Customer concentration is not visibly intensifying. Q2 FY2027 names one direct customer at 16%, against three in Q1 at 21%, 17% and 16%, which softens the concentration risk.",
@@ -16033,7 +16127,8 @@
             "f6"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         }
       ],
       "strongest_against": [
@@ -16043,7 +16138,8 @@
             "ev-0001045810-26-000082"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         },
         {
           "text": "Receivables grew +126.8% against revenue growth of +105.9%, a result that runs against what the growth claim implies. It raises the question of how much of the growth has turned into cash.",
@@ -16052,7 +16148,8 @@
             "cor:c1:3"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         },
         {
           "text": "On the annual basis, Data Center growth slowed by 74.2 percentage points, and the filing warns that faster product transitions may make revenue volatile. With one segment at 92.5% of revenue, any stumble in it hits the whole company.",
@@ -16062,7 +16159,8 @@
             "an:part:data_center:q:growth"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         }
       ],
       "bottom_line": [
@@ -16073,7 +16171,8 @@
             "an:bridge:growth:revenue_by_product:q"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         },
         {
           "text": "The margin leg adds little to that case. Gross margin is 0.2 percentage points below where it was eight quarters ago, and the filing calls it approximately flat sequentially, so any earnings upside into the report has to come from revenue rather than margin.",
@@ -16082,7 +16181,8 @@
             "f13"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         },
         {
           "text": "The risk claims are true as disclosures, but none yet shows in the numbers. The one computable China test runs against the export-control claim by +97.7 points, and the company's own concentration and supplier warnings sit beside a quarter of unbroken growth.",
@@ -16093,7 +16193,8 @@
             "an:revenue:yoy"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         },
         {
           "text": "The record ends before the decision's horizon. The CEO resigned effective immediately in an 8-K filed after the newest 10-Q, and none of the financial evidence can weigh what that means for the next report.",
@@ -16101,7 +16202,8 @@
             "ev-0001045810-26-000082"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         },
         {
           "text": "The quality of the growth carries two cautions the bullish claims do not address. Receivable days rose to 59.6 from 54.1, and inventory days rose to 119.3 from 105.6.",
@@ -16110,7 +16212,8 @@
             "an:eq:dio"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         },
         {
           "text": "A careful investor would want three things from the next filing: whether quarterly revenue stays above $96.22B, whether receivable days stop climbing, and how the leadership transition is disclosed.",
@@ -16120,7 +16223,8 @@
             "ev-0001045810-26-000082"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         }
       ],
       "scenarios": [
@@ -16133,7 +16237,8 @@
                 "revenue:quarter:2026-07-26"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Gross margin holds at or above 75.0%.",
@@ -16141,7 +16246,8 @@
                 "gross_margin:quarter:2026-07-26"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Receivable days stay at or below 59.6.",
@@ -16149,7 +16255,8 @@
                 "an:eq:dso"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ]
         },
@@ -16163,7 +16270,8 @@
                 "an:revenue:trend8"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Receivable days rise above 59.6 while inventory days rise above 119.3.",
@@ -16172,7 +16280,8 @@
                 "an:eq:dio"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ]
         },
@@ -16185,7 +16294,8 @@
                 "test:c4"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "A filing discloses an inventory or purchase-obligation charge like the $4.5 billion H20 charge.",
@@ -16193,7 +16303,8 @@
                 "f8"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "A further Item 5.02 8-K discloses additional leadership change following the CEO's resignation.",
@@ -16201,7 +16312,8 @@
                 "ev-0001045810-26-000082"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ]
         }

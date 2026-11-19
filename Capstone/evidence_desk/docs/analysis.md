@@ -305,16 +305,46 @@ why:
    provider, a reported figure, a computed test (`test:c2`), a corollary, odds, an 8-K event. A
    finding the run withheld may not;
 2. at least one cited id is evidence (a claim id names what the sentence is about, and is not);
-3. every number it writes is a value of something it cites, by `core/numcheck.check_numbers`,
-   the check the findings pass.
+3. every number it writes is carried by evidence it cites, by `core/numcheck.check_numbers`,
+   the check the findings pass, or is a threshold restated (below).
 
-Two things are not failures of 3, on purpose. A `would_change` condition may write its own
-threshold (`Condition.threshold`), which is a line the model proposes to watch, not a statement
-about the record; a scenario's conditions get no such exception. And a bare year ("the 2026
-8-Ks") is carried by a cited item whose own date is in that year: an event's filing or event
-date, the filing or period of a finding's source, a figure's period, the period an analytic or
-a test is of. A year in none of them is still flagged ("the 2024 fee increase", citing filings
-of 2025 and 2026).
+**What carries a number** (since version 14.3; the seventh referee's finding 1): a verified
+finding's statement, quotes and cited figures; an analytic's value, inputs and reading; a
+computed test's operands, their arithmetic and its margin; a reported figure; an 8-K event's
+text; odds. **What does not:** the claim's own words when the claim id is cited, and the
+sentence a model wrote for a corollary (only what code computed for the corollary carries).
+Until 14.3 both did: "Gross margin was 70%" citing an analytic and a claim that reads "above
+70%" was verified, and a model could write a threshold into a corollary and cite it back
+(`tests/test_audit_number_sources.py`, written first and seen to fail).
+
+**A threshold is a third thing.** A computed test compares a measure with a constant the
+claim's author wrote; a corollary's test with one the proposing model wrote; a `would_change`
+condition states one of its own. When a number in a sentence is carried by no evidence it
+cites but equals the threshold of a test or corollary it cites, or of the test an analytic it
+cites was computed from (`an:c2:history`), or the condition's own, the sentence is not failed
+for it, and the record lists it: `thresholds: [{raw, of, note}]` on the sentence, with `note`
+reading "restates a threshold: 70% (test:c2); not checked as a fact". Such a sentence is
+`verified` and not plainly so: `coverage.analysis_sentences_restating` counts them, and a page
+that shows "verified" for one without the note says more than the record does. A scenario's
+conditions have no threshold of their own; they may restate one of a test they cite. The rule
+in words is `analysis_policy.AUDIT_RULE`, carried by every analysis as `Analysis.audit_rule`.
+
+**A bare year** ("the 2026 8-Ks") is carried by a cited item whose own date is in that year:
+an event's filing or event date, the filing or period of a finding's source, a figure's
+period, the period an analytic or a test is of. Only four bare digits are excused so, with no
+currency, sign or unit, and not directly before a thing a filing counts
+(`numcheck.COUNTED_NOUNS`): "2020 customers" beside an item dated 2020 is a count nothing
+carries. A year in none of them is still flagged ("the 2024 fee increase", citing filings of
+2025 and 2026).
+
+**Records made before 14.3** keep the audit of their day; none is edited. `make audit-recount`
+audits a record again by today's rule and changes nothing. On the page's two live samples
+(19 November 2026): NVIDIA, 105 sentences, 101 verified as recorded and 102 today, 6 of them
+restating a threshold, 4 marked as recorded and 3 today (the one that moved is the 70% of
+the gross-margin test restated beside `an:c2:history`, which two reviewers of the page had
+called a false alarm); Costco, 92 sentences, 85 verified then and now, 2 of them restating a
+threshold, 7 marked then and now. No sentence of either sample cites a claim id or a
+corollary's sentence for a number, so the two closed holes move neither count.
 
 A `lean` that contradicts the claim's verdict (supports against Challenged, challenges against
 Supported) is `ClaimArgument.lean_flag` and a line in `Run.analysis.flags`. The verdict stands.

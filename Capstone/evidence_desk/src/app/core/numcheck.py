@@ -352,12 +352,18 @@ class NumberCheck:
     ``status`` is "none" when the statement has no quantity, "passed" when
     every quantity matched, "failed" otherwise. ``details`` has one sentence
     per quantity; ``unmatched`` lists the raw text of each one not found.
+    ``quantities`` are the quantities read, in order, ``found`` says of each
+    whether it matched and ``offsets`` where its digits begin in the statement,
+    for a caller that treats some of them apart.
     """
 
     status: Status
     details: list[str]
     checked: int
     unmatched: list[str]
+    quantities: tuple[Quantity, ...] = ()
+    found: tuple[bool, ...] = ()
+    offsets: tuple[int, ...] = ()
 
 
 def _masked(text: str) -> list[tuple[int, int]]:
@@ -530,6 +536,13 @@ def _read(text: str, match: re.Match[str]) -> Quantity | None:
         scale=scale,
         signed=negative,
     )
+
+
+def counts_a_listed_thing(text: str, offset: int) -> bool:
+    """True when the number whose digits begin at ``offset`` of ``text`` is directly followed
+    by a noun of :data:`COUNTED_NOUNS` ("2020 customers"), so that it cannot be a year."""
+    digits = _NUMBER.match(text, offset)
+    return digits is not None and _COUNTED_NOUN_AFTER.match(text, digits.end()) is not None
 
 
 def _placed_quantities(text: str) -> list[tuple[Quantity, int]]:
@@ -795,6 +808,7 @@ def check_numbers(
     unmatched: list[str] = []
     placed = _placed_quantities(statement)
     wanted = [quantity for quantity, _ in placed]
+    found: list[bool] = []
     for quantity, position in placed:
         sentence, begins = _sentence_at(statement, position)
         if quantity.unit in ("percent", "bps"):
@@ -804,6 +818,7 @@ def check_numbers(
         # A decline may not match a computed increase (a quote's sign cannot be known).
         usable = [c for c in candidates if not (negative_allowed and c.increase)]
         hit = next((c for c in usable if _matches(quantity, c, negative_allowed)), None)
+        found.append(hit is not None)
         if hit is None:
             unmatched.append(quantity.raw)
             details.append(f"{quantity.raw} was not found in the quotes or the cited figures")
@@ -813,4 +828,12 @@ def check_numbers(
         status: Status = "none"
     else:
         status = "failed" if unmatched else "passed"
-    return NumberCheck(status=status, details=details, checked=len(wanted), unmatched=unmatched)
+    return NumberCheck(
+        status=status,
+        details=details,
+        checked=len(wanted),
+        unmatched=unmatched,
+        quantities=tuple(wanted),
+        found=tuple(found),
+        offsets=tuple(position for _, position in placed),
+    )

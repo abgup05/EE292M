@@ -1721,7 +1721,8 @@
                 "ev-0001045810-26-000082"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The step from that departure to a reason to buy is not backed by anything in the record, because every financial figure here ends with the quarter ended 2026-07-26, more than three months before he left.",
@@ -1731,7 +1732,8 @@
                 "free_cash_flow:quarter:2026-07-26"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The corollaries that came out in the claim's favour, a wider operating margin and a lower opex ratio in Q2 FY2027, describe a quarter run under Huang, so they cannot be evidence that his absence helps; and the free cash flow margin corollary failed anyway.",
@@ -1742,7 +1744,8 @@
                 "f1"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The valuation analytics are priced at 2026-09-30, also before the resignation, so the 28.5× earnings multiple and the 13.4% a year growth the price implies say nothing about how the market repriced the departure.",
@@ -1752,7 +1755,8 @@
                 "f1"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "What the price needs leans most on the operating margin holding at 65.2% every year; at the industry's 90th percentile margin the same price needs 28.1% a year, so any leadership change that eroded margin would cut against the buy rather than for it.",
@@ -1760,7 +1764,8 @@
                 "an:reverse_dcf:NVDA:2026-09-30"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The claim is a cause and an intention the filings cannot test; it rests on an assumption that the business improves without its founder-CEO, and the record neither supports nor refutes that assumption.",
@@ -1769,7 +1774,8 @@
                 "cor:c1:1"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "case_for": [
@@ -1779,7 +1785,8 @@
                 "ev-0001045810-26-000082"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The business the new leadership inherits was strong in the last reported quarter: revenue up +105.9% year over year at a 75.0% gross margin, with margin and cost-ratio corollaries holding.",
@@ -1790,7 +1797,8 @@
                 "cor:c1:2"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "case_against": [
@@ -1803,7 +1811,8 @@
                 "ev-0001045810-26-000082"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The price already asks for 10 years of growth that 0 of 40 comparable-size filer spans achieved, and at a 2.3% free cash flow yield there is little cushion if the leadership change disrupts execution.",
@@ -1812,7 +1821,8 @@
                 "an:fcf_yield:NVDA:2026-09-30"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The one cash-based corollary failed, with free cash flow margin down 6.6 points year over year even before the departure, so the trend the claim would need is not uniformly in place.",
@@ -1820,7 +1830,8 @@
                 "cor:c1:3"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "decides": [
@@ -1831,7 +1842,8 @@
                 "an:reverse_dcf:NVDA:2026-09-30"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "It also turns on who becomes permanent CEO and when, since the record shows only an interim appointment.",
@@ -1839,7 +1851,8 @@
                 "ev-0001045810-26-000082"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "would_change": [
@@ -1850,6 +1863,7 @@
               ],
               "verified": true,
               "problems": [],
+              "thresholds": [],
               "measure": "",
               "comparison": "none",
               "threshold": 0.0,
@@ -1863,6 +1877,7 @@
               ],
               "verified": true,
               "problems": [],
+              "thresholds": [],
               "measure": "operating_margin",
               "comparison": "<",
               "threshold": 65.2,
@@ -1877,6 +1892,13 @@
               ],
               "verified": true,
               "problems": [],
+              "thresholds": [
+                {
+                  "raw": "70%",
+                  "of": "test:c2",
+                  "note": "restates a threshold: 70% (test:c2); not checked as a fact"
+                }
+              ],
               "measure": "gross_margin",
               "comparison": "<",
               "threshold": 70.0,
@@ -4333,7 +4355,8 @@
                 "an:c2:headroom"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "That room is real but not deep. One typical move would not break the test, and in 69% of resampled paths it held for four more quarters, which also means roughly a third of paths built from the margin's own past swings did not.",
@@ -4342,7 +4365,8 @@
                 "odds:c2"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The streak is also recent rather than habitual: the test held in only 6 of 20 past filing-date readings, and the four-quarter run now in place matches its longest run.",
@@ -4350,7 +4374,8 @@
                 "an:c2:history"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The quarter just before this window shows what breaks it. Q1 FY2026 fell to 60.5% because of the H20 inventory and purchase-obligation charge, which the filing names as a prior-year item, not an operating trend.",
@@ -4359,7 +4384,8 @@
                 "an:gross_margin:trend8"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "For a buy decision, the claim matters mainly because the price leans on margin. The reverse DCF assumes a 65.2% operating margin every year, and at the industry's 90th-percentile margin the same price would need 28.1% annual growth instead of 13.4%.",
@@ -4367,7 +4393,8 @@
                 "an:reverse_dcf:NVDA:2026-09-30"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "So the claim supports a precondition of the valuation at the 2026-09-30 price, but on its own it is not a reason to buy. It says nothing about whether margins persist, and nothing about the period after the CEO's resignation, which comes later than the newest quarter in the record.",
@@ -4376,7 +4403,8 @@
                 "ev-0001045810-26-000082"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "case_for": [
@@ -4387,7 +4415,8 @@
                 "f3"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Against its industry the level is exceptional, ranking 4 of 63 against a class median of 41.2%, though SIC 3674 is a broad peer set.",
@@ -4395,7 +4424,8 @@
                 "an:peer:NVDA:gross_margin:2025:2026-11-18"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The implications check out: fiscal 2026 margin cleared 70%, and the latest operating margin clears 50%, so the strength is not limited to the gross line.",
@@ -4404,7 +4434,19 @@
                 "cor:c2:3"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": [
+                {
+                  "raw": "70%",
+                  "of": "cor:c2:1",
+                  "note": "restates a threshold: 70% (cor:c2:1); not checked as a fact"
+                },
+                {
+                  "raw": "50%",
+                  "of": "cor:c2:3",
+                  "note": "restates a threshold: 50% (cor:c2:3); not checked as a fact"
+                }
+              ]
             }
           ],
           "case_against": [
@@ -4416,7 +4458,8 @@
                 "f5"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The margin is no higher than two years ago, so the recent rise is a recovery from the charge-hit low rather than new ground.",
@@ -4424,7 +4467,8 @@
                 "an:gross_margin:trend8"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The filing already notes a net unfavorable effect on gross margin in the latest quarter, so the 75.0% level absorbs headwinds that the record does not size beyond that.",
@@ -4433,7 +4477,8 @@
                 "gross_margin:quarter:2026-07-26"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "decides": [
@@ -4444,7 +4489,8 @@
                 "f5"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Whether margins stay near the 65.2% operating margin that the 2026-09-30 price assumes; the gross-margin streak is necessary for that but not sufficient.",
@@ -4453,7 +4499,8 @@
                 "cor:c2:3"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "How margins behave in the first quarter reported under interim leadership, which no filing in the record covers yet.",
@@ -4461,7 +4508,8 @@
                 "ev-0001045810-26-000082"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "would_change": [
@@ -4473,6 +4521,7 @@
               ],
               "verified": true,
               "problems": [],
+              "thresholds": [],
               "measure": "gross_margin",
               "comparison": "<",
               "threshold": 70.0,
@@ -4487,6 +4536,13 @@
               ],
               "verified": true,
               "problems": [],
+              "thresholds": [
+                {
+                  "raw": "50%",
+                  "of": "cor:c2:3",
+                  "note": "restates a threshold: 50% (cor:c2:3); not checked as a fact"
+                }
+              ],
               "measure": "operating_margin",
               "comparison": "<",
               "threshold": 50.0,
@@ -4503,6 +4559,7 @@
               "problems": [
                 "writes 70%, which nothing it cites carries"
               ],
+              "thresholds": [],
               "measure": "",
               "comparison": "none",
               "threshold": 0.0,
@@ -6282,7 +6339,8 @@
                 "an:revenue:fy2026:path"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The doubling the thesis describes belongs to the two years before, at +125.9% and +114.2%; fiscal 2026 is the year growth slowed, by 48.7 percentage points.",
@@ -6290,7 +6348,8 @@
                 "an:revenue:fy2026:path"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The claim still points at something real on a different basis: the newest quarter's revenue grew 105.9% on a year earlier, but that is one quarter of fiscal 2027, not fiscal 2026.",
@@ -6299,7 +6358,8 @@
                 "revenue_yoy:quarter:2026-07-26"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The implications of a doubling also fail in fiscal 2026: neither operating income nor operating cash flow doubled, and receivables grew faster than revenue.",
@@ -6309,7 +6369,8 @@
                 "cor:c3:3"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "For a buy decision, the step from growth to price runs through the reverse DCF at the 2026-09-30 price, which needs only 13.4% a year for 10 years, so a doubling is not what the price requires. That figure leans most on a 65.2% operating margin held every year, and 0 of 40 ten-year spans of filers of this size grew that fast.",
@@ -6317,7 +6378,8 @@
                 "an:reverse_dcf:NVDA:2026-09-30"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The record cannot say whether the quarter's 105.9% pace lasts through fiscal 2027, or what happened after the newest filing. The full fiscal 2027 10-K is the evidence that would tell.",
@@ -6325,7 +6387,8 @@
                 "an:revenue:fy2026:since"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "case_for": [
@@ -6336,7 +6399,8 @@
                 "an:peer:NVDA:revenue_growth:2025:2026-11-18"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Deferred revenue rose 215.1% against revenue's 105.9%, so billings ahead of delivery are growing faster than recognized sales, which is consistent with the quarterly reacceleration.",
@@ -6344,7 +6408,8 @@
                 "an:eq:deferred_revenue"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "case_against": [
@@ -6355,7 +6420,8 @@
                 "an:base_rate:NVDA:industry:yoy(revenue)[t] > 100%:2026-11-18"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Part of the newest quarter's growth is uncollected: receivable days rose to 59.6 from 54.1, with receivables up 126.8% against revenue's 105.9%.",
@@ -6363,7 +6429,8 @@
                 "an:eq:dso"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The fiscal 2026 corollary on receivables points the same way, so collection lagged sales on both the annual and the quarterly basis.",
@@ -6372,7 +6439,8 @@
                 "an:eq:dso"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "decides": [
@@ -6383,7 +6451,8 @@
                 "an:revenue:fy2026:since"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "For the decision, what matters is less whether revenue doubled than whether the 65.2% operating margin underlying the 13.4% implied growth holds.",
@@ -6391,7 +6460,8 @@
                 "an:reverse_dcf:NVDA:2026-09-30"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "would_change": [
@@ -6402,6 +6472,7 @@
               ],
               "verified": true,
               "problems": [],
+              "thresholds": [],
               "measure": "revenue",
               "comparison": ">=",
               "threshold": 260990000000.0,
@@ -6415,6 +6486,7 @@
               ],
               "verified": true,
               "problems": [],
+              "thresholds": [],
               "measure": "",
               "comparison": "none",
               "threshold": 0.0,
@@ -8211,7 +8283,8 @@
                 "an:bridge:cash:fy2026"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The shortfall is not a spending story, since capex stayed under 5% of revenue; it comes from receivables and inventory absorbing cash that net income counts but the cash flow statement does not.",
@@ -8221,7 +8294,14 @@
                 "cor:c4:2"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": [
+                {
+                  "raw": "5%",
+                  "of": "cor:c4:3",
+                  "note": "restates a threshold: 5% (cor:c4:3); not checked as a fact"
+                }
+              ]
             },
             {
               "text": "The gap is widening, not closing: free cash flow as a share of net income has fallen at every 10-K reading, and over the four quarters to Q2 FY2027 the shortfall grew to $65.87B with conversion of 0.40x in the latest quarter alone.",
@@ -8231,7 +8311,8 @@
                 "an:eq:cash_conversion"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "That makes NVIDIA unusual against its industry: its cash conversion ranks 32 of 38 among SIC 3674 filers, while FCF above net income held in 116 of 179 company-years for those peers.",
@@ -8240,7 +8321,8 @@
                 "an:base_rate:NVDA:industry:free_cash_flow[t] > net_income[t]:2026-11-18"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "For a buy decision the step that matters is that the 2026-09-30 price, a 2.3% free cash flow yield, rests on earnings that are increasingly running ahead of cash, so the claim's failure weakens rather than supports the earnings-quality case for buying.",
@@ -8249,7 +8331,8 @@
                 "an:eq:cash_conversion"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The reverse DCF assumes each dollar of new revenue needs capital at a sales-to-capital of 1.47; receivables and inventory rising faster than revenue is evidence that growth may tie up more capital than that assumption allows, which would raise the 13.4% growth the price needs.",
@@ -8261,7 +8344,8 @@
               "verified": false,
               "problems": [
                 "writes 1.47, which nothing it cites carries"
-              ]
+              ],
+              "thresholds": []
             }
           ],
           "case_for": [
@@ -8271,7 +8355,8 @@
                 "an:peer:NVDA:fcf_margin:2025:2026-11-18"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Because capex is light, the gap sits almost wholly in working capital, which can unwind if receivables are collected and inventory is shipped, whereas a capex-driven gap would be structural.",
@@ -8280,7 +8365,8 @@
                 "an:bridge:cash:fy2026"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Management attributes the rise in operating cash flow to higher revenue, consistent with receivables and inventory building in a period when sales were growing at +105.9% year over year in the latest quarter.",
@@ -8289,7 +8375,8 @@
                 "revenue_yoy:quarter:2026-07-26"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "case_against": [
@@ -8299,7 +8386,8 @@
                 "cor:c4:1"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The trend runs one way across three 10-Ks and then sharpened in the trailing quarters, which argues against reading fiscal 2026 as a one-year timing blip.",
@@ -8308,7 +8396,8 @@
                 "an:eq:cash_conversion"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Among filers with at least $100.00B of revenue, FCF above net income held in 48 of 83 company-years, so NVIDIA's position below the line is not explained by its size either.",
@@ -8316,7 +8405,8 @@
                 "an:base_rate:NVDA:size:free_cash_flow[t] > net_income[t]:2026-11-18"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "decides": [
@@ -8326,7 +8416,8 @@
                 "an:bridge:cash:ttm"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Whether customers are paying more slowly or the build reflects shipments in transit; the record gives the size of the build but no cause, and the filings' receivable aging or days-sales figures would be needed.",
@@ -8335,7 +8426,8 @@
                 "f10"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "How much of the buy case leans on reported earnings, priced at 28.5x, rather than cash, since the two are diverging.",
@@ -8346,7 +8438,8 @@
               "verified": false,
               "problems": [
                 "writes 28.5x, which nothing it cites carries"
-              ]
+              ],
+              "thresholds": []
             }
           ],
           "would_change": [
@@ -8357,6 +8450,7 @@
               ],
               "verified": true,
               "problems": [],
+              "thresholds": [],
               "measure": "receivables",
               "comparison": "<",
               "threshold": 63060000000.0,
@@ -8370,6 +8464,7 @@
               ],
               "verified": true,
               "problems": [],
+              "thresholds": [],
               "measure": "inventory",
               "comparison": "<",
               "threshold": 31570000000.0,
@@ -8383,6 +8478,7 @@
               ],
               "verified": true,
               "problems": [],
+              "thresholds": [],
               "measure": "free_cash_flow",
               "comparison": ">",
               "threshold": 21400000000.0,
@@ -9563,7 +9659,8 @@
                 "cor:c5:1"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The fiscal-year basis tells the opposite story: Data Center growth slowed by 74.2 percentage points in fiscal 2026, so 'still' is true only if the newest quarters, not the last full year, are the right frame.",
@@ -9572,7 +9669,8 @@
                 "an:part:data_center:q:growth"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The record measures shipped revenue, not demand, and the filing itself says production complexity has caused supply and demand challenges and revenue volatility, so revenue could understate or lag demand in either direction.",
@@ -9581,7 +9679,8 @@
                 "f12"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Billings ahead of delivery grew faster than revenue, which leans toward demand outrunning shipments, while receivables also grew faster than revenue, which means part of the booked growth has not yet turned into cash.",
@@ -9590,7 +9689,8 @@
                 "an:eq:dso"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "For a purchase decision the step from acceleration to value is that the 2026-09-30 price needs 13.4% a year for 10 years, far below current growth, but that arithmetic leans most on holding a 65.2% operating margin; at the industry's 90th-percentile margin it needs 28.1% a year, and no peer of this size in the record sustained even the base rate.",
@@ -9599,7 +9699,8 @@
                 "an:revenue:yoy"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The CEO's resignation was filed after the newest 10-Q and after the price date, so nothing in this record shows whether demand or the valuation absorbed it.",
@@ -9608,7 +9709,8 @@
                 "an:pe:NVDA:2026-09-30"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "case_for": [
@@ -9619,7 +9721,8 @@
                 "an:part:data_center:fy:growth"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Revenue rose in each of the 8 quarters while growth on a larger base still accelerated, and the company's growth rank among SIC 3674 filers stayed near the top.",
@@ -9628,7 +9731,8 @@
                 "an:peer:NVDA:revenue_growth:2025:2026-11-18"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Deferred revenue up +215.1% against revenue up +105.9% is the closest proxy in the record to demand ahead of delivery, and it points the same way.",
@@ -9637,7 +9741,8 @@
                 "cor:c5:3"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "case_against": [
@@ -9648,7 +9753,8 @@
                 "an:bridge:growth:revenue_by_product:q"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Receivable days rose from 54.1 to 59.6, so some of the accelerating revenue is booked but uncollected, which weakens reading it as pure end demand.",
@@ -9656,7 +9762,8 @@
                 "an:eq:dso"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "The filing names supply constraints as a source of revenue volatility, so a quarter's acceleration could reflect timing of production rather than a change in demand.",
@@ -9664,7 +9771,8 @@
                 "f13"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "decides": [
@@ -9675,7 +9783,8 @@
                 "an:part:data_center:fy:pace"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Whether deferred revenue keeps growing faster than revenue, the record's best stand-in for demand not yet shipped.",
@@ -9683,7 +9792,8 @@
                 "an:eq:deferred_revenue"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Whether the 65.2% operating margin the price leans on holds, since acceleration matters to the decision only through that margin.",
@@ -9691,7 +9801,8 @@
                 "an:reverse_dcf:NVDA:2026-09-30"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "would_change": [
@@ -9703,6 +9814,7 @@
               ],
               "verified": true,
               "problems": [],
+              "thresholds": [],
               "measure": "revenue",
               "comparison": "<",
               "threshold": 96220000000.0,
@@ -9716,6 +9828,7 @@
               ],
               "verified": true,
               "problems": [],
+              "thresholds": [],
               "measure": "deferred_revenue",
               "comparison": "<",
               "threshold": 6410000000.0,
@@ -9729,6 +9842,7 @@
               ],
               "verified": true,
               "problems": [],
+              "thresholds": [],
               "measure": "",
               "comparison": "none",
               "threshold": 0.0,
@@ -10530,6 +10644,7 @@
     "analysis_sentences_written": 109,
     "analysis_sentences_verified": 106,
     "analysis_sentences_unverified": 3,
+    "analysis_sentences_restating": 7,
     "analysis_sentences_cut": 0,
     "analysis_unverified_no_evidence": 0,
     "analysis_unverified_unknown_id": 0,
@@ -22055,6 +22170,7 @@
     "corollaries_by": "replayed from cassette analysis-example: 14 responses recorded via the Anthropic API with claude-opus-5-5, 2026-11-18 to 2026-11-19",
     "corollaries_note": "",
     "corollary_rule": "A corollary is an implication a model proposed and code computed. Each is read by the grammar and by the typed form the proposing model wrote: two readers, which is weaker than the two-of-three rule the thesis's own claims are read under. A corollary never moves a verdict; when most of a claim's computed corollaries come out against it, the claim is flagged.",
+    "audit_rule": "A sentence is verified by code when every id it cites is in this run, at least one is evidence, and every number it writes is carried by that evidence: a verified finding's quotes and cited figures, an analytic's value, inputs and reading, a computed test's operands and result, a reported figure, an 8-K event's text. The claim's own words carry no number, and neither does the sentence a model wrote for a corollary: only what code computed for it does. A threshold is a third thing: when a number equals the threshold of a computed test or corollary the sentence cites, or a condition's own threshold, the sentence is not failed for it, and it is listed as a threshold restated, not checked as a fact. A bare year is carried by a cited item dated in that year. The audit does not decide whether a sentence follows from what it cites.",
     "persistence_method": "Resampling with replacement: 10,000 paths of 4 quarters, each step drawn from the measure's own last N quarterly changes (differences in points for a percent, growth rates for an amount), from the current value; the share of paths in which the test holds in every one of the 4 quarters. Seed 20261118. It assumes the past changes are exchangeable: it ignores trend, seasonality and anything not in the facts. It describes the history; it is not a forecast.",
     "argument_by": "model",
     "argument_detail": "replayed from cassette analysis-example: 14 responses recorded via the Anthropic API with claude-opus-5-5, 2026-11-18 to 2026-11-19",
@@ -22077,7 +22193,8 @@
             "an:reverse_dcf:NVDA:2026-09-30"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         },
         {
           "text": "Its favourable corollaries describe a quarter run under Huang, so they cannot show that his absence helps, and the free cash flow margin corollary failed anyway, with a margin of -6.6 points.",
@@ -22087,7 +22204,8 @@
             "cor:c1:3"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         },
         {
           "text": "What the record does show is a broad transition, with an interim CEO drawn from the CFO role, a retiring head of worldwide field operations and an earlier Chief Accounting Officer retirement, and that is evidence of turnover, not of improvement.",
@@ -22097,7 +22215,8 @@
             "ev-0001045810-26-000026"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         }
       ],
       "strongest_for": [
@@ -22108,7 +22227,8 @@
             "an:c2:headroom"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         },
         {
           "text": "Data Center growth of +116.6% outpaced the company's +105.9%, and deferred revenue grew +215.1%, which leans toward demand running ahead of shipments in the newest quarter.",
@@ -22117,7 +22237,8 @@
             "an:eq:deferred_revenue"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         },
         {
           "text": "Across the full grid the price needs between 6.5% and 19.7% a year, all far below the growth the latest quarter shows, so the valuation does not require the current pace to last.",
@@ -22126,7 +22247,8 @@
             "an:revenue:yoy"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         }
       ],
       "strongest_against": [
@@ -22137,7 +22259,8 @@
             "an:peer:NVDA:cash_conversion:2025:2026-11-18"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         },
         {
           "text": "Inventory now covers 119.3 days against 105.6 a year before, and the last time inventory and purchase obligations went wrong, the H20 charge cut gross margin to 60.5%, so the margin streak the price depends on has a known failure mode.",
@@ -22146,7 +22269,8 @@
             "f5"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         },
         {
           "text": "Even the modest 13.4% implied growth was matched by 0 of 40 ten-year spans of filers at this size, and at the industry's 90th-percentile margin of 26.6% the price would need 28.1% a year, so the price leans heavily on margin persistence through a leadership change.",
@@ -22154,7 +22278,8 @@
             "an:reverse_dcf:NVDA:2026-09-30"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         }
       ],
       "bottom_line": [
@@ -22165,7 +22290,8 @@
             "ev-0001045810-26-000082"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         },
         {
           "text": "Every financial figure ends with the quarter ended 2026-07-26 and the valuation is priced at 2026-09-30, so the record cannot show how either the business or the price absorbed the departure.",
@@ -22175,7 +22301,8 @@
             "ev-0001045810-26-000082"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         },
         {
           "text": "The supporting financial claims split: the gross-margin streak holds and quarterly revenue growth sped up, but revenue did not double in fiscal 2026 and free cash flow fell short of net income, so the thesis's operating case is mixed rather than uniformly strong.",
@@ -22186,7 +22313,8 @@
             "test:c4"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         },
         {
           "text": "Growth is not the binding constraint for the price: at 2026-09-30 it needs 13.4% a year against the newest quarter's 105.9%, but that arithmetic leans most on a 65.2% operating margin held every year, which is exactly what a leadership change could threaten.",
@@ -22195,7 +22323,8 @@
             "an:revenue:yoy"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         },
         {
           "text": "The 28.5× earnings multiple rests on earnings that are converting to cash at only 0.70x over four quarters and 0.40x in the latest quarter, so the price is paying for profit that is increasingly sitting in receivables and inventory.",
@@ -22204,7 +22333,8 @@
             "an:eq:cash_conversion"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         },
         {
           "text": "A careful investor would want the first 10-Q covering quarters after the resignation, an 8-K naming a permanent CEO, and evidence that the receivables and inventory build is unwinding.",
@@ -22214,7 +22344,8 @@
             "an:eq:dio"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         }
       ],
       "scenarios": [
@@ -22228,7 +22359,14 @@
                 "ev-0001045810-26-000082"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": [
+                {
+                  "raw": "70%",
+                  "of": "test:c2",
+                  "note": "restates a threshold: 70% (test:c2); not checked as a fact"
+                }
+              ]
             },
             {
               "text": "Quarterly operating margin in that 10-Q stays above 50%.",
@@ -22236,7 +22374,14 @@
                 "cor:c2:3"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": [
+                {
+                  "raw": "50%",
+                  "of": "cor:c2:3",
+                  "note": "restates a threshold: 50% (cor:c2:3); not checked as a fact"
+                }
+              ]
             },
             {
               "text": "An 8-K names a permanent Chief Executive Officer in place of the interim appointment.",
@@ -22244,7 +22389,8 @@
                 "ev-0001045810-26-000082"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ]
         },
@@ -22257,7 +22403,8 @@
                 "an:eq:dso"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Inventory falls below the $31.57B of Q2 FY2027.",
@@ -22265,7 +22412,8 @@
                 "an:eq:dio"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Quarterly free cash flow rises above the $21.40B of Q2 FY2027.",
@@ -22273,7 +22421,8 @@
                 "free_cash_flow:quarter:2026-07-26"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ]
         },
@@ -22286,7 +22435,14 @@
                 "test:c2"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": [
+                {
+                  "raw": "70%",
+                  "of": "test:c2",
+                  "note": "restates a threshold: 70% (test:c2); not checked as a fact"
+                }
+              ]
             },
             {
               "text": "An 8-K or 10-Q discloses an excess-inventory or purchase-obligation charge like the H20 charge.",
@@ -22295,7 +22451,8 @@
                 "an:eq:dio"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Quarterly revenue falls below the $96.22B of Q2 FY2027.",
@@ -22303,7 +22460,8 @@
                 "revenue:quarter:2026-07-26"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ]
         }

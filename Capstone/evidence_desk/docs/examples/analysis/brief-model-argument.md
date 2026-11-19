@@ -293,8 +293,8 @@ Its weakest link: c1.
 
 **Scenario: Transition holds**
 
-- The first 10-Q after the resignation shows quarterly gross margin still above 70%. [test:c2, ev-0001045810-26-000082]
-- Quarterly operating margin in that 10-Q stays above 50%. [cor:c2:3]
+- The first 10-Q after the resignation shows quarterly gross margin still above 70%. [test:c2, ev-0001045810-26-000082] *Restates a threshold: 70% (test:c2); not checked as a fact.*
+- Quarterly operating margin in that 10-Q stays above 50%. [cor:c2:3] *Restates a threshold: 50% (cor:c2:3); not checked as a fact.*
 - An 8-K names a permanent Chief Executive Officer in place of the interim appointment. [ev-0001045810-26-000082]
 
 **Scenario: Cash catches up**
@@ -305,7 +305,7 @@ Its weakest link: c1.
 
 **Scenario: Margin cracks**
 
-- A post-resignation 10-Q shows quarterly gross margin below 70%. [test:c2]
+- A post-resignation 10-Q shows quarterly gross margin below 70%. [test:c2] *Restates a threshold: 70% (test:c2); not checked as a fact.*
 - An 8-K or 10-Q discloses an excess-inventory or purchase-obligation charge like the H20 charge. [f5, an:eq:dio]
 - Quarterly revenue falls below the $96.22B of Q2 FY2027. [revenue:quarter:2026-07-26]
 
@@ -356,7 +356,7 @@ The model reads the record as: unclear.
 
 - A later 8-K naming a permanent Chief Executive Officer would show whether the leadership transition the claim depends on is settled. [ev-0001045810-26-000082]
 - A post-departure quarterly operating margin below the 65.2% the reverse DCF assumes would cut against the idea that the departure helps the business. [an:reverse\_dcf:NVDA:2026-09-30]
-- A post-departure quarterly gross margin falling below 70% would break the margin record the new leadership inherited. [test:c2, gross\_margin:quarter:2026-07-26]
+- A post-departure quarterly gross margin falling below 70% would break the margin record the new leadership inherited. [test:c2, gross\_margin:quarter:2026-07-26] *Restates a threshold: 70% (test:c2); not checked as a fact.*
 
 This claim names no measure the facts report, cites none and compiles to no test: no figure is tied to it.
 
@@ -385,7 +385,7 @@ The model reads the record as: supports.
 
 - The margin is rising, not merely holding: it is up on a year earlier, and the filing attributes the gain to Blackwell Ultra mix. [an:gross\_margin:yoy, f3]
 - Against its industry the level is exceptional, ranking 4 of 63 against a class median of 41.2%, though SIC 3674 is a broad peer set. [an:peer:NVDA:gross\_margin:2025:2026-11-18]
-- The implications check out: fiscal 2026 margin cleared 70%, and the latest operating margin clears 50%, so the strength is not limited to the gross line. [cor:c2:1, cor:c2:3]
+- The implications check out: fiscal 2026 margin cleared 70%, and the latest operating margin clears 50%, so the strength is not limited to the gross line. [cor:c2:1, cor:c2:3] *Restates a threshold: 70% (cor:c2:1); not checked as a fact; restates a threshold: 50% (cor:c2:3); not checked as a fact.*
 
 **Case against**
 
@@ -402,7 +402,7 @@ The model reads the record as: supports.
 **What would change the verdict**
 
 - A quarterly gross margin below 70% in a later 10-Q would break the four-quarter test. [test:c2, an:c2:headroom]
-- A quarterly operating margin below 50% would fail a corollary the claim implies, and would undercut the margin the price assumes. [cor:c2:3, an:reverse\_dcf:NVDA:2026-09-30]
+- A quarterly operating margin below 50% would fail a corollary the claim implies, and would undercut the margin the price assumes. [cor:c2:3, an:reverse\_dcf:NVDA:2026-09-30] *Restates a threshold: 50% (cor:c2:3); not checked as a fact.*
 - An 8-K disclosing an inventory or purchase-obligation charge would signal a repeat of the H20 episode that broke the 70% line before. [f5, an:eq:dio] **Unverified:** writes 70%, which nothing it cites carries.
 
 **What the figures say** (computed by code)
@@ -495,7 +495,7 @@ The model reads the record as: challenges.
 **Assessment**
 
 - The premise is false on this record: fiscal 2026 free cash flow fell short of net income, so the claim fails as worded rather than on a technicality. [test:c4, an:bridge:cash:fy2026]
-- The shortfall is not a spending story, since capex stayed under 5% of revenue; it comes from receivables and inventory absorbing cash that net income counts but the cash flow statement does not. [cor:c4:3, an:bridge:cash:fy2026, cor:c4:2]
+- The shortfall is not a spending story, since capex stayed under 5% of revenue; it comes from receivables and inventory absorbing cash that net income counts but the cash flow statement does not. [cor:c4:3, an:bridge:cash:fy2026, cor:c4:2] *Restates a threshold: 5% (cor:c4:3); not checked as a fact.*
 - The gap is widening, not closing: free cash flow as a share of net income has fallen at every 10-K reading, and over the four quarters to Q2 FY2027 the shortfall grew to $65.87B with conversion of 0.40x in the latest quarter alone. [an:c4:sides, an:bridge:cash:ttm, an:eq:cash\_conversion]
 - That makes NVIDIA unusual against its industry: its cash conversion ranks 32 of 38 among SIC 3674 filers, while FCF above net income held in 116 of 179 company-years for those peers. [an:peer:NVDA:cash\_conversion:2025:2026-11-18, an:base\_rate:NVDA:industry:free\_cash\_flow\[t\] > net\_income\[t\]:2026-11-18]
 - For a buy decision the step that matters is that the 2026-09-30 price, a 2.3% free cash flow yield, rests on earnings that are increasingly running ahead of cash, so the claim's failure weakens rather than supports the earnings-quality case for buying. [an:fcf\_yield:NVDA:2026-09-30, an:eq:cash\_conversion]

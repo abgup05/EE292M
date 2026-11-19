@@ -1,0 +1,861 @@
+{
+  "key": "f3d25b29856077b66cbb0487",
+  "step": "propose",
+  "via": "the Anthropic API",
+  "model": "claude-opus-5-5",
+  "recorded_at": "2026-11-19T00:07:13+00:00",
+  "response": {
+    "claims": [
+      {
+        "claim_id": "c1",
+        "implications": [
+          {
+            "sentence": "Operating margin in the latest quarter is above operating margin in the same quarter a year earlier.",
+            "expect": "holds",
+            "why": "A leadership change worth buying on should show in better execution, with operating margin higher than a year earlier.",
+            "test": {
+              "form": "direction",
+              "left": {
+                "fn": "value",
+                "subject": "operating_margin",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "op": ">",
+              "right_term": {
+                "fn": "value",
+                "subject": "operating_margin",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "Q",
+                  "back": 4,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "right_number": {
+                "value": 0,
+                "unit": "percent"
+              },
+              "each": 0,
+              "each_since": 0
+            }
+          },
+          {
+            "sentence": "Operating expenses as a share of revenue in the latest quarter are below their level a year earlier.",
+            "expect": "holds",
+            "why": "If new leadership improves the business, cost discipline should show as a lower opex ratio than a year earlier.",
+            "test": {
+              "form": "direction",
+              "left": {
+                "fn": "value",
+                "subject": "opex_ratio",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "op": "<",
+              "right_term": {
+                "fn": "value",
+                "subject": "opex_ratio",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "Q",
+                  "back": 4,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "right_number": {
+                "value": 0,
+                "unit": "percent"
+              },
+              "each": 0,
+              "each_since": 0
+            }
+          },
+          {
+            "sentence": "Free cash flow margin in the latest quarter is above its level a year earlier.",
+            "expect": "holds",
+            "why": "A buy case resting on the leadership change implies cash generation is improving, not deteriorating.",
+            "test": {
+              "form": "direction",
+              "left": {
+                "fn": "value",
+                "subject": "fcf_margin",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "op": ">",
+              "right_term": {
+                "fn": "value",
+                "subject": "fcf_margin",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "Q",
+                  "back": 4,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "right_number": {
+                "value": 0,
+                "unit": "percent"
+              },
+              "each": 0,
+              "each_since": 0
+            }
+          }
+        ]
+      },
+      {
+        "claim_id": "c2",
+        "implications": [
+          {
+            "sentence": "Gross margin for fiscal 2026 was above 70%.",
+            "expect": "holds",
+            "why": "If each recent quarter was above 70%, the full fiscal year basis should also clear 70%.",
+            "test": {
+              "form": "threshold",
+              "left": {
+                "fn": "value",
+                "subject": "gross_margin",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "FY",
+                  "back": 0,
+                  "fiscal_year": 2026,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "op": ">",
+              "right_term": {
+                "fn": "value",
+                "subject": "gross_margin",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "FY",
+                  "back": 0,
+                  "fiscal_year": 2026,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "right_number": {
+                "value": 70,
+                "unit": "percent"
+              },
+              "each": 0,
+              "each_since": 0
+            }
+          },
+          {
+            "sentence": "Inventory grew faster year over year than revenue in the latest quarter.",
+            "expect": "fails",
+            "why": "Durable high margins should not be propped up by building inventory faster than sales.",
+            "test": {
+              "form": "faster_than",
+              "left": {
+                "fn": "yoy",
+                "subject": "inventory",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "op": ">",
+              "right_term": {
+                "fn": "yoy",
+                "subject": "revenue",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "right_number": {
+                "value": 0,
+                "unit": "percent"
+              },
+              "each": 0,
+              "each_since": 0
+            }
+          },
+          {
+            "sentence": "Operating margin in the latest quarter is above 50%.",
+            "expect": "holds",
+            "why": "A gross margin above 70% matters only if operating costs leave a high operating margin.",
+            "test": {
+              "form": "threshold",
+              "left": {
+                "fn": "value",
+                "subject": "operating_margin",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "op": ">",
+              "right_term": {
+                "fn": "value",
+                "subject": "operating_margin",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "right_number": {
+                "value": 50,
+                "unit": "percent"
+              },
+              "each": 0,
+              "each_since": 0
+            }
+          }
+        ]
+      },
+      {
+        "claim_id": "c3",
+        "implications": [
+          {
+            "sentence": "Operating income grew more than 100% in fiscal 2026.",
+            "expect": "holds",
+            "why": "If revenue more than doubled with high margins, operating income should have more than doubled too.",
+            "test": {
+              "form": "growth_threshold",
+              "left": {
+                "fn": "yoy",
+                "subject": "operating_income",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "FY",
+                  "back": 0,
+                  "fiscal_year": 2026,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "op": ">",
+              "right_term": {
+                "fn": "yoy",
+                "subject": "operating_income",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "FY",
+                  "back": 0,
+                  "fiscal_year": 2026,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "right_number": {
+                "value": 100,
+                "unit": "percent"
+              },
+              "each": 0,
+              "each_since": 0
+            }
+          },
+          {
+            "sentence": "Receivables grew faster than revenue in fiscal 2026.",
+            "expect": "fails",
+            "why": "Genuine doubling of sales should be collected, not show up as receivables outpacing revenue.",
+            "test": {
+              "form": "faster_than",
+              "left": {
+                "fn": "yoy",
+                "subject": "receivables",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "FY",
+                  "back": 0,
+                  "fiscal_year": 2026,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "op": ">",
+              "right_term": {
+                "fn": "yoy",
+                "subject": "revenue",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "FY",
+                  "back": 0,
+                  "fiscal_year": 2026,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "right_number": {
+                "value": 0,
+                "unit": "percent"
+              },
+              "each": 0,
+              "each_since": 0
+            }
+          },
+          {
+            "sentence": "Operating cash flow grew more than 100% in fiscal 2026.",
+            "expect": "holds",
+            "why": "A doubling of revenue of good quality should carry operating cash flow up by a similar amount.",
+            "test": {
+              "form": "growth_threshold",
+              "left": {
+                "fn": "yoy",
+                "subject": "operating_cash_flow",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "FY",
+                  "back": 0,
+                  "fiscal_year": 2026,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "op": ">",
+              "right_term": {
+                "fn": "yoy",
+                "subject": "operating_cash_flow",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "FY",
+                  "back": 0,
+                  "fiscal_year": 2026,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "right_number": {
+                "value": 100,
+                "unit": "percent"
+              },
+              "each": 0,
+              "each_since": 0
+            }
+          }
+        ]
+      },
+      {
+        "claim_id": "c4",
+        "implications": [
+          {
+            "sentence": "Operating cash flow was above net income in fiscal 2026.",
+            "expect": "holds",
+            "why": "Free cash flow above net income requires operating cash flow above net income before capex.",
+            "test": {
+              "form": "compare",
+              "left": {
+                "fn": "value",
+                "subject": "operating_cash_flow",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "FY",
+                  "back": 0,
+                  "fiscal_year": 2026,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "op": ">",
+              "right_term": {
+                "fn": "value",
+                "subject": "net_income",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "FY",
+                  "back": 0,
+                  "fiscal_year": 2026,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "right_number": {
+                "value": 0,
+                "unit": "USD"
+              },
+              "each": 0,
+              "each_since": 0
+            }
+          },
+          {
+            "sentence": "Inventory grew faster than revenue in fiscal 2026.",
+            "expect": "fails",
+            "why": "Cash conversion above earnings is hard if working capital such as inventory is absorbing cash faster than sales grow.",
+            "test": {
+              "form": "faster_than",
+              "left": {
+                "fn": "yoy",
+                "subject": "inventory",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "FY",
+                  "back": 0,
+                  "fiscal_year": 2026,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "op": ">",
+              "right_term": {
+                "fn": "yoy",
+                "subject": "revenue",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "FY",
+                  "back": 0,
+                  "fiscal_year": 2026,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "right_number": {
+                "value": 0,
+                "unit": "percent"
+              },
+              "each": 0,
+              "each_since": 0
+            }
+          },
+          {
+            "sentence": "Capital expenditure was below 5% of revenue in fiscal 2026.",
+            "expect": "holds",
+            "why": "Free cash flow can exceed net income only if capex takes a small share of revenue.",
+            "test": {
+              "form": "threshold",
+              "left": {
+                "fn": "value",
+                "subject": "capex_ratio",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "FY",
+                  "back": 0,
+                  "fiscal_year": 2026,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "op": "<",
+              "right_term": {
+                "fn": "value",
+                "subject": "capex_ratio",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "FY",
+                  "back": 0,
+                  "fiscal_year": 2026,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "right_number": {
+                "value": 5,
+                "unit": "percent"
+              },
+              "each": 0,
+              "each_since": 0
+            }
+          }
+        ]
+      },
+      {
+        "claim_id": "c5",
+        "implications": [
+          {
+            "sentence": "Year-over-year revenue growth in the latest quarter is above the growth of the quarter before.",
+            "expect": "holds",
+            "why": "Data Center dominates revenue, so accelerating data center demand should show as accelerating total revenue growth.",
+            "test": {
+              "form": "acceleration",
+              "left": {
+                "fn": "yoy",
+                "subject": "revenue",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "op": ">",
+              "right_term": {
+                "fn": "yoy",
+                "subject": "revenue",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "Q",
+                  "back": 1,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "right_number": {
+                "value": 0,
+                "unit": "percent"
+              },
+              "each": 0,
+              "each_since": 0
+            }
+          },
+          {
+            "sentence": "Data Center revenue grew more than 100% year over year in the newest filing period.",
+            "expect": "holds",
+            "why": "Total revenue rose about 106%; if data center demand is accelerating, Data Center should be growing at least that fast.",
+            "test": {
+              "form": "growth_threshold",
+              "left": {
+                "fn": "yoy",
+                "subject": "revenue",
+                "member": "Data Center",
+                "axis": "segment",
+                "years": 0,
+                "period": {
+                  "kind": "filing",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "op": ">",
+              "right_term": {
+                "fn": "yoy",
+                "subject": "revenue",
+                "member": "Data Center",
+                "axis": "segment",
+                "years": 0,
+                "period": {
+                  "kind": "filing",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "right_number": {
+                "value": 100,
+                "unit": "percent"
+              },
+              "each": 0,
+              "each_since": 0
+            }
+          },
+          {
+            "sentence": "Deferred revenue in the latest quarter is above its level a year earlier.",
+            "expect": "holds",
+            "why": "Accelerating demand should show up as more customer prepayments and contract liabilities than a year earlier.",
+            "test": {
+              "form": "direction",
+              "left": {
+                "fn": "value",
+                "subject": "deferred_revenue",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "op": ">",
+              "right_term": {
+                "fn": "value",
+                "subject": "deferred_revenue",
+                "member": "",
+                "axis": "",
+                "years": 0,
+                "period": {
+                  "kind": "Q",
+                  "back": 4,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                },
+                "base": {
+                  "used": false,
+                  "kind": "Q",
+                  "back": 0,
+                  "fiscal_year": 0,
+                  "quarter": 0
+                }
+              },
+              "right_number": {
+                "value": 0,
+                "unit": "USD"
+              },
+              "each": 0,
+              "each_since": 0
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

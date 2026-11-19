@@ -1,0 +1,171 @@
+{
+  "key": "ee3eab286e5b3dc80eaf5598",
+  "step": "analyse",
+  "via": "the Anthropic API",
+  "model": "claude-opus-5-5",
+  "recorded_at": "2026-11-19T00:05:49+00:00",
+  "response": {
+    "lean": "supports",
+    "sentences": [
+      {
+        "section": "assessment",
+        "text": "The premise holds on every period the filings report: a few direct customers each took a double-digit share of revenue for the full fiscal year, the first quarter and the first half, and the company says so itself.",
+        "cites": [
+          "f4",
+          "f5",
+          "f6",
+          "f7"
+        ]
+      },
+      {
+        "section": "assessment",
+        "text": "The shares are shifting rather than settling: the largest single customer went from 22% for fiscal 2026 to 21% in Q1 FY2027, and the first-half figures top out at 16%, which points to a buyer set that is rotating or broadening, not to one buyer growing more dominant.",
+        "cites": [
+          "f4",
+          "f5",
+          "f6"
+        ]
+      },
+      {
+        "section": "assessment",
+        "text": "The Q2 FY2027 disclosure names only one direct customer, at 16%, against three in Q1, so the concentration visible in the newest quarter looks thinner than in the quarter before it.",
+        "cites": [
+          "f5",
+          "f6"
+        ]
+      },
+      {
+        "section": "assessment",
+        "text": "The step from concentration to the overweight decision is the real question, and the record does not back it in either direction: concentration is a fragility, but in this record it sits beside revenue that more than doubled and growth that sped up by 20.6 percentage points, nearly all of it from Data Center.",
+        "cites": [
+          "an:revenue:acceleration",
+          "an:bridge:growth:revenue_by_product:q",
+          "f7"
+        ]
+      },
+      {
+        "section": "assessment",
+        "text": "The one place concentration might show up in the numbers is collection: receivables grew faster than revenue and receivable days rose to 59.6 from 54.1, but the record does not say which customers hold those balances.",
+        "cites": [
+          "an:eq:dso"
+        ]
+      },
+      {
+        "section": "assessment",
+        "text": "The corollaries that would size concentration directly, the largest customer's share and the hyperscale share, could not be computed, so the claim rests on the quoted disclosures alone.",
+        "cites": [
+          "cor:c2:1",
+          "cor:c2:2"
+        ]
+      },
+      {
+        "section": "case_for",
+        "text": "Four separate disclosures across three reporting periods, including the company's own risk statement that the trend may continue, leave no doubt that the premise is true.",
+        "cites": [
+          "f4",
+          "f5",
+          "f6",
+          "f7"
+        ]
+      },
+      {
+        "section": "case_for",
+        "text": "Because all of the disclosed customer revenue is attributed to Compute & Networking, and Data Center supplied 102.5 percentage points of growth, any pause by a few buyers would land directly on the engine of the growth.",
+        "cites": [
+          "f5",
+          "f6",
+          "an:bridge:growth:revenue_by_product:q"
+        ]
+      },
+      {
+        "section": "case_for",
+        "text": "Receivables rising +126.8% against revenue growth of +105.9% is consistent with large buyers taking more time to pay, which is the form concentration risk would take before revenue itself turns.",
+        "cites": [
+          "an:eq:dso"
+        ]
+      },
+      {
+        "section": "case_against",
+        "text": "The top-customer shares drift down across the periods and the newest quarter names a single customer at 16%, so the concentration is not intensifying.",
+        "cites": [
+          "f4",
+          "f5",
+          "f6"
+        ]
+      },
+      {
+        "section": "case_against",
+        "text": "Revenue rose in each of the 8 quarters while this concentration was present, so on this record it has coexisted with steady growth rather than causing visible breaks.",
+        "cites": [
+          "an:revenue:trend8",
+          "f7"
+        ]
+      },
+      {
+        "section": "case_against",
+        "text": "The claim is a static description of who buys, not evidence that any buyer is cutting back, so true as it is, it says little about the next earnings report on its own.",
+        "cites": [
+          "f7",
+          "an:revenue:acceleration"
+        ]
+      },
+      {
+        "section": "decides",
+        "text": "Whether concentration matters for this decision turns on whether the large buyers keep ordering, which the filings cannot show; a later disclosure of a customer share falling sharply, or revenue growth reversing, would be the evidence.",
+        "cites": [
+          "f6",
+          "an:revenue:acceleration"
+        ]
+      },
+      {
+        "section": "decides",
+        "text": "It also turns on whether the rise in receivable days reflects slower payment by the few large customers, which needs a customer-level receivables disclosure the record does not have.",
+        "cites": [
+          "an:eq:dso"
+        ]
+      },
+      {
+        "section": "decides",
+        "text": "The CEO's resignation filed after the newest quarter is outside what the concentration figures can speak to, but any change in customer relationships following it would only appear in later filings.",
+        "cites": [
+          "ev-0001045810-26-000082"
+        ]
+      }
+    ],
+    "conditions": [
+      {
+        "text": "Receivables climbing above the Q2 FY2027 level of $63.06B while revenue stalls would signal collection strain consistent with concentrated buyers.",
+        "cites": [
+          "an:eq:dso"
+        ],
+        "measure": "receivables",
+        "comparison": ">",
+        "threshold": 63060000000,
+        "unit": "USD",
+        "event_category": "none"
+      },
+      {
+        "text": "Quarterly revenue falling below the $96.22B of Q2 FY2027 would show whether the concentrated buyer base has started to pull back.",
+        "cites": [
+          "revenue:quarter:2026-07-26"
+        ],
+        "measure": "revenue",
+        "comparison": "<",
+        "threshold": 96220000000,
+        "unit": "USD",
+        "event_category": "none"
+      },
+      {
+        "text": "An 8-K disclosing the loss, renegotiation or termination of a major customer agreement would bear directly on the concentration claim.",
+        "cites": [
+          "f7"
+        ],
+        "measure": "",
+        "comparison": "none",
+        "threshold": 0,
+        "unit": "none",
+        "event_category": "deal"
+      }
+    ]
+  }
+}

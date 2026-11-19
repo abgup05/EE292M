@@ -20,7 +20,8 @@ The rules:
   matches 55.6% and 56.4% but not 55.4%; "$46.7 billion" matches $46,743 million.
 - A plain or USD number in a quote with no scale word (a table cell such as
   "Revenue $ 46,743") also matches at 1e3, 1e6 or 1e9 times its value. A count
-  of things does not.
+  of things does not. The quote gate keeps a quote from making such a bare
+  number by stopping before the scale word or unit (:func:`quantity_cut`).
 - Direction: an unsigned statement number matches a positive source; it
   matches a *negative* source ("(3)%", "-3%") only when the statement's
   sentence that holds it allows it ("revenue declined 3%" against "(3)%"
@@ -268,6 +269,8 @@ _UNIT_AFTER: tuple[tuple[re.Pattern[str], Unit], ...] = (
 _ORDINAL_AFTER = re.compile(r"(?:st|nd|rd|th)\b")
 _CAPS_WORD_BEFORE = re.compile(r"\b([A-Z]{2,}[A-Za-z]*)\s$")
 _MINUS = "-−–"
+# A decimal point or a thousands separator between two digits is part of the number.
+NUMBER_SEPARATORS = ".,"
 
 
 @dataclass(frozen=True)
@@ -371,12 +374,30 @@ def is_year(text: str, begin: int, end: int) -> bool:
     )
 
 
-def _read(text: str, match: re.Match[str]) -> Quantity | None:
-    """The quantity at one digit run, or None when it is a label, a date part or a count."""
-    begin, end = match.span()
-    digits = match.group()
-    if begin > 0 and (text[begin - 1].isalnum() or text[begin - 1] in "._"):
-        return None  # Q2, H20, FY2026, 10b5: part of an alphanumeric name
+@dataclass(frozen=True)
+class _Written:
+    """How far one number reaches around its digits, and what was read there.
+
+    ``start`` is where its opening parenthesis, currency sign or minus begins and
+    ``position`` where its closing parenthesis, scale word and unit end. ``head`` is
+    ``start``, except that an opening parenthesis nothing closes is left out: it is
+    punctuation ("(5% in the prior year)"), not a sign.
+    """
+
+    start: int
+    head: int
+    position: int
+    currency: bool
+    negative: bool
+    scale: float
+    unit: Unit | None
+
+
+_CLOSING = re.compile(r"\s?\)")
+
+
+def _written(text: str, begin: int, end: int) -> _Written:
+    """Read what is written around the digits at ``text[begin:end]``."""
     # Before the digits: an opening parenthesis, a currency sign, a minus, in that order inward.
     start = begin
     currency = False
@@ -395,19 +416,40 @@ def _read(text: str, match: re.Match[str]) -> Quantity | None:
             paren_open = True
             start -= 2 if head.endswith("( ") else 1
             head = text[max(0, start - 6) : start]
+    paren_outermost = paren_open and text[start] == "("
     negative = False
     if head and head[-1] in _MINUS and (len(head) < 2 or not head[-2].isalnum()):
         negative = True
         start -= 1
+        paren_outermost = False
     # After the digits: a closing parenthesis, a scale word, a unit.
     position = end
+    closed = False
     if paren_open:
-        closing = re.compile(r"\s?\)").match(text, position)
+        closing = _CLOSING.match(text, position)
         if closing:
+            closed = True
             negative = True
             position = closing.end()
     scale, position = _scale_after(text, position, currency)
     unit, position = _unit_after(text, position)
+    sign_from = start
+    if paren_outermost and not closed:
+        sign_from = start + 1
+        while sign_from < begin and text[sign_from].isspace():
+            sign_from += 1
+    return _Written(start, sign_from, position, currency, negative, scale, unit)
+
+
+def _read(text: str, match: re.Match[str]) -> Quantity | None:
+    """The quantity at one digit run, or None when it is a label, a date part or a count."""
+    begin, end = match.span()
+    digits = match.group()
+    if begin > 0 and (text[begin - 1].isalnum() or text[begin - 1] in "._"):
+        return None  # Q2, H20, FY2026, 10b5: part of an alphanumeric name
+    written = _written(text, begin, end)
+    start, position, currency = written.start, written.position, written.currency
+    negative, scale, unit = written.negative, written.scale, written.unit
     if unit is None:
         if _ORDINAL_AFTER.match(text, end):
             return None
@@ -449,6 +491,43 @@ def _placed_quantities(text: str) -> list[tuple[Quantity, int]]:
         if quantity is not None:
             found.append((quantity, match.start()))
     return found
+
+
+# The furthest a number's sign, currency, scale word or unit lies from a boundary beside it:
+# "( US$ " before the digits, ") trillion percentage points" after them.
+_QUANTITY_REACH = 40
+Cut = Literal["", "head", "tail"]
+
+
+def quantity_cut(text: str, cut: int) -> Cut:
+    """Where a boundary at offset ``cut`` of ``text`` falls inside a number as written here.
+
+    "head": between a number's opening parenthesis, currency sign or minus and its
+    digits ("-|5%", "$|46.7", "$ |46,743", "(|1,234)"), so that a text beginning there
+    reads the number without them. "tail": between its digits and the closing
+    parenthesis, scale word or unit that follows ("$46.7| billion", "56|%", "106| %",
+    "(1,234|)", "350| basis points", "30| times"), so that a text ending there reads a
+    bare number. "" anywhere else, and after the unit ("56%|"). The sign, scale and
+    unit are the ones :func:`quantities` reads, found the same way, so a text cut at a
+    boundary this function passes reads each of its numbers as the whole text does.
+    What is not read as part of a number is not protected: the noun of a count ("46|
+    customers") and "per share".
+    """
+    if cut <= 0 or cut >= len(text):
+        return ""
+    low = max(0, cut - _QUANTITY_REACH)
+    while low > 0 and (text[low - 1].isdigit() or text[low - 1] in NUMBER_SEPARATORS):
+        low -= 1  # never start reading inside a run of digits
+    for match in _NUMBER.finditer(text, low, min(len(text), cut + _QUANTITY_REACH)):
+        begin, end = match.span()
+        if begin > 0 and (text[begin - 1].isalnum() or text[begin - 1] in "._"):
+            continue  # part of an alphanumeric name, never a quantity
+        written = _written(text, begin, end)
+        if written.head < cut <= begin:
+            return "head"
+        if end <= cut < written.position:
+            return "tail"
+    return ""
 
 
 def quantities(text: str) -> list[Quantity]:

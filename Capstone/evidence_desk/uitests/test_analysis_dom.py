@@ -220,7 +220,8 @@ def test_every_cited_id_is_a_chip_that_names_what_it_opens(name: str) -> None:
             if cited in findings:
                 want, label = f"finding:{cited}", cited
             elif cited in known:
-                want, label = f"analytic:{cited}", ref_of(run, cited)
+                # An analytic's chip: its reference in the ledger, then the record's word for its kind.
+                want, label = f"analytic:{cited}", f"{ref_of(run, cited)} {known[cited]['kind'].replace('_', ' ')}"
             elif cited in tests:
                 want, label = f"test:{cited.removeprefix('test:')}", f"test {cited.removeprefix('test:')}"
             elif cited in corollaries:
@@ -517,7 +518,9 @@ def test_the_stage_times_are_the_runs_timings(name: str) -> None:
     rows = method.select("tr[data-timing]")
     assert [row["data-timing"] for row in rows] == list(timings)
     for row in rows:
-        assert words(row.select("td")[1]) == f"{timings[row['data-timing']]['seconds']:,.3f}".rstrip("0").rstrip(".") + " s"
+        seconds = timings[row["data-timing"]]["seconds"]
+        # Seconds as the record gives them, to the millisecond; a time under a millisecond is not written as "0 s".
+        assert words(row.select("td")[1]) == ("<0.001 s" if 0 < seconds < 0.001 else f"{seconds:,.3f}".rstrip("0").rstrip(".") + " s")
     for node in method.select(".mth-node"):
         time = node.select_one("[data-method-seconds]")
         if node["data-stage"] in timings:
@@ -624,6 +627,7 @@ def test_a_claims_analysis_is_its_own_and_the_frame_holds() -> None:
         assert (s["data-page-scroll"], s["data-page-sideways"], s["data-centre-sideways"]) == ("0", "0", "0"), name
     assert step("laptop-terminal")["data-scopes-shown"] == "c4"
     assert step("method")["data-panels-shown"] == "panel-method" and int(step("method")["data-nodes-drawn"]) == 18
+    assert step("method")["data-inspecting"] == "stage:company" and step("method")["data-inspect-kind"] == "Stage", "a stage is read at the side"
     assert int(step("method")["data-times-drawn"]) == len([t for t in run["timings"] if t["stage"] not in ("analysis (all of it)", "finishing")])
     s = step("overview")
     assert (s["data-tape-source"], s["data-tape-title"]) == ("headline", "Headline figures")

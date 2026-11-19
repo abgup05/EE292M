@@ -180,8 +180,30 @@ SHOT_SPECS := \
 	sample-live@1440,900@?sample=run-live&theme=paper \
 	sample-live-terminal@1440,900@?sample=run-live&theme=terminal \
 	sample-live-phone@390,3600@?sample=run-live&theme=paper \
-	frame-claim@1440,900@?sample=run-live&theme=paper&claim=c2 \
-	frame-claim-terminal@1440,900@?sample=run-live&theme=terminal&claim=c2 \
+	sample-costco@1440,900@?sample=run-costco&theme=paper \
+	sample-costco-terminal@1440,900@?sample=run-costco&theme=terminal \
+	analysis-thesis@1440,2800@?sample=run-live&theme=paper \
+	analysis-thesis-terminal@1440,2800@?sample=run-live&theme=terminal \
+	analysis-claim@1440,900@?sample=run-live&theme=paper&claim=c4 \
+	analysis-claim-terminal@1440,900@?sample=run-costco&theme=terminal&claim=c1 \
+	analysis-claim-tall@1440,3400@?sample=run-live&theme=paper&claim=c3 \
+	analysis-claim-tall-terminal@1440,3400@?sample=run-costco&theme=terminal&claim=c2 \
+	analysis-1280@1280,800@?sample=run-costco&theme=paper&claim=c4 \
+	analysis-1280-terminal@1280,800@?sample=run-live&theme=terminal&claim=c2 \
+	analysis-tablet@900,800@?sample=run-live&theme=paper \
+	analysis-phone@390,844@?sample=run-costco&theme=paper&claim=c2 \
+	analysis-phone-terminal@390,3600@?sample=run-live&theme=terminal \
+	analysis-no-model@1440,900@?sample=computed&theme=paper \
+	analysis-no-model-terminal@1440,900@?sample=computed&theme=terminal&claim=c1 \
+	analysis-shapes@1440,900@?sample=analysis-shapes&theme=paper&claim=c2 \
+	method@1440,1500@?sample=run-live&theme=paper&tab=method \
+	method-terminal@1440,900@?sample=run-costco&theme=terminal&tab=method \
+	method-no-model@1440,900@?sample=computed&theme=paper&tab=method \
+	overview@1440,900@?sample=run-live&theme=paper&tab=overview \
+	overview-terminal@1440,900@?sample=run-costco&theme=terminal&tab=overview \
+	frame-claim@1440,900@?sample=run-live&theme=paper&claim=c2&tab=overview \
+	frame-claim-terminal@1440,900@?sample=run-live&theme=terminal&claim=c2&tab=overview \
+	frame-figures-claim@1440,900@?sample=run-live&theme=paper&claim=c3&tab=figures \
 	frame-evidence@1440,900@?sample=run-live&theme=paper&claim=c1&tab=evidence \
 	frame-evidence-terminal@1440,900@?sample=run-live&theme=terminal&claim=c1&tab=evidence \
 	frame-thesis-evidence@1440,900@?sample=run-live&theme=paper&tab=evidence \
@@ -192,12 +214,12 @@ SHOT_SPECS := \
 	frame-figures@1440,900@?sample=run-live&theme=paper&tab=figures \
 	frame-figures-terminal@1440,900@?sample=run-live&theme=terminal&tab=figures \
 	frame-limits-terminal@1440,900@?sample=run-live&theme=terminal&tab=limits \
-	frame-1280@1280,800@?sample=run-live&theme=paper&claim=c3 \
-	frame-1280-terminal@1280,800@?sample=run-live&theme=terminal&claim=c4 \
+	frame-1280@1280,800@?sample=run-live&theme=paper&claim=c3&tab=overview \
+	frame-1280-terminal@1280,800@?sample=run-live&theme=terminal&claim=c4&tab=overview \
 	frame-tablet@900,800@?sample=run-live&theme=paper&claim=c2&tab=evidence \
-	frame-tablet-terminal@900,800@?sample=run-live&theme=terminal \
-	frame-phone@390,844@?sample=run-live&theme=paper \
-	frame-phone-terminal@390,844@?sample=run-live&theme=terminal \
+	frame-tablet-terminal@900,800@?sample=run-live&theme=terminal&tab=overview \
+	frame-phone@390,844@?sample=run-live&theme=paper&tab=overview \
+	frame-phone-terminal@390,844@?sample=run-live&theme=terminal&tab=overview \
 	sample-run@1440,900@?sample&theme=paper \
 	sample-run-terminal@1440,900@?sample&theme=terminal&claim=c1 \
 	sample-run-phone@390,1400@?sample&theme=paper \
@@ -216,10 +238,10 @@ SHOT_SPECS := \
 	sample-inbox@1440,900@?sample=inbox&theme=paper \
 	sample-inbox-terminal@1440,900@?sample=inbox&theme=terminal \
 	sample-inbox-phone@390,3400@?sample=inbox&theme=paper \
-	sample-computed@1440,900@?sample=computed&theme=paper&claim=c1 \
+	sample-computed@1440,900@?sample=computed&theme=paper&claim=c1&tab=overview \
 	sample-computed-terminal@1440,900@?sample=computed&theme=terminal&tab=time \
 	sample-computed-phone@390,3600@?sample=computed&theme=paper \
-	sample-as-of@1440,900@?sample=as-of&theme=paper \
+	sample-as-of@1440,900@?sample=as-of&theme=paper&tab=overview \
 	sample-as-of-terminal@1440,900@?sample=as-of&theme=terminal&tab=time \
 	sample-restatements@1440,900@?sample=restatements&theme=paper \
 	sample-restatements-terminal@1440,900@?sample=restatements&theme=terminal \

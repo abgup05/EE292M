@@ -2839,7 +2839,20 @@ input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.55; cursor: p
 /* Prose. The bottom line and each claim's assessment lead, in the face of what was written. */
 .an-p { margin: 0; max-width: 68ch; font-family: var(--font-prose); font-size: var(--prose-size); line-height: var(--prose-leading); }
 .an-lead { font-family: var(--font-quote); font-size: var(--step-2); line-height: 1.4; max-width: 56ch; }
+.an-p + .an-p { margin-top: 0.7em; }
 .an-lead + .an-p { margin-top: var(--s-3); }
+/* The second level of heading: a plain line over a part of the argument. The ruled small capitals are for the note's own sections. */
+.an-h { margin: 0 0 var(--s-2); font-family: var(--font-prose); font-size: var(--step-1); font-weight: 700; line-height: 1.25; }
+.an-part > .an-h { padding-top: var(--s-3); border-top: 1px solid var(--line); }
+/* The bottom line with the figures the claims turn on beside it, when the pane has room for both. */
+.an-top { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-5); }
+@container note (min-width: 38rem) {
+  .an-top:has(> .an-key) { grid-template-columns: minmax(0, 1fr) 13.5rem; gap: var(--s-4); align-items: start; }
+  .an-top > .an-key .hl-spark { display: none; }
+  .an-top > .an-key .hl-table .hl-open { font-size: var(--step--1); font-weight: 500; }
+  .an-top > .an-key .hl-value { font-size: var(--step-0); }
+  .an-top > .an-key .hl-table :is(th, td) { padding-left: 0.3rem; padding-right: 0.3rem; }
+}
 .an-sub { margin: var(--s-4) 0 var(--s-1); font-family: var(--font-prose); font-size: var(--step-0); font-weight: 700; }
 .an-none { margin: 0; font-size: var(--step--1); }
 
@@ -2848,18 +2861,21 @@ input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.55; cursor: p
 body.app .ws .centre .an-s[data-pick] { cursor: pointer; }
 body.app .ws .centre .an-s[data-pick]:hover > .an-text { background: var(--surface-2); }
 body.app .ws .centre .an-s.is-picked { box-shadow: none; }
-body.app .ws .centre .an-s.is-picked > .an-text { background: var(--surface-2); text-decoration: underline; text-decoration-color: var(--accent); text-decoration-thickness: 2px; text-underline-offset: 0.22em; }
+/* The sentence being read at the side is marked as the rail marks its selection: a rule in the accent at its left. */
+body.app .ws .centre :is(p, li, td):has(> .an-s.is-picked) { box-shadow: -0.6rem 0 0 -0.45rem var(--accent); }
 /* Not verified by the audit: shown, marked, and it says why. */
 .an-s.is-unverified > .an-text { text-decoration: underline wavy var(--limit); text-decoration-thickness: 1px; text-underline-offset: 0.2em; }
-.an-unverified { margin-left: 0.35em; font-family: var(--font-ui); font-size: var(--step--2); font-weight: 600; color: var(--limit); }
-.an-cites { margin-left: 0.2em; white-space: normal; }
+/* The audit's word on it: a line of its own under the sentence, never woven into the next one. */
+.an-unverified { display: block; margin: 0.15rem 0 0; font-family: var(--font-ui); font-size: var(--step--1); font-weight: 600; line-height: 1.4; color: var(--limit); }
+/* The first chip stays with the sentence's last word (a no-break space joins them); the chips may break between themselves. */
+.an-cites { white-space: normal; }
 .an-nocite { font-family: var(--font-ui); font-size: var(--step--2); color: var(--ink-2); }
 
 /* The chip: a citation. Small, in the code face, in the colour of what can be clicked. */
 .chip {
   display: inline-block; max-width: 22ch; margin: 0 0.1em; padding: 0 0.32em; overflow: hidden; vertical-align: 0.12em;
   border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--surface);
-  color: var(--link); font-family: var(--font-code); font-size: 0.6875rem; font-weight: 500; line-height: 1.35; letter-spacing: 0;
+  color: var(--link); font-family: var(--font-code); font-size: 0.71875rem; font-weight: 500; line-height: 1.35; letter-spacing: 0;
   text-overflow: ellipsis; white-space: nowrap; text-decoration: none; cursor: pointer;
 }
 button.chip:hover, button.chip:focus-visible { border-color: var(--link); background: var(--surface-2); }
@@ -2887,10 +2903,15 @@ body.app .ws .centre .chip.is-picked { box-shadow: none; border-color: var(--acc
 .lean-list { margin: 0; padding: 0; list-style: none; border-top: 1.5px solid var(--ink); }
 /* The claims are listed once, in the rail: here each is its id (its words are the link's title), its verdict and its lean. */
 .lean-list { counter-reset: lean; }
-.lean-row { counter-increment: lean; display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-3); padding: 0.3rem 0; border-bottom: 1px solid var(--line); font-size: var(--step-0); }
-.lean-row::before { content: counter(lean); min-width: 1.2em; font-family: var(--font-code); font-size: var(--step--2); color: var(--ink-2); }
-.lean-row > .pill { min-width: 11.5rem; }
-.lean-row > .lean-arg { font-size: var(--step--2); color: var(--ink-2); }
+.lean-row { counter-increment: lean; display: grid; grid-template-columns: 1.2em 2.2rem minmax(0, 12.5rem) auto minmax(0, 1fr); align-items: center; gap: var(--s-1) var(--s-3); padding: 0.3rem 0; border-bottom: 1px solid var(--line); font-size: var(--step-0); }
+.lean-row::before { content: counter(lean); font-family: var(--font-code); font-size: var(--step--2); color: var(--ink-2); }
+.lean-row > * { justify-self: start; }
+.lean-row > .lean-arg { grid-column: 4; font-size: var(--step--2); color: var(--ink-2); }
+.lean-row > .lean-weakest { grid-column: 5; }
+@container note (max-width: 34rem) {
+  .lean-row { grid-template-columns: 1.2em 2.2rem minmax(0, 1fr); }
+  .lean-row > .lean-arg, .lean-row > .lean-weakest { grid-column: 3; }
+}
 .lean-weakest { padding: 0 0.4em; border: 1px solid var(--limit); color: var(--limit); font-family: var(--font-label); font-size: var(--label-size); font-weight: 700; text-transform: var(--label-transform); letter-spacing: var(--label-track); }
 .an-claim-link { font-weight: 700; }
 /* A lean is an outline, never a fill: a filled stamp is a verdict. */
@@ -2898,9 +2919,11 @@ body.app .ws .centre .chip.is-picked { box-shadow: none; border-color: var(--acc
 .lean.l-supports { color: var(--support); }
 .lean.l-challenges { color: var(--challenge); }
 .lean.l-mixed, .lean.l-unclear, .lean.l-unknown { color: var(--neutral); }
-.an-leanline { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-2); margin: 0 0 var(--s-2); }
-.an-leanline .label { margin: 0; }
-.an-leanline-arg { margin-left: var(--s-3) !important; }
+.an-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-1) var(--s-4); margin: 0 0 var(--s-3); }
+.an-meta > .an-by { flex: 1 1 16rem; margin: 0; }
+.an-leanline { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-2); margin: 0; }
+.an-leanline-arg { font-size: var(--step--2); color: var(--ink-2); }
+.an-by :is(.badge-model, .rule-mark) { font-weight: 500; }
 .an-flag, .an-failed, .an-caveat { margin: 0 0 var(--s-2); font-size: var(--step--1); line-height: 1.45; }
 .an-flag, .an-failed { padding: 0.3rem 0.6rem; border: 1px solid var(--limit); background: var(--limit-bg); }
 .an-caveat { color: var(--ink-2); }
@@ -2922,13 +2945,14 @@ body.app .ws .centre .chip.is-picked { box-shadow: none; border-color: var(--acc
 }
 .hl-table :is(th, td) { padding-top: 0.3rem; padding-bottom: 0.3rem; vertical-align: baseline; }
 .hl-table th { font-weight: 400; }
-.hl-open { font-family: var(--font-prose); font-size: var(--step-0); font-weight: 600; color: var(--ink); text-decoration: none; }
-button.hl-open:hover, button.hl-open:focus-visible { color: var(--link); text-decoration: underline; }
+.hl-table .hl-open { font-family: var(--font-prose); font-size: var(--step-0); font-weight: 600; color: var(--ink); text-decoration: none; }
+.hl-table button.hl-open:hover, .hl-table button.hl-open:focus-visible { color: var(--link); text-decoration: underline; }
 .hl-period { display: block; font-size: var(--step--2); color: var(--ink-2); }
+.hl-src { font-family: var(--font-label); font-size: var(--label-size); font-weight: 600; text-transform: var(--label-transform); letter-spacing: var(--label-track); color: var(--ink-2); white-space: nowrap; }
 .hl-spark { width: 6.5rem; }
 .hl-spark .spark { display: block; width: 6rem; height: 1.1rem; }
 .hl-value { font-family: var(--font-data); font-size: var(--step-1); font-weight: 700; }
-.hl-claims { width: 1%; font-family: var(--font-code); font-size: var(--step--2); color: var(--ink-2); white-space: nowrap; }
+.hl-claims { width: 1%; font-family: var(--font-code); font-size: var(--step--1); color: var(--ink); white-space: nowrap; }
 body.app .ws .centre .hl-row[data-pick]:hover > * { background: var(--surface-2); }
 
 /* What code computed: a ledger. Reference, question, value; the reading under them. */
@@ -2942,14 +2966,12 @@ body.app .ws .centre .an-row.is-picked { background: var(--surface-2); }
 .an-q p { margin: 0; }
 .an-question { font-family: var(--font-prose); font-size: var(--step-0); font-weight: 650; line-height: 1.35; }
 .an-label { font-size: var(--step--2); line-height: 1.35; color: var(--ink-2); }
-.an-value { grid-column: 3; margin: 0; max-width: 16rem; font-family: var(--font-data); font-size: var(--step-1); font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.25; text-align: right; }
+.an-value { grid-column: 3; align-self: start; margin: 0; font-family: var(--font-data); font-size: var(--step-1); font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.25; text-align: right; white-space: nowrap; }
 .an-value.num-neg { color: var(--neg); }
 .an-row.is-na .an-value { font-weight: 400; color: var(--ink-2); }
 .an-reading, .an-note { grid-column: 2 / -1; margin: var(--s-1) 0 0; max-width: 72ch; }
 .an-reading { font-family: var(--font-prose); font-size: var(--step-0); line-height: 1.5; }
 .an-note { font-size: var(--step--2); line-height: 1.45; color: var(--ink-2); }
-/* A long note keeps to two lines in the ledger; it is whole in the inspector and on paper. */
-body.app .ws .centre .an-note:not(.an-why) { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .an-pick { margin: var(--s-1) 0 0; }
 
 /* Tables of the analysis: what would change the verdict, the corollaries, the wall times. */
@@ -2971,14 +2993,34 @@ body.app .ws .centre tr.is-picked { box-shadow: none; }
 body.app .ws .centre tr.hl-row.is-picked > * { background: var(--surface-2); }
 body.app .ws .centre tr.is-picked > td { background: var(--surface-2); }
 .an-rule { margin-top: var(--s-2); max-width: 78ch; }
-@container note (max-width: 34rem) {
-  .an-table thead { display: none; }
-  .an-table, .an-table :is(tbody, tr, td) { display: block; width: auto; }
-  .an-table tr { padding: var(--s-2) 0; border-bottom: 1px solid var(--line); }
-  .an-table td { padding: 0.1rem 0; border: 0; text-align: left; }
-  .an-table td[data-th]::before { content: attr(data-th) ": "; color: var(--ink-2); font-size: var(--step--2); }
-  .an-change-text, .an-cor-text { min-width: 0; }
+@container note (max-width: 36rem) {
+  /* A narrow pane: a long value takes the line under its question. */
+  .an-row { grid-template-columns: 2.4rem minmax(0, 1fr); }
+  .an-value { grid-column: 2; margin-top: 0.15rem; text-align: left; white-space: normal; }
+  .an-cor tr { grid-template-columns: minmax(0, 1fr); }
+  .an-cor td:nth-child(3) { grid-column: 1; grid-row: auto; margin-top: 0.2rem; text-align: left; }
 }
+@container note (max-width: 34rem) {
+  .an-change thead { display: none; }
+  .an-change, .an-change :is(tbody, tr, td) { display: block; width: auto; }
+  .an-change tr { padding: var(--s-2) 0; border-bottom: 1px solid var(--line); }
+  .an-change td { padding: 0.1rem 0; border: 0; text-align: left; }
+  .an-change td[data-th]::before { content: attr(data-th) ": "; color: var(--ink-2); font-size: var(--step--2); }
+  .an-change-text { min-width: 0; }
+}
+/* A corollary is a row of the same ledger as an analytic: the implication and why at the left, how it came out at the
+   right, and under them what was expected, who read it and its status. Five columns do not fit the pane as a table. */
+.an-cor thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.an-cor, .an-cor tbody { display: block; }
+.an-cor tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(9.5rem, auto); gap: 0 var(--s-4); padding: var(--s-2) 0; border-bottom: 1px solid var(--line); }
+.an-cor tbody tr:last-child { border-bottom: 0; }
+.an-cor td { display: block; padding: 0; border: 0; }
+.an-cor td:nth-child(1) { grid-column: 1; grid-row: 1; min-width: 0; }
+.an-cor td:nth-child(3) { grid-column: 2; grid-row: 1 / span 4; text-align: right; }
+.an-cor td:nth-child(n + 2):not(:nth-child(3)) { grid-column: 1; font-size: var(--step--2); line-height: 1.5; color: var(--ink-2); }
+.an-cor td:nth-child(n + 2):not(:nth-child(3))::before { content: attr(data-th) ": "; }
+.an-cor td:nth-child(2) { margin-top: 0.15rem; }
+.an-cor-why { display: block; }
 
 /* The odds: one number, its sentence, and the caveat that never leaves it. */
 .an-odds-line { margin: 0 0 var(--s-2); max-width: 70ch; font-size: var(--step-0); line-height: 1.45; }
@@ -2997,7 +3039,7 @@ body.app .ws .centre .an-odds.is-picked { box-shadow: inset -3px 0 0 var(--accen
 .an-to-method { font-size: var(--step--1); }
 
 /* The analysis in the inspector. */
-.ins-sentence { margin: 0 0 var(--s-3); padding: 0 0 0 var(--s-3); border-left: 2px solid var(--line-strong); font-family: var(--font-quote); font-size: var(--step-1); line-height: 1.45; }
+.ins-sentence { margin: 0 0 var(--s-2); padding: 0 0 0 var(--s-3); border-left: 2px solid var(--line-strong); font-family: var(--font-prose); font-size: var(--step--1); line-height: 1.45; color: var(--ink-2); }
 .ins-audit { margin: 0 0 var(--s-3); font-size: var(--step--1); line-height: 1.45; color: var(--ink-2); }
 .ins-audit .rule-mark { display: inline; padding: 0; border: 0; background: none; font-size: inherit; }
 .ins-audit.is-unverified { padding: var(--s-2) var(--s-3); border: 1px solid var(--limit); background: var(--limit-bg); color: var(--ink); }
@@ -3007,7 +3049,7 @@ body.app .ws .centre .an-odds.is-picked { box-shadow: inset -3px 0 0 var(--accen
 .ins-rest p { margin: 0; }
 .ins-rest-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); }
 .ins-rest-kind { color: var(--ink-2); font-family: var(--font-label); font-size: var(--label-size); font-weight: 700; text-transform: var(--label-transform); letter-spacing: var(--label-track); }
-.ins-rest-line { margin-top: 0.15rem !important; font-size: var(--step--1); line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.ins-rest-line { margin-top: 0.15rem !important; font-size: var(--step--1); line-height: 1.45; }
 .ins-question { margin: 0 0 var(--s-1); font-size: var(--step--1); color: var(--ink-2); }
 .ins-reading { margin: 0 0 var(--s-3); font-family: var(--font-prose); font-size: var(--step-0); line-height: 1.5; }
 .ins-note { margin: 0; font-size: var(--step--1); line-height: 1.5; color: var(--ink-2); }
@@ -3050,7 +3092,18 @@ body.app .ws .centre .an-odds.is-picked { box-shadow: inset -3px 0 0 var(--accen
 .mth-phase-n { font-family: var(--font-code); font-size: var(--step--2); color: var(--ink-2); }
 .mth-phase-name { font-family: var(--font-prose); font-size: var(--step-0); font-weight: 700; line-height: 1.2; }
 .mth-phase-what { font-size: var(--step--2); line-height: 1.35; color: var(--ink-2); }
-.mth-nodes { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.9rem, 1fr)); gap: var(--s-3) var(--s-4); margin: 0; padding: 0; list-style: none; }
+.mth-nodes { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.9rem, 1fr)); align-items: start; gap: var(--s-3) var(--s-4); margin: 0; padding: 0; list-style: none; }
+.mth-phase + .mth-phase { position: relative; }
+.mth-phase + .mth-phase::before { content: "\2193"; position: absolute; top: -0.75em; left: 50%; padding: 0 var(--s-2); background: var(--pane-main); color: var(--ink-2); font-size: var(--step-0); line-height: 1.2; }
+button.mth-name { padding: 0; border: 0; background: none; color: var(--ink); text-align: left; cursor: pointer; }
+button.mth-name:hover, button.mth-name:focus-visible { color: var(--link); text-decoration: underline; }
+body.app .ws .centre .mth-node[data-pick] { cursor: pointer; }
+body.app .ws .centre .mth-node.is-picked { box-shadow: 0 0 0 2px var(--accent); }
+@media screen and (min-width: 641px) {
+  /* Read in the inspector, so not twice in the diagram: what the stage does and who answered. */
+  body.app .ws .centre :is(.mth-does, .mth-who) { display: none; }
+  body.app .ws .centre .mth-node { min-height: 5.6rem; }
+}
 .mth-node { position: relative; display: flex; flex-direction: column; gap: 0.2rem; padding: var(--s-2); border: 1px solid var(--line-strong); border-top-width: 3px; background: var(--surface); }
 .mth-node.by-code { border-top-color: var(--rule); }
 .mth-node.by-model { border-top-color: var(--model); }
@@ -3079,7 +3132,10 @@ body.app .ws .centre .an-odds.is-picked { box-shadow: inset -3px 0 0 var(--accen
 @media screen and (max-width: 640px) {
   .an-lead { font-size: var(--step-1); }
   .an-row { grid-template-columns: 2.2rem minmax(0, 1fr); }
-  .an-value { grid-column: 2; max-width: none; margin-top: 0.15rem; text-align: left; }
+  .an-value { grid-column: 2; max-width: none; margin-top: 0.15rem; text-align: left; white-space: normal; }
+  .an-cor tr { grid-template-columns: minmax(0, 1fr); }
+  .an-cor td:nth-child(3) { grid-column: 1; grid-row: auto; margin-top: 0.2rem; text-align: left; }
+  .hl-spark { display: none; }
   .mth-node + .mth-node::before { content: none; }
   /* A phone has no inspector pane: what a chip or a sentence of the analysis opens is read in a sheet. */
   .inspector.is-phone-sheet { display: flex; flex-direction: column; position: fixed; z-index: 30; left: 0; right: 0; bottom: 0; max-height: 72vh; background: var(--pane-side); border-top: 2px solid var(--bar-rule); box-shadow: 0 -10px 28px rgb(0 0 0 / 0.22); }
@@ -3092,6 +3148,14 @@ body.app .ws .centre .an-odds.is-picked { box-shadow: inset -3px 0 0 var(--accen
 /* Terminal: the note's data is mono; its sentences keep the reading face. */
 :root[data-theme="terminal"] :is(.an-value, .an-question, .an-label, .lean-text, .mth-name, .mth-phase-name, .an-sub, .an-cor-sentence, .an-state-lead) { font-family: var(--font-mono); letter-spacing: 0; }
 :root[data-theme="terminal"] .an-lead { font-size: var(--step-1); line-height: 1.5; }
+:root[data-theme="terminal"] .an-p { max-width: 92ch; }
+:root[data-theme="terminal"] .an-h { font-family: var(--font-mono); font-size: var(--step-0); letter-spacing: 0; }
+:root[data-theme="terminal"] .an-part > .an-h { border-top-color: var(--line-strong); }
+/* Terminal's tabs hold eight in a 1280 window: tighter, and their numbers go. */
+@media screen and (max-width: 1339px) {
+  :root[data-theme="terminal"] .tab { padding-left: 0.4rem; padding-right: 0.5rem; letter-spacing: 0.03em; }
+  :root[data-theme="terminal"] .tab-key { display: none; }
+}
 :root[data-theme="terminal"] .an-value { color: var(--ink); }
 :root[data-theme="terminal"] .chip { background: #000; border-color: var(--line-strong); }
 :root[data-theme="terminal"] .an-rows, :root[data-theme="terminal"] .lean-list, :root[data-theme="terminal"] .an-made-grid, :root[data-theme="terminal"] .hl-table { border-top: 1px solid var(--line-strong); }

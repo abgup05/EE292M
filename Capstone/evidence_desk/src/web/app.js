@@ -6886,6 +6886,10 @@ function firstPick(run, claim) {
     const first = els.analysis?.querySelector(`.an-scope[data-an-scope="${CSS.escape(claim ? claim.id : "")}"] [data-pick]`);
     return first ? parsePick(first.dataset.pick) : null;
   }
+  if (state.tab === "method") {
+    const node = els.method?.querySelector("[data-pick]");
+    return node ? parsePick(node.dataset.pick) : null;
+  }
   if (state.tab === "overview") {
     if (claim) return test ?? firstFinding(claim);
     const cell = els.tape?.querySelector("[data-pick]");
@@ -7012,7 +7016,7 @@ function inspectRunFacts() {
   ];
 }
 
-const INSPECT = { finding: inspectFinding, test: inspectTest, event: inspectEvent, figure: inspectFigure, sentence: inspectSentence, analytic: inspectAnalytic, corollary: inspectCorollary, odds: inspectOdds };
+const INSPECT = { finding: inspectFinding, test: inspectTest, event: inspectEvent, figure: inspectFigure, sentence: inspectSentence, analytic: inspectAnalytic, corollary: inspectCorollary, odds: inspectOdds, stage: inspectStage };
 
 /** Fill the inspector from what was picked, else from the tab's first item, and mark that item in the centre pane. */
 function drawInspector() {
@@ -7130,7 +7134,8 @@ function citeTarget(id) {
   }
   if (ctx.analytics?.has(text)) {
     const item = ctx.analytics.get(text);
-    return { kind: "analytic", id: text, label: ctx.analyticRef.get(text), what: "Analytic", title: `${str(item.label)}: ${str(item.display)}`, line: `${str(item.label)}: ${str(item.display) || "n/a"}` };
+    const kind = str(item.kind).replaceAll("_", " ");
+    return { kind: "analytic", id: text, label: `${ctx.analyticRef.get(text)}${kind ? ` ${kind}` : ""}`, what: "Analytic", title: `${str(item.label)}: ${str(item.display)}`, line: `${str(item.label)}: ${str(item.display) || "n/a"}` };
   }
   if (text.startsWith("test:")) {
     const claim = ctx.claims.get(text.slice(5));
@@ -7181,6 +7186,7 @@ function anSentence(sentence, where, scope) {
     "span",
     { class: `an-s${verified ? "" : " is-unverified"}`, "data-an-sentence": key, "data-verified": String(verified), "data-pick": `sentence:${key}` },
     h("span", { class: "an-text", text: str(sentence?.text) }),
+    "\u00a0",
     cites.length ? h("span", { class: "an-cites" }, cites.map(citeChip)) : h("span", { class: "an-cites an-nocite", "data-no-cite": "", text: "cites nothing" }),
     verified ? "" : h("span", { class: "an-unverified", "data-unverified": "" }, limitGlyph(), ` Not verified: ${problems.join("; ") || "the audit recorded no reason"}`),
   );
@@ -7202,7 +7208,17 @@ function anPara(sentences, where, scope, cls = "an-p") {
 function anLead(sentences, where, scope) {
   const items = list(sentences);
   if (!items.length) return "";
-  return [h("p", { class: "an-p an-lead" }, anSentence(items[0], where, scope)), anPara(items.slice(1), where, scope)];
+  return [h("p", { class: "an-p an-lead" }, anSentence(items[0], where, scope)), ...anParas(items.slice(1), where, scope)];
+}
+
+/** Each of the record's sentences as a short paragraph of its own, in the record's order: the argument's steps, one after another. */
+function anParas(sentences, where, scope) {
+  return list(sentences).map((item) => h("p", { class: "an-p" }, anSentence(item, where, scope)));
+}
+
+/** A part of the argument under a plain heading: the second level, under the ruled titles. */
+function anPart(title, name, ...children) {
+  return h("section", { class: `an-block an-part an-${name}`, "data-an-block": name }, h("h4", { class: "an-h", text: title }), ...children);
 }
 
 /** Sentences set as separate points, in the record's order. */
@@ -7329,9 +7345,9 @@ function headlineCells(run) {
         "th",
         { scope: "row" },
         pickId ? h("button", { type: "button", class: "linklike hl-open", "data-pick-button": "", text: label }) : h("span", { class: "hl-open", text: label }),
-        h("span", { class: "hl-period", text: str(item?.period_label) || (item?.source === "computed_test" ? "the value its computed test read" : "") }),
+        str(item?.period_label) ? h("span", { class: "hl-period", text: item.period_label }) : "",
       ),
-      h("td", { class: "hl-spark" }, metric ? sparkline(metric, series) : ""),
+      h("td", { class: "hl-spark" }, metric ? sparkline(metric, series) : item?.source === "computed_test" ? h("span", { class: "hl-src", text: "computed test" }) : ""),
       h("td", { class: `num hl-value fig-value${signClass(str(item?.display))}`, "data-headline-value": "", text: str(item?.display) }),
       h("td", { class: "hl-claims", "data-th": "Claims", text: claims.join(" ") }),
     );
@@ -7515,7 +7531,7 @@ function analysisThesis(run) {
     ? h(
         "section",
         { class: "an-block an-key", "data-an-block": "headline" },
-        h("h3", { class: "block-title", "data-code": "KEY", text: "The figures the claims turn on" }),
+        h("h3", { class: "block-title", "data-code": "KEY", text: "Headline figures" }),
         table,
         str(analysis.headline_note) ? h("p", { class: "hint", "data-headline-note": "", text: analysis.headline_note }) : "",
       )
@@ -7527,10 +7543,13 @@ function analysisThesis(run) {
     const weakest = str(th.weakest_link);
     const leans = list(th.leans_on).map(String);
     out.push(
-      anBlock("BTM", "Bottom line", "bottom", anBy("model", argumentBy(analysis)), anLead(th.bottom_line, "the bottom line", scope) || h("p", { class: "muted an-none", text: "The argument gives no bottom line." })),
-      keyFigures,
-      anBlock(
-        "LNS",
+      h(
+        "div",
+        { class: "an-top" },
+        anBlock("BTM", "Bottom line", "bottom", anBy("model", argumentBy(analysis)), anLead(th.bottom_line, "the bottom line", scope) || h("p", { class: "muted an-none", text: "The argument gives no bottom line." })),
+        keyFigures,
+      ),
+      anPart(
         "What the thesis leans on",
         "leans",
         leans.length
@@ -7552,16 +7571,15 @@ function analysisThesis(run) {
             )
           : h("p", { class: "muted an-none", text: "The argument does not order the claims." }),
         weakest ? h("h4", { class: "an-sub", text: `Why ${weakest} is the weakest link` }) : "",
-        anPara(th.weakest_why, "why it is the weakest link", scope),
+        ...anParas(th.weakest_why, "why it is the weakest link", scope),
       ),
       h(
         "div",
         { class: "an-versus" },
-        anBlock("FOR", "Strongest case for", "for", anPoints(th.strongest_for, "the strongest case for", scope)),
-        anBlock("AGN", "Strongest case against", "against", anPoints(th.strongest_against, "the strongest case against", scope)),
+        anPart("The strongest case for", "for", anPoints(th.strongest_for, "the strongest case for", scope)),
+        anPart("The strongest case against", "against", anPoints(th.strongest_against, "the strongest case against", scope)),
       ),
-      anBlock(
-        "SCN",
+      anPart(
         "Scenarios, as conditions you can observe",
         "scenarios",
         list(th.scenarios).length
@@ -7650,13 +7668,13 @@ function analysisClaim(run, claim) {
         "ASM",
         "How it bears on the decision",
         "assessment",
-        anBy("model", argumentBy(analysis)),
-        h("p", { class: "an-leanline", "data-lean-line": "" }, h("span", { class: "label", text: "Verdict " }), verdictPill(claim.verdict), h("span", { class: "label an-leanline-arg", text: " The argument " }), leanPill(arg.lean)),
+        h("div", { class: "an-meta" }, anBy("model", argumentBy(analysis)), h("p", { class: "an-leanline", "data-lean-line": "" }, verdictPill(claim.verdict), h("span", { class: "an-leanline-arg", text: "the argument" }), leanPill(arg.lean))),
         str(arg.lean_flag) ? h("p", { class: "an-flag", "data-lean-flag": "" }, limitGlyph(), ` ${arg.lean_flag}`) : "",
         anLead(arg.assessment, "the assessment", scope),
       ),
-      h("div", { class: "an-versus" }, anBlock("FOR", "The case for", "for", anPoints(arg.case_for, "the case for", scope)), anBlock("AGN", "The case against", "against", anPoints(arg.case_against, "the case against", scope))),
-      anBlock("DEC", "What decides it", "decides", anPoints(arg.decides, "what decides it", scope)),
+      h("div", { class: "an-versus" }, anPart("The case for", "for", anPoints(arg.case_for, "the case for", scope)), anPart("The case against", "against", anPoints(arg.case_against, "the case against", scope))),
+      // A part the argument left empty is not printed as a blank.
+      list(arg.decides).length ? anPart("What decides it", "decides", anPoints(arg.decides, "what decides it", scope)) : "",
       anBlock("CHG", "What would change the verdict", "change", wouldChangeTable(arg.would_change, scope)),
     );
   } else {
@@ -8003,7 +8021,35 @@ function timingsOf(run) {
 
 /** Seconds as the record gives them. */
 function secondsText(seconds) {
+  // A time under a millisecond is not written as "0 s".
+  if (seconds > 0 && seconds < 0.001) return "<0.001 s";
   return `${seconds.toLocaleString("en-US", { maximumFractionDigits: 3 })} s`;
+}
+
+/** One stage of the run whole: what it does, whether code or a model did it and which, this run's counts, and its time. */
+function inspectStage(key) {
+  const entry = state.ctx.stages?.get(key);
+  if (!entry) return null;
+  const { item, time } = entry;
+  const [by, who] = item.by;
+  const fact = (label, ...value) => h("div", null, h("dt", { text: label }), h("dd", null, ...value));
+  // The counts are drawn in the stage's box: here they are copies, so the box keeps its own.
+  const counts = mLine(...list(item.line)).map((part) => (part instanceof Node ? part.cloneNode(true) : part));
+  const stateWords = { ran: "Ran on this run", skipped: "Not asked for on this run", failed: "Asked for, and failed" }[item.state ?? "ran"];
+  return [
+    inspectHead("Stage", item.name, byTag(by)),
+    h("p", { class: "ins-reading", text: item.does }),
+    h(
+      "dl",
+      { class: "ins-grid" },
+      fact("State", stateWords),
+      who ? fact(by === "code" ? "How" : "Answered by", who) : "",
+      counts.length ? fact("This run", ...counts) : "",
+      time ? fact("Wall time", secondsText(time.seconds), time.background ? " (in the background, overlapping other stages)" : "") : "",
+      time && time.note ? fact("Note", time.note) : "",
+    ),
+    h("p", { class: "ins-note", text: by === "code" ? "Code: a fixed rule. The same record gives the same result, and the result can be recomputed." : by === "model" ? "A model: a language model's answer, which code then checks before it is shown." : "Code and a model: the fixed rule runs on every run; the model's part is checked by code." }),
+  ];
 }
 
 /** A stage's time as a bar on the scale of the run's longest stage. Drawing only. */
@@ -8030,16 +8076,19 @@ function renderMethod(run) {
   if (!els.method) return;
   const timings = timingsOf(run);
   const phases = methodPhases(run);
+  state.ctx.stages = new Map();
   const drawn = new Set(phases.flatMap((phase) => phase.nodes.map((node) => node.stage)));
   const longest = Math.max(0, ...[...timings.values()].filter((item) => drawn.has(item.stage)).map((item) => item.seconds));
   const node = (item) => {
     const [by, who] = item.by;
     const time = timings.get(item.stage);
     const line = mLine(...list(item.line));
+    const key = item.stage || item.name;
+    state.ctx.stages.set(key, { item, time });
     return h(
       "li",
-      { class: `mth-node by-${by} is-${item.state ?? "ran"}`, "data-stage": item.stage || item.name, "data-by": by, "data-state": item.state ?? "ran" },
-      h("p", { class: "mth-head" }, h("span", { class: "mth-name", text: item.name }), byTag(by)),
+      { class: `mth-node by-${by} is-${item.state ?? "ran"}`, "data-stage": key, "data-by": by, "data-state": item.state ?? "ran", "data-pick": `stage:${key}` },
+      h("p", { class: "mth-head" }, h("button", { type: "button", class: "mth-name", "data-pick-button": "", text: item.name }), byTag(by)),
       h("p", { class: "mth-does", text: item.does }),
       who ? h("p", { class: "mth-who", "data-method-who": "", text: who }) : "",
       line.length ? h("p", { class: "mth-counts" }, line) : "",

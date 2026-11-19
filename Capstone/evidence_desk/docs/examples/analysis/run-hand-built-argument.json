@@ -18813,5 +18813,121 @@
       "c2: The model reads the evidence as challenges, but the verdict is supported. The verdict stands: it is computed from verified evidence and the computed test.",
       "c4: Most of this claim's computed corollaries came out against what it implies (2 of 2). The verdict is unchanged; read them before relying on the claim."
     ]
-  }
+  },
+  "timings": [
+    {
+      "stage": "company",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "filings",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "events",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "numbers",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "computed tests and claim readers",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "planning",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "retrieving",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "assessing",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "verifying",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "summary",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "analytics: facts",
+      "seconds": 0.0,
+      "background": false,
+      "note": "part of the analysis"
+    },
+    {
+      "stage": "analytics: outside_view",
+      "seconds": 0.0,
+      "background": true,
+      "note": ""
+    },
+    {
+      "stage": "analytics: market_view",
+      "seconds": 0.0,
+      "background": true,
+      "note": ""
+    },
+    {
+      "stage": "corollaries: proposed by the model",
+      "seconds": 0.0,
+      "background": true,
+      "note": ""
+    },
+    {
+      "stage": "corollaries: computed",
+      "seconds": 0.0,
+      "background": false,
+      "note": "part of the analysis"
+    },
+    {
+      "stage": "argument: the claims",
+      "seconds": 0.0,
+      "background": false,
+      "note": "5 request(s), up to 6 at once"
+    },
+    {
+      "stage": "argument: the thesis",
+      "seconds": 0.0,
+      "background": false,
+      "note": "part of the analysis"
+    },
+    {
+      "stage": "analysis (all of it)",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "finishing",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    }
+  ]
 }

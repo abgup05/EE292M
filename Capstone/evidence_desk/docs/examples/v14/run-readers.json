@@ -15603,5 +15603,85 @@
     "argument_note": "No model wrote an argument: this run was given no analysing model (the extractive engine, no key, or a run the watcher started). The figures and their readings are code's.",
     "thesis": null,
     "flags": []
-  }
+  },
+  "timings": [
+    {
+      "stage": "company",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "filings",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "events",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "numbers",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "computed tests and claim readers",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "planning",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "retrieving",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "assessing",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "verifying",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "summary",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "analytics: facts",
+      "seconds": 0.0,
+      "background": false,
+      "note": "part of the analysis"
+    },
+    {
+      "stage": "analysis (all of it)",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "finishing",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    }
+  ]
 }

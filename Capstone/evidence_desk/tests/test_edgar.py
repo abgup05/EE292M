@@ -783,3 +783,62 @@ def test_company_facts_are_read_from_data_sec_gov_for_the_padded_cik() -> None:
 def test_company_facts_failures_are_source_errors(response: httpx.Response) -> None:
     with pytest.raises(SourceError):
         make_client(lambda request: response).company_facts(NVDA)
+
+
+# The filing before one that is not the newest (sixth referee, finding 4) ----------------------
+
+TWO_ANNUALS = [("10-K", "2026-02-25"), ("10-Q", "2025-11-19"), ("10-K", "2025-02-26")]
+
+
+def test_filings_of_form_stops_at_two_however_many_are_asked_for() -> None:
+    """What the referee read: ``limit`` only trims, so the older 10-K has no predecessor."""
+    seen: list[str] = []
+    files = [page_entry(1, "2023-06-01", "2024-12-31")]
+    pages = {1: older_page(1, [("10-K", "2024-02-21")])}
+    refs = paged_client(TWO_ANNUALS, files, pages, seen).filings_of_form(NVDA, "10-K", 12)
+    assert forms_and_dates(refs) == [("10-K", "2026-02-25"), ("10-K", "2025-02-26")]
+    assert seen == [MAIN_INDEX]
+
+
+def test_filings_back_to_reads_older_pages_for_the_filing_before_the_one_named() -> None:
+    seen: list[str] = []
+    files = [page_entry(2, "2022-01-01", "2023-05-31"), page_entry(1, "2023-06-01", "2024-12-31")]
+    pages = {
+        1: older_page(1, [("10-K", "2024-02-21")]),
+        2: older_page(2, [("10-K", "2023-02-24")]),
+    }
+    client = paged_client(TWO_ANNUALS, files, pages, seen)
+    older = client.filings_of_form(NVDA, "10-K", 12)[1]
+    seen.clear()
+    listing = client.filings_back_to(NVDA, "10-K", older.accession)
+    assert forms_and_dates(listing.refs) == [
+        ("10-K", "2026-02-25"),
+        ("10-K", "2025-02-26"),
+        ("10-K", "2024-02-21"),
+    ]
+    assert seen == [MAIN_INDEX, page_name(1)]  # the second older page was not needed
+    assert not listing.complete
+    assert listing.where == "EDGAR's recent index and the 1 newest of its 2 older index pages"
+
+
+def test_filings_back_to_reads_no_older_page_when_the_recent_index_has_the_pair() -> None:
+    seen: list[str] = []
+    files = [page_entry(1, "2023-06-01", "2024-12-31")]
+    client = paged_client(TWO_ANNUALS, files, {}, seen)
+    newest = client.filings_of_form(NVDA, "10-K", 2)[0]
+    seen.clear()
+    listing = client.filings_back_to(NVDA, "10-K", newest.accession)
+    assert seen == [MAIN_INDEX] and not listing.complete
+    assert listing.where == "EDGAR's recent index"
+
+
+def test_filings_back_to_says_the_index_was_read_whole_when_it_was() -> None:
+    seen: list[str] = []
+    files = [page_entry(1, "2023-06-01", "2024-12-31")]
+    pages = {1: older_page(1, [("424B2", "2024-02-21")])}
+    client = paged_client(TWO_ANNUALS, files, pages, seen)
+    oldest = client.filings_of_form(NVDA, "10-K", 12)[1]
+    listing = client.filings_back_to(NVDA, "10-K", oldest.accession)
+    assert listing.complete and len(listing.refs) == 2  # EDGAR lists no 10-K before it
+    unknown = client.filings_back_to(NVDA, "10-K", "0000000000-00-000000")
+    assert unknown.complete and len(unknown.refs) == 2

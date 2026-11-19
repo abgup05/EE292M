@@ -20,8 +20,8 @@ from app.core.change_models import (
 )
 from app.core.claim_change_models import ClaimChanges, RelevantChange, RunChanges
 from app.core.claim_changes import MAX_CHANGES_PER_CLAIM, MIN_SHARED_TERMS, relevant_changes
-from app.core.documents import FilingRef
-from app.core.models import Claim, Run, RunStatus, Source, ThesisRequest
+from app.core.documents import FilingRef, FormListing
+from app.core.models import Claim, Company, Run, RunStatus, Source, ThesisRequest
 from app.core.ports import SourceError
 from app.services.claim_changes import run_changes
 from app.services.ingest import PARSER_VERSION, _read_filing
@@ -349,6 +349,7 @@ NEWER_ONLY = (
 K_EARLIER, K_RUN = synthetic_ref(1, "10-K"), synthetic_ref(2, "10-K")
 Q_OLDEST, Q_EARLIER, Q_RUN = synthetic_ref(3), synthetic_ref(4), synthetic_ref(5)
 K_NEWER, Q_NEWER = synthetic_ref(6, "10-K"), synthetic_ref(7)
+K_NEWEST = synthetic_ref(8, "10-K")
 
 
 def annual(risks: list[str], results: list[str]) -> str:
@@ -645,3 +646,116 @@ def test_without_a_cache_one_in_memory_serves_the_call() -> None:
     result = run_changes(run, filings=filings)
     assert len(result.compared) == 2
     assert len(filings.fetched) == fetched + 4
+
+
+# EDGAR's recent index holds two filings of the form and the run read the older (sixth referee,
+# finding 4) -----------------------------------------------------------------------------------
+
+
+class RecentIndexFilings(FormFakeFilings):
+    """A source that lists as EDGAR does: ``filings_of_form`` reads the recent index only
+    while it holds two filings of the form, whatever ``limit`` asks for. ``recent`` are the
+    accessions in the recent index; the other refs are on an older page of the index."""
+
+    recent: frozenset[str] = frozenset()
+
+    def filings_of_form(self, company: Company, form: str, limit: int) -> list[FilingRef]:
+        listed = super().filings_of_form(company, form, limit)
+        recent = [ref for ref in listed if ref.accession in self.recent]
+        return recent[:limit] if len(recent) >= 2 else listed
+
+
+def recent_index(*recent: FilingRef) -> RecentIndexFilings:
+    """The filings of a year plus a newer 10-K; ``recent`` are in the recent index."""
+    base = filings_of_a_year(K_NEWER)
+    filings = RecentIndexFilings(refs=base.refs, documents=base.documents)
+    filings.recent = frozenset(ref.accession for ref in recent)
+    return filings
+
+
+def test_a_source_that_lists_two_newer_filings_does_not_make_edgar_list_no_earlier_one() -> None:
+    """The referee's case: the index's recent page holds two 10-Ks, the run read the older,
+    and the 10-K before it is on an older page. Until version 14.3 the note said "EDGAR
+    lists no 10-K filed before ...", which EDGAR does."""
+    cache = FilingCache()
+    filings = recent_index(K_NEWER, K_RUN, Q_RUN, Q_EARLIER)
+    run = finished_run(filings, cache)
+    assert [ref.accession for ref in filings.filings_of_form(NVIDIA, "10-K", 12)] == [
+        K_NEWER.accession,
+        K_RUN.accession,
+    ]
+    result = run_changes(run, filings=filings, cache=cache)
+    assert [c.form for c in result.compared] == ["10-Q"]
+    [note] = result.notes
+    assert "EDGAR lists no" not in note
+    assert "none of the 2 latest 10-K filings listed was filed before" in note
+
+
+class DeepIndexFilings(RecentIndexFilings):
+    """The same source, able to read the older pages as EdgarClient.filings_back_to does."""
+
+    back_to_calls: list[tuple[str, str]]
+    pages_left_unread: bool = False
+
+    def filings_back_to(self, company: Company, form: str, accession: str) -> FormListing:
+        self.back_to_calls.append((form, accession))
+        refs = FormFakeFilings.filings_of_form(self, company, form, 1000)
+        if self.pages_left_unread:
+            refs = [ref for ref in refs if ref.accession in self.recent]
+        where = "EDGAR's recent index and the 1 newest of its 1 older index pages"
+        if self.pages_left_unread:
+            where = "EDGAR's recent index and the 12 newest of its 14 older index pages"
+        return FormListing(refs=refs, where=where, complete=not self.pages_left_unread)
+
+
+def deep_index(*recent: FilingRef, drop: tuple[FilingRef, ...] = ()) -> DeepIndexFilings:
+    base = filings_of_a_year(K_NEWER)
+    refs = [ref for ref in base.refs if ref not in drop]
+    filings = DeepIndexFilings(refs=refs, documents=base.documents)
+    filings.recent = frozenset(ref.accession for ref in recent)
+    filings.back_to_calls = []
+    return filings
+
+
+def test_the_earlier_filing_is_sought_on_older_pages_when_the_listing_ends_at_the_runs() -> None:
+    cache = FilingCache()
+    filings = deep_index(K_NEWER, K_RUN, Q_RUN, Q_EARLIER)
+    run = finished_run(filings, cache)
+    result = run_changes(run, filings=filings, cache=cache)
+    assert [(c.form, c.earlier.accession, c.later.accession) for c in result.compared] == [
+        ("10-K", K_EARLIER.accession, K_RUN.accession),
+        ("10-Q", Q_EARLIER.accession, Q_RUN.accession),
+    ]
+    assert result.notes == []
+    # Only the form whose listing ended at the run's filing cost the deeper search.
+    assert filings.back_to_calls == [("10-K", K_RUN.accession)]
+
+
+def test_edgar_lists_no_earlier_filing_is_said_only_after_the_whole_index_was_read() -> None:
+    cache = FilingCache()
+    whole = deep_index(K_NEWER, K_RUN, Q_RUN, Q_EARLIER, drop=(K_EARLIER,))
+    run = finished_run(whole, cache)
+    [note] = run_changes(run, filings=whole, cache=cache).notes
+    assert note.startswith("No 10-K comparison: EDGAR lists no 10-K filed before NVIDIA CORP 10-K")
+    capped = deep_index(K_NEWER, K_RUN, Q_RUN, Q_EARLIER)
+    capped.pages_left_unread = True
+    [note] = run_changes(finished_run(capped, cache), filings=capped, cache=cache).notes
+    assert "EDGAR lists no" not in note
+    assert "no 10-K filed before" in note
+    assert "EDGAR's recent index and the 12 newest of its 14 older index pages" in note
+
+
+def test_a_run_filing_older_than_the_listing_is_sought_on_the_older_pages() -> None:
+    """An as-of run on an older 10-K: the recent index holds two newer ones."""
+    cache = FilingCache()
+    filings = deep_index(K_NEWER, K_RUN, Q_RUN, Q_EARLIER)
+    filings.refs.append(K_NEWEST)
+    filings.documents[K_NEWEST.url] = annual([KEEP, NEWER_ONLY], [FIGURES_AFTER])
+    recent = (K_NEWEST, K_NEWER, Q_RUN, Q_EARLIER)
+    filings.recent = frozenset(ref.accession for ref in recent)
+    run = finished_run(filings, cache)
+    result = run_changes(run, filings=filings, cache=cache)
+    assert ("10-K", K_EARLIER.accession, K_RUN.accession) in [
+        (c.form, c.earlier.accession, c.later.accession) for c in result.compared
+    ]
+    assert result.notes == []

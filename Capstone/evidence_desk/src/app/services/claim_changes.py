@@ -16,7 +16,10 @@ the newest). The brief's heading and note (:mod:`app.services.export`) say so.
 The pair is fixed by the run, not by today's index: the later filing is the one
 the run read (found in EDGAR's list by its accession) and the earlier one is the
 newest of that form filed before it, so a run made last quarter gives the same
-pair after the company files again. A comparison that cannot be made (no earlier
+pair after the company files again. EDGAR's client lists a form from the recent
+page of the index and stops once it has two, so for a run whose filing is no
+longer the newest the older pages are read back to the filing before it
+(:func:`app.services.filing_changes.find_predecessor`). A comparison that cannot be made (no earlier
 filing, a source that cannot list filings of a form, EDGAR failing) becomes a
 note and the other form is still compared.
 """
@@ -30,7 +33,6 @@ from typing import cast
 from app.core.change_models import FilingChanges
 from app.core.claim_change_models import ClaimChanges, RunChanges
 from app.core.claim_changes import compared_filings, relevant_changes
-from app.core.documents import FilingRef
 from app.core.models import (
     Company,
     ExtractionStatus,
@@ -40,14 +42,24 @@ from app.core.models import (
     SourceKind,
 )
 from app.core.ports import FilingSource, SourceError
-from app.services.filing_changes import FORMS, FormFilingSource, compare_pair, read_pair
+from app.services.filing_changes import (
+    FORMS,
+    FormFilingSource,
+    Predecessor,
+    compare_pair,
+    find_predecessor,
+    read_pair,
+)
 from app.services.thesis_run import safe_message
 from app.store import FilingCache
 
 log = logging.getLogger(__name__)
 
-# How many of a form's latest filings are listed to find the run's filing and the one before
-# it: three years of 10-Qs, or twelve of 10-Ks. A run whose filing is older is given a note.
+# The most of a form's latest filings asked for to find the run's filing and the one before
+# it. It is a ceiling, not a depth: EDGAR's client reads the recent page of the index and
+# stops once it has two of the form, so what comes back is usually the one or two 10-Ks and
+# the three or so 10-Qs of the last year. When that list does not reach the filing before
+# the run's, the older pages are read for it (find_predecessor); a note says how far.
 FORM_HISTORY = 12
 
 NOT_FINISHED_NOTE = (
@@ -65,10 +77,23 @@ CANNOT_LIST_NOTE = (
 )
 NOT_LISTED_NOTE = (
     "No {form} comparison: {title}, the {form} this run read, is not among the {count} latest "
-    "{form} filings EDGAR lists, so the filing before it cannot be found."
+    "{form} filings listed, so the filing before it cannot be found."
 )
+NOT_FOUND_NOTE = (
+    "No {form} comparison: {title}, the {form} this run read, is not among the {count} {form} "
+    "filings in {where}, so the filing before it cannot be found."
+)
+# Said only when the whole index was read: only then does EDGAR list none.
 NO_EARLIER_NOTE = (
     "No {form} comparison: EDGAR lists no {form} filed before {title}, the {form} this run read."
+)
+NO_EARLIER_FOUND_NOTE = (
+    "No {form} comparison: no {form} filed before {title}, the {form} this run read, is in "
+    "{where}; the rest of the index was not read."
+)
+NO_EARLIER_LISTED_NOTE = (
+    "No {form} comparison: none of the {count} latest {form} filings listed was filed before "
+    "{title}, the {form} this run read; older ones were not looked for."
 )
 FAILED_NOTE = "No {form} comparison for {title}: {reason}"
 REREAD_NOTE = (
@@ -117,17 +142,18 @@ def _empty(run: Run, note: str) -> RunChanges:
     return RunChanges(run_id=run.id, claims=claims, notes=[note])
 
 
-def _earlier_ref(refs: list[FilingRef], later: FilingRef) -> FilingRef | None:
-    """The newest of ``refs`` of the same form filed before ``later``, or None."""
-    key = (later.filed_date, later.accession)
-    before = [
-        ref
-        for ref in refs
-        if ref.form == later.form
-        and ref.accession != later.accession
-        and (ref.filed_date, ref.accession) < key
-    ]
-    return max(before, key=lambda ref: (ref.filed_date, ref.accession), default=None)
+def _missing_note(found: Predecessor, form: str, title: str) -> str:
+    """Why the pair cannot be made, claiming no more about EDGAR than was read."""
+    count = found.listed
+    if found.later is None:
+        if found.where:
+            return NOT_FOUND_NOTE.format(form=form, title=title, count=count, where=found.where)
+        return NOT_LISTED_NOTE.format(form=form, title=title, count=count)
+    if found.complete:
+        return NO_EARLIER_NOTE.format(form=form, title=title)
+    if found.where:
+        return NO_EARLIER_FOUND_NOTE.format(form=form, title=title, where=found.where)
+    return NO_EARLIER_LISTED_NOTE.format(form=form, title=title, count=count)
 
 
 def _compare_form(
@@ -142,16 +168,13 @@ def _compare_form(
     if not callable(lister):
         return _Outcome(notes=[CANNOT_LIST_NOTE.format(form=form, title=title)])
     try:
-        refs: list[FilingRef] = lister(company, form, FORM_HISTORY)
+        found = find_predecessor(filings, company, form, cast(str, source.accession), FORM_HISTORY)
     except SourceError as exc:
         reason = safe_message(exc)
         return _Outcome(notes=[FAILED_NOTE.format(form=form, title=title, reason=reason)])
-    later = next((ref for ref in refs if ref.accession == source.accession), None)
-    if later is None:
-        return _Outcome(notes=[NOT_LISTED_NOTE.format(form=form, title=title, count=len(refs))])
-    earlier = _earlier_ref(refs, later)
-    if earlier is None:
-        return _Outcome(notes=[NO_EARLIER_NOTE.format(form=form, title=title)])
+    later, earlier = found.later, found.earlier
+    if later is None or earlier is None:
+        return _Outcome(notes=[_missing_note(found, form, title)])
     reader = cast(FormFilingSource, filings)
     try:
         pair = read_pair(company, earlier, later, filings=reader, cache=cache)

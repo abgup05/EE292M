@@ -1,6 +1,6 @@
 # Architecture
 
-Evidence Desk (version 0.14.1) tests an equity analyst's thesis claims against the company's own SEC filings and shows,
+Evidence Desk (version 0.14.2) tests an equity analyst's thesis claims against the company's own SEC filings and shows,
 per claim, the verbatim passages and figures that support or challenge it. A reviewer can accept or reject each
 finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the brief; `docs/reviews/` the review.
 
@@ -33,6 +33,12 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/core/claim_eval.py  evaluates a compiled claim against a FactBook (as of a date) with its arithmetic, and its history over the 10-K and 10-Q filing dates of five years; claim_test_models.py is its pure data
     src/app/core/tagged_figures.py  turns a filing's tagged breakdowns into figures a finding can cite (ids starting "tagged:") and chooses the ones offered; pure
     src/app/core/metrics.py     computes the metrics report from facts; metric_models.py is its pure data
+    src/app/core/analysis_models.py, analysis_policy.py   the analysis's pure data (analytic, relevance, headline, corollary, odds, argument, sentence) and every number and sentence it uses
+    src/app/core/relevance.py   which measures bear on each claim and why (test operand, cited, named, a part the filings tag), the headline figures (the sides of each claim's test), the reported figures tied to no claim; pure
+    src/app/core/analytics.py   the analytics, each answering a stated question about a claim on the claim's own basis (quarters, or a fiscal year and what came since): a measure's path, a computed test's room and record, the walk from net income to free cash flow, a named part against the company, earnings quality; the AnalyticsProvider port and FactsProvider; pure
+    src/app/core/persistence.py the odds a quarterly test keeps holding, by resampling its own past changes (seeded); pure
+    src/app/core/corollaries.py a model's proposed implications read by the grammar and the typed form, computed and compared; the flag; pure
+    src/app/core/analysis_audit.py   what a sentence of the argument may cite, and the audit of each (ids, evidence, numbers; a condition may state its own threshold); the lean flag; pure
     src/app/core/numcheck.py    the numeric check: each number a statement writes is in what it cites
     src/app/core/periods.py     the period check: each year or fiscal label a statement names is in its evidence (reported, never withheld); a company's fiscal calendar from its newest annual report; a planted wrong year, for measuring the check
     src/app/core/meaning.py     the meaning check's pure half: what the checker is shown, and applying its judgements
@@ -40,6 +46,17 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/core/watch_models.py, watch_policy.py   the standing watch's pure data (watch, job, triage, inbox item, what moved) and every number and sentence it uses
     src/app/core/triage.py      whether a new filing bears on each claim, by rule (8-K item categories, results, periodic reports and their changed paragraphs); an extension point, unwired; pure
     src/app/core/watch_report.py   what moved between a thesis's previous run and the one a filing caused, from core/compare; pure
+    src/app/core/view_models.py the record types of the outside view and the market view: one result shape (id, value, unit, display, formula, inputs with source and dates, assumptions, one templated reading, data origin); pure data
+    src/app/core/frames.py      SEC XBRL frames into a panel of measures by filer and year: rows placed by their dates, a concept group resolved filer by filer in the order of facts.GROUPS, which years a date admits; pure
+    src/app/core/base_rates.py  a compiled claim test read on fiscal years; how often it held among a reference class decided in the base year (the company left out), how often it held again, the nearest cases; the spread of ten-year revenue growth of filers of a size; pure
+    src/app/core/peers.py       the company's rank and percentile on a measure among its industry class, now and a year before, with its neighbours; pure
+    src/app/core/thirteenf.py   a Form 13F information table into share positions; a company matched to an issuer by name; value ÷ shares as a quarter-end price, the unit read from the table; pure
+    src/app/core/valuation.py   market value, enterprise value and multiples from a dated price and the facts filed by its date; balances of the newest balance sheet only; pure
+    src/app/core/reverse_dcf.py the constant revenue growth at which a stated cash-flow model equals a target, and its sensitivity grid; pure
+    src/app/core/price_series.py, reaction.py   daily closes read and cut at a date; a stock's move after a filing against an index and its own normal move; pure
+    src/app/sources/frames.py   SEC frames and the company list by SIC code through the EDGAR client, kept under the disposable cache
+    src/app/sources/thirteenf.py   a manager's 13F filings and tables through the EDGAR client, kept under the disposable cache; QuarterEndPrices, the price provider that reads SEC
+    src/app/sources/prices.py   PriceProvider and the user's own price; daily closes from a file, a request or FRED's S&P 500 (only when asked), with a bounded, allow-listed fetch
     src/app/sources/edgar.py    SEC EDGAR adapter: ticker, filing selection, rate-limited fetch; recent_filings lists the watched forms in one request
     src/app/sources/filing.py   splits a 10-K/10-Q into Part and Item sections
     src/app/sources/current_report.py   splits an 8-K into one section per "Item N.NN" heading, the signature block and an exhibit index after the last item apart; its own parser version
@@ -51,6 +68,7 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/engines/claude.py   Claude engine: builds each request and parses each answer
     src/app/engines/checker.py  the meaning checker: a second model judges each verified finding (NoChecker: none)
     src/app/engines/claim_reader.py  the model readers of each claim's test, one or two of different models, off by default (steps "read" and "read_2"); the prompt is built from the catalogue; a reading that breaks rule 3 is refused whatever period the model wrote
+    src/app/engines/analyser.py the analysing model: the "propose" and "analyse" requests, their schemas (no unions) and the bounded parse of each answer (NoAnalyser: none)
     src/app/engines/transport.py, cassette.py   the Transport port and its API adapter; answers recorded once, replayed by key
     src/app/engines/extractive.py, fallback.py   deterministic engine, no stance; a primary engine falling back to it
     src/app/services/ingest.py  select, read (cache or EDGAR), parse, deduplicate, record the sources
@@ -62,8 +80,14 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/services/claim_changes.py   for a run: the filing before the newest annual and the newest quarterly report it read, the two comparisons, the ranking per claim; a comparison that cannot be made is a note, never an error
     src/app/services/breakdowns.py   the latest filing of a form, fetched and read into breakdowns
     src/app/services/events.py  a company's 8-Ks after its newest annual report: listed from the index, the ones the rule picks read through the cache and split; a document that cannot be read is a reason on its event, never an error; the item sections offered to a claim
-    src/app/services/computed.py   for a run: compiles every claim, computes the compiled ones and their histories from the facts the run read, and counts the outcomes in the verdicts after the summary
+    src/app/services/computed.py   for a run: compiles every claim, computes the compiled ones and their histories from the facts the run read, and counts the outcomes in the verdicts after the summary; returns the compiled tests and breakdowns for the analysis
+    src/app/sources/reference.py   the reference pack shipped in src/app/reference (SEC frames for filers that ever reported $100 million of revenue, with their industry codes; three managers' 13F positions): read first, EDGAR only for what it lacks; build_reference.py builds it (`make reference-pack`, `docs/reference-pack.md`)
+    src/app/services/view_providers.py   the outside view and the market view as analytics providers of a run: which of their results a run keeps, the question each answers, the claims each is tied to, each provider's time budget; run_providers
+    src/app/services/analysis.py   for a run: relevance, analytics from every provider, odds, headline; the two model steps with the corollaries and the audit, and what became of each; what the analysing model is shown
     src/app/services/restatements.py   a company's restatement ledger outside a run, as of a date when given
+    src/app/services/outside_view.py   one company and one claim: the frames read, the two reference classes, the base rates and the standings
+    src/app/services/market_view.py    one company: the price from a provider, the valuation, the reverse DCF beside what the frames say of filers its size and its industry's margin, the reactions to 8-Ks
+    src/app/services/view_analytics.py   outside_analytics and market_analytics: both views as a flat list in the one analytic shape a provider list expects; nothing computed
     src/app/services/tagged_figures.py   for a run that asks: the tags of the newest annual and quarterly report it read, as figures; a filing that cannot be read is a reason, never an error
     src/app/watch/store.py      the watch's tables: WatchStore (watches, seen filings, jobs, inbox, in the record) and WatchStatus (heartbeat and checks, in the cache)
     src/app/watch/service.py    start and stop watching; the Watcher: a cycle polls each watched company once, queues a job per new (thesis, filing), and works each job (triage, then a run or a waiting run, then the inbox item); EXTRA_TRIAGE_RULES
@@ -73,10 +97,12 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/backup.py           backs up the record; checks that the newest backup restores
     src/app/wiring.py           composition root: reads the environment, builds collaborators
     src/app/api.py              HTTP routes and static files
+    src/app/analysis_routes.py  the outside view's and the market view's routes, added by create_app
     src/app/cli.py              command line onto the same use case
     src/app/demo.py, probe.py, figures.py, changes.py, breakdowns.py, record_fixtures.py, record_facts.py   live demo; live parser check; live check of the reported figures, company by company; the filing comparison and the tagged breakdowns from the command line; fixture recorders
     src/app/restatements.py, facts_load.py   a company's restatement ledger as text (`make restatements`); load companies' facts into the fact store (`make facts-load`)
     src/app/measures_probe.py   live check of the catalogue on the eight probe companies: each measure's newest fiscal year as a claim test computes it, and the parts each newest 10-K tags (`make measures-probe`)
+    src/app/outside.py, market.py, market_probe.py, market_check.py, record_market.py   the outside view and the market view as text (`make outside-view`, `make market-view`); the live probe of every outside source (`make market-probe`); both views on the eight probe companies (`make market-check`); the recorder of their fixtures (`make fixtures-market`)
     src/app/events.py, events_probe.py   a company's 8-Ks since its annual report as text (`make events`); live check of the 8-K splitter on the eight probe companies (`make events-probe`)
     src/app/evaluation/golden.py, corpus.py   load and validate the golden set; the filings it is measured on, pinned by hash
     src/app/evaluation/retrieval_eval.py  scores where the right passage ranks; the variant registry
@@ -89,12 +115,13 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/evaluation/claim_oracle.py   the expected results of eval/claim-results.json from the raw facts, by a route that never calls the evaluator (`make claim-results-key`)
     src/app/evaluation/compiler_vs_model.py   the compiler and a model given the same figure lines, scored on eval/claim-results.json (`make eval ARGS='compiler-vs-model'`)
     src/app/evaluation/claim_readers.py   each reader's normal form of each claim of a set, the agreeing pairs and the counting rule's conclusion, one row per claim for a judge; and the judge's file of the readings that would count (`make eval ARGS='claim-readers --set FILE [--judge]'`)
-    src/web/                    index.html, app.js, styles.css (one layout, two themes: docs/design.md), specimen.html (every component on made-up data, served at /specimen.html), sample-run.json, sample-run-events.json (a live run, copied unedited), sample-synthetic.json, sample-changes.json, sample-run-changes.json, sample-run-tagged.json, sample-breakdowns.json, sample-breakdowns-gap.json (synthetic), sample-inbox.json, sample-inbox-page-2.json, sample-inbox-watches.json, sample-inbox-health.json, sample-inbox-meta.json (the watch's example payloads of docs/examples/v13, copied unedited by `make sample-inbox`), sample-computed.json, sample-as-of.json, sample-restatements.json, sample-readers.json (version 14's example run, as-of run, restatement ledger and run with two model readers of docs/examples/v14, copied unedited by `make sample-v14`), sample-run-live.json (a live run with three claim readers, copied unedited)
+    src/web/                    index.html, app.js, styles.css (one frame of panes that fills the window, two themes: docs/design.md), specimen.html (every component on made-up data, served at /specimen.html), sample-run.json, sample-run-events.json (a live run, copied unedited), sample-synthetic.json, sample-changes.json, sample-run-changes.json, sample-run-tagged.json, sample-breakdowns.json, sample-breakdowns-gap.json (synthetic), sample-inbox.json, sample-inbox-page-2.json, sample-inbox-watches.json, sample-inbox-health.json, sample-inbox-meta.json (the watch's example payloads of docs/examples/v13, copied unedited by `make sample-inbox`), sample-computed.json, sample-as-of.json, sample-restatements.json, sample-readers.json (version 14's example run, as-of run, restatement ledger and run with two model readers of docs/examples/v14, copied unedited by `make sample-v14`), sample-run-live.json and sample-run-costco.json (the two live runs of 19 November 2026 with the full analysis, copied unedited), sample-analysis-shapes.json (the hand-built analysis example of docs/examples/analysis, copied unedited by `make sample-analysis`)
     eval/                       the golden set, its pinned filings, cache/ and results/; README.md
-    tests/                      offline tests, fakes.py (EDGAR, pages, engine, clock), smoke.py; replay_run.py, golden_run.py, speed_run.py; lookahead.py (the no-lookahead checks); examples_v14.py (`make examples`, docs/examples/v14; the example with two model readers only once its reads are recorded in eval/cassettes/claim-readers)
+    tests/                      offline tests, fakes.py (EDGAR, pages, engine, clock), smoke.py; replay_run.py, golden_run.py, speed_run.py; lookahead.py (the no-lookahead checks); examples_v14.py (`make examples`, docs/examples/v14; the example with two model readers only once its reads are recorded in eval/cassettes/claim-readers); examples_analysis.py (`make examples-analysis`, docs/examples/analysis) and record_analysis.py (`make record-analysis`, the only analysis code that reaches the API, capped)
     tests/live_walk.py          the live end-to-end walk over HTTP; tests/golden/ the tripwire and replayed verdicts
+    tests/market_examples.py    `make market-examples`: docs/examples/market from the recorded frames, facts and 13F tables, offline; tests/outside_fakes.py a hand-made panel of frames
     tests/watch_examples.py, watch_replay.py, watch_contention.py   the watch's example payloads (docs/examples/v13); the live replay of a year of filings against eval/watch-replay-nvda.json; a run timed alone and beside a watcher
-    uitests/                    browser tests: the rendered DOM of the sample runs, the sample filing comparison and breakdowns against their JSON; test_events_dom.py the 8-Ks and the as-of line; test_run_events_dom.py the live-run sample and the time line; keys.html + test_keys_dom.py the keys and the themes; test_inbox_dom.py the recorded inbox, and watch.html (the page's code for every answer of the watch routes, with `fetch` stood in for)
+    uitests/                    browser tests: the rendered DOM of the sample runs, the sample filing comparison and breakdowns against their JSON; test_events_dom.py the 8-Ks and the as-of line; test_run_events_dom.py the live-run sample and the time line; keys.html + test_keys_dom.py the keys and the themes; frame.html + test_frame_dom.py the frame at four window sizes (no page scroll, the claims once, the selection driving the panes, nothing hidden reachable); print.html + test_print_dom.py the print layout; test_inbox_dom.py the recorded inbox, and watch.html (the page's code for every answer of the watch routes, with `fetch` stood in for)
 
 ## Storage: the record, the cache and the fact store
 
@@ -234,6 +261,36 @@ nothing filed later reaches any stage, which `tests/lookahead.py` checks (`docs/
    predated gets a `caution`; a claim of a substantive category gets an `event_note` saying what the 8-Ks since the
    annual report do and do not report on it ("No 8-K filed since ... reports ...; anything later is not in the
    record"), never that the claim is false.
+11. **Analyse** (version 0.14.2, `services/analysis.analyse_run`, `docs/analysis.md`). After the verdicts are final,
+   while the stage stays `verifying` (its detail says what is being analysed). Code decides which measures bear
+   on each claim (`core/relevance`: test operand, cited by a finding, named in the claim, or a part of the
+   business the claim names as the newest filings tag it) and the headline: the figures the claims are about.
+   The parts are read once per run from the tags the cache keeps or the HTML the run fetched, never by a
+   fetch (`ingest` keeps a fetched filing's HTML until then). Every analytic (`core/analytics`, one
+   `AnalyticsProvider`, "facts") answers a stated question about a claim on the claim's own basis, with its
+   id, formula, inputs with their filings and a templated reading; none is computed for the thesis at large,
+   and one the facts cannot give stays on the record with why. A run that can reach EDGAR also asks two
+   providers that read it (`services/view_providers`): the outside view (the base rate of each computed claim's
+   test among other filers, the company's standing in its industry) and the market view (price to earnings, the
+   free cash flow yield and the growth the last 13F price implies, about the company as a whole). Each has a
+   time budget (20 s and 15 s); one that runs out, or that EDGAR does not answer, is named in
+   `Run.analysis.providers_failed` with its reason and the run carries on. Both honour `as_of`. Both read the
+   reference pack shipped with the app first (`sources/reference`), so a host with an empty cache has them at
+   once, and both are started, with the request for the corollaries, as soon as the claims are computed
+   (`start_background`), so that they run beside the assessments. `Run.timings` records how long each stage
+   and each of these took. The odds a quarterly test holds in each of the
+   next four quarters (`core/persistence`, 10,000 resampled paths, seed 20261118). Then, with an analysing
+   model (`engines/analyser`, `ANTHROPIC_ANALYSIS_MODEL`, default the engine's model, the engine's transport
+   or cassette): one `propose` request for every claim's corollaries, read by the grammar and the proposer's
+   typed form and computed by code (`core/corollaries`), then the argument: one `analyse` request
+   per claim, up to three at once, and one `conclude` request for the thesis, which is shown the claims'
+   audited arguments (4,000 output tokens and 60 seconds each). Every sentence is `{text, cites}`, audited by
+   code (`core/analysis_audit`: ids, evidence, numbers by `core/numcheck`); an unverified sentence is kept
+   and marked. A claim whose request fails has no argument and says why, and the others stand.
+   `Run.analysis` records what became of each step (`not_asked`, `failed`, `partial`, `answered`, and how
+   many claims were answered); whenever the record holds less than a model's analysis (no
+   model, no time, a failed request, a cassette without the answer) it says why and `run.errors` gets one
+   line. It never changes a verdict or the status. The watcher's runs get no analysing model.
 
 Saves: the run is saved at each stage, after each source and after each claim. A save while the status is `running`
 is a progress save, not synced to disk on its own; the final save is synced and carries those before it. A power cut
@@ -266,6 +323,31 @@ data directory with the app. Each cycle (every `EVIDENCE_DESK_WATCH_INTERVAL_SEC
 Nothing new is installed: the queue is a SQLite table with an atomic claim and a lease, and the loop is the standard
 library. The app starts a waiting run in its own executor, like any run, and writes what moved into the item when it
 ends.
+
+## The outside view and the market view (not part of a run yet)
+
+Two families of results that need data beyond the one company (`docs/outside-view.md`,
+`docs/market-view.md`). They are computed on demand, stored nowhere, and not called by
+`execute_run`: wiring them into a run is a later step, for which each family has an adapter
+(`services/view_analytics.outside_analytics`, `market_analytics`) returning its results in the
+analytic shape `{id, provider, data_origin, kind, label, claim_ids, measure, period, value, unit,
+display, formula, inputs[{ref_kind, id, label, value, display, accession, form, filed}], reading,
+reading_origin: "code", available, note}`.
+
+- **Outside view** (`data_origin: sec_frames`): the claim is compiled by `core/claimtest`, read on
+  fiscal years, and counted over a reference class from SEC's annual frames; the company's standing
+  among its SIC code's filers. Frames carry no filing date, so as of a date only periods that ended
+  a year before it are read.
+- **Market view** (`data_origin: market_prices`): a `PriceProvider` gives one dated price (the
+  newest quarter-end price public from a Form 13F by the date, or the user's own); the facts are
+  cut at the price's date; `core/valuation` and `core/reverse_dcf` do the arithmetic; the frames
+  give the comparisons. A reaction to an 8-K takes daily closes from the request or a file.
+- Routes, read-only, every input bounded by the schema: `GET /api/companies/{ticker}/outside`,
+  `/market`, `/analytics`, `POST /api/companies/{ticker}/market/reactions`. Payloads:
+  `docs/examples/market/`.
+- Outside hosts: `data.sec.gov` and `www.sec.gov` through the EDGAR client, and
+  `fred.stlouisfed.org` only when a request asks for the S&P 500 as an index. Bodies are kept under
+  `data/cache/frames`, `data/cache/13f` and `data/cache/prices`, all disposable.
 
 ## Patterns and interfaces
 
@@ -310,6 +392,17 @@ the end of `create_app`, which takes an injectable `wall_clock`): `PUT` and `DEL
 - **A change to the verdict or status rule**: `core/policy.py` and its tests only.
 - **A new output view**: a module that reads a `Run` (and a `Review` if it shows decisions) and the wording in
   `core/policy.py`, as `services/export.py` does; serve it from `api.py`.
+- **A new analytic**: a function in `core/analytics.py` returning an `Analytic` with the question it answers,
+  called from `FactsProvider` for the claims it bears on (`BEARS_ON`), with a test whose expected value comes
+  from the definition (`tests/test_analytics.py`) and, where the facts allow, from a company's raw facts
+  (`tests/test_analytics_recorded.py`). If no claim would ask its question, it does not belong. The count in
+  the tripwire's coverage stage moves: `make golden-baseline`, `make examples-analysis`, read both diffs.
+  Analytics from another source: an `AnalyticsProvider` added in `services/view_providers.run_providers`,
+  with its own `provider`, `data_origin` and, if it reads a network, `budget_seconds`; which of the outside
+  or market view's results a run keeps is decided there too.
+- **A change to the analysis prompts or schemas** (`engines/analyser.py`): the recorded `propose` and
+  `analyse` answers no longer match, and a replay falls back to the computed analysis. `make record-analysis`
+  (API), read the answers, then `make examples-analysis` and `make golden-baseline`.
 - **A new metric**: its computation in `core/metrics.py` (writing the formula out); if the engine should see it, its
   key in `services/numbers.FIGURE_KEYS`. The gate and numeric check apply unchanged; re-baseline the tripwire.
 - **A prompt or schema change** (`engines/claude.py`): the tripwire's `prompts` stage moves and the replay finds no
@@ -360,6 +453,19 @@ the end of `create_app`, which takes an injectable `wall_clock`): `PUT` and `DEL
   `core/watch_policy.py`. A new watch table: `WATCH_SCHEMA` in `watch/store.py` and `WATCH_KINDS` (so backup and
   restore-check cover it); `make backup` first, `make restore-check` after. A change to a payload: `make
   watch-examples`, then `tests/test_watch_examples.py` says whether the README still names every field.
+- **A change to the outside view** (a measure, a class, which years a date admits): `core/frames.py`
+  (`MEASURES`, `admitted_years`), `core/base_rates.py`, `core/peers.py`, with `tests/test_outside_view.py`,
+  whose expected counts are made by hand from `tests/outside_fakes.py`: change the table's comments
+  with the numbers. Then `make market-check` on the eight probe companies, before and after, and
+  `make market-examples`.
+- **A change to the market view.** The price: `core/thirteenf.py` (the name match, the unit) and
+  `sources/thirteenf.MANAGERS`, with `tests/test_thirteenf.py`; another source is a class with
+  `name` and `price(company, as_of)` (`sources/prices.PriceProvider`), which must never return a
+  price dated or known after the date. The valuation: `core/valuation.py` with
+  `tests/test_valuation.py`. The model: `core/reverse_dcf.py` and the defaults at the top of
+  `services/market_view.py`; `tests/test_market_examples.py` rebuilds the example's value by two
+  routes that do not call the solver. A change to what the fixtures must hold: `make fixtures-market
+  REFRESH=1` (live, on purpose), then `make market-examples` and read the diff.
 - **A change to the breakdowns** (another axis, another revenue concept, a new shape of nested members): `core/breakdowns.py`, whose specifications and constants sit at its top, with `tests/test_breakdowns.py`; a number format the reader does not know: `sources/ixbrl.py` with `tests/test_ixbrl.py`. Start from a failing test built on a small excerpt of the real filing, then run `make breakdowns` on the eight probe companies, annual and quarterly, and check that every breakdown still adds up to its tagged total (`docs/breakdowns.md`).
 
 ## The boundary
@@ -386,7 +492,11 @@ what counts. Filings come only from `www.sec.gov` and `data.sec.gov` (7 requests
 - `make verify`: image build, ruff, `node --check`, the offline tests, `tests/smoke.py` against the live container
   (no internet), and `make uitest` (headless Chromium renders the sample runs, the sample filing comparison and the breakdowns; `uitests/`
   checks the DOM against their JSON; `uitests/keys.html`, loaded from disk with the same-origin rule off for that page
-  only, presses the page's keys in a frame and records what happened; `uitests/watch.html` does the same for the inbox and the watch
+  only, presses the page's keys in a frame and records what happened; `uitests/frame.html` frames the page at four window
+  sizes and records the browser's own measures (no page scroll at desktop sizes, the claims listed once, the selection
+  driving the panes, nothing hidden reachable) and `uitests/print.html` its print layout; `uitests/analysis.html` uses the
+  Analysis, Figures and Method tabs as a reader would (a sentence, a chip of every kind, a claim) and draws the states no
+  sample has (an argument answered in part, a failed provider) from the live sample changed by hand; `uitests/watch.html` does the same for the inbox and the watch
   controls, answering the page's watch requests with the example payloads and the README's refusal shapes; `uitests/v14.html` drives the version 14 states the examples do not show: three readers with a dissent, a disagreement and a refusal, a test of two parts joined by "and", the ledger lookup's answers, a run sent as of a date, the watch API's version 14 fields). Offline tests use `tests/fakes.py`; `make fixtures` re-records EDGAR responses.
 - `make golden-check` compares the offline example run with `tests/golden/golden.json` and names the first stage that
   moved; `make golden-baseline` rewrites it. `make profile` and `make bench` time the offline run (`docs/testing.md`,

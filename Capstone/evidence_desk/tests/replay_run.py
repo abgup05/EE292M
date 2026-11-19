@@ -7,6 +7,12 @@ every time, which is what lets ``tests/test_replay.py`` assert the result.
 
 ``make replay`` runs this. Exit code 3 means the cassette is missing answers:
 the requests were saved under ``<cassette>/pending``.
+
+The analysing model's two requests ("propose" and "analyse", version 0.14.2) are replayed
+read-only: a cassette recorded before they existed replays every other request, and the
+run records the computed analysis only. ``make record-analysis`` (``--record-analysis``)
+asks the analysis model for exactly those two answers through the API and records them; it
+needs ``ANTHROPIC_API_KEY`` and refuses to send more than ``--max-calls`` requests.
 """
 
 from __future__ import annotations
@@ -15,14 +21,17 @@ import argparse
 import json
 import sys
 import tempfile
+import threading
 from pathlib import Path
 
 from app.api import create_app
 from app.core import policy
 from app.core.models import Run
+from app.engines.analyser import ClaudeAnalyser, configured_model
 from app.engines.cassette import CassetteTransport
 from app.engines.checker import ClaudeChecker
 from app.engines.claude import ClaudeAnalyst
+from app.engines.transport import AnthropicTransport, EngineError, ModelRequest, Transport
 from app.services.examples import EXAMPLE_THESIS
 from app.services.export import render_markdown
 from app.services.thesis_run import execute_run, new_run
@@ -63,15 +72,48 @@ def recorded_filings() -> FakeFilings:
     )
 
 
+class CappedTransport:
+    """A live transport that refuses to send more than ``max_calls`` requests."""
+
+    def __init__(self, live: AnthropicTransport, max_calls: int) -> None:
+        self.live = live
+        self.model = live.model
+        self.via = live.via
+        self.max_calls = max_calls
+        self.sent = 0
+        self._lock = threading.Lock()
+
+    def __call__(self, request: ModelRequest) -> dict[str, object]:
+        """Send ``request`` unless the cap is reached (it is called from several threads)."""
+        with self._lock:
+            if self.sent >= self.max_calls:
+                raise EngineError(f"the cap of {self.max_calls} model request(s) is reached")
+            self.sent += 1
+        return self.live(request)
+
+
+def replay_analyser(cassette: Path, live: Transport | None = None) -> ClaudeAnalyser:
+    """The analysing model over ``cassette``: read-only, or recording what ``live`` answers."""
+    return ClaudeAnalyser(
+        transport=CassetteTransport(cassette, live=live, read_only=live is None),
+        model=configured_model(),
+    )
+
+
 def replay(
-    cassette: Path, data_dir: Path, *, tagged_figures: bool = False
+    cassette: Path,
+    data_dir: Path,
+    *,
+    tagged_figures: bool = False,
+    analysis_live: Transport | None = None,
 ) -> tuple[Run, list[str]]:
     """Execute the example thesis; return the run and the keys of unanswered requests.
 
     With ``tagged_figures`` the run also offers the figures tagged in the filings,
     which changes every assessment prompt, so it needs a cassette of its own. The
     record goes to ``data_dir/replay.sqlite`` and the source text to
-    ``data_dir/cache.sqlite``.
+    ``data_dir/cache.sqlite``. The analysing model answers from the cassette, read-only,
+    unless ``analysis_live`` is given to record its two answers.
     """
     transport = CassetteTransport(cassette)
     analyst = ClaudeAnalyst(transport=transport)
@@ -84,6 +126,7 @@ def replay(
         analyst=analyst,
         cache=FilingCache(data_dir / "cache.sqlite"),
         checker=replay_checker(transport),
+        analyser=replay_analyser(cassette, analysis_live),
     )
     return run, list(transport.pending_keys)
 
@@ -116,6 +159,7 @@ def sample_record(run: Run, cassette: Path, data_dir: Path) -> dict[str, object]
         filings=recorded_filings(),
         analyst=ClaudeAnalyst(transport=transport),
         checker=replay_checker(transport),
+        analyser=replay_analyser(cassette),
     )
     with TestClient(app) as client:
         meta = client.get("/api/meta").json()
@@ -140,6 +184,32 @@ def period_lines(run: Run) -> list[str]:
     return lines
 
 
+def analysis_lines(run: Run, live: CappedTransport | None = None) -> list[str]:
+    """Who wrote the run's analysis, its counts, and the requests sent to record it."""
+    analysis, coverage = run.analysis, run.coverage
+    if analysis is None:
+        return ["analysis: none"]
+    lines = [
+        f"analysis: {coverage.analytics_computed} analytics computed by code; corollaries "
+        f"proposed {coverage.corollaries_proposed}, computed {coverage.corollaries_computed} "
+        f"({coverage.corollaries_as_expected} as implied, {coverage.corollaries_against} "
+        "against)",
+        f"argument: by {analysis.argument_by} ({analysis.argument_detail or 'no model'}); "
+        f"{analysis.argument_step}: claims answered {analysis.argument_claims_answered} of "
+        f"{analysis.argument_claims_asked} asked, thesis {analysis.thesis_step}; "
+        f"sentences written {coverage.analysis_sentences_written}, verified "
+        f"{coverage.analysis_sentences_verified}, unverified "
+        f"{coverage.analysis_sentences_unverified}",
+    ]
+    if analysis.argument_note:
+        lines.append(f"  {analysis.argument_note}")
+    if analysis.corollaries_note:
+        lines.append(f"  {analysis.corollaries_note}")
+    if live is not None:
+        lines.append(f"analysis requests sent to the API: {live.sent} (cap {live.max_calls})")
+    return lines
+
+
 def main(argv: list[str] | None = None) -> int:
     """Replay the example and print its verdicts; write the record when it is complete."""
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
@@ -152,9 +222,26 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="also offer the figures tagged in the filings (a cassette recorded with the option)",
     )
+    parser.add_argument(
+        "--record-analysis",
+        action="store_true",
+        help="ask the analysis model (API) for the analysis answers the cassette lacks",
+    )
+    parser.add_argument("--max-calls", type=int, help="the most requests --record-analysis sends")
     args = parser.parse_args(argv)
+    live: CappedTransport | None = None
+    if args.record_analysis:
+        if args.max_calls is None:
+            print("--record-analysis needs --max-calls N; nothing was asked.")
+            return 2
+        live = CappedTransport(AnthropicTransport(model=configured_model()), args.max_calls)
     with tempfile.TemporaryDirectory() as scratch:
-        run, pending = replay(args.cassette, Path(scratch), tagged_figures=args.tagged_figures)
+        run, pending = replay(
+            args.cassette,
+            Path(scratch),
+            tagged_figures=args.tagged_figures,
+            analysis_live=live,
+        )
         sample = (
             sample_record(run, args.cassette, Path(scratch))
             if args.sample and not pending
@@ -184,6 +271,8 @@ def main(argv: list[str] | None = None) -> int:
         f"partly {coverage.findings_partly}, withheld {coverage.findings_failed_meaning}"
     )
     for line in period_lines(run):
+        print(line)
+    for line in analysis_lines(run, live):
         print(line)
     if args.out:
         args.out.mkdir(parents=True, exist_ok=True)

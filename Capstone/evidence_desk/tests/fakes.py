@@ -13,6 +13,7 @@ import dataclasses
 import functools
 import gzip
 import json
+import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -543,3 +544,58 @@ class WallClock:
     def advance(self, seconds: float) -> None:
         """Move the clock forward."""
         self.now += timedelta(seconds=seconds)
+
+
+CLAIM_SECTIONS = ("assessment", "case_for", "case_against", "decides")
+THESIS_SECTIONS = ("bottom_line", "weakest_why", "strongest_for", "strongest_against")
+FOCUS = re.compile(r'<claim id="([^"]+)"[^>]*focus="yes"')
+
+
+def focus_of(request: Any) -> str:
+    """The id of the claim an analysing model's per-claim request is about."""
+    found = FOCUS.search(request.user)
+    assert found is not None, "the request names no claim as its focus"
+    return found.group(1)
+
+
+def claim_answer(nested: dict[str, Any], claim_id: str) -> dict[str, Any]:
+    """One claim's flat answer from an argument written nested, as the record holds it; a
+    claim the nested argument does not have gets an empty one."""
+    claim = next((c for c in nested["claims"] if c["claim_id"] == claim_id), None)
+    if claim is None:
+        return {"lean": "unclear", "sentences": [], "conditions": []}
+    return {
+        "lean": claim["lean"],
+        "sentences": [
+            {"section": section, **item} for section in CLAIM_SECTIONS for item in claim[section]
+        ],
+        "conditions": claim["would_change"],
+    }
+
+
+def thesis_answer(nested: dict[str, Any]) -> dict[str, Any]:
+    """The thesis's flat answer from an argument written nested."""
+    thesis = nested["thesis"]
+    sentences = [
+        {"section": section, "scenario": "", **item}
+        for section in THESIS_SECTIONS
+        for item in thesis[section]
+    ]
+    sentences += [
+        {"section": "scenario", "scenario": scenario["name"], **item}
+        for scenario in thesis["scenarios"]
+        for item in scenario["conditions"]
+    ]
+    return {
+        "leans_on": thesis["leans_on"],
+        "weakest_link": thesis["weakest_link"],
+        "sentences": sentences,
+    }
+
+
+def scripted_argument(nested: dict[str, Any], request: Any) -> dict[str, Any]:
+    """The flat answer to one "analyse" (a claim) or "conclude" (the thesis) request, from an
+    argument written nested: the tests' scripted answers are easier to read whole."""
+    if request.step == "conclude":
+        return thesis_answer(nested)
+    return claim_answer(nested, focus_of(request))

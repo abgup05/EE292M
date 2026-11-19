@@ -241,3 +241,19 @@ site-version:
 	@$(MAKE) -s site-vendor
 	@$(MAKE) -s site-live-test VERSIONS='$(N)'
 	@echo "Version $(N) runs live under the emulation. Commit $(LIVE_MAP) and $(LIVE_DIR), then open the pull request."
+
+# The live site's two secrets, copied from the capstone's gitignored .env into the Vercel
+# project's environment variables by a throwaway container (tools/live/push_secrets.sh), using
+# the Vercel CLI login saved on this machine. No value is printed.
+#   make site-secrets                    say what is present, change nothing
+#   make site-secrets MODE=push          set them for production
+#   make site-secrets MODE=push REDEPLOY=1   and redeploy production so the site reads them
+.PHONY: site-secrets
+site-secrets:
+	@MODE='$(or $(MODE),check)' REDEPLOY='$(REDEPLOY)' docker compose -p ee292m-site-secrets -f tools/live/secrets.compose.yaml run --rm secrets
+
+# One-off containers of the Week 2 app left spinning by an interrupted test run: stop them
+# (they were started with --rm, so stopping removes them). make down does not reach them.
+.PHONY: week2-runs-stop
+week2-runs-stop:
+	@docker ps -q --filter "name=^ee292m-week2-radius-app-run-" | xargs -r docker stop -t 2

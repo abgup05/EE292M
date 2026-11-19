@@ -17,9 +17,11 @@ destinations that cannot end early.
 from __future__ import annotations
 
 import re
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from urllib.parse import quote as percent_encode
 
+from app.core.analysis_models import Analytic, ArgSentence, ClaimAnalysis, Corollary
 from app.core.claim_change_models import RelevantChange, RunChanges
 from app.core.event_models import Event
 from app.core.metric_models import Metric
@@ -694,6 +696,188 @@ def _reading_list(run: Run, changes: RunChanges) -> list[str]:
     return lines
 
 
+ANALYSIS_HEADING_MD = "## Analysis"
+
+
+def _who_wrote(run: Run) -> str:
+    """Who wrote each part of the analysis, in one line."""
+    analysis = run.analysis
+    assert analysis is not None
+    parts = ["The figures under each claim, their readings and the odds: computed by code."]
+    if analysis.corollaries_step == "answered":
+        parts.append(
+            f"Corollaries: proposed by a model{_answers(analysis.corollaries_by)}, computed "
+            "by code."
+        )
+    if analysis.argument_by == "model":
+        parts.append(
+            f"The argument: written by a model{_answers(analysis.argument_detail)}, every "
+            "sentence audited by code (a sentence that fails is kept and marked)."
+        )
+    return " ".join(parts)
+
+
+def _answers(detail: str) -> str:
+    """Where a model's answers came from, in brackets: "(claude-opus-5-5 via the Anthropic
+    API)", or "(its answers replayed from cassette ...)"."""
+    if not detail:
+        return ""
+    replayed = "replayed from "
+    return f" (its answers {detail})" if detail.startswith(replayed) else f" ({detail})"
+
+
+def _sentence_line(sentence: ArgSentence, indent: str = "") -> str:
+    """One sentence of the argument, its citations, and why it is unverified when it is."""
+    cites = f" [{_text(', '.join(sentence.cites))}]" if sentence.cites else ""
+    line = f"{indent}- {_text(sentence.text, line_start=True)}{cites}"
+    if not sentence.verified:
+        line += f" **Unverified:** {_text('; '.join(sentence.problems) or 'not audited')}."
+    return line
+
+
+def _section(title: str, sentences: Sequence[ArgSentence]) -> list[str]:
+    if not sentences:
+        return []
+    return [f"**{title}**", "", *(_sentence_line(s) for s in sentences), ""]
+
+
+def _analytic_lines(items: Sequence[Analytic]) -> list[str]:
+    """The figures that bear on a claim, each under the question it answers; then, in one
+    line, what was asked of the facts and could not be had."""
+    lines = [
+        f"- *{_text(item.question or item.label)}* {_text(item.reading)} ({item.id})"
+        for item in items
+        if item.available
+    ]
+    missing = [item for item in items if not item.available]
+    if missing:
+        listed = "; ".join(
+            f"{_text(item.label)} ({_text(item.reading or item.note)})" for item in missing
+        )
+        lines.append(f"- Could not be computed: {listed}")
+    return lines
+
+
+def _corollary_line(corollary: Corollary) -> str:
+    line = f"- {_text(corollary.sentence)} If the claim is true this should {corollary.expect[:-1]}"
+    if corollary.why:
+        line += f" ({_text(corollary.why)})"
+    if corollary.computed is None:
+        return f"{line}. Not computed: {_text(corollary.read_by)}. ({corollary.id})"
+    test = corollary.computed
+    margin = f", by {_text(test.margin_display)}" if test.margin_display else ""
+    return (
+        f"{line}. Computed as `{test.bound or test.canonical}`: "
+        f"{_text(test.outcome_label)}{margin}; {_text(corollary.result_label)}. Read by "
+        f"{_text(corollary.read_by)}. ({corollary.id})"
+    )
+
+
+def _claim_analysis(claim: Claim, analysis: ClaimAnalysis, by_id: dict[str, Analytic]) -> list[str]:
+    verdict = VERDICT_LABELS[claim.verdict] if claim.verdict else "No verdict"
+    lines = [f"### {_text(claim.id)}. {_text(claim.text)}", "", f"Verdict: {_text(verdict)}.", ""]
+    argument = analysis.argument
+    if argument is not None:
+        lines += [f"The model reads the record as: {argument.lean}.", ""]
+        if argument.lean_flag:
+            lines += [f"**Flag:** {_text(argument.lean_flag)}", ""]
+        lines += _section("Assessment", argument.assessment)
+        lines += _section("Case for", argument.case_for)
+        lines += _section("Case against", argument.case_against)
+        lines += _section("What decides it", argument.decides)
+        lines += _section("What would change the verdict", argument.would_change)
+    elif analysis.argument_note:
+        lines += [_text(analysis.argument_note, line_start=True), ""]
+    items = [by_id[i] for i in analysis.analytic_ids if i in by_id]
+    if analysis.relevant:
+        bears = "; ".join(
+            f"{_text(m.label)} ({_text(', '.join(m.reasons))})" for m in analysis.relevant
+        )
+        lines += ["**What the figures say** (computed by code)", "", f"Bears on it: {bears}.", ""]
+        lines += [*_analytic_lines(items), ""]
+    else:
+        lines += [_text(analysis.relevance_note, line_start=True), ""]
+    odds = analysis.persistence
+    if odds is not None and odds.applicable:
+        lines += [
+            "**Odds the test holds in each of the next four quarters** (resampled by code)",
+            "",
+            f"{_text(odds.note or odds.warning)} {_text(odds.caveat)}".strip(),
+            "",
+        ]
+    if analysis.corollaries:
+        lines += ["**If the claim were true, what else would be?**", ""]
+        lines += [_corollary_line(corollary) for corollary in analysis.corollaries]
+        lines.append("")
+    if analysis.corollary_flag:
+        lines += [f"**Flag:** {_text(analysis.corollary_flag)}", ""]
+    return lines
+
+
+def _analysis(run: Run) -> list[str]:
+    """The analysis: who wrote it, the flags, the thesis's argument and each claim's part."""
+    analysis = run.analysis
+    if analysis is None:
+        return []
+    lines = [ANALYSIS_HEADING_MD, "", f"_{_text(_who_wrote(run))}_", ""]
+    for note in (analysis.corollaries_note, analysis.argument_note, analysis.breakdowns_note):
+        if note:
+            lines += [_text(note, line_start=True), ""]
+    if analysis.flags:
+        lines += ["Flags:", "", *_bullets(analysis.flags, ""), ""]
+    thesis = analysis.thesis
+    if thesis is not None:
+        lines += ["### The thesis", ""]
+        lines += _section("Bottom line", thesis.bottom_line)
+        if thesis.leans_on:
+            lines += [f"It leans on: {', '.join(thesis.leans_on)}.", ""]
+        if thesis.weakest_link:
+            lines += [f"Its weakest link: {thesis.weakest_link}.", ""]
+        lines += _section("Why that is the weakest link", thesis.weakest_why)
+        lines += _section("Strongest point for", thesis.strongest_for)
+        lines += _section("Strongest point against", thesis.strongest_against)
+        for scenario in thesis.scenarios:
+            lines += _section(f"Scenario: {_text(scenario.name)}", scenario.conditions)
+    if analysis.headline:
+        lines += ["The figures the claims are about:", ""]
+        lines += [
+            f"- {_text(', '.join(part for part in (figure.label, figure.period_label) if part))}: "
+            f"{_text(figure.display)} ({', '.join(figure.claim_ids)})"
+            for figure in analysis.headline
+        ]
+        lines.append("")
+    elif analysis.headline_note:
+        lines += [_text(analysis.headline_note, line_start=True), ""]
+    if analysis.untied_metric_ids:
+        lines += [
+            f"{len(analysis.untied_metric_ids)} reported figures are not tied to a claim: they "
+            "are on the record (under Reported figures) and not part of the analysis.",
+            "",
+        ]
+    by_id = {item.id: item for item in analysis.analytics}
+    for claim in run.claims:
+        if claim.analysis is not None:
+            lines += _claim_analysis(claim, claim.analysis, by_id)
+    company_wide = [
+        item for item in analysis.analytics if item.scope == "company" or not item.claim_ids
+    ]
+    if company_wide:
+        lines += ["### The company at its price", "", *_analytic_lines(company_wide), ""]
+        notes = list(dict.fromkeys(item.note for item in company_wide if item.note))
+        lines += [*(f"_{_text(note)}_" for note in notes), ""] if notes else []
+    if analysis.providers_failed:
+        lines += [
+            "Not in this analysis: "
+            + "; ".join(
+                f"{_text(name)} ({_text(analysis.provider_reasons.get(name, 'it failed'))})"
+                for name in analysis.providers_failed
+            )
+            + ".",
+            "",
+        ]
+    return lines
+
+
 def render_markdown(
     run: Run, review: Review | None = None, changes: RunChanges | None = None
 ) -> str:
@@ -705,7 +889,11 @@ def render_markdown(
     Order: title, status, your review (reviewed brief only), decision, verdict
     table (finished runs only), summary,
     reported figures (when the run has any), the 8-Ks since the annual report (runs
-    from version 12), claims with their caution and 8-K note and their verified findings,
+    from version 12), the computed tests, the analysis (version 0.14.2: who wrote each
+    part, flags, the thesis's argument with every unverified sentence marked, the figures the
+    claims are about, and under each claim its argument, the figures that bear on it each
+    under the question it answers, the odds and the corollaries), claims with their caution
+    and 8-K note and their verified findings,
     their checks, cited figures and excerpts, unknowns, next steps,
     sources, coverage limits, errors, provenance, withheld findings, and for a
     reviewed brief a closing line dating the decisions. A reviewed brief adds
@@ -731,6 +919,7 @@ def render_markdown(
     lines += _reported_figures(run)
     lines += _events(run)
     lines += _computed_tests(run)
+    lines += _analysis(run)
     lines += _claims(run, review)
     if changes is not None:
         lines += _reading_list(run, changes)

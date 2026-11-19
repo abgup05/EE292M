@@ -19,7 +19,8 @@ import os
 from pathlib import Path
 
 from app.core import watch_policy
-from app.core.ports import Analyst, Checker, ClaimReader
+from app.core.ports import Analyser, Analyst, Checker, ClaimReader
+from app.engines.analyser import ClaudeAnalyser, NoAnalyser, configured_model
 from app.engines.cassette import CassetteTransport
 from app.engines.checker import ClaudeChecker, NoChecker, configured_check_model
 from app.engines.claim_reader import ModelClaimReader, first_model, second_model, second_reader
@@ -170,6 +171,60 @@ def checker_named(engine: str, analyst: Analyst) -> Checker:
     return NoChecker()
 
 
+def _analyser_beside(transport: CassetteTransport) -> ClaudeAnalyser:
+    """The analysing model over the engine's own cassette.
+
+    Recording (the engine's cassette has a live answerer), a missing answer is asked of the
+    analysis model and recorded, in the engine's run. Replaying, the cassette is read-only
+    for it: a missing "propose" or "analyse" answer is never saved as pending, so a
+    cassette recorded before the analysis existed still replays every other request, and the
+    run records the computed analysis only.
+    """
+    if transport.live is not None:
+        live = AnthropicTransport(model=configured_model())
+        return ClaudeAnalyser(transport=transport.sibling(live=live), model=live.model)
+    return ClaudeAnalyser(transport=CassetteTransport(transport.directory, read_only=True))
+
+
+def analyser_from_env(analyst: Analyst | None = None) -> Analyser:
+    """The analysing model the environment configures (two requests per run).
+
+    None with the extractive engine. With ``EVIDENCE_DESK_CASSETTE`` set: Claude over that
+    cassette (beside ``analyst``'s own when it replays one), recording only as the engine
+    does. Otherwise Claude over the API, with ``ANTHROPIC_ANALYSIS_MODEL`` (default: the
+    engine's model), when ``ANTHROPIC_API_KEY`` is set; else :class:`NoAnalyser`.
+    """
+    if analyst is not None and analyst.name == ExtractiveAnalyst().name:
+        return NoAnalyser()
+    cassette = os.environ.get(CASSETTE_VARIABLE, "").strip()
+    if cassette:
+        shared = _cassette_of(analyst)
+        if shared is not None:
+            return _analyser_beside(shared)
+        record = model_key_present() and os.environ.get(RECORD_VARIABLE, "").strip() == "1"
+        live = AnthropicTransport(model=configured_model()) if record else None
+        return ClaudeAnalyser(
+            transport=CassetteTransport(Path(cassette), live=live, read_only=live is None)
+        )
+    if model_key_present():
+        return ClaudeAnalyser()
+    return NoAnalyser()
+
+
+def analyser_named(engine: str, analyst: Analyst) -> Analyser:
+    """The analysing model that goes with the engine called ``engine`` (see
+    :func:`analyst_named`): over the engine's own cassette for "cassette", the API for
+    "claude", as the environment says for "auto", and none for "extractive"."""
+    shared = _cassette_of(analyst)
+    if engine == "cassette" and shared is not None:
+        return _analyser_beside(shared)
+    if engine == "claude":
+        return ClaudeAnalyser()
+    if engine == "auto":
+        return analyser_from_env(analyst)
+    return NoAnalyser()
+
+
 def claim_reader_from_env(
     analyst: Analyst | None = None,
 ) -> ClaimReader | tuple[ClaimReader, ClaimReader] | None:
@@ -257,6 +312,21 @@ def cache_from_env() -> FilingCache:
 def facts_from_env() -> FactStore:
     """The disposable fact store at ``data_dir()/facts/facts.sqlite``, created if needed."""
     return FactStore(data_dir() / FACTS_PATH)
+
+
+def frames_dir() -> Path:
+    """The disposable store of SEC frames and SIC lists: ``data_dir()/cache/frames``."""
+    return data_dir() / "cache" / "frames"
+
+
+def thirteenf_dir() -> Path:
+    """The disposable store of 13F filing indexes and tables: ``data_dir()/cache/13f``."""
+    return data_dir() / "cache" / "13f"
+
+
+def prices_dir() -> Path:
+    """The disposable store of fetched price series: ``data_dir()/cache/prices``."""
+    return data_dir() / "cache" / "prices"
 
 
 # The standing watch (version 13).

@@ -16,7 +16,7 @@ import json
 import os
 import threading
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 DEFAULT_MODEL = "claude-opus-5-5"
@@ -26,8 +26,10 @@ API_VIA = "the Anthropic API"
 
 # The model steps, in the order a run makes them: each depends on the answers before it. A
 # claim's "check" (app.engines.checker) reads that claim's assessment; the summary reads the
-# verdicts the checks decide.
-STEPS = ("plan", "assess", "check", "summarize")
+# verdicts the checks decide; the corollaries are proposed from the final verdicts
+# ("propose", app.engines.analyser) and the argued analysis reads the corollaries computed
+# from them ("analyse").
+STEPS = ("plan", "assess", "check", "summarize", "propose", "analyse", "conclude")
 
 
 class EngineError(RuntimeError):
@@ -38,9 +40,11 @@ class EngineError(RuntimeError):
 class ModelRequest:
     """One structured-output request, complete: what a model needs to answer it.
 
-    ``step`` names the model step ("plan", "assess", "check" or "summarize");
+    ``step`` names the model step (one of :data:`STEPS`, or a model reader's);
     ``schema`` is the JSON schema the answer must satisfy; ``max_tokens``
-    bounds the answer's length.
+    bounds the answer's length. ``timeout`` (seconds) bounds one API call and turns off
+    the SDK's retries, so the request cannot run past it; None keeps the SDK's defaults.
+    It is not part of what was asked, so it is not part of a cassette's key.
     """
 
     step: str
@@ -48,6 +52,7 @@ class ModelRequest:
     user: str
     schema: dict[str, Any]
     max_tokens: int
+    timeout: float | None = field(default=None, compare=False)
 
 
 # A transport takes a request and returns the model's answer as one JSON object.
@@ -115,8 +120,11 @@ class AnthropicTransport:
             api_errors: tuple[type[Exception], ...] = (anthropic.APIError,)
         except ImportError:  # pragma: no cover - the SDK is installed in the image
             api_errors = ()
+        client = self.client
+        if request.timeout is not None and hasattr(client, "with_options"):
+            client = client.with_options(timeout=request.timeout, max_retries=0)
         try:
-            response = self.client.beta.messages.create(
+            response = client.beta.messages.create(
                 model=self.model,
                 max_tokens=request.max_tokens,
                 system=request.system,

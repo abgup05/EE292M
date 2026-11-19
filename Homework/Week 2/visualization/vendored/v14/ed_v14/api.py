@@ -26,8 +26,9 @@ from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from pydantic import BaseModel
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from ed_v14 import __version__, wiring
+from ed_v14 import __version__, analysis_routes, wiring
 from ed_v14.core import limits, policy, watch_policy
+from ed_v14.core.analytics import AnalyticsProvider
 from ed_v14.core.breakdown_models import BreakdownReport
 from ed_v14.core.change_models import FilingChanges
 from ed_v14.core.claim_change_models import RunChanges
@@ -50,6 +51,7 @@ from ed_v14.core.models import (
     as_of_problem,
 )
 from ed_v14.core.ports import (
+    Analyser,
     Analyst,
     Checker,
     ClaimReaders,
@@ -59,6 +61,7 @@ from ed_v14.core.ports import (
     UnknownTicker,
 )
 from ed_v14.core.review import build_review
+from ed_v14.engines.analyser import NoAnalyser
 from ed_v14.engines.checker import NoChecker
 from ed_v14.services import events as event_service
 from ed_v14.services import theses, thesis_run
@@ -71,7 +74,11 @@ from ed_v14.services.filing_changes import FORMS as CHANGE_FORMS
 from ed_v14.services.filing_changes import filing_changes
 from ed_v14.services.numbers import load_numbers
 from ed_v14.services.restatements import company_restatements
+from ed_v14.services.view_providers import run_providers
+from ed_v14.sources.edgar import EdgarClient
+from ed_v14.sources.frames import FramesSource
 from ed_v14.sources.http import fetch_page as default_fetch_page
+from ed_v14.sources.thirteenf import ThirteenFSource
 from ed_v14.sources.urls import canonicalize, validate_public_url
 from ed_v14.store import FactStore, FilingCache, Store
 from ed_v14.watch import routes as watch_routes
@@ -269,6 +276,9 @@ def create_app(
     facts_store: FactStore | None = None,
     claim_reader: ClaimReaders = None,
     wall_clock: Callable[[], datetime] | None = None,
+    analyser: Analyser | None = None,
+    frames: FramesSource | None = None,
+    thirteenf: ThirteenFSource | None = None,
 ) -> FastAPI:
     """Build the application. Collaborators not given are built by :mod:`app.wiring`.
 
@@ -282,6 +292,8 @@ def create_app(
     ``claim_reader`` is the model parser: the configured one (off by default) when the
     engine is the configured one, otherwise none unless one is given.
     ``wall_clock`` is the time the standing watch's routes use (injectable for tests).
+    ``frames`` is where the outside and market views read SEC's frames: through the EDGAR
+    client into the disposable cache when it is the real one, else from that cache only.
     """
     if facts_store is None:
         facts_store = wiring.facts_from_env() if store is None else FactStore()
@@ -293,7 +305,9 @@ def create_app(
         analyst = wiring.analyst_from_env()
         checker = checker or wiring.checker_from_env(analyst)
         claim_reader = claim_reader or wiring.claim_reader_from_env(analyst)
+        analyser = analyser or wiring.analyser_from_env(analyst)
     checker = checker or NoChecker()
+    analyser = analyser or NoAnalyser()
     executor = ThreadPoolExecutor(max_workers=RUN_WORKERS, thread_name_prefix="run")
     metrics_cache = MetricsCache(monotonic)
     changes_cache = ChangesCache(monotonic)
@@ -333,6 +347,18 @@ def create_app(
     async def conflict(_: Request, exc: Conflict) -> JSONResponse:
         return JSONResponse(status_code=409, content={"error": str(exc)})
 
+    # A run's analysis reads the outside and market views when their sources can answer:
+    # through EDGAR, or from the directories a caller gave. Offline with none given, a run
+    # computes from its own facts only.
+    sec_get = filings.get if isinstance(filings, EdgarClient) else None
+    providers: tuple[AnalyticsProvider, ...] | None = None
+    if sec_get is not None or (frames is not None and thirteenf is not None):
+        providers = run_providers(
+            filings,
+            frames or FramesSource(sec_get, wiring.frames_dir()),
+            thirteenf or ThirteenFSource(sec_get, wiring.thirteenf_dir()),
+        )
+
     def execute(run: Run) -> None:
         try:
             thesis_run.execute_run(
@@ -345,6 +371,8 @@ def create_app(
                 checker=checker,
                 facts_store=facts_store,
                 claim_reader=claim_reader,
+                analyser=analyser,
+                analytics_providers=providers,
             )
         except Exception:  # noqa: BLE001 - last resort: a run must never stay "running"
             log.exception("Run %s crashed", run.id)
@@ -669,6 +697,7 @@ def create_app(
             "review_note": policy.REVIEW_NOTE,
             "engine": analyst.name,
             "checker": {"name": checker.name, "detail": str(checker.detail or "")},
+            "analyser": {"name": analyser.name, "detail": str(analyser.detail or "")},
             "support_labels": policy.SUPPORT_LABELS,
             "no_checker_note": policy.NO_CHECKER_NOTE,
             "example": EXAMPLE_THESIS.model_dump(mode="json"),
@@ -692,6 +721,21 @@ def create_app(
             "engine": analyst.name,
             "model": model if isinstance(model, str) else None,
         }
+
+    # The outside view and the market view: app/analysis_routes.py.
+    if frames is None:
+        frames = FramesSource(sec_get, wiring.frames_dir())
+    if thirteenf is None:
+        thirteenf = ThirteenFSource(sec_get, wiring.thirteenf_dir())
+    clock = wall_clock or (lambda: datetime.now(UTC))
+    analysis_routes.add_routes(
+        app,
+        filings=filings,
+        frames=frames,
+        thirteenf=thirteenf,
+        resolve=resolve,
+        today=lambda: clock().date(),
+    )
 
     # The standing watch (version 13): app/watch/routes.py.
     watch_routes.add_routes(

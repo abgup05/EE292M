@@ -35,7 +35,7 @@ def test_shim_carries_this_versions_settings():
     text = body.decode()
     assert "/*LIVE*/null" not in text
     assert '"base": "/v14/"' in text
-    assert '"ref": "capstone-v14"' in text
+    assert '"ref": "capstone-v14.2"' in text  # the ref tools/live/versions.map names for 14
 
 
 @pytest.mark.parametrize(

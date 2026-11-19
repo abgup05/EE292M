@@ -1,0 +1,207 @@
+{
+  "built_at": "2026-11-18T23:38:26+00:00",
+  "command": "make reference-pack",
+  "source": "SEC EDGAR: XBRL frames, submissions indexes, Form 13F-HR information tables",
+  "frames": {
+    "file": "frames.json.gz",
+    "bytes": 2640612,
+    "sha256": "27fd02ee162f9408dc6c8a8ea5224eed920d05b5d6c337b399ef52f6009d852a",
+    "revenue_floor_usd": 100000000.0,
+    "years": [
+      2009,
+      2025
+    ],
+    "concepts": [
+      "RevenueFromContractWithCustomerExcludingAssessedTax",
+      "Revenues",
+      "SalesRevenueNet",
+      "RevenueFromContractWithCustomerIncludingAssessedTax",
+      "RevenuesNetOfInterestExpense",
+      "CostOfRevenue",
+      "CostOfGoodsAndServicesSold",
+      "CostOfGoodsSold",
+      "GrossProfit",
+      "OperatingIncomeLoss",
+      "NetIncomeLoss",
+      "ResearchAndDevelopmentExpense",
+      "NetCashProvidedByUsedInOperatingActivities",
+      "PaymentsToAcquirePropertyPlantAndEquipment",
+      "PaymentsToAcquireProductiveAssets"
+    ],
+    "frames_read": 255,
+    "frames_sec_does_not_have": 20,
+    "filers": 5836,
+    "filers_with_an_industry_code": 5834,
+    "values": 384994,
+    "values_with_a_period_of_their_own": 469
+  },
+  "prices": {
+    "file": "prices.json.gz",
+    "bytes": 1154061,
+    "sha256": "928bbe310e897c137de0735f52dfc410b0d5804522829c16c83f0d35ac034d4e",
+    "managers": [
+      {
+        "cik": 1582202,
+        "name": "Swiss National Bank",
+        "filings": [
+          {
+            "accession": "0001582202-26-000008",
+            "period": "2026-09-30",
+            "filed": "2026-11-12",
+            "positions": 2300
+          },
+          {
+            "accession": "0001582202-26-000007",
+            "period": "2026-06-30",
+            "filed": "2026-08-11",
+            "positions": 2301
+          },
+          {
+            "accession": "0001582202-26-000004",
+            "period": "2026-03-31",
+            "filed": "2026-05-07",
+            "positions": 2301
+          },
+          {
+            "accession": "0001582202-26-000002",
+            "period": "2025-12-31",
+            "filed": "2026-02-12",
+            "positions": 2311
+          },
+          {
+            "accession": "0001582202-25-000011",
+            "period": "2025-09-30",
+            "filed": "2025-11-13",
+            "positions": 2315
+          },
+          {
+            "accession": "0001582202-25-000007",
+            "period": "2025-06-30",
+            "filed": "2025-08-12",
+            "positions": 2332
+          },
+          {
+            "accession": "0001582202-25-000004",
+            "period": "2025-03-31",
+            "filed": "2025-05-12",
+            "positions": 2397
+          },
+          {
+            "accession": "0001582202-25-000002",
+            "period": "2024-12-31",
+            "filed": "2025-02-10",
+            "positions": 2440
+          }
+        ]
+      },
+      {
+        "cik": 919079,
+        "name": "California Public Employees Retirement System",
+        "filings": [
+          {
+            "accession": "0000919079-26-000013",
+            "period": "2026-09-30",
+            "filed": "2026-11-16",
+            "positions": 1042
+          },
+          {
+            "accession": "0000919079-26-000011",
+            "period": "2026-06-30",
+            "filed": "2026-08-14",
+            "positions": 1060
+          },
+          {
+            "accession": "0000919079-26-000006",
+            "period": "2026-03-31",
+            "filed": "2026-05-06",
+            "positions": 1063
+          },
+          {
+            "accession": "0000919079-26-000003",
+            "period": "2025-12-31",
+            "filed": "2026-02-12",
+            "positions": 1085
+          },
+          {
+            "accession": "0000919079-25-000012",
+            "period": "2025-09-30",
+            "filed": "2025-11-14",
+            "positions": 1088
+          },
+          {
+            "accession": "0000919079-25-000010",
+            "period": "2025-06-30",
+            "filed": "2025-08-13",
+            "positions": 1113
+          },
+          {
+            "accession": "0000919079-25-000007",
+            "period": "2025-03-31",
+            "filed": "2025-05-13",
+            "positions": 1118
+          },
+          {
+            "accession": "0000919079-25-000003",
+            "period": "2024-12-31",
+            "filed": "2025-02-12",
+            "positions": 1142
+          }
+        ]
+      },
+      {
+        "cik": 810265,
+        "name": "New York State Common Retirement Fund",
+        "filings": [
+          {
+            "accession": "0000810265-26-000008",
+            "period": "2026-09-30",
+            "filed": "2026-11-17",
+            "positions": 2975
+          },
+          {
+            "accession": "0000810265-26-000004",
+            "period": "2026-06-30",
+            "filed": "2026-07-29",
+            "positions": 3173
+          },
+          {
+            "accession": "0000810265-26-000003",
+            "period": "2026-03-31",
+            "filed": "2026-05-06",
+            "positions": 3132
+          },
+          {
+            "accession": "0000810265-26-000002",
+            "period": "2025-12-31",
+            "filed": "2026-02-12",
+            "positions": 3177
+          },
+          {
+            "accession": "0000810265-25-000025",
+            "period": "2025-09-30",
+            "filed": "2025-11-03",
+            "positions": 3182
+          },
+          {
+            "accession": "0000810265-25-000009",
+            "period": "2025-06-30",
+            "filed": "2025-08-13",
+            "positions": 3195
+          },
+          {
+            "accession": "0000810265-25-000005",
+            "period": "2025-03-31",
+            "filed": "2025-05-01",
+            "positions": 3168
+          },
+          {
+            "accession": "0000810265-25-000001",
+            "period": "2024-12-31",
+            "filed": "2025-01-31",
+            "positions": 3171
+          }
+        ]
+      }
+    ]
+  }
+}

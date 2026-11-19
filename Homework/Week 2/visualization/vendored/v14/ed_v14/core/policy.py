@@ -101,6 +101,37 @@ SUMMARY_REPLACED = (
     "The model's summary was replaced by the template summary: {numbers} in it "
     "is not in any verified finding or reported figure."
 )
+# The line after a model's summary when the computed tests, counted after it was written,
+# set or changed verdicts: the lead, then each claim with its verdict before and after.
+VERDICTS_AFTER_SUMMARY_LEAD = (
+    "Written by code: the computed tests were counted after this summary was written"
+)
+VERDICTS_AFTER_SUMMARY = "{lead}, and set or changed {count}: {changes}."
+VERDICT_MOVED = "“{claim}” from {before} to {after}"
+NOT_ASSESSED_VERDICT = "not assessed"
+
+
+def verdicts_after_summary(moved: list[tuple[str, Verdict | None, Verdict | None]]) -> str:
+    """The line naming each claim whose verdict the computed tests set or changed; "" if none.
+
+    ``moved`` holds (claim text, verdict the summariser was shown, final verdict).
+    """
+    if not moved:
+        return ""
+
+    def label(verdict: Verdict | None) -> str:
+        return VERDICT_LABELS[verdict] if verdict else NOT_ASSESSED_VERDICT
+
+    changes = "; ".join(
+        VERDICT_MOVED.format(claim=claim, before=label(before), after=label(after))
+        for claim, before, after in moved
+    )
+    count = f"{len(moved)} verdict" if len(moved) == 1 else f"{len(moved)} verdicts"
+    return VERDICTS_AFTER_SUMMARY.format(
+        lead=VERDICTS_AFTER_SUMMARY_LEAD, count=count, changes=changes
+    )
+
+
 # A filing whose text mostly sits outside numbered Item headings: its passages carry
 # sub-heading locators only, so the run is partial.
 THIN_FILINGS = (

@@ -410,3 +410,24 @@ def test_a_supplied_price_is_used_and_labelled_as_not_checked(tmp_path: Path) ->
     kinds = {r.kind: r.outcome for r in view.valuation}
     assert kinds["market_value"] == "computed"
     assert "not checked against any source" in view.price_source
+
+
+def test_a_manager_read_before_the_one_that_named_the_issuer_confirms_by_cusip(
+    tmp_path: Path,
+) -> None:
+    """Met on the reference pack while checking the rule above: Amazon's price came from the
+    third manager (the only one whose spelling of the name matched the name asked for), and
+    the two read before it, holding the same CUSIP at the same price, were never asked to
+    confirm it. With confirmation enforced that would have refused a price two filings back."""
+    other_spelling = table(entry("ACME WHOLESALERS OF AMERICA", "000111222", 5_000, 100))
+    source = stocked(
+        tmp_path,
+        {
+            1: [("0000000001-26-000002", "2026-09-30", "2026-11-12", other_spelling)],
+            2: [("0000000002-26-000009", "2026-09-30", "2026-11-16", Q3)],
+        },
+    )
+    price = QuarterEndPrices(source, (FIRST, SECOND)).price(ACME, date(2026, 11, 18))
+    assert price.value == 50.0 and "Second Fund" in price.source
+    assert price.confirmed, price.note
+    assert "Confirmed within 0.5% by the 13F of First Fund (0000000001-26-000002)" in price.note

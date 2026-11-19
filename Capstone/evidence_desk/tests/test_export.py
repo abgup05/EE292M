@@ -955,3 +955,25 @@ def test_the_links_the_export_writes_still_work_and_a_url_cannot_close_one_early
     assert "[Investor page](https://investor.example.com/a%20b%28c%29%5C)" in table
     claims = _between(render_markdown(run), "## Claims", "## Unknowns")
     assert f"[NVIDIA 10-Q for the period ended 2026-07-26]({URL}#:~:text=Data%20Center)" in claims
+
+
+# A bare carriage return ends a line too (seventh referee, finding 8) -----------------------------
+
+
+@pytest.mark.parametrize("separator", ["\r", "\r\n", " ", " ", "\x85", "\x0b", "\x0c"])
+def test_a_line_marker_after_any_line_separator_is_escaped(separator: str) -> None:
+    """CommonMark ends a line at a bare carriage return, so "ok\\r# Heading" in a model's
+    statement started a heading: only "\\n" was treated as a line break."""
+    from app.services.export import _text
+
+    hostile = f"a{separator}# injected{separator}- item{separator}1. first{separator}> quote"
+    assert _text(hostile) == "a\n\\# injected\n\\- item\n1\\. first\n\\> quote"
+    assert _text(hostile, line_start=True) == "a\n\\# injected\n\\- item\n1\\. first\n\\> quote"
+
+
+def test_text_without_a_line_break_is_escaped_as_before() -> None:
+    from app.services.export import _text
+
+    assert _text("Revenue rose 5% - a record - in Q2.") == "Revenue rose 5% - a record - in Q2."
+    assert _text("# not a heading", line_start=True) == "\\# not a heading"
+    assert _text("one\ntwo\n# three") == "one\ntwo\n\\# three"

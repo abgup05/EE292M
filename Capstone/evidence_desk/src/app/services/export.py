@@ -105,6 +105,11 @@ _REFERENCE = re.compile(r"&(?=#[0-9]{1,7};|#[xX][0-9a-fA-F]{1,6};|[A-Za-z][A-Za-
 # "1." or "1)". Within a line they are text, so ordinary text keeps them unescaped.
 _LINE_MARKER = re.compile(r"^([ \t]*)([#>+=-])", re.MULTILINE)
 _ORDERED_MARKER = re.compile(r"^([ \t]*[0-9]{1,9})([.)])(?=[ \t]|$)", re.MULTILINE)
+# Every character that ends a line somewhere: CommonMark's own (a line feed, a carriage
+# return, the two together) and the others ``str.splitlines`` knows, which some viewers
+# break at. Each becomes one line feed before anything is escaped, so that "the start of a
+# line" below means the same to this module as to whatever renders the brief.
+_LINE_BREAK = re.compile("\r\n|[\r\v\f\x1c\x1d\x1e\x85\u2028\u2029]")
 # A link destination the export writes keeps the characters a URL may hold and that Markdown
 # does not read in a destination; everything else is percent-encoded, so ")", a space, "<" or a
 # trailing "\" cannot end the link early or turn it into something else.
@@ -115,9 +120,11 @@ def _escape(value: str, *, line_start: bool) -> str:
     """``value`` backslash-escaped so it renders as the text it is.
 
     Line-leading markers are escaped on every line after the first, and on the first too
-    when ``line_start`` (the text begins a line or a list item of the brief).
+    when ``line_start`` (the text begins a line or a list item of the brief). A line ends
+    at a line feed, at a bare carriage return and at every other separator of
+    :data:`_LINE_BREAK`; each is written as a line feed.
     """
-    escaped = _INLINE_ACTIVE.sub(r"\\\g<0>", value)
+    escaped = _INLINE_ACTIVE.sub(r"\\\g<0>", _LINE_BREAK.sub("\n", value))
     escaped = _REFERENCE.sub(r"\\&", escaped)
     if line_start:
         escaped = _LINE_MARKER.sub(r"\1\\\2", escaped)

@@ -249,7 +249,7 @@ Not a numeric claim this version computes: does not name a measure in the metric
 
 ## Analysis
 
-_The figures under each claim, their readings and the odds: computed by code. Corollaries: proposed by a model (its answers replayed from cassette analysis-example: 1 of its 14 recorded answers used (propose), recorded via the Anthropic API with claude-opus-5-5, 2026-11-19), computed by code. The argument: written by a model (its answers replayed from cassette analysis-example: 6 of its 14 recorded answers used (analyse, conclude), recorded via the Anthropic API with claude-opus-5-5, 2026-11-19), every sentence audited by code (a sentence that fails is kept and marked)._
+_The figures under each claim, their readings and the odds: computed by code. Corollaries: proposed by a model (its answers replayed from cassette analysis-example: 1 of its 15 recorded answers used (propose), recorded via the Anthropic API with claude-opus-5-5, 2026-11-19), computed by code. The argument: written by a model (its answers replayed from cassette analysis-example: 6 of its 15 recorded answers used (analyse, conclude), recorded via the Anthropic API with claude-opus-5-5, 2026-11-19), every sentence audited by code (a sentence that fails is kept and marked)._
 
 Parts are read from the tags of the 10-Q filed 2026-08-26 and the 10-K filed 2026-02-25.
 
@@ -262,12 +262,12 @@ Flags:
 
 **Bottom line**
 
-- The thesis's central claim, buying because Jensen Huang is gone, is unsupported on this record: the 8-K confirms the resignation, but nothing in the record connects his departure to the value of the business. [f1, ev-0001045810-26-000082]
-- Every financial figure ends with the quarter ended 2026-07-26 and the valuation is priced at 2026-09-30, so the record cannot show how either the business or the price absorbed the departure. [an:pe:NVDA:2026-09-30, an:reverse\_dcf:NVDA:2026-09-30, ev-0001045810-26-000082]
-- The supporting financial claims split: the gross-margin streak holds and quarterly revenue growth sped up, but revenue did not double in fiscal 2026 and free cash flow fell short of net income, so the thesis's operating case is mixed rather than uniformly strong. [test:c2, cor:c5:1, test:c3, test:c4]
-- Growth is not the binding constraint for the price: at 2026-09-30 it needs 13.4% a year against the newest quarter's 105.9%, but that arithmetic leans most on a 65.2% operating margin held every year, which is exactly what a leadership change could threaten. [an:reverse\_dcf:NVDA:2026-09-30, an:revenue:yoy]
-- The 28.5× earnings multiple rests on earnings that are converting to cash at only 0.70x over four quarters and 0.40x in the latest quarter, so the price is paying for profit that is increasingly sitting in receivables and inventory. [an:pe:NVDA:2026-09-30, an:eq:cash\_conversion]
-- A careful investor would want the first 10-Q covering quarters after the resignation, an 8-K naming a permanent CEO, and evidence that the receivables and inventory build is unwinding. [ev-0001045810-26-000082, an:eq:dso, an:eq:dio]
+- The thesis's central reason to buy, that Huang's departure is good for the company, is unsupported on this record. The 8-K confirms the resignation, but every financial figure and the valuation price come from before it, so nothing here shows how the business or the price responded. [ev-0001045810-26-000082, f1, revenue:quarter:2026-07-26, an:pe:NVDA:2026-09-30]
+- The claims that do hold, gross margin above 70% and accelerating revenue, describe the business Huang left behind. They argue that the asset is strong, not that his absence improves it. [test:c2, an:revenue:acceleration, ev-0001045810-26-000082] *Restates a threshold: 70% (test:c2); not checked as a fact.*
+- Of the two challenged claims, the cash claim matters more to a buy decision than the revenue claim: missing a doubling is beside the point when the price needs only 13.4% a year. Earnings running ahead of cash goes to the quality of what the price is paid for. [test:c3, test:c4, an:reverse\_dcf:NVDA:2026-09-30, an:bridge:cash:ttm]
+- The price of 28.5× earnings sits against a free cash flow yield of only 2.3%, because each dollar of net income came with 0.70 dollars of operating cash. On cash the stock is dearer than on earnings. [an:pe:NVDA:2026-09-30, an:fcf\_yield:NVDA:2026-09-30, an:eq:cash\_conversion]
+- The price's modest growth requirement leans almost entirely on a 65.2% operating margin held every year. Any leadership change that dents margin works against the buy case, not for it. [an:reverse\_dcf:NVDA:2026-09-30]
+- A careful investor would want two things the record lacks: the first 10-Q covering a quarter after November 11, 2026, and an 8-K naming a permanent chief executive in place of the interim one. [ev-0001045810-26-000082]
 
 It leans on: c1, c5, c2, c4, c3.
 
@@ -275,39 +275,39 @@ Its weakest link: c1.
 
 **Why that is the weakest link**
 
-- The claim is a cause the filings cannot test: the departure is a fact, but the step from it to a reason to buy has no backing, because the newest quarter and the price date both precede it. [f1, an:pe:NVDA:2026-09-30, an:reverse\_dcf:NVDA:2026-09-30]
-- Its favourable corollaries describe a quarter run under Huang, so they cannot show that his absence helps, and the free cash flow margin corollary failed anyway, with a margin of -6.6 points. [cor:c1:1, cor:c1:2, cor:c1:3]
-- What the record does show is a broad transition, with an interim CEO drawn from the CFO role, a retiring head of worldwide field operations and an earlier Chief Accounting Officer retirement, and that is evidence of turnover, not of improvement. [ev-0001045810-26-000082, ev-0001045810-26-000060, ev-0001045810-26-000026]
+- The claim asserts a cause. The filings can confirm that the change happened, but not that it makes the company more valuable, and no figure in the record dates from after it. [f1, ev-0001045810-26-000082]
+- The corollaries that came out in its favour, a wider operating margin and a lower opex ratio, measure a quarter run under Huang. The free cash flow margin corollary failed anyway, so even this indirect support is mixed. [cor:c1:1, cor:c1:2, cor:c1:3]
+- The departure sits within a run of senior turnover: the interim chief executive is the existing CFO, the head of worldwide field operations is retiring, and the chief accounting officer retired. The record cannot say whether that much change helps or hurts. [ev-0001045810-26-000082, ev-0001045810-26-000060, ev-0001045810-26-000026]
 
 **Strongest point for**
 
-- The new leadership inherits an exceptional margin position: gross margin ranks 4 of 63 among SIC 3674 filers, and the 70% streak has room of 1.69x a typical move in its tightest quarter. [an:peer:NVDA:gross\_margin:2025:2026-11-18, an:c2:headroom]
-- Data Center growth of +116.6% outpaced the company's +105.9%, and deferred revenue grew +215.1%, which leans toward demand running ahead of shipments in the newest quarter. [an:part:data\_center:q:growth, an:eq:deferred\_revenue]
-- Across the full grid the price needs between 6.5% and 19.7% a year, all far below the growth the latest quarter shows, so the valuation does not require the current pace to last. [an:reverse\_dcf:NVDA:2026-09-30, an:revenue:yoy]
+- Growth is speeding up, not fading: year-on-year revenue growth rose to 105.9% from 85.2% the quarter before, with Data Center contributing 102.5 percentage points of it. [an:revenue:acceleration, an:bridge:growth:revenue\_by\_product:q]
+- The margin the price depends on rests on a gross margin that ranks 4 of 63 in its industry. The tightest quarter of the streak still had room of 1.69x a typical move. [an:peer:NVDA:gross\_margin:2025:2026-11-18, an:c2:headroom]
+- The 13.4% a year the 2026-09-30 price needs is far below the company's own +100.0% a year over three fiscal years. Even the top of the assumption grid, 19.7%, sits well below its current pace. [an:reverse\_dcf:NVDA:2026-09-30]
 
 **Strongest point against**
 
-- Free cash flow ran $65.87B below net income over the four quarters to Q2 FY2027, as receivables rose $35.25B and inventory rose $16.61B, and cash conversion ranks 32 of 38 among SIC 3674 peers. [an:bridge:cash:ttm, an:peer:NVDA:cash\_conversion:2025:2026-11-18]
-- Inventory now covers 119.3 days against 105.6 a year before, and the last time inventory and purchase obligations went wrong, the H20 charge cut gross margin to 60.5%, so the margin streak the price depends on has a known failure mode. [an:eq:dio, f5]
-- Even the modest 13.4% implied growth was matched by 0 of 40 ten-year spans of filers at this size, and at the industry's 90th-percentile margin of 26.6% the price would need 28.1% a year, so the price leans heavily on margin persistence through a leadership change. [an:reverse\_dcf:NVDA:2026-09-30]
+- Earnings are outrunning cash and the gap is widening. Over the four quarters free cash flow fell $65.87B short of net income as receivables and inventory absorbed cash, and the company ranks 32 of 38 on cash conversion among its peers. [an:bridge:cash:ttm, an:peer:NVDA:cash\_conversion:2025:2026-11-18, an:c4:sides]
+- Inventory has risen to 119.3 days from 105.6. The last excess-inventory episode, the H20 charge, pulled gross margin down to 60.5%, so the build is a direct risk to the margin the price relies on. [an:eq:dio, f5]
+- At an industry 90th-percentile margin of 26.6% the price would need 28.1% a year, and 0 of 40 ten-year spans of filers this size grew even 13.4%. The valuation also predates the resignation. [an:reverse\_dcf:NVDA:2026-09-30, ev-0001045810-26-000082]
 
-**Scenario: Transition holds**
+**Scenario: Transition absorbed**
 
-- The first 10-Q after the resignation shows quarterly gross margin still above 70%. [test:c2, ev-0001045810-26-000082] *Restates a threshold: 70% (test:c2); not checked as a fact.*
-- Quarterly operating margin in that 10-Q stays above 50%. [cor:c2:3] *Restates a threshold: 50% (cor:c2:3); not checked as a fact.*
-- An 8-K names a permanent Chief Executive Officer in place of the interim appointment. [ev-0001045810-26-000082]
+- A 10-Q for a quarter after the resignation shows quarterly gross margin still above 70%. [test:c2, ev-0001045810-26-000082] *Restates a threshold: 70% (test:c2); not checked as a fact.*
+- That quarter's operating margin stays above 50%. [cor:c2:3] *Restates a threshold: 50% (cor:c2:3); not checked as a fact.*
+- An 8-K names a permanent chief executive in place of the interim appointment. [ev-0001045810-26-000082]
 
-**Scenario: Cash catches up**
+**Scenario: Cash gap widens**
 
-- Accounts receivable fall below the $63.06B of Q2 FY2027. [an:eq:dso]
-- Inventory falls below the $31.57B of Q2 FY2027. [an:eq:dio]
-- Quarterly free cash flow rises above the $21.40B of Q2 FY2027. [free\_cash\_flow:quarter:2026-07-26]
+- Quarterly cash conversion stays at or below 0.40x. [an:eq:cash\_conversion]
+- Inventory days rise above 119.3 days. [an:eq:dio]
+- Accounts receivable climb above $63.06B. [an:eq:dso]
 
-**Scenario: Margin cracks**
+**Scenario: Growth fades**
 
-- A post-resignation 10-Q shows quarterly gross margin below 70%. [test:c2] *Restates a threshold: 70% (test:c2); not checked as a fact.*
-- An 8-K or 10-Q discloses an excess-inventory or purchase-obligation charge like the H20 charge. [f5, an:eq:dio]
-- Quarterly revenue falls below the $96.22B of Q2 FY2027. [revenue:quarter:2026-07-26]
+- Year-on-year quarterly revenue growth falls below the +85.2% of Q1 FY2027. [an:revenue:acceleration]
+- Deferred revenue falls below $6.41B. [an:eq:deferred\_revenue]
+- Quarterly revenue falls below $96.22B. [revenue:quarter:2026-07-26]
 
 The figures the claims are about:
 
@@ -517,7 +517,7 @@ The model reads the record as: challenges.
 
 - Whether the receivables and inventory build reverses in coming quarters or keeps compounding, which the record cannot forecast; only later balance sheets will show it. [an:bridge:cash:ttm]
 - Whether customers are paying more slowly or the build reflects shipments in transit; the record gives the size of the build but no cause, and the filings' receivable aging or days-sales figures would be needed. [an:bridge:cash:fy2026, f10]
-- How much of the buy case leans on reported earnings, priced at 28.5x, rather than cash, since the two are diverging. [an:pe:NVDA:2026-09-30, an:eq:cash\_conversion] **Unverified:** writes 28.5x, which nothing it cites carries.
+- How much of the buy case leans on reported earnings, priced at 28.5x, rather than cash, since the two are diverging. [an:pe:NVDA:2026-09-30, an:eq:cash\_conversion]
 
 **What would change the verdict**
 

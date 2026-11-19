@@ -1,7 +1,7 @@
 """Browser-level checks of the live three-reader sample and of the two-model example.
 
 `make uitest` renders /?sample=run-live, a bare run copied unedited from a live NVIDIA run of
-19 Nov 2026 UTC (results/run-8a12ef614117.json: claude-opus-5-5 reading the filings and
+19 Nov 2026 UTC (results/run-a3c830947e19.json: claude-opus-5-5 reading the filings and
 claude-haiku-5-5 checking meaning, both through the Anthropic API, and three claim readers: the
 grammar, claude-haiku-5-5 and claude-sonnet-5-5), and /?sample=readers in the Terminal theme,
 docs/examples/v14/run-readers.json (six claims of set C, the model readers' answers replayed from
@@ -25,7 +25,7 @@ from test_dom import require_fresh
 ROOT = Path(__file__).resolve().parents[1]
 WEB = ROOT / "src" / "web"
 RESULTS = ROOT / "results"
-ORIGINAL = RESULTS / "run-8a12ef614117.json"
+ORIGINAL = RESULTS / "run-a3c830947e19.json"
 DUMPS = {"run-live": ("dom-run-live.html", "sample-run-live.json"), "readers": ("dom-readers.html", "sample-readers.json")}
 COUNTED = {"supports": "Counted as support", "challenges": "Counted as a challenge"}
 SHORT = {"grammar": "Grammar", "model": "Model 1", "model_2": "Model 2"}
@@ -75,7 +75,7 @@ def expected_mark(reading: dict[str, Any], test: dict[str, Any] | None) -> str:
 
 def test_the_live_sample_is_the_run_unedited() -> None:
     if not ORIGINAL.is_file():
-        pytest.skip("results/run-8a12ef614117.json is not on this machine (results/ is not committed)")
+        pytest.skip("results/run-a3c830947e19.json is not on this machine (results/ is not committed)")
     assert (WEB / "sample-run-live.json").read_bytes() == ORIGINAL.read_bytes()
 
 
@@ -88,7 +88,7 @@ def test_the_live_sample_is_the_first_offered_on_the_first_screen() -> None:
 
 def test_the_live_sample_says_where_it_came_from_and_who_answered() -> None:
     note = words(page("run-live").select_one("#run-head [data-sample-note]"))
-    for phrase in ("live run of 19 November 2026", "run-8a12ef614117", "Anthropic API", "claude-opus-5-5", "claude-haiku-5-5", "claude-sonnet-5-5", "copied unedited from results/run-8a12ef614117.json"):
+    for phrase in ("live run of 19 November 2026", "run-a3c830947e19", "Anthropic API", "claude-opus-5-5", "claude-haiku-5-5", "claude-sonnet-5-5", "copied unedited from results/run-a3c830947e19.json"):
         assert phrase in note, phrase
     run = record("run-live")
     assert run["engine_detail"].endswith("via the Anthropic API") and run["claim_reader_detail"].count("via the Anthropic API") == 2

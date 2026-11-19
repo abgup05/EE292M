@@ -448,8 +448,10 @@ more than `MAX_CALLS` (default: all). Then `make examples-analysis` and
   still not known is whether the argument is one an analyst would respect: nobody has read the
   two live arguments for that, and "verified" is a statement about numbers and ids, not about
   the inference.
-- The page's inspector does not show `thresholds` (a sentence that restates a threshold reads
-  "Verified by code" there); the record and the Markdown brief carry it.
+- The page shows `thresholds` since 14.3: on the sentence ("restates a threshold: 70%"), in the
+  inspector in words, and with `audit_rule` printed there as the only statement of what
+  "verified" means (`docs/design.md`). A record made before 14.3 has neither field, and the
+  page says so in the inspector instead of writing a rule of its own.
 - The two views have run inside a run only on NVIDIA's recorded frames, 13F tables and facts,
   from disk. How long they take against EDGAR with nothing kept, and how often the budgets cut
   them off, was not measured.

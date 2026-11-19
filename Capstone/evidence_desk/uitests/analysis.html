@@ -100,6 +100,8 @@ function record(frame, step, extra) {
   li.dataset.inspectFilingLinks = [...body.querySelectorAll(".ins-inputs a.ext, .ct-facts a.ext")].map((a) => a.getAttribute("href")).join(" ");
   li.dataset.inspectAudit = (body.querySelector("[data-audit]") || { dataset: {} }).dataset.audit || "";
   li.dataset.inspectAuditText = text(body.querySelector("[data-audit]"));
+  li.dataset.inspectRule = text(body.querySelector("[data-audit-rule]"));
+  li.dataset.inspectThresholds = [...body.querySelectorAll("[data-ins-thresholds] > li")].map(text).join("|");
   li.dataset.inspectRests = [...body.querySelectorAll(".ins-rests > li")].map((node) => node.dataset.rest || "missing").join("|");
   li.dataset.inspectEvidence = [...body.querySelectorAll("[data-inspected-evidence]")].map((node) => node.dataset.inspectedEvidence).join(" ");
   li.dataset.inspectEvent = (body.querySelector("[data-inspected-event]") || { dataset: {} }).dataset.inspectedEvent || "";
@@ -151,6 +153,30 @@ async function run() {
   lead.querySelector(".an-text").click();
   await sleep(100);
   record(frame, "sentence-verified", { sentenceCites: [...lead.querySelectorAll("[data-cite]")].map((chip) => chip.dataset.cite).join("|") });
+
+  // A sentence that restates a threshold: it says so quietly on the sentence, and in words in the inspector.
+  const restating = doc.querySelector("#analysis [data-an-sentence].has-thresholds");
+  if (restating) {
+    const of = restating.closest(".an-scope").dataset.anScope;
+    (of ? doc.querySelector(`#scorecard a.score-row[data-select="${of}"]`) : doc.getElementById("rail-thesis")).click();
+    await sleep(120);
+    restating.querySelector(".an-text").click();
+    await sleep(100);
+    const mark = restating.querySelector(".an-threshold");
+    const flagged = doc.querySelector("#analysis .an-unverified");
+    record(frame, "sentence-restating", {
+      sentenceText: text(restating.querySelector(".an-text")),
+      sentenceVerified: restating.dataset.verified,
+      marksDrawn: [...restating.querySelectorAll(".an-threshold")].filter(visible).map(text).join("|"),
+      markTitle: mark.getAttribute("title"),
+      markColor: win.getComputedStyle(mark).color,
+      markUnderline: win.getComputedStyle(restating.querySelector(".an-text")).textDecorationLine,
+      unverifiedColor: flagged ? win.getComputedStyle(flagged).color : "",
+      markHasLimitGlyph: String(Boolean(mark.querySelector(".g-limit"))),
+    });
+    doc.getElementById("rail-thesis").click();
+    await sleep(120);
+  }
 
   // A citation chip of every kind the record has: each opens what it names. The whole thesis first, then each claim.
   const seen = new Set();
@@ -269,6 +295,21 @@ async function run() {
   frame = await open("?sample=run-events&theme=paper", 1440, 900, "a record without an analysis");
   doc = frame.contentDocument;
   record(frame, "no-analysis", { tapeSource: doc.getElementById("tape").dataset.source || "", analysisChildren: String(doc.getElementById("analysis").childElementCount) });
+
+  // ---- a replayed argument: who wrote it names the cassette and the answers this run used, whole
+  frame = await open("?sample=run-live&theme=paper", 1280, 800, "the live run, to draw a replayed one over");
+  doc = frame.contentDocument;
+  win = frame.contentWindow;
+  const replayed = await readJson("file:///work/docs/examples/analysis/run-model-argument.json");
+  win.renderRun(replayed);
+  await sleep(200);
+  const byline = doc.querySelector('#analysis > .an-scope[data-an-scope=""] [data-an-block="bottom"] .an-by');
+  record(frame, "replayed", { by: text(byline), byClipped: String(byline.scrollWidth > byline.clientWidth + 1), made: text(doc.querySelector('#analysis > .an-scope[data-an-scope=""] [data-an-block="made"]')) });
+  doc.getElementById("tab-method").click();
+  await sleep(120);
+  doc.querySelector('#method .mth-node[data-stage="argument: the claims"] [data-pick-button]').click();
+  await sleep(100);
+  record(frame, "replayed-stage", { stageText: text(doc.getElementById("inspect-body")) });
 
   // ---- states no sample has, drawn by the page's own code from the live sample changed by hand (see the comment at the top)
   frame = await open("?sample=run-live&theme=paper", 1440, 900, "the live run, to be changed");

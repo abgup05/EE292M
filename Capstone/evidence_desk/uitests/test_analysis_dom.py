@@ -134,7 +134,7 @@ def ref_of(run: dict[str, Any], analytic_id: str) -> str:
 
 def test_the_analysis_samples_are_copied_unedited() -> None:
     assert (WEB / "sample-analysis-shapes.json").read_bytes() == (EXAMPLES / "run-hand-built-argument.json").read_bytes(), "run `make sample-analysis`"
-    for sample, run_id in (("sample-run-live.json", "run-8a12ef614117"), ("sample-run-costco.json", "run-72359824897a")):
+    for sample, run_id in (("sample-run-live.json", "run-a3c830947e19"), ("sample-run-costco.json", "run-6560ff7f364f")):
         original = RESULTS / f"{run_id}.json"
         assert json.loads((WEB / sample).read_text(encoding="utf-8"))["id"] == run_id
         if original.is_file():  # results/ is not committed
@@ -150,8 +150,8 @@ def test_the_first_two_samples_offered_are_the_two_live_runs() -> None:
 
 
 @pytest.mark.parametrize(("name", "phrases"), [
-    ("run-live", ("live run of 19 November 2026", "run-8a12ef614117", "Anthropic API", "claude-opus-5-5", "wrote the argument", "copied unedited from results/run-8a12ef614117.json")),
-    ("run-costco", ("live run of 19 November 2026", "run-72359824897a", "Costco", "Anthropic API", "claude-opus-5-5", "copied unedited from results/run-72359824897a.json")),
+    ("run-live", ("live run of 19 November 2026", "run-a3c830947e19", "Anthropic API", "claude-opus-5-5", "wrote the argument", "copied unedited from results/run-a3c830947e19.json")),
+    ("run-costco", ("live run of 19 November 2026", "run-6560ff7f364f", "Costco", "Anthropic API", "claude-opus-5-5", "copied unedited from results/run-6560ff7f364f.json")),
     ("analysis-shapes", ("docs/examples/analysis/run-hand-built-argument.json", "hand-built", "no model", "make sample-analysis")),
 ])
 def test_a_sample_says_where_its_answers_came_from(name: str, phrases: tuple[str, ...]) -> None:
@@ -199,6 +199,65 @@ def test_a_sentence_shows_the_audits_verdict_and_an_unverified_one_says_why(name
         for problem in sentence["problems"]:
             assert problem in words(mark), problem
     assert unverified == run["coverage"]["analysis_sentences_unverified"] > 0, "each argued sample has sentences the audit did not verify"
+
+
+@each_argued
+def test_a_sentence_that_restates_a_threshold_says_so_and_is_not_marked_as_a_failure(name: str) -> None:
+    run = record(name)
+    restating = 0
+    for node, (_, sentence) in zip(page(name).select("#analysis [data-an-sentence]"), all_sentences(run), strict=True):
+        marks = node.select(".an-threshold")
+        listed = sentence.get("thresholds") or []
+        assert [(m["data-threshold"], m["data-threshold-of"]) for m in marks] == [(t["raw"], t["of"]) for t in listed], sentence["text"]
+        assert ("has-thresholds" in node["class"]) == bool(listed)
+        for mark, item in zip(marks, listed, strict=True):
+            assert words(mark) == f"restates a threshold: {item['raw']}"
+            # In words, in the mark's title: the number, whose threshold it is, and that it was not checked as a fact.
+            assert mark["title"].startswith(f"Restates a threshold: {item['raw']} (") and mark["title"].endswith("). Not checked as a fact.")
+            assert mark.select_one(".g-limit") is None and "an-unverified" not in mark["class"], "restating a threshold is not a failure"
+        if listed:
+            restating += 1
+            assert sentence["verified"] and node["data-verified"] == "true"
+    assert restating == run["coverage"]["analysis_sentences_restating"] > 0, "each argued sample has a sentence that restates a threshold"
+
+
+def test_the_inspector_says_what_the_audit_does_in_the_records_own_words() -> None:
+    run = record("run-live")
+    rule = " ".join(run["analysis"]["audit_rule"].split())
+    for name in ("default", "sentence-unverified", "sentence-verified", "sentence-restating"):
+        assert step(name)["data-inspect-rule"] == rule, name
+    # The page writes no rule of its own: what it says beside the mark is the state, and nothing about what was checked.
+    assert step("sentence-verified")["data-inspect-audit-text"].removeprefix("ƒ").strip() in ("Verified by code.", "Verified by code, with a threshold restated.")
+    source = (WEB / "app.js").read_text(encoding="utf-8")
+    assert "every number it writes is carried by something it cites" not in source and "Code checked every sentence" not in source
+    for name in ARGUED:
+        assert words(scope(name).select_one('[data-an-block="made"] [data-audit-rule]')) == " ".join(record(name)["analysis"]["audit_rule"].split())
+    s = step("sentence-restating")
+    sentence = next(x for _, x in all_sentences(run) if " ".join(x["text"].split()) == s["data-sentence-text"])
+    assert sentence["thresholds"] and (s["data-sentence-verified"], s["data-inspect-audit"]) == ("true", "verified-restating")
+    lines = s["data-inspect-thresholds"].split("|")
+    assert len(lines) == len(sentence["thresholds"])
+    for line, item in zip(lines, sentence["thresholds"], strict=True):
+        kind, _, rest = item["of"].partition(":")
+        whose = f"the test of {rest}" if kind == "test" else f"corollary {rest.replace(':', '.')}" if kind == "cor" else item["of"]
+        assert line == f"Restates a threshold: {item['raw']} ({whose}). Not checked as a fact."
+    assert s["data-marks-drawn"].split("|") == [f"restates a threshold: {t['raw']}" for t in sentence["thresholds"]]
+    assert s["data-mark-title"] == lines[0]
+    # A quiet mark, distinct from the one for a sentence the audit did not verify: no limit glyph, no wavy rule, another colour.
+    assert (s["data-mark-has-limit-glyph"], s["data-mark-underline"]) == ("false", "none")
+    assert s["data-unverified-color"] and s["data-mark-color"] != s["data-unverified-color"]
+
+
+def test_a_replayed_argument_says_which_recorded_answers_it_used_whole() -> None:
+    """Drawn by the page's own code from docs/examples/analysis/run-model-argument.json (uitests/analysis.html says how)."""
+    run = json.loads((EXAMPLES / "run-model-argument.json").read_text(encoding="utf-8"))
+    detail, proposer = run["analysis"]["argument_detail"], run["analysis"]["corollaries_by"]
+    assert detail.startswith("replayed from cassette ") and "recorded answers used" in detail
+    s = step("replayed")
+    assert detail in s["data-by"] and s["data-by-clipped"] == "false", "the line that says who wrote it is whole and inside its pane"
+    assert detail in s["data-made"] and proposer in s["data-made"]
+    assert (s["data-page-sideways"], s["data-centre-sideways"]) == ("0", "0")
+    assert detail in step("replayed-stage")["data-stage-text"]
 
 
 @each_argued
@@ -257,7 +316,7 @@ def test_who_wrote_the_argument_is_said_in_the_records_words(name: str) -> None:
     assert detail in made and run["analysis"]["corollaries_by"] in made
     assert f"{run['analysis']['argument_claims_answered']} of {run['analysis']['argument_claims_asked']} claims argued" in made
     audit = scope(name).select_one("[data-an-audit]")
-    for field in ("analysis_sentences_verified", "analysis_sentences_written", "analysis_sentences_unverified", "analysis_sentences_cut"):
+    for field in ("analysis_sentences_verified", "analysis_sentences_written", "analysis_sentences_restating", "analysis_sentences_unverified", "analysis_sentences_cut"):
         assert words(audit.select_one(f'[data-coverage="{field}"]')) == f"{run['coverage'][field]:,}"
 
 
@@ -559,7 +618,8 @@ def test_selecting_a_sentence_reads_the_audit_and_what_it_rests_on() -> None:
     assert s["data-reason-drawn"].removeprefix("▲ Not verified: ").split("; ")[0] in s["data-inspect-audit-text"]
     assert s["data-inspect-rests"] == s["data-sentence-cites"]
     s = step("sentence-verified")
-    assert s["data-inspect-audit"] == "verified" and s["data-inspect-rests"] == s["data-sentence-cites"]
+    lead = record("run-live")["analysis"]["thesis"]["bottom_line"][0]
+    assert s["data-inspect-audit"] == ("verified-restating" if lead.get("thresholds") else "verified") and s["data-inspect-rests"] == s["data-sentence-cites"]
 
 
 def test_a_chip_of_every_kind_opens_the_thing_it_names() -> None:

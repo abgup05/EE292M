@@ -33,7 +33,7 @@
   "checker": "none",
   "checker_detail": "",
   "claim_readers": "grammar, model and model_2",
-  "claim_reader_detail": "replayed from cassette claim-readers: 252 responses recorded via the Anthropic API with claude-haiku-5-5 and claude-sonnet-5-5, 2026-11-18 to 2026-11-18; replayed from cassette claim-readers: 252 responses recorded via the Anthropic API with claude-haiku-5-5 and claude-sonnet-5-5, 2026-11-18 to 2026-11-18",
+  "claim_reader_detail": "replayed from cassette claim-readers: 6 of its 252 recorded answers used (read), recorded via the Anthropic API with claude-haiku-5-5, 2026-11-18; replayed from cassette claim-readers: 6 of its 252 recorded answers used (read_2), recorded via the Anthropic API with claude-sonnet-5-5, 2026-11-18",
   "claim_reading_rule": "Three readers (grammar, model and model_2): a computed test counts when at least two of them reach the same test (in one normal form). A different test from the third is shown as a dissent and the test still counts; a refusal is not a dissent. When no two agree, every reading is shown and nothing counts.",
   "claims": [
     {

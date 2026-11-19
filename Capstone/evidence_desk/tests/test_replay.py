@@ -105,3 +105,24 @@ def test_each_claim_has_its_recorded_verdict_and_counts(
         "or the verdict rule now reads the same answers differently; if intended, run "
         "`make golden-baseline` and read the diff"
     )
+
+
+def test_each_step_names_who_answered_the_requests_this_run_used(
+    replayed: tuple[Run, list[str], Path],
+) -> None:
+    """The cassette holds a stand-in's answers (plan, assess, check, summarize) and the API's
+    (propose, analyse, conclude), 26 in all. Until version 14.3 every "who answered" line
+    of a replayed run described all 26 at once (seventh referee, finding 3)."""
+    run, _, _ = replayed
+    analysis = run.analysis
+    assert analysis is not None and analysis.argument_by == "model"
+    stand_in, api = "Claude Code subagent standing in for the Anthropic API", "the Anthropic API"
+    assert "7 of its 26 recorded answers used (assess, plan, summarize)" in run.engine_detail
+    assert stand_in in run.engine_detail and "claude-opus-5-5" not in run.engine_detail
+    assert "5 of its 26 recorded answers used (check)" in run.checker_detail
+    assert "claude-haiku-5-5" in run.checker_detail
+    assert "1 of its 26 recorded answers used (propose)" in analysis.corollaries_by
+    assert "6 of its 26 recorded answers used (analyse, conclude)" in analysis.argument_detail
+    for line in (analysis.corollaries_by, analysis.argument_detail):
+        assert f"recorded via {api} with claude-opus-5-5" in line
+        assert "standing in" not in line and "sonnet" not in line

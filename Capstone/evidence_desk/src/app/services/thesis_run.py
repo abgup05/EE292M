@@ -67,6 +67,7 @@ from app.engines.analyser import NoAnalyser
 from app.engines.checker import NoChecker
 from app.engines.extractive import ExtractiveAnalyst
 from app.engines.fallback import FallbackAnalyst
+from app.engines.transport import CHECK_STEPS, ENGINE_STEPS, answered_by, answers_mark
 from app.retrieval.chunk import chunk_document
 from app.retrieval.search import PassageIndex
 from app.services import events as event_service
@@ -269,6 +270,7 @@ def execute_run(
     )
     run.engine = analyst.name
     run.engine_detail = str(getattr(analyst, "detail", "") or "")
+    engine_mark, checker_mark = answers_mark(analyst), answers_mark(reader)
     if reader is not None:
         run.checker = reader.name
         run.checker_detail = str(reader.detail or "")
@@ -624,6 +626,11 @@ def execute_run(
         timing=timer.add,
     )
     timer.mark("finishing")
+    # Until here the two lines described the engine and the checker as configured (for a
+    # cassette, everything in it). Now they say who answered what this run asked.
+    run.engine_detail = answered_by(analyst, ENGINE_STEPS, engine_mark)
+    if reader is not None:
+        run.checker_detail = answered_by(reader, CHECK_STEPS, checker_mark)
     unknowns, dropped = _drop_unverified_numbers(unknowns, run)
     next_steps, dropped_steps = _drop_unverified_numbers(summary.next_steps, run)
     if dropped + dropped_steps:

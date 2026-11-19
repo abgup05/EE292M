@@ -18,6 +18,7 @@ import json
 import os
 import tempfile
 import threading
+from collections.abc import Collection
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -134,6 +135,9 @@ class CassetteTransport:
         self.read_only = read_only
         self.via = via or str(getattr(live, "via", "")) or UNKNOWN
         self._run = _RunState()
+        # Every answer this transport gave, in order: (step, key, via, model, day recorded).
+        # Its own, not a sibling's: the engine's answers are not the checker's.
+        self._served: list[tuple[str, str, str, str, str]] = []
 
     def sibling(self, live: Transport | None = None, via: str = "") -> CassetteTransport:
         """A transport over the same cassette and the same run, with its own ``live`` answerer.
@@ -157,8 +161,54 @@ class CassetteTransport:
 
     @property
     def detail(self) -> str:
-        """The cassette's description, shown on the run record as the engine detail."""
+        """The cassette as a whole: every response in the directory, whoever recorded it.
+
+        Before any request this is all that can be said. What a run used is
+        :meth:`describe_used`: a cassette may hold a stand-in's answers beside the
+        API's, and answers no request asks for any more.
+        """
         return Cassette(self.directory).describe()
+
+    def mark(self) -> int:
+        """A place in this transport's answers: pass it as ``since`` to :meth:`describe_used`
+        to describe only the answers given after it (one run on a transport that serves
+        several)."""
+        with self._lock:
+            return len(self._served)
+
+    def describe_used(self, steps: Collection[str] | None = None, since: int = 0) -> str:
+        """Who recorded the answers this transport actually gave, through what and when.
+
+        Only answers given since ``since`` (:meth:`mark`) and, with ``steps``, only those
+        of these steps; an answer given twice counts once. Unlike :attr:`detail`, a
+        response in the directory that no request asked for is not described. Two runs
+        using one transport at the same time are not told apart: each would list the
+        other's answers given meanwhile.
+        """
+        with self._lock:
+            served = self._served[since:]
+        wanted = None if steps is None else set(steps)
+        used = {row[1]: row for row in served if wanted is None or row[0] in wanted}
+        name = self.directory.name
+        if not used:
+            of_steps = f" ({', '.join(sorted(wanted))})" if wanted else ""
+            return f"replayed from cassette {name}: no recorded answer was used{of_steps}"
+        rows = list(used.values())
+        total = Cassette(self.directory).responses()
+        days = sorted({row[4] for row in rows if row[4]})
+        when = "" if not days else f", {days[0]}" + (f" to {days[-1]}" if len(days) > 1 else "")
+        return (
+            f"replayed from cassette {name}: {len(rows)} of its {total} recorded answers used "
+            f"({', '.join(sorted({row[0] for row in rows}))}), recorded via "
+            f"{_distinct([row[2] for row in rows])} with {_distinct([row[3] for row in rows])}"
+            f"{when}"
+        )
+
+    def _note_served(self, step: str, key: str, envelope: dict[str, Any]) -> None:
+        """Remember one answer given (the lock is held by the caller)."""
+        via = str(envelope.get("via") or UNKNOWN)
+        model = str(envelope.get("model") or UNKNOWN)
+        self._served.append((step, key, via, model, str(envelope.get("recorded_at") or "")[:10]))
 
     def __call__(self, request: ModelRequest) -> dict[str, Any]:
         """The recorded answer to ``request``, or a live one recorded now."""
@@ -168,7 +218,13 @@ class CassetteTransport:
         with self._lock:
             self._start_new_run_if_earlier(request.step)
             if response_path.exists():
-                answer = self._stored_answer(response_path)
+                stored = _read_envelope(response_path)
+                answer = stored["response"]
+                if not isinstance(answer, dict):
+                    raise EngineError(
+                        f"The recorded response {response_path.name} is not a JSON object"
+                    )
+                self._note_served(request.step, key, stored)
                 if not self.read_only:
                     pending_path.unlink(missing_ok=True)
                 return answer
@@ -193,6 +249,7 @@ class CassetteTransport:
         with self._lock:
             _write_json(response_path, envelope)
             pending_path.unlink(missing_ok=True)
+            self._note_served(request.step, key, envelope)
         return answer
 
     def _start_new_run_if_earlier(self, step: str) -> None:
@@ -200,13 +257,6 @@ class CassetteTransport:
         if rank == 0 and missed is not None and rank < STEPS.index(missed):
             self._run.missed_step = None
             self._run.pending_keys.clear()
-
-    @staticmethod
-    def _stored_answer(path: Path) -> dict[str, Any]:
-        answer = _read_envelope(path)["response"]
-        if not isinstance(answer, dict):
-            raise EngineError(f"The recorded response {path.name} is not a JSON object")
-        return answer
 
     def _miss(self, request: ModelRequest, key: str, pending_path: Path) -> CassetteMiss:
         rank, missed = _step_rank(request.step), self._run.missed_step

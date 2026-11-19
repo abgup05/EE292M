@@ -249,7 +249,7 @@ Not a numeric claim this version computes: does not name a measure in the metric
 
 ## Analysis
 
-_The figures under each claim, their readings and the odds: computed by code. Corollaries: proposed by a model (its answers replayed from cassette analysis-example: 14 responses recorded via the Anthropic API with claude-opus-5-5, 2026-11-18 to 2026-11-19), computed by code. The argument: written by a model (its answers replayed from cassette analysis-example: 14 responses recorded via the Anthropic API with claude-opus-5-5, 2026-11-18 to 2026-11-19), every sentence audited by code (a sentence that fails is kept and marked)._
+_The figures under each claim, their readings and the odds: computed by code. Corollaries: proposed by a model (its answers replayed from cassette analysis-example: 1 of its 14 recorded answers used (propose), recorded via the Anthropic API with claude-opus-5-5, 2026-11-19), computed by code. The argument: written by a model (its answers replayed from cassette analysis-example: 6 of its 14 recorded answers used (analyse, conclude), recorded via the Anthropic API with claude-opus-5-5, 2026-11-19), every sentence audited by code (a sentence that fails is kept and marked)._
 
 Parts are read from the tags of the 10-Q filed 2026-08-26 and the 10-K filed 2026-02-25.
 

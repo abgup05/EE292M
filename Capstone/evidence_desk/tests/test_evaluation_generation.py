@@ -389,7 +389,7 @@ def test_generate_exits_3_and_writes_nothing_while_answers_are_pending(
     assert {Path(name).suffix for name in written} == {".json", ".md"}
     markdown = (out / written[1]).read_text()
     head = markdown[: markdown.index("## ")]
-    assert "7 responses recorded via a test script" in head
+    assert "7 of its 7 recorded answers used (assess), recorded via a test script" in head
     assert "upper bound for quote validity" in head
     record = json.loads((out / written[0]).read_text())
     assert record["summary"]["answerable"]["verdict_agreement"]["total"] == 5

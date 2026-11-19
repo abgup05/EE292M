@@ -27,7 +27,8 @@ builder stopped there and required the user to type a price. But SEC itself hold
 **Quarter-end prices from Form 13F** (`core/thirteenf.py`, `sources/thirteenf.py`). An
 institutional manager's 13F-HR lists each position's market value and share count on the last day
 of a calendar quarter. Value ÷ shares is the price the manager valued the position at, which for a
-listed share is that day's close. The filing has a filing date, so the price can be placed in time
+listed share is taken to be that day's close (an assumption, never checked against an exchange:
+see below). The filing has a filing date, so the price can be placed in time
 exactly: a view as of a date reads the newest 13F **filed** on or before it.
 
 - Three managers are read, in this order: Swiss National Bank, California Public Employees
@@ -36,12 +37,29 @@ exactly: a view as of a date reads the newest 13F **filed** on or before it.
   43, 47 and 48 days after the quarter's end. The first holds no banks; the others do.
 - The newest quarter any of them has filed for wins; among managers of that quarter, the first that
   holds the company gives the price, and each other one that holds the same CUSIP **confirms it
-  within 0.5%** or the result says by how much it differs. An unconfirmed price says so.
+  within 0.5%** or the result says by how much it differs.
+- **An unconfirmed price values nothing** (since the fixes after 14.2; the seventh referee's
+  finding 2). Until then `Price.confirmed` was set and read nowhere: a price a second manager put
+  10% away, or that no second manager held, still fed the market value, the P/E, the yield and
+  the reverse DCF, with the difference in a note
+  (`tests/test_thirteenf.py::test_a_price_a_second_manager_puts_ten_percent_away_values_nothing`,
+  written first). Now the view records the price it read and its note, and the market value is
+  "cannot compute" with the reason; nothing else is computed. A price supplied on the request is
+  used as given and labelled as not checked.
+- **A 13F value is the manager's valuation, not an exchange's close.** The form asks for the
+  market value of each position at the quarter's end; what the manager or its custodian used for
+  it is not stated in the filing. The view assumes it is the close of the quarter's last trading
+  day and never compares it with an exchange: there is no exchange data in this project. Two
+  managers agreeing within 0.5% shows that two valuations agree, which is evidence for the close
+  and not a check against one. Every price's note says so.
 - **The issuer is matched by name.** SEC publishes no table from a filer to its CUSIP, and a 13F
   names an issuer in the manager's own abbreviations ("COSTCO WHSL CORP NEW"). Both names are
   reduced to the words that identify them (`issuer_key`) and must be equal. Positions of two CUSIPs
   under one name are two share classes: no price is taken, and the reason lists them. The result
-  always prints the issuer name and CUSIP it matched, so a wrong match is visible.
+  always prints the issuer name and CUSIP it matched, so a wrong match is visible. A single CUSIP
+  under the name is taken to be the common stock: a filer whose only matching position were a
+  preferred or other security of the same name would be priced on it, and only the printed CUSIP
+  would show it.
 - **The unit is read from the table.** The form has asked for dollars since 3 January 2023 and
   thousands before. One of the three managers still reported thousands in February 2025 (met live:
   NVIDIA at "$0.13" beside two filings at $134.29), so the unit is decided by the table's median

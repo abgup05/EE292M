@@ -18,6 +18,8 @@ The rules:
   count or a plain number, never a USD amount.
 - The tolerance is half a unit in the last digit the *statement* wrote: "56%"
   matches 55.6% and 56.4% but not 55.4%; "$46.7 billion" matches $46,743 million.
+  A scale may be a word ("billion") or an abbreviation: "$2.5B", "$45mm", "$46.7bn",
+  "$1.2tn", "$46.7 bn" after a dollar amount, "46.7bn" and "1.2tn" without one.
 - A plain or USD number in a quote with no scale word (a table cell such as
   "Revenue $ 46,743") also matches at 1e3, 1e6 or 1e9 times its value. A count
   of things does not. The quote gate keeps a quote from making such a bare
@@ -90,8 +92,19 @@ SCALES: dict[str, float] = {
     "billion": 1e9,
     "trillion": 1e12,
 }
-# Abbreviations recognised only directly after a dollar amount ("$2.5B", "$45mm").
-SCALE_ABBREVIATIONS: dict[str, float] = {"K": 1e3, "M": 1e6, "B": 1e9, "bn": 1e9, "mm": 1e6}
+# Abbreviations recognised only directly after a dollar amount ("$2.5B", "$45mm", "$1.2tn").
+# The two-letter ones (lower case only: "TN" is Tennessee) may also follow a dollar amount
+# after one space ("$46.7 bn"), and the digits of an amount with no dollar sign directly
+# ("46.7bn"); the single letters never after a space ("$5 B shares" is not five billion).
+SCALE_ABBREVIATIONS: dict[str, float] = {
+    "K": 1e3,
+    "M": 1e6,
+    "B": 1e9,
+    "bn": 1e9,
+    "mm": 1e6,
+    "mn": 1e6,
+    "tn": 1e12,
+}
 TABLE_SCALES: tuple[float, ...] = (1.0, 1e3, 1e6, 1e9)
 MAX_EXEMPT_COUNT = 12
 YEARS = range(1900, 2101)
@@ -302,9 +315,10 @@ _SENTENCE_BREAK = re.compile(r"[.!?;](?=\s)|\n")
 _NUMBER = re.compile(r"\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?|\.\d+")
 _CURRENCY_BEFORE = re.compile(r"(?:US\$|\$|\bUSD)\s?$")
 _SCALE_AFTER = re.compile(r"\s?(thousand|million|billion|trillion)\b", re.IGNORECASE)
-_ABBREVIATION_AFTER = re.compile(r"(K|M|B|bn|mm)\b")
-# Without a dollar sign, only the letters of millions and billions, glued to the digits.
-_GLUED_SCALE_AFTER = re.compile(r"(M|B|bn|mm)\b")
+_ABBREVIATION_AFTER = re.compile(r"(K|M|B|bn|mm|mn|tn)\b|\s(bn|mm|mn|tn)\b")
+# Without a dollar sign, only the letters of millions, billions and trillions, glued to the
+# digits.
+_GLUED_SCALE_AFTER = re.compile(r"(M|B|bn|mm|mn|tn)\b")
 _UNIT_AFTER: tuple[tuple[re.Pattern[str], Unit], ...] = (
     (re.compile(r"\s?%"), "percent"),
     (re.compile(r"\s?percentage[\s-]points?\b", re.IGNORECASE), "percent"),
@@ -382,7 +396,7 @@ def _scale_after(text: str, position: int, currency: bool) -> tuple[float, int]:
     if currency:
         match = _ABBREVIATION_AFTER.match(text, position)
         if match:
-            return SCALE_ABBREVIATIONS[match.group(1)], match.end()
+            return SCALE_ABBREVIATIONS[match.group(1) or match.group(2)], match.end()
         return 1.0, position
     match = _GLUED_SCALE_AFTER.match(text, position)
     if match and _glued_number(text, position):

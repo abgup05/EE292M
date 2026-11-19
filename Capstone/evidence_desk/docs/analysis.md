@@ -439,11 +439,17 @@ more than `MAX_CALLS` (default: all). Then `make examples-analysis` and
 
 ## Not verified
 
-- The corollaries have been answered by a model and recorded (claude-opus-5-5, through the API).
-  The argument has not: its per-claim and thesis requests have been exercised only with a fake
-  transport. Whether the API accepts the two schemas, whether an answer fits in 4,000 tokens and
-  60 seconds, how many sentences pass the audit and whether the argument is one an analyst would
-  respect are unknown until `make record-analysis` is run and its output read.
+- The corollaries and the argument have both been answered by a model: recorded through the
+  API for both examples (claude-opus-5-5, 14 requests, `make record-analysis`), and written in
+  two live runs, NVIDIA and Costco, on 19 November 2026 (105 and 92 sentences, 101 and 85 of
+  them verified by the audit of that day; by today's rule 102 and 85, `make audit-recount`).
+  This item said until the seventh referee read it that no model had answered the argument;
+  that was true when it was written and stale by the time version 14.2 was tagged. What is
+  still not known is whether the argument is one an analyst would respect: nobody has read the
+  two live arguments for that, and "verified" is a statement about numbers and ids, not about
+  the inference.
+- The page's inspector does not show `thresholds` (a sentence that restates a threshold reads
+  "Verified by code" there); the record and the Markdown brief carry it.
 - The two views have run inside a run only on NVIDIA's recorded frames, 13F tables and facts,
   from disk. How long they take against EDGAR with nothing kept, and how often the budgets cut
   them off, was not measured.

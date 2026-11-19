@@ -76,3 +76,56 @@ def test_a_wrong_glued_amount_fails_and_a_right_one_passes() -> None:
 def test_a_day_of_a_month_followed_by_a_percent_sign_is_a_percentage() -> None:
     assert [q.value for q in quantities("In March 15% of units shipped late.")] == [15]
     assert quantities("as of March 15, 2026") == []
+
+
+# "tn" and a spaced "bn" (seventh referee, finding 11) ----------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("text", "value"),
+    [
+        ("a market value of $1.2tn at the close", 1.2e12),
+        ("a market value of $3tn", 3e12),
+        ("revenue of $46.7 bn in the quarter", 46.7e9),
+        ("revenue of $46.7 tn", 46.7e12),
+        ("revenue of $46.7 mn", 46.7e6),
+        ("revenue of $46.7mn", 46.7e6),
+        ("revenue of 46.7tn in the quarter", 46.7e12),
+        ("revenue of 46.7mn", 46.7e6),
+    ],
+)
+def test_trillions_and_spaced_abbreviations_are_amounts(text: str, value: float) -> None:
+    (found,) = quantities(text)
+    assert found.value == pytest.approx(value)
+    assert found.raw.endswith(("tn", "bn", "mn"))
+
+
+def test_a_wrong_figure_in_trillions_is_checked_and_a_right_one_passes() -> None:
+    """ "$1.2tn" was skipped whole: the letters after the digits made it a name."""
+    quote = "The company's market value passed $1.2 trillion in the quarter."
+    assert check_numbers("Its market value passed $1.2tn.", [quote], []).status == "passed"
+    wrong = check_numbers("Its market value passed $1.3tn.", [quote], [])
+    assert wrong.status == "failed" and wrong.unmatched == ["$1.3tn"]
+
+
+def test_a_spaced_bn_matches_billions_and_not_millions() -> None:
+    """ "$46.7 bn" read as 46.7 dollars, so it failed against "$46.7 billion". (A quote's
+    bare "$46.70" still matches it at a thousand, a million and a billion times: the
+    README's blind spot for a bare amount, which this does not close.)"""
+    billions = "Revenue was $46.7 billion, up 56% from a year ago."
+    assert check_numbers("Revenue was $46.7 bn.", [billions], []).status == "passed"
+    millions = "Revenue was $46.7 million, up 56% from a year ago."
+    assert check_numbers("Revenue was $46.7 bn.", [millions], []).status == "failed"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "It runs a $5 TN plant in Memphis.",  # Tennessee, not trillions
+        "The $5 BN line is a rail line.",  # upper case is a name
+        "It paid $46.7 tnt for the freight.",  # a longer word that begins "tn"
+        "It sold 3 bn-class units.",  # no currency, a space: not read as a scale
+    ],
+)
+def test_a_name_that_looks_like_an_abbreviation_is_not_a_scale(text: str) -> None:
+    assert all(found.scale == 1.0 for found in quantities(text))

@@ -632,6 +632,15 @@ def _metrics(text: str) -> list[tuple[int, int, str]]:
     return found
 
 
+def measures_named(text: str) -> list[str]:
+    """Every catalogue measure ``text`` names, as keys in order of first mention.
+
+    The words alone: a claim that names gross margin names it whether or not it states a
+    test this version computes (:mod:`app.core.relevance` uses it).
+    """
+    return list(dict.fromkeys(key for _, _, key in _metrics(_normalised(text))))
+
+
 def _named_period(text: str) -> Period | None:
     between = BETWEEN_YEARS.search(text)
     if between is not None and int(between["b"]) == int(between["a"]) + 1:

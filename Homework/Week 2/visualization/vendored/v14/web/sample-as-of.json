@@ -709,7 +709,59 @@
           "reason": "",
           "normal_form": "gross_margin[Q] > gross_margin[Q-4]"
         }
-      ]
+      ],
+      "analysis": {
+        "relevant": [
+          {
+            "key": "gross_margin",
+            "label": "Gross margin",
+            "reasons": [
+              "test operand",
+              "named in the claim"
+            ],
+            "metric_ids": [
+              "gross_margin:quarter:2026-01-25"
+            ],
+            "analytic_ids": [
+              "an:gross_margin:yoy",
+              "an:gross_margin:trend8",
+              "an:c1:headroom",
+              "an:c1:history"
+            ]
+          }
+        ],
+        "relevance_note": "",
+        "analytic_ids": [
+          "an:c1:headroom",
+          "an:c1:history",
+          "an:gross_margin:yoy",
+          "an:gross_margin:trend8",
+          "an:eq:dio"
+        ],
+        "corollaries": [],
+        "corollary_flag": "",
+        "persistence": {
+          "id": "odds:c1",
+          "claim_id": "c1",
+          "applicable": false,
+          "test": "",
+          "method": "",
+          "step": "",
+          "changes": 0,
+          "paths": 0,
+          "seed": 0,
+          "horizon": 0,
+          "start_value": null,
+          "start_display": "",
+          "probability": null,
+          "display": "",
+          "warning": "",
+          "note": "Odds are computed for a test of a quarterly measure (its value or its growth on a year earlier) against a constant; this test is not one.",
+          "caveat": ""
+        },
+        "argument": null,
+        "argument_note": ""
+      }
     },
     {
       "id": "c2",
@@ -1229,7 +1281,65 @@
           "reason": "",
           "normal_form": "yoy(revenue)[Q] > 200%"
         }
-      ]
+      ],
+      "analysis": {
+        "relevant": [
+          {
+            "key": "revenue",
+            "label": "Revenue",
+            "reasons": [
+              "test operand",
+              "named in the claim"
+            ],
+            "metric_ids": [
+              "revenue:quarter:2026-01-25",
+              "revenue_yoy:quarter:2026-01-25"
+            ],
+            "analytic_ids": [
+              "an:revenue:yoy",
+              "an:revenue:acceleration",
+              "an:revenue:trend8",
+              "an:c2:headroom",
+              "an:c2:needed",
+              "an:c2:history"
+            ]
+          }
+        ],
+        "relevance_note": "",
+        "analytic_ids": [
+          "an:c2:headroom",
+          "an:c2:needed",
+          "an:c2:history",
+          "an:revenue:yoy",
+          "an:revenue:acceleration",
+          "an:revenue:trend8",
+          "an:eq:dso",
+          "an:eq:deferred_revenue"
+        ],
+        "corollaries": [],
+        "corollary_flag": "",
+        "persistence": {
+          "id": "odds:c2",
+          "claim_id": "c2",
+          "applicable": true,
+          "test": "yoy(revenue)[Q] > 200%",
+          "method": "Resampling with replacement: 10,000 paths of 4 quarters, each step drawn from the measure's own last 20 quarterly changes (growth rates), from the current value; the share of paths in which the test holds in every one of the 4 quarters. Seed 20261118. It assumes the past changes are exchangeable: it ignores trend, seasonality and anything not in the facts. It describes the history; it is not a forecast.",
+          "step": "relative",
+          "changes": 20,
+          "paths": 10000,
+          "seed": 20261118,
+          "horizon": 4,
+          "start_value": 68127000000.0,
+          "start_display": "$68.13B",
+          "probability": 0.0,
+          "display": "0%",
+          "warning": "",
+          "note": "In 0% of 10,000 resampled paths the test held in each of the next 4 quarters, drawing from its last 20 quarterly growth rates.",
+          "caveat": "This describes the measure's own past quarterly changes, resampled; it knows nothing of trend, seasonality or events, and is not a forecast."
+        },
+        "argument": null,
+        "argument_note": ""
+      }
     },
     {
       "id": "c3",
@@ -1258,7 +1368,73 @@
           "reason": "'data center' names a part of the company (a segment, a product or a geography), whose revenue is not the company's: only a part's share of revenue is read, from the newest filing's tags, and it has no history in the facts",
           "normal_form": "none"
         }
-      ]
+      ],
+      "analysis": {
+        "relevant": [
+          {
+            "key": "revenue",
+            "label": "Revenue",
+            "reasons": [
+              "named in the claim",
+              "part named in the claim"
+            ],
+            "metric_ids": [
+              "revenue:quarter:2026-01-25",
+              "revenue_yoy:quarter:2026-01-25"
+            ],
+            "analytic_ids": [
+              "an:revenue:yoy",
+              "an:revenue:acceleration",
+              "an:revenue:trend8"
+            ]
+          },
+          {
+            "key": "revenue(segment \"Data Center\")",
+            "label": "Revenue, segment Data Center",
+            "reasons": [
+              "part named in the claim"
+            ],
+            "metric_ids": [],
+            "analytic_ids": [
+              "an:part:data_center:fy:growth",
+              "an:part:data_center:fy:pace"
+            ]
+          }
+        ],
+        "relevance_note": "",
+        "analytic_ids": [
+          "an:part:data_center:fy:growth",
+          "an:part:data_center:fy:pace",
+          "an:revenue:yoy",
+          "an:revenue:acceleration",
+          "an:revenue:trend8",
+          "an:eq:dso",
+          "an:eq:deferred_revenue"
+        ],
+        "corollaries": [],
+        "corollary_flag": "",
+        "persistence": {
+          "id": "odds:c3",
+          "claim_id": "c3",
+          "applicable": false,
+          "test": "",
+          "method": "",
+          "step": "",
+          "changes": 0,
+          "paths": 0,
+          "seed": 0,
+          "horizon": 0,
+          "start_value": null,
+          "start_display": "",
+          "probability": null,
+          "display": "",
+          "warning": "",
+          "note": "The claim has no computed test.",
+          "caveat": ""
+        },
+        "argument": null,
+        "argument_note": ""
+      }
     },
     {
       "id": "c4",
@@ -1413,7 +1589,75 @@
           "reason": "",
           "normal_form": "share(segment \"data center\")[filing] > 80%"
         }
-      ]
+      ],
+      "analysis": {
+        "relevant": [
+          {
+            "key": "revenue(segment \"Data Center\")",
+            "label": "Revenue, segment Data Center",
+            "reasons": [
+              "part named in the claim"
+            ],
+            "metric_ids": [],
+            "analytic_ids": [
+              "an:part:data_center:fy:growth",
+              "an:part:data_center:fy:pace"
+            ]
+          },
+          {
+            "key": "revenue",
+            "label": "Revenue",
+            "reasons": [
+              "test operand",
+              "named in the claim",
+              "part named in the claim"
+            ],
+            "metric_ids": [
+              "revenue:quarter:2026-01-25",
+              "revenue_yoy:quarter:2026-01-25"
+            ],
+            "analytic_ids": [
+              "an:revenue:yoy",
+              "an:revenue:acceleration",
+              "an:revenue:trend8"
+            ]
+          }
+        ],
+        "relevance_note": "",
+        "analytic_ids": [
+          "an:c4:history",
+          "an:part:data_center:fy:growth",
+          "an:part:data_center:fy:pace",
+          "an:revenue:yoy",
+          "an:revenue:acceleration",
+          "an:revenue:trend8",
+          "an:eq:dso",
+          "an:eq:deferred_revenue"
+        ],
+        "corollaries": [],
+        "corollary_flag": "",
+        "persistence": {
+          "id": "odds:c4",
+          "claim_id": "c4",
+          "applicable": false,
+          "test": "",
+          "method": "",
+          "step": "",
+          "changes": 0,
+          "paths": 0,
+          "seed": 0,
+          "horizon": 0,
+          "start_value": null,
+          "start_display": "",
+          "probability": null,
+          "display": "",
+          "warning": "",
+          "note": "Odds are computed for a test of a quarterly measure (its value or its growth on a year earlier) against a constant; this test is not one.",
+          "caveat": ""
+        },
+        "argument": null,
+        "argument_note": ""
+      }
     },
     {
       "id": "c5",
@@ -1789,7 +2033,59 @@
           "reason": "",
           "normal_form": "revenue[FY-18] > revenue[FY-19]"
         }
-      ]
+      ],
+      "analysis": {
+        "relevant": [
+          {
+            "key": "revenue",
+            "label": "Revenue",
+            "reasons": [
+              "test operand",
+              "named in the claim"
+            ],
+            "metric_ids": [
+              "revenue:quarter:2026-01-25",
+              "revenue_yoy:quarter:2026-01-25"
+            ],
+            "analytic_ids": [
+              "an:revenue:fy2008:path",
+              "an:revenue:fy2008:since",
+              "an:bridge:growth:revenue_by_product:fy"
+            ]
+          }
+        ],
+        "relevance_note": "",
+        "analytic_ids": [
+          "an:revenue:fy2008:path",
+          "an:revenue:fy2008:since",
+          "an:bridge:growth:revenue_by_product:fy",
+          "an:eq:dso",
+          "an:eq:deferred_revenue"
+        ],
+        "corollaries": [],
+        "corollary_flag": "",
+        "persistence": {
+          "id": "odds:c5",
+          "claim_id": "c5",
+          "applicable": false,
+          "test": "",
+          "method": "",
+          "step": "",
+          "changes": 0,
+          "paths": 0,
+          "seed": 0,
+          "horizon": 0,
+          "start_value": null,
+          "start_display": "",
+          "probability": null,
+          "display": "",
+          "warning": "",
+          "note": "The test could not be computed, so its persistence cannot be either.",
+          "caveat": ""
+        },
+        "argument": null,
+        "argument_note": ""
+      }
     }
   ],
   "sources": [
@@ -2473,7 +2769,9 @@
     "3 filing(s) were requested; EDGAR lists 1 (the newest annual report filed by 2026-03-01 and the quarterly reports filed after it up to that date).",
     "2 of 5 claim(s) have relevant passages but no judged stance."
   ],
-  "errors": [],
+  "errors": [
+    "The analysis holds what code computed only, with no model's corollaries or argument: this run was given no analysing model (the extractive engine, no key, or a run the watcher started)."
+  ],
   "coverage": {
     "filings_asked": 3,
     "sources_requested": 1,
@@ -2506,7 +2804,31 @@
     "findings_failed_meaning": 0,
     "periods_checked": 7,
     "periods_unverified": 0,
-    "periods_comparative": 0
+    "periods_comparative": 0,
+    "analytics_computed": 16,
+    "analytics_unavailable": 3,
+    "analytics_providers_failed": 0,
+    "corollaries_proposed": 0,
+    "corollaries_computed": 0,
+    "corollaries_as_expected": 0,
+    "corollaries_against": 0,
+    "corollaries_cannot_tell": 0,
+    "corollaries_no_test": 0,
+    "corollaries_not_agreed": 0,
+    "corollary_flags": 0,
+    "analysis_sentences_written": 0,
+    "analysis_sentences_verified": 0,
+    "analysis_sentences_unverified": 0,
+    "analysis_sentences_cut": 0,
+    "analysis_unverified_no_evidence": 0,
+    "analysis_unverified_unknown_id": 0,
+    "analysis_unverified_disallowed_id": 0,
+    "analysis_unverified_number": 0,
+    "analysis_claims_argued": 0,
+    "analysis_claims_asked": 0,
+    "analysis_claims_answered": 0,
+    "analysis_thesis_answered": 0,
+    "analysis_lean_flags": 0
   },
   "metrics": [
     {
@@ -11759,7 +12081,7 @@
     "No quarterly report was read, so no tagged figure is offered from one."
   ],
   "brief": {
-    "summary": "Verdicts across 5 claims — Passages found, not judged: 5. No engine judged the stance of the passages found for 5 claim(s), so read those excerpts before relying on them.",
+    "summary": "Verdicts across 5 claims — Supported: 2; Challenged: 1; Passages found, not judged: 2. No engine judged the stance of the passages found for 2 claim(s), so read those excerpts before relying on them.",
     "summary_origin": "template",
     "unknowns": [],
     "next_steps": [
@@ -11768,7 +12090,8 @@
     ],
     "coverage_status": "partial",
     "status_note": "Part of the thesis could not be assessed with verified evidence. The reasons are listed under coverage limits.",
-    "provenance_note": "Evidence comes from the company's own filings with the SEC. It shows what the company reported, not whether an outside party agrees."
+    "provenance_note": "Evidence comes from the company's own filings with the SEC. It shows what the company reported, not whether an outside party agrees.",
+    "verdicts_after_summary": ""
   },
   "timeline": [],
   "as_of": {
@@ -11794,5 +12117,1358 @@
     "line": "Evidence as of 25 Feb 2026 (10-K), 4 days before the date this run is as of. Newest periodic report: 10-K filed 25 Feb 2026.",
     "requested": "2026-03-01",
     "requested_note": "This run is as of 1 Mar 2026: it read only the filings, 8-Ks and XBRL facts filed by then, and nothing filed later."
-  }
+  },
+  "analysis": {
+    "headline": [
+      {
+        "id": "test:c1",
+        "source": "computed_test",
+        "label": "Gross margin, quarter ended 2026-01-25",
+        "period_label": "",
+        "value": 74.99669734466511,
+        "unit": "percent",
+        "display": "75.0%",
+        "claim_ids": [
+          "c1"
+        ]
+      },
+      {
+        "id": "test:c1",
+        "source": "computed_test",
+        "label": "Gross margin, quarter ended 2025-01-26",
+        "period_label": "",
+        "value": 73.02890849457171,
+        "unit": "percent",
+        "display": "73.0%",
+        "claim_ids": [
+          "c1"
+        ]
+      },
+      {
+        "id": "test:c2",
+        "source": "computed_test",
+        "label": "Revenue growth, quarter ended 2026-01-25 on quarter ended 2025-01-26",
+        "period_label": "",
+        "value": 73.21451272533116,
+        "unit": "percent",
+        "display": "+73.2%",
+        "claim_ids": [
+          "c2"
+        ]
+      },
+      {
+        "id": "revenue:quarter:2026-01-25",
+        "source": "metric",
+        "label": "Revenue",
+        "period_label": "Quarter ended 2026-01-25",
+        "value": 68127000000.0,
+        "unit": "USD",
+        "display": "$68.13B",
+        "claim_ids": [
+          "c3",
+          "c5"
+        ]
+      },
+      {
+        "id": "revenue_yoy:quarter:2026-01-25",
+        "source": "metric",
+        "label": "Revenue growth, year over year",
+        "period_label": "Quarter ended 2026-01-25",
+        "value": 73.21451272533116,
+        "unit": "percent",
+        "display": "+73.2%",
+        "claim_ids": [
+          "c3",
+          "c5"
+        ]
+      },
+      {
+        "id": "an:part:data_center:fy:growth",
+        "source": "analytic",
+        "label": "Data Center revenue, growth on a year earlier",
+        "period_label": "the fiscal year ended 2026-01-25",
+        "value": 68.19491952146961,
+        "unit": "percent",
+        "display": "+68.2%",
+        "claim_ids": [
+          "c3"
+        ]
+      },
+      {
+        "id": "test:c4",
+        "source": "computed_test",
+        "label": "Data Center as a share of revenue, Fiscal year ended 2026-01-25 (10-K)",
+        "period_label": "",
+        "value": 89.718808176421,
+        "unit": "percent",
+        "display": "89.7%",
+        "claim_ids": [
+          "c4"
+        ]
+      }
+    ],
+    "headline_note": "",
+    "untied_metric_ids": [
+      "operating_margin:quarter:2026-01-25",
+      "operating_margin:quarter:2025-10-26",
+      "operating_margin:quarter:2025-07-27",
+      "operating_margin:quarter:2025-04-27",
+      "operating_margin:quarter:2025-01-26",
+      "operating_margin:quarter:2024-10-27",
+      "operating_margin:quarter:2024-07-28",
+      "operating_margin:quarter:2024-04-28",
+      "net_margin:quarter:2026-01-25",
+      "net_margin:quarter:2025-10-26",
+      "net_margin:quarter:2025-07-27",
+      "net_margin:quarter:2025-04-27",
+      "net_margin:quarter:2025-01-26",
+      "net_margin:quarter:2024-10-27",
+      "net_margin:quarter:2024-07-28",
+      "net_margin:quarter:2024-04-28",
+      "eps_diluted:quarter:2026-01-25",
+      "eps_diluted:quarter:2025-10-26",
+      "eps_diluted:quarter:2025-07-27",
+      "eps_diluted:quarter:2025-04-27",
+      "eps_diluted:quarter:2025-01-26",
+      "eps_diluted:quarter:2024-10-27",
+      "eps_diluted:quarter:2024-07-28",
+      "eps_diluted:quarter:2024-04-28",
+      "rnd_ratio:quarter:2026-01-25",
+      "rnd_ratio:quarter:2025-10-26",
+      "rnd_ratio:quarter:2025-07-27",
+      "rnd_ratio:quarter:2025-04-27",
+      "rnd_ratio:quarter:2025-01-26",
+      "rnd_ratio:quarter:2024-10-27",
+      "rnd_ratio:quarter:2024-07-28",
+      "rnd_ratio:quarter:2024-04-28",
+      "operating_cash_flow:quarter:2026-01-25",
+      "operating_cash_flow:quarter:2025-10-26",
+      "operating_cash_flow:quarter:2025-07-27",
+      "operating_cash_flow:quarter:2025-04-27",
+      "operating_cash_flow:quarter:2025-01-26",
+      "operating_cash_flow:quarter:2024-10-27",
+      "operating_cash_flow:quarter:2024-07-28",
+      "operating_cash_flow:quarter:2024-04-28",
+      "capex:quarter:2026-01-25",
+      "capex:quarter:2025-10-26",
+      "capex:quarter:2025-07-27",
+      "capex:quarter:2025-04-27",
+      "capex:quarter:2025-01-26",
+      "capex:quarter:2024-10-27",
+      "capex:quarter:2024-07-28",
+      "capex:quarter:2024-04-28",
+      "free_cash_flow:quarter:2026-01-25",
+      "free_cash_flow:quarter:2025-10-26",
+      "free_cash_flow:quarter:2025-07-27",
+      "free_cash_flow:quarter:2025-04-27",
+      "free_cash_flow:quarter:2025-01-26",
+      "free_cash_flow:quarter:2024-10-27",
+      "free_cash_flow:quarter:2024-07-28",
+      "free_cash_flow:quarter:2024-04-28",
+      "fcf_margin:quarter:2026-01-25",
+      "fcf_margin:quarter:2025-10-26",
+      "fcf_margin:quarter:2025-07-27",
+      "fcf_margin:quarter:2025-04-27",
+      "fcf_margin:quarter:2025-01-26",
+      "fcf_margin:quarter:2024-10-27",
+      "fcf_margin:quarter:2024-07-28",
+      "fcf_margin:quarter:2024-04-28",
+      "operating_margin:annual:2026-01-25",
+      "operating_margin:annual:2025-01-26",
+      "operating_margin:annual:2024-01-28",
+      "operating_margin:annual:2023-01-29",
+      "net_margin:annual:2026-01-25",
+      "net_margin:annual:2025-01-26",
+      "net_margin:annual:2024-01-28",
+      "net_margin:annual:2023-01-29",
+      "eps_diluted:annual:2026-01-25",
+      "eps_diluted:annual:2025-01-26",
+      "eps_diluted:annual:2024-01-28",
+      "eps_diluted:annual:2023-01-29",
+      "rnd_ratio:annual:2026-01-25",
+      "rnd_ratio:annual:2025-01-26",
+      "rnd_ratio:annual:2024-01-28",
+      "rnd_ratio:annual:2023-01-29",
+      "operating_cash_flow:annual:2026-01-25",
+      "operating_cash_flow:annual:2025-01-26",
+      "operating_cash_flow:annual:2024-01-28",
+      "operating_cash_flow:annual:2023-01-29",
+      "capex:annual:2026-01-25",
+      "capex:annual:2025-01-26",
+      "capex:annual:2024-01-28",
+      "capex:annual:2023-01-29",
+      "free_cash_flow:annual:2026-01-25",
+      "free_cash_flow:annual:2025-01-26",
+      "free_cash_flow:annual:2024-01-28",
+      "free_cash_flow:annual:2023-01-29",
+      "fcf_margin:annual:2026-01-25",
+      "fcf_margin:annual:2025-01-26",
+      "fcf_margin:annual:2024-01-28",
+      "fcf_margin:annual:2023-01-29",
+      "cash:instant:2026-01-25",
+      "cash:instant:2025-01-26",
+      "cash_yoy:instant:2026-01-25",
+      "cash_yoy:instant:2025-01-26",
+      "inventory:instant:2026-01-25",
+      "inventory:instant:2025-01-26",
+      "inventory_yoy:instant:2026-01-25",
+      "inventory_yoy:instant:2025-01-26",
+      "receivables:instant:2026-01-25",
+      "receivables:instant:2025-01-26",
+      "receivables_yoy:instant:2026-01-25",
+      "receivables_yoy:instant:2025-01-26",
+      "tagged:revenue_by_segment:nvda:ComputeAndNetworkingSegmentMember:annual:2026-01-25",
+      "tagged:revenue_by_segment:nvda:ComputeAndNetworkingSegmentMember:change:annual:2026-01-25",
+      "tagged:revenue_by_segment:nvda:GraphicsSegmentMember:annual:2026-01-25",
+      "tagged:revenue_by_segment:nvda:GraphicsSegmentMember:change:annual:2026-01-25",
+      "tagged:revenue_by_product:nvda:DataCenterMember:annual:2026-01-25",
+      "tagged:revenue_by_product:nvda:DataCenterMember:change:annual:2026-01-25",
+      "tagged:revenue_by_product:nvda:ComputeMember:annual:2026-01-25",
+      "tagged:revenue_by_product:nvda:ComputeMember:change:annual:2026-01-25",
+      "tagged:revenue_by_product:nvda:NetworkingMember:annual:2026-01-25",
+      "tagged:revenue_by_product:nvda:NetworkingMember:change:annual:2026-01-25",
+      "tagged:revenue_by_product:nvda:GamingMember:annual:2026-01-25",
+      "tagged:revenue_by_product:nvda:GamingMember:change:annual:2026-01-25",
+      "tagged:revenue_by_product:nvda:ProfessionalVisualizationMember:annual:2026-01-25",
+      "tagged:revenue_by_product:nvda:ProfessionalVisualizationMember:change:annual:2026-01-25",
+      "tagged:revenue_by_product:nvda:AutomotiveMember:annual:2026-01-25",
+      "tagged:revenue_by_product:nvda:AutomotiveMember:change:annual:2026-01-25",
+      "tagged:revenue_by_product:nvda:OEMAndOtherMember:annual:2026-01-25",
+      "tagged:revenue_by_product:nvda:OEMAndOtherMember:change:annual:2026-01-25",
+      "tagged:revenue_by_geography:country:US:annual:2026-01-25",
+      "tagged:revenue_by_geography:country:US:change:annual:2026-01-25",
+      "tagged:revenue_by_geography:country:TW:annual:2026-01-25",
+      "tagged:revenue_by_geography:country:TW:change:annual:2026-01-25",
+      "tagged:revenue_by_geography:nvda:ChinaIncludingHongKongMember:annual:2026-01-25",
+      "tagged:revenue_by_geography:nvda:ChinaIncludingHongKongMember:change:annual:2026-01-25",
+      "tagged:revenue_by_geography:nvda:OtherCountriesMember:annual:2026-01-25",
+      "tagged:revenue_by_geography:nvda:OtherCountriesMember:change:annual:2026-01-25",
+      "tagged:revenue_concentration_by_customer:nvda:CustomerOneMember+ComputeandNetworkingSegment:annual:2026-01-25",
+      "tagged:revenue_concentration_by_customer:nvda:CustomerTwoMember+ComputeandNetworkingSegment:annual:2026-01-25",
+      "tagged:receivables_concentration_by_customer:nvda:CustomerOneMember:annual:2026-01-25",
+      "tagged:receivables_concentration_by_customer:nvda:CustomerTwoMember:annual:2026-01-25",
+      "tagged:receivables_concentration_by_customer:nvda:CustomerThreeMember:annual:2026-01-25"
+    ],
+    "untied_note": "Reported figures no claim is tied to: on the record, not part of the analysis.",
+    "breakdowns_note": "Parts are read from the tags of the 10-K filed 2026-02-25.",
+    "analytics": [
+      {
+        "id": "an:gross_margin:yoy",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "yoy",
+        "label": "Gross margin, change on a year earlier",
+        "question": "Which way is gross margin moving on a year earlier?",
+        "scope": "claim",
+        "claim_ids": [
+          "c1"
+        ],
+        "measure": "gross_margin",
+        "period": "Q4 FY2026",
+        "value": 1.9677888500933989,
+        "unit": "points",
+        "display": "+2.0 percentage points",
+        "formula": "75.0% − 73.0%",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "gross_margin[Q4 FY2026]",
+            "label": "Gross margin, Q4 FY2026",
+            "value": 74.99669734466511,
+            "display": "75.0%",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "gross_margin[Q4 FY2025]",
+            "label": "Gross margin, Q4 FY2025",
+            "value": 73.02890849457171,
+            "display": "73.0%",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          }
+        ],
+        "reading": "Gross margin rose 2.0 percentage points on a year earlier: 73.0% in Q4 FY2025, 75.0% in Q4 FY2026.",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:gross_margin:trend8",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "trend8",
+        "label": "Gross margin, change over the last 8 quarters",
+        "question": "Where does gross margin stand against the last two years?",
+        "scope": "claim",
+        "claim_ids": [
+          "c1"
+        ],
+        "measure": "gross_margin",
+        "period": "Q4 FY2026",
+        "value": -0.9703659499102884,
+        "unit": "points",
+        "display": "-1.0 percentage points",
+        "formula": "75.0% − 76.0%",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "gross_margin[Q4 FY2024]",
+            "label": "Gross margin, Q4 FY2024",
+            "value": 75.9670632945754,
+            "display": "76.0%",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "gross_margin[Q4 FY2026]",
+            "label": "Gross margin, Q4 FY2026",
+            "value": 74.99669734466511,
+            "display": "75.0%",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "gross_margin[Q1 FY2026]",
+            "label": "Gross margin, Q1 FY2026",
+            "value": 60.52380736235305,
+            "display": "60.5%",
+            "accession": "0001045810-25-000116",
+            "form": "10-Q",
+            "filed": "2025-05-28"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "gross_margin[Q1 FY2025]",
+            "label": "Gross margin, Q1 FY2025",
+            "value": 78.35201965903855,
+            "display": "78.4%",
+            "accession": "0001045810-25-000116",
+            "form": "10-Q",
+            "filed": "2025-05-28"
+          }
+        ],
+        "reading": "Gross margin is 1.0 percentage points below where it was 8 quarters ago (76.0% in Q4 FY2024, 75.0% in Q4 FY2026); the highest was 78.4% (Q1 FY2025); the lowest was 60.5% (Q1 FY2026).",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:revenue:yoy",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "yoy",
+        "label": "Revenue, change on a year earlier",
+        "question": "Which way is revenue moving on a year earlier?",
+        "scope": "claim",
+        "claim_ids": [
+          "c2",
+          "c3",
+          "c4"
+        ],
+        "measure": "revenue",
+        "period": "Q4 FY2026",
+        "value": 73.21451272533116,
+        "unit": "percent",
+        "display": "+73.2%",
+        "formula": "($68.13B − $39.33B) ÷ $39.33B",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "revenue[Q4 FY2026]",
+            "label": "Revenue, Q4 FY2026",
+            "value": 68127000000.0,
+            "display": "$68.13B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "revenue[Q4 FY2025]",
+            "label": "Revenue, Q4 FY2025",
+            "value": 39331000000.0,
+            "display": "$39.33B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          }
+        ],
+        "reading": "Revenue grew 73.2% on a year earlier: $39.33B in Q4 FY2025, $68.13B in Q4 FY2026.",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:revenue:acceleration",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "acceleration",
+        "label": "Revenue, growth on a year earlier now against the quarter before",
+        "question": "Is revenue growth speeding up or slowing?",
+        "scope": "claim",
+        "claim_ids": [
+          "c2",
+          "c3",
+          "c4"
+        ],
+        "measure": "revenue",
+        "period": "Q4 FY2026",
+        "value": 10.720926270739064,
+        "unit": "points",
+        "display": "+10.7 percentage points",
+        "formula": "+73.2% − +62.5%",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "revenue[Q4 FY2026]",
+            "label": "Revenue, Q4 FY2026",
+            "value": 68127000000.0,
+            "display": "$68.13B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "revenue[Q4 FY2025]",
+            "label": "Revenue, Q4 FY2025",
+            "value": 39331000000.0,
+            "display": "$39.33B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "revenue[Q3 FY2026]",
+            "label": "Revenue, Q3 FY2026",
+            "value": 57006000000.0,
+            "display": "$57.01B",
+            "accession": "0001045810-25-000230",
+            "form": "10-Q",
+            "filed": "2025-11-19"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "revenue[Q3 FY2025]",
+            "label": "Revenue, Q3 FY2025",
+            "value": 35082000000.0,
+            "display": "$35.08B",
+            "accession": "0001045810-25-000230",
+            "form": "10-Q",
+            "filed": "2025-11-19"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "revenue[Q4 FY2024]",
+            "label": "Revenue, Q4 FY2024",
+            "value": 22103000000.0,
+            "display": "$22.10B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          }
+        ],
+        "reading": "Revenue growth on a year earlier was +73.2% in Q4 FY2026 and +62.5% in Q3 FY2026: speeding up, by 10.7 percentage points. Four quarters before, in Q4 FY2025, it was +77.9%.",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:revenue:trend8",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "trend8",
+        "label": "Revenue, compound quarterly growth over the last 8 quarters",
+        "question": "Where does revenue stand against the last two years?",
+        "scope": "claim",
+        "claim_ids": [
+          "c2",
+          "c3",
+          "c4"
+        ],
+        "measure": "revenue",
+        "period": "Q4 FY2026",
+        "value": 15.108794357444655,
+        "unit": "percent",
+        "display": "+15.1%",
+        "formula": "($68.13B ÷ $22.10B)^(1/8) − 1",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "revenue[Q4 FY2024]",
+            "label": "Revenue, Q4 FY2024",
+            "value": 22103000000.0,
+            "display": "$22.10B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "revenue[Q4 FY2026]",
+            "label": "Revenue, Q4 FY2026",
+            "value": 68127000000.0,
+            "display": "$68.13B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          }
+        ],
+        "reading": "Revenue went from $22.10B in Q4 FY2024 to $68.13B in Q4 FY2026, a compound +15.1% a quarter; it rose in each of the 8 quarters.",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:revenue:fy2008:path",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "fiscal_path",
+        "label": "Revenue by fiscal year, to FY2008",
+        "question": "What has revenue done over the last fiscal years?",
+        "scope": "claim",
+        "claim_ids": [
+          "c5"
+        ],
+        "measure": "revenue",
+        "period": "FY2008",
+        "value": null,
+        "unit": "percent",
+        "display": "n/a",
+        "formula": "",
+        "inputs": [],
+        "reading": "",
+        "reading_origin": "code",
+        "available": false,
+        "note": "The facts hold no fiscal year of revenue before FY2008."
+      },
+      {
+        "id": "an:revenue:fy2008:since",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "since",
+        "label": "Revenue in the newest quarter since FY2008, on a year earlier",
+        "question": "What has happened to revenue since that fiscal year ended?",
+        "scope": "claim",
+        "claim_ids": [
+          "c5"
+        ],
+        "measure": "revenue",
+        "period": "Q4 FY2026",
+        "value": 73.21451272533116,
+        "unit": "percent",
+        "display": "+73.2%",
+        "formula": "($68.13B − $39.33B) ÷ $39.33B",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "revenue[Q4 FY2026]",
+            "label": "Revenue, Q4 FY2026",
+            "value": 68127000000.0,
+            "display": "$68.13B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "revenue[Q4 FY2025]",
+            "label": "Revenue, Q4 FY2025",
+            "value": 39331000000.0,
+            "display": "$39.33B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          }
+        ],
+        "reading": "Since FY2008 ended: revenue grew 73.2% on a year earlier: $39.33B in Q4 FY2025, $68.13B in Q4 FY2026.",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:c1:headroom",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "headroom",
+        "label": "Room of the test, against a typical move",
+        "question": "How much room does the test have, against how far the figure usually moves?",
+        "scope": "claim",
+        "claim_ids": [
+          "c1"
+        ],
+        "measure": "gross_margin",
+        "period": "gross_margin[Q4 FY2026] > gross_margin[Q4 FY2025]",
+        "value": 1.9677888500933989,
+        "unit": "points",
+        "display": "+2.0 percentage points",
+        "formula": "75.0% − 73.0%; ÷ 2.0 percentage points",
+        "inputs": [
+          {
+            "ref_kind": "computed_test",
+            "id": "test:c1",
+            "label": "gross_margin[Q] > gross_margin[Q-4]",
+            "value": null,
+            "display": "Holds",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          },
+          {
+            "ref_kind": "computed_test",
+            "id": "test:c1",
+            "label": "Gross margin, quarter ended 2026-01-25",
+            "value": 74.99669734466511,
+            "display": "75.0%",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          },
+          {
+            "ref_kind": "computed_test",
+            "id": "test:c1",
+            "label": "Gross margin, quarter ended 2025-01-26",
+            "value": 73.02890849457171,
+            "display": "73.0%",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          }
+        ],
+        "reading": "The test holds with 2.0 percentage points to spare: 75.0% against 73.0%. Between one reading of this test and the next its left side has typically moved 2.0 percentage points (the median of 19 moves, either way), so the room is less than one typical move (0.98x): an ordinary change against it would flip the outcome.",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:c1:history",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "history",
+        "label": "How often the test held before",
+        "question": "How often has this been true before?",
+        "scope": "claim",
+        "claim_ids": [
+          "c1"
+        ],
+        "measure": "gross_margin",
+        "period": "gross_margin[Q4 FY2026] > gross_margin[Q4 FY2025]",
+        "value": 55.00000000000001,
+        "unit": "percent",
+        "display": "11 of 20",
+        "formula": "11 ÷ 20",
+        "inputs": [
+          {
+            "ref_kind": "computed_test",
+            "id": "test:c1",
+            "label": "gross_margin[Q] > gross_margin[Q-4]",
+            "value": null,
+            "display": "Holds",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          }
+        ],
+        "reading": "Run again as of each 10-K and 10-Q filing date of the last five years, the test gave 20 distinct readings (over 20 filing dates) and held in 11 of them (55.0%); its longest run holding was 6, and its outcome last changed with the filing of 2026-02-25.",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:c2:headroom",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "headroom",
+        "label": "Room of the test, against a typical move",
+        "question": "How much room does the test have, against how far the figure usually moves?",
+        "scope": "claim",
+        "claim_ids": [
+          "c2"
+        ],
+        "measure": "revenue",
+        "period": "yoy(revenue)[Q4 FY2026] > 200%",
+        "value": -126.78548727466884,
+        "unit": "points",
+        "display": "-126.8 percentage points",
+        "formula": "+73.2% − 200%; ÷ 15.5 percentage points",
+        "inputs": [
+          {
+            "ref_kind": "computed_test",
+            "id": "test:c2",
+            "label": "yoy(revenue)[Q] > 200%",
+            "value": null,
+            "display": "Fails",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          },
+          {
+            "ref_kind": "computed_test",
+            "id": "test:c2",
+            "label": "Revenue growth, quarter ended 2026-01-25 on quarter ended 2025-01-26",
+            "value": 73.21451272533116,
+            "display": "+73.2%",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          },
+          {
+            "ref_kind": "computed_test",
+            "id": "test:c2",
+            "label": "the threshold",
+            "value": 200.0,
+            "display": "200%",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          }
+        ],
+        "reading": "The test fails by 126.8 percentage points: +73.2% against 200%. Between one reading of this test and the next its left side has typically moved 15.5 percentage points (the median of 19 moves, either way), so the room is 8.19x a typical move.",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:c2:needed",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "needed",
+        "label": "Needed against reached",
+        "question": "How far short did it fall?",
+        "scope": "claim",
+        "claim_ids": [
+          "c2"
+        ],
+        "measure": "revenue",
+        "period": "yoy(revenue)[Q4 FY2026] > 200%",
+        "value": -49866000000.0,
+        "unit": "USD",
+        "display": "-$49.87B",
+        "formula": "$68.13B − $39.33B × (1 + 200%)",
+        "inputs": [
+          {
+            "ref_kind": "computed_test",
+            "id": "test:c2",
+            "label": "yoy(revenue)[Q] > 200%",
+            "value": null,
+            "display": "Fails",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          },
+          {
+            "ref_kind": "computed_test",
+            "id": "test:c2",
+            "label": "Revenue, quarter ended 2026-01-25",
+            "value": 68127000000.0,
+            "display": "$68.13B",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          },
+          {
+            "ref_kind": "computed_test",
+            "id": "test:c2",
+            "label": "Revenue, quarter ended 2025-01-26",
+            "value": 39331000000.0,
+            "display": "$39.33B",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          }
+        ],
+        "reading": "To hold, revenue had to reach $117.99B ($39.33B grown by 200%); it reached $68.13B, $49.87B short.",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:c2:history",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "history",
+        "label": "How often the test held before",
+        "question": "How often has this been true before?",
+        "scope": "claim",
+        "claim_ids": [
+          "c2"
+        ],
+        "measure": "revenue",
+        "period": "yoy(revenue)[Q4 FY2026] > 200%",
+        "value": 15.0,
+        "unit": "percent",
+        "display": "3 of 20",
+        "formula": "3 ÷ 20",
+        "inputs": [
+          {
+            "ref_kind": "computed_test",
+            "id": "test:c2",
+            "label": "yoy(revenue)[Q] > 200%",
+            "value": null,
+            "display": "Fails",
+            "accession": "",
+            "form": "",
+            "filed": ""
+          }
+        ],
+        "reading": "Run again as of each 10-K and 10-Q filing date of the last five years, the test gave 20 distinct readings (over 20 filing dates) and held in 3 of them (15.0%); its longest run holding was 3, and its outcome last changed with the filing of 2024-08-28.",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:c4:history",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "history",
+        "label": "How often the test held before",
+        "question": "How often has this been true before?",
+        "scope": "claim",
+        "claim_ids": [
+          "c4"
+        ],
+        "measure": "",
+        "period": "share(segment \"Data Center\")[10-K filed 2026-02-25, Fiscal year ended 2026-01-25] > 80%",
+        "value": null,
+        "unit": "percent",
+        "display": "n/a",
+        "formula": "",
+        "inputs": [],
+        "reading": "",
+        "reading_origin": "code",
+        "available": false,
+        "note": "A share of revenue is read from the newest filing's tagged breakdowns, which have no history in the company facts; no history is drawn."
+      },
+      {
+        "id": "an:eq:dso",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "earnings_quality",
+        "label": "Receivable days: accounts receivable ÷ the quarter's revenue × its days",
+        "question": "Is revenue being collected, or building up in receivables?",
+        "scope": "claim",
+        "claim_ids": [
+          "c2",
+          "c3",
+          "c4",
+          "c5"
+        ],
+        "measure": "receivables",
+        "period": "Q4 FY2026",
+        "value": 51.38059800079263,
+        "unit": "days",
+        "display": "51.4 days",
+        "formula": "$38.47B ÷ $68.13B × 91",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "AccountsReceivableNetCurrent:..2026-01-25",
+            "label": "AccountsReceivableNetCurrent",
+            "value": 38466000000.0,
+            "display": "$38.47B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "Revenues:2025-10-27..2026-01-25",
+            "label": "Revenues",
+            "value": 68127000000.0,
+            "display": "$68.13B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "AccountsReceivableNetCurrent:..2025-01-26",
+            "label": "AccountsReceivableNetCurrent",
+            "value": 23065000000.0,
+            "display": "$23.07B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "Revenues:2024-10-28..2025-01-26",
+            "label": "Revenues",
+            "value": 39331000000.0,
+            "display": "$39.33B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          }
+        ],
+        "reading": "At the end of Q4 FY2026, accounts receivable of $38.47B stood for 51.4 days of the quarter's revenue ($68.13B over 91 days), against 53.4 days a year before: the balance grew +66.8% while revenue grew +73.2%.",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:eq:dio",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "earnings_quality",
+        "label": "Inventory days: inventory ÷ the quarter's cost of revenue × its days",
+        "question": "Is inventory building ahead of sales?",
+        "scope": "claim",
+        "claim_ids": [
+          "c1"
+        ],
+        "measure": "inventory",
+        "period": "Q4 FY2026",
+        "value": 114.34031936127745,
+        "unit": "days",
+        "display": "114.3 days",
+        "formula": "$21.40B ÷ $17.03B × 91",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "InventoryNet:..2026-01-25",
+            "label": "InventoryNet",
+            "value": 21403000000.0,
+            "display": "$21.40B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "CostOfRevenue:2025-10-27..2026-01-25",
+            "label": "CostOfRevenue",
+            "value": 17034000000.0,
+            "display": "$17.03B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "InventoryNet:..2025-01-26",
+            "label": "InventoryNet",
+            "value": 10080000000.0,
+            "display": "$10.08B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "CostOfRevenue:2024-10-28..2025-01-26",
+            "label": "CostOfRevenue",
+            "value": 10608000000.0,
+            "display": "$10.61B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          }
+        ],
+        "reading": "At the end of Q4 FY2026, inventory of $21.40B stood for 114.3 days of the quarter's cost of revenue ($17.03B over 91 days), against 86.5 days a year before: the balance grew +112.3% while cost of revenue grew +60.6%.",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:eq:deferred_revenue",
+        "provider": "facts",
+        "data_origin": "sec_xbrl_facts",
+        "kind": "earnings_quality",
+        "label": "Deferred revenue, change on a year earlier",
+        "question": "Is revenue billed ahead of delivery growing or shrinking?",
+        "scope": "claim",
+        "claim_ids": [
+          "c2",
+          "c3",
+          "c4",
+          "c5"
+        ],
+        "measure": "deferred_revenue",
+        "period": "Q4 FY2026",
+        "value": null,
+        "unit": "percent",
+        "display": "n/a",
+        "formula": "",
+        "inputs": [],
+        "reading": "",
+        "reading_origin": "code",
+        "available": false,
+        "note": "The facts tag no deferred revenue at this quarter's end."
+      },
+      {
+        "id": "an:part:data_center:fy:growth",
+        "provider": "facts",
+        "data_origin": "sec_tagged_breakdowns",
+        "kind": "part_growth",
+        "label": "Data Center revenue, growth on a year earlier",
+        "question": "Is Data Center growing faster or slower than the company?",
+        "scope": "claim",
+        "claim_ids": [
+          "c3",
+          "c4"
+        ],
+        "measure": "revenue(segment \"Data Center\")",
+        "period": "the fiscal year ended 2026-01-25",
+        "value": 68.19491952146961,
+        "unit": "percent",
+        "display": "+68.2%",
+        "formula": "($193.74B − $115.19B) ÷ $115.19B",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:data_center:2025-01-27..2026-01-25",
+            "label": "Data Center, 2025-01-27 to 2026-01-25",
+            "value": 193737000000.0,
+            "display": "$193.74B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:data_center:2024-01-29..2025-01-26",
+            "label": "Data Center, 2024-01-29 to 2025-01-26",
+            "value": 115186000000.0,
+            "display": "$115.19B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:total_revenue:2025-01-27..2026-01-25",
+            "label": "Total revenue, 2025-01-27 to 2026-01-25",
+            "value": 215938000000.0,
+            "display": "$215.94B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:total_revenue:2024-01-29..2025-01-26",
+            "label": "Total revenue, 2024-01-29 to 2025-01-26",
+            "value": 130497000000.0,
+            "display": "$130.50B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          }
+        ],
+        "reading": "Data Center revenue was $193.74B in the fiscal year ended 2026-01-25, +68.2% on a year earlier ($115.19B); the company's revenue grew +65.5%. It was 89.7% of revenue, against 88.3% a year earlier (as the 10-K filed 2026-02-25 tags it).",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:part:data_center:fy:pace",
+        "provider": "facts",
+        "data_origin": "sec_tagged_breakdowns",
+        "kind": "part_pace",
+        "label": "Data Center revenue, growth now against growth before",
+        "question": "Is Data Center growth speeding up or slowing?",
+        "scope": "claim",
+        "claim_ids": [
+          "c3",
+          "c4"
+        ],
+        "measure": "revenue(segment \"Data Center\")",
+        "period": "the fiscal year ended 2026-01-25",
+        "value": -74.17435980520057,
+        "unit": "points",
+        "display": "-74.2 percentage points",
+        "formula": "+68.2% − +142.4%",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:data_center:2025-01-27..2026-01-25",
+            "label": "Data Center, 2025-01-27 to 2026-01-25",
+            "value": 193737000000.0,
+            "display": "$193.74B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:data_center:2024-01-29..2025-01-26",
+            "label": "Data Center, 2024-01-29 to 2025-01-26",
+            "value": 115186000000.0,
+            "display": "$115.19B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:data_center:2023-01-30..2024-01-28",
+            "label": "Data Center, 2023-01-30 to 2024-01-28",
+            "value": 47525000000.0,
+            "display": "$47.52B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          }
+        ],
+        "reading": "Data Center revenue grew +68.2% on a year earlier in the fiscal year ended 2026-01-25, against +142.4% in the fiscal year ended 2025-01-26: slowing, by 74.2 percentage points (as the 10-K filed 2026-02-25 tags it).",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      },
+      {
+        "id": "an:bridge:growth:revenue_by_product:fy",
+        "provider": "facts",
+        "data_origin": "sec_tagged_breakdowns",
+        "kind": "bridge",
+        "label": "Revenue by product or service: each part's contribution to growth",
+        "question": "Which parts of the business drove the growth?",
+        "scope": "claim",
+        "claim_ids": [
+          "c5"
+        ],
+        "measure": "revenue",
+        "period": "the fiscal year ended 2026-01-25",
+        "value": 60.19372092845047,
+        "unit": "points",
+        "display": "+60.2 percentage points",
+        "formula": "($193.74B − $115.19B) ÷ $130.50B",
+        "inputs": [
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:total_revenue:2025-01-27..2026-01-25",
+            "label": "Total revenue, 2025-01-27 to 2026-01-25",
+            "value": 215938000000.0,
+            "display": "$215.94B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:total_revenue:2024-01-29..2025-01-26",
+            "label": "Total revenue, 2024-01-29 to 2025-01-26",
+            "value": 130497000000.0,
+            "display": "$130.50B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:data_center:2025-01-27..2026-01-25",
+            "label": "Data Center, 2025-01-27 to 2026-01-25",
+            "value": 193737000000.0,
+            "display": "$193.74B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:data_center:2024-01-29..2025-01-26",
+            "label": "Data Center, 2024-01-29 to 2025-01-26",
+            "value": 115186000000.0,
+            "display": "$115.19B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:gaming:2025-01-27..2026-01-25",
+            "label": "Gaming, 2025-01-27 to 2026-01-25",
+            "value": 16042000000.0,
+            "display": "$16.04B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:gaming:2024-01-29..2025-01-26",
+            "label": "Gaming, 2024-01-29 to 2025-01-26",
+            "value": 11350000000.0,
+            "display": "$11.35B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:professional_visualization:2025-01-27..2026-01-25",
+            "label": "Professional Visualization, 2025-01-27 to 2026-01-25",
+            "value": 3191000000.0,
+            "display": "$3.19B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:professional_visualization:2024-01-29..2025-01-26",
+            "label": "Professional Visualization, 2024-01-29 to 2025-01-26",
+            "value": 1878000000.0,
+            "display": "$1.88B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:automotive:2025-01-27..2026-01-25",
+            "label": "Automotive, 2025-01-27 to 2026-01-25",
+            "value": 2349000000.0,
+            "display": "$2.35B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:automotive:2024-01-29..2025-01-26",
+            "label": "Automotive, 2024-01-29 to 2025-01-26",
+            "value": 1694000000.0,
+            "display": "$1.69B",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:oem_and_other:2025-01-27..2026-01-25",
+            "label": "OEM and Other, 2025-01-27 to 2026-01-25",
+            "value": 619000000.0,
+            "display": "$619.0M",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          },
+          {
+            "ref_kind": "fact",
+            "id": "0001045810-26-000021:oem_and_other:2024-01-29..2025-01-26",
+            "label": "OEM and Other, 2024-01-29 to 2025-01-26",
+            "value": 389000000.0,
+            "display": "$389.0M",
+            "accession": "0001045810-26-000021",
+            "form": "10-K",
+            "filed": "2026-02-25"
+          }
+        ],
+        "reading": "Revenue grew +65.5% in the fiscal year ended 2026-01-25. Of that growth, each part's contribution: Data Center +60.2 percentage points; Gaming +3.6 percentage points; Professional Visualization +1.0 percentage points; Automotive +0.5 percentage points; OEM and Other +0.2 percentage points (as the 10-K filed 2026-02-25 tags them; the parts shown split the total without overlap).",
+        "reading_origin": "code",
+        "available": true,
+        "note": ""
+      }
+    ],
+    "providers": [
+      "facts"
+    ],
+    "providers_failed": [],
+    "provider_reasons": {},
+    "analytics_by": "code",
+    "corollaries_step": "not_asked",
+    "argument_step": "not_asked",
+    "argument_claims_asked": 0,
+    "argument_claims_answered": 0,
+    "thesis_step": "not_asked",
+    "corollaries_by": "",
+    "corollaries_note": "No corollaries: no model was asked to propose them.",
+    "corollary_rule": "A corollary is an implication a model proposed and code computed. Each is read by the grammar and by the typed form the proposing model wrote: two readers, which is weaker than the two-of-three rule the thesis's own claims are read under. A corollary never moves a verdict; when most of a claim's computed corollaries come out against it, the claim is flagged.",
+    "persistence_method": "Resampling with replacement: 10,000 paths of 4 quarters, each step drawn from the measure's own last N quarterly changes (differences in points for a percent, growth rates for an amount), from the current value; the share of paths in which the test holds in every one of the 4 quarters. Seed 20261118. It assumes the past changes are exchangeable: it ignores trend, seasonality and anything not in the facts. It describes the history; it is not a forecast.",
+    "argument_by": "none",
+    "argument_detail": "",
+    "argument_note": "No model wrote an argument: this run was given no analysing model (the extractive engine, no key, or a run the watcher started). The figures and their readings are code's.",
+    "thesis": null,
+    "flags": []
+  },
+  "timings": [
+    {
+      "stage": "company",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "filings",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "events",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "numbers",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "computed tests and claim readers",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "planning",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "retrieving",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "assessing",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "verifying",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "summary",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "analytics: facts",
+      "seconds": 0.0,
+      "background": false,
+      "note": "part of the analysis"
+    },
+    {
+      "stage": "analysis (all of it)",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "finishing",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    }
+  ]
 }

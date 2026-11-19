@@ -12,7 +12,9 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Protocol
 
+from ed_v14.core.analysis_models import ClaimArgument, ThesisArgument
 from ed_v14.core.claimtest import ClaimTest, NotNumeric
+from ed_v14.core.corollaries import Implication
 from ed_v14.core.documents import FetchedFiling, FilingRef, Passage
 from ed_v14.core.fact_models import CompanyProfile
 from ed_v14.core.metric_models import Metric
@@ -244,3 +246,98 @@ class ClaimReader(Protocol):
 
 # The model readers a run is given beside the grammar: none, one, or two of different models.
 type ClaimReaders = ClaimReader | Sequence[ClaimReader] | None
+
+
+# The analysis (app.services.analysis): what the analysing model is shown, and its port.
+
+
+@dataclass(frozen=True)
+class BriefItem:
+    """One item of the record shown to the analysing model: its id and its text."""
+
+    id: str
+    text: str
+
+
+@dataclass(frozen=True)
+class BriefClaim:
+    """One claim as the analysing model is shown it: its verdict, computed test, findings
+    (verified only), analytics, corollaries and odds, each with the id it may be cited by;
+    ``notes`` the run's own notes on the claim (why no test, a caution, what the 8-Ks do and
+    do not report) and ``not_computed`` what was asked of the facts and could not be had."""
+
+    id: str
+    text: str
+    verdict: str
+    test: str = ""
+    findings: tuple[BriefItem, ...] = ()
+    analytics: tuple[BriefItem, ...] = ()
+    corollaries: tuple[BriefItem, ...] = ()
+    odds: tuple[BriefItem, ...] = ()
+    notes: tuple[str, ...] = ()
+    not_computed: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class AnalysisBrief:
+    """Everything the analysing model is shown: the company, the decision, the claims, the
+    analytics another provider computed about the company as a whole, the reported figures
+    the claims are tied to, the 8-Ks, the date the run is as of ("" for none), and the names
+    of the parts of the business the filings read tag (a corollary may name one). For the
+    thesis's request, ``arguments`` holds each claim's audited argument as text, by claim id
+    (or that it has none, and why)."""
+
+    company: Company
+    decision: str
+    claims: tuple[BriefClaim, ...]
+    analytics: tuple[BriefItem, ...] = ()
+    figures: tuple[BriefItem, ...] = ()
+    events: tuple[BriefItem, ...] = ()
+    as_of: str = ""
+    parts: tuple[str, ...] = ()
+    arguments: tuple[BriefItem, ...] = ()
+
+
+@dataclass(frozen=True)
+class ProposedImplications:
+    """The proposing model's implications, each validated, and what was dropped and why."""
+
+    implications: list[Implication] = field(default_factory=list)
+    problems: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class ArgumentDraft:
+    """The analysing model's argument, parsed and bounded but not yet audited."""
+
+    claims: list[ClaimArgument] = field(default_factory=list)
+    thesis: ThesisArgument | None = None
+    cut: int = 0
+    problems: list[str] = field(default_factory=list)
+
+
+class Analyser(Protocol):
+    """The model that proposes corollaries and argues the analysis: one request for the
+    corollaries, one per claim for its argument (called from several threads at once), then
+    one for the thesis.
+
+    ``name`` is "none" for no model (then no method is called); ``detail`` says which model
+    and how (the API, or the cassette). Every method raises
+    :class:`~app.engines.transport.EngineError` on any failure; the run then records what it
+    has and says why the rest is missing.
+    """
+
+    name: str
+    detail: str
+
+    def propose(self, brief: AnalysisBrief) -> ProposedImplications:
+        """Two or three observable implications for each claim of ``brief``."""
+        ...
+
+    def analyse_claim(self, brief: AnalysisBrief, claim_id: str) -> ArgumentDraft:
+        """The argument about one claim of ``brief`` (``claims`` holds it alone)."""
+        ...
+
+    def analyse_thesis(self, brief: AnalysisBrief) -> ArgumentDraft:
+        """The argument about the thesis (``thesis``), given ``brief.arguments``."""
+        ...

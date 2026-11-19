@@ -1,9 +1,9 @@
 {
-  "commit": "b372c7f88a3964f74bdf4e6559dfad08d70d86a5",
+  "commit": "2b56f7a4b27fcdfd3ca7dff8fbf16ed53c17f72a",
   "package": "ed_v14",
-  "python_files": 114,
-  "ref": "capstone-v14",
-  "renamed_imports": 516,
+  "python_files": 147,
+  "ref": "capstone-v14.2",
+  "renamed_imports": 739,
   "renamed_strings": {
     "services/thesis_run.py": [
       "app. -> ed_v14."
@@ -16,6 +16,7 @@
   "web_files": [
     "app.js",
     "index.html",
+    "sample-analysis-shapes.json",
     "sample-as-of.json",
     "sample-breakdowns-gap.json",
     "sample-breakdowns.json",
@@ -29,6 +30,7 @@
     "sample-readers.json",
     "sample-restatements.json",
     "sample-run-changes.json",
+    "sample-run-costco.json",
     "sample-run-events.json",
     "sample-run-live.json",
     "sample-run-tagged.json",

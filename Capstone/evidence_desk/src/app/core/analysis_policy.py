@@ -26,6 +26,18 @@ PROVIDER_FAILED_ERROR = (
     "The analytics provider {name} gave nothing ({why}); its analytics are missing from the record."
 )
 
+# The claims' arguments are separate requests with nothing shared; this many are sent at once.
+MAX_CONCURRENT_ARGUMENTS = 6
+# The claim readers' requests (one a claim and reader) are sent this many at once.
+MAX_CONCURRENT_READS = 6
+PEER_CLAIM_NOTE = (
+    "This claim compares the company with other companies. Its rank among the filers of its "
+    "SEC industry code on the measure is computed apart from you and shown with the claim. "
+    "The claim-test language states nothing about other companies, so do not propose the "
+    "comparison itself: propose what would be true of the company's own figures if it were "
+    "the one pulling ahead."
+)
+
 # The headline (app.core.relevance): at most this many figures.
 MAX_HEADLINE = 12
 
@@ -50,9 +62,19 @@ PROPOSE_TYPED_FORM = True
 # The model steps (app.engines.analyser)
 PROPOSE_STEP = "propose"
 ANALYSE_STEP = "analyse"
+CONCLUDE_STEP = "conclude"
 ANALYSIS_MODEL_VARIABLE = "ANTHROPIC_ANALYSIS_MODEL"
 PROPOSE_MAX_TOKENS = 8_000
-ANALYSE_MAX_TOKENS = 10_000
+# One claim's argument, or the thesis's, fits well inside this; a whole thesis in one answer
+# ran past 10,000 tokens and would have taken minutes.
+ANALYSE_MAX_TOKENS = 4_000
+# One claim or thesis request; not retried on a timeout. Claims are asked several at once
+# (limits.MAX_CONCURRENT_ASSESSMENTS), so five claims are two rounds of this, then the thesis.
+ANALYSE_TIMEOUT_SECONDS = 60.0
+# The thesis's argument rests on every claim's and has more sections: on the first recording one
+# of two answers was truncated at 4,000 tokens, so it has its own cap and its own time.
+CONCLUDE_MAX_TOKENS = 7_000
+CONCLUDE_TIMEOUT_SECONDS = 90.0
 # One request must finish well under two minutes; it is not retried on a timeout.
 MODEL_TIMEOUT_SECONDS = 110.0
 # Sentences per section of the argument: the assessment and the bottom line are arguments.
@@ -107,6 +129,11 @@ OUT_OF_TIME_WHY = "the run's time limit was reached first"
 COMPUTED_ONLY_ERROR = (
     "The analysis holds what code computed only, with no model's corollaries or argument: {why}."
 )
+ARGUMENT_PARTIAL = (
+    "A model argued {answered} of {total} claim(s); the thesis's argument: {thesis}. Each "
+    "claim without one says why."
+)
+NO_CLAIM_ARGUMENT = "No model's argument for this claim: {why}."
 MODEL_STEP_ERROR = (
     "The analysis is missing a model step ({why}); what the record holds of the analysis "
     "says who wrote it."

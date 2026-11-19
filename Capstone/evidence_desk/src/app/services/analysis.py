@@ -26,14 +26,18 @@ from __future__ import annotations
 
 import logging
 import threading
+import time
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass, field, replace
+from typing import Any
 
 from app.core import analysis_policy as rules
 from app.core.analysis_audit import audit_argument, citables
 from app.core.analysis_models import (
     Analysis,
     Analytic,
+    ArgSentence,
     ClaimAnalysis,
     ClaimArgument,
     Corollary,
@@ -49,8 +53,22 @@ from app.core.claimtest import ClaimTest
 from app.core.corollaries import COUNTED, FactsAt, corollaries, flag
 from app.core.models import Claim, Finding, Run
 from app.core.persistence import persistence
-from app.core.ports import Analyser, AnalysisBrief, BriefClaim, BriefItem, SourceError
-from app.core.relevance import claim_relevance, headline, part_names, untied_metric_ids
+from app.core.ports import (
+    Analyser,
+    AnalysisBrief,
+    ArgumentDraft,
+    BriefClaim,
+    BriefItem,
+    ProposedImplications,
+    SourceError,
+)
+from app.core.relevance import (
+    claim_relevance,
+    compares_with_peers,
+    headline,
+    part_names,
+    untied_metric_ids,
+)
 from app.engines.transport import EngineError
 from app.services.computed import Computed
 from app.services.numbers import NumbersResult
@@ -96,33 +114,158 @@ def _why(exc: Exception) -> str:
     return str(exc)[:MAX_WHY_CHARS] or exc.__class__.__name__
 
 
-def _call(provider: AnalyticsProvider, request: AnalyticsRequest) -> list[Analytic] | str:
-    """The provider's analytics, or why it gave none. A provider with ``budget_seconds`` runs
-    in a thread of its own and is waited for that long: past it the run goes on without it,
-    and the thread is left to finish what it is reading (what it keeps on disk is there for
-    the next run). A provider is code outside this module, so any failure of one is caught
-    here and logged with its trace; a :class:`SourceError` carries a message safe to show."""
-    box: dict[str, list[Analytic] | str] = {}
+Timing = Callable[[str, float, bool, str], None]
 
-    def work() -> None:
+
+def _no_timing(stage: str, seconds: float, background: bool, note: str) -> None:
+    """Timings nobody asked for."""
+
+
+@dataclass
+class _Task:
+    """Work started in a thread of its own: the thread, where it leaves its result, and when
+    it began (by the run's clock)."""
+
+    thread: threading.Thread
+    box: dict[str, Any]
+    began: float
+
+    def joined(self, wait: float | None) -> bool:
+        """Wait up to ``wait`` seconds (None: until it ends); True when it has ended."""
+        self.thread.join(wait)
+        return "out" in self.box
+
+
+def _started(name: str, work: Callable[[], Any], clock: Callable[[], float]) -> _Task:
+    box: dict[str, Any] = {}
+
+    def run() -> None:
+        began = clock()
         try:
-            box["out"] = provider.provide(request)
-        except SourceError as exc:
-            box["out"] = _why(exc)
-        except Exception as exc:  # noqa: BLE001 - see the docstring
-            log.exception("The analytics provider %s failed", provider.name)
-            box["out"] = f"it failed ({exc.__class__.__name__})"
+            box["out"] = work()
+        finally:
+            box["seconds"] = clock() - began
 
-    budget = getattr(provider, "budget_seconds", None)
-    if budget is None:
-        work()
-        return box["out"]
-    thread = threading.Thread(target=work, name=f"provider-{provider.name}", daemon=True)
+    thread = threading.Thread(target=run, name=name, daemon=True)
+    task = _Task(thread, box, clock())
     thread.start()
-    thread.join(budget)
-    if "out" not in box:
-        return rules.PROVIDER_OUT_OF_TIME.format(seconds=budget)
-    return box["out"]
+    return task
+
+
+def _provided(provider: AnalyticsProvider, request: AnalyticsRequest) -> list[Analytic] | str:
+    """The provider's analytics, or why it gave none. A provider is code outside this module,
+    so any failure of one is caught here and logged with its trace; a :class:`SourceError`
+    carries a message safe to show."""
+    try:
+        return provider.provide(request)
+    except SourceError as exc:
+        return _why(exc)
+    except Exception as exc:  # noqa: BLE001 - see the docstring
+        log.exception("The analytics provider %s failed", provider.name)
+        return f"it failed ({exc.__class__.__name__})"
+
+
+@dataclass
+class Background:
+    """What a run starts as soon as its claims are computed, to be joined by the analysis: the
+    providers that read EDGAR, and the corollary proposals. ``reports`` are the tagged
+    breakdowns the parts are read from, with ``breakdowns_note`` saying which or why none."""
+
+    reports: list[BreakdownReport]
+    breakdowns_note: str
+    providers: dict[str, _Task] = field(default_factory=dict)
+    proposal: _Task | None = None
+
+
+def _tests(run: Run, computed: Computed) -> dict[str, tuple[ClaimTest, ComputedTest]]:
+    tests: dict[str, tuple[ClaimTest, ComputedTest]] = {}
+    for claim in run.claims:
+        test = computed.tests.get(claim.id)
+        if test is not None and claim.computed is not None:
+            tests[claim.id] = (test, claim.computed)
+    return tests
+
+
+def _request(
+    run: Run,
+    numbers: NumbersResult,
+    tests: dict[str, tuple[ClaimTest, ComputedTest]],
+    relevant: dict[str, list[RelevantMeasure]],
+    reports: Sequence[BreakdownReport],
+) -> AnalyticsRequest:
+    return AnalyticsRequest(
+        book=numbers.book,
+        calendar=numbers.calendar,
+        measures={claim_id: [m.key for m in items] for claim_id, items in relevant.items()},
+        tests=tests,
+        reports=reports,
+        error=numbers.error or "",
+        company=run.company,
+        claims={claim.id: claim.text for claim in run.claims},
+        as_of=run.inputs.as_of,
+        today=run.started_at.date(),
+        payload=numbers.payload,
+    )
+
+
+def _relevance(
+    run: Run,
+    tests: dict[str, tuple[ClaimTest, ComputedTest]],
+    reports: Sequence[BreakdownReport],
+    findings: Sequence[Finding],
+) -> dict[str, list[RelevantMeasure]]:
+    parts = part_names(reports)
+    return {
+        claim.id: claim_relevance(
+            claim, tests[claim.id][0] if claim.id in tests else None, findings, run.metrics, parts
+        )
+        for claim in run.claims
+    }
+
+
+def start_background(
+    run: Run,
+    numbers: NumbersResult,
+    computed: Computed,
+    analyser: Analyser,
+    *,
+    providers: Sequence[AnalyticsProvider] = DEFAULT_PROVIDERS,
+    read_reports: ReportReader | None = None,
+    out_of_time: Callable[[], bool] = lambda: False,
+    clock: Callable[[], float] = time.monotonic,
+) -> Background:
+    """Start what the analysis needs and nothing later in the run changes: each provider with
+    a time budget (it reads EDGAR), and the request for the corollaries. Called once the
+    claims are computed, so both run while the claims are assessed; the analysis joins them.
+
+    They are given what is known then: each claim's text, its computed test, the measures its
+    test and its words name and the parts the filings tag. A measure that only a finding
+    cites is not known yet, so a provider started here does not see it (the run's own facts
+    provider, which runs at the end, does), and the proposer is not shown a verdict.
+    """
+    reports, note = _reports(computed, read_reports)
+    started = Background(reports, note)
+    if out_of_time():
+        return started
+    tests = _tests(run, computed)
+    relevant = _relevance(run, tests, reports, [])
+    request = _request(run, numbers, tests, relevant, reports)
+    for provider in providers:
+        if getattr(provider, "budget_seconds", None) is not None:
+            started.providers[provider.name] = _started(
+                f"provider-{provider.name}", lambda p=provider: _provided(p, request), clock
+            )
+    if analyser.name != "none" and run.company is not None:
+        brief = _propose_brief(run, relevant, reports)
+
+        def propose() -> ProposedImplications | EngineError:
+            try:
+                return analyser.propose(brief)
+            except EngineError as exc:
+                return exc
+
+        started.proposal = _started("propose", propose, clock)
+    return started
 
 
 def _provide(
@@ -130,16 +273,34 @@ def _provide(
     providers: Sequence[AnalyticsProvider],
     request: AnalyticsRequest,
     analysis: Analysis,
-    out_of_time: Callable[[], bool],
+    background: Background,
+    clock: Callable[[], float],
+    timing: Timing,
 ) -> list[Analytic]:
-    """Every provider's analytics. One that gives nothing is named in
-    ``providers_failed`` with its reason, gets a line in ``run.errors``, and the others
-    still run; one with a time budget is not started once the run's own time is up."""
+    """Every provider's analytics. One with a time budget was started in the background
+    (:func:`start_background`) and is waited for until its budget, counted from its start, is
+    spent; past it the run goes on without it, and its thread is left to finish what it is
+    reading (what it keeps on disk is there for the next run). One that gives nothing is
+    named in ``providers_failed`` with its reason and gets a line in ``run.errors``."""
     analytics: list[Analytic] = []
     for provider in providers:
         analysis.providers.append(provider.name)
-        budgeted = getattr(provider, "budget_seconds", None) is not None
-        found = rules.OUT_OF_TIME_WHY if budgeted and out_of_time() else _call(provider, request)
+        budget = getattr(provider, "budget_seconds", None)
+        began = clock()
+        found: list[Analytic] | str
+        if budget is None:
+            found = _provided(provider, request)
+            timing(f"analytics: {provider.name}", clock() - began, False, "")
+        elif provider.name not in background.providers:
+            found = rules.OUT_OF_TIME_WHY
+        else:
+            task = background.providers[provider.name]
+            if task.joined(max(budget - (clock() - task.began), 0.0)):
+                found = task.box["out"]
+                timing(f"analytics: {provider.name}", task.box["seconds"], True, "")
+            else:
+                found = rules.PROVIDER_OUT_OF_TIME.format(seconds=budget)
+                timing(f"analytics: {provider.name}", float(budget), True, "out of time")
         if isinstance(found, str):
             analysis.providers_failed.append(provider.name)
             analysis.provider_reasons[provider.name] = found
@@ -276,10 +437,11 @@ def _brief(
 
 
 def _reports(
-    computed: Computed, read_reports: ReportReader | None, analysis: Analysis
-) -> list[BreakdownReport]:
-    """The tagged breakdowns the parts are read from: those a computed test already read, else
-    the newest filings' own, read here; a failure is a note, never an error."""
+    computed: Computed, read_reports: ReportReader | None
+) -> tuple[list[BreakdownReport], str]:
+    """The tagged breakdowns the parts are read from (those a computed test already read, else
+    the newest filings' own) and the note saying which, or why none; a failure is a note,
+    never an error."""
     reports = list(computed.reports)
     errors: list[str] = []
     if not reports and read_reports is not None:
@@ -288,11 +450,45 @@ def _reports(
         read = " and ".join(
             f"the {report.filing.form} filed {report.filing.filed_date}" for report in reports
         )
-        analysis.breakdowns_note = " ".join([f"Parts are read from the tags of {read}.", *errors])
-    else:
-        why = " ".join(errors) or "No filing's tagged breakdowns were read."
-        analysis.breakdowns_note = f"No part of the business could be read: {why}"
-    return reports
+        return reports, " ".join([f"Parts are read from the tags of {read}.", *errors])
+    why = " ".join(errors) or "No filing's tagged breakdowns were read."
+    return reports, f"No part of the business could be read: {why}"
+
+
+def _propose_brief(
+    run: Run, relevant: dict[str, list[RelevantMeasure]], reports: Sequence[BreakdownReport]
+) -> AnalysisBrief:
+    """What the proposer is shown: each claim's text, its computed test and why it has none,
+    the reported figures the claims are tied to and the parts the filings tag. No verdict:
+    the proposals are asked for before the claims are assessed."""
+    company = run.company
+    assert company is not None
+    tied = {i for items in relevant.values() for m in items for i in m.metric_ids}
+    return AnalysisBrief(
+        company=company,
+        decision=run.inputs.decision,
+        claims=tuple(
+            BriefClaim(
+                id=claim.id,
+                text=claim.text,
+                verdict="",
+                test=_test_line(claim),
+                notes=tuple(note for note in (claim.compile_note, _peer_note(claim)) if note),
+            )
+            for claim in run.claims
+        ),
+        figures=tuple(
+            BriefItem(m.id, f"{m.label}, {m.period_label}: {m.display}")
+            for m in run.metrics
+            if m.value is not None and m.id in tied
+        )[: rules.MAX_METRICS_SHOWN],
+        as_of=run.inputs.as_of.isoformat() if run.inputs.as_of else "",
+        parts=tuple(dict.fromkeys(label for _, label in part_names(reports))),
+    )
+
+
+def _peer_note(claim: Claim) -> str:
+    return rules.PEER_CLAIM_NOTE if compares_with_peers(claim.text) else ""
 
 
 def analyse_run(
@@ -303,16 +499,33 @@ def analyse_run(
     *,
     providers: Sequence[AnalyticsProvider] = DEFAULT_PROVIDERS,
     read_reports: ReportReader | None = None,
+    background: Background | None = None,
     out_of_time: Callable[[], bool] = lambda: False,
     on_step: Callable[[str], None] = lambda step: None,
+    clock: Callable[[], float] = time.monotonic,
+    timing: Timing = _no_timing,
 ) -> None:
     """Set ``run.analysis`` and each claim's ``analysis``, and count them (see the module
-    docstring). ``read_reports`` reads the tagged breakdowns of the newest filings the run
-    read, and is called only when no computed test read them. ``on_step`` is told before
-    each model request, to show progress."""
+    docstring). ``background`` is what :func:`start_background` started earlier in the run;
+    without it, it is started here. ``read_reports`` reads the tagged breakdowns of the
+    newest filings the run read, and is called only when no computed test read them.
+    ``on_step`` is told before each model request, to show progress; ``timing`` is told how
+    long each part took (its name, seconds, whether it ran in the background, a note)."""
     coverage = run.coverage
+    if background is None:
+        background = start_background(
+            run,
+            numbers,
+            computed,
+            analyser,
+            providers=providers,
+            read_reports=read_reports,
+            out_of_time=out_of_time,
+            clock=clock,
+        )
     analysis = Analysis(
         untied_note=rules.UNTIED,
+        breakdowns_note=background.breakdowns_note,
         corollary_rule=rules.COROLLARY_RULE,
         persistence_method=rules.PERSISTENCE_METHOD.format(
             paths=rules.PERSISTENCE_PATHS,
@@ -322,37 +535,11 @@ def analyse_run(
             seed=rules.PERSISTENCE_SEED,
         ),
     )
-    tests: dict[str, tuple[ClaimTest, ComputedTest]] = {}
-    for claim in run.claims:
-        test = computed.tests.get(claim.id)
-        if test is not None and claim.computed is not None:
-            tests[claim.id] = (test, claim.computed)
-    reports = _reports(computed, read_reports, analysis)
-    parts = part_names(reports)
-    relevant = {
-        claim.id: claim_relevance(
-            claim,
-            tests[claim.id][0] if claim.id in tests else None,
-            run.findings,
-            run.metrics,
-            parts,
-        )
-        for claim in run.claims
-    }
-    request = AnalyticsRequest(
-        book=numbers.book,
-        calendar=numbers.calendar,
-        measures={claim_id: [m.key for m in items] for claim_id, items in relevant.items()},
-        tests=tests,
-        reports=reports,
-        error=numbers.error or "",
-        company=run.company,
-        claims={claim.id: claim.text for claim in run.claims},
-        as_of=run.inputs.as_of,
-        today=run.started_at.date(),
-        payload=numbers.payload,
-    )
-    analytics = _provide(run, providers, request, analysis, out_of_time)
+    tests = _tests(run, computed)
+    reports = background.reports
+    relevant = _relevance(run, tests, reports, run.findings)
+    request = _request(run, numbers, tests, relevant, reports)
+    analytics = _provide(run, providers, request, analysis, background, clock, timing)
     coverage.analytics_computed = sum(1 for item in analytics if item.available)
     coverage.analytics_unavailable = sum(1 for item in analytics if not item.available)
     coverage.analytics_providers_failed = len(analysis.providers_failed)
@@ -384,8 +571,18 @@ def analyse_run(
     analysis.analytics = analytics
     if not analysis.headline:
         analysis.headline_note = rules.NO_HEADLINE
-    found, argument_claims, thesis = _model_steps(
-        run, numbers, reports, analyser, analytics, claimed, analysis, out_of_time, on_step
+    found, argument_claims, thesis, reasons = _model_steps(
+        run,
+        numbers,
+        background,
+        analyser,
+        analytics,
+        claimed,
+        analysis,
+        out_of_time,
+        on_step,
+        timing,
+        clock,
     )
     for claim in run.claims:
         mine = claimed[claim.id]
@@ -399,6 +596,7 @@ def analyse_run(
             corollary_flag=flag(own),
             persistence=mine.odds,
             argument=argument,
+            argument_note="" if argument is not None else reasons.get(claim.id, ""),
         )
         if claim.analysis.corollary_flag:
             analysis.flags.append(f"{claim.id}: {claim.analysis.corollary_flag}")
@@ -426,40 +624,48 @@ def _count_corollaries(run: Run, found: Sequence[Corollary]) -> None:
 def _model_steps(
     run: Run,
     numbers: NumbersResult,
-    reports: Sequence[BreakdownReport],
+    background: Background,
     analyser: Analyser,
     analytics: list[Analytic],
     claimed: dict[str, _Claimed],
     analysis: Analysis,
     out_of_time: Callable[[], bool],
     on_step: Callable[[str], None],
-) -> tuple[list[Corollary], list[ClaimArgument], ThesisArgument | None]:
-    """The two model requests, when there is a model and time. Whatever keeps the record from
+    timing: Timing,
+    clock: Callable[[], float],
+) -> tuple[list[Corollary], list[ClaimArgument], ThesisArgument | None, dict[str, str]]:
+    """The model requests, when there is a model and time. Whatever keeps the record from
     holding a model's argument is a reason on the analysis and one line in ``run.errors``."""
-    coverage = run.coverage
     why = ""
     if analyser.name == "none":
         why = rules.NO_MODEL_WHY
-    elif out_of_time():
-        why = rules.OUT_OF_TIME_WHY
     elif run.company is None:
         why = "the company could not be read"
+    elif background.proposal is None and out_of_time():
+        why = rules.OUT_OF_TIME_WHY
     if why:
         analysis.corollaries_note = rules.NO_PROPOSER
         analysis.argument_note = rules.NO_ARGUMENT.format(why=why)
         run.errors.append(rules.COMPUTED_ONLY_ERROR.format(why=why))
-        return [], [], None
+        return [], [], None, {}
     found: list[Corollary] = []
     failures: list[str] = []
-    on_step("Analysing: proposing corollaries")
-    try:
-        names = list(dict.fromkeys(label for _, label in part_names(reports)))
-        proposed = analyser.propose(_brief(run, analytics, claimed, [], names))
-    except EngineError as exc:
-        analysis.corollaries_step = "failed"
-        analysis.corollaries_note = rules.PROPOSE_FAILED.format(why=_why(exc))
-        failures.append(f"the corollaries: {_why(exc)}")
+    reports = background.reports
+    proposed: ProposedImplications | EngineError
+    if background.proposal is None:
+        proposed = EngineError(rules.OUT_OF_TIME_WHY)
     else:
+        on_step("Analysing: waiting for the proposed corollaries")
+        # Not waited for with a limit of its own: the request has one (its timeout).
+        background.proposal.joined(None)
+        proposed = background.proposal.box["out"]
+        timing("corollaries: proposed by the model", background.proposal.box["seconds"], True, "")
+    if isinstance(proposed, EngineError):
+        analysis.corollaries_step = "failed" if background.proposal is not None else "not_asked"
+        analysis.corollaries_note = rules.PROPOSE_FAILED.format(why=_why(proposed))
+        failures.append(f"the corollaries: {_why(proposed)}")
+    else:
+        began = clock()
         facts = FactsAt(
             book=numbers.book,
             calendar=numbers.calendar,
@@ -479,41 +685,170 @@ def _model_steps(
             dropped = "; ".join(proposed.problems)
             analysis.corollaries_note = f"Dropped from the proposal: {dropped}."
         _count_corollaries(run, found)
-    draft = None
-    if out_of_time():
-        analysis.argument_note = rules.NO_ARGUMENT.format(why=rules.OUT_OF_TIME_WHY)
-        failures.append(f"the argument: {rules.OUT_OF_TIME_WHY}")
-    else:
-        on_step("Analysing: writing the argument")
-        try:
-            draft = analyser.analyse(_brief(run, analytics, claimed, found))
-        except EngineError as exc:
-            analysis.argument_step = "failed"
-            analysis.argument_note = rules.NO_ARGUMENT.format(
-                why=f"the request failed ({_why(exc)})"
-            )
-            failures.append(f"the argument: {_why(exc)}")
+        timing("corollaries: computed", clock() - began, False, "")
+    claims, thesis, reasons = _argue(
+        run,
+        analyser,
+        analytics,
+        claimed,
+        found,
+        analysis,
+        failures,
+        out_of_time,
+        on_step,
+        timing,
+        clock,
+    )
     if failures:
         run.errors.append(rules.MODEL_STEP_ERROR.format(why="; ".join(failures)))
-    if draft is None:
-        return found, [], None
+    return found, claims, thesis, reasons
+
+
+def _argument_text(argument: ClaimArgument) -> str:
+    """A claim's audited argument as the thesis's request is shown it: its lean, its
+    assessment and what decides it, each sentence that failed the audit marked with why."""
+
+    def lines(sentences: Sequence[ArgSentence]) -> str:
+        return " ".join(
+            s.text + ("" if s.verified else f" [UNVERIFIED: {'; '.join(s.problems)}]")
+            for s in sentences
+        )
+
+    parts = [f"Lean: {argument.lean}."]
+    if argument.lean_flag:
+        parts.append(argument.lean_flag)
+    for title, sentences in (
+        ("Assessment", argument.assessment),
+        ("What decides it", argument.decides),
+        ("What would change the verdict", argument.would_change),
+    ):
+        if sentences:
+            parts.append(f"{title}: {lines(sentences)}")
+    return " ".join(parts)
+
+
+def _argue(
+    run: Run,
+    analyser: Analyser,
+    analytics: list[Analytic],
+    claimed: dict[str, _Claimed],
+    found: Sequence[Corollary],
+    analysis: Analysis,
+    failures: list[str],
+    out_of_time: Callable[[], bool],
+    on_step: Callable[[str], None],
+    timing: Timing,
+    clock: Callable[[], float],
+) -> tuple[list[ClaimArgument], ThesisArgument | None, dict[str, str]]:
+    """The argument: one request per claim, several at once, each audited; then one for the
+    thesis, shown the audited arguments. A claim whose request fails, or is not sent for want
+    of time, has no argument and a reason, and the others stand; the thesis's request runs on
+    what there is. Returns the claims' arguments, the thesis's, and each missing one's reason."""
+    coverage = run.coverage
+    brief = _brief(run, analytics, claimed, found)
+    ids = [claim.id for claim in run.claims]
+
+    def one(claim_id: str) -> ArgumentDraft | str | None:
+        if out_of_time():
+            return None
+        try:
+            return analyser.analyse_claim(brief, claim_id)
+        except EngineError as exc:
+            return _why(exc)
+
+    on_step("Analysing: arguing each claim")
+    began = clock()
+    workers = rules.MAX_CONCURRENT_ARGUMENTS
+    with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="analyse") as pool:
+        answers = dict(zip(ids, pool.map(one, ids), strict=True))
+    timing(
+        "argument: the claims",
+        clock() - began,
+        False,
+        f"{len(ids)} request(s), up to {workers} at once",
+    )
+    drafts = {cid: a for cid, a in answers.items() if isinstance(a, ArgumentDraft)}
+    reasons: dict[str, str] = {}
+    for claim_id, answer in answers.items():
+        if answer is None:
+            reasons[claim_id] = rules.NO_CLAIM_ARGUMENT.format(why=rules.OUT_OF_TIME_WHY)
+        elif isinstance(answer, str):
+            reasons[claim_id] = rules.NO_CLAIM_ARGUMENT.format(why=f"the request failed ({answer})")
+            failures.append(f"the argument about {claim_id}: {answer}")
+    asked = sum(1 for answer in answers.values() if answer is not None)
     odds = [mine.odds for mine in claimed.values()]
     known = citables(run, analytics, found, odds)
     withheld = {finding.id for finding in run.unsupported_findings}
     verdicts = {claim.id: claim.verdict for claim in run.claims}
-    claims, thesis, counts = audit_argument(draft.claims, draft.thesis, known, withheld, verdicts)
-    analysis.argument_step = "answered"
+    written = [draft.claims[0] for draft in drafts.values()]
+    claims, _, counts = audit_argument(written, None, known, withheld, verdicts)
+    by_id = {argument.claim_id: argument for argument in claims}
+    thesis: ThesisArgument | None = None
+    thesis_draft: ArgumentDraft | None = None
+    thesis_state = "not asked: " + rules.OUT_OF_TIME_WHY
+    if not out_of_time():
+        on_step("Analysing: arguing the thesis")
+        arguments = tuple(
+            BriefItem(cid, _argument_text(by_id[cid]) if cid in by_id else reasons[cid])
+            for cid in ids
+        )
+        began = clock()
+        try:
+            thesis_draft = analyser.analyse_thesis(replace(brief, arguments=arguments))
+        except EngineError as exc:
+            analysis.thesis_step = "failed"
+            thesis_state = f"the request failed ({_why(exc)})"
+            failures.append(f"the argument about the thesis: {_why(exc)}")
+        else:
+            _, thesis, more = audit_argument([], thesis_draft.thesis, known, withheld, verdicts)
+            counts = counts.merged(more)
+            analysis.thesis_step = "answered"
+            thesis_state = "answered"
+        timing("argument: the thesis", clock() - began, False, "")
+    elif asked:
+        failures.append(f"the argument about the thesis: {rules.OUT_OF_TIME_WHY}")
+    analysis.argument_claims_asked = asked
+    analysis.argument_claims_answered = len(drafts)
+    coverage.analysis_claims_asked = asked
+    coverage.analysis_claims_answered = len(drafts)
+    coverage.analysis_thesis_answered = int(thesis is not None)
+    sent = asked + int(analysis.thesis_step != "not_asked")
+    answered = len(drafts) + int(thesis is not None)
+    if sent == 0:
+        analysis.argument_step = "not_asked"
+        analysis.argument_note = rules.NO_ARGUMENT.format(why=rules.OUT_OF_TIME_WHY)
+        failures.append(f"the argument: {rules.OUT_OF_TIME_WHY}")
+        return [], None, reasons
+    if answered == 0:
+        analysis.argument_step = "failed"
+        first = next((why for why in answers.values() if isinstance(why, str)), thesis_state)
+        analysis.argument_note = rules.NO_ARGUMENT.format(
+            why=f"every request failed (the first: {first})"
+        )
+        return [], None, reasons
+    whole = len(drafts) == len(ids) and thesis is not None
+    analysis.argument_step = "answered" if whole else "partial"
     analysis.argument_by = "model"
     analysis.argument_detail = analyser.detail
-    if draft.problems:
-        analysis.argument_note = "Dropped from the answer: " + "; ".join(draft.problems) + "."
+    notes: list[str] = []
+    if not whole:
+        notes.append(
+            rules.ARGUMENT_PARTIAL.format(answered=len(drafts), total=len(ids), thesis=thesis_state)
+        )
+    dropped = [f"{cid}: {p}" for cid, draft in drafts.items() for p in draft.problems]
+    dropped += [f"thesis: {p}" for p in (thesis_draft.problems if thesis_draft else [])]
+    if dropped:
+        notes.append("Dropped from the answers: " + "; ".join(dropped) + ".")
+    analysis.argument_note = " ".join(notes)
     coverage.analysis_sentences_written = counts.written
     coverage.analysis_sentences_verified = counts.verified
     coverage.analysis_sentences_unverified = counts.unverified
-    coverage.analysis_sentences_cut = draft.cut
+    coverage.analysis_sentences_cut = sum(d.cut for d in drafts.values()) + (
+        thesis_draft.cut if thesis_draft else 0
+    )
     coverage.analysis_unverified_no_evidence = counts.reasons["no_evidence"]
     coverage.analysis_unverified_unknown_id = counts.reasons["unknown_id"]
     coverage.analysis_unverified_disallowed_id = counts.reasons["disallowed_id"]
     coverage.analysis_unverified_number = counts.reasons["number"]
     coverage.analysis_claims_argued = sum(1 for claim in claims if claim.assessment)
-    return found, claims, thesis
+    return claims, thesis, reasons

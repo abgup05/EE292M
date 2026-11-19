@@ -283,7 +283,9 @@ class AnalysisBrief:
     """Everything the analysing model is shown: the company, the decision, the claims, the
     analytics another provider computed about the company as a whole, the reported figures
     the claims are tied to, the 8-Ks, the date the run is as of ("" for none), and the names
-    of the parts of the business the filings read tag (a corollary may name one)."""
+    of the parts of the business the filings read tag (a corollary may name one). For the
+    thesis's request, ``arguments`` holds each claim's audited argument as text, by claim id
+    (or that it has none, and why)."""
 
     company: Company
     decision: str
@@ -293,6 +295,7 @@ class AnalysisBrief:
     events: tuple[BriefItem, ...] = ()
     as_of: str = ""
     parts: tuple[str, ...] = ()
+    arguments: tuple[BriefItem, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -314,12 +317,14 @@ class ArgumentDraft:
 
 
 class Analyser(Protocol):
-    """The model that proposes corollaries and argues the analysis (two requests per run).
+    """The model that proposes corollaries and argues the analysis: one request for the
+    corollaries, one per claim for its argument (called from several threads at once), then
+    one for the thesis.
 
-    ``name`` is "none" for no model (then neither method is called); ``detail`` says which
-    model and how (the API, or the cassette). Both methods raise
-    :class:`~app.engines.transport.EngineError` on any failure; the run then records the
-    computed analysis only and says why.
+    ``name`` is "none" for no model (then no method is called); ``detail`` says which model
+    and how (the API, or the cassette). Every method raises
+    :class:`~app.engines.transport.EngineError` on any failure; the run then records what it
+    has and says why the rest is missing.
     """
 
     name: str
@@ -329,6 +334,10 @@ class Analyser(Protocol):
         """Two or three observable implications for each claim of ``brief``."""
         ...
 
-    def analyse(self, brief: AnalysisBrief) -> ArgumentDraft:
-        """The argued analysis of ``brief``: per claim and for the thesis."""
+    def analyse_claim(self, brief: AnalysisBrief, claim_id: str) -> ArgumentDraft:
+        """The argument about one claim of ``brief`` (``claims`` holds it alone)."""
+        ...
+
+    def analyse_thesis(self, brief: AnalysisBrief) -> ArgumentDraft:
+        """The argument about the thesis (``thesis``), given ``brief.arguments``."""
         ...

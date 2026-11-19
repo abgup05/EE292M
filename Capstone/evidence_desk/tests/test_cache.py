@@ -107,7 +107,7 @@ def _run(store: Store, cache: FilingCache, filings: FakeFilings) -> Run:
 
 def _without_times(run: Run) -> dict[str, Any]:
     """The record without its id, its timestamps and when each source was retrieved."""
-    record = run.model_dump(mode="json", exclude={"id", "started_at", "finished_at"})
+    record = run.model_dump(mode="json", exclude={"id", "started_at", "finished_at", "timings"})
     for source in record["sources"]:
         source.pop("retrieved_at")
     return record

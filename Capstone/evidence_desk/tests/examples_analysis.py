@@ -54,7 +54,7 @@ from app.services.view_providers import run_providers
 from app.sources.frames import FramesSource
 from app.sources.thirteenf import ThirteenFSource
 from app.store import FilingCache, Store
-from tests.fakes import FakeFilings, FakePages, ManualClock, flat_argument
+from tests.fakes import FakeFilings, FakePages, ManualClock, scripted_argument
 from tests.golden_run import replay_copy
 from tests.replay_run import DEFAULT_CASSETTE, recorded_filings
 
@@ -125,7 +125,7 @@ class HandBuilt:
         """The propose or analyse answer for the base run's claims."""
         if request.step == "propose":
             return {"claims": [self._proposal(claim.id) for claim in self.base.claims]}
-        return flat_argument(self._argument())
+        return scripted_argument(self._argument(), request)
 
     @staticmethod
     def _proposal(claim_id: str) -> dict[str, Any]:
@@ -205,7 +205,9 @@ class HandBuilt:
 def providers(filings: FakeFilings) -> tuple[AnalyticsProvider, ...]:
     """The run's own facts, and the outside and market views over the recorded SEC frames
     and 13F tables (read from disk only: nothing is fetched)."""
-    return run_providers(filings, FramesSource(None, FRAMES), ThirteenFSource(None, THIRTEENF))
+    return run_providers(
+        filings, FramesSource(None, FRAMES), ThirteenFSource(None, THIRTEENF), pack=None
+    )
 
 
 def _run(run_id: str, data_dir: Path, analyser: ClaudeAnalyser | None = None) -> Run:
@@ -316,7 +318,8 @@ def replayed(cassette: Path = DEFAULT_CASSETTE) -> Run | None:
         run, pending = replay_copy(cassette, Path(scratch))
     if pending:
         return None
-    return run.model_copy(update={"id": "run-example-analysis-replayed"})
+    # The replay runs on the real clock; its timings would differ every time it is made.
+    return run.model_copy(update={"id": "run-example-analysis-replayed", "timings": []})
 
 
 def analysis_recorded(run: Run | None) -> bool:

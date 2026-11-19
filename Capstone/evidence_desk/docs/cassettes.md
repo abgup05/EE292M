@@ -62,17 +62,21 @@ With `EVIDENCE_DESK_CASSETTE=<dir>` the API and `--engine auto` use the cassette
 records the answers (`via` "the Anthropic API", `model` the configured model name: the engine's
 `ANTHROPIC_MODEL`, or for a check `ANTHROPIC_CHECK_MODEL`, default `claude-haiku-5-5`).
 
-The analysing model (`engines/analyser.py`, version 0.14.2, `docs/analysis.md`) asks two
-requests per run after the summary: `propose` (corollaries for every claim) and then `analyse`
-(the argument, which reads the computed corollaries). Recording, they are recorded in the
-engine's cassette and run like any other step (`model` is `ANTHROPIC_ANALYSIS_MODEL`, default
-the engine's model). Replaying, the cassette is **read-only** for them: a missing answer is never
-written to `pending/`, so a cassette recorded before 0.14.2 still replays every other request, and
-the run records the computed analysis with a note saying the cassette holds no answer and one line
-in its errors. `make record-analysis` adds the answers through the API: two to the example cassette
-and two to `demo/cassettes/analysis-example` (the analysis example of `docs/examples/analysis`,
-whose engine is the extractive one, so that cassette holds nothing else). It sends only a request
-a cassette lacks and never more than `MAX_CALLS` (default 4); see `docs/analysis.md`.
+The analysing model (`engines/analyser.py`, version 0.14.2, `docs/analysis.md`) asks, after the
+summary: one `propose` request (corollaries for every claim), one `analyse` request per claim
+(its argument, which reads the computed corollaries; several are sent at once) and one `conclude`
+request (the thesis's argument, which reads the claims' audited arguments). Each is keyed by its
+content like any other request, so a claim's answer is recorded and replayed apart from the
+others'. Recording, they are recorded in the engine's cassette (`model` is
+`ANTHROPIC_ANALYSIS_MODEL`, default the engine's model). Replaying, the cassette is **read-only**
+for them: a missing answer is never written to `pending/`, so a cassette recorded before 0.14.2
+still replays every other request, and the run records what the cassette does hold (the
+corollaries; the argument of each claim it answers) with a note on what it lacks and one line in
+its errors. `make record-analysis` adds the answers through the API to the example cassette and to
+`demo/cassettes/analysis-example` (the analysis example of `docs/examples/analysis`, whose engine
+is the extractive one, so that cassette holds nothing else): up to 7 requests each, 14 in all. It
+prints the number first, sends only a request a cassette lacks and never more than `MAX_CALLS`
+(default: all); see `docs/analysis.md`.
 
 ## The honesty rule
 

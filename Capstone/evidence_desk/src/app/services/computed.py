@@ -22,8 +22,10 @@ one reader.
 from __future__ import annotations
 
 from collections.abc import Callable, Collection, Sequence
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 
+from app.core import analysis_policy as analysis_rules
 from app.core import policy
 from app.core.breakdown_models import BreakdownReport
 from app.core.claim_eval import HistoryBooks, claim_history, evaluate, newest_periods
@@ -95,14 +97,37 @@ def _reading(reader: str, result: ClaimTest | NotNumeric, newest: Newest) -> Cla
     )
 
 
-def _model_read(run: Run, claim: Claim, reader: ClaimReader) -> ClaimTest | NotNumeric:
-    """A model reader's reading of ``claim``; a failure to ask is recorded, never raised."""
+def _model_read(claim: Claim, reader: ClaimReader) -> tuple[ClaimTest | NotNumeric, str]:
+    """A model reader's reading of ``claim`` and the error line to record ("" for none); a
+    failure to ask is returned as a reading that says so, never raised."""
     try:
-        return reader.read(claim.text)
+        return reader.read(claim.text), ""
     except EngineError as exc:  # its message is safe to show (EngineError's contract)
         why = str(exc)[:MAX_WHY_CHARS]
-        run.errors.append(policy.READER_ERROR.format(claim_id=claim.id, why=why))
-        return NotNumeric(policy.COMPUTED_READER_FAILED.format(why=why))
+        return (
+            NotNumeric(policy.COMPUTED_READER_FAILED.format(why=why)),
+            policy.READER_ERROR.format(claim_id=claim.id, why=why),
+        )
+
+
+def _model_reads(
+    run: Run, models: Sequence[ClaimReader]
+) -> dict[tuple[str, str], ClaimTest | NotNumeric]:
+    """Every model reader's reading of every claim, by (claim id, reader name). The requests
+    share nothing, so several are sent at once; the readings and any error lines are put in
+    claim and reader order whatever order the answers came in."""
+    pairs = [(claim, reader) for claim in run.claims for reader in models]
+    if not pairs:
+        return {}
+    with ThreadPoolExecutor(
+        max_workers=analysis_rules.MAX_CONCURRENT_READS, thread_name_prefix="read"
+    ) as pool:
+        answers = list(pool.map(lambda pair: _model_read(*pair), pairs))
+    run.errors.extend(error for _, error in answers if error)
+    return {
+        (claim.id, reader.name): reading
+        for (claim, reader), (reading, _) in zip(pairs, answers, strict=True)
+    }
 
 
 def read_claims(
@@ -123,11 +148,12 @@ def read_claims(
         run.claim_reader_detail = "; ".join(str(reader.detail or "") for reader in models)
     at = newest or Newest()
     to_compute: dict[str, ReadClaim] = {}
+    read = _model_reads(run, models)
     for claim in run.claims:
         compiled = compile_claim(claim.text)
         results: dict[str, ClaimTest | NotNumeric] = {policy.GRAMMAR_READER: compiled}
         for reader in models:
-            results[reader.name] = _model_read(run, claim, reader)
+            results[reader.name] = read[(claim.id, reader.name)]
         claim.readings = [_reading(name, result, at) for name, result in results.items()]
         agreement = policy.reading_agreement({r.reader: r.normal_form for r in claim.readings})
         chosen = agreement.agreeing[0] if agreement.counts else policy.GRAMMAR_READER

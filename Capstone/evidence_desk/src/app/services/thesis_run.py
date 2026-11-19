@@ -44,6 +44,7 @@ from app.core.models import (
     Run,
     RunStatus,
     SourceKind,
+    StageTiming,
     Stance,
     ThesisRequest,
     UnplacedPeriod,
@@ -69,7 +70,7 @@ from app.engines.fallback import FallbackAnalyst
 from app.retrieval.chunk import chunk_document
 from app.retrieval.search import PassageIndex
 from app.services import events as event_service
-from app.services.analysis import DEFAULT_PROVIDERS, analyse_run
+from app.services.analysis import DEFAULT_PROVIDERS, analyse_run, start_background
 from app.services.computed import compute_claims, count_computed
 from app.services.ingest import Ingested, ingest
 from app.services.numbers import NumbersResult, load_numbers, select_figures
@@ -244,9 +245,14 @@ def execute_run(
     cache = cache if cache is not None else FilingCache()
     reader = None if checker is None or isinstance(checker, NoChecker) else checker
     started = clock()
+    timer = _Timer(run, clock)
 
     def out_of_time() -> bool:
         return clock() - started > limits.RUN_TIME_LIMIT_SECONDS
+
+    def stage(name: str) -> None:
+        timer.mark(name)
+        _stage(run, store, name)
 
     failures = EngineFailures(analyst.name)
     plan_fallbacks = 0
@@ -266,7 +272,7 @@ def execute_run(
     if reader is not None:
         run.checker = reader.name
         run.checker_detail = str(reader.detail or "")
-    _stage(run, store, "company")
+    stage("company")
     try:
         company = filings.company(run.inputs.ticker)
     except SourceError as exc:
@@ -281,7 +287,7 @@ def execute_run(
         for position, text in enumerate(run.inputs.claims, start=1)
     ]
 
-    _stage(run, store, "filings")
+    stage("filings")
     ingested = ingest(
         run,
         company,
@@ -308,10 +314,10 @@ def execute_run(
         )
         return fail_run(run, store, reasons[0])
 
-    _stage(run, store, "events")
+    stage("events")
     timeline = _read_events(run, company, ingested, filings, cache, out_of_time)
 
-    _stage(run, store, "numbers")
+    stage("numbers")
     # The facts are recorded as a source but are not a document: they are never chunked or
     # quoted, and they do not count toward sources requested or read.
     numbers = load_numbers(
@@ -350,6 +356,7 @@ def execute_run(
     # Computed tests: compiled from the claim text, computed from the facts just read. The
     # engine is never asked about them; their outcomes enter the verdicts after the summary.
     newest = newest_reports(ingested.filing_refs.values())
+    timer.mark("computed tests and claim readers")
     computed = compute_claims(
         run,
         numbers,
@@ -379,15 +386,28 @@ def execute_run(
         fetch=False,
     )
     ingested.filing_html.clear()  # megabytes of HTML, needed for the tags and no longer
+    # Started now and joined by the analysis, so that they run while the claims are assessed:
+    # the providers that read EDGAR, and the request for the corollaries.
+    providers = analytics_providers or DEFAULT_PROVIDERS
+    background = start_background(
+        run,
+        numbers,
+        computed,
+        analyser or NoAnalyser(),
+        providers=providers,
+        read_reports=lambda: (part_reports, part_errors),
+        out_of_time=out_of_time,
+        clock=clock,
+    )
 
-    _stage(run, store, "planning")
+    stage("planning")
     queries = engine.plan(run.inputs, company)
     if len(queries) != len(run.claims):
         run.errors.append("The plan did not cover every claim; keyword queries were used instead.")
         plan_fallbacks += 1
         queries = deterministic.plan(run.inputs, company)
 
-    _stage(run, store, "retrieving")
+    stage("retrieving")
     passages = [
         passage
         for source_id, document in ingested.documents.items()
@@ -406,7 +426,7 @@ def execute_run(
     stored = {source_id: StoredSource(texts[source_id], urls[source_id]) for source_id in read_ids}
     run.coverage.passages_indexed = len(passages)
 
-    _stage(run, store, "assessing")
+    stage("assessing")
     period_ends = {source.id: _day(source.period_end) for source in run.sources}
     ids = RunIds()
     unknowns: list[str] = []
@@ -553,7 +573,8 @@ def execute_run(
     _record_meaning_limits(run, reader, analyst, unchecked)
     _note_events(run, timeline)
 
-    _stage(run, store, "verifying")
+    stage("verifying")
+    timer.mark("summary")
     summary_step = len(failures)
     summary = engine.summarize(run.inputs, company, run.claims, run.findings)
     model_wrote_summary = (
@@ -589,16 +610,20 @@ def execute_run(
         run.stage_detail = step
         store.save_run(run)
 
+    timer.mark("analysis (all of it)")
     analyse_run(
         run,
         numbers,
         computed,
         analyser or NoAnalyser(),
-        providers=analytics_providers or DEFAULT_PROVIDERS,
-        read_reports=lambda: (part_reports, part_errors),
+        providers=providers,
+        background=background,
         out_of_time=out_of_time,
         on_step=analysing,
+        clock=clock,
+        timing=timer.add,
     )
+    timer.mark("finishing")
     unknowns, dropped = _drop_unverified_numbers(unknowns, run)
     next_steps, dropped_steps = _drop_unverified_numbers(summary.next_steps, run)
     if dropped + dropped_steps:
@@ -644,6 +669,7 @@ def execute_run(
         provenance_note=policy.provenance_note(run.sources),
         verdicts_after_summary=verdicts_after,
     )
+    timer.mark("")
     return _finish(run, store, status)
 
 
@@ -903,6 +929,34 @@ def _distinct(items: list[str]) -> list[str]:
             seen.add(text.casefold())
             kept.append(text)
     return kept
+
+
+class _Timer:
+    """The run's timings: each stage from its mark to the next, by the run's clock."""
+
+    def __init__(self, run: Run, clock: Callable[[], float]) -> None:
+        self.run, self.clock = run, clock
+        self.name, self.began = "", clock()
+
+    def mark(self, name: str) -> None:
+        """End the stage being timed, if any, and begin ``name``."""
+        now = self.clock()
+        if self.name:
+            self.run.timings.append(
+                StageTiming(stage=self.name, seconds=round(now - self.began, 3))
+            )
+        self.name, self.began = name, now
+
+    def add(self, stage: str, seconds: float, background: bool, note: str) -> None:
+        """A part timed elsewhere (inside the analysis, or in the background)."""
+        self.run.timings.append(
+            StageTiming(
+                stage=stage,
+                seconds=round(seconds, 3),
+                background=background,
+                note=note or ("" if background else "part of the analysis"),
+            )
+        )
 
 
 def _stage(run: Run, store: Store, stage: str) -> None:

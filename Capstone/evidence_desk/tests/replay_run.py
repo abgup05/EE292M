@@ -21,6 +21,7 @@ import argparse
 import json
 import sys
 import tempfile
+import threading
 from pathlib import Path
 
 from app.api import create_app
@@ -80,12 +81,14 @@ class CappedTransport:
         self.via = live.via
         self.max_calls = max_calls
         self.sent = 0
+        self._lock = threading.Lock()
 
     def __call__(self, request: ModelRequest) -> dict[str, object]:
-        """Send ``request`` unless the cap is reached."""
-        if self.sent >= self.max_calls:
-            raise EngineError(f"the cap of {self.max_calls} model request(s) is reached")
-        self.sent += 1
+        """Send ``request`` unless the cap is reached (it is called from several threads)."""
+        with self._lock:
+            if self.sent >= self.max_calls:
+                raise EngineError(f"the cap of {self.max_calls} model request(s) is reached")
+            self.sent += 1
         return self.live(request)
 
 
@@ -192,6 +195,8 @@ def analysis_lines(run: Run, live: CappedTransport | None = None) -> list[str]:
         f"({coverage.corollaries_as_expected} as implied, {coverage.corollaries_against} "
         "against)",
         f"argument: by {analysis.argument_by} ({analysis.argument_detail or 'no model'}); "
+        f"{analysis.argument_step}: claims answered {analysis.argument_claims_answered} of "
+        f"{analysis.argument_claims_asked} asked, thesis {analysis.thesis_step}; "
         f"sentences written {coverage.analysis_sentences_written}, verified "
         f"{coverage.analysis_sentences_verified}, unverified "
         f"{coverage.analysis_sentences_unverified}",
@@ -220,7 +225,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--record-analysis",
         action="store_true",
-        help="ask the analysis model (API) for the propose and analyse answers the cassette lacks",
+        help="ask the analysis model (API) for the analysis answers the cassette lacks",
     )
     parser.add_argument("--max-calls", type=int, help="the most requests --record-analysis sends")
     args = parser.parse_args(argv)

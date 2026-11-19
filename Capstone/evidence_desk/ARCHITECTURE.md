@@ -81,6 +81,7 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
     src/app/services/breakdowns.py   the latest filing of a form, fetched and read into breakdowns
     src/app/services/events.py  a company's 8-Ks after its newest annual report: listed from the index, the ones the rule picks read through the cache and split; a document that cannot be read is a reason on its event, never an error; the item sections offered to a claim
     src/app/services/computed.py   for a run: compiles every claim, computes the compiled ones and their histories from the facts the run read, and counts the outcomes in the verdicts after the summary; returns the compiled tests and breakdowns for the analysis
+    src/app/sources/reference.py   the reference pack shipped in src/app/reference (SEC frames for filers that ever reported $100 million of revenue, with their industry codes; three managers' 13F positions): read first, EDGAR only for what it lacks; build_reference.py builds it (`make reference-pack`, `docs/reference-pack.md`)
     src/app/services/view_providers.py   the outside view and the market view as analytics providers of a run: which of their results a run keeps, the question each answers, the claims each is tied to, each provider's time budget; run_providers
     src/app/services/analysis.py   for a run: relevance, analytics from every provider, odds, headline; the two model steps with the corollaries and the audit, and what became of each; what the analysing model is shown
     src/app/services/restatements.py   a company's restatement ledger outside a run, as of a date when given
@@ -273,14 +274,21 @@ nothing filed later reaches any stage, which `tests/lookahead.py` checks (`docs/
    test among other filers, the company's standing in its industry) and the market view (price to earnings, the
    free cash flow yield and the growth the last 13F price implies, about the company as a whole). Each has a
    time budget (20 s and 15 s); one that runs out, or that EDGAR does not answer, is named in
-   `Run.analysis.providers_failed` with its reason and the run carries on. Both honour `as_of`. The odds a quarterly test holds in each of the
+   `Run.analysis.providers_failed` with its reason and the run carries on. Both honour `as_of`. Both read the
+   reference pack shipped with the app first (`sources/reference`), so a host with an empty cache has them at
+   once, and both are started, with the request for the corollaries, as soon as the claims are computed
+   (`start_background`), so that they run beside the assessments. `Run.timings` records how long each stage
+   and each of these took. The odds a quarterly test holds in each of the
    next four quarters (`core/persistence`, 10,000 resampled paths, seed 20261118). Then, with an analysing
    model (`engines/analyser`, `ANTHROPIC_ANALYSIS_MODEL`, default the engine's model, the engine's transport
    or cassette): one `propose` request for every claim's corollaries, read by the grammar and the proposer's
-   typed form and computed by code (`core/corollaries`), then one `analyse` request for the argument, every
-   sentence `{text, cites}`, audited by code (`core/analysis_audit`: ids, evidence, numbers by
-   `core/numcheck`); an unverified sentence is kept and marked. `Run.analysis` records what became of each
-   request (`not_asked`, `failed`, `answered`); whenever the record holds less than a model's analysis (no
+   typed form and computed by code (`core/corollaries`), then the argument: one `analyse` request
+   per claim, up to three at once, and one `conclude` request for the thesis, which is shown the claims'
+   audited arguments (4,000 output tokens and 60 seconds each). Every sentence is `{text, cites}`, audited by
+   code (`core/analysis_audit`: ids, evidence, numbers by `core/numcheck`); an unverified sentence is kept
+   and marked. A claim whose request fails has no argument and says why, and the others stand.
+   `Run.analysis` records what became of each step (`not_asked`, `failed`, `partial`, `answered`, and how
+   many claims were answered); whenever the record holds less than a model's analysis (no
    model, no time, a failed request, a cassette without the answer) it says why and `run.errors` gets one
    line. It never changes a verdict or the status. The watcher's runs get no analysing model.
 

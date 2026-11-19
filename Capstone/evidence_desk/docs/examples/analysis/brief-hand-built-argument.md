@@ -249,7 +249,7 @@ Not a numeric claim this version computes: does not name a measure in the metric
 
 ## Analysis
 
-_The figures under each claim, their readings and the odds: computed by code. Corollaries: proposed by scripted answers made by tests/examples\_analysis.py from the run's own analytics (no model wrote them), computed by code. The argument: written by scripted answers made by tests/examples\_analysis.py from the run's own analytics (no model wrote them), every sentence audited by code (a sentence that fails is kept and marked)._
+_The figures under each claim, their readings and the odds: computed by code. Corollaries: proposed by a model (scripted answers made by tests/examples\_analysis.py from the run's own analytics (no model wrote them)), computed by code. The argument: written by a model (scripted answers made by tests/examples\_analysis.py from the run's own analytics (no model wrote them)), every sentence audited by code (a sentence that fails is kept and marked)._
 
 Parts are read from the tags of the 10-Q filed 2026-08-26 and the 10-K filed 2026-02-25.
 

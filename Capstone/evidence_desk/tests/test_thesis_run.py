@@ -376,7 +376,7 @@ class _SlowEngine(ScriptedAnalyst):
 
 def _comparable(run: Run) -> dict[str, object]:
     """The record without what differs between any two runs: ids and timestamps."""
-    record = run.model_dump(mode="json", exclude={"id", "started_at", "finished_at"})
+    record = run.model_dump(mode="json", exclude={"id", "started_at", "finished_at", "timings"})
     for source in record["sources"]:
         source.pop("retrieved_at")
     return record
@@ -399,7 +399,10 @@ def test_concurrent_assessment_gives_the_sequential_record_in_less_time(store: S
     timings: dict[int, float] = {}
     records: dict[int, dict[str, object]] = {}
     for concurrency in (1, limits.MAX_CONCURRENT_ASSESSMENTS):
-        engine = _SlowEngine(0.2)
+        # Half a second an assessment: five in turn are 2.5 s, three at once 1.0 s. The rest of
+        # a run (parsing, the analysis) is about half a second either way, so the ratio is
+        # near 0.5; at 0.2 s it sat at 0.58 to 0.63, on the limit, and failed by turns.
+        engine = _SlowEngine(0.5)
         began = time.perf_counter()
         thesis = request(*claims)
         run = run_with(store, thesis, _five_claim_filing(), engine, concurrency=concurrency)

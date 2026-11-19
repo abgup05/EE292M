@@ -1,0 +1,169 @@
+{
+  "key": "c92c87cf2437b25de1994072",
+  "step": "analyse",
+  "via": "the Anthropic API",
+  "model": "claude-opus-5-5",
+  "recorded_at": "2026-11-18T23:21:50+00:00",
+  "response": {
+    "lean": "supports",
+    "sentences": [
+      {
+        "section": "assessment",
+        "text": "The premise holds on every filing in the record: two direct customers carried a large share of fiscal 2026 revenue, three did in the first quarter of fiscal 2027, and the company itself says revenue is concentrated and may stay so.",
+        "cites": [
+          "f4",
+          "f5",
+          "f7"
+        ]
+      },
+      {
+        "section": "assessment",
+        "text": "The newest quarter reads less concentrated than the one before: only one direct customer is named at 16% for Q2 FY2027, against three at 21%, 17% and 16% in Q1, though half-year figures of 16%, 15% and 13% show the group is still large.",
+        "cites": [
+          "f5",
+          "f6"
+        ]
+      },
+      {
+        "section": "assessment",
+        "text": "These are direct customers, so the record cannot say whether the concentration sits with end buyers or with intermediaries that resell to many, and the corollary that would test the largest share directly could not be computed.",
+        "cites": [
+          "f6",
+          "f7",
+          "cor:c2:1"
+        ]
+      },
+      {
+        "section": "assessment",
+        "text": "For holding into the next report, the step from concentration to risk is assumed rather than shown: so far the concentrated base has produced revenue growth of 105.9% that is speeding up, almost all of it from Data Center.",
+        "cites": [
+          "an:revenue:yoy",
+          "an:revenue:acceleration",
+          "an:bridge:growth:revenue_by_product:q"
+        ]
+      },
+      {
+        "section": "assessment",
+        "text": "Where concentration does show up in the numbers is receivables, which grew faster than revenue and lengthened to 59.6 days from 54.1, so more of the balance sheet rests on the payment timing of a few counterparties.",
+        "cites": [
+          "an:eq:dso",
+          "f6"
+        ]
+      },
+      {
+        "section": "assessment",
+        "text": "The claim is true and points at a real exposure, but on this record it describes a fragility, not a deterioration, and does not by itself argue against the position.",
+        "cites": [
+          "f7",
+          "an:revenue:trend8"
+        ]
+      },
+      {
+        "section": "case_for",
+        "text": "Concentration has persisted across the fiscal year, the first quarter and the first half, all tied to Compute & Networking, so it is structural rather than a one-quarter artifact.",
+        "cites": [
+          "f4",
+          "f5",
+          "f6"
+        ]
+      },
+      {
+        "section": "case_for",
+        "text": "Management's own risk language says the trend may continue, which makes the dependence on a few buyers a standing feature of the revenue the position is betting on.",
+        "cites": [
+          "f7"
+        ]
+      },
+      {
+        "section": "case_for",
+        "text": "Receivables outgrowing revenue is consistent with large buyers holding more negotiating weight over payment terms, a channel through which concentration could bite.",
+        "cites": [
+          "an:eq:dso"
+        ]
+      },
+      {
+        "section": "case_against",
+        "text": "Concentration has not yet cost anything visible: revenue rose in each of the last 8 quarters and growth accelerated by 20.6 percentage points in the latest quarter.",
+        "cites": [
+          "an:revenue:trend8",
+          "an:revenue:acceleration"
+        ]
+      },
+      {
+        "section": "case_against",
+        "text": "The Q2 disclosure names a single customer above the threshold, down from three in Q1, which suggests the base broadened in the most recent quarter.",
+        "cites": [
+          "f5",
+          "f6"
+        ]
+      },
+      {
+        "section": "case_against",
+        "text": "Direct-customer shares may overstate end-customer dependence if those buyers are intermediaries, which the record cannot resolve.",
+        "cites": [
+          "f7",
+          "cor:c2:1"
+        ]
+      },
+      {
+        "section": "decides",
+        "text": "Whether the claim matters for the decision turns on whether a large customer slows orders, which no filing here shows and which only the next report's revenue and customer disclosure would reveal.",
+        "cites": [
+          "f6",
+          "an:revenue:yoy"
+        ]
+      },
+      {
+        "section": "decides",
+        "text": "It also turns on whether receivable days keep lengthening faster than revenue grows, the one place concentration already leaves a mark.",
+        "cites": [
+          "an:eq:dso"
+        ]
+      },
+      {
+        "section": "decides",
+        "text": "And on whether the drop from three named customers in Q1 to one in Q2 is a broadening or a timing swing, which the half-year shares cannot settle.",
+        "cites": [
+          "f5",
+          "f6"
+        ]
+      }
+    ],
+    "conditions": [
+      {
+        "text": "Quarterly revenue falling below the Q2 FY2027 level of $96.22B would be the first sign that dependence on a few buyers is reducing sales.",
+        "cites": [
+          "an:revenue:yoy",
+          "f6"
+        ],
+        "measure": "revenue",
+        "comparison": "<",
+        "threshold": 96220000000,
+        "unit": "USD",
+        "event_category": "none"
+      },
+      {
+        "text": "Accounts receivable rising above the Q2 FY2027 balance of $63.06B while revenue stalls would show concentrated customers stretching payment.",
+        "cites": [
+          "an:eq:dso"
+        ],
+        "measure": "receivables",
+        "comparison": ">",
+        "threshold": 63060000000,
+        "unit": "USD",
+        "event_category": "none"
+      },
+      {
+        "text": "An 8-K reporting results or a material agreement change with a major customer would show whether the concentration is turning into a loss.",
+        "cites": [
+          "f7"
+        ],
+        "measure": "",
+        "comparison": "none",
+        "threshold": 0,
+        "unit": "none",
+        "event_category": "results"
+      }
+    ]
+  }
+}

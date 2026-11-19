@@ -875,7 +875,8 @@
           "case_against": [],
           "decides": [],
           "would_change": []
-        }
+        },
+        "argument_note": ""
       }
     },
     {
@@ -2943,7 +2944,8 @@
               "event_category": ""
             }
           ]
-        }
+        },
+        "argument_note": ""
       }
     },
     {
@@ -4275,7 +4277,8 @@
             }
           ],
           "would_change": []
-        }
+        },
+        "argument_note": ""
       }
     },
     {
@@ -5755,7 +5758,8 @@
             }
           ],
           "would_change": []
-        }
+        },
+        "argument_note": ""
       }
     },
     {
@@ -6404,7 +6408,8 @@
             }
           ],
           "would_change": []
-        }
+        },
+        "argument_note": ""
       }
     }
   ],
@@ -7203,6 +7208,9 @@
     "analysis_unverified_disallowed_id": 0,
     "analysis_unverified_number": 1,
     "analysis_claims_argued": 4,
+    "analysis_claims_asked": 5,
+    "analysis_claims_answered": 5,
+    "analysis_thesis_answered": 1,
     "analysis_lean_flags": 1
   },
   "metrics": [
@@ -18713,6 +18721,9 @@
     "analytics_by": "code",
     "corollaries_step": "answered",
     "argument_step": "answered",
+    "argument_claims_asked": 5,
+    "argument_claims_answered": 5,
+    "thesis_step": "answered",
     "corollaries_by": "scripted answers made by tests/examples_analysis.py from the run's own analytics (no model wrote them)",
     "corollaries_note": "",
     "corollary_rule": "A corollary is an implication a model proposed and code computed. Each is read by the grammar and by the typed form the proposing model wrote: two readers, which is weaker than the two-of-three rule the thesis's own claims are read under. A corollary never moves a verdict; when most of a claim's computed corollaries come out against it, the claim is flagged.",
@@ -18802,5 +18813,121 @@
       "c2: The model reads the evidence as challenges, but the verdict is supported. The verdict stands: it is computed from verified evidence and the computed test.",
       "c4: Most of this claim's computed corollaries came out against what it implies (2 of 2). The verdict is unchanged; read them before relying on the claim."
     ]
-  }
+  },
+  "timings": [
+    {
+      "stage": "company",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "filings",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "events",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "numbers",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "computed tests and claim readers",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "planning",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "retrieving",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "assessing",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "verifying",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "summary",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "analytics: facts",
+      "seconds": 0.0,
+      "background": false,
+      "note": "part of the analysis"
+    },
+    {
+      "stage": "analytics: outside_view",
+      "seconds": 0.0,
+      "background": true,
+      "note": ""
+    },
+    {
+      "stage": "analytics: market_view",
+      "seconds": 0.0,
+      "background": true,
+      "note": ""
+    },
+    {
+      "stage": "corollaries: proposed by the model",
+      "seconds": 0.0,
+      "background": true,
+      "note": ""
+    },
+    {
+      "stage": "corollaries: computed",
+      "seconds": 0.0,
+      "background": false,
+      "note": "part of the analysis"
+    },
+    {
+      "stage": "argument: the claims",
+      "seconds": 0.0,
+      "background": false,
+      "note": "5 request(s), up to 6 at once"
+    },
+    {
+      "stage": "argument: the thesis",
+      "seconds": 0.0,
+      "background": false,
+      "note": "part of the analysis"
+    },
+    {
+      "stage": "analysis (all of it)",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    },
+    {
+      "stage": "finishing",
+      "seconds": 0.0,
+      "background": false,
+      "note": ""
+    }
+  ]
 }

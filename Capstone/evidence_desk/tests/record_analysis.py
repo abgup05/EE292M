@@ -1,17 +1,20 @@
 """Record the analysis model's answers through the API (``make record-analysis``).
 
-Two runs, each with two requests ("propose", then "analyse"), so at most four requests:
+Two runs, each with one "propose" request, one "analyse" request per claim and one
+"conclude" request for the thesis. Both theses have five claims, so 7 requests a run and at
+most 14 in all (:func:`needed`):
 
 1. the example thesis replayed from ``demo/cassettes/nvda-example`` (every other step from
-   the cassette), its two answers recorded into that cassette;
+   the cassette), its answers recorded into that cassette;
 2. the analysis example of ``tests/examples_analysis`` (the extractive engine on the recorded
-   filings), its two answers recorded into ``demo/cassettes/analysis-example``.
+   filings), its answers recorded into ``demo/cassettes/analysis-example``.
 
-Only a request a cassette lacks is sent, and never more than ``--max-calls`` in all: at the
-cap the next request is refused, the run records the computed analysis and this says so.
-It needs ``ANTHROPIC_API_KEY`` in ``.env``; it reads no other secret and prints none. After
-it: ``make examples-analysis``, ``make golden-baseline`` (the replayed example now carries
-an argument, so the tripwire's coverage stage moves) and read both diffs.
+Only a request a cassette lacks is sent, and never more than ``--max-calls`` in all (default:
+what the two runs need): at the cap the next request is refused, the run records what it has
+and this says so. The number is printed before anything is sent. It needs
+``ANTHROPIC_API_KEY`` in ``.env``; it reads no other secret and prints none. After it:
+``make examples-analysis``, ``make golden-baseline`` (the replayed example now carries an
+argument, so the tripwire's coverage stage moves) and read both diffs.
 """
 
 from __future__ import annotations
@@ -24,6 +27,7 @@ from pathlib import Path
 
 from app.engines.analyser import configured_model
 from app.engines.transport import AnthropicTransport, Transport
+from app.services.examples import EXAMPLE_THESIS
 from tests import examples_analysis
 from tests.replay_run import DEFAULT_CASSETTE, CappedTransport, analysis_lines, replay
 
@@ -51,15 +55,28 @@ def record(
     return lines
 
 
+def needed() -> int:
+    """The most requests the two runs make: for each, one for the corollaries, one per claim
+    and one for the thesis."""
+    return sum(1 + len(claims) + 1 for claims in (EXAMPLE_THESIS.claims, examples_analysis.CLAIMS))
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Record what the two cassettes lack, within the cap."""
     parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
-    parser.add_argument("--max-calls", type=int, required=True, help="the most requests sent")
+    parser.add_argument("--max-calls", type=int, help="the most requests sent (default: all)")
     args = parser.parse_args(argv)
-    if args.max_calls < 1:
+    cap = needed() if args.max_calls is None else args.max_calls
+    if cap < 1:
         print("--max-calls must be at least 1; nothing was asked.")
         return 2
-    live = CappedTransport(AnthropicTransport(model=configured_model()), args.max_calls)
+    print(
+        f"record-analysis: the two examples make up to {needed()} requests (for each: 1 for "
+        f"the corollaries, 1 per claim, 1 for the thesis); at most {cap} will be sent, and "
+        "none that a cassette already answers.",
+        flush=True,
+    )
+    live = CappedTransport(AnthropicTransport(model=configured_model()), cap)
     for line in record(live):
         print(line)
     print(

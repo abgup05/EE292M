@@ -19,11 +19,12 @@ numbers and wording in `core/analysis_policy.py`.
 | Analytics and their readings, from every provider | code; `reading_origin` is always `code` | tests against the definitions and against two companies' raw facts; the views' own tests |
 | Odds a test holds in each of the next four quarters | code (`core/persistence`) | tests against an exact enumeration |
 | Corollaries: the sentence, the expected outcome, the reason | a model (step `propose`) | read by the grammar and by the model's typed form; computed by code |
-| The argument: every sentence | a model (step `analyse`) | every sentence audited by code; a failing sentence is kept and marked |
+| The argument: every sentence | a model (step `analyse`, one request per claim; then step `conclude` for the thesis) | every sentence audited by code; a failing sentence is kept and marked |
 
 The record says which of these it holds. `Run.analysis.corollaries_step` and `argument_step` are
 each `not_asked` (no model, or the run's time was up), `failed` (asked, no usable answer: an API
-failure, a malformed answer, a cassette that holds none) or `answered`. `corollaries_by` and
+failure, a malformed answer, a cassette that holds none), `partial` (the argument only: some of
+its requests were answered) or `answered`. `corollaries_by` and
 `argument_detail` name the model and whether the answers came from the API or a cassette.
 `providers` lists the analytics providers asked, `providers_failed` those that gave nothing and
 `provider_reasons` why.
@@ -37,7 +38,11 @@ A measure bears on a claim for one or more stated reasons (`RelevantMeasure.reas
 - `named in the claim`: the claim's words name a measure of the catalogue;
 - `part named in the claim`: the claim's test names a segment, product line or geography, or the
   claim's words contain the name of one as the newest filings tag it ("Data Center"). A label of
-  three letters or fewer ("US") must be written as tagged, so the word "us" is not a country.
+  three letters or fewer ("US") must be written as tagged, so the word "us" is not a country;
+- `growth compared with peers in the claim`: revenue, for a claim that compares the company's
+  growth with its peers, competitors or industry and names no measure ("Costco is growing
+  faster than its retail peers"). The claim is then given the company's rank on revenue growth
+  within its SEC industry code (below), and its own revenue's path.
 
 A claim with no measure gets none, and `Claim.analysis.relevance_note` says so. The run's other
 reported figures stay in `Run.metrics`; `Run.analysis.untied_metric_ids` lists them, and they are
@@ -136,25 +141,41 @@ a run at all: the reaction to an 8-K, which needs daily closes the 13F source do
 price supplied by the user, which the market route accepts and `ThesisRequest` does not; and
 base rates of corollaries, which would cost one reading of the frames for each.
 
-### Time, failure and the date
+### The reference pack, time, failure and the date
 
-The two views read EDGAR during a run (frames, the industry's member list, 13F tables), each
-kept on disk once read. Each has a time budget: `OUTSIDE_BUDGET_SECONDS` (20) and
-`MARKET_BUDGET_SECONDS` (15) in `core/analysis_policy.py`. A provider runs in a thread of its
-own and the run waits that long; past it, or when EDGAR does not answer, the provider is named
-in `providers_failed` with its reason in `provider_reasons`, `Run.errors` gets one line, and the
-run carries on with what the others gave. The thread is left to finish what it was reading, so
-what it keeps is there for the next run. A provider with a budget is not started once the run's
-own time limit is reached. With a cold cache the outside view will usually run out of time on
-the first run of a company and answer on a later one.
+Both views read data that is not about the run's company: SEC's frames and three managers' 13F
+tables. They read it first from the **reference pack** shipped with the app
+(`src/app/reference/`, `docs/reference-pack.md`): at once, with no request, on a host that keeps
+nothing on disk. EDGAR is asked only for what the pack lacks: a year or a 13F newer than the
+pack, or everything for a company too small to be in it. Every analytic that read the pack says
+so in its note, with the day the pack was built.
+
+Both providers are **started as soon as the claims are computed** and run beside the
+assessments; the analysis joins them. Each has a time budget counted from its start:
+`OUTSIDE_BUDGET_SECONDS` (20) and `MARKET_BUDGET_SECONDS` (15) in `core/analysis_policy.py`.
+Past it, or when EDGAR does not answer, the provider is named in `providers_failed` with its
+reason in `provider_reasons`, `Run.errors` gets one line, and the run carries on with what the
+others gave; the thread is left to finish what it was reading, so what it keeps is there for the
+next run. Started that early, a provider knows each claim's text, its computed test, the
+measures its words and test name and the parts the filings tag, but not a measure that only a
+finding cites: such a measure gets no peer standing.
 
 Both honour `as_of`: no frame of a year not yet reportable by the date, no 13F filed after it,
 and the company's facts (the payload the run already read, not fetched again) cut at the
-price's date. `tests/test_view_providers.py` runs a thesis as of a date and looks for any later
-date in what the two views returned.
+price's date. `tests/test_view_providers.py` and `tests/test_reference_pack.py` run a thesis as
+of a date and look for any later date in what the two views returned.
 
 A run gets the two views when its filing source reaches EDGAR (the API and the CLI). A run
 given no providers (the watcher's, the offline tests) computes from its own facts only.
+
+**A claim about peers.** A claim whose words compare the company with peers, competitors or its
+industry gets the peer standing of the measure it names (growth, when it names none), and the
+corollary proposer is told so on that claim. It gets no computed test of its own: the
+claim-test language has no form for a rank among other companies, and adding one would put it
+into the grammar, the model readers' schema and prompt, the normal form and the evaluator, and
+would let a rank within an SEC industry code count toward a verdict, which for a company whose
+code is a poor set of peers (Apple, Amazon) it should not. The standing is shown and argued
+from; it does not move the verdict.
 
 ### What was deleted from the first build, and why
 
@@ -183,8 +204,10 @@ events, and is not a forecast.
 
 ## Corollaries (`core/corollaries`, step `propose`)
 
-One request proposes, for every claim, including one no test compiles for, two or three
-implications: "if this claim were true, what else would be true in the figures?" Each is a
+One request, sent as soon as the claims are computed so that it is answered while the claims
+are assessed (it is shown each claim's text, computed test and notes, the parts the filings tag
+and the figures the claims are tied to, and no verdict), proposes, for every claim, including
+one no test compiles for, two or three implications: "if this claim were true, what else would be true in the figures?" Each is a
 sentence in the claim-test language, the outcome expected (`holds` or `fails`), a reason, and the
 typed test the proposer means (the reading schema of `core/claim_reading`, which has no nullable
 field and no union; `PROPOSE_TYPED_FORM` in `core/analysis_policy.py` turns the typed form off if
@@ -205,15 +228,28 @@ so (`Run.analysis.corollary_rule`). A corollary never moves a verdict. A claim w
 counted corollaries of known outcome, more than half of them against what it implies, gets
 `Claim.analysis.corollary_flag`.
 
-## The argument (`engines/analyser`, step `analyse`)
+## The argument (`engines/analyser`, steps `analyse` and `conclude`)
 
-One request after the corollaries are computed. The model is shown the decision, each claim with
-its verdict, computed test, the run's own notes on it, its verified findings with a quotation,
-its analytics (each opening with its question; one from the outside or market view followed by
-its note, which carries the class or the assumptions), its corollaries, its odds and what could
-not be computed; the analytics about the company as a whole; the reported figures the claims are
-tied to; the 8-Ks with each item's opening sentences; the date the run is as of. A withheld
-finding is never shown.
+After the corollaries are computed: **one request per claim**, up to 6 at once
+(`MAX_CONCURRENT_ARGUMENTS`), **then one for the thesis**. One request for everything was tried
+first: its answer ran past a 10,000-token cap and, at the speed observed, a longer one would
+have taken about three minutes of a run that has four. A claim's request has a cap of 4,000
+output tokens and one attempt of at most 60 seconds; the thesis's 7,000 and 90.
+
+A claim's request shows the decision, every claim's text, verdict and computed test (so the
+model knows the thesis the claim belongs to), and the whole material of the one claim it argues:
+the run's own notes on it, its verified findings with a quotation, its analytics (each opening
+with its question; one from the outside or market view followed by its note, which carries the
+class or the assumptions), its corollaries, its odds and what could not be computed; then the
+analytics about the company as a whole, the reported figures the claims are tied to, the 8-Ks
+with each item's opening sentences, and the date the run is as of. A withheld finding is never
+shown.
+
+The claims' arguments are audited as they come back. The thesis's request shows the whole
+record and, per claim, the audited argument: its lean, its assessment, what decides it and what
+would change the verdict, with each sentence that failed the audit marked and why, or the note
+that the claim has no argument. It is told to build on them and not to rest a point on a
+sentence marked unverified.
 
 It writes, per claim: `lean` (supports, challenges, mixed, unclear), `assessment` (up to 6
 sentences: is the premise true, and is the step from the claim to the decision backed by the
@@ -227,32 +263,38 @@ not a probability for this company) and what an implied growth is (arithmetic un
 assumptions at a dated price, not a forecast).
 
 The model is the engine's by default (`ANTHROPIC_ANALYSIS_MODEL`, then `ANTHROPIC_MODEL`, then
-`claude-opus-5-5`), 10,000 output tokens, one attempt of at most 110 seconds. Record text goes
-in escaped and every string the model returns is unescaped.
+`claude-opus-5-5`). Record text goes in escaped and every string the model returns is
+unescaped. A cassette keys each request by its content, so each claim's answer and the thesis's
+are recorded and replayed apart, and a replay that lacks some degrades claim by claim.
 
-**The answer is asked for flat, and code regroups it.** The API compiles a schema into a grammar
-and refused the first `analyse` schema, which spelled the sentence object out under each of nine
-sections, a condition and a scenario (HTTP 400, "The compiled grammar is too large"); it accepted
-`propose`. The schema now states the sentence once:
+**When a request fails.** A claim whose request fails, or is not sent because the run's time is
+up, has no argument and `Claim.analysis.argument_note` says why; the others stand, and the
+thesis's request runs on what there is. `Run.analysis.argument_claims_answered` of
+`argument_claims_asked` and `thesis_step` say what happened; `argument_step` is `answered` only
+when every claim and the thesis were, `partial` when some were, `failed` when requests were sent
+and none was answered, `not_asked` when none was sent. `Run.errors` gets one line naming each
+request that failed.
 
-    leans[]       {claim_id, lean}
-    sentences[]   {about, section, scenario, text, cites[]}
-    conditions[]  {about, text, cites[], measure, comparison, threshold, unit, event_category}
-    leans_on[]    claim ids
-    weakest_link  a claim id
+**Each answer is asked for flat, and code regroups it.** The API compiles a schema into a
+grammar and refused the first schema, which spelled the sentence object out under each of nine
+sections, a condition and a scenario (HTTP 400, "The compiled grammar is too large"); it
+accepted `propose`. Each schema now states the sentence once:
 
-`about` is a claim id or `thesis`; `section` is the schema's only enum (assessment, case_for,
-case_against, decides for a claim; bottom_line, weakest_why, strongest_for, strongest_against,
-scenario for the thesis); `scenario` is the scenario's name when the section is scenario.
-`parse_argument` puts each sentence under its claim and section in the order written, which
-gives the record the same shape as before (`ClaimArgument`, `ThesisArgument`), and checks in
-code what the schema no longer does: a lean, comparison, unit or category it does not know
-becomes `unclear`, `none` or empty; a sentence about a claim the run does not have, in a
-section that is not its subject's, over a section's cap or in a fourth scenario is cut, counted
-in `analysis_sentences_cut`, and `argument_note` says why once per reason. Neither schema has a
-union or a nullable field, and `tests/test_analysis_schema.py` keeps the `analyse` schema at no
-more than half the size of the accepted `propose` schema (schema nodes plus enum members), with
-one enum and four object definitions.
+    a claim     lean, sentences[] {section, text, cites[]},
+                conditions[] {text, cites[], measure, comparison, threshold, unit, event_category}
+    the thesis  leans_on[], weakest_link, sentences[] {section, scenario, text, cites[]}
+
+`section` is each schema's only enum (assessment, case_for, case_against, decides for a claim;
+bottom_line, weakest_why, strongest_for, strongest_against, scenario for the thesis);
+`scenario` is the scenario's name when the section is scenario. `parse_claim_argument` and
+`parse_thesis_argument` put each sentence under its section in the order written, which gives
+the record the same shape as before (`ClaimArgument`, `ThesisArgument`), and check in code what
+the schema does not: a lean, comparison, unit or category it does not know becomes `unclear`,
+`none` or empty; a sentence in a section that is not its subject's, over a section's cap or in a
+fourth scenario is cut, counted in `analysis_sentences_cut`, and `argument_note` says why once
+per reason. No schema has a union or a nullable field, and `tests/test_analysis_schema.py` keeps
+each at no more than half the size of the accepted `propose` schema (schema nodes plus enum
+members), with one enum.
 
 ### The audit (`core/analysis_audit`)
 
@@ -266,9 +308,13 @@ why:
 3. every number it writes is a value of something it cites, by `core/numcheck.check_numbers`,
    the check the findings pass.
 
-One exception to 3, on purpose: a `would_change` condition may write its own threshold
-(`Condition.threshold`), which is a line the model proposes to watch, not a statement about the
-record. A scenario's conditions get no such exception.
+Two things are not failures of 3, on purpose. A `would_change` condition may write its own
+threshold (`Condition.threshold`), which is a line the model proposes to watch, not a statement
+about the record; a scenario's conditions get no such exception. And a bare year ("the 2026
+8-Ks") is carried by a cited item whose own date is in that year: an event's filing or event
+date, the filing or period of a finding's source, a figure's period, the period an analytic or
+a test is of. A year in none of them is still flagged ("the 2024 fee increase", citing filings
+of 2025 and 2026).
 
 A `lean` that contradicts the claim's verdict (supports against Challenged, challenges against
 Supported) is `ClaimArgument.lean_flag` and a line in `Run.analysis.flags`. The verdict stands.
@@ -283,8 +329,8 @@ source real; the reader, shown each citation, judges the inference.
 | --- | --- | --- |
 | The extractive engine, no key, or a run the watcher started | `not_asked` / `not_asked` | relevance, headline, analytics, odds |
 | The run's time limit was reached before a request | `not_asked` for that request | the same, and whatever was answered before |
-| A request failed, or its answer was malformed | `failed` for that request | the same; a failed `propose` does not stop `analyse` |
-| A cassette that lacks an answer | `failed` | the same; a read-only cassette saves no pending request |
+| A request failed, or its answer was malformed | `failed` for the corollaries; `partial` or `failed` for the argument | the same, with the arguments that were answered; a failed `propose` does not stop the argument |
+| A cassette that lacks an answer | `failed`, or `partial` when it holds some of the argument's | the same; a read-only cassette saves no pending request |
 
 In each case `corollaries_note` and `argument_note` give the reason and `Run.errors` gets exactly
 one line. The run's status is unchanged.
@@ -299,11 +345,33 @@ one line. The run's status is unchanged.
   `corollaries_no_test` + `corollaries_not_agreed`. A corollary not agreed is computed and shown
   but is in neither outcome count. `corollaries_computed` = as expected + against.
   `corollary_flags` counts flagged claims.
-- The argument, meaningful only when `argument_step` is `answered`:
+- The argument's requests: `analysis_claims_answered` of `analysis_claims_asked` claim requests
+  and `analysis_thesis_answered` (0 or 1). Its sentences, meaningful when `argument_step` is
+  `answered` or `partial` and then covering the requests that were answered:
   `analysis_sentences_written` = `_verified` + `_unverified`; `_cut` counts sentences over a
   section's cap, removed before the audit; `analysis_unverified_no_evidence`, `_unknown_id`,
   `_disallowed_id` and `_number` count each reason once per sentence, so they can add up to more
   than `_unverified`. `analysis_claims_argued` of `claims_total`; `analysis_lean_flags`.
+
+## How long a run takes (`Run.timings`)
+
+A run records how long each part took, by its own clock: each stage in order, the parts of the
+analysis (marked `part of the analysis` in `note`, so they are not added to the stage that
+holds them), and what ran in the background beside other stages (`background`: a provider, the
+request for the corollaries), whose seconds overlap theirs. `make time-analysis` runs five
+claims with two model readers against stand-ins that wait as requests do and prints them.
+
+What was moved off the critical path, after a live four-claim run took 218 seconds: the claim
+readers' requests are sent six at once instead of in turn; the providers and the corollary
+proposals start when the claims are computed and are joined at the analysis; the claims'
+arguments are sent six at once instead of three; and with the reference pack the providers no
+longer wait out their budgets on an empty cache. With delays chosen so that the old order adds
+up to that live run (3 s a claim reading, 17 + 5 s an assessment and its check, 25 s the
+proposals, 22 s a claim's argument, 35 s the thesis's), the stand-in run took 118.5 seconds
+against 233 for the same requests in the old order (`make time-analysis`, 18 November 2026; one
+run; the stand-in assessments return no finding, so the meaning checks, about 10 seconds in two
+rounds, are not in it). Those delays are assumptions; a live run's `timings` are the
+measurement.
 
 ## Adding a provider
 
@@ -333,17 +401,19 @@ recorded fixtures of `make fixtures-market`) writes `docs/examples/analysis/`:
 - `replayed-run.json`: the example thesis replayed from `demo/cassettes/nvda-example`, once that
   cassette holds the two answers.
 
-`make record-analysis` records the model's answers through the API: two requests for the example
-thesis and two for the analysis example, four in all. It sends only a request a cassette lacks
-and never more than `MAX_CALLS` (default 4). Then `make examples-analysis` and
+`make record-analysis` records the model's answers through the API. Each of the two examples
+has five claims and so makes 7 requests (1 for the corollaries, 5 for the claims, 1 for the
+thesis), 14 in all. It prints that number first, sends only a request a cassette lacks and never
+more than `MAX_CALLS` (default: all). Then `make examples-analysis` and
 `make golden-baseline`, and read both diffs: the replayed example now carries an argument.
 
 ## Not verified
 
-- No model has answered either request: the prompts and schemas have been exercised only with a
-  fake transport. Whether the API accepts both schemas, how long the answers take, how many
-  sentences pass the audit and whether the argument is one an analyst would respect are unknown
-  until `make record-analysis` is run and its output read.
+- The corollaries have been answered by a model and recorded (claude-opus-5-5, through the API).
+  The argument has not: its per-claim and thesis requests have been exercised only with a fake
+  transport. Whether the API accepts the two schemas, whether an answer fits in 4,000 tokens and
+  60 seconds, how many sentences pass the audit and whether the argument is one an analyst would
+  respect are unknown until `make record-analysis` is run and its output read.
 - The two views have run inside a run only on NVIDIA's recorded frames, 13F tables and facts,
   from disk. How long they take against EDGAR with nothing kept, and how often the budgets cut
   them off, was not measured.

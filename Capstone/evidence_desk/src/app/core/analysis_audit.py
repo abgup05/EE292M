@@ -11,7 +11,10 @@ Pure. A sentence is verified when
   findings pass (:func:`app.core.numcheck.check_numbers`, with its rules for signs, units
   and the precision written). One exception, stated on the record: a condition that would
   change a verdict may write its own threshold (``Condition.threshold``), which is a line
-  the model proposes to watch, not a statement about the record.
+  the model proposes to watch, not a statement about the record. And a bare year ("the 2026
+  8-Ks") is carried by a cited item whose own date is in that year: an event's filing or
+  event date, the filing or period of a finding's source, a figure's period, the period an
+  analytic or a test is of. A year in none of them is still flagged.
 
 What the audit does not decide: whether a sentence follows from what it cites. A sentence
 with no number that cites a real id passes; it is the reader, shown each citation, who
@@ -23,6 +26,7 @@ audit never changes a verdict: a model's lean that contradicts a claim's verdict
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from typing import Literal
@@ -65,13 +69,14 @@ CONTRADICTS = {
 
 @dataclass(frozen=True)
 class Citable:
-    """Something a sentence may cite: its kind, whether it is evidence, and its numbers (as
-    text, and as figures with a unit)."""
+    """Something a sentence may cite: its kind, whether it is evidence, its numbers (as
+    text, and as figures with a unit) and the years of its own dates."""
 
     kind: Kind
     evidence: bool = True
     excerpts: tuple[str, ...] = ()
     metrics: tuple[Metric, ...] = ()
+    years: frozenset[str] = frozenset()
 
 
 @dataclass
@@ -84,6 +89,23 @@ class AuditCounts:
     reasons: dict[Reason, int] = field(
         default_factory=lambda: {"no_evidence": 0, "unknown_id": 0, "disallowed_id": 0, "number": 0}
     )
+
+    def merged(self, other: AuditCounts) -> AuditCounts:
+        """The sum of two audits' counts."""
+        return AuditCounts(
+            self.written + other.written,
+            self.verified + other.verified,
+            self.unverified + other.unverified,
+            {key: self.reasons[key] + other.reasons[key] for key in self.reasons},
+        )
+
+
+YEAR = re.compile(r"(?<!\d)((?:19|20)\d\d)(?!\d)")
+
+
+def years_of(*texts: str | None) -> frozenset[str]:
+    """Every four-digit year written in ``texts`` (dates, period labels such as FY2026)."""
+    return frozenset(year for text in texts if text for year in YEAR.findall(text))
 
 
 def as_metric(
@@ -150,7 +172,8 @@ def analytic_citable(item: Analytic) -> Citable:
         for i in item.inputs
         if i.ref_kind == "fact" and i.display.startswith(("$", "-$"))
     ]
-    return Citable("analytic", True, tuple(texts), _present(metrics))
+    dated = years_of(item.period, *(i.filed for i in item.inputs))
+    return Citable("analytic", True, tuple(texts), _present(metrics), dated)
 
 
 def citables(
@@ -163,20 +186,33 @@ def citables(
     out: dict[str, Citable] = {}
     metrics = {metric.id: metric for metric in run.metrics}
     for metric in run.metrics:
-        out[metric.id] = Citable("metric", True, (), (metric,))
+        dated = years_of(metric.period_end, metric.period_label)
+        out[metric.id] = Citable("metric", True, (), (metric,), dated)
+    sources = {source.id: source for source in run.sources}
     excerpts: dict[str, list[str]] = {}
+    filed: dict[str, set[str]] = {}
     for item in run.evidence:
         excerpts.setdefault(item.finding_id, []).append(item.excerpt)
+        source = sources.get(item.source_id)
+        if source is not None:
+            filed.setdefault(item.finding_id, set()).update(
+                years_of(source.published_date, source.period_end)
+            )
     for finding in run.findings:
         cited = tuple(metrics[i] for i in finding.metric_ids if i in metrics)
         texts = (finding.statement, *excerpts.get(finding.id, []))
-        out[finding.id] = Citable("finding", True, texts, cited)
+        dated = frozenset(filed.get(finding.id, set())) | years_of(*(m.period_end for m in cited))
+        out[finding.id] = Citable("finding", True, texts, cited, dated)
     for claim in run.claims:
         out[claim.id] = Citable("claim", False, (claim.text,))
         if claim.computed is not None:
             test = claim.computed
             out[f"test:{claim.id}"] = Citable(
-                "computed_test", True, tuple(_test_texts(test)), _present(_test_metrics(test))
+                "computed_test",
+                True,
+                tuple(_test_texts(test)),
+                _present(_test_metrics(test)),
+                years_of(test.bound, test.as_of),
             )
     for item in analytics:
         out[item.id] = analytic_citable(item)
@@ -186,7 +222,8 @@ def citables(
         if corollary.computed is not None:
             texts += _test_texts(corollary.computed)
             found += _test_metrics(corollary.computed)
-        out[corollary.id] = Citable("corollary", True, tuple(texts), _present(found))
+        dated = years_of(corollary.computed.bound) if corollary.computed else frozenset()
+        out[corollary.id] = Citable("corollary", True, tuple(texts), _present(found), dated)
     for record in odds:
         texts = (record.display, record.note, record.start_display, record.warning, record.method)
         metric = as_metric(record.id, "odds", record.probability, "probability", record.display)
@@ -195,7 +232,8 @@ def citables(
         texts = [event.filed_label, event.filed_date, event.event_date]
         for item in event.items:
             texts += [f"Item {item.number} {item.title}", *item.opening]
-        out[event.id] = Citable("event", True, tuple(text for text in texts if text))
+        dated = years_of(event.filed_date, event.event_date)
+        out[event.id] = Citable("event", True, tuple(text for text in texts if text), years=dated)
     return out
 
 
@@ -226,9 +264,11 @@ def audit_sentence(
         )
         figures += [own] if own is not None else []
     check = check_numbers(sentence.text, texts, figures)
-    for raw in check.unmatched:
+    carried = frozenset().union(*(item.years for item in valid))
+    unmatched = [raw for raw in check.unmatched if raw.strip() not in carried]
+    for raw in unmatched:
         problems.append(NUMBER.format(raw=raw))
-    if check.unmatched:
+    if unmatched:
         reasons.append("number")
     counts.written += 1
     verified = not reasons

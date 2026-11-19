@@ -1,4 +1,4 @@
-.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench eval eval-validate backup restore-check up-recorded live-walk changes breakdowns sample-run-changes golden-sheet backup-status figures two-writers header-cut-check time-live events events-probe event-categories facts-load restatements claim-labels claim-results-key examples claim-foreign watch-once watch-status watch-examples watch-replay watch-contention sample-inbox sample-v14 look measures-probe readers-echo readers-check examples-analysis record-analysis market-probe outside-view market-view fixtures-market market-examples market-check look-print
+.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench eval eval-validate backup restore-check up-recorded live-walk changes breakdowns sample-run-changes golden-sheet backup-status figures two-writers header-cut-check time-live events events-probe event-categories facts-load restatements claim-labels claim-results-key examples claim-foreign watch-once watch-status watch-examples watch-replay watch-contention sample-inbox sample-v14 look measures-probe readers-echo readers-check examples-analysis record-analysis market-probe outside-view market-view fixtures-market market-examples market-check reference-pack time-analysis look-print
 
 export COMPOSE_PROJECT_NAME := ee292m-evidence-desk
 export LOCAL_UID := $(shell id -u)
@@ -51,7 +51,8 @@ help:
 	@echo 'Fixtures: fixtures-facts(record XBRL company facts of NVDA, AAPL, MSFT under tests/fixtures/edgar; REFRESH=1 to overwrite)'
 	@echo 'Fixtures: fixtures (record SEC EDGAR responses for NVIDIA under tests/fixtures/edgar; REFRESH=1 to overwrite)'
 	@echo 'Examples: examples (offline: the version 14 payloads in docs/examples/v14, made from the recorded fixtures with the extractive engine; tests/test_examples_v14.py fails when they are out of date), sample-v14 (copies run.json, as-of-run.json, restatements.json and run-readers.json, unedited, into the page'"'"'s samples ?sample=computed, ?sample=as-of, ?sample=restatements and ?sample=readers)'
-	@echo 'Analysis (0.14.2): examples-analysis (offline: docs/examples/analysis, the computed analysis of the live NVIDIA sample'"'"'s claims, a scripted argument showing every shape, and a model'"'"'s argument when its answers are recorded), record-analysis (API: the analysis model'"'"'s answers, two for the example thesis into demo/cassettes/nvda-example and two for the analysis example into demo/cassettes/analysis-example; sends only what a cassette lacks and never more than MAX_CALLS, default 4)'
+	@echo 'Reference pack and timings: reference-pack (live EDGAR, slow the first time: rebuilds src/app/reference, the SEC frames and 13F tables the outside and market views read first; docs/reference-pack.md), time-analysis (offline: five claims against stand-ins that wait as requests do, with the run'"'"'s timings; SCALE=0.1 for a quick look)'
+	@echo 'Analysis (0.14.2): examples-analysis (offline: docs/examples/analysis, the computed analysis of the live NVIDIA sample'"'"'s claims, a scripted argument showing every shape, and a model'"'"'s argument when its answers are recorded), record-analysis (API: the analysis model'"'"'s answers for the example thesis into demo/cassettes/nvda-example and for the analysis example into demo/cassettes/analysis-example: 1 request for the corollaries, 1 per claim and 1 for the thesis each, 14 in all; sends only what a cassette lacks and never more than MAX_CALLS, default all)'
 	@echo 'Diagnostics: figures TICKERS="COST AMZN" (live: each company'"'"'s quarters as a run sees them; MISSING=1 lists every metric without a value); header-cut-check TICKERS="..." (live: each filing parsed with and without the header cut, the whole documents compared)'
 	@echo 'Diagnostics: measures-probe TICKERS="..." (live, the eight probe companies by default: each claim-test measure'"'"'s newest fiscal year, how many have it and why the rest do not, and the parts each newest 10-K tags; writes results/measures-<UTC>.md)'
 	@echo 'Diagnostics: probe TICKERS="AAPL MSFT" (live: parse each company'"'"'s latest 10-K and 10-Q, report Item coverage; writes results/probe-<UTC>.md)'
@@ -287,12 +288,13 @@ examples:
 examples-analysis:
 	$(RUN) python -m tests.examples_analysis $(ARGS)
 
-# Records the analysis model's answers through the API: "propose" and "analyse" for the
-# example thesis (into demo/cassettes/nvda-example) and for the analysis example (into
-# demo/cassettes/analysis-example). Needs ANTHROPIC_API_KEY in .env. Only a request a
-# cassette lacks is sent, and never more than MAX_CALLS in all (default 4, which is all of them).
+# Records the analysis model's answers through the API, for the example thesis (into
+# demo/cassettes/nvda-example) and the analysis example (into demo/cassettes/analysis-example):
+# for each, 1 request for the corollaries, 1 per claim and 1 for the thesis, 14 in all. Needs
+# ANTHROPIC_API_KEY in .env. Only a request a cassette lacks is sent, and never more than
+# MAX_CALLS (default: all 14); the number is printed before anything is sent.
 record-analysis:
-	$(RUN) python -m tests.record_analysis --max-calls $(or $(MAX_CALLS),4) $(ARGS)
+	$(RUN) python -m tests.record_analysis $(if $(MAX_CALLS),--max-calls $(MAX_CALLS),) $(ARGS)
 
 eval-validate:
 	$(RUN) python -m app.evaluation validate $(ARGS)
@@ -444,6 +446,17 @@ outside-view:
 # (FRED's S&P 500, read live) or INDEX=path/to/index.csv is the index they are measured against.
 market-view:
 	$(RUN) python -m app.market $(or $(T),NVDA) --claim "$(CLAIM)" $(if $(PRICE),--price "$(PRICE)" --price-date "$(PRICE_DATE)",) $(if $(AS_OF),--as-of "$(AS_OF)",) $(if $(PRICES),--prices "$(PRICES)",) $(if $(INDEX),--index "$(INDEX)",) $(ARGS)
+
+# Offline: one run of five claims with stand-ins that wait as model requests do, its
+# timings, and the same requests in the old order. SCALE=0.1 for a quick look.
+time-analysis:
+	$(RUN) python -m tests.timing_run --scale $(or $(SCALE),1)
+
+# Live, on purpose, and slow the first time (one request for each of several thousand filers'
+# industry codes; everything fetched is kept, so a second run is quick): the reference pack of
+# SEC frames and 13F tables that ships in src/app/reference (docs/reference-pack.md).
+reference-pack:
+	$(RUN) python -m app.build_reference $(ARGS)
 
 # Live, on purpose: the frames, SIC list and company facts the offline example reads
 # (tests/fixtures/frames/manifest.json says what and when). REFRESH=1 writes over them.

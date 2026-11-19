@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Print check</title>
+<style>body { margin: 0; background: #fff; } iframe { border: 0; display: block; }</style>
+</head>
+<body>
+<!--
+  The print check. Headless Chromium can write a PDF (`make look-print`) but nothing here can
+  read one, so this page shows the note as the print stylesheet lays it out, on a screen:
+  it loads the live-run sample in a frame, with a claim selected and a tab that is not the
+  first (the state a reader is likely to print from), fires the page's own `beforeprint`, and
+  then turns every `@media print` rule of the page's stylesheet on and every `@media screen`
+  rule off. `make uitest` dumps this page's DOM and uitests/test_print_dom.py reads what it
+  recorded; `make look-print` also captures it as results/print.png for the eye. The same-origin
+  rule is off for this page only (KEYS_FLAGS in the Makefile). It is an emulation: page breaks,
+  margins and a printer's fonts are not shown.
+-->
+<iframe id="app" title="Evidence Desk, as printed" src="http://app:8000/?sample=run-live&amp;theme=terminal&amp;claim=c2&amp;tab=events" width="794" height="1000"></iframe>
+<ol id="steps"></ol>
+<p id="done" data-done="false">running</p>
+<script>
+"use strict";
+const frame = document.getElementById("app");
+const steps = document.getElementById("steps");
+const done = document.getElementById("done");
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function text(node) {
+  return node ? node.textContent.replace(/\s+/g, " ").trim() : "";
+}
+
+function visible(node) {
+  if (!node || !node.isConnected) return false;
+  const box = node.getBoundingClientRect();
+  return box.width > 0 && box.height > 0 && node.ownerDocument.defaultView.getComputedStyle(node).visibility !== "hidden";
+}
+
+/** Turn the page's print rules on and its screen rules off, in every stylesheet and nested media rule. */
+function emulatePrint(win) {
+  const visit = (rules) => {
+    for (const rule of rules) {
+      if (!(rule instanceof win.CSSMediaRule)) continue;
+      const media = rule.media.mediaText;
+      if (/\bprint\b/.test(media)) rule.media.mediaText = "all";
+      else if (/\bscreen\b/.test(media)) rule.media.mediaText = "not all";
+      visit(rule.cssRules);
+    }
+  };
+  for (const sheet of win.document.styleSheets) visit(sheet.cssRules);
+}
+
+function record(step, extra) {
+  const doc = frame.contentDocument;
+  const top = (node) => Math.round(node.getBoundingClientRect().top + frame.contentWindow.scrollY);
+  const order = ["rail-head", "scorecard", "run-info", "status-banner", "analysis", "tape-section", "summary-section", "claim-list", "sources", "timeline-section", "events-section", "figures-section", "method-section", "coverage-limits"]
+    .map((id) => doc.getElementById(id))
+    .filter(visible)
+    .sort((a, b) => top(a) - top(b))
+    .map((node) => node.id);
+  const dockets = [...doc.querySelectorAll("#claim-list details.claim")];
+  const li = document.createElement("li");
+  li.dataset.step = step;
+  li.dataset.order = order.join(" ");
+  li.dataset.docketsDrawn = dockets.filter(visible).map((d) => d.dataset.docket).join(" ");
+  li.dataset.docketsOpen = dockets.filter((d) => d.open).map((d) => d.dataset.docket).join(" ");
+  li.dataset.docketHeadings = dockets.map((d) => d.querySelector("summary")).filter(visible).map((s) => text(s.querySelector(".claim-text"))).join("|");
+  li.dataset.panelsDrawn = [...doc.querySelectorAll(".tabpanel")].filter(visible).map((panel) => panel.id).join(" ");
+  li.dataset.lanesDrawn = [...doc.querySelectorAll("#tot [data-tot-claim]")].filter(visible).map((lane) => lane.dataset.totClaim).join(" ");
+  li.dataset.chromeDrawn = ["cmdbar", "tabs", "sel-head", "inspector", "rail-thesis", "run-drawer", "statusbar", "legend", "howto"]
+    .filter((id) => visible(doc.getElementById(id) || doc.querySelector(`.${id}`)))
+    .join(" ");
+  // A citation chip and a headline figure's name are buttons on screen; on paper they are printed as the references they are.
+  li.dataset.pickButtonsDrawn = String([...doc.querySelectorAll("[data-pick-button]:not(.chip):not(.hl-open)")].filter(visible).length);
+  li.dataset.chipsDrawn = String([...doc.querySelectorAll("#analysis .chip")].filter(visible).length);
+  li.dataset.sentencesDrawn = String([...doc.querySelectorAll("#analysis [data-an-sentence]")].filter(visible).length);
+  li.dataset.analysisScopesDrawn = [...doc.querySelectorAll("#analysis > .an-scope")].filter(visible).map((node) => node.dataset.anScope || "thesis").join(" ");
+  li.dataset.contextsDrawn = String([...doc.querySelectorAll("#claim-list .excerpt .context")].filter(visible).length);
+  li.dataset.testDetailsDrawn = String([...doc.querySelectorAll("#claim-list .ct-detail")].filter(visible).length);
+  li.dataset.openingsDrawn = String([...doc.querySelectorAll("#events .event-opening")].filter(visible).length);
+  li.dataset.countsDrawn = String(visible(doc.querySelector("#status-banner .coverage-facts")));
+  li.dataset.runInfo = text(doc.getElementById("run-head")).slice(0, 3000);
+  li.dataset.runInfoAfter = (doc.getElementById("run-info").previousElementSibling || { id: "" }).id;
+  li.dataset.runInfoIn = doc.getElementById("run-info").parentElement.id;
+  li.dataset.background = frame.contentWindow.getComputedStyle(doc.body).backgroundColor;
+  li.dataset.theme = doc.documentElement.getAttribute("data-theme") || "";
+  li.dataset.selectedRowBackground = frame.contentWindow.getComputedStyle(doc.querySelector('#scorecard a.score-row[aria-current="true"]')).backgroundColor;
+  li.dataset.pageScrolls = String(doc.documentElement.scrollHeight > frame.contentWindow.innerHeight);
+  Object.assign(li.dataset, extra || {});
+  li.textContent = step;
+  steps.append(li);
+}
+
+async function run() {
+  const win = frame.contentWindow;
+  const doc = frame.contentDocument;
+  record("screen");
+  win.dispatchEvent(new win.Event("beforeprint"));
+  emulatePrint(win);
+  await sleep(200);
+  // How tall the note is in a window 1000px high; then the frame is made as tall, so a capture of this page shows all of it.
+  const noteHeight = doc.documentElement.scrollHeight;
+  frame.height = String(Math.min(noteHeight, 30000));
+  await sleep(100);
+  record("print", { noteHeight: String(noteHeight) });
+  if (!location.hash.includes("keep")) {
+    // Put the page back, as the browser does after printing; a capture keeps the printed state (#keep).
+    win.dispatchEvent(new win.Event("afterprint"));
+    await sleep(50);
+    record("after");
+  }
+  done.dataset.done = "true";
+  done.textContent = "done";
+}
+
+function waitForRun(tries) {
+  let ready = false;
+  try {
+    const doc = frame.contentDocument;
+    const view = doc && doc.getElementById("run-view");
+    ready = Boolean(view && !view.hidden && doc.querySelector("#scorecard li[data-claim-id]") && doc.querySelector("#events li.event"));
+  } catch (e) {
+    done.textContent = `the frame could not be read: ${e.message}`;
+    return;
+  }
+  if (ready) {
+    run().catch((error) => {
+      done.textContent = `the print check stopped: ${error.message}`;
+    });
+    return;
+  }
+  if (tries <= 0) {
+    done.textContent = "the run never rendered in the frame";
+    return;
+  }
+  setTimeout(() => waitForRun(tries - 1), 100);
+}
+
+frame.addEventListener("load", () => waitForRun(60));
+</script>
+</body>
+</html>

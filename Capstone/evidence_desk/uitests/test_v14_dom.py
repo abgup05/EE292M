@@ -209,8 +209,8 @@ def test_the_status_line_carries_the_computed_counts(name: str) -> None:
 @both
 def test_the_thesis_over_time_sits_under_the_time_line(name: str) -> None:
     soup = page(name)
-    ids = [node.get("id") for node in soup.select("#run-view > *") if node.get("id")]
-    assert ids.index("tot-section") == ids.index("timeline-section") + 1
+    ids = [node.get("id") for node in soup.select("#panel-time > *") if node.get("id")]
+    assert ids.index("tot-section") == ids.index("timeline-section") + 1, "both are on the Over time tab, one under the other"
     assert soup.select_one("#tot-section[hidden]") is None
 
 
@@ -447,7 +447,7 @@ def test_a_run_asked_for_as_of_a_date_sends_it_and_draws_the_banner() -> None:
     assert recorded("run-as-of", "views") == ["run-view"]
     step = steps()["run-as-of"]
     assert as_of_run["as_of"]["requested_note"] in step["data-banner"]
-    assert step["data-cmd"] == f'Run as of {date_label(as_of_run["as_of"]["requested"])} ·'
+    assert step["data-cmd"] == f'Run as of {date_label(as_of_run["as_of"]["requested"])}'
     assert "as-of-run" in step["data-body-class"]
 
 

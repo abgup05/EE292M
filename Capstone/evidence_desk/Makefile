@@ -1,4 +1,4 @@
-.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench eval eval-validate backup restore-check up-recorded live-walk changes breakdowns sample-run-changes golden-sheet backup-status figures two-writers header-cut-check time-live events events-probe event-categories facts-load restatements claim-labels claim-results-key examples claim-foreign watch-once watch-status watch-examples watch-replay watch-contention sample-inbox sample-v14 look measures-probe readers-echo readers-check examples-analysis record-analysis market-probe outside-view market-view fixtures-market market-examples market-check reference-pack time-analysis
+.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench eval eval-validate backup restore-check up-recorded live-walk changes breakdowns sample-run-changes golden-sheet backup-status figures two-writers header-cut-check time-live events events-probe event-categories facts-load restatements claim-labels claim-results-key examples claim-foreign watch-once watch-status watch-examples watch-replay watch-contention sample-inbox sample-v14 sample-analysis look measures-probe readers-echo readers-check examples-analysis record-analysis market-probe outside-view market-view fixtures-market market-examples market-check reference-pack time-analysis look-print
 
 export COMPOSE_PROJECT_NAME := ee292m-evidence-desk
 export LOCAL_UID := $(shell id -u)
@@ -30,7 +30,7 @@ help:
 	@echo 'Demonstration: demo (live NVIDIA example through the HTTP API: real EDGAR, configured engine; writes results/demo-<UTC>.json and .md)'
 	@echo 'Screenshots: screenshots (headless Chromium renders the first screen, the samples, the recorded inbox, the computed claims, the as-of run, the restatement ledger and the specimen page, in the Paper and Terminal themes and at phone width, into docs/screenshots)'
 	@echo 'Looking while changing the page: look (captures the pages LOOK names, each name@width,height@query, into results/; nothing committed)'
-	@echo 'Browser test: uitest (headless Chromium renders the sample records, the recorded inbox and the version 14 examples, drives the keys and themes in uitests/keys.html, every answer of the watch routes in uitests/watch.html and the version 14 variants in uitests/v14.html; pytest uitests checks the DOM against the JSON)'
+	@echo 'Browser test: uitest (headless Chromium renders the sample records, the recorded inbox and the version 14 examples, drives the keys and themes in uitests/keys.html, every answer of the watch routes in uitests/watch.html, the version 14 variants in uitests/v14.html, the frame at 1440x900, 1280x800, 900x800 and 360x740 in uitests/frame.html and the print layout in uitests/print.html; pytest uitests checks the DOM against the JSON); look-print (the note as a PDF and as a capture of its print layout, into results/)'
 	@echo "Replay: replay ARGS='--out demo' (the example thesis on recorded filings with model answers from the cassette; no network, no key)"
 	@echo 'Tripwire: golden-check (the offline example run against tests/golden/golden.json; names the first stage that moved)'
 	@echo 'Tripwire: golden-baseline (rewrite tests/golden/golden.json, and replay.json when the replay has nothing pending; read the diff before committing a new baseline)'
@@ -53,6 +53,7 @@ help:
 	@echo 'Examples: examples (offline: the version 14 payloads in docs/examples/v14, made from the recorded fixtures with the extractive engine; tests/test_examples_v14.py fails when they are out of date), sample-v14 (copies run.json, as-of-run.json, restatements.json and run-readers.json, unedited, into the page'"'"'s samples ?sample=computed, ?sample=as-of, ?sample=restatements and ?sample=readers)'
 	@echo 'Reference pack and timings: reference-pack (live EDGAR, slow the first time: rebuilds src/app/reference, the SEC frames and 13F tables the outside and market views read first; docs/reference-pack.md), time-analysis (offline: five claims against stand-ins that wait as requests do, with the run'"'"'s timings; SCALE=0.1 for a quick look)'
 	@echo 'Analysis (0.14.2): examples-analysis (offline: docs/examples/analysis, the computed analysis of the live NVIDIA sample'"'"'s claims, a scripted argument showing every shape, and a model'"'"'s argument when its answers are recorded), record-analysis (API: the analysis model'"'"'s answers for the example thesis into demo/cassettes/nvda-example and for the analysis example into demo/cassettes/analysis-example: 1 request for the corollaries, 1 per claim and 1 for the thesis each, 14 in all; sends only what a cassette lacks and never more than MAX_CALLS, default all)'
+	@echo 'Analysis sample: sample-analysis (copies the hand-built example of docs/examples/analysis, unedited, into the page as ?sample=analysis-shapes; run it after examples-analysis)'
 	@echo 'Diagnostics: figures TICKERS="COST AMZN" (live: each company'"'"'s quarters as a run sees them; MISSING=1 lists every metric without a value); header-cut-check TICKERS="..." (live: each filing parsed with and without the header cut, the whole documents compared)'
 	@echo 'Diagnostics: measures-probe TICKERS="..." (live, the eight probe companies by default: each claim-test measure'"'"'s newest fiscal year, how many have it and why the rest do not, and the parts each newest 10-K tags; writes results/measures-<UTC>.md)'
 	@echo 'Diagnostics: probe TICKERS="AAPL MSFT" (live: parse each company'"'"'s latest 10-K and 10-Q, report Item coverage; writes results/probe-<UTC>.md)'
@@ -125,6 +126,9 @@ smoke:
 # and writes what happened into its own DOM. Reading a frame of another origin needs the browser's
 # same-origin rule off: these flags are for that one test page and no other capture.
 KEYS_FLAGS := --disable-web-security --disable-site-isolation-trials --disable-features=IsolateOrigins,site-per-process --allow-file-access-from-files --user-data-dir=/tmp/keys-profile
+# The frame check (uitests/frame.html) loads the page ten times at four sizes, so it is given more
+# (virtual) time than one page load, and a window larger than its largest frame.
+FRAME_FLAGS := --virtual-time-budget=60000 --window-size=1600,1000
 uitest:
 	@mkdir -p results
 	$(COMPOSE) up --force-recreate -d app
@@ -148,7 +152,12 @@ uitest:
 	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=restatements" > results/dom-restatements.html 2> results/dom-restatements.log && \
 	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=run-live" > results/dom-run-live.html 2> results/dom-run-live.log && \
 	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=readers&theme=terminal" > results/dom-readers.html 2> results/dom-readers.log && \
-	$(COMPOSE) run --rm -T shots $(KEYS_FLAGS) --dump-dom "file:///work/uitests/v14.html" > results/dom-v14.html 2> results/dom-v14.log
+	$(COMPOSE) run --rm -T shots $(KEYS_FLAGS) --dump-dom "file:///work/uitests/v14.html" > results/dom-v14.html 2> results/dom-v14.log && \
+	$(COMPOSE) run --rm -T shots $(KEYS_FLAGS) $(FRAME_FLAGS) --dump-dom "file:///work/uitests/frame.html" > results/dom-frame.html 2> results/dom-frame.log && \
+	$(COMPOSE) run --rm -T shots $(KEYS_FLAGS) --dump-dom "file:///work/uitests/print.html" > results/dom-print.html 2> results/dom-print.log && \
+	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=run-costco" > results/dom-run-costco.html 2> results/dom-run-costco.log && \
+	$(COMPOSE) run --rm -T shots --dump-dom "http://app:8000/?sample=analysis-shapes&theme=terminal" > results/dom-analysis-shapes.html 2> results/dom-analysis-shapes.log && \
+	$(COMPOSE) run --rm -T shots $(KEYS_FLAGS) $(FRAME_FLAGS) --dump-dom "file:///work/uitests/analysis.html" > results/dom-analysis.html 2> results/dom-analysis.log
 	$(RUN) pytest -q -p no:cacheprovider uitests
 
 run:
@@ -162,60 +171,104 @@ demo: build
 # so no capture is taller than 3600 px and the target fails unless every file was written anew.
 # It also paints nothing after a scroll, so a deep link into a claim cannot be captured: the page
 # test reads its DOM instead (uitests/test_run_changes_dom.py).
-SHOTS := first-screen sample-run sample-run-phone sample-synthetic sample-changes sample-changes-phone sample-breakdowns tagged-figures \
-	first-screen-terminal sample-run-terminal sample-run-phone-terminal sample-events sample-events-terminal sample-events-phone \
-	sample-synthetic-terminal sample-changes-terminal sample-breakdowns-terminal specimen specimen-terminal specimen-v14 specimen-note specimen-note-terminal specimen-views specimen-phone \
-	sample-inbox sample-inbox-terminal sample-inbox-phone \
-	sample-computed sample-computed-terminal sample-computed-phone specimen-v14-terminal specimen-v14-phone \
-	sample-as-of sample-as-of-terminal sample-restatements sample-restatements-terminal \
-	sample-live sample-live-terminal sample-live-phone computed-readers computed-readers-terminal
+# One capture per line: name@width,height@address. A run is captured as the window shows it
+# (1440x900, 1280x800, 900x800: the page does not scroll, so that is the whole of it), with the
+# claim and tab named in the address; a phone capture and the specimen are documents and are
+# captured tall. frame-* are the same live run on each tab and at each width.
+SHOT_SPECS := \
+	first-screen@1440,900@?theme=paper \
+	first-screen-terminal@1440,900@?theme=terminal \
+	sample-live@1440,900@?sample=run-live&theme=paper \
+	sample-live-terminal@1440,900@?sample=run-live&theme=terminal \
+	sample-live-phone@390,3600@?sample=run-live&theme=paper \
+	sample-costco@1440,900@?sample=run-costco&theme=paper \
+	sample-costco-terminal@1440,900@?sample=run-costco&theme=terminal \
+	analysis-thesis@1440,2800@?sample=run-live&theme=paper \
+	analysis-thesis-terminal@1440,2800@?sample=run-live&theme=terminal \
+	analysis-claim@1440,900@?sample=run-live&theme=paper&claim=c4 \
+	analysis-claim-terminal@1440,900@?sample=run-costco&theme=terminal&claim=c1 \
+	analysis-claim-tall@1440,3400@?sample=run-live&theme=paper&claim=c3 \
+	analysis-claim-tall-terminal@1440,3400@?sample=run-costco&theme=terminal&claim=c2 \
+	analysis-1280@1280,800@?sample=run-costco&theme=paper&claim=c4 \
+	analysis-1280-terminal@1280,800@?sample=run-live&theme=terminal&claim=c2 \
+	analysis-tablet@900,800@?sample=run-live&theme=paper \
+	analysis-phone@390,844@?sample=run-costco&theme=paper&claim=c2 \
+	analysis-phone-terminal@390,3600@?sample=run-live&theme=terminal \
+	analysis-no-model@1440,900@?sample=computed&theme=paper \
+	analysis-no-model-terminal@1440,900@?sample=computed&theme=terminal&claim=c1 \
+	analysis-shapes@1440,900@?sample=analysis-shapes&theme=paper&claim=c2 \
+	method@1440,1500@?sample=run-live&theme=paper&tab=method \
+	method-terminal@1440,900@?sample=run-costco&theme=terminal&tab=method \
+	method-no-model@1440,900@?sample=computed&theme=paper&tab=method \
+	overview@1440,900@?sample=run-live&theme=paper&tab=overview \
+	overview-terminal@1440,900@?sample=run-costco&theme=terminal&tab=overview \
+	frame-claim@1440,900@?sample=run-live&theme=paper&claim=c2&tab=overview \
+	frame-claim-terminal@1440,900@?sample=run-live&theme=terminal&claim=c2&tab=overview \
+	frame-figures-claim@1440,900@?sample=run-live&theme=paper&claim=c3&tab=figures \
+	frame-evidence@1440,900@?sample=run-live&theme=paper&claim=c1&tab=evidence \
+	frame-evidence-terminal@1440,900@?sample=run-live&theme=terminal&claim=c1&tab=evidence \
+	frame-thesis-evidence@1440,900@?sample=run-live&theme=paper&tab=evidence \
+	frame-time@1440,900@?sample=run-live&theme=paper&tab=time \
+	frame-time-terminal@1440,900@?sample=run-live&theme=terminal&claim=c2&tab=time \
+	frame-events@1440,900@?sample=run-live&theme=paper&tab=events \
+	frame-events-terminal@1440,900@?sample=run-live&theme=terminal&tab=events \
+	frame-figures@1440,900@?sample=run-live&theme=paper&tab=figures \
+	frame-figures-terminal@1440,900@?sample=run-live&theme=terminal&tab=figures \
+	frame-limits-terminal@1440,900@?sample=run-live&theme=terminal&tab=limits \
+	frame-1280@1280,800@?sample=run-live&theme=paper&claim=c3&tab=overview \
+	frame-1280-terminal@1280,800@?sample=run-live&theme=terminal&claim=c4&tab=overview \
+	frame-tablet@900,800@?sample=run-live&theme=paper&claim=c2&tab=evidence \
+	frame-tablet-terminal@900,800@?sample=run-live&theme=terminal&tab=overview \
+	frame-phone@390,844@?sample=run-live&theme=paper&tab=overview \
+	frame-phone-terminal@390,844@?sample=run-live&theme=terminal&tab=overview \
+	sample-run@1440,900@?sample&theme=paper \
+	sample-run-terminal@1440,900@?sample&theme=terminal&claim=c1 \
+	sample-run-phone@390,1400@?sample&theme=paper \
+	sample-run-phone-terminal@390,1400@?sample&theme=terminal \
+	sample-synthetic@1440,900@?sample=synthetic&theme=paper \
+	sample-synthetic-terminal@1440,900@?sample=synthetic&theme=terminal&claim=c2&tab=evidence \
+	sample-changes@1440,900@?sample=changes&theme=paper \
+	sample-changes-terminal@1440,900@?sample=changes&theme=terminal \
+	sample-changes-phone@390,2600@?sample=changes&theme=paper \
+	sample-breakdowns@1440,900@?sample=breakdowns&theme=paper \
+	sample-breakdowns-terminal@1440,900@?sample=breakdowns&theme=terminal \
+	tagged-figures@1440,900@?sample=run-tagged&theme=paper&tab=figures \
+	sample-events@1440,900@?sample=run-events&theme=paper&claim=c1 \
+	sample-events-terminal@1440,900@?sample=run-events&theme=terminal&tab=events \
+	sample-events-phone@390,2400@?sample=run-events&theme=paper \
+	sample-inbox@1440,900@?sample=inbox&theme=paper \
+	sample-inbox-terminal@1440,900@?sample=inbox&theme=terminal \
+	sample-inbox-phone@390,3400@?sample=inbox&theme=paper \
+	sample-computed@1440,900@?sample=computed&theme=paper&claim=c1&tab=overview \
+	sample-computed-terminal@1440,900@?sample=computed&theme=terminal&tab=time \
+	sample-computed-phone@390,3600@?sample=computed&theme=paper \
+	sample-as-of@1440,900@?sample=as-of&theme=paper&tab=overview \
+	sample-as-of-terminal@1440,900@?sample=as-of&theme=terminal&tab=time \
+	sample-restatements@1440,900@?sample=restatements&theme=paper \
+	sample-restatements-terminal@1440,900@?sample=restatements&theme=terminal \
+	specimen@1280,3600@specimen.html?theme=paper \
+	specimen-terminal@1280,3600@specimen.html?theme=terminal \
+	specimen-frame@1280,700@specimen.html?theme=paper&only=frame \
+	specimen-v14@1280,3600@specimen.html?theme=paper&only=v14 \
+	specimen-v14-terminal@1280,3600@specimen.html?theme=terminal&only=v14 \
+	specimen-v14-phone@390,3600@specimen.html?theme=paper&only=v14 \
+	specimen-note@1280,3600@specimen.html?theme=paper&only=note \
+	specimen-note-terminal@1280,3600@specimen.html?theme=terminal&only=note \
+	specimen-views@1280,2400@specimen.html?theme=paper&only=views \
+	specimen-phone@390,3000@specimen.html?theme=paper \
+	computed-readers@1280,1500@specimen.html?theme=paper&only=v14 \
+	computed-readers-terminal@1280,1500@specimen.html?theme=terminal&only=v14
+SHOTS := $(foreach s,$(SHOT_SPECS),$(firstword $(subst @, ,$(s))))
 screenshots:
 	@mkdir -p docs/screenshots results
 	@touch results/.screenshots-started
 	$(COMPOSE) up --force-recreate -d app
 	@trap '$(COMPOSE) down' EXIT; \
 	$(COMPOSE) exec -T app python uitests/wait_ready.py && \
-	$(COMPOSE) run --rm shots --window-size=1280,1000 --screenshot=/work/docs/screenshots/first-screen.png "http://app:8000/?theme=paper" && \
-	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-run.png "http://app:8000/?sample&theme=paper" && \
-	$(COMPOSE) run --rm shots --window-size=390,1400 --screenshot=/work/docs/screenshots/sample-run-phone.png "http://app:8000/?sample&theme=paper" && \
-	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-synthetic.png "http://app:8000/?sample=synthetic&theme=paper" && \
-	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-changes.png "http://app:8000/?sample=changes&theme=paper" && \
-	$(COMPOSE) run --rm shots --window-size=390,2600 --screenshot=/work/docs/screenshots/sample-changes-phone.png "http://app:8000/?sample=changes&theme=paper" && \
-	$(COMPOSE) run --rm shots --window-size=1280,2400 --screenshot=/work/docs/screenshots/sample-breakdowns.png "http://app:8000/?sample=breakdowns&theme=paper" && \
-	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/tagged-figures.png "http://app:8000/?sample=run-tagged&theme=paper" && \
-	$(COMPOSE) run --rm shots --window-size=1280,1000 --screenshot=/work/docs/screenshots/first-screen-terminal.png "http://app:8000/?theme=terminal" && \
-	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-run-terminal.png "http://app:8000/?sample&theme=terminal" && \
-	$(COMPOSE) run --rm shots --window-size=390,1400 --screenshot=/work/docs/screenshots/sample-run-phone-terminal.png "http://app:8000/?sample&theme=terminal" && \
-	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-events.png "http://app:8000/?sample=run-events&theme=paper" && \
-	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-events-terminal.png "http://app:8000/?sample=run-events&theme=terminal" && \
-	$(COMPOSE) run --rm shots --window-size=390,2400 --screenshot=/work/docs/screenshots/sample-events-phone.png "http://app:8000/?sample=run-events&theme=paper" && \
-	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-synthetic-terminal.png "http://app:8000/?sample=synthetic&theme=terminal" && \
-	$(COMPOSE) run --rm shots --window-size=1280,2400 --screenshot=/work/docs/screenshots/sample-changes-terminal.png "http://app:8000/?sample=changes&theme=terminal" && \
-	$(COMPOSE) run --rm shots --window-size=1280,2400 --screenshot=/work/docs/screenshots/sample-breakdowns-terminal.png "http://app:8000/?sample=breakdowns&theme=terminal" && \
-	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/specimen.png "http://app:8000/specimen.html?theme=paper" && \
-	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/specimen-terminal.png "http://app:8000/specimen.html?theme=terminal" && \
-	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/specimen-v14.png "http://app:8000/specimen.html?theme=paper&only=v14" && \
-	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/specimen-note.png "http://app:8000/specimen.html?theme=paper&only=note" && \
-	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/specimen-note-terminal.png "http://app:8000/specimen.html?theme=terminal&only=note" && \
-	$(COMPOSE) run --rm shots --window-size=1280,2400 --screenshot=/work/docs/screenshots/specimen-views.png "http://app:8000/specimen.html?theme=paper&only=views" && \
-	$(COMPOSE) run --rm shots --window-size=390,3000 --screenshot=/work/docs/screenshots/specimen-phone.png "http://app:8000/specimen.html?theme=paper" && \
-	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-inbox.png "http://app:8000/?sample=inbox&theme=paper" && \
-	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-inbox-terminal.png "http://app:8000/?sample=inbox&theme=terminal" && \
-	$(COMPOSE) run --rm shots --window-size=390,3400 --screenshot=/work/docs/screenshots/sample-inbox-phone.png "http://app:8000/?sample=inbox&theme=paper" && \
-	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-computed.png "http://app:8000/?sample=computed&theme=paper" && \
-	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-computed-terminal.png "http://app:8000/?sample=computed&theme=terminal" && \
-	$(COMPOSE) run --rm shots --window-size=390,3600 --screenshot=/work/docs/screenshots/sample-computed-phone.png "http://app:8000/?sample=computed&theme=paper" && \
-	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/specimen-v14-terminal.png "http://app:8000/specimen.html?theme=terminal&only=v14" && \
-	$(COMPOSE) run --rm shots --window-size=390,3600 --screenshot=/work/docs/screenshots/specimen-v14-phone.png "http://app:8000/specimen.html?theme=paper&only=v14" && \
-	$(COMPOSE) run --rm shots --window-size=1280,2400 --screenshot=/work/docs/screenshots/sample-as-of.png "http://app:8000/?sample=as-of&theme=paper" && \
-	$(COMPOSE) run --rm shots --window-size=1280,2400 --screenshot=/work/docs/screenshots/sample-as-of-terminal.png "http://app:8000/?sample=as-of&theme=terminal" && \
-	$(COMPOSE) run --rm shots --window-size=1280,3000 --screenshot=/work/docs/screenshots/sample-restatements.png "http://app:8000/?sample=restatements&theme=paper" && \
-	$(COMPOSE) run --rm shots --window-size=1280,3000 --screenshot=/work/docs/screenshots/sample-restatements-terminal.png "http://app:8000/?sample=restatements&theme=terminal" && \
-	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-live.png "http://app:8000/?sample=run-live&theme=paper" && \
-	$(COMPOSE) run --rm shots --window-size=1280,3600 --screenshot=/work/docs/screenshots/sample-live-terminal.png "http://app:8000/?sample=run-live&theme=terminal" && \
-	$(COMPOSE) run --rm shots --window-size=390,3600 --screenshot=/work/docs/screenshots/sample-live-phone.png "http://app:8000/?sample=run-live&theme=paper" && \
-	$(COMPOSE) run --rm shots --window-size=1280,1500 --screenshot=/work/docs/screenshots/computed-readers.png "http://app:8000/specimen.html?theme=paper&only=v14" && \
-	$(COMPOSE) run --rm shots --window-size=1280,1500 --screenshot=/work/docs/screenshots/computed-readers-terminal.png "http://app:8000/specimen.html?theme=terminal&only=v14"
+	for spec in $(foreach s,$(SHOT_SPECS),'$(s)'); do \
+	  name=$${spec%%@*}; rest=$${spec#*@}; size=$${rest%%@*}; url=$${rest#*@}; \
+	  $(COMPOSE) run --rm shots --window-size=$$size --screenshot=/work/docs/screenshots/$$name.png "http://app:8000/$$url" 2>/dev/null || exit 1; \
+	done
 	@for name in $(SHOTS); do \
 		test docs/screenshots/$$name.png -nt results/.screenshots-started \
 		|| { echo "screenshots: docs/screenshots/$$name.png was not written"; exit 1; }; \
@@ -233,6 +286,21 @@ look:
 	  name=$${spec%%@*}; rest=$${spec#*@}; size=$${rest%%@*}; url=$${rest#*@}; \
 	  $(COMPOSE) run --rm shots --window-size=$$size --screenshot=/work/results/$$name.png "http://app:8000/$$url" 2>/dev/null && echo "results/$$name.png"; \
 	done
+
+# The note as it prints, as a PDF in results/ (disposable, not committed): the print stylesheet
+# lays the workspace out as a document, which no screenshot shows.
+# make look-print PRINT='?sample=run-live'
+# It also captures results/print.png: uitests/print.html showing the live-run sample under the
+# print rules, on a screen (the first PRINT_HEIGHT pixels of it), for when no PDF reader is at hand.
+PRINT ?= ?sample=run-live
+PRINT_HEIGHT ?= 3400
+look-print:
+	@mkdir -p results
+	$(COMPOSE) up --force-recreate -d app
+	@trap '$(COMPOSE) down' EXIT; \
+	$(COMPOSE) exec -T app python uitests/wait_ready.py && \
+	$(COMPOSE) run --rm shots --no-pdf-header-footer --print-to-pdf=/work/results/print.pdf "http://app:8000/$(PRINT)" 2>/dev/null && echo "results/print.pdf" && \
+	$(COMPOSE) run --rm shots $(KEYS_FLAGS) --window-size=794,$(PRINT_HEIGHT) --screenshot=/work/results/print.png "file:///work/uitests/print.html#keep" 2>/dev/null && echo "results/print.png"
 
 fixtures:
 	$(RUN) python -m app.record_fixtures $(if $(filter 1,$(REFRESH)),--refresh,)
@@ -384,6 +452,12 @@ sample-v14:
 	  src=$${pair%%:*}; out=sample-$${pair##*:}.json; \
 	  cp docs/examples/v14/$$src.json src/web/$$out && echo "src/web/$$out <- docs/examples/v14/$$src.json"; \
 	done
+
+# The page's sample of every shape the analysis can take (?sample=analysis-shapes): the hand-built
+# example of `make examples-analysis`, copied unedited. Run it after examples-analysis;
+# uitests/test_analysis_dom.py fails while the copy differs.
+sample-analysis:
+	@cp docs/examples/analysis/run-hand-built-argument.json src/web/sample-analysis-shapes.json && echo "src/web/sample-analysis-shapes.json <- docs/examples/analysis/run-hand-built-argument.json"
 
 watch-replay:
 	$(RUN) python -m tests.watch_replay $(ARGS)

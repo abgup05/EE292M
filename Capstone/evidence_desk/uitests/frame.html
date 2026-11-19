@@ -134,7 +134,59 @@ function record(frame, step, extra) {
   steps.append(li);
 }
 
+function readJson(url) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", url);
+    xhr.onload = () => resolve(JSON.parse(xhr.responseText));
+    xhr.onerror = () => reject(new Error(`could not read ${url}`));
+    xhr.send();
+  });
+}
+
+/**
+ * Which claims of the sample each step uses, chosen from the record and never by name: the live
+ * sample is replaced whenever a run is made again, and its claims change what they hold.
+ * - main: the first claim with a computed test and a finding that quotes a filing;
+ * - many: the first claim with two findings that quote a filing, and pick: the last of those findings;
+ * - noted: the first claim whose test read a value with a long note on it;
+ * - other: the first claim that is not `main`; first: the first claim.
+ * A kind the sample lacks is "", and the steps that need it are recorded as skipped, with the reason.
+ */
+function planFrom(run) {
+  const findings = new Map((run.findings || []).map((finding) => [finding.id, finding]));
+  const quoted = (claim) => (claim.finding_ids || []).map((id) => findings.get(id)).filter((finding) => finding && finding.verified !== false && (finding.evidence_ids || []).length);
+  const tested = run.claims.filter((claim) => claim.computed && typeof claim.computed === "object");
+  const id = (claim) => (claim ? claim.id : "");
+  const main = tested.find((claim) => quoted(claim).length);
+  const many = run.claims.find((claim) => quoted(claim).length >= 2);
+  return {
+    main: id(main),
+    many: id(many),
+    // The last of its findings that quotes a filing: the one picked, since a finding that cites only figures has no quote to read.
+    pick: many ? quoted(many)[quoted(many).length - 1].id : "",
+    noted: id(tested.find((claim) => (claim.computed.operands || []).some((operand) => (operand.note || "").length > 80))),
+    other: id(run.claims.find((claim) => claim.id !== id(main))),
+    first: id(run.claims[0]),
+  };
+}
+
+/** A step this sample cannot show: recorded with the reason, so its tests are skipped and say why. */
+function skip(step, reason) {
+  const li = document.createElement("li");
+  li.dataset.step = step;
+  li.dataset.skipped = reason;
+  steps.append(li);
+}
+
 async function run() {
+  const plan = planFrom(await readJson("file:///work/src/web/sample-run-live.json"));
+  const planLi = document.createElement("li");
+  planLi.dataset.step = "plan";
+  for (const [key, value] of Object.entries(plan)) planLi.dataset[key] = value;
+  steps.append(planLi);
+  const noMain = "the live sample has no claim with both a computed test and a finding that quotes a filing";
+
   // ---- a wide window: 1440x900, the live three-reader run
   // A run with an analysis opens on its Analysis tab (uitests/analysis.html checks that); this check starts from the Overview.
   let frame = await open("?sample=run-live&theme=paper&tab=overview", 1440, 900, runReady, "the live run at 1440x900");
@@ -155,59 +207,80 @@ async function run() {
     stampFontPx: win.getComputedStyle(doc.querySelector("#scorecard .pill.verdict")).fontSize,
     // The first stamp's fill: a colour, or for a mixed verdict the two colours as a gradient.
     stampFill: ((style) => `${style.backgroundColor} ${style.backgroundImage}`)(win.getComputedStyle(doc.querySelector("#scorecard .pill.verdict"))),
-    badgeBorder: win.getComputedStyle(doc.querySelector("#summary-origin .badge-model")).borderTopWidth,
+    // The tag that says a model wrote something: on the summary when a model wrote it, else on a finding's statement.
+    badgeBorder: ((badge) => (badge ? win.getComputedStyle(badge).borderTopWidth : ""))(doc.querySelector("#summary-origin .badge-model, #claim-list .badge-model")),
     railRowHeights: [...doc.querySelectorAll("#scorecard a.score-row")].map((row) => Math.round(row.getBoundingClientRect().height)).join(" "),
   });
 
-  // Select the second claim by its row in the rail.
-  doc.querySelector('#scorecard a.score-row[data-select="c2"]').click();
-  await sleep(100);
-  record(frame, "wide-c2");
+  const selectClaim = async (id) => {
+    doc.querySelector(`#scorecard a.score-row[data-select="${id}"]`).click();
+    await sleep(120);
+  };
+  // Select the claim that has a computed test and a quoted finding, by its row in the rail.
+  if (plan.main) {
+    await selectClaim(plan.main);
+    record(frame, "wide-claim");
 
-  // Its Evidence tab, by the tab's own button.
-  doc.getElementById("tab-evidence").click();
-  await sleep(100);
-  const finding = [...doc.querySelectorAll("#claim-list details.claim:not(.is-off) article.finding[data-pick]")].find(visible);
-  record(frame, "wide-c2-evidence", { firstFinding: finding ? finding.dataset.findingId : "", contextDrawnInCentre: String([...doc.querySelectorAll("#centre-scroll .excerpt .context")].filter(visible).length) });
+    // Its Evidence tab, by the tab's own button.
+    doc.getElementById("tab-evidence").click();
+    await sleep(100);
+    const finding = [...doc.querySelectorAll("#claim-list details.claim:not(.is-off) article.finding[data-pick]")].find(visible);
+    record(frame, "wide-claim-evidence", { firstFinding: finding ? finding.dataset.findingId : "", contextDrawnInCentre: String([...doc.querySelectorAll("#centre-scroll .excerpt .context")].filter(visible).length) });
+  } else {
+    skip("wide-claim", noMain);
+    doc.getElementById("tab-evidence").click();
+    await sleep(100);
+    skip("wide-claim-evidence", noMain);
+  }
 
-  // The first claim has several findings: pick its last by the finding's own button, and the inspector reads its quote in context.
-  doc.querySelector('#scorecard a.score-row[data-select="c1"]').click();
-  await sleep(100);
-  const findings = [...doc.querySelectorAll("#claim-list details.claim:not(.is-off) article.finding[data-pick]")].filter(visible);
-  const last = findings[findings.length - 1];
-  last.querySelector("[data-pick-button]").click();
-  await sleep(100);
-  record(frame, "wide-c1-pick-finding", {
-    firstOfItsClaim: findings[0].dataset.findingId,
-    pickedFinding: last.dataset.findingId,
-    inspectedEvidence: [...doc.querySelectorAll("#inspect-body [data-inspected-evidence]")].map((node) => node.dataset.inspectedEvidence).join(" "),
-    inspectedContext: String([...doc.querySelectorAll("#inspect-body .excerpt .context")].filter(visible).length),
-    inspectedLinks: [...doc.querySelectorAll("#inspect-body .evidence-caption a.ext")].map((a) => a.getAttribute("href")).join(" "),
-  });
+  // A claim with several quoted findings: pick its last by the finding's own button, and the inspector reads its quote in context.
+  if (plan.many) {
+    await selectClaim(plan.many);
+    const findings = [...doc.querySelectorAll("#claim-list details.claim:not(.is-off) article.finding[data-pick]")].filter(visible);
+    const last = findings.find((node) => node.dataset.findingId === plan.pick);
+    last.querySelector("[data-pick-button]").click();
+    await sleep(100);
+    record(frame, "wide-pick-finding", {
+      firstOfItsClaim: findings[0].dataset.findingId,
+      pickedFinding: last.dataset.findingId,
+      inspectedEvidence: [...doc.querySelectorAll("#inspect-body [data-inspected-evidence]")].map((node) => node.dataset.inspectedEvidence).join(" "),
+      inspectedContext: String([...doc.querySelectorAll("#inspect-body .excerpt .context")].filter(visible).length),
+      inspectedLinks: [...doc.querySelectorAll("#inspect-body .evidence-caption a.ext")].map((a) => a.getAttribute("href")).join(" "),
+    });
+  } else {
+    skip("wide-pick-finding", "the live sample has no claim with two findings that quote a filing");
+  }
 
-  doc.querySelector('#scorecard a.score-row[data-select="c2"]').click();
-  await sleep(100);
-  // Its Overview tab: the computed test's operands and arithmetic are read in the inspector.
-  press(win, doc.body, "2");
-  await sleep(100);
-  doc.querySelector("#claim-list details.claim:not(.is-off) .ct [data-pick-button]").click();
-  await sleep(100);
-  record(frame, "wide-c2-pick-test", {
-    inspectedOperands: [...doc.querySelectorAll("#inspect-body [data-operand]")].map((row) => row.dataset.operand).join("|"),
-    detailDrawnInCentre: String([...doc.querySelectorAll("#centre-scroll .ct-detail")].filter(visible).length),
-  });
+  // The main claim's Overview tab: the computed test's operands and arithmetic are read in the inspector.
+  if (plan.main) {
+    await selectClaim(plan.main);
+    press(win, doc.body, "2");
+    await sleep(100);
+    doc.querySelector("#claim-list details.claim:not(.is-off) .ct [data-pick-button]").click();
+    await sleep(100);
+    record(frame, "wide-pick-test", {
+      inspectedOperands: [...doc.querySelectorAll("#inspect-body [data-operand]")].map((row) => row.dataset.operand).join("|"),
+      detailDrawnInCentre: String([...doc.querySelectorAll("#centre-scroll .ct-detail")].filter(visible).length),
+    });
+  } else {
+    press(win, doc.body, "2");
+    await sleep(100);
+    skip("wide-pick-test", noMain);
+  }
 
-  // A claim whose test has a long note on a value (c4): the operand's term stays on its line and nothing spills out of the inspector.
-  doc.querySelector('#scorecard a.score-row[data-select="c4"]').click();
-  await sleep(150);
-  const insBody = doc.getElementById("inspect-body");
-  record(frame, "wide-c4", {
-    inspectorSpill: String(insBody.scrollWidth - insBody.clientWidth),
-    tallestTerm: String(Math.max(0, ...[...insBody.querySelectorAll("[data-operand] th code")].map((node) => Math.round(node.getBoundingClientRect().height)))),
-    widestNote: String(Math.max(0, ...[...insBody.querySelectorAll("[data-operand] .ct-label")].map((node) => Math.round(node.getBoundingClientRect().width)))),
-  });
-  doc.querySelector('#scorecard a.score-row[data-select="c2"]').click();
-  await sleep(100);
+  // A claim whose test read a value with a long note on it: the operand's term stays on its line and nothing spills out of the inspector.
+  if (plan.noted) {
+    await selectClaim(plan.noted);
+    const insBody = doc.getElementById("inspect-body");
+    record(frame, "wide-noted", {
+      inspectorSpill: String(insBody.scrollWidth - insBody.clientWidth),
+      tallestTerm: String(Math.max(0, ...[...insBody.querySelectorAll("[data-operand] th code")].map((node) => Math.round(node.getBoundingClientRect().height)))),
+      widestNote: String(Math.max(0, ...[...insBody.querySelectorAll("[data-operand] .ct-label")].map((node) => Math.round(node.getBoundingClientRect().width)))),
+    });
+  } else {
+    skip("wide-noted", "the live sample has no computed test that read a value with a long note");
+  }
+  await selectClaim(plan.main || plan.first);
 
   // The Events tab reads the newest 8-K at the side; picking another reads that one.
   press(win, doc.body, "5");
@@ -231,7 +304,7 @@ async function run() {
   // Over time for one claim: its own lane only. Then the whole thesis: every lane.
   press(win, doc.body, "4");
   await sleep(150);
-  record(frame, "wide-c2-time");
+  record(frame, "wide-claim-time");
   doc.getElementById("rail-thesis").click();
   await sleep(150);
   record(frame, "wide-thesis-time");
@@ -258,7 +331,7 @@ async function run() {
   ticker.dispatchEvent(new win.Event("input", { bubbles: true }));
   ticker.blur();
   // A cell of the verdict strip in the bar selects its claim.
-  doc.querySelector('#cmd-verdicts [data-vcell="c3"]').click();
+  doc.querySelector(`#cmd-verdicts [data-vcell="${plan.other}"]`).click();
   await sleep(100);
   record(frame, "wide-vcell");
 
@@ -274,12 +347,12 @@ async function run() {
   doc.getElementById("run-drawer-close").click();
 
   // ---- a claim and a tab named in the address
-  frame = await open("?sample=run-live&theme=terminal&claim=c3&tab=evidence", 1440, 900, runReady, "the live run opened on c3's evidence");
+  frame = await open(`?sample=run-live&theme=terminal&claim=${plan.other}&tab=evidence`, 1440, 900, runReady, "the live run opened on a claim's evidence");
   record(frame, "wide-address", { theme: frame.contentDocument.documentElement.getAttribute("data-theme") });
 
   // ---- 1280x800, the smallest laptop the frame is drawn for
-  frame = await open("?sample=run-live&theme=terminal&claim=c1&tab=overview", 1280, 800, runReady, "the live run at 1280x800");
-  record(frame, "laptop-c1");
+  frame = await open(`?sample=run-live&theme=terminal&claim=${plan.first}&tab=overview`, 1280, 800, runReady, "the live run at 1280x800");
+  record(frame, "laptop-claim");
 
   // ---- the first screen at 1440x900: the form, the guide as the lead, the samples
   frame = await open("?theme=paper", 1440, 900, (d) => d.body.classList.contains("is-first") && d.getElementById("howto").parentElement.id === "lead-slot", "the first screen");
@@ -287,9 +360,9 @@ async function run() {
   record(frame, "wide-first", { firstScreen: String(doc.body.classList.contains("is-first")), howtoIn: doc.getElementById("howto").parentElement.id, samplesDrawn: String([...doc.querySelectorAll("#sample-nav a")].filter(visible).length), formDrawn: String(visible(doc.getElementById("decision"))) });
 
   // ---- a narrower window: the rail is a strip, the inspector a sheet
-  frame = await open("?sample=run-live&theme=paper&claim=c2&tab=evidence", 900, 800, runReady, "the live run at 900x800");
+  frame = await open(`?sample=run-live&theme=paper&claim=${plan.many || plan.main || plan.first}&tab=evidence`, 900, 800, runReady, "the live run at 900x800");
   doc = frame.contentDocument;
-  record(frame, "mid-c2-evidence");
+  record(frame, "mid-claim-evidence");
   [...doc.querySelectorAll("#claim-list details.claim:not(.is-off) article.finding[data-pick]")].filter(visible)[0].querySelector("[data-pick-button]").click();
   await sleep(100);
   record(frame, "mid-pick", { sheetPosition: frame.contentWindow.getComputedStyle(doc.getElementById("inspector")).position });
@@ -302,15 +375,15 @@ async function run() {
   doc = frame.contentDocument;
   win = frame.contentWindow;
   record(frame, "phone-loaded");
-  doc.querySelector('#scorecard a.score-row[data-select="c2"]').click();
+  doc.querySelector(`#scorecard a.score-row[data-select="${plan.main || plan.first}"]`).click();
   await sleep(200);
   doc.getElementById("tab-evidence").click();
   await sleep(100);
-  record(frame, "phone-c2-evidence", { contextDrawn: String([...doc.querySelectorAll("#claim-list .excerpt .context")].filter(visible).length), pickButtonsDrawn: String([...doc.querySelectorAll("[data-pick-button]")].filter(visible).length) });
+  record(frame, "phone-claim-evidence", { contextDrawn: String([...doc.querySelectorAll("#claim-list .excerpt .context")].filter(visible).length), pickButtonsDrawn: String([...doc.querySelectorAll("[data-pick-button]")].filter(visible).length) });
   win.scrollTo(0, 99999);
   await sleep(100);
   record(frame, "phone-scrolled", { scrollY: String(Math.round(win.scrollY)), tabsTop: String(Math.round(doc.getElementById("tabs").getBoundingClientRect().top)) });
-  for (const [tab, name] of [["overview", "phone-c2-overview"], ["time", "phone-c2-time"], ["events", "phone-events"], ["figures", "phone-figures"], ["limits", "phone-limits"]]) {
+  for (const [tab, name] of [["overview", "phone-claim-overview"], ["time", "phone-claim-time"], ["events", "phone-events"], ["figures", "phone-figures"], ["limits", "phone-limits"]]) {
     doc.getElementById(`tab-${tab}`).click();
     await sleep(120);
     record(frame, name);

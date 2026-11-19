@@ -1,7 +1,7 @@
 """Browser-level checks of the live three-reader sample and of the two-model example.
 
 `make uitest` renders /?sample=run-live, a bare run copied unedited from a live NVIDIA run of
-19 Nov 2026 UTC (results/run-b9d5f9224a25.json: claude-opus-5-5 reading the filings and
+19 Nov 2026 UTC (the record named by the sample's own id in results/: claude-opus-5-5 reading the filings and
 claude-haiku-5-5 checking meaning, both through the Anthropic API, and three claim readers: the
 grammar, claude-haiku-5-5 and claude-sonnet-5-5), and /?sample=readers in the Terminal theme,
 docs/examples/v14/run-readers.json (six claims of set C, the model readers' answers replayed from
@@ -14,6 +14,7 @@ the verdict rule counted, and the history. The page compares no readings and com
 from __future__ import annotations
 
 import json
+import re
 from functools import cache
 from pathlib import Path
 from typing import Any
@@ -25,7 +26,6 @@ from test_dom import require_fresh
 ROOT = Path(__file__).resolve().parents[1]
 WEB = ROOT / "src" / "web"
 RESULTS = ROOT / "results"
-ORIGINAL = RESULTS / "run-b9d5f9224a25.json"
 DUMPS = {"run-live": ("dom-run-live.html", "sample-run-live.json"), "readers": ("dom-readers.html", "sample-readers.json")}
 COUNTED = {"supports": "Counted as support", "challenges": "Counted as a challenge"}
 SHORT = {"grammar": "Grammar", "model": "Model 1", "model_2": "Model 2"}
@@ -74,9 +74,10 @@ def expected_mark(reading: dict[str, Any], test: dict[str, Any] | None) -> str:
 
 
 def test_the_live_sample_is_the_run_unedited() -> None:
-    if not ORIGINAL.is_file():
-        pytest.skip("results/run-b9d5f9224a25.json is not on this machine (results/ is not committed)")
-    assert (WEB / "sample-run-live.json").read_bytes() == ORIGINAL.read_bytes()
+    original = RESULTS / f"{record('run-live')['id']}.json"
+    if not original.is_file():
+        pytest.skip(f"results/{original.name} is not on this machine (results/ is not committed)")
+    assert (WEB / "sample-run-live.json").read_bytes() == original.read_bytes()
 
 
 def test_the_live_sample_is_the_first_offered_on_the_first_screen() -> None:
@@ -88,10 +89,15 @@ def test_the_live_sample_is_the_first_offered_on_the_first_screen() -> None:
 
 def test_the_live_sample_says_where_it_came_from_and_who_answered() -> None:
     note = words(page("run-live").select_one("#run-head [data-sample-note]"))
-    for phrase in ("live run of 19 November 2026", "run-b9d5f9224a25", "Anthropic API", "claude-opus-5-5", "claude-haiku-5-5", "claude-sonnet-5-5", "copied unedited from results/run-b9d5f9224a25.json"):
-        assert phrase in note, phrase
     run = record("run-live")
-    assert run["engine_detail"].endswith("via the Anthropic API") and run["claim_reader_detail"].count("via the Anthropic API") == 2
+    # What the note must say is the record's: its id, its day, the file it was copied from and every model that answered.
+    year, month, day = (int(part) for part in run["started_at"][:10].split("-"))
+    months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+    said = " ".join([run["engine_detail"], run["checker_detail"], run["claim_reader_detail"]])
+    models = sorted(set(re.findall(r"claude-[a-z0-9-]+", said)))
+    assert models and "via the Anthropic API" in said, "the live sample was answered by models through the API"
+    for phrase in (f"live run of {day} {months[month - 1]} {year}", run["id"], "Anthropic API", *models, f"copied unedited from results/{run['id']}.json"):
+        assert phrase in note, phrase
 
 
 def test_the_readers_example_says_its_answers_were_replayed() -> None:

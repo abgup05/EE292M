@@ -16,8 +16,8 @@
 
   Three states have no recorded sample, so the last steps have the page's own code draw them from
   the live sample changed by hand here, in the shapes docs/analysis.md gives:
-  - "made-partial": `argument_step` "partial" (4 of 5 claims argued, `thesis_step` "failed"), claim
-    c5 with no argument and an `argument_note`, the outside view in `providers_failed` with its
+  - "made-partial": `argument_step` "partial" (all but one claim argued, `thesis_step` "failed"), the
+    last claim with no argument and an `argument_note`, the outside view in `providers_failed` with its
     reason and its analytics gone, and no `timings`;
   - "made-failed": `argument_step` "failed", no claim argued.
   Nothing a model answered is changed: sentences are removed, never rewritten.
@@ -125,7 +125,54 @@ function readJson(url) {
   });
 }
 
+/** A step a sample cannot show: recorded with the reason, so its tests are skipped and say why. */
+function skip(step, reason) {
+  const li = document.createElement("li");
+  li.dataset.step = step;
+  li.dataset.skipped = reason;
+  steps.append(li);
+}
+
+/** Every sentence of a record's argument, with the scope ("" or a claim's id) it is drawn in. */
+function sentencesOf(run) {
+  const out = [];
+  const walk = (node, scope) => {
+    if (Array.isArray(node)) node.forEach((item) => walk(item, scope));
+    else if (node && typeof node === "object") {
+      if (typeof node.text === "string" && Array.isArray(node.cites) && "verified" in node) out.push({ sentence: node, scope });
+      Object.values(node).forEach((value) => walk(value, scope));
+    }
+  };
+  walk(run.analysis && run.analysis.thesis, "");
+  for (const claim of run.claims) walk(claim.analysis && claim.analysis.argument, claim.id);
+  return out;
+}
+
 async function run() {
+  // What each step uses is chosen from the records, never by name: the live samples are replaced whenever
+  // a run is made again, and where their sentences, tests and notes sit changes with them.
+  const SAMPLES = ["run-live", "run-costco", "analysis-shapes"];
+  const records = {};
+  for (const name of SAMPLES) records[name] = await readJson(`file:///work/src/web/sample-${name}.json`);
+  const live = records["run-live"];
+  /** The first argued sample (the live ones first) that has a sentence of a kind, or "" when none has. */
+  const sampleWith = (test) => SAMPLES.find((name) => sentencesOf(records[name]).some(({ sentence }) => test(sentence))) || "";
+  const argued = (claim) => claim.analysis && claim.analysis.argument;
+  const plan = {
+    // A claim with an argument, analytics, corollaries and a figure tied to it.
+    claim: (live.claims.find((claim) => argued(claim) && (claim.analysis.analytic_ids || []).length && (claim.analysis.corollaries || []).length && (claim.analysis.relevant || []).some((item) => (item.metric_ids || []).length)) || {}).id || "",
+    lastClaim: live.claims[live.claims.length - 1].id,
+    costcoClaim: records["run-costco"].claims[records["run-costco"].claims.length - 1].id,
+    unverifiedIn: sampleWith((sentence) => sentence.verified === false),
+    restatingIn: sampleWith((sentence) => (sentence.thresholds || []).length > 0),
+    // A claim of the hand-built example that the record ties to no measure, with its note.
+    noMeasure: (records["analysis-shapes"].claims.find((claim) => claim.analysis && !(claim.analysis.relevant || []).length && claim.analysis.relevance_note) || {}).id || "",
+  };
+  const planLi = document.createElement("li");
+  planLi.dataset.step = "plan";
+  for (const [key, value] of Object.entries(plan)) planLi.dataset[key] = value;
+  steps.append(planLi);
+
   // ---- the first sample, as a visitor opens it: 1440x900, nothing named in the address but the sample
   let frame = await open("?sample=run-live&theme=paper", 1440, 900, "the live run");
   let doc = frame.contentDocument;
@@ -142,41 +189,10 @@ async function run() {
     leadSentenceKey: lead.dataset.anSentence,
   });
 
-  // A sentence the audit did not verify: selecting it says so in the inspector, with the reason.
-  const unverified = [...scope("").querySelectorAll('[data-an-sentence][data-verified="false"]')][0];
-  if (unverified) {
-    unverified.querySelector(".an-text").click();
-    await sleep(100);
-    record(frame, "sentence-unverified", { sentenceText: text(unverified.querySelector(".an-text")), sentenceCites: [...unverified.querySelectorAll("[data-cite]")].map((chip) => chip.dataset.cite).join("|"), reasonDrawn: text(unverified.querySelector("[data-unverified]")), reasonVisible: String(visible(unverified.querySelector("[data-unverified]"))) });
-  }
-  // A verified one.
+  // A verified sentence: the lead.
   lead.querySelector(".an-text").click();
   await sleep(100);
   record(frame, "sentence-verified", { sentenceCites: [...lead.querySelectorAll("[data-cite]")].map((chip) => chip.dataset.cite).join("|") });
-
-  // A sentence that restates a threshold: it says so quietly on the sentence, and in words in the inspector.
-  const restating = doc.querySelector("#analysis [data-an-sentence].has-thresholds");
-  if (restating) {
-    const of = restating.closest(".an-scope").dataset.anScope;
-    (of ? doc.querySelector(`#scorecard a.score-row[data-select="${of}"]`) : doc.getElementById("rail-thesis")).click();
-    await sleep(120);
-    restating.querySelector(".an-text").click();
-    await sleep(100);
-    const mark = restating.querySelector(".an-threshold");
-    const flagged = doc.querySelector("#analysis .an-unverified");
-    record(frame, "sentence-restating", {
-      sentenceText: text(restating.querySelector(".an-text")),
-      sentenceVerified: restating.dataset.verified,
-      marksDrawn: [...restating.querySelectorAll(".an-threshold")].filter(visible).map(text).join("|"),
-      markTitle: mark.getAttribute("title"),
-      markColor: win.getComputedStyle(mark).color,
-      markUnderline: win.getComputedStyle(restating.querySelector(".an-text")).textDecorationLine,
-      unverifiedColor: flagged ? win.getComputedStyle(flagged).color : "",
-      markHasLimitGlyph: String(Boolean(mark.querySelector(".g-limit"))),
-    });
-    doc.getElementById("rail-thesis").click();
-    await sleep(120);
-  }
 
   // A citation chip of every kind the record has: each opens what it names. The whole thesis first, then each claim.
   const seen = new Set();
@@ -200,19 +216,19 @@ async function run() {
   record(frame, "chips-done", { kinds: [...seen].sort().join(" ") });
 
   // One claim: its own analysis and no other; an analytic's row and a corollary's row read at the side.
-  doc.querySelector('#scorecard a.score-row[data-select="c3"]').click();
+  doc.querySelector(`#scorecard a.score-row[data-select="${plan.claim}"]`).click();
   await sleep(120);
-  record(frame, "claim", { headLean: (doc.querySelector("#sel-head [data-sel-lean]") || { dataset: {} }).dataset.selLean || "", headLeanDrawn: String(visible(doc.querySelector("#sel-head [data-sel-lean]"))), headVerdict: (doc.querySelector("#sel-head .pill.verdict") || { dataset: {} }).dataset.verdict || "", leanLine: text(scope("c3").querySelector("[data-lean-line]")), analyticsDrawn: [...scope("c3").querySelectorAll("[data-analytic]")].filter(visible).map((node) => node.dataset.analytic).join("|"), corollariesDrawn: [...scope("c3").querySelectorAll("[data-corollary]")].filter(visible).map((node) => node.dataset.corollary).join("|") });
+  record(frame, "claim", { headLean: (doc.querySelector("#sel-head [data-sel-lean]") || { dataset: {} }).dataset.selLean || "", headLeanDrawn: String(visible(doc.querySelector("#sel-head [data-sel-lean]"))), headVerdict: (doc.querySelector("#sel-head .pill.verdict") || { dataset: {} }).dataset.verdict || "", leanLine: text(scope(plan.claim).querySelector("[data-lean-line]")), analyticsDrawn: [...scope(plan.claim).querySelectorAll("[data-analytic]")].filter(visible).map((node) => node.dataset.analytic).join("|"), corollariesDrawn: [...scope(plan.claim).querySelectorAll("[data-corollary]")].filter(visible).map((node) => node.dataset.corollary).join("|") });
   // The first of its analytics that was computed from filed facts: its row is selected by its reading.
   let analyticRow = null;
-  for (const row of [...scope("c3").querySelectorAll("li[data-analytic]")].filter(visible)) {
+  for (const row of [...scope(plan.claim).querySelectorAll("li[data-analytic]")].filter(visible)) {
     row.querySelector(".an-reading, .an-question").click();
     await sleep(100);
     analyticRow = row;
     if (doc.querySelector("#inspect-body .ins-inputs a.ext")) break;
   }
-  record(frame, "pick-analytic", { analytic: analyticRow.dataset.analytic });
-  const corRow = [...scope("c3").querySelectorAll("tr[data-corollary]")].filter(visible)[0];
+  record(frame, "pick-analytic", { analytic: analyticRow.dataset.analytic, filingLinked: String(Boolean(doc.querySelector("#inspect-body .ins-inputs a.ext"))) });
+  const corRow = [...scope(plan.claim).querySelectorAll("tr[data-corollary]")].filter(visible)[0];
   corRow.querySelector("button.chip").click();
   await sleep(100);
   record(frame, "pick-corollary", { corollary: corRow.dataset.corollary });
@@ -224,10 +240,12 @@ async function run() {
     oddsBlock.querySelector("[data-pick-button]").click();
     await sleep(100);
     record(frame, "pick-odds", { odds: oddsBlock.dataset.oddsId, caveatDrawn: String(visible(oddsBlock.querySelector("[data-odds-caveat]"))) });
+  } else {
+    skip("pick-odds", "no claim of the live sample has persistence odds");
   }
 
   // The Figures tab for a claim: the figures the record ties to it first, the rest behind a control that says what it holds.
-  doc.querySelector('#scorecard a.score-row[data-select="c3"]').click();
+  doc.querySelector(`#scorecard a.score-row[data-select="${plan.claim}"]`).click();
   await sleep(100);
   doc.getElementById("tab-figures").click();
   await sleep(120);
@@ -259,7 +277,7 @@ async function run() {
   record(frame, "overview", { tapeSource: doc.getElementById("tape").dataset.source || "", headlineDrawn: [...doc.querySelectorAll("#tape [data-headline]")].filter(visible).map((row) => row.dataset.headline).join("|"), tapeTitle: text(doc.getElementById("tape-title")) });
 
   // ---- Terminal at 1280x800, a claim's analysis
-  frame = await open("?sample=run-costco&theme=terminal&claim=c4", 1280, 800, "the Costco run at 1280x800");
+  frame = await open(`?sample=run-costco&theme=terminal&claim=${plan.costcoClaim}`, 1280, 800, "the Costco run at 1280x800");
   record(frame, "laptop-terminal");
 
   // ---- a phone: one column, nothing sideways; a chip's target is read in a sheet, and Esc closes it
@@ -278,10 +296,54 @@ async function run() {
   await sleep(120);
   record(frame, "phone-method");
 
+  // ---- a sentence the audit did not verify, and one that restates a threshold: each on the first sample that has one
+  // (the live runs first), wherever in the argument it sits. Selecting it says what the audit found, in the inspector.
+  const sentenceStep = async (step, sample, selector, extra) => {
+    if (!sample) {
+      skip(step, `no argued sample (${SAMPLES.join(", ")}) has such a sentence`);
+      return;
+    }
+    frame = await open(`?sample=${sample}&theme=paper`, 1440, 900, `the ${sample} sample, for ${step}`);
+    doc = frame.contentDocument;
+    win = frame.contentWindow;
+    const node = doc.querySelector(`#analysis [data-an-sentence]${selector}`);
+    const of = node.closest(".an-scope").dataset.anScope;
+    (of ? doc.querySelector(`#scorecard a.score-row[data-select="${of}"]`) : doc.getElementById("rail-thesis")).click();
+    await sleep(120);
+    node.querySelector(".an-text").click();
+    await sleep(100);
+    record(frame, step, { sample, sentenceScope: of, sentenceText: text(node.querySelector(".an-text")), sentenceVerified: node.dataset.verified, sentenceCites: [...node.querySelectorAll("[data-cite]")].map((chip) => chip.dataset.cite).join("|"), ...extra(node) });
+  };
+  await sentenceStep("sentence-unverified", plan.unverifiedIn, '[data-verified="false"]', (node) => ({
+    reasonDrawn: text(node.querySelector("[data-unverified]")),
+    reasonVisible: String(visible(node.querySelector("[data-unverified]"))),
+  }));
+  await sentenceStep("sentence-restating", plan.restatingIn, ".has-thresholds", (node) => {
+    const mark = node.querySelector(".an-threshold");
+    // The colour an unverified sentence's reason is drawn in, read from a mark of that class put on the page for the reading.
+    const probe = doc.createElement("span");
+    probe.className = "an-unverified";
+    node.parentElement.append(probe);
+    const unverifiedColor = win.getComputedStyle(probe).color;
+    probe.remove();
+    return {
+      marksDrawn: [...node.querySelectorAll(".an-threshold")].filter(visible).map(text).join("|"),
+      markTitle: mark.getAttribute("title"),
+      markColor: win.getComputedStyle(mark).color,
+      markUnderline: win.getComputedStyle(node.querySelector(".an-text")).textDecorationLine,
+      unverifiedColor,
+      markHasLimitGlyph: String(Boolean(mark.querySelector(".g-limit"))),
+    };
+  });
+
   // ---- a claim the record ties to no measure: the Figures tab shows the record's note in place of tied figures
-  frame = await open("?sample=analysis-shapes&theme=paper&claim=c1&tab=figures", 1440, 900, "the hand-built example, c1's figures");
-  doc = frame.contentDocument;
-  record(frame, "figures-no-measure", { noneNote: text(doc.querySelector("#figures [data-fig-none]")), noneDrawn: String(visible(doc.querySelector("#figures [data-fig-none]"))), tiedCount: (doc.querySelector("#figures [data-fig-tied]") || { dataset: {} }).dataset.figTied || "", untiedCount: (doc.querySelector("#figures details.fig-untied") || { dataset: {} }).dataset.figUntied || "" });
+  if (plan.noMeasure) {
+    frame = await open(`?sample=analysis-shapes&theme=paper&claim=${plan.noMeasure}&tab=figures`, 1440, 900, "the hand-built example, a claim tied to no measure");
+    doc = frame.contentDocument;
+    record(frame, "figures-no-measure", { noneNote: text(doc.querySelector("#figures [data-fig-none]")), noneDrawn: String(visible(doc.querySelector("#figures [data-fig-none]"))), tiedCount: (doc.querySelector("#figures [data-fig-tied]") || { dataset: {} }).dataset.figTied || "", untiedCount: (doc.querySelector("#figures details.fig-untied") || { dataset: {} }).dataset.figUntied || "" });
+  } else {
+    skip("figures-no-measure", "the hand-built example has no claim tied to no measure with a note");
+  }
 
   // ---- no model: the computed analysis only
   frame = await open("?sample=computed&theme=paper", 1440, 900, "the computed example");
@@ -320,16 +382,16 @@ async function run() {
   partial.id = "run-made-partial";
   Object.assign(partial.analysis, {
     argument_step: "partial",
-    argument_claims_asked: 5,
-    argument_claims_answered: 4,
+    argument_claims_asked: partial.claims.length,
+    argument_claims_answered: partial.claims.length - 1,
     thesis_step: "failed",
-    argument_note: "4 of 5 claims were argued; the request for the whole thesis timed out.",
+    argument_note: "All but one claim was argued; the request for the whole thesis timed out.",
     thesis: null,
     providers_failed: ["outside_view"],
     provider_reasons: { outside_view: "SEC's frames did not answer within 20 seconds." },
   });
   partial.analysis.analytics = partial.analysis.analytics.filter((item) => item.provider !== "outside_view");
-  const gone = partial.claims.find((claim) => claim.id === "c5");
+  const gone = partial.claims[partial.claims.length - 1];
   gone.analysis.argument = null;
   gone.analysis.argument_note = "The request for this claim timed out; the other claims stand.";
   delete partial.timings;
@@ -344,7 +406,7 @@ async function run() {
     madeFailed: shown("#analysis [data-providers-failed]"),
     sentences: String([...doc.querySelectorAll("#analysis [data-an-sentence]")].filter(visible).length),
   });
-  doc.querySelector('#scorecard a.score-row[data-select="c5"]').click();
+  doc.querySelector(`#scorecard a.score-row[data-select="${plan.lastClaim}"]`).click();
   await sleep(120);
   record(frame, "made-partial-claim", { unargued: shown("#analysis [data-claim-unargued]"), failedProvider: shown('#analysis [data-provider-failed="outside_view"]'), sentences: String([...doc.querySelectorAll("#analysis [data-an-sentence]")].filter(visible).length) });
   doc.getElementById("tab-method").click();
@@ -360,7 +422,7 @@ async function run() {
   });
   const failed = JSON.parse(JSON.stringify(original));
   failed.id = "run-made-failed";
-  Object.assign(failed.analysis, { argument_step: "failed", argument_claims_asked: 5, argument_claims_answered: 0, thesis_step: "failed", argument_note: "Every request for the argument failed: the model did not answer.", thesis: null });
+  Object.assign(failed.analysis, { argument_step: "failed", argument_claims_asked: failed.claims.length, argument_claims_answered: 0, thesis_step: "failed", argument_note: "Every request for the argument failed: the model did not answer.", thesis: null });
   for (const claim of failed.claims) {
     claim.analysis.argument = null;
     claim.analysis.argument_note = "";

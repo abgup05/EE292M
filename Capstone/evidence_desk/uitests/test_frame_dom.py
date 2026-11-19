@@ -36,15 +36,15 @@ HARNESS = ROOT / "uitests" / "frame.html"
 
 WIDE = [
     "wide-loaded",
-    "wide-c2",
-    "wide-c2-evidence",
-    "wide-c1-pick-finding",
-    "wide-c2-pick-test",
-    "wide-c4",
+    "wide-claim",
+    "wide-claim-evidence",
+    "wide-pick-finding",
+    "wide-pick-test",
+    "wide-noted",
     "wide-events",
     "wide-pick-event",
     "wide-pick-figure",
-    "wide-c2-time",
+    "wide-claim-time",
     "wide-thesis-time",
     "wide-thesis-limits",
     "wide-code",
@@ -54,11 +54,11 @@ WIDE = [
     "wide-run-drawer",
     "wide-address",
 ]
-MID = ["mid-c2-evidence", "mid-pick", "mid-escape"]
-PHONE_RUN = ["phone-loaded", "phone-c2-evidence", "phone-scrolled", "phone-c2-overview", "phone-c2-time", "phone-events", "phone-figures", "phone-limits", "phone-terminal"]
-EVERY = [*WIDE, "laptop-c1", "wide-first", *MID, *PHONE_RUN, "phone-first", "phone-inbox", "wide-inbox", "laptop-inbox-terminal"]
+MID = ["mid-claim-evidence", "mid-pick", "mid-escape"]
+PHONE_RUN = ["phone-loaded", "phone-claim-evidence", "phone-scrolled", "phone-claim-overview", "phone-claim-time", "phone-events", "phone-figures", "phone-limits", "phone-terminal"]
+EVERY = [*WIDE, "laptop-claim", "wide-first", *MID, *PHONE_RUN, "phone-first", "phone-inbox", "wide-inbox", "laptop-inbox-terminal"]
 # Every step that shows the run (not the first screen, not the inbox).
-RUN_STEPS = [*WIDE, "laptop-c1", *MID, *PHONE_RUN]
+RUN_STEPS = [*WIDE, "laptop-claim", *MID, *PHONE_RUN]
 
 
 @cache
@@ -80,7 +80,22 @@ def steps() -> dict[str, Tag]:
 
 
 def step(name: str) -> Tag:
-    return steps()[name]
+    """A step's record; a step the sample could not show skips its test with the harness's reason."""
+    recorded = steps()[name]
+    if recorded.has_attr("data-skipped"):
+        pytest.skip(f"{name}: {recorded['data-skipped']}")
+    return recorded
+
+
+def shown(names: list[str]) -> list[str]:
+    """The steps of `names` that the sample could show."""
+    return [name for name in names if not steps()[name].has_attr("data-skipped")]
+
+
+def plan() -> dict[str, str]:
+    """Which claim of the sample each step used (uitests/frame.html chooses them from the record)."""
+    chosen = steps()["plan"]
+    return {key: chosen[f"data-{key}"] for key in ("main", "many", "pick", "noted", "other", "first")}
 
 
 def pane(name: str, which: str) -> dict[str, Any] | None:
@@ -102,7 +117,12 @@ def compiled_ids() -> list[str]:
 
 
 def test_the_harness_ran_every_step() -> None:
-    assert list(steps()) == EVERY
+    assert list(steps()) == ["plan", *EVERY]
+    # The plan is the record's, not a name written into the harness.
+    quoted = {f["claim_id"] for f in run()["findings"] if f.get("verified") is not False and f["evidence_ids"]}
+    tested = [c["id"] for c in run()["claims"] if c.get("computed")]
+    assert plan()["main"] == next((i for i in tested if i in quoted), "")
+    assert plan()["first"] == claim_ids()[0] and plan()["other"] != plan()["main"]
 
 
 # ---------------------------------------------------------------- the page does not scroll; its panes do
@@ -117,14 +137,14 @@ def test_the_page_does_not_scroll_at_1440_by_900(name: str) -> None:
 
 
 def test_nor_at_1280_by_800_nor_at_900_by_800() -> None:
-    for name, size in [("laptop-c1", (1280, 800)), *[(m, (900, 800)) for m in MID]]:
+    for name, size in [("laptop-claim", (1280, 800)), *[(m, (900, 800)) for m in MID]]:
         s = step(name)
         assert s["data-viewport"] == f"{size[0]}x{size[1]}"
         assert int(s["data-page-scroll-height"]) <= int(s["data-page-client-height"]) == size[1], name
         assert int(s["data-page-scroll-width"]) <= int(s["data-page-client-width"]) == size[0], name
 
 
-@pytest.mark.parametrize("name", [*WIDE, "laptop-c1"])
+@pytest.mark.parametrize("name", [*WIDE, "laptop-claim"])
 def test_each_pane_is_inside_the_window_and_scrolls_inside_itself(name: str) -> None:
     height = int(step(name)["data-page-client-height"])
     width = int(step(name)["data-page-client-width"])
@@ -158,7 +178,7 @@ def test_the_first_screen_of_a_run_shows_every_verdict_and_the_thesis_without_sc
 
 
 def test_the_tabs_are_the_eight_views_and_exactly_one_is_selected() -> None:
-    for name in RUN_STEPS:
+    for name in shown(RUN_STEPS):
         s = step(name)
         assert s["data-tab-names"].split("|") == ["Analysis", "Overview", "Evidence", "Over time", "Events", "Figures", "Method", "Limits"], name
         assert s["data-tab-selected"] == s["data-tab"], name
@@ -187,23 +207,23 @@ def test_the_claims_are_listed_once(name: str) -> None:
 
 
 def test_selecting_a_claim_shows_that_claim_and_reads_its_test_at_the_side() -> None:
-    s = step("wide-c2")
-    assert (s["data-selected"], s["data-tab"], s["data-panels-shown"]) == ("c2", "overview", "panel-claim")
-    assert s["data-sel-title"] == claim("c2")["text"]
-    assert s["data-dockets-drawn"] == "c2"
-    assert s["data-inspecting"] == "test:c2" and s["data-picked"] == "test:c2"
-    assert claim("c2")["computed"]["canonical"] in s["data-inspector-text"]
+    s, main = step("wide-claim"), plan()["main"]
+    assert (s["data-selected"], s["data-tab"], s["data-panels-shown"]) == (main, "overview", "panel-claim")
+    assert s["data-sel-title"] == claim(main)["text"]
+    assert s["data-dockets-drawn"] == main
+    assert s["data-inspecting"] == f"test:{main}" and s["data-picked"] == f"test:{main}"
+    assert claim(main)["computed"]["canonical"] in s["data-inspector-text"]
 
 
 def test_the_evidence_tab_reads_a_findings_quote_in_its_context_with_the_link() -> None:
-    s = step("wide-c2-evidence")
-    assert (s["data-selected"], s["data-tab"], s["data-panels-shown"]) == ("c2", "evidence", "panel-claim")
+    s = step("wide-claim-evidence")
+    assert (s["data-selected"], s["data-tab"], s["data-panels-shown"]) == (plan()["main"], "evidence", "panel-claim")
     assert s["data-inspecting"] == f"finding:{s['data-first-finding']}", "with nothing picked, the first finding is read"
     assert s["data-context-drawn-in-centre"] == "0", "the context is read at the side, not twice"
-    # The live run's c2 has one finding; its c1 has several, so another than the first is picked there.
-    picked = step("wide-c1-pick-finding")
+    # Another finding than the first is picked on the claim that has several.
+    picked = step("wide-pick-finding")
     finding = next(f for f in run()["findings"] if f["id"] == picked["data-picked-finding"])
-    assert finding["claim_id"] == "c1" and finding["id"] != picked["data-first-of-its-claim"]
+    assert finding["id"] == plan()["pick"] and finding["claim_id"] == plan()["many"] and finding["id"] != picked["data-first-of-its-claim"]
     assert picked["data-inspecting"] == picked["data-picked"] == f"finding:{finding['id']}"
     assert picked["data-inspected-evidence"].split() == finding["evidence_ids"]
     evidence = {e["id"]: e for e in run()["evidence"]}
@@ -214,9 +234,9 @@ def test_the_evidence_tab_reads_a_findings_quote_in_its_context_with_the_link() 
 
 
 def test_a_computed_tests_operands_and_arithmetic_are_read_in_the_inspector() -> None:
-    s = step("wide-c2-pick-test")
-    test = claim("c2")["computed"]
-    assert s["data-inspecting"] == "test:c2"
+    s = step("wide-pick-test")
+    test = claim(plan()["main"])["computed"]
+    assert s["data-inspecting"] == f"test:{plan()['main']}"
     assert s["data-inspected-operands"].split("|") == [operand["term"] for operand in test["operands"]]
     assert s["data-detail-drawn-in-centre"] == "0"
     for operand in test["operands"]:
@@ -224,11 +244,11 @@ def test_a_computed_tests_operands_and_arithmetic_are_read_in_the_inspector() ->
 
 
 def test_an_operand_with_a_long_note_stays_inside_the_inspector() -> None:
-    """c4's free cash flow carries a sentence of a note: it once squeezed the term to a letter a line."""
-    s = step("wide-c4")
-    test = claim("c4")["computed"]
-    assert any(len(operand.get("note") or "") > 80 for operand in test["operands"]), "the sample no longer has a long note"
-    assert s["data-inspecting"] == "test:c4"
+    """A value with a sentence of a note (free cash flow, in the live runs) once squeezed its term to a letter a line."""
+    s = step("wide-noted")
+    test = claim(plan()["noted"])["computed"]
+    assert any(len(operand.get("note") or "") > 80 for operand in test["operands"])
+    assert s["data-inspecting"] == f"test:{plan()['noted']}"
     assert int(s["data-inspector-spill"]) <= 0, "the inspector's content is wider than the inspector"
     assert int(s["data-tallest-term"]) <= 48, "an operand's term is broken over more than two lines"
     assert int(s["data-widest-note"]) >= 200, "the note is squeezed into the value's column"
@@ -260,8 +280,8 @@ def test_a_figures_inputs_are_read_in_the_inspector_and_its_row_stays_shut() -> 
 
 
 def test_over_time_shows_the_selected_claims_lane_and_every_lane_for_the_thesis() -> None:
-    assert step("wide-c2-time")["data-lanes-drawn"].split() == ["c2"]
-    assert step("wide-c2-time")["data-panels-shown"] == "panel-time"
+    assert step("wide-claim-time")["data-lanes-drawn"].split() == [plan()["main"]]
+    assert step("wide-claim-time")["data-panels-shown"] == "panel-time"
     assert step("wide-thesis-time")["data-lanes-drawn"].split() == compiled_ids()
     assert step("wide-thesis-time")["data-selected"] == ""
 
@@ -294,13 +314,15 @@ def test_the_verdicts_are_one_strip_of_cells_drawn_the_same_everywhere() -> None
     # The result first: the masthead with its strip, then the verdict table beside the figures, then the summary.
     assert s["data-overview-order"].split() == ["overview-mast", "verdicts-section", "tape-section", "summary-section"]
     picked = step("wide-vcell")
-    assert picked["data-selected"] == "c3" and picked["data-sel-title"] == claim("c3")["text"]
+    assert picked["data-selected"] == plan()["other"] and picked["data-sel-title"] == claim(plan()["other"])["text"]
 
 
 def test_a_verdict_is_a_solid_stamp_and_a_provenance_tag_is_not_a_box() -> None:
     s = step("wide-loaded")
     assert 11 <= float(s["data-stamp-font-px"].removesuffix("px")) <= 12
     assert s["data-stamp-fill"] != "rgba(0, 0, 0, 0) none", "a verdict stamp is filled"
+    if s["data-badge-border"] == "":
+        pytest.skip("this sample draws no model-written tag on its summary or its findings")
     assert s["data-badge-border"] == "0px", "the model-written tag has no box"
 
 
@@ -320,8 +342,8 @@ def test_a_code_typed_in_the_ticker_field_goes_to_its_panel() -> None:
 
 def test_the_address_can_name_a_claim_and_a_tab() -> None:
     s = step("wide-address")
-    assert (s["data-selected"], s["data-tab"], s["data-theme"]) == ("c3", "evidence", "terminal")
-    assert s["data-sel-title"] == claim("c3")["text"]
+    assert (s["data-selected"], s["data-tab"], s["data-theme"]) == (plan()["other"], "evidence", "terminal")
+    assert s["data-sel-title"] == claim(plan()["other"])["text"]
 
 
 # ---------------------------------------------------------------- nothing hidden can be reached
@@ -337,7 +359,7 @@ def test_a_docket_that_is_not_on_show_is_inert_and_out_of_the_tab_order(name: st
 
 
 def test_nothing_drawn_is_inert_while_the_drawers_are_closed() -> None:
-    for name in RUN_STEPS:
+    for name in shown(RUN_STEPS):
         if name == "wide-run-drawer":
             continue
         assert step(name)["data-focusable-drawn-but-inert"] == "0", name
@@ -385,11 +407,11 @@ def test_a_view_that_is_not_a_run_is_laid_out_in_the_same_three_panes() -> None:
 
 
 def test_below_1100_the_rail_is_a_strip_across_the_top_and_the_inspector_a_sheet() -> None:
-    rail, centre = pane("mid-c2-evidence", "rail"), pane("mid-c2-evidence", "centre")
+    rail, centre = pane("mid-claim-evidence", "rail"), pane("mid-claim-evidence", "centre")
     assert rail["width"] == 900 and centre["width"] == 900
     assert rail["top"] + rail["height"] <= centre["top"], "the rail sits above the centre pane"
     assert rail["height"] <= 260, "a strip, not a column"
-    assert pane("mid-c2-evidence", "inspector") is None, "nothing is read at the side until it is picked"
+    assert pane("mid-claim-evidence", "inspector") is None, "nothing is read at the side until it is picked"
     sheet = pane("mid-pick", "inspector")
     assert sheet is not None and step("mid-pick")["data-sheet-position"] == "fixed"
     assert sheet["top"] + sheet["height"] == 800 and sheet["width"] == 900, "a sheet from the bottom"
@@ -418,8 +440,8 @@ def test_a_phone_is_one_column_with_the_tabs_kept_in_view() -> None:
 
 
 def test_a_phone_reads_in_place_what_a_wide_window_reads_in_the_inspector() -> None:
-    s = step("phone-c2-evidence")
-    assert (s["data-selected"], s["data-tab"]) == ("c2", "evidence")
+    s = step("phone-claim-evidence")
+    assert (s["data-selected"], s["data-tab"]) == (plan()["main"] or plan()["first"], "evidence")
     assert int(s["data-context-drawn"]) >= 1, "the quote's context is drawn with the finding"
     assert s["data-pick-buttons-drawn"] == "0" and s["data-inspecting"] == ""
 
@@ -427,7 +449,7 @@ def test_a_phone_reads_in_place_what_a_wide_window_reads_in_the_inspector() -> N
 # ---------------------------------------------------------------- the bar
 
 
-@pytest.mark.parametrize("name", [*WIDE, "laptop-c1", "wide-first", "wide-inbox", "laptop-inbox-terminal"])
+@pytest.mark.parametrize("name", [*WIDE, "laptop-claim", "wide-first", "wide-inbox", "laptop-inbox-terminal"])
 def test_the_bar_is_one_row_with_every_control_inside_the_window(name: str) -> None:
     s = step(name)
     assert int(s["data-bar-height"]) <= 36, "the bar is one low row"

@@ -774,6 +774,21 @@ tests hold the page to:
 - the Run drawer's contents, the first screen, and the strip and sheet below 1100px;
 - the second pass: the verdict strip's cells in the bar, over the rail and in the Overview against the record's verdicts, and a cell selecting its claim; a stamp filled and 11 to 12px, a model tag without a box; a rail row no taller than its id line and two lines of claim; the menu's three items and no key hint in the bar; the bar no taller than 36px; a code typed in the ticker field going to its panel and an unknown one saying so; the inspector staying on every tab and reading the run's facts (the counts, every source, every limit) when nothing is picked; the inbox laid out in the three panes with one rail entry per item; an operand with a long note staying inside the inspector.
 
+**The harnesses follow the record.** The two live samples are replaced whenever a run is made
+again, and what their claims hold moves with them (after one remake the second claim had no
+finding, the summary was not a model's, and the only unverified sentence sat in a claim's table
+of what would change the verdict). So `uitests/frame.html` and `uitests/analysis.html` read the
+samples' JSON first and choose what each step uses from it: the first claim with a computed test
+and a quoted finding, the first with two quoted findings and the last of those, the first whose
+test read a value with a long note, the first unverified sentence and the first that restates a
+threshold in the first sample that has one (the live runs, then the hand-built example),
+wherever in the argument it sits. The choice is recorded as a `plan` step and the tests check it
+against the record. A kind no sample has is recorded as a skipped step with its reason, and its
+tests skip saying so; a count the record gives (unverified, restating, flagged) is compared with
+the record's own number, never with "at least one". Following the record found a defect of the
+page: a sentence inside a table could not be selected (a click inside any table was left to the
+table), so the inspector kept reading another sentence.
+
 `uitests/test_analysis_dom.py` reads the dumps of four records (the two live samples, the
 hand-built example and the computed example) and what `uitests/analysis.html` recorded, each
 against the record's JSON:

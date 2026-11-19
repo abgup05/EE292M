@@ -6862,8 +6862,11 @@ function onCentreClick(event) {
   // A phone has no inspector pane: only what the analysis cites is read in a sheet; the rest is read in place.
   if (!inspectorOn() && !(workspaceOn() && els.analysis?.contains(host))) return;
   const button = event.target.closest("[data-pick-button]");
-  // A link, a control or a disclosure inside the item keeps its own meaning, and so does selecting its text.
-  if (!button && event.target.closest("a, button, input, textarea, select, label, summary, table")) return;
+  // A link, a control or a disclosure inside the item keeps its own meaning, and so does selecting its text. A table
+  // inside the item is for reading and selecting too; but an item that is itself inside a table (a sentence of what
+  // would change the verdict, a corollary's row) is picked like any other.
+  const inside = event.target.closest("a, button, input, textarea, select, label, summary, table");
+  if (!button && inside && !(inside.tagName === "TABLE" && inside.contains(host) && inside !== host)) return;
   if (!button && String(window.getSelection?.() ?? "")) return;
   const target = parsePick(host.dataset.pick);
   if (target) pick(target);

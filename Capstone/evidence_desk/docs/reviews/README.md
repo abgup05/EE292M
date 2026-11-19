@@ -20,7 +20,7 @@ The referee is not a checklist review. It is the agent in `.claude/agents/refere
 4. Check that nothing in the checkout is newer than the `.started` file and that every file the referee says it opened is inside the checkout. Save the text unedited under a header that says what was read, by which model, and what was removed. Triage every finding in a file of its own.
 5. Remove the worktree.
 
-The first two referee runs were started with that command typed directly, before the target existed; the third to the sixth used the target.
+The first two referee runs were started with that command typed directly, before the target existed; the third to the seventh used the target.
 
 ## Index
 
@@ -38,3 +38,4 @@ The first two referee runs were started with that command typed directly, before
 | [referee-4-version-11.md](referee-4-version-11.md) | before Week 9B | `capstone-v11` | A hostile referee a fourth time: findings that cite tagged figures, the period check, the restore check and the speed measurements, and the older claims again. Eight findings, each decided in [`../referee-4-triage.md`](../referee-4-triage.md) |
 | [referee-5-version-14.md](referee-5-version-14.md) | before Week 9B | `capstone-v14` | A hostile referee a fifth time: where the model answers came from, the summary beside the computed verdicts, the computed tests' arithmetic and readers, the number check, the gate's and the restore check's evidence, and the older claims again. Thirteen findings, each decided in [`../referee-5-triage.md`](../referee-5-triage.md) |
 | [referee-6-version-14.2.md](referee-6-version-14.2.md) | after Week 9B | `capstone-v14.2` | A hostile referee a sixth time. Its brief predates version 12 and it read the older checks, not the analysis 14.2 added: the quote gate at the edge of a unit, what a partly supported finding does to a verdict, the period check on a fiscal label, the speed and gate evidence. Eleven findings, each decided in [`../referee-6-triage.md`](../referee-6-triage.md); the four about documents fixed, seven open |
+| [referee-7-version-14.2.md](referee-7-version-14.2.md) | after Week 9B | `capstone-v14.2` (commit `5ef601d`: the same code, the brief extended) | A hostile referee a seventh time, with a brief that names the claims of versions 12 to 14.2: the argument's audit, the 13F price, who wrote a replayed run, the reverse DCF, the base rate's class, the persistence odds. Twelve findings, each run as a test and decided in [`../referee-7-triage.md`](../referee-7-triage.md); nine held and were fixed in version 14.3, three did not hold, one is left to decide |

@@ -196,6 +196,25 @@ This part began with three things I said after opening the page and the site: th
 - **A builder delegated and waited.** The page builder handed the Analysis and Method tabs to a second agent, which produced nothing for an hour; the builder then did the work itself.
 - **The last state of the page was not reviewed from outside.** Two rounds of outside review were answered; nobody but the builder read the screenshots after the final changes.
 
+**After version 14.2: two referees, and version 14.3**
+
+- **A sixth hostile reading**, of version 14.2, by the referee agent (Claude Sonnet 5.5, read-only, on a checkout without the logs, the hand-ins and the earlier reviews). Eleven findings, none about the analysis: its brief stopped at version 11, so it read the older checks. Three mattered: a quote can stop between a number and its scale word; a finding the second model only partly accepted counts in full; a fiscal label passes on a calendar date.
+- **The brief extended, and a seventh reading.** The brief now names what versions 12 to 14.2 claim, and the same referee read the analysis: twelve findings. The worst: the argument's audit let a number be carried by the claim's own words, so "verified" on the page claimed more than was checked; and a price no second manager confirmed was still used.
+- **Every finding run before it was decided.** A test from the referee's own description, seen failing or not, then the fix. All four open code findings of the sixth held. Nine of the seventh's twelve held and three did not. Looking where the referees pointed found three faults they had not named.
+- **Version 14.3.** The audit has three states and the page shows them; an unconfirmed price values nothing; a replayed run names the answers it used; the quote gate, the period check and the number check are each stricter where they were shown wrong. No recorded result moved: 0 of 292 recorded quotes are refused, and the period check's measurements are unchanged.
+- **One bottom line read against its citations**, by the orchestrating session: the six sentences of the Costco run's. Every number was in what its sentence cites; three of the six also state a judgment nothing cited states.
+- **The gate at 14.3 from a fresh clone**, kept: 2,700 offline tests, the smoke test, 580 page assertions and 2 skipped.
+
+**What went wrong in this part**
+
+- **The first of the two referees read the wrong half.** Its brief was written at version 11 and nobody had extended it through six versions, so a referee asked to attack the project's claims did not know the newest ones existed. $3.45 and ten minutes went on a sixth reading of checks five referees had read. It still found three real things there.
+- **Preparing the referee's checkout hides the site.** The steps delete `Homework/`, where the hand-ins are, and the public site's code lives under it. The seventh referee said it could not read the guard. The part of the project that spends money on a public address has been read by no referee.
+- **The first triage decided without running anything.** The sixth referee's findings were read against the code, written up as open and merged that way. Running them took one agent about eighty minutes and showed all four were true, with nine more quote cuts of the same kind. Reading was not a reason to wait.
+- **A fix invented a new false alarm before it was committed.** The first form of the stricter year rule would have marked two true sentences of the Costco sample. A recount of the live samples by the new rule caught it; the unit tests had passed.
+- **The samples were made three times in a day.** Once at 14.2, again after the referees' fixes, and again an hour later because the audit did not know that "28.5x" and "28.5×" are one number. The page builder saw that one in a screenshot; no test had a multiple written both ways.
+- **A page test pinned the old samples.** Replacing the samples broke three tests that counted their sentences, and the page builder committed over a red gate because its command chained the commit after the gate without reading the exit code. The old samples are now fixtures.
+- **Wording is part of a recording.** Two loose sentences in the reverse DCF's reading could not be corrected without making both recorded examples unplayable, since the reading is shown to the model. They stay, and the documents say what they mean.
+
 **Status at version 14.2**
 
 Version 14.2, tags `capstone-v13.1` and `capstone-v14.2`, both merged to `main` and live at `/v13/` and `/v14/`. The gate from a fresh clone: 2,568 offline tests, the smoke test, 573 assertions on the rendered page and 2 skipped. `make restore-check` on the real record: PASS, 46 runs, 20 decisions, 10 theses. What that does not mean, beyond the list above, which still stands except where noted:
@@ -209,6 +228,10 @@ Version 14.2, tags `capstone-v13.1` and `capstone-v14.2`, both merged to `main` 
 - The page now says who read each computed test (the last item of the earlier list), and a model-backed run has now been timed twice.
 
 Next, in order: set a contact string for EDGAR on the server and test a company outside the seed there; rotate the key and set a spend limit; read one whole argument against its citations myself; have the audit accept a claim's own threshold; decide what the referee's findings change.
+
+**Status at version 14.3**
+
+Version 14.3, tag `capstone-v14.3`. The gate from a fresh clone: 2,700 offline tests, the smoke test, 580 assertions on the rendered page and 2 skipped. `make restore-check`: PASS, 51 runs, 20 decisions, 10 theses. The status at 14.2 above stands except that the referee's code findings are fixed and the audit accepts a claim's own threshold only as a threshold, said so. Open, and mine to decide: whether a finding the second model only partly accepted should count in full, and whether a claim that rests on a computed test alone is "Supported" in a complete run. The site's guard has been read by no referee.
 
 **Status at version 14.1**
 
@@ -268,3 +291,5 @@ And with it, a choice made for one reason and applied where the reason did not h
 And an eighth, from versions 13.1 and 14.2. The things I asked for at the end were the only ones stated as a person would state them, and the gate said nothing about any of them. A page can pass 341 assertions and be unpleasant to use; a run can verify 17 of 20 findings and contain no analysis. Each needed a check of a kind the project did not have: someone looking at the page who had not built it, and a run on a company nobody had prepared for. The second one, a single Costco run, found in four minutes what two builders and 2,500 tests had not: the two new views had only ever been run on recorded NVIDIA data.
 
 And a ninth, about replacing builders. Stopping the first agents left their mistakes in the tree and their processes on the machine. The mistakes were found because the agents that took over were told to trust nothing. The processes were not looked for by anyone, and four of them slowed every gate for eight hours until one was mistaken for a hang. Taking over work means taking over what it left running too.
+
+And a tenth, from version 14.3. A reviewer reads what its brief names. The referee's brief was last extended at version 11. It was run at version 14 and again at 14.2 on that brief, and both times it attacked the older claims while the claims of the newer versions went unread. The first run with the brief extended found that the newest check, the audit of the argument, said "verified" over a number it had traced to the claim under argument. Keeping the brief of a reviewer current is part of keeping the reviewer.

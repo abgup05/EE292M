@@ -31,12 +31,15 @@ from typing import Any
 from app.core import analysis_policy as rules
 from app.core.analysis_models import Analytic, AnalyticInput, AnalyticUnit
 from app.core.analytics import AnalyticsProvider, AnalyticsRequest, FactsProvider
+from app.core.fact_models import CompanyProfile
 from app.core.models import Company
 from app.core.ports import FilingSource
 from app.services import view_analytics
 from app.services.market_view import market_view
 from app.services.outside_view import outside_view
+from app.sources import reference
 from app.sources.frames import FramesSource
+from app.sources.reference import PACK_NOTE, Pack, PackFrames, PackThirteenF
 from app.sources.thirteenf import QuarterEndPrices, ThirteenFSource
 
 Q_BASE_RATE = "How often has this been true of comparable companies, and did it last?"
@@ -83,10 +86,31 @@ PEERS_OF: dict[str, tuple[str, ...]] = {
 
 class _RunFilings:
     """The run's filing source, answering for the company's facts with the payload the run
-    already read (no second request); everything else is the source's own."""
+    already read and for its industry code from the reference pack when the pack lists it
+    (no request for either); everything else is the source's own."""
 
-    def __init__(self, inner: FilingSource, company: Company, payload: dict[str, Any] | None):
-        self._inner, self._company, self._payload = inner, company, payload
+    def __init__(
+        self,
+        inner: FilingSource,
+        company: Company,
+        payload: dict[str, Any] | None,
+        pack: Pack | None = None,
+    ):
+        self._inner, self._company, self._payload, self._pack = inner, company, payload, pack
+
+    def company_profile(self, company: Company) -> CompanyProfile:
+        """The pack's industry code for a filer it lists; else the source's."""
+        frames = self._pack.frames if self._pack else None
+        listed = frames.filers.get(company.cik) if frames else None
+        if frames is None or listed is None or not listed[1]:
+            return self._inner.company_profile(company)
+        return CompanyProfile(
+            cik=company.cik,
+            ticker=company.ticker,
+            name=company.name,
+            sic=listed[1],
+            sic_description=frames.sic_names.get(listed[1], ""),
+        )
 
     def company_facts(self, company: Company) -> dict[str, Any]:
         """The run's payload for the run's company; the source's for any other."""
@@ -142,6 +166,19 @@ def adapt(
     )
 
 
+def _dated(items: list[Analytic], source: object) -> list[Analytic]:
+    """``items`` with the reference pack's date in each note, when ``source`` answered from
+    the pack: a reader must know the numbers are SEC's as of that day."""
+    pack = getattr(source, "pack", None)
+    if pack is None or not getattr(source, "used", False):
+        return items
+    said = PACK_NOTE.format(built=pack.built.isoformat())
+    for item in items:
+        if said not in item.note:
+            item.note = f"{item.note} {said}".strip()
+    return items
+
+
 def _merged(items: Sequence[Analytic]) -> list[Analytic]:
     """One analytic per id, its claims those of every copy, in order."""
     out: dict[str, Analytic] = {}
@@ -157,8 +194,10 @@ class OutsideProvider:
     name = view_analytics.OUTSIDE_PROVIDER
     budget_seconds: float = rules.OUTSIDE_BUDGET_SECONDS
 
-    def __init__(self, filings: FilingSource, frames: FramesSource) -> None:
-        self.filings, self.frames = filings, frames
+    def __init__(
+        self, filings: FilingSource, frames: FramesSource, pack: Pack | None = None
+    ) -> None:
+        self.filings, self.frames, self.pack = filings, frames, pack
 
     def provide(self, request: AnalyticsRequest) -> list[Analytic]:
         """For a claim with a computed test: the base rate of the test in each reference
@@ -167,7 +206,10 @@ class OutsideProvider:
         company = request.company
         if company is None or request.today is None:
             return []
-        filings = _RunFilings(self.filings, company, request.payload)
+        filings = _RunFilings(self.filings, company, request.payload, self.pack)
+        frames = (
+            PackFrames(self.pack.frames, self.frames, company.cik) if self.pack else self.frames
+        )
         asking = {
             claim_id: text
             for claim_id, text in request.claims.items()
@@ -179,7 +221,7 @@ class OutsideProvider:
                 company,
                 text if claim_id in request.tests else "",
                 filings,  # type: ignore[arg-type]
-                self.frames,
+                frames,
                 today=request.today,
                 as_of=request.as_of,
             )
@@ -196,7 +238,7 @@ class OutsideProvider:
             out += [adapt(item, Q_PEER, [claim_id]) for item in standings if item.available][
                 :MAX_PEERS_PER_CLAIM
             ]
-        return _merged(out)
+        return _merged(_dated(out, frames))
 
     @staticmethod
     def _peer_measures(test_measures: Sequence[str], keys: Sequence[str]) -> list[str]:
@@ -215,9 +257,13 @@ class MarketProvider:
     budget_seconds: float = rules.MARKET_BUDGET_SECONDS
 
     def __init__(
-        self, filings: FilingSource, frames: FramesSource | None, thirteenf: ThirteenFSource
+        self,
+        filings: FilingSource,
+        frames: FramesSource | None,
+        thirteenf: ThirteenFSource,
+        pack: Pack | None = None,
     ) -> None:
-        self.filings, self.frames, self.thirteenf = filings, frames, thirteenf
+        self.filings, self.frames, self.thirteenf, self.pack = filings, frames, thirteenf, pack
 
     def provide(self, request: AnalyticsRequest) -> list[Analytic]:
         """Price to earnings, the free cash flow yield and the growth the price implies, about
@@ -226,11 +272,17 @@ class MarketProvider:
         company = request.company
         if company is None or request.today is None:
             return []
+        day = request.as_of or request.today
+        frames, thirteenf = self.frames, self.thirteenf
+        if self.pack is not None:
+            thirteenf = PackThirteenF(self.pack.prices, self.thirteenf, day)
+            if frames is not None:
+                frames = PackFrames(self.pack.frames, frames, company.cik)
         view = market_view(
             company,
-            _RunFilings(self.filings, company, request.payload),  # type: ignore[arg-type]
-            self.frames,
-            prices=QuarterEndPrices(self.thirteenf),
+            _RunFilings(self.filings, company, request.payload, self.pack),  # type: ignore[arg-type]
+            frames,
+            prices=QuarterEndPrices(thirteenf),
             today=request.today,
             as_of=request.as_of,
         )
@@ -260,16 +312,30 @@ class MarketProvider:
         for item in out:
             if item.available and price and item.kind in VALUATION:
                 item.note = (item.note + price).strip()
-        return out
+        stale = getattr(thirteenf, "stale", "")
+        if stale:
+            for item in out:
+                item.note = f"{item.note} {stale}".strip()
+        return _dated(_dated(out, thirteenf), frames)
+
+
+USE_SHIPPED_PACK = "shipped"
 
 
 def run_providers(
-    filings: FilingSource, frames: FramesSource, thirteenf: ThirteenFSource
+    filings: FilingSource,
+    frames: FramesSource,
+    thirteenf: ThirteenFSource,
+    pack: Pack | None | str = USE_SHIPPED_PACK,
 ) -> tuple[AnalyticsProvider, ...]:
     """The providers of a run that may read EDGAR: the run's own facts, then the outside view
-    and the market view."""
+    and the market view. Both views read the reference pack shipped with the app first
+    (``pack``; None for none, as the offline examples ask, whose fixtures stand in for it)
+    and ``frames`` and ``thirteenf`` only for what it lacks."""
+    found = reference.load() if pack == USE_SHIPPED_PACK else pack
+    assert found is None or isinstance(found, Pack)
     return (
         FactsProvider(),
-        OutsideProvider(filings, frames),
-        MarketProvider(filings, frames, thirteenf),
+        OutsideProvider(filings, frames, found),
+        MarketProvider(filings, frames, thirteenf, found),
     )

@@ -205,7 +205,9 @@ class HandBuilt:
 def providers(filings: FakeFilings) -> tuple[AnalyticsProvider, ...]:
     """The run's own facts, and the outside and market views over the recorded SEC frames
     and 13F tables (read from disk only: nothing is fetched)."""
-    return run_providers(filings, FramesSource(None, FRAMES), ThirteenFSource(None, THIRTEENF))
+    return run_providers(
+        filings, FramesSource(None, FRAMES), ThirteenFSource(None, THIRTEENF), pack=None
+    )
 
 
 def _run(run_id: str, data_dir: Path, analyser: ClaudeAnalyser | None = None) -> Run:
@@ -316,7 +318,8 @@ def replayed(cassette: Path = DEFAULT_CASSETTE) -> Run | None:
         run, pending = replay_copy(cassette, Path(scratch))
     if pending:
         return None
-    return run.model_copy(update={"id": "run-example-analysis-replayed"})
+    # The replay runs on the real clock; its timings would differ every time it is made.
+    return run.model_copy(update={"id": "run-example-analysis-replayed", "timings": []})
 
 
 def analysis_recorded(run: Run | None) -> bool:

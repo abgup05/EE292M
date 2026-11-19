@@ -32,14 +32,20 @@ from tests.replay_run import recorded_filings
 DECISION = "Whether to buy NVIDIA now"
 
 
-def _run(tmp_path: Path, name: str, providers: Any = None, as_of: date | None = None) -> Run:
+def _run(
+    tmp_path: Path,
+    name: str,
+    providers: Any = None,
+    as_of: date | None = None,
+    claims: list[str] | None = None,
+) -> Run:
     filings = recorded_filings()
     filings.facts = json.loads(gzip.decompress(MARKET_FACTS.read_bytes()))
     if providers is None:
         providers = run_providers(
-            filings, FramesSource(None, FRAMES), ThirteenFSource(None, THIRTEENF)
+            filings, FramesSource(None, FRAMES), ThirteenFSource(None, THIRTEENF), pack=None
         )
-    request = ThesisRequest(ticker="NVDA", decision=DECISION, claims=CLAIMS, as_of=as_of)
+    request = ThesisRequest(ticker="NVDA", decision=DECISION, claims=claims or CLAIMS, as_of=as_of)
     return execute_run(
         new_run(request),
         Store(tmp_path / f"{name}.sqlite"),
@@ -179,3 +185,20 @@ def test_as_of_a_date_neither_view_reads_anything_later(tmp_path: Path) -> None:
     # And the same run today does read the later quarter's price.
     today = {item.kind: item for item in _of(_run(tmp_path, "today"), "market_view")}
     assert today["pe"].period == "2026-09-30" and today["pe"].value != market["pe"].value
+
+
+def test_a_claim_about_peers_gets_the_standing_of_the_growth_it_compares(tmp_path: Path) -> None:
+    claim = "NVIDIA is growing faster than its semiconductor peers"
+    run = _run(tmp_path, "peers", claims=[claim, "Management is excellent."])
+    peer, other = run.claims
+    assert peer.computed is None, "no test: the claim-test language has no form for a rank"
+    assert [(m.key, m.reasons) for m in peer.analysis.relevant] == [
+        ("revenue", ["growth compared with peers in the claim"])
+    ]
+    standing = [a for a in _of(run, "outside_view") if a.kind == "peer_standing"]
+    assert [(a.measure, a.claim_ids) for a in standing] == [("revenue_growth", ["c1"])]
+    assert standing[0].available and "ranks" in standing[0].reading
+    assert standing[0].id in peer.analysis.analytic_ids
+    # The company's own growth is beside it; the other claim, with no measure, gets nothing.
+    assert "an:revenue:yoy" in peer.analysis.analytic_ids
+    assert other.analysis.analytic_ids == []

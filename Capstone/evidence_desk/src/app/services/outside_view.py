@@ -99,6 +99,13 @@ def coverage() -> tuple[list[str], list[str]]:
     return covered, sorted(k for k in CATALOGUE if k not in covered)
 
 
+def _packed_wording(frames: FramesSource, sic: str, count: int) -> str:
+    """How the industry's members are described when they were read from the reference pack
+    (:class:`app.sources.reference.PackFrames`); "" when they are SEC's list of today."""
+    wording = getattr(frames, "members_wording", None)
+    return wording(sic, count) if callable(wording) and getattr(frames, "covers", False) else ""
+
+
 def outside_view(
     company: Company,
     claim: str,
@@ -197,8 +204,12 @@ def outside_view(
             members=members,
             sic=sic or "",
             definition=(
-                f"the {len(members):,} filers SEC lists today under SIC {sic}"
-                f"{f' ({sic_description})' if sic_description else ''} that have filed a 10-K, "
+                (
+                    _packed_wording(frames, sic, len(members))
+                    or f"the {len(members):,} filers SEC lists today under SIC {sic}"
+                    f"{f' ({sic_description})' if sic_description else ''} that have filed a 10-K"
+                )
+                + ", "
                 f"with revenue of at least {usd_text(INDUSTRY_FLOOR)} in the test's base year "
                 "(for a ranking, in the year ranked)"
             ),

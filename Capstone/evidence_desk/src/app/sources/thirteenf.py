@@ -39,6 +39,7 @@ from app.core.ports import SourceError
 from app.core.thirteenf import (
     AGREE_TOLERANCE,
     Matched,
+    Table,
     ThirteenFError,
     agree,
     implied_price,
@@ -151,6 +152,12 @@ class ThirteenFSource:
         ]
         return sorted(found, key=lambda f: (f.filed, f.period), reverse=True)
 
+    def holdings(self, filing: ManagerFiling) -> Table | None:
+        """The filing's share positions; None when its table cannot be had offline. Raises
+        :class:`~app.core.thirteenf.ThirteenFError` when the table cannot be read."""
+        text = self.table(filing)
+        return None if text is None else parse_information_table(text)
+
     def table(self, filing: ManagerFiling) -> str | None:
         """The filing's information table as text; offline, None when it is not on disk."""
         path = self.cache_dir / f"13f-{filing.manager_cik}-{filing.accession}.xml.gz"
@@ -230,14 +237,13 @@ class QuarterEndPrices:
         for filing in newest:
             if taken is not None and filing.period != taken[0].period:
                 continue
-            text = self._source.table(filing)
-            if text is None:
-                reasons.append(f"{filing.manager}: the 13F for {filing.period} is not on disk")
-                continue
             try:
-                table = parse_information_table(text)
+                table = self._source.holdings(filing)
             except ThirteenFError as exc:
                 reasons.append(f"{filing.manager}: {exc}")
+                continue
+            if table is None:
+                reasons.append(f"{filing.manager}: the 13F for {filing.period} is not on disk")
                 continue
             if taken is None:
                 matched = match_issuer(table.holdings, company.name)

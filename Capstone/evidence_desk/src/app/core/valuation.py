@@ -53,6 +53,10 @@ class Price:
     13F's filing date): a view as of a date may use a price only when it was known by
     then. ``inputs`` are the numbers the price was computed from, when it was computed;
     ``confirmed`` is True when a second independent source gave the same price.
+    ``needs_confirmation`` is True for a price that was inferred, not quoted (a 13F's
+    position value over its shares): the market view computes nothing from such a price
+    unless it is ``confirmed``. A price supplied on a request needs none: it is used as
+    given, and its ``source`` says it was not checked.
     """
 
     value: float
@@ -63,6 +67,7 @@ class Price:
     note: str = ""
     inputs: tuple[ResultInput, ...] = ()
     confirmed: bool = False
+    needs_confirmation: bool = False
 
 
 @dataclass(frozen=True)

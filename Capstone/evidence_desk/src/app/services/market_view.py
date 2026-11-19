@@ -605,6 +605,29 @@ def _peer_margin(
     return percentile(margins, 50), percentile(margins, 90), len(margins), name, year
 
 
+# A price inferred from one filing and confirmed by no second one values nothing.
+UNCONFIRMED_PRICE = (
+    "The price of ${value:,.2f} for {day} is not confirmed by a second manager's filing. "
+    "{note} No valuation is computed from an unconfirmed price; a price supplied on the "
+    "request is used as given and labelled as not checked."
+)
+
+
+def _no_market_value(company: Company, day: date, why: str) -> AnalysisResult:
+    """The market value that could not be computed, saying why; nothing else is computed."""
+    return AnalysisResult(
+        id=f"market_value:{company.ticker}:{day.isoformat()}",
+        kind="market_value",
+        label="Market value",
+        outcome="cannot_compute",
+        reason=why,
+        reading=why,
+        unit="USD",
+        data_origin="market_prices",
+        as_of=day.isoformat(),
+    )
+
+
 def market_view(
     company: Company,
     filings: FilingSource,
@@ -624,6 +647,9 @@ def market_view(
 
     A provider with no price for the company and date is not an error: the view says
     why in a market value that cannot be computed, and computes nothing from a price.
+    The same holds for a price that needs a second source and has none that agrees (a
+    13F-implied price no second manager's filing confirms): the view records what was
+    read and computes nothing from it.
     """
     day = as_of or today
     view = MarketView(
@@ -632,19 +658,7 @@ def market_view(
     try:
         price = prices.price(company, day)
     except PriceUnavailable as exc:
-        view.valuation = [
-            AnalysisResult(
-                id=f"market_value:{company.ticker}:{day.isoformat()}",
-                kind="market_value",
-                label="Market value",
-                outcome="cannot_compute",
-                reason=str(exc),
-                reading=str(exc),
-                unit="USD",
-                data_origin="market_prices",
-                as_of=day.isoformat(),
-            )
-        ]
+        view.valuation = [_no_market_value(company, day, str(exc))]
         view.notes.append("No price: no valuation, no reverse DCF.")
         return view
     if price.day > day or (price.known is not None and price.known > day):
@@ -652,6 +666,13 @@ def market_view(
     view.price_source, view.price_note = price.source, price.note
     view.price_day = price.day.isoformat()
     view.price_known = price.known.isoformat() if price.known else ""
+    if price.needs_confirmation and not price.confirmed:
+        why = UNCONFIRMED_PRICE.format(
+            value=price.value, day=price.day.isoformat(), note=price.note
+        )
+        view.valuation = [_no_market_value(company, day, why)]
+        view.notes.append("No confirmed price: no valuation, no reverse DCF.")
+        return view
     payload = filings.company_facts(company)
     try:
         book = FactBook(payload, as_of=price.day)

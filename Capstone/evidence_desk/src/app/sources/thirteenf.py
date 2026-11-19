@@ -312,10 +312,13 @@ class QuarterEndPrices:
             known=filing.filed,
             url=f"{filing.folder}/",
             note=(
-                "The close of the last trading day of the quarter ended "
-                f"{filing.period.isoformat()}, not a price of today; the issuer is matched by "
-                f"name ({matched.issuer}). " + " ".join(checks)
+                "The manager's own valuation of its position at the quarter ended "
+                f"{filing.period.isoformat()}, taken to be the close of the quarter's last "
+                "trading day and never compared with an exchange; not a price of today. The "
+                f"issuer is matched by name ({matched.issuer}), not by ticker. "
+                + " ".join(checks)
             ),
             inputs=inputs,
             confirmed=bool(agreeing) and not differing,
+            needs_confirmation=True,
         )

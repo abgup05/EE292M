@@ -151,7 +151,7 @@ def test_the_first_screen_of_a_run_shows_every_verdict_and_the_thesis_without_sc
     assert s["data-claim-rows"].split() == claim_ids()
     assert rail["scrollHeight"] <= rail["clientHeight"], "at 1440x900 the five verdicts fit the rail without scrolling it"
     assert (s["data-selected"], s["data-tab"], s["data-panels-shown"]) == ("", "overview", "panel-overview")
-    assert s["data-sel-title"] == "The whole thesis"
+    assert s["data-sel-title"] == run()["inputs"]["decision"], "the whole thesis is headed by the decision it is about"
     # The status line is at the head of the rail, under the bar: the bar is the only strip across the window.
     strip = pane("wide-loaded", "strip")
     assert strip["left"] >= 0 and strip["left"] + strip["width"] <= rail["width"] and strip["height"] <= 60
@@ -173,8 +173,8 @@ def test_the_claims_are_listed_once(name: str) -> None:
     assert s["data-claim-rows"].split() == claim_ids(), "the rail lists every claim"
     selected = s["data-selected"]
     drawn = json.loads(s["data-claim-texts-drawn"])
-    # Below 1100px the rail is a strip of chips (id and stamp): a claim's words are its chip's title.
-    in_rail = 0 if name in MID else 1
+    # Below 1100px, and on a phone, the rail is a strip of chips (id and stamp): a claim's words are its chip's title.
+    in_rail = 0 if name in MID or name in PHONE_RUN else 1
     for claim_id in claim_ids():
         # In the rail; and, for the claim selected, in the centre pane's head.
         expected = in_rail + (1 if claim_id == selected else 0)
@@ -349,7 +349,8 @@ def test_nothing_drawn_is_inert_while_the_drawers_are_closed() -> None:
 def test_the_full_counts_open_over_the_panes_without_moving_them() -> None:
     assert step("wide-counts-open")["data-counts-open"] == "true"
     box = lambda name: {k: pane(name, "centre")[k] for k in ("left", "top", "width", "height")}  # noqa: E731
-    assert box("wide-counts-open") == box("wide-thesis-limits")
+    # Against the step before it, with the same claim selected: the head of the centre pane is as tall as what it names.
+    assert box("wide-counts-open") == box("wide-vcell")
 
 
 def test_the_run_drawer_holds_who_did_the_work_the_guide_and_the_marks() -> None:

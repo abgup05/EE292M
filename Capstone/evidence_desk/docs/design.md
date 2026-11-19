@@ -200,7 +200,7 @@ inside themselves. One command bar (one row at 1280px and wider), then the view.
   whole thesis, then one row per claim (`#scorecard`): id, verdict stamp, the claim, the computed
   outcome with what it counted and how many readers agreed, the record's counts, and a caution
   flag. Selecting a row (a click, or `j` and `k`) drives the other two panes. A run opens on the
-  whole thesis.
+  whole thesis, on its Analysis tab when the record has an analysis and on its Overview when not.
 - **The centre pane** (`#centre`) shows the selection under tabs. Its head says what is selected
   (a claim's id, stamps, counts and flags are the record's). The tabs are a registry, `TABS` in
   `app.js`: a new tab is one entry there and one `.tabpanel[data-tab]` in `index.html`.
@@ -291,7 +291,9 @@ status note, every count, the limit lines), which opens over the panes. Every co
 `[data-coverage]` node holding the record's number. A partial or failed run gets a limit rule
 at its left edge; a running run's line is dashed and the stages follow it.
 
-**Tape** (`#tape`). The newest period's key figures, first on the whole thesis's Overview. Each
+**Tape** (`#tape`). For a record with an analysis this block is the record's headline figures
+(see "The analysis, the headline figures and the method"); what follows is a record without one.
+The newest period's key figures, first on the whole thesis's Overview. Each
 cell is a metric from `run.metrics` (the quarter's when the record has one, else the year's):
 its label, its `display` string (split at the decimal point, not reformatted) and its sparkline
 from `run.series`. Selecting a cell reads that figure in the inspector. The row holds as many
@@ -580,9 +582,9 @@ is ignored, so additive changes to these payloads do not break the page. The fun
    `GET /api/theses`.
 
 The recorded samples are `?sample=run-live`, offered first on the first screen: a live NVIDIA
-run of 18 Nov 2026 answered by the Anthropic API (claude-opus-5-5 reading, claude-haiku-5-5
+run of 19 Nov 2026 (UTC) answered by the Anthropic API (claude-opus-5-5 reading, claude-haiku-5-5
 checking) with three claim readers (the grammar, claude-haiku-5-5, claude-sonnet-5-5), copied
-unedited from `results/run-7fa4a528d428.json`: three tests all three readers read alike, one of
+unedited from `results/run-8a12ef614117.json`: three tests all three readers read alike, one of
 them held in each of the last four quarters, and two claims no reader could read.
 `?sample=readers` (`docs/examples/v14/run-readers.json`) shows what the live run does not: the
 grammar refusing while both models agree ("2 of 3 readers"), two writings of one test, and a
@@ -593,6 +595,130 @@ cannot be computed, one claim that does not compile), `?sample=as-of` (the same 
 offline with the extractive engine: no model, no cassette. No recorded run has a dissent, a
 disagreement or a test of two parts joined by "and": `uitests/v14.html` makes each from the
 example run, and the specimen shows a dissent made up from the live run's c4, labelled.
+
+## The analysis, the headline figures and the method
+
+`docs/analysis.md` is the contract. A record made since version 0.14.2 carries `Run.analysis`
+and `Claim.analysis`; the page draws them and computes none of them. A record made before has
+neither: it has no Analysis tab and opens on the Overview, as it always did.
+
+**The Analysis tab leads.** It is the first tab and where a run opens, for the whole thesis and
+for a claim. The argument is the product, so it is set as a note and read top to bottom:
+
+- *The whole thesis.* The bottom line first: its first sentence stands alone in the face of what
+  was written (`--font-quote`, `--step-2`) and each later step of the argument is a short
+  paragraph of its own, with the record's headline figures beside it where the pane has room
+  (`.an-top`). Then what the thesis leans on (the claims in the argument's order, each as its id,
+  its verdict stamp and its lean, the weakest link marked, and why it is the weakest: the claims
+  are listed once, in the rail, so a claim's words are the link's title here), the strongest
+  case for beside the strongest case against, the scenarios as numbered conditions a reader can
+  observe, the company-scope analytics (what the price implies), the flags, and how the analysis
+  was made.
+- *A claim.* Who wrote it, with its verdict and the argument's lean at the end of that line (and
+  the record's flag when they contradict each other); how it bears on the decision; the case for
+  beside the case against; what decides it; what would change the verdict as a small table (what
+  to watch for, the measure, the threshold, or the category of 8-K); then what code computed:
+  the analytics grouped by where their data came from (the company's own filings; the outside
+  view; the market view), the corollaries and the odds.
+
+Two levels of heading keep it a note and not a form: the ruled small capitals (`.block-title`)
+are for the note's own sections (the bottom line, each group of computed figures); the parts of
+the argument under them have a plain line (`.an-h`). A part the argument left empty is not
+printed as a blank.
+
+**A sentence** (`.an-s`) is the record's `{text, cites, verified, problems}`: its text, then one
+chip per cited id, the first kept to the sentence's last word. Selecting the sentence reads it in
+the inspector: the audit's word on it and, for each thing it cites, what that is with a way to
+open it; the sentence being read is marked as the rail marks its selection, by a rule in the
+accent at its left. A sentence the audit did not verify is never hidden: it has a wavy underline
+in `--limit` and says why on a line of its own under it ("▲ Not verified: writes 70%, which
+nothing it cites carries").
+
+**A chip** (`.chip`) is the one way a citation is drawn, wherever it appears: small, in the code
+face, in `--link`. Its label is short: a finding's id (`f2`), an analytic's reference and the
+record's word for its kind (`A33 reverse dcf`: the reference is its place in
+`Run.analysis.analytics`, the one its row carries in the ledger), `test c2`, `cor c3.1`,
+`odds c2`, an 8-K's form and date, a figure's label; its title says what it names.
+Selecting it reads that thing in the inspector (a finding's quotes in context, an analytic's
+formula and inputs with the filing each came from, a test's or a corollary's operands and
+arithmetic, the odds' method, the 8-K, a figure's inputs), and every chip that names the thing
+being read is filled in the accent. An id the record holds nothing under is a dotted chip in
+`--limit` that says so. On paper a chip prints as the reference it is.
+
+**Who wrote what is said in words** under each title (`.an-by`): "✎ Written by claude-opus-5-5 via
+the Anthropic API. Code checked every sentence against what it cites." is the record's
+`argument_detail`, so a replayed answer says it was replayed from a cassette; "ƒ Computed by code"
+heads every group of analytics. A lean is an outlined tag (`.lean`), never filled: a filled stamp
+is a verdict. The argument's state when it is not whole is said before anything else: answered in
+part ("4 of 5 claims argued; the request for the whole thesis was asked and failed") and failed
+are limits (`--limit`); no model asked is how the run was made, so it is a calm panel with the
+record's own note and no warning, and the computed analysis follows it. A claim without an
+argument shows the record's `argument_note` in the argument's place.
+
+**An analytic** (`.an-row`) is a row of a ledger, not a table cell: its reference, the question
+it answers with its label under it, its value at the right, its reading as a sentence, and its
+note in small type (the reference pack's date, the assumptions of a reverse DCF; for an analytic
+with no value, why), shown whole. A provider that gave nothing on a run is a group of its own
+with the record's reason; it is never left out. **A corollary** is a row of the same ledger (the
+markup is a table): the implication and why it follows at the left, how it came out at the
+right, and under them what was expected, who read it and its status in words.
+
+**The headline figures** (`.hl-table`) are `Run.analysis.headline`, in the note and as the
+Overview's figures, where they replace the fixed tape: the figure and its period, its series, its
+value and the claims that turn on it. A row opens the figure, or the computed test the value was
+read by. A record without an analysis keeps the tape. **The Figures tab** lists the figures the
+record ties to the selection first (for a claim, `Claim.analysis.relevant`; for the whole thesis,
+all but `untied_metric_ids`) and the rest behind a control that says what it holds and how many;
+a claim tied to no measure shows the record's note there.
+
+**The Method tab** (`#method`) is this run's pipeline: four phases down the page (Read, Test,
+Find, Analyse), the stages of each across it. A stage is a box with a top rule in the olive of a
+fixed rule (code), the violet of a model, or both; it carries its name, the mark and word for
+who did it, the run's own counts (`run.coverage`, each a `[data-coverage]` node) and, when the
+record has `timings`, its wall time as a bar on the scale of the run's longest stage. Selecting
+a stage reads it in the inspector: what it does, which model answered it on this run, its
+counts and its time (on a phone and on paper that is in the box). A stage this run did not ask
+for is dim and says so; one that failed is in `--limit` with the reason. The recorded times
+follow as a table, because background stages overlap and the bars do not add up.
+
+**Terminal as an instrument.** A reviewer who saw only Terminal called it "a dark recolour of a
+document". What changed: what is data is set in the mono face (claims, tables, values, labels)
+and the sans is kept for sentences someone wrote; every section has a title bar on a raised
+ground; the tab in use is amber words over an amber rule, not a fill that competes with the
+stamps; figure rows keep one height; in a key and value grid the value is full ink and the label
+dim; a negative number is ink with its minus sign (the orange read as a second amber); the
+footer is a prompt.
+
+**The head of the centre pane** names what the note is about: for the whole thesis, the decision
+in the record's words; for a claim, its id, its verdict stamp and beside it the argument's lean,
+then the claim.
+
+**A phone** has no inspector pane. What a chip or a sentence of the analysis opens is read in a
+sheet from the bottom, closed by Close or Esc; everything else is read in place as before. The
+claims are a strip of chips there (a claim's id and its stamp's glyph cell; its words are the
+chip's title and, once selected, the head of the note), so the note starts on the first screen.
+
+**What two outside reviews changed.** Two reviewers who had not seen the page read its
+screenshots, one after the other. The first found a note for one screen and a form after it: a
+14-line paragraph, a row of labelled stamps over each lead, an empty part printed as a blank,
+nine headings of one weight, chips with opaque labels left alone on a line, the audit's reason
+woven into the next sentence, a five-column table crushed to a word a line, and a Method tab
+that was a pile of cards. The second found the figures squeezing the prose to 45 characters, the
+navigation label where a headline should be, two faces in one argument, a phone whose first
+screen was all claims, and stages chained by arrows that ran side by side. The page as described
+above is the answer to both. What they asked for and was not done is in the README's limits.
+
+**The samples.** `?sample=run-live` (NVIDIA, run-8a12ef614117) and `?sample=run-costco` (Costco,
+run-72359824897a) are offered first: two live runs of 19 November 2026 (UTC), each answered
+through the Anthropic API (claude-opus-5-5 read the passages, proposed the corollaries and wrote
+the argument; claude-haiku-5-5 checked meaning; the grammar, claude-haiku-5-5 and
+claude-sonnet-5-5 read the claims into tests) and copied unedited from the runs' records.
+`?sample=analysis-shapes` is `docs/examples/analysis/run-hand-built-argument.json`, copied by
+`make sample-analysis`: scripted answers, no model, kept for the shapes the live runs lack (a
+lean that contradicts its verdict, a claim tied to no measure, readers that disagree on a
+corollary). `?sample=computed`, `as-of` and `readers` carry the computed analysis only: no model
+was asked. No recorded run has an argument answered in part, a failed provider or a claim left
+unargued: `uitests/analysis.html` makes each from the live run, and the specimen has one made up.
 
 **Not built: the peer strip.** The backend has no peers route, so the strip is only on the
 specimen, on made-up data, under the heading "Not built". It is not on the page.
@@ -635,6 +761,39 @@ tests hold the page to:
 - the Run drawer's contents, the first screen, and the strip and sheet below 1100px;
 - the second pass: the verdict strip's cells in the bar, over the rail and in the Overview against the record's verdicts, and a cell selecting its claim; a stamp filled and 11 to 12px, a model tag without a box; a rail row no taller than its id line and two lines of claim; the menu's three items and no key hint in the bar; the bar no taller than 36px; a code typed in the ticker field going to its panel and an unknown one saying so; the inspector staying on every tab and reading the run's facts (the counts, every source, every limit) when nothing is picked; the inbox laid out in the three panes with one rail entry per item; an operand with a long note staying inside the inspector.
 
+`uitests/test_analysis_dom.py` reads the dumps of four records (the two live samples, the
+hand-built example and the computed example) and what `uitests/analysis.html` recorded, each
+against the record's JSON:
+
+- every sentence of the argument on the page once, in the record's order, in the analysis of
+  what it is about, with the audit's verdict; an unverified one marked with each of its problems;
+- every cited id a chip that names what it opens, and a chip of every kind the live run has
+  (a finding, an analytic, a computed test, a corollary, an 8-K, a figure) opening that thing in
+  the inspector, checked against the record (an analytic's label, value, formula, number of
+  inputs and the EDGAR links of its filings; a corollary's operands; the odds' method);
+- who wrote the argument, in the record's `argument_detail`, on the thesis and on each claim, and
+  the audit's four counts against `run.coverage`;
+- each analytic's question, value, reading and note; the outside and market views on the live
+  runs with the reference pack named in their notes; each corollary's five fields; the odds
+  never without their caveat;
+- the headline figures against `Run.analysis.headline`, in the note and on the Overview; the
+  Figures tab's tied figures against `Claim.analysis.relevant` and `untied_metric_ids`, its
+  count against the rows it lists, and a claim tied to no measure showing the record's note;
+- the Method tab's counts against `run.coverage`, each stage marked code or model as the run was
+  made, and each time against `run.timings`;
+- a run opening on the analysis with the bottom line inside the window and the inspector already
+  reading what its first sentence rests on; no page scroll and no sideways scroll at 1440, 1280
+  and 360; on a phone a chip opening a sheet that Esc closes;
+- a run with no model saying so in the record's words, without a warning; a record without an
+  analysis having no Analysis tab;
+- an argument answered in part, a claim left unargued, a provider that gave nothing and a record
+  without timings, each made by hand from the live run (no recorded run has one).
+
+Two of these failed before they passed and found defects of the page: the count on the control
+that holds the figures not tied to the selection claimed every figure of the record (158) where
+it lists the newest quarter's and year's (35), and a model's mark was drawn without its class on
+the Method tab. A later one found the centre pane scrolling sideways by 38px at 1280 in Terminal.
+
 `uitests/test_print_dom.py` reads what `uitests/print.html` recorded: the live run with a claim
 and the Events tab selected in Terminal, then the page's own `beforeprint` and the stylesheet's
 print rules turned on (an emulation on a screen: page breaks and a printer are not checked).
@@ -652,7 +811,7 @@ tab, `e` and `r` for the two drawers with Esc closing each, Enter on the selecte
 every mark, its kind, whether it is quoted, its link, the run and the gap. It also checks the
 live-run sample, the command bar, the caution and the predated mark. For every run sample it also checks:
 
-- the tape: each cell is the record's metric, in order, with its own display string;
+- the tape: each cell is the record's metric, in order, with its own display string (for a record with an analysis, that its rows are the record's headline and the fixed tape is not drawn);
 - the order of the markup (a phone's and paper's reading order): the company and decision, the verdicts, the status line, the tape and summary, the dockets, the time line, the figures; and that a run opens on the whole thesis's Overview;
 - the status line's counts, and that the full strip starts folded;
 - the withheld fold and its counts;

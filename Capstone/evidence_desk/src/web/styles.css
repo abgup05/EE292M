@@ -2824,10 +2824,14 @@ input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.55; cursor: p
  * computed test, a corollary, an 8-K, a figure), and it looks the same wherever it appears.
  * What code computed is a ledger under the prose: the question, the value, the reading. */
 
-.analysis { max-width: 46rem; }
+.analysis { max-width: 60rem; }
+.an-scope > :not(.an-top) { max-width: 46rem; }
 .an-scope > * + * { margin-top: var(--s-5); }
-.an-claim-head { display: none; margin: 0 0 var(--s-3); font-family: var(--font-prose); font-size: var(--step-1); font-weight: 600; }
+.an-claim-head { display: none; margin: 0 0 var(--s-3); }
+.an-claim-title { margin: 0 0 var(--s-2); font-family: var(--font-prose); font-size: var(--step-1); font-weight: 600; }
 .ws-flat .an-claim-head { display: block; padding-top: var(--s-3); border-top: 1.5px solid var(--ink); }
+.sel-lean { display: inline-flex; align-items: center; gap: 0.35em; font-size: var(--step--2); color: var(--ink-2); white-space: nowrap; }
+.sel-id-thesis { white-space: nowrap; }
 .an-block > .block-title { margin-bottom: var(--s-2); }
 
 /* Who made it: said in words under each title, quietly. */
@@ -2837,8 +2841,9 @@ input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.55; cursor: p
 .an-what { color: var(--ink-2); }
 
 /* Prose. The bottom line and each claim's assessment lead, in the face of what was written. */
-.an-p { margin: 0; max-width: 68ch; font-family: var(--font-prose); font-size: var(--prose-size); line-height: var(--prose-leading); }
-.an-lead { font-family: var(--font-quote); font-size: var(--step-2); line-height: 1.4; max-width: 56ch; }
+.an-p { margin: 0; max-width: 66ch; font-family: var(--font-quote); font-size: var(--prose-size); line-height: 1.55; }
+.an-lead { font-size: var(--step-2); line-height: 1.4; max-width: 54ch; }
+.an-points > li, .an-conds > li, .an-change-text { font-family: var(--font-quote); }
 .an-p + .an-p { margin-top: 0.7em; }
 .an-lead + .an-p { margin-top: var(--s-3); }
 /* The second level of heading: a plain line over a part of the argument. The ruled small capitals are for the note's own sections. */
@@ -2846,8 +2851,9 @@ input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.55; cursor: p
 .an-part > .an-h { padding-top: var(--s-3); border-top: 1px solid var(--line); }
 /* The bottom line with the figures the claims turn on beside it, when the pane has room for both. */
 .an-top { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-5); }
-@container note (min-width: 38rem) {
-  .an-top:has(> .an-key) { grid-template-columns: minmax(0, 1fr) 13.5rem; gap: var(--s-4); align-items: start; }
+/* Beside it only in a pane wide enough to keep the prose its measure; in a narrower one the figures follow the bottom line. */
+@container note (min-width: 54rem) {
+  .an-top:has(> .an-key) { grid-template-columns: minmax(0, 1fr) 13.5rem; gap: var(--s-5); align-items: start; }
   .an-top > .an-key .hl-spark { display: none; }
   .an-top > .an-key .hl-table .hl-open { font-size: var(--step--1); font-weight: 500; }
   .an-top > .an-key .hl-value { font-size: var(--step-0); }
@@ -2862,7 +2868,7 @@ body.app .ws .centre .an-s[data-pick] { cursor: pointer; }
 body.app .ws .centre .an-s[data-pick]:hover > .an-text { background: var(--surface-2); }
 body.app .ws .centre .an-s.is-picked { box-shadow: none; }
 /* The sentence being read at the side is marked as the rail marks its selection: a rule in the accent at its left. */
-body.app .ws .centre :is(p, li, td):has(> .an-s.is-picked) { box-shadow: -0.6rem 0 0 -0.45rem var(--accent); }
+body.app .ws .centre :is(p, li, td):has(> .an-s.is-picked) { box-shadow: -0.5rem 0 0 0 var(--pane-main), calc(-0.5rem - 2px) 0 0 0 var(--accent); }
 /* Not verified by the audit: shown, marked, and it says why. */
 .an-s.is-unverified > .an-text { text-decoration: underline wavy var(--limit); text-decoration-thickness: 1px; text-underline-offset: 0.2em; }
 /* The audit's word on it: a line of its own under the sentence, never woven into the next one. */
@@ -2873,10 +2879,10 @@ body.app .ws .centre :is(p, li, td):has(> .an-s.is-picked) { box-shadow: -0.6rem
 
 /* The chip: a citation. Small, in the code face, in the colour of what can be clicked. */
 .chip {
-  display: inline-block; max-width: 22ch; margin: 0 0.1em; padding: 0 0.32em; overflow: hidden; vertical-align: 0.12em;
+  display: inline-block; max-width: 100%; margin: 0 0.1em; padding: 0 0.32em; vertical-align: 0.12em;
   border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--surface);
   color: var(--link); font-family: var(--font-code); font-size: 0.71875rem; font-weight: 500; line-height: 1.35; letter-spacing: 0;
-  text-overflow: ellipsis; white-space: nowrap; text-decoration: none; cursor: pointer;
+  white-space: normal; text-align: left; text-decoration: none; cursor: pointer;
 }
 button.chip:hover, button.chip:focus-visible { border-color: var(--link); background: var(--surface-2); }
 body.app .ws .centre .chip.is-picked { box-shadow: none; border-color: var(--accent); background: var(--accent); color: var(--accent-ink); }
@@ -2893,8 +2899,11 @@ body.app .ws .centre .chip.is-picked { box-shadow: none; border-color: var(--acc
 .an-conds > li { counter-increment: cond; }
 .an-conds > li::before { content: counter(cond); position: absolute; left: 0; font-family: var(--font-code); font-size: var(--step--2); color: var(--ink-2); line-height: 2; }
 .an-versus { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-5); }
-.an-scn-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: var(--s-3) var(--s-5); }
-.an-scenario > .an-sub { margin-top: 0; padding-top: var(--s-2); border-top: 1.5px solid var(--ink); }
+.an-scenario { display: grid; grid-template-columns: 11rem minmax(0, 1fr); gap: 0 var(--s-4); padding: var(--s-2) 0; border-top: 1px solid var(--line-strong); }
+.an-scenario > .an-sub { margin: 0; padding-top: var(--s-1); }
+@container note (max-width: 34rem) {
+  .an-scenario { grid-template-columns: minmax(0, 1fr); }
+}
 @container note (min-width: 38rem) {
   .an-versus { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 }
@@ -2902,14 +2911,14 @@ body.app .ws .centre .chip.is-picked { box-shadow: none; border-color: var(--acc
 /* What the thesis leans on: the claims in the argument's order, each with its verdict and its lean. */
 .lean-list { margin: 0; padding: 0; list-style: none; border-top: 1.5px solid var(--ink); }
 /* The claims are listed once, in the rail: here each is its id (its words are the link's title), its verdict and its lean. */
-.lean-list { counter-reset: lean; }
-.lean-row { counter-increment: lean; display: grid; grid-template-columns: 1.2em 2.2rem minmax(0, 12.5rem) auto minmax(0, 1fr); align-items: center; gap: var(--s-1) var(--s-3); padding: 0.3rem 0; border-bottom: 1px solid var(--line); font-size: var(--step-0); }
+.lean-list { counter-reset: lean; display: grid; grid-template-columns: 1.2em 2.2rem max-content max-content minmax(0, 1fr); column-gap: var(--s-3); }
+.lean-row { counter-increment: lean; display: grid; grid-template-columns: subgrid; grid-column: 1 / -1; align-items: center; row-gap: var(--s-1); padding: 0.3rem 0; border-bottom: 1px solid var(--line); font-size: var(--step-0); }
 .lean-row::before { content: counter(lean); font-family: var(--font-code); font-size: var(--step--2); color: var(--ink-2); }
 .lean-row > * { justify-self: start; }
 .lean-row > .lean-arg { grid-column: 4; font-size: var(--step--2); color: var(--ink-2); }
 .lean-row > .lean-weakest { grid-column: 5; }
 @container note (max-width: 34rem) {
-  .lean-row { grid-template-columns: 1.2em 2.2rem minmax(0, 1fr); }
+  .lean-list { grid-template-columns: 1.2em 2.2rem minmax(0, 1fr); }
   .lean-row > .lean-arg, .lean-row > .lean-weakest { grid-column: 3; }
 }
 .lean-weakest { padding: 0 0.4em; border: 1px solid var(--limit); color: var(--limit); font-family: var(--font-label); font-size: var(--label-size); font-weight: 700; text-transform: var(--label-transform); letter-spacing: var(--label-track); }
@@ -3084,6 +3093,7 @@ body.app .ws .centre .an-odds.is-picked { box-shadow: inset -3px 0 0 var(--accen
 .mth-lede { margin: 0 0 var(--s-4); max-width: 76ch; font-size: var(--step--1); line-height: 1.5; color: var(--ink-2); }
 .mth-by { font-family: var(--font-label); font-size: var(--label-size); font-weight: 700; text-transform: var(--label-transform); letter-spacing: var(--label-track); white-space: nowrap; }
 .mth-by .glyph { margin-right: 0.15em; }
+.mth-node .mth-by { white-space: normal; }
 .mth-by.by-code { color: var(--rule); }
 .mth-by.by-model, .mth-by.by-both { color: var(--model); }
 .mth-flow { margin: 0; padding: 0; list-style: none; }
@@ -3092,7 +3102,18 @@ body.app .ws .centre .an-odds.is-picked { box-shadow: inset -3px 0 0 var(--accen
 .mth-phase-n { font-family: var(--font-code); font-size: var(--step--2); color: var(--ink-2); }
 .mth-phase-name { font-family: var(--font-prose); font-size: var(--step-0); font-weight: 700; line-height: 1.2; }
 .mth-phase-what { font-size: var(--step--2); line-height: 1.35; color: var(--ink-2); }
-.mth-nodes { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.9rem, 1fr)); align-items: start; gap: var(--s-3) var(--s-4); margin: 0; padding: 0; list-style: none; }
+.mth-nodes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: var(--s-3) var(--s-4); margin: 0; padding: 0; list-style: none; }
+.mth-node:nth-child(2n + 1)::before { content: none !important; }
+@container note (min-width: 38rem) {
+  .mth-nodes { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .mth-phase[data-phase="Find"] .mth-nodes { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--s-3) var(--s-3); }
+  .mth-node:nth-child(2n + 1)::before { content: "\2192" !important; }
+  .mth-phase:not([data-phase="Find"]) .mth-node:nth-child(4n + 1)::before, .mth-phase[data-phase="Find"] .mth-node:nth-child(5n + 1)::before, .mth-node:first-child::before { content: none !important; }
+  .mth-phase[data-phase="Find"] .mth-node + .mth-node::before { left: calc(-1 * var(--s-3)); width: var(--s-3); }
+}
+/* A stage that ran in the background ran beside the ones before it, not after them. */
+.mth-node.is-bg + .mth-node.is-bg::before, .mth-node.is-bg::before { content: "\2225" !important; }
+.mth-node.is-bg:first-child::before { content: none !important; }
 .mth-phase + .mth-phase { position: relative; }
 .mth-phase + .mth-phase::before { content: "\2193"; position: absolute; top: -0.75em; left: 50%; padding: 0 var(--s-2); background: var(--pane-main); color: var(--ink-2); font-size: var(--step-0); line-height: 1.2; }
 button.mth-name { padding: 0; border: 0; background: none; color: var(--ink); text-align: left; cursor: pointer; }
@@ -3137,6 +3158,18 @@ body.app .ws .centre .mth-node.is-picked { box-shadow: 0 0 0 2px var(--accent); 
   .an-cor td:nth-child(3) { grid-column: 1; grid-row: auto; margin-top: 0.2rem; text-align: left; }
   .hl-spark { display: none; }
   .mth-node + .mth-node::before { content: none; }
+  /* The claims are a strip of chips (id and stamp; a claim's words are its chip's title and, once selected, the head of
+     the note), so what is selected starts on the first screen. */
+  body.app .rail { display: flex; flex-wrap: wrap; align-items: stretch; }
+  body.app .rail-head, body.app .rail .review-line { flex: 1 1 100%; }
+  body.app .rail > .pane-label, body.app .board-head, body.app .score-claim, body.app .score-counts, body.app .score-sub, body.app .rail-all-what { display: none; }
+  /* A chip is the claim's id and its stamp's glyph cell; the stamp's words are in the head of the note once it is selected.
+     The strip of cells under the decision would say the same again, so it is not drawn here. */
+  body.app .score-row .pill-label, body.app .score-row .score-flag, body.app .score-row .slot-label, body.app .rail-head .vstrip { display: none; }
+  body.app .rail-all { flex: 0 0 auto; display: flex; align-items: center; width: auto; padding: var(--s-1) var(--s-3); border: 1px solid var(--line); }
+  body.app .scorecard { flex: 0 1 auto; display: flex; flex-wrap: wrap; }
+  body.app .scorecard > li { flex: 0 0 auto; margin: 0 0 -1px -1px; border: 1px solid var(--line); }
+  body.app .score-row { display: flex; flex-wrap: nowrap; align-items: center; gap: var(--s-1); height: 100%; padding: var(--s-1) var(--s-2); }
   /* A phone has no inspector pane: what a chip or a sentence of the analysis opens is read in a sheet. */
   .inspector.is-phone-sheet { display: flex; flex-direction: column; position: fixed; z-index: 30; left: 0; right: 0; bottom: 0; max-height: 72vh; background: var(--pane-side); border-top: 2px solid var(--bar-rule); box-shadow: 0 -10px 28px rgb(0 0 0 / 0.22); }
   .inspector.is-phone-sheet > .pane-head { display: flex; align-items: center; gap: var(--s-2); padding: var(--s-2) var(--gutter) 0; }
@@ -3163,7 +3196,7 @@ body.app .ws .centre .mth-node.is-picked { box-shadow: 0 0 0 2px var(--accent); 
 :root[data-theme="terminal"] .mth-node { background: #000; }
 :root[data-theme="terminal"] .mth-node.is-skipped { background: none; }
 :root[data-theme="terminal"] .hl-open { font-family: var(--font-mono); }
-:root[data-theme="terminal"] .an-scenario > .an-sub { border-top: 1px solid var(--line-strong); }
+
 :root[data-theme="terminal"] .an-state-none { background: var(--surface-2); }
 
 /* ------------------------------------------------------------ Terminal as an instrument

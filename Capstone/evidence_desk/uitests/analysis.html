@@ -176,7 +176,7 @@ async function run() {
   // One claim: its own analysis and no other; an analytic's row and a corollary's row read at the side.
   doc.querySelector('#scorecard a.score-row[data-select="c3"]').click();
   await sleep(120);
-  record(frame, "claim", { leanLine: text(scope("c3").querySelector("[data-lean-line]")), analyticsDrawn: [...scope("c3").querySelectorAll("[data-analytic]")].filter(visible).map((node) => node.dataset.analytic).join("|"), corollariesDrawn: [...scope("c3").querySelectorAll("[data-corollary]")].filter(visible).map((node) => node.dataset.corollary).join("|") });
+  record(frame, "claim", { headLean: (doc.querySelector("#sel-head [data-sel-lean]") || { dataset: {} }).dataset.selLean || "", headLeanDrawn: String(visible(doc.querySelector("#sel-head [data-sel-lean]"))), headVerdict: (doc.querySelector("#sel-head .pill.verdict") || { dataset: {} }).dataset.verdict || "", leanLine: text(scope("c3").querySelector("[data-lean-line]")), analyticsDrawn: [...scope("c3").querySelectorAll("[data-analytic]")].filter(visible).map((node) => node.dataset.analytic).join("|"), corollariesDrawn: [...scope("c3").querySelectorAll("[data-corollary]")].filter(visible).map((node) => node.dataset.corollary).join("|") });
   // The first of its analytics that was computed from filed facts: its row is selected by its reading.
   let analyticRow = null;
   for (const row of [...scope("c3").querySelectorAll("li[data-analytic]")].filter(visible)) {

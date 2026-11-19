@@ -6585,10 +6585,12 @@ function applySelection() {
 /** The centre pane's head: what the rail has selected. A claim's id, stamps, counts and flags are the record's. */
 function selectionHead(run, claim) {
   if (!claim) {
-    return [h("div", { class: "sel-line" }, h("span", { class: "sel-id sel-id-thesis", text: "Thesis" }), briefActions(run)), h("h3", { id: "sel-title", class: "sel-title", text: "The whole thesis" })];
+    // The whole thesis is headed by the decision it is about, in the record's words.
+    return [h("div", { class: "sel-line" }, h("span", { class: "sel-id sel-id-thesis", text: "The whole thesis" }), briefActions(run)), h("h3", { id: "sel-title", class: "sel-title", "data-sel-thesis": "", text: str(run.inputs?.decision) || "The whole thesis" })];
   }
+  const lean = claim.analysis?.argument?.lean;
   return [
-    h("div", { class: "sel-line" }, h("span", { class: "claim-id sel-id", text: claim.id }), claimStamps(claim, currentReview(run)), docketMeta(claim, run)),
+    h("div", { class: "sel-line" }, h("span", { class: "claim-id sel-id", text: claim.id }), claimStamps(claim, currentReview(run)), str(lean) ? h("span", { class: "sel-lean", "data-sel-lean": lean }, "argument ", leanPill(lean)) : "", docketMeta(claim, run)),
     h("h3", { id: "sel-title", class: "sel-title", text: claim.text }),
   ];
 }
@@ -7661,14 +7663,22 @@ function analysisClaim(run, claim) {
   const ca = claim.analysis && typeof claim.analysis === "object" ? claim.analysis : {};
   const arg = ca.argument && typeof ca.argument === "object" ? ca.argument : null;
   const scope = claim.id;
-  const out = [h("h3", { class: "an-claim-head" }, h("span", { class: "claim-id", text: claim.id }), " ", str(claim.text))];
+  // On a screen the centre pane's head names the claim, its verdict and its lean; on paper and on the specimen this heading does.
+  const out = [
+    h(
+      "div",
+      { class: "an-claim-head" },
+      h("h3", { class: "an-claim-title" }, h("span", { class: "claim-id", text: claim.id }), " ", str(claim.text)),
+      arg ? h("p", { class: "an-leanline", "data-lean-line": "" }, verdictPill(claim.verdict), h("span", { class: "an-leanline-arg", text: "the argument" }), leanPill(arg.lean)) : "",
+    ),
+  ];
   if (arg) {
     out.push(
       anBlock(
         "ASM",
         "How it bears on the decision",
         "assessment",
-        h("div", { class: "an-meta" }, anBy("model", argumentBy(analysis)), h("p", { class: "an-leanline", "data-lean-line": "" }, verdictPill(claim.verdict), h("span", { class: "an-leanline-arg", text: "the argument" }), leanPill(arg.lean))),
+        anBy("model", argumentBy(analysis)),
         str(arg.lean_flag) ? h("p", { class: "an-flag", "data-lean-flag": "" }, limitGlyph(), ` ${arg.lean_flag}`) : "",
         anLead(arg.assessment, "the assessment", scope),
       ),
@@ -8087,7 +8097,7 @@ function renderMethod(run) {
     state.ctx.stages.set(key, { item, time });
     return h(
       "li",
-      { class: `mth-node by-${by} is-${item.state ?? "ran"}`, "data-stage": key, "data-by": by, "data-state": item.state ?? "ran", "data-pick": `stage:${key}` },
+      { class: `mth-node by-${by} is-${item.state ?? "ran"}${time?.background ? " is-bg" : ""}`, "data-stage": key, "data-by": by, "data-state": item.state ?? "ran", "data-pick": `stage:${key}` },
       h("p", { class: "mth-head" }, h("button", { type: "button", class: "mth-name", "data-pick-button": "", text: item.name }), byTag(by)),
       h("p", { class: "mth-does", text: item.does }),
       who ? h("p", { class: "mth-who", "data-method-who": "", text: who }) : "",

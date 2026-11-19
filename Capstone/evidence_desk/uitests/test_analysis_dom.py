@@ -620,6 +620,8 @@ def test_a_claims_analysis_is_its_own_and_the_frame_holds() -> None:
     claim = next(c for c in run["claims"] if c["id"] == "c3")
     s = step("claim")
     assert (s["data-selected"], s["data-tab"], s["data-scopes-shown"]) == ("c3", "analysis", "c3")
+    # The lean sits beside the verdict, in the head of the centre pane.
+    assert (s["data-head-verdict"], s["data-head-lean"], s["data-head-lean-drawn"]) == (claim["verdict"], claim["analysis"]["argument"]["lean"], "true")
     assert s["data-analytics-drawn"].split("|") == sorted(claim["analysis"]["analytic_ids"], key=lambda i: PROVIDERS.index(analytics(run)[i]["provider"]))
     assert s["data-corollaries-drawn"].split("|") == [c["id"] for c in claim["analysis"]["corollaries"]]
     for name in ("default", "claim", "method", "overview", "figures-claim", "laptop-terminal"):

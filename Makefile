@@ -157,3 +157,9 @@ site-check:
 .PHONY: site-secrets
 site-secrets:
 	@MODE='$(or $(MODE),check)' REDEPLOY='$(REDEPLOY)' docker compose -p ee292m-site-secrets -f tools/live/secrets.compose.yaml run --rm secrets
+
+# One-off containers of the Week 2 app left spinning by an interrupted test run: stop them
+# (they were started with --rm, so stopping removes them). make down does not reach them.
+.PHONY: week2-runs-stop
+week2-runs-stop:
+	@docker ps -q --filter "name=^ee292m-week2-radius-app-run-" | xargs -r docker stop -t 2

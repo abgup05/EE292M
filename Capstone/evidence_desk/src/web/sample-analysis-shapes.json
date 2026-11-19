@@ -2857,7 +2857,8 @@
                 "an:c2:headroom"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Run again as of each 10-K and 10-Q filing date of the last five years, the test gave 20 distinct readings (over 20 filing dates) and held in 6 of them (30.0%); its longest run holding was 4, and its outcome last changed with the filing of 2026-05-20.",
@@ -2865,7 +2866,8 @@
                 "an:c2:history"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Gross margin was 99.9% in the newest quarter.",
@@ -2875,7 +2877,8 @@
               "verified": false,
               "problems": [
                 "writes 99.9%, which nothing it cites carries"
-              ]
+              ],
+              "thresholds": []
             },
             {
               "text": "A sentence resting on an id the run does not have.",
@@ -2886,7 +2889,8 @@
               "problems": [
                 "cites an:no, which is not in this run",
                 "cites nothing that is evidence"
-              ]
+              ],
+              "thresholds": []
             },
             {
               "text": "A sentence that cites the claim alone.",
@@ -2896,7 +2900,8 @@
               "verified": false,
               "problems": [
                 "cites nothing that is evidence"
-              ]
+              ],
+              "thresholds": []
             }
           ],
           "case_for": [
@@ -2906,7 +2911,8 @@
                 "an:gross_margin:yoy"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "case_against": [
@@ -2916,7 +2922,8 @@
                 "an:gross_margin:trend8"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "decides": [
@@ -2926,7 +2933,8 @@
                 "an:peer:NVDA:gross_margin:2025:2026-11-18"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "would_change": [
@@ -2937,6 +2945,13 @@
               ],
               "verified": true,
               "problems": [],
+              "thresholds": [
+                {
+                  "raw": "70%",
+                  "of": "test:c2",
+                  "note": "restates a threshold: 70% (test:c2); not checked as a fact"
+                }
+              ],
               "measure": "gross_margin",
               "comparison": "<",
               "threshold": 70.0,
@@ -4235,7 +4250,8 @@
                 "an:c3:needed"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Among filers with revenue of at least $100.00B (the company left out), yoy(revenue)[t] > 100% held in 0 of 366 company-years from 2011 to 2025; none that held could be read a year later.",
@@ -4243,7 +4259,8 @@
                 "an:base_rate:NVDA:size:yoy(revenue)[t] > 100%:2026-11-18"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "case_for": [
@@ -4253,7 +4270,8 @@
                 "an:base_rate:NVDA:industry:yoy(revenue)[t] > 100%:2026-11-18"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "case_against": [
@@ -4263,7 +4281,8 @@
                 "an:revenue:fy2026:path"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "decides": [
@@ -4273,7 +4292,8 @@
                 "an:revenue:fy2026:since"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "would_change": []
@@ -5716,7 +5736,8 @@
                 "an:c4:sides"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Among filers with revenue of at least $100.00B (the company left out), free_cash_flow[t] > net_income[t] held in 48 of 83 company-years from 2011 to 2025; of the 32 that held and could be read a year later, 20 still held.",
@@ -5724,7 +5745,8 @@
                 "an:base_rate:NVDA:size:free_cash_flow[t] > net_income[t]:2026-11-18"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "case_for": [
@@ -5734,7 +5756,8 @@
                 "an:base_rate:NVDA:industry:free_cash_flow[t] > net_income[t]:2026-11-18"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "case_against": [
@@ -5744,7 +5767,8 @@
                 "an:bridge:cash:fy2026"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "decides": [
@@ -5754,7 +5778,8 @@
                 "an:bridge:cash:ttm"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "would_change": []
@@ -6366,7 +6391,8 @@
                 "an:part:data_center:q:growth"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             },
             {
               "text": "Data Center revenue was $193.74B in the fiscal year ended 2026-01-25, +68.2% on a year earlier ($115.19B); the company's revenue grew +65.5%. It was 89.7% of revenue, against 88.3% a year earlier (as the 10-K filed 2026-02-25 tags it).",
@@ -6374,7 +6400,8 @@
                 "an:part:data_center:fy:growth"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "case_for": [
@@ -6384,7 +6411,8 @@
                 "an:part:data_center:fy:pace"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "case_against": [
@@ -6394,7 +6422,8 @@
                 "an:revenue:yoy"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "decides": [
@@ -6404,7 +6433,8 @@
                 "an:revenue:acceleration"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ],
           "would_change": []
@@ -7202,6 +7232,7 @@
     "analysis_sentences_written": 31,
     "analysis_sentences_verified": 28,
     "analysis_sentences_unverified": 3,
+    "analysis_sentences_restating": 1,
     "analysis_sentences_cut": 0,
     "analysis_unverified_no_evidence": 2,
     "analysis_unverified_unknown_id": 1,
@@ -18727,6 +18758,7 @@
     "corollaries_by": "scripted answers made by tests/examples_analysis.py from the run's own analytics (no model wrote them)",
     "corollaries_note": "",
     "corollary_rule": "A corollary is an implication a model proposed and code computed. Each is read by the grammar and by the typed form the proposing model wrote: two readers, which is weaker than the two-of-three rule the thesis's own claims are read under. A corollary never moves a verdict; when most of a claim's computed corollaries come out against it, the claim is flagged.",
+    "audit_rule": "A sentence is verified by code when every id it cites is in this run, at least one is evidence, and every number it writes is carried by that evidence: a verified finding's quotes and cited figures, an analytic's value, inputs and reading, a computed test's operands and result, a reported figure, an 8-K event's text. The claim's own words carry no number, and neither does the sentence a model wrote for a corollary: only what code computed for it does. A threshold is a third thing: when a number equals the threshold of a computed test or corollary the sentence cites, or a condition's own threshold, the sentence is not failed for it, and it is listed as a threshold restated, not checked as a fact. A bare year is carried by a cited item dated in that year. The audit does not decide whether a sentence follows from what it cites.",
     "persistence_method": "Resampling with replacement: 10,000 paths of 4 quarters, each step drawn from the measure's own last N quarterly changes (differences in points for a percent, growth rates for an amount), from the current value; the share of paths in which the test holds in every one of the 4 quarters. Seed 20261118. It assumes the past changes are exchangeable: it ignores trend, seasonality and anything not in the facts. It describes the history; it is not a forecast.",
     "argument_by": "model",
     "argument_detail": "scripted answers made by tests/examples_analysis.py from the run's own analytics (no model wrote them)",
@@ -18744,7 +18776,8 @@
             "an:c2:headroom"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         }
       ],
       "strongest_for": [
@@ -18754,7 +18787,8 @@
             "an:c3:needed"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         }
       ],
       "strongest_against": [
@@ -18764,7 +18798,8 @@
             "an:c4:sides"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         }
       ],
       "bottom_line": [
@@ -18774,7 +18809,8 @@
             "an:c2:headroom"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         },
         {
           "text": "To hold, revenue had to reach $260.99B ($130.50B grown by 100%); it reached $215.94B, $45.06B short.",
@@ -18782,7 +18818,8 @@
             "an:c3:needed"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         },
         {
           "text": "Free cash flow as a share of net income: 90.8% as of the 10-K filed 2024-02-21, 83.5% as of the 10-K filed 2025-02-26, 80.5% as of the 10-K filed 2026-02-25; it has fallen at every reading.",
@@ -18790,7 +18827,8 @@
             "an:c4:sides"
           ],
           "verified": true,
-          "problems": []
+          "problems": [],
+          "thresholds": []
         }
       ],
       "scenarios": [
@@ -18803,7 +18841,8 @@
                 "an:c2:headroom"
               ],
               "verified": true,
-              "problems": []
+              "problems": [],
+              "thresholds": []
             }
           ]
         }

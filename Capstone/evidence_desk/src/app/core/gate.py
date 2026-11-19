@@ -9,8 +9,15 @@ wording. So every excerpt shown is byte-exact:
 ``stored_text[e.start : e.start + len(e.excerpt)] == e.excerpt``, and carries
 the locator of the offered passage that holds it. A span never begins or ends
 inside a word or a number: "revenue was $46.7" is not a quote of "revenue was
-$46.78 billion", since the excerpt shown, and number-checked, would carry 46.7
-(:func:`is_whole`). A quote found only elsewhere
+$46.78 billion", since the excerpt shown, and number-checked, would carry 46.7.
+Nor does it part a number from what the number check reads with it: it never
+ends between a number and its closing parenthesis, scale word or unit
+("revenue was $46.7" is not a quote of "revenue was $46.7 billion" either: the
+bare 46.7 would match an amount in thousands, millions or billions), and never
+begins between a sign or currency symbol and its number ("5% from the prior
+year" is not a quote of "-5% from the prior year"). Both are :func:`is_whole`.
+The noun of a count ("46 customers") and "per share" are not units to it: the
+number check reads neither as part of the number. A quote found only elsewhere
 in the source is rejected: the engine was not shown it, and a passage never
 holds a heading line the parser wrote.
 
@@ -37,7 +44,7 @@ from app.core.documents import Passage
 from app.core.links import link_kind, passage_link
 from app.core.metric_models import Metric
 from app.core.models import Evidence, Finding, FindingChecks
-from app.core.numcheck import check_numbers
+from app.core.numcheck import NUMBER_SEPARATORS, check_numbers, quantity_cut
 from app.core.ports import ClaimDraft, FindingDraft
 
 NO_SUPPORT_REASON = "no verified quote or reported figure"
@@ -69,8 +76,6 @@ _FOLDS: dict[str, str] = {
 # Spans that normalisation rewrites: whitespace runs other than one plain space, and folds.
 # A lone plain space is already normal, so typical prose produces few matches.
 _REWRITE = re.compile(r"\s{2,}|[^\S ]|[" + "".join(_FOLDS) + "]")
-# A decimal point or a thousands separator: a cut beside one, between two digits, splits a number.
-NUMBER_SEPARATORS = ".,"
 
 
 def _splits(text: str, cut: int) -> bool:
@@ -100,8 +105,21 @@ def _splits(text: str, cut: int) -> bool:
 
 
 def is_whole(text: str, begin: int, end: int) -> bool:
-    """True when ``text[begin:end]`` neither begins nor ends inside a word or a number."""
-    return not _splits(text, begin) and not _splits(text, end)
+    """True when ``text[begin:end]`` neither cuts a word or a number nor parts a number from
+    its sign, scale or unit.
+
+    It does not begin or end inside a word or a number (:func:`_splits`); it does not
+    begin between a number's opening parenthesis, currency sign or minus and its digits
+    ("5% from the prior year" out of "-5% from the prior year"); and it does not end
+    between a number's digits and the closing parenthesis, scale word or unit after
+    them ("revenue was $46.7" out of "revenue was $46.7 billion", "up 56" out of "up
+    56%"). The sign, scale and unit are those the number check reads
+    (:func:`app.core.numcheck.quantity_cut`), so an excerpt reads each number as the
+    filing wrote it.
+    """
+    if _splits(text, begin) or _splits(text, end):
+        return False
+    return quantity_cut(text, begin) != "head" and quantity_cut(text, end) != "tail"
 
 
 def normalise(text: str) -> str:
@@ -183,9 +201,10 @@ class TextIndex:
         both sides are normalised (see :func:`normalise`) and the match is
         mapped back, so ``text[start:end]`` is the stored span. Surrounding
         whitespace of the quote is ignored. On either path an occurrence that
-        begins or ends inside a word or a number (:func:`is_whole`) is skipped
-        and the next one tried: "revenue was $46.7" is not a quote of
-        "revenue was $46.78 billion".
+        begins or ends inside a word or a number, or parts a number from its
+        sign, scale or unit (:func:`is_whole`), is skipped and the next one
+        tried: "revenue was $46.7" is not a quote of "revenue was $46.78
+        billion", nor of "revenue was $46.7 billion".
         """
         wanted = quote.strip()
         if not wanted:

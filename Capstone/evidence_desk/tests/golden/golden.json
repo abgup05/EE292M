@@ -197,6 +197,7 @@
       "analysis_claims_asked": 0,
       "analysis_lean_flags": 0,
       "analysis_sentences_cut": 0,
+      "analysis_sentences_restating": 0,
       "analysis_sentences_unverified": 0,
       "analysis_sentences_verified": 0,
       "analysis_sentences_written": 0,
@@ -759,7 +760,7 @@
     ],
     "passages_indexed": 636
   },
-  "sha256": "75abab74f3a7dd4c1794358875fbde0662d70179590c77375d1cbe853232c7b9",
+  "sha256": "1ba607e6cfe0dd3fb96d04f38afbf460a34396bb4648d1736c1a31ab02153368",
   "sources": [
     {
       "characters": 151303,

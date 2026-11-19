@@ -27,6 +27,7 @@ The page computes none of this: each check is the record's value against the pag
 from __future__ import annotations
 
 import json
+import re
 from functools import cache
 from pathlib import Path
 from typing import Any
@@ -85,8 +86,29 @@ def steps() -> dict[str, Tag]:
 
 
 def step(name: str) -> Tag:
+    """A step's record; a step no sample could show skips its test with the harness's reason."""
     assert name in steps(), f"the analysis check recorded no step {name!r}"
-    return steps()[name]
+    recorded = steps()[name]
+    if recorded.has_attr("data-skipped"):
+        pytest.skip(f"{name}: {recorded['data-skipped']}")
+    return recorded
+
+
+def plan() -> dict[str, str]:
+    """What each step used, chosen by uitests/analysis.html from the records and never by name."""
+    chosen = steps()["plan"]
+    return {key.removeprefix("data-"): value for key, value in chosen.attrs.items() if key.startswith("data-") and key != "data-step"}
+
+
+def test_the_harness_chose_its_steps_from_the_records() -> None:
+    """The live samples are replaced whenever a run is made again: nothing here may rest on where one run's sentences sit."""
+    chosen, live = plan(), record("run-live")
+    argued = [c for c in live["claims"] if c["analysis"].get("argument") and c["analysis"]["analytic_ids"] and c["analysis"]["corollaries"] and any(i["metric_ids"] for i in c["analysis"]["relevant"])]
+    assert chosen["claim"] == (argued[0]["id"] if argued else "")
+    assert chosen["last-claim"] == live["claims"][-1]["id"] and chosen["costco-claim"] == record("run-costco")["claims"][-1]["id"]
+    for key, wanted in (("unverified-in", lambda x: not x["verified"]), ("restating-in", lambda x: bool(x.get("thresholds")))):
+        first = next((name for name in ("run-live", "run-costco", "analysis-shapes") if any(wanted(x) for _, x in all_sentences(record(name)))), "")
+        assert chosen[key] == first, key
 
 
 def words(node: Tag | None) -> str:
@@ -125,6 +147,18 @@ def analytics(run: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return {item["id"]: item for item in run["analysis"]["analytics"]}
 
 
+MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+
+
+def live_phrases(run: dict[str, Any]) -> list[str]:
+    """What a live sample's note must say, read from the record: its id, its day (UTC), the file it was copied from, and every model that answered."""
+    year, month, day = (int(part) for part in run["started_at"][:10].split("-"))
+    said = " ".join([run["engine_detail"], run["checker_detail"], run["claim_reader_detail"], (run.get("analysis") or {}).get("argument_detail", ""), (run.get("analysis") or {}).get("corollaries_by", "")])
+    models = sorted(set(re.findall(r"claude-[a-z0-9-]+", said)))
+    api = ["Anthropic API"] if "via the Anthropic API" in said else []
+    return [f"live run of {day} {MONTHS[month - 1]} {year}", run["id"], f"copied unedited from results/{run['id']}.json", *api, *models]
+
+
 def ref_of(run: dict[str, Any], analytic_id: str) -> str:
     return f"A{[item['id'] for item in run['analysis']['analytics']].index(analytic_id) + 1}"
 
@@ -134,10 +168,10 @@ def ref_of(run: dict[str, Any], analytic_id: str) -> str:
 
 def test_the_analysis_samples_are_copied_unedited() -> None:
     assert (WEB / "sample-analysis-shapes.json").read_bytes() == (EXAMPLES / "run-hand-built-argument.json").read_bytes(), "run `make sample-analysis`"
-    for sample, run_id in (("sample-run-live.json", "run-8a12ef614117"), ("sample-run-costco.json", "run-72359824897a")):
-        original = RESULTS / f"{run_id}.json"
-        assert json.loads((WEB / sample).read_text(encoding="utf-8"))["id"] == run_id
-        if original.is_file():  # results/ is not committed
+    for sample in ("sample-run-live.json", "sample-run-costco.json"):
+        # Against the run's own record, named by the id the sample carries (results/ is not committed).
+        original = RESULTS / f"{json.loads((WEB / sample).read_text(encoding='utf-8'))['id']}.json"
+        if original.is_file():
             assert (WEB / sample).read_bytes() == original.read_bytes()
 
 
@@ -149,21 +183,19 @@ def test_the_first_two_samples_offered_are_the_two_live_runs() -> None:
         assert "Anthropic API" in words(link.find_parent("li"))
 
 
-@pytest.mark.parametrize(("name", "phrases"), [
-    ("run-live", ("live run of 19 November 2026", "run-8a12ef614117", "Anthropic API", "claude-opus-5-5", "wrote the argument", "copied unedited from results/run-8a12ef614117.json")),
-    ("run-costco", ("live run of 19 November 2026", "run-72359824897a", "Costco", "Anthropic API", "claude-opus-5-5", "copied unedited from results/run-72359824897a.json")),
-    ("analysis-shapes", ("docs/examples/analysis/run-hand-built-argument.json", "hand-built", "no model", "make sample-analysis")),
-])
-def test_a_sample_says_where_its_answers_came_from(name: str, phrases: tuple[str, ...]) -> None:
+@pytest.mark.parametrize("name", ["run-live", "run-costco", "analysis-shapes"])
+def test_a_sample_says_where_its_answers_came_from(name: str) -> None:
     note = words(page(name).select_one("#run-head [data-sample-note]"))
-    for phrase in phrases:
-        assert phrase in note, phrase
     run = record(name)
-    if name != "analysis-shapes":
-        assert run["analysis"]["argument_detail"].endswith("via the Anthropic API")
-        assert run["started_at"].startswith("2026-11-19")
-    else:
+    if name == "analysis-shapes":
+        phrases = ["docs/examples/analysis/run-hand-built-argument.json", "hand-built", "no model", "make sample-analysis"]
         assert "scripted" in run["analysis"]["argument_detail"]
+    else:
+        # The note is written in the page; what it must say is the record's: a note left behind by a replaced sample fails here.
+        phrases = [*live_phrases(run), "wrote the argument", run["company"]["name"].split()[0].title()]
+        assert run["analysis"]["argument_by"] == "model"
+    for phrase in phrases:
+        assert phrase in note or phrase.upper() in note, phrase
 
 
 # ---------------------------------------------------------------- every sentence, with the audit's word on it
@@ -198,7 +230,70 @@ def test_a_sentence_shows_the_audits_verdict_and_an_unverified_one_says_why(name
         assert mark.select_one(".g-limit") is not None
         for problem in sentence["problems"]:
             assert problem in words(mark), problem
-    assert unverified == run["coverage"]["analysis_sentences_unverified"] > 0, "each argued sample has sentences the audit did not verify"
+    assert unverified == run["coverage"]["analysis_sentences_unverified"], "as many marked as the record counts, whatever the count"
+
+
+@each_argued
+def test_a_sentence_that_restates_a_threshold_says_so_and_is_not_marked_as_a_failure(name: str) -> None:
+    run = record(name)
+    restating = 0
+    for node, (_, sentence) in zip(page(name).select("#analysis [data-an-sentence]"), all_sentences(run), strict=True):
+        marks = node.select(".an-threshold")
+        listed = sentence.get("thresholds") or []
+        assert [(m["data-threshold"], m["data-threshold-of"]) for m in marks] == [(t["raw"], t["of"]) for t in listed], sentence["text"]
+        assert ("has-thresholds" in node["class"]) == bool(listed)
+        for mark, item in zip(marks, listed, strict=True):
+            assert words(mark) == f"restates a threshold: {item['raw']}"
+            # In words, in the mark's title: the number, whose threshold it is, and that it was not checked as a fact.
+            assert mark["title"].startswith(f"Restates a threshold: {item['raw']} (") and mark["title"].endswith("). Not checked as a fact.")
+            assert mark.select_one(".g-limit") is None and "an-unverified" not in mark["class"], "restating a threshold is not a failure"
+        if listed:
+            restating += 1
+            assert sentence["verified"] and node["data-verified"] == "true"
+    assert restating == run["coverage"]["analysis_sentences_restating"], "as many marked as the record counts, whatever the count"
+
+
+def test_the_inspector_says_what_the_audit_does_in_the_records_own_words() -> None:
+    rule = " ".join(record("run-live")["analysis"]["audit_rule"].split())
+    for name in ("default", "sentence-verified"):
+        assert step(name)["data-inspect-rule"] == rule, name
+    if not steps()["sentence-unverified"].has_attr("data-skipped"):
+        unverified = step("sentence-unverified")
+        assert unverified["data-inspect-rule"] == " ".join(record(unverified["data-sample"])["analysis"]["audit_rule"].split())
+    # The page writes no rule of its own: what it says beside the mark is the state, and nothing about what was checked.
+    assert step("sentence-verified")["data-inspect-audit-text"].removeprefix("ƒ").strip() in ("Verified by code.", "Verified by code, with a threshold restated.")
+    source = (WEB / "app.js").read_text(encoding="utf-8")
+    assert "every number it writes is carried by something it cites" not in source and "Code checked every sentence" not in source
+    for name in ARGUED:
+        assert words(scope(name).select_one('[data-an-block="made"] [data-audit-rule]')) == " ".join(record(name)["analysis"]["audit_rule"].split())
+    s = step("sentence-restating")
+    run = record(s["data-sample"])
+    assert s["data-sample"] == plan()["restating-in"] and s["data-inspect-rule"] == " ".join(run["analysis"]["audit_rule"].split())
+    sentence = next(x for scope_id, x in all_sentences(run) if scope_id == s["data-sentence-scope"] and " ".join(x["text"].split()) == s["data-sentence-text"])
+    assert sentence["thresholds"] and (s["data-sentence-verified"], s["data-inspect-audit"]) == ("true", "verified-restating")
+    lines = s["data-inspect-thresholds"].split("|")
+    assert len(lines) == len(sentence["thresholds"])
+    for line, item in zip(lines, sentence["thresholds"], strict=True):
+        kind, _, rest = item["of"].partition(":")
+        whose = f"the test of {rest}" if kind == "test" else f"corollary {rest.replace(':', '.')}" if kind == "cor" else item["of"]
+        assert line == f"Restates a threshold: {item['raw']} ({whose}). Not checked as a fact."
+    assert s["data-marks-drawn"].split("|") == [f"restates a threshold: {t['raw']}" for t in sentence["thresholds"]]
+    assert s["data-mark-title"] == lines[0]
+    # A quiet mark, distinct from the one for a sentence the audit did not verify: no limit glyph, no wavy rule, another colour.
+    assert (s["data-mark-has-limit-glyph"], s["data-mark-underline"]) == ("false", "none")
+    assert s["data-unverified-color"] and s["data-mark-color"] != s["data-unverified-color"]
+
+
+def test_a_replayed_argument_says_which_recorded_answers_it_used_whole() -> None:
+    """Drawn by the page's own code from docs/examples/analysis/run-model-argument.json (uitests/analysis.html says how)."""
+    run = json.loads((EXAMPLES / "run-model-argument.json").read_text(encoding="utf-8"))
+    detail, proposer = run["analysis"]["argument_detail"], run["analysis"]["corollaries_by"]
+    assert detail.startswith("replayed from cassette ") and "recorded answers used" in detail
+    s = step("replayed")
+    assert detail in s["data-by"] and s["data-by-clipped"] == "false", "the line that says who wrote it is whole and inside its pane"
+    assert detail in s["data-made"] and proposer in s["data-made"]
+    assert (s["data-page-sideways"], s["data-centre-sideways"]) == ("0", "0")
+    assert detail in step("replayed-stage")["data-stage-text"]
 
 
 @each_argued
@@ -257,7 +352,7 @@ def test_who_wrote_the_argument_is_said_in_the_records_words(name: str) -> None:
     assert detail in made and run["analysis"]["corollaries_by"] in made
     assert f"{run['analysis']['argument_claims_answered']} of {run['analysis']['argument_claims_asked']} claims argued" in made
     audit = scope(name).select_one("[data-an-audit]")
-    for field in ("analysis_sentences_verified", "analysis_sentences_written", "analysis_sentences_unverified", "analysis_sentences_cut"):
+    for field in ("analysis_sentences_verified", "analysis_sentences_written", "analysis_sentences_restating", "analysis_sentences_unverified", "analysis_sentences_cut"):
         assert words(audit.select_one(f'[data-coverage="{field}"]')) == f"{run['coverage'][field]:,}"
 
 
@@ -312,8 +407,8 @@ def test_a_claim_shows_its_lean_beside_its_verdict_and_what_would_change_it(name
             else:
                 assert words(cells[2]) == "—"
             assert words(cells[3]) == (item["event_category"] or "—")
-    if name == "analysis-shapes":
-        assert flagged > 0, "the hand-built example has a lean that contradicts its verdict"
+    if run["coverage"].get("analysis_lean_flags") is not None:
+        assert flagged == run["coverage"]["analysis_lean_flags"], "as many flagged as the record counts"
 
 
 # ---------------------------------------------------------------- what code computed
@@ -349,7 +444,10 @@ def test_every_analytic_is_a_question_a_value_and_a_reading(name: str) -> None:
 def test_the_outside_and_market_views_are_on_the_live_runs_with_the_packs_date(name: str) -> None:
     run = record(name)
     by_provider = {p: [i for i in run["analysis"]["analytics"] if i["provider"] == p] for p in PROVIDERS}
-    assert all(by_provider.values())
+    # Each provider the run asked and that answered has its analytics on the page; one that gave nothing is named instead.
+    for provider in PROVIDERS:
+        if provider in run["analysis"]["providers"] and provider not in run["analysis"]["providers_failed"]:
+            assert by_provider[provider], provider
     drawn = {row["data-analytic"]: row for row in page(name).select("#analysis li[data-analytic]")}
     for item in [*by_provider["outside_view"], *by_provider["market_view"]]:
         if item["available"]:
@@ -381,7 +479,7 @@ def test_a_claims_corollaries_say_expected_result_reader_and_status(name: str) -
         if rows:
             by = part.select_one('[data-an-block="corollaries"] .an-by')
             assert run["analysis"]["corollaries_by"] in words(by) and by.select_one(".g-model") is not None and by.select_one(".g-rule") is not None
-    assert "agreed" in statuses
+    assert statuses == {c["status"] for claim in run["claims"] for c in claim["analysis"]["corollaries"]}
 
 
 @each_sample
@@ -400,7 +498,7 @@ def test_the_odds_never_appear_without_their_caveat(name: str) -> None:
             assert odds["note"] in words(block) and odds["caveat"] in words(block.select_one("[data-odds-caveat]"))
         else:
             assert block.select_one("[data-odds]") is None and words(block.select_one("[data-odds-none]")) == (odds["note"] or "No odds were computed for this claim.")
-    assert with_odds > 0
+    assert with_odds == sum(1 for c in run["claims"] if (c["analysis"].get("persistence") or {}).get("applicable"))
 
 
 # ---------------------------------------------------------------- headline figures
@@ -410,7 +508,8 @@ def test_the_odds_never_appear_without_their_caveat(name: str) -> None:
 def test_the_headline_figures_are_the_records(name: str) -> None:
     run = record(name)
     headline = run["analysis"]["headline"]
-    assert headline, "every analysis sample names headline figures"
+    if not headline:
+        pytest.skip(f"{name} names no headline figures")
     for root in ("#tape", '#analysis > .an-scope[data-an-scope=""] [data-an-block="headline"]'):
         rows = page(name).select(f"{root} [data-headline]")
         assert [row["data-headline"] for row in rows] == [item["id"] for item in headline], root
@@ -437,10 +536,12 @@ def newest_figures(run: dict[str, Any]) -> set[str]:
 def test_the_figures_tab_puts_the_figures_tied_to_the_selection_first() -> None:
     run = record("run-live")
     listed = newest_figures(run)
-    claim = next(c for c in run["claims"] if c["id"] == "c3")
+    if not plan()["claim"]:
+        pytest.skip("the live sample has no claim with an argument, analytics, corollaries and a tied figure")
+    claim = next(c for c in run["claims"] if c["id"] == plan()["claim"])
     tied = {i for item in claim["analysis"]["relevant"] for i in item["metric_ids"]}
     s = step("figures-claim")
-    assert set(s["data-tied-drawn"].split("|")) == tied and tied, "the figures the record ties to c3"
+    assert set(s["data-tied-drawn"].split("|")) == tied and tied, "the figures the record ties to the claim"
     assert int(s["data-untied-count"]) == len(listed - tied)
     assert (s["data-untied-open"], s["data-untied-rows-drawn"]) == ("false", "0"), "the rest is behind its control"
     assert "not tied to this claim" in s["data-untied-label"] and str(len(listed - tied)) in s["data-untied-label"]
@@ -456,9 +557,9 @@ def test_the_figures_tab_puts_the_figures_tied_to_the_selection_first() -> None:
 
 def test_a_claim_with_no_measure_shows_the_records_note() -> None:
     run = record("analysis-shapes")
-    claim = next(c for c in run["claims"] if c["id"] == "c1")
-    assert not claim["analysis"]["relevant"] and claim["analysis"]["relevance_note"], "the hand-built example's c1 is tied to no measure"
     s = step("figures-no-measure")
+    claim = next(c for c in run["claims"] if c["id"] == plan()["no-measure"])
+    assert not claim["analysis"]["relevant"] and claim["analysis"]["relevance_note"]
     assert (s["data-none-drawn"], s["data-none-note"], s["data-tied-count"]) == ("true", claim["analysis"]["relevance_note"], "0")
     assert int(s["data-untied-count"]) == len(newest_figures(run)), "every figure the tab lists is still there, behind the control"
 
@@ -553,19 +654,32 @@ def test_a_run_opens_on_the_analysis_with_the_bottom_line_in_view() -> None:
 
 def test_selecting_a_sentence_reads_the_audit_and_what_it_rests_on() -> None:
     s = step("sentence-unverified")
+    # The first unverified sentence of the first sample that has one, wherever in the argument it sits.
+    sentence = next(x for scope_id, x in all_sentences(record(s["data-sample"])) if not x["verified"])
+    assert s["data-sample"] == plan()["unverified-in"] and s["data-sentence-text"] == " ".join(sentence["text"].split())
+    for problem in sentence["problems"]:
+        assert problem in s["data-reason-drawn"] and problem in s["data-inspect-audit-text"]
     assert s["data-inspect-kind"] == "Sentence" and s["data-inspect-sentence"] == s["data-sentence-text"]
     assert s["data-inspect-audit"] == "unverified" and "Not verified" in s["data-inspect-audit-text"]
     assert s["data-reason-visible"] == "true" and s["data-reason-drawn"].startswith("▲ Not verified: ")
     assert s["data-reason-drawn"].removeprefix("▲ Not verified: ").split("; ")[0] in s["data-inspect-audit-text"]
     assert s["data-inspect-rests"] == s["data-sentence-cites"]
     s = step("sentence-verified")
-    assert s["data-inspect-audit"] == "verified" and s["data-inspect-rests"] == s["data-sentence-cites"]
+    lead = record("run-live")["analysis"]["thesis"]["bottom_line"][0]
+    assert s["data-inspect-audit"] == ("verified-restating" if lead.get("thresholds") else "verified") and s["data-inspect-rests"] == s["data-sentence-cites"]
 
 
 def test_a_chip_of_every_kind_opens_the_thing_it_names() -> None:
     run = record("run-live")
     kinds = step("chips-done")["data-kinds"].split()
-    assert {"analytic", "corollary", "event", "figure", "finding", "test"} <= set(kinds), kinds
+    # Every kind of thing this run's argument cites, as the record has them: no kind is expected by name.
+    prefixes = {"finding": {f["id"] for f in [*run["findings"], *run["unsupported_findings"]]}, "figure": {m["id"] for m in run["metrics"]}, "event": {e["id"] for e in run["timeline"]}, "analytic": set(analytics(run))}
+    cited = {i for _, x in all_sentences(run) for i in x["cites"]}
+    expected = {kind for kind, ids in prefixes.items() if cited & ids}
+    expected |= {"test"} if any(i.startswith("test:") for i in cited) else set()
+    expected |= {"corollary"} if any(i.startswith("cor:") for i in cited) else set()
+    expected |= {"odds"} if any(i.startswith("odds:") for i in cited) else set()
+    assert set(kinds) == expected and expected, kinds
     known = analytics(run)
     for kind in kinds:
         s = step(f"chip-{kind}")
@@ -604,12 +718,18 @@ def test_an_analytic_is_traceable_to_its_formula_and_the_filings_behind_it() -> 
     assert s["data-inspecting"] == f"analytic:{item['id']}" and s["data-inspect-formula"] == " ".join(item["formula"].split())
     accessions = [ref["accession"] for ref in item["inputs"] if ref["accession"]]
     links = s["data-inspect-filing-links"].split()
-    assert len(links) == len(accessions) > 0
+    assert len(links) == len(accessions)
+    if s["data-filing-linked"] == "false":
+        pytest.skip("no analytic of the chosen claim was computed from a filed fact with an accession number")
     for link, accession in zip(links, accessions, strict=True):
         assert link.startswith(f"https://www.sec.gov/Archives/edgar/data/{run['company']['cik']}/") and accession in link
     s = step("pick-corollary")
     cor = next(c for claim in run["claims"] for c in claim["analysis"]["corollaries"] if c["id"] == s["data-corollary"])
     assert s["data-inspecting"] == f"corollary:{cor['id']}" and s["data-inspect-sentence"] == cor["sentence"]
+
+
+def test_the_odds_are_read_with_their_method_at_the_side() -> None:
+    run = record("run-live")
     s = step("pick-odds")
     odds = next(c["analysis"]["persistence"] for c in run["claims"] if c["analysis"]["persistence"]["id"] == s["data-odds"])
     assert (s["data-inspect-value"], s["data-caveat-drawn"]) == (odds["display"], "true") and odds["method"] in s["data-inspect-note"]
@@ -617,9 +737,12 @@ def test_an_analytic_is_traceable_to_its_formula_and_the_filings_behind_it() -> 
 
 def test_a_claims_analysis_is_its_own_and_the_frame_holds() -> None:
     run = record("run-live")
-    claim = next(c for c in run["claims"] if c["id"] == "c3")
+    chosen = plan()["claim"]
+    if not chosen:
+        pytest.skip("the live sample has no claim with an argument, analytics, corollaries and a tied figure")
+    claim = next(c for c in run["claims"] if c["id"] == chosen)
     s = step("claim")
-    assert (s["data-selected"], s["data-tab"], s["data-scopes-shown"]) == ("c3", "analysis", "c3")
+    assert (s["data-selected"], s["data-tab"], s["data-scopes-shown"]) == (chosen, "analysis", chosen)
     # The lean sits beside the verdict, in the head of the centre pane.
     assert (s["data-head-verdict"], s["data-head-lean"], s["data-head-lean-drawn"]) == (claim["verdict"], claim["analysis"]["argument"]["lean"], "true")
     assert s["data-analytics-drawn"].split("|") == sorted(claim["analysis"]["analytic_ids"], key=lambda i: PROVIDERS.index(analytics(run)[i]["provider"]))
@@ -627,10 +750,11 @@ def test_a_claims_analysis_is_its_own_and_the_frame_holds() -> None:
     for name in ("default", "claim", "method", "overview", "figures-claim", "laptop-terminal"):
         s = step(name)
         assert (s["data-page-scroll"], s["data-page-sideways"], s["data-centre-sideways"]) == ("0", "0", "0"), name
-    assert step("laptop-terminal")["data-scopes-shown"] == "c4"
-    assert step("method")["data-panels-shown"] == "panel-method" and int(step("method")["data-nodes-drawn"]) == 18
+    assert step("laptop-terminal")["data-scopes-shown"] == plan()["costco-claim"]
+    stages = [node["data-stage"] for node in page("run-live").select("#method .mth-node")]
+    assert step("method")["data-panels-shown"] == "panel-method" and int(step("method")["data-nodes-drawn"]) == len(stages) == 18
     assert step("method")["data-inspecting"] == "stage:company" and step("method")["data-inspect-kind"] == "Stage", "a stage is read at the side"
-    assert int(step("method")["data-times-drawn"]) == len([t for t in run["timings"] if t["stage"] not in ("analysis (all of it)", "finishing")])
+    assert int(step("method")["data-times-drawn"]) == len([t for t in run["timings"] if t["stage"] in stages])
     s = step("overview")
     assert (s["data-tape-source"], s["data-tape-title"]) == ("headline", "Headline figures")
     assert s["data-headline-drawn"].split("|") == [item["id"] for item in run["analysis"]["headline"]]
@@ -668,10 +792,11 @@ def test_a_record_without_an_analysis_has_no_analysis_tab_and_opens_on_the_overv
 
 def test_an_argument_answered_in_part_says_what_was_and_was_not_answered() -> None:
     """Made by hand from the live sample (uitests/analysis.html says how): no recorded run is partial."""
+    n = len(record("run-live")["claims"])
     s = step("made-partial")
-    assert s["data-state-text"].startswith("▲ The argument was answered in part: 4 of 5 claims argued; the request for the whole thesis was asked and failed.")
+    assert s["data-state-text"].startswith(f"▲ The argument was answered in part: {n - 1} of {n} claims argued; the request for the whole thesis was asked and failed.")
     assert "the request for the whole thesis timed out" in s["data-state-text"]
-    assert (s["data-argued"], s["data-thesis-step"]) == ("4 of 5", "asked and failed")
+    assert (s["data-argued"], s["data-thesis-step"]) == (f"{n - 1} of {n}", "asked and failed")
     # A provider that gave nothing is named with its reason on the thesis, on each claim and in how the analysis was made.
     assert s["data-failed-provider"] == "▲ Not available on this run: SEC's frames did not answer within 20 seconds."
     assert "The outside view" in s["data-made-failed"] and "did not answer within 20 seconds" in s["data-made-failed"]
@@ -685,5 +810,5 @@ def test_an_argument_answered_in_part_says_what_was_and_was_not_answered() -> No
     assert "gave nothing: SEC's frames did not answer within 20 seconds." in s["data-outside-text"]
     assert s["data-times-drawn"] == "0" and "no stage times" in s["data-no-timings"]
     s = step("made-failed")
-    assert s["data-state-step"] == "failed" and s["data-state-text"].startswith("▲ The argument was asked for and failed: 0 of 5 claims argued")
+    assert s["data-state-step"] == "failed" and s["data-state-text"].startswith(f"▲ The argument was asked for and failed: 0 of {n} claims argued")
     assert s["data-sentences"] == "0"

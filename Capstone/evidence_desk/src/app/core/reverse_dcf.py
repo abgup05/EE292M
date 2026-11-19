@@ -1,4 +1,5 @@
-"""What the price implies: the constant revenue growth at which a stated cash-flow model equals it.
+"""What the price implies: the constant revenue growth at which a stated cash-flow model is
+worth the company's enterprise value at that price (not its market value: see below).
 
 Pure arithmetic under stated assumptions; not a forecast and not advice. The model
 (:func:`present_value`), with every number an assumption the result prints:
@@ -17,9 +18,17 @@ securities), because the cash flows are before any payment to lenders.
 :func:`implied_growth` scans ``g`` from :data:`LOW` to :data:`HIGH` percent a year in
 steps of one point for the first crossing of the target, then bisects to
 :data:`TOLERANCE`; a target no growth in that range reaches is not solved, and the result
-says on which side it lies. When the return on new capital, ``margin × (1 − tax) ×
-sales-to-capital``, is under the discount rate, growth lowers the value, a higher price
-implies a lower growth, and the result says so.
+says on which side it lies.
+
+There is at most one crossing. Write ``x = 1 + g``, ``k = margin × (1 − tax)``, ``s`` for
+sales-to-capital and ``d = 1 ÷ (1 + r)``. Year ``t``'s cash flow is ``R0 · x^(t−1) · (k·x −
+(x − 1) ÷ s)``, and every coefficient of the derivative of the value in ``x`` (the terminal
+term included) has the sign of ``k − r ÷ (s · (1 + r))``. So the value rises with growth
+over the whole range when the return on new capital, ``k · s``, is above ``r ÷ (1 + r)``,
+and falls with it when below; it never turns. (The seventh referee asked what happens to a
+second root: there is none, and ``tests/test_market_view.py`` checks it over a grid.) When
+it falls, a higher price implies a lower growth, and the result says so. The line is
+``r ÷ (1 + r)``, not ``r``: new capital is spent at a year's end and earns from the next.
 """
 
 from __future__ import annotations
@@ -69,6 +78,12 @@ class DcfAssumptions:
         """After-tax operating profit per dollar reinvested, in percent."""
         return self.operating_margin * (1 - self.tax_rate / 100) * self.sales_to_capital
 
+    @property
+    def growth_hurdle(self) -> float:
+        """The return on new capital, in percent, under which growth lowers the value:
+        ``r ÷ (1 + r)`` (see the module notes)."""
+        return self.discount_rate / (1 + self.discount_rate / 100)
+
 
 def present_value(growth: float, a: DcfAssumptions) -> float:
     """The model's value today at a constant revenue growth of ``growth`` percent a year."""
@@ -100,11 +115,12 @@ class Solution:
 def implied_growth(target: float, a: DcfAssumptions) -> Solution:
     """The constant growth in percent at which :func:`present_value` equals ``target``."""
     note = ""
-    if a.return_on_new_capital < a.discount_rate:
+    if a.return_on_new_capital < a.growth_hurdle:
         note = (
             f"At these assumptions the return on new capital ({a.return_on_new_capital:.1f}%) is "
-            f"under the discount rate ({a.discount_rate:g}%): growth lowers the value, so a "
-            "higher price implies lower growth."
+            f"under the {a.growth_hurdle:.1f}% at which growth pays for itself at a discount "
+            f"rate of {a.discount_rate:g}%: growth lowers the value, so a higher price implies "
+            "lower growth."
         )
     steps = round((HIGH - LOW) / STEP)
     points = [LOW + STEP * i for i in range(steps + 1)]

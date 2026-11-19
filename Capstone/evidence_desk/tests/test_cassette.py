@@ -398,3 +398,70 @@ def test_the_engine_over_a_cassette_parses_exactly_as_over_the_api(tmp_path: Pat
     assert messages.calls == 2
     [recorded] = (tmp_path / "responses").iterdir()
     assert json.loads(recorded.read_text())["model"] == "m"
+
+
+# Who answered the requests a run used, not every response in the directory (seventh referee,
+# finding 3) ------------------------------------------------------------------------------------
+
+ASSESS = ModelRequest("assess", "You assess.", "<claim>1</claim>", {}, 100)
+ANALYSE = ModelRequest("analyse", "You argue.", "<claim>1</claim>", {}, 100)
+OLD_ANALYSE = ModelRequest("analyse", "You argued.", "<claim>1</claim>", {}, 100)
+
+
+def mixed_cassette(directory: Path) -> None:
+    """A stand-in's assessment, the API's argument, and a superseded argument by a third."""
+    write_response(directory, ASSESS, {"a": 1}, via="a stand-in", model="model-s")
+    write_response(
+        directory,
+        ANALYSE,
+        {"b": 2},
+        via="the Anthropic API",
+        model="model-o",
+        recorded_at="2026-11-19T00:05:49+00:00",
+    )
+    write_response(directory, OLD_ANALYSE, {"c": 3}, via="an earlier stand-in", model="model-x")
+
+
+def test_the_answers_used_are_described_apart_from_the_cassette_as_a_whole(tmp_path: Path) -> None:
+    mixed_cassette(tmp_path)
+    transport = CassetteTransport(tmp_path)
+    assert "a stand-in, an earlier stand-in and the Anthropic API" in transport.detail
+    assert transport.describe_used() == (
+        f"replayed from cassette {tmp_path.name}: no recorded answer was used"
+    )
+    transport(ANALYSE)
+    transport(ANALYSE)  # the same answer twice is one answer
+    assert transport.describe_used() == (
+        f"replayed from cassette {tmp_path.name}: 1 of its 3 recorded answers used (analyse), "
+        "recorded via the Anthropic API with model-o, 2026-11-19"
+    )
+    transport(ASSESS)
+    assert transport.describe_used(["analyse"]) == transport.describe_used(["analyse", "conclude"])
+    assert "a stand-in with model-s, 2026-11-17" in transport.describe_used(["assess"])
+    assert "the Anthropic API" not in transport.describe_used(["assess"])
+    assert "earlier stand-in" not in transport.describe_used()
+    assert transport.describe_used(["propose"]) == (
+        f"replayed from cassette {tmp_path.name}: no recorded answer was used (propose)"
+    )
+
+
+def test_a_mark_separates_one_run_from_the_next_on_the_same_transport(tmp_path: Path) -> None:
+    mixed_cassette(tmp_path)
+    transport = CassetteTransport(tmp_path)
+    transport(ASSESS)
+    mark = transport.mark()
+    transport(ANALYSE)
+    assert "model-s" not in transport.describe_used(since=mark)
+    assert "model-o" in transport.describe_used(since=mark)
+
+
+def test_an_answer_recorded_live_in_this_run_is_one_of_those_used(tmp_path: Path) -> None:
+    def live(request: ModelRequest) -> dict[str, Any]:
+        return {"ok": request.step}
+
+    live.model = "model-live"  # type: ignore[attr-defined]
+    transport = CassetteTransport(tmp_path, live=live, via="a scripted test")
+    transport(ANALYSE)
+    used = transport.describe_used()
+    assert "1 of its 1 recorded answers used (analyse)" in used
+    assert "recorded via a scripted test with model-live" in used

@@ -349,3 +349,85 @@ def test_a_supplied_price_is_refused_when_dated_after_the_date() -> None:
     assert "not checked against any source" in supplied.price(ACME, date(2026, 3, 2)).source
     with pytest.raises(PriceUnavailable, match="after 2026-03-01"):
         supplied.price(ACME, date(2026, 3, 1))
+
+
+# A price no second manager confirms values nothing (seventh referee, finding 2) ----------------
+
+
+def _nvidia_table(value: int) -> str:
+    return table(entry("NVIDIA CORP", "67066G104", value, 100))
+
+
+def _view(tmp_path: Path, second: str | None, prices: object = None):  # noqa: ANN202
+    from app.services.market_view import market_view
+    from tests.fakes import NVIDIA
+    from tests.market_examples import _filings  # NVIDIA's facts with its share counts
+
+    filings: dict[int, list[tuple[str, str, str, str]]] = {
+        1: [("0000000001-26-000002", "2026-09-30", "2026-11-12", _nvidia_table(18_000))]
+    }
+    if second is not None:
+        filings[2] = [("0000000002-26-000009", "2026-09-30", "2026-11-16", second)]
+    source = stocked(tmp_path, filings)
+    return market_view(
+        NVIDIA,
+        _filings(),
+        None,
+        prices=prices or QuarterEndPrices(source, (FIRST, SECOND)),  # type: ignore[arg-type]
+        today=date(2026, 11, 18),
+    )
+
+
+def test_a_price_a_second_manager_puts_ten_percent_away_values_nothing(tmp_path: Path) -> None:
+    """The referee's input. Until version 14.3 the first manager's $180.00 fed the market
+    value, the P/E, the yield and the reverse DCF, with the difference in a note."""
+    view = _view(tmp_path, _nvidia_table(16_200))  # 162.00 beside 180.00
+    assert [(r.kind, r.outcome) for r in view.valuation] == [("market_value", "cannot_compute")]
+    assert view.reverse_dcf is None
+    reason = view.valuation[0].reason
+    assert "$180.00" in reason and "not confirmed" in reason
+    assert "Differs from Second Fund's $162.00" in reason
+    assert "No valuation is computed from an unconfirmed price" in reason
+    # What was read is still on the record: the source and its date.
+    assert "0000000001-26-000002" in view.price_source and view.price_day == "2026-09-30"
+
+
+def test_a_price_only_one_manager_holds_values_nothing(tmp_path: Path) -> None:
+    view = _view(tmp_path, None)
+    assert [(r.kind, r.outcome) for r in view.valuation] == [("market_value", "cannot_compute")]
+    assert "No second manager read holds it that quarter" in view.valuation[0].reason
+
+
+def test_a_confirmed_price_is_valued_as_before(tmp_path: Path) -> None:
+    view = _view(tmp_path, _nvidia_table(18_050))  # 180.50: within 0.5%
+    kinds = {r.kind: r.outcome for r in view.valuation}
+    assert kinds["market_value"] == "computed", view.valuation[0].reason
+    assert "Confirmed within 0.5%" in view.price_note
+
+
+def test_a_supplied_price_is_used_and_labelled_as_not_checked(tmp_path: Path) -> None:
+    view = _view(tmp_path, None, prices=SuppliedPrice(180.0, date(2026, 11, 17)))
+    kinds = {r.kind: r.outcome for r in view.valuation}
+    assert kinds["market_value"] == "computed"
+    assert "not checked against any source" in view.price_source
+
+
+def test_a_manager_read_before_the_one_that_named_the_issuer_confirms_by_cusip(
+    tmp_path: Path,
+) -> None:
+    """Met on the reference pack while checking the rule above: Amazon's price came from the
+    third manager (the only one whose spelling of the name matched the name asked for), and
+    the two read before it, holding the same CUSIP at the same price, were never asked to
+    confirm it. With confirmation enforced that would have refused a price two filings back."""
+    other_spelling = table(entry("ACME WHOLESALERS OF AMERICA", "000111222", 5_000, 100))
+    source = stocked(
+        tmp_path,
+        {
+            1: [("0000000001-26-000002", "2026-09-30", "2026-11-12", other_spelling)],
+            2: [("0000000002-26-000009", "2026-09-30", "2026-11-16", Q3)],
+        },
+    )
+    price = QuarterEndPrices(source, (FIRST, SECOND)).price(ACME, date(2026, 11, 18))
+    assert price.value == 50.0 and "Second Fund" in price.source
+    assert price.confirmed, price.note
+    assert "Confirmed within 0.5% by the 13F of First Fund (0000000001-26-000002)" in price.note

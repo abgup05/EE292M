@@ -1,6 +1,6 @@
 Market view: NVIDIA CORP (NVDA) as of 2026-11-18
 Price: quarter-end price from SEC Form 13F-HR 0001582202-26-000008 of Swiss National Bank, filed 2026-11-12: the value of its NVIDIA CORPORATION position (CUSIP 67066G104) ÷ the shares held
-  The close of the last trading day of the quarter ended 2026-09-30, not a price of today; the issuer is matched by name (NVIDIA CORPORATION). Confirmed within 0.5% by the 13F of California Public Employees Retirement System (0000919079-26-000013) and of New York State Common Retirement Fund (0000810265-26-000008).
+  The manager's own valuation of its position at the quarter ended 2026-09-30, taken to be the close of the quarter's last trading day and never compared with an exchange; not a price of today. The issuer is matched by name (NVIDIA CORPORATION), not by ticker. Confirmed within 0.5% by the 13F of California Public Employees Retirement System (0000919079-26-000013) and of New York State Common Retirement Fund (0000810265-26-000008).
 
 [market_value:NVDA:2026-09-30] Market value: $5.50T
   At $228.38 on 2026-09-30, the 24,100,000,000 shares outstanding on 2026-08-21 are worth $5.50T.
@@ -54,7 +54,7 @@ Price: quarter-end price from SEC Form 13F-HR 0001582202-26-000008 of Swiss Nati
   compare: Revenue growth, newest fiscal year: +65.5% a year, from fiscal year ended 2025-01-26 to 2026-01-25.
   compare: Revenue, compound annual growth over 3 fiscal years: +100.0% a year, from fiscal year ended 2023-01-29 to 2026-01-25.
   scenario: With the operating margin at the industry's median of 4.2% (n = 61, 2025) instead of 65.2%, no growth from −50% to +100% a year reaches the price.
-    At these assumptions the return on new capital (4.9%) is under the discount rate (9%): growth lowers the value, so a higher price implies lower growth.
+    At these assumptions the return on new capital (4.9%) is under the 8.3% at which growth pays for itself at a discount rate of 9%: growth lowers the value, so a higher price implies lower growth.
   scenario: With the operating margin at the industry's 90th percentile of 26.6% (n = 61, 2025) instead of 65.2%, the same price needs 28.1% a year.
   outside: Compound annual revenue growth over 10 years of filers whose revenue in the start year was $151.48B to $605.94B (starts 2009 to 2015); survivors only. n=40, dropped 4; p10 -5.1%, p25 -1.5%, p50 1.3%, p75 3.4%, p90 8.0%
 

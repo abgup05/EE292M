@@ -16,6 +16,14 @@ fiscal years as the annual frames place them. For each year t of the last 15 adm
     revenue, rounded down to 1, 2 or 5 times a power of ten (`min_revenue` overrides it);
   - *industry*: the filers SEC lists today under the company's SIC code, with revenue of at least
     $100M then;
+- **a level of revenue is the exception**: a test of a *level* of revenue ("revenue was above $300
+  billion") reads no earlier year, and its outcome is the measure the class is chosen on: decided in
+  the year read, every filer of a class whose floor is above the threshold held by construction (the
+  seventh referee's finding 6, shown by
+  `tests/test_outside_view.py::test_a_revenue_level_is_not_counted_in_a_class_chosen_on_that_years_revenue`,
+  2 of 2 before). Since version 14.3 the class of such a test is decided a year earlier, and the
+  result's assumptions say so. A level of another measure (a margin) still takes the class of the
+  year read;
 - **the company itself is left out** of every count; the years the test held for it are listed apart;
 - a filer in the class whose test cannot be computed in year t is counted as *not computable*, never
   as a failure;

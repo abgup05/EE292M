@@ -18,9 +18,12 @@ The rules:
   count or a plain number, never a USD amount.
 - The tolerance is half a unit in the last digit the *statement* wrote: "56%"
   matches 55.6% and 56.4% but not 55.4%; "$46.7 billion" matches $46,743 million.
+  A scale may be a word ("billion") or an abbreviation: "$2.5B", "$45mm", "$46.7bn",
+  "$1.2tn", "$46.7 bn" after a dollar amount, "46.7bn" and "1.2tn" without one.
 - A plain or USD number in a quote with no scale word (a table cell such as
   "Revenue $ 46,743") also matches at 1e3, 1e6 or 1e9 times its value. A count
-  of things does not.
+  of things does not. The quote gate keeps a quote from making such a bare
+  number by stopping before the scale word or unit (:func:`quantity_cut`).
 - Direction: an unsigned statement number matches a positive source; it
   matches a *negative* source ("(3)%", "-3%") only when the statement's
   sentence that holds it allows it ("revenue declined 3%" against "(3)%"
@@ -42,7 +45,13 @@ The rules:
     "vs.", "compared to", "compared with" or "relative to", paired with
     another year ("2024 and 2025", "2023 to 2025"), or directly before a
     financial noun of :data:`YEAR_NOUNS` ("2025 revenue", "2026 net income").
-    "2000 employees" and "2025 stores" are checked;
+    "2000 employees" and "2025 stores" are checked. After "of", "for", "by" or
+    "in", which introduce a count as readily as a year, the number is a count
+    when a noun of :data:`COUNTED_NOUNS` directly follows it ("a headcount of
+    2000 employees", "in 2000 locations") and a year before anything else
+    ("for 2026 remains", "in 2026 we"): a year read as a count would withhold
+    a true finding, a count read as a year only goes unchecked, so the list
+    is short and a noun not on it ("of 2000 turbines") is still not checked;
   - a reference: a *capitalised* word such as "Note", "Item", "Part",
     "Section", "Rule" or "Form" directly followed by its own number or Roman
     numeral ("Note 5", "Item 1A", "Part II", "Rule 10b5-1"), never a
@@ -83,8 +92,19 @@ SCALES: dict[str, float] = {
     "billion": 1e9,
     "trillion": 1e12,
 }
-# Abbreviations recognised only directly after a dollar amount ("$2.5B", "$45mm").
-SCALE_ABBREVIATIONS: dict[str, float] = {"K": 1e3, "M": 1e6, "B": 1e9, "bn": 1e9, "mm": 1e6}
+# Abbreviations recognised only directly after a dollar amount ("$2.5B", "$45mm", "$1.2tn").
+# The two-letter ones (lower case only: "TN" is Tennessee) may also follow a dollar amount
+# after one space ("$46.7 bn"), and the digits of an amount with no dollar sign directly
+# ("46.7bn"); the single letters never after a space ("$5 B shares" is not five billion).
+SCALE_ABBREVIATIONS: dict[str, float] = {
+    "K": 1e3,
+    "M": 1e6,
+    "B": 1e9,
+    "bn": 1e9,
+    "mm": 1e6,
+    "mn": 1e6,
+    "tn": 1e12,
+}
 TABLE_SCALES: tuple[float, ...] = (1.0, 1e3, 1e6, 1e9)
 MAX_EXEMPT_COUNT = 12
 YEARS = range(1900, 2101)
@@ -106,6 +126,39 @@ YEAR_NOUNS: tuple[str, ...] = (
     "annual report",
     "10-K",
     "10-Q",
+)
+# Things a filing counts. After "of", "for", "by" or "in" a four-digit number directly before
+# one of these is a count, not a year ("a headcount of 2000 employees"), matched as whole
+# words, case ignored. Only these: any other word there may be a verb after a year ("growth
+# in 2026 reflects"), and reading that year as a count would withhold a true finding.
+COUNTED_NOUNS: tuple[str, ...] = (
+    "employees",
+    "people",
+    "workers",
+    "engineers",
+    "developers",
+    "customers",
+    "clients",
+    "members",
+    "subscribers",
+    "users",
+    "suppliers",
+    "partners",
+    "stores",
+    "locations",
+    "warehouses",
+    "restaurants",
+    "offices",
+    "sites",
+    "facilities",
+    "countries",
+    "markets",
+    "shares",
+    "units",
+    "vehicles",
+    "patents",
+    "positions",
+    "jobs",
 )
 # Words that let a number written without a sign stand for a negative source figure, matched
 # as whole words, case ignored, in the number's own sentence. Two kinds. Words of decline
@@ -192,6 +245,10 @@ NOT_COUNTED: frozenset[str] = frozenset(
     }
 )  # fmt: skip
 
+MONTH_NAMES: tuple[str, ...] = (
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+)  # fmt: skip
 _MONTH = (
     r"(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|Aug(?:ust)?|"
     r"Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)"
@@ -240,6 +297,11 @@ _YEAR_NOUN_AFTER = re.compile(
 )
 
 
+# The prepositions that introduce a count as readily as a year, directly before the number.
+_COUNT_OR_YEAR_BEFORE = re.compile(r"\b(?:of|for|by|in)\s+$", re.IGNORECASE)
+_COUNTED_NOUN_AFTER = re.compile(r"\s+(?:" + "|".join(COUNTED_NOUNS) + r")\b", re.IGNORECASE)
+
+
 def _whole_words(words: tuple[str, ...]) -> re.Pattern[str]:
     alternatives = "|".join(re.escape(word).replace(r"\ ", r"\s+") for word in words)
     return re.compile(r"\b(?:" + alternatives + r")\b", re.IGNORECASE)
@@ -253,21 +315,25 @@ _SENTENCE_BREAK = re.compile(r"[.!?;](?=\s)|\n")
 _NUMBER = re.compile(r"\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?|\.\d+")
 _CURRENCY_BEFORE = re.compile(r"(?:US\$|\$|\bUSD)\s?$")
 _SCALE_AFTER = re.compile(r"\s?(thousand|million|billion|trillion)\b", re.IGNORECASE)
-_ABBREVIATION_AFTER = re.compile(r"(K|M|B|bn|mm)\b")
-# Without a dollar sign, only the letters of millions and billions, glued to the digits.
-_GLUED_SCALE_AFTER = re.compile(r"(M|B|bn|mm)\b")
+_ABBREVIATION_AFTER = re.compile(r"(K|M|B|bn|mm|mn|tn)\b|\s(bn|mm|mn|tn)\b")
+# Without a dollar sign, only the letters of millions, billions and trillions, glued to the
+# digits.
+_GLUED_SCALE_AFTER = re.compile(r"(M|B|bn|mm|mn|tn)\b")
 _UNIT_AFTER: tuple[tuple[re.Pattern[str], Unit], ...] = (
     (re.compile(r"\s?%"), "percent"),
     (re.compile(r"\s?percentage[\s-]points?\b", re.IGNORECASE), "percent"),
     (re.compile(r"\s?(?:percent|per\s+cent)\b", re.IGNORECASE), "percent"),
     (re.compile(r"\s?(?:basis\s+points?|bps|bp)\b", re.IGNORECASE), "bps"),
-    (re.compile(r"x\b"), "multiple"),
+    # "28.5x" and "28.5×": the multiplication sign is not a word character, so no \b after it.
+    (re.compile(r"(?:x\b|×)"), "multiple"),
     (re.compile(r"\s(?:times)\b", re.IGNORECASE), "multiple"),
     (re.compile(r"\s?(?:dollars|USD)\b"), "usd"),
 )
 _ORDINAL_AFTER = re.compile(r"(?:st|nd|rd|th)\b")
 _CAPS_WORD_BEFORE = re.compile(r"\b([A-Z]{2,}[A-Za-z]*)\s$")
 _MINUS = "-−–"
+# A decimal point or a thousands separator between two digits is part of the number.
+NUMBER_SEPARATORS = ".,"
 
 
 @dataclass(frozen=True)
@@ -301,12 +367,18 @@ class NumberCheck:
     ``status`` is "none" when the statement has no quantity, "passed" when
     every quantity matched, "failed" otherwise. ``details`` has one sentence
     per quantity; ``unmatched`` lists the raw text of each one not found.
+    ``quantities`` are the quantities read, in order, ``found`` says of each
+    whether it matched and ``offsets`` where its digits begin in the statement,
+    for a caller that treats some of them apart.
     """
 
     status: Status
     details: list[str]
     checked: int
     unmatched: list[str]
+    quantities: tuple[Quantity, ...] = ()
+    found: tuple[bool, ...] = ()
+    offsets: tuple[int, ...] = ()
 
 
 def _masked(text: str) -> list[tuple[int, int]]:
@@ -325,7 +397,7 @@ def _scale_after(text: str, position: int, currency: bool) -> tuple[float, int]:
     if currency:
         match = _ABBREVIATION_AFTER.match(text, position)
         if match:
-            return SCALE_ABBREVIATIONS[match.group(1)], match.end()
+            return SCALE_ABBREVIATIONS[match.group(1) or match.group(2)], match.end()
         return 1.0, position
     match = _GLUED_SCALE_AFTER.match(text, position)
     if match and _glued_number(text, position):
@@ -358,12 +430,16 @@ def is_year(text: str, begin: int, end: int) -> bool:
     preposition of time, a month or a quarter label (:data:`_YEAR_BEFORE`), be
     joined to another year by "and", "to", "through", "or" or a dash, or be
     directly followed by a financial noun of :data:`YEAR_NOUNS` ("2025
-    revenue"). Before any other noun it is a count ("2025 employees").
+    revenue"). Before any other noun it is a count ("2025 employees"). After
+    "of", "for", "by" or "in" it is a count when a noun of :data:`COUNTED_NOUNS`
+    directly follows ("a headcount of 2000 employees") and a year otherwise.
     """
     digits = text[begin:end]
     if len(digits) != 4 or not digits.isdigit() or int(digits) not in YEARS:
         return False
     before = text[max(0, begin - 40) : begin]
+    if _COUNT_OR_YEAR_BEFORE.search(before) and _COUNTED_NOUN_AFTER.match(text, end):
+        return False
     return bool(
         _YEAR_BEFORE.search(before)
         or _YEAR_AFTER.match(text, end)
@@ -371,12 +447,30 @@ def is_year(text: str, begin: int, end: int) -> bool:
     )
 
 
-def _read(text: str, match: re.Match[str]) -> Quantity | None:
-    """The quantity at one digit run, or None when it is a label, a date part or a count."""
-    begin, end = match.span()
-    digits = match.group()
-    if begin > 0 and (text[begin - 1].isalnum() or text[begin - 1] in "._"):
-        return None  # Q2, H20, FY2026, 10b5: part of an alphanumeric name
+@dataclass(frozen=True)
+class _Written:
+    """How far one number reaches around its digits, and what was read there.
+
+    ``start`` is where its opening parenthesis, currency sign or minus begins and
+    ``position`` where its closing parenthesis, scale word and unit end. ``head`` is
+    ``start``, except that an opening parenthesis nothing closes is left out: it is
+    punctuation ("(5% in the prior year)"), not a sign.
+    """
+
+    start: int
+    head: int
+    position: int
+    currency: bool
+    negative: bool
+    scale: float
+    unit: Unit | None
+
+
+_CLOSING = re.compile(r"\s?\)")
+
+
+def _written(text: str, begin: int, end: int) -> _Written:
+    """Read what is written around the digits at ``text[begin:end]``."""
     # Before the digits: an opening parenthesis, a currency sign, a minus, in that order inward.
     start = begin
     currency = False
@@ -395,19 +489,40 @@ def _read(text: str, match: re.Match[str]) -> Quantity | None:
             paren_open = True
             start -= 2 if head.endswith("( ") else 1
             head = text[max(0, start - 6) : start]
+    paren_outermost = paren_open and text[start] == "("
     negative = False
     if head and head[-1] in _MINUS and (len(head) < 2 or not head[-2].isalnum()):
         negative = True
         start -= 1
+        paren_outermost = False
     # After the digits: a closing parenthesis, a scale word, a unit.
     position = end
+    closed = False
     if paren_open:
-        closing = re.compile(r"\s?\)").match(text, position)
+        closing = _CLOSING.match(text, position)
         if closing:
+            closed = True
             negative = True
             position = closing.end()
     scale, position = _scale_after(text, position, currency)
     unit, position = _unit_after(text, position)
+    sign_from = start
+    if paren_outermost and not closed:
+        sign_from = start + 1
+        while sign_from < begin and text[sign_from].isspace():
+            sign_from += 1
+    return _Written(start, sign_from, position, currency, negative, scale, unit)
+
+
+def _read(text: str, match: re.Match[str]) -> Quantity | None:
+    """The quantity at one digit run, or None when it is a label, a date part or a count."""
+    begin, end = match.span()
+    digits = match.group()
+    if begin > 0 and (text[begin - 1].isalnum() or text[begin - 1] in "._"):
+        return None  # Q2, H20, FY2026, 10b5: part of an alphanumeric name
+    written = _written(text, begin, end)
+    start, position, currency = written.start, written.position, written.currency
+    negative, scale, unit = written.negative, written.scale, written.unit
     if unit is None:
         if _ORDINAL_AFTER.match(text, end):
             return None
@@ -438,6 +553,13 @@ def _read(text: str, match: re.Match[str]) -> Quantity | None:
     )
 
 
+def counts_a_listed_thing(text: str, offset: int) -> bool:
+    """True when the number whose digits begin at ``offset`` of ``text`` is directly followed
+    by a noun of :data:`COUNTED_NOUNS` ("2020 customers"), so that it cannot be a year."""
+    digits = _NUMBER.match(text, offset)
+    return digits is not None and _COUNTED_NOUN_AFTER.match(text, digits.end()) is not None
+
+
 def _placed_quantities(text: str) -> list[tuple[Quantity, int]]:
     """Every quantity ``text`` writes with the offset of its digits, in order."""
     masks = _masked(text)
@@ -449,6 +571,43 @@ def _placed_quantities(text: str) -> list[tuple[Quantity, int]]:
         if quantity is not None:
             found.append((quantity, match.start()))
     return found
+
+
+# The furthest a number's sign, currency, scale word or unit lies from a boundary beside it:
+# "( US$ " before the digits, ") trillion percentage points" after them.
+_QUANTITY_REACH = 40
+Cut = Literal["", "head", "tail"]
+
+
+def quantity_cut(text: str, cut: int) -> Cut:
+    """Where a boundary at offset ``cut`` of ``text`` falls inside a number as written here.
+
+    "head": between a number's opening parenthesis, currency sign or minus and its
+    digits ("-|5%", "$|46.7", "$ |46,743", "(|1,234)"), so that a text beginning there
+    reads the number without them. "tail": between its digits and the closing
+    parenthesis, scale word or unit that follows ("$46.7| billion", "56|%", "106| %",
+    "(1,234|)", "350| basis points", "30| times"), so that a text ending there reads a
+    bare number. "" anywhere else, and after the unit ("56%|"). The sign, scale and
+    unit are the ones :func:`quantities` reads, found the same way, so a text cut at a
+    boundary this function passes reads each of its numbers as the whole text does.
+    What is not read as part of a number is not protected: the noun of a count ("46|
+    customers") and "per share".
+    """
+    if cut <= 0 or cut >= len(text):
+        return ""
+    low = max(0, cut - _QUANTITY_REACH)
+    while low > 0 and (text[low - 1].isdigit() or text[low - 1] in NUMBER_SEPARATORS):
+        low -= 1  # never start reading inside a run of digits
+    for match in _NUMBER.finditer(text, low, min(len(text), cut + _QUANTITY_REACH)):
+        begin, end = match.span()
+        if begin > 0 and (text[begin - 1].isalnum() or text[begin - 1] in "._"):
+            continue  # part of an alphanumeric name, never a quantity
+        written = _written(text, begin, end)
+        if written.head < cut <= begin:
+            return "head"
+        if end <= cut < written.position:
+            return "tail"
+    return ""
 
 
 def quantities(text: str) -> list[Quantity]:
@@ -664,6 +823,7 @@ def check_numbers(
     unmatched: list[str] = []
     placed = _placed_quantities(statement)
     wanted = [quantity for quantity, _ in placed]
+    found: list[bool] = []
     for quantity, position in placed:
         sentence, begins = _sentence_at(statement, position)
         if quantity.unit in ("percent", "bps"):
@@ -673,6 +833,7 @@ def check_numbers(
         # A decline may not match a computed increase (a quote's sign cannot be known).
         usable = [c for c in candidates if not (negative_allowed and c.increase)]
         hit = next((c for c in usable if _matches(quantity, c, negative_allowed)), None)
+        found.append(hit is not None)
         if hit is None:
             unmatched.append(quantity.raw)
             details.append(f"{quantity.raw} was not found in the quotes or the cited figures")
@@ -682,4 +843,12 @@ def check_numbers(
         status: Status = "none"
     else:
         status = "failed" if unmatched else "passed"
-    return NumberCheck(status=status, details=details, checked=len(wanted), unmatched=unmatched)
+    return NumberCheck(
+        status=status,
+        details=details,
+        checked=len(wanted),
+        unmatched=unmatched,
+        quantities=tuple(wanted),
+        found=tuple(found),
+        offsets=tuple(position for _, position in placed),
+    )

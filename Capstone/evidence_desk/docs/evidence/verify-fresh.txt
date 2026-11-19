@@ -1,15 +1,17 @@
 # make verify-fresh
-# 2026-11-19T08:16:19Z, a fresh clone of commit d1e5e56 on capstone/evidence-desk, version 0.14.2 (the tag
-# capstone-v14.2, commit 2b56f7a, with main merged in: the same app; the root Makefile's site targets differ).
-# The commit this file is in differs from d1e5e56 only in documents: this file, backup-restore.txt, the sixth
-# referee's report and its triage, and the lines of README.md and other documents that answer it.
+# 2026-11-19T10:49:33Z, a fresh clone of commit b81ba78 on capstone/evidence-desk, version 0.14.3 (the tag
+# capstone-v14.3).
+# The commit this file is in differs from b81ba78 only in documents: this file, backup-restore.txt and the
+# lines of README.md and other documents that quote them.
 # The two skipped page tests compare a sample with its source record in results/, which a clone does not have.
-# Kept after the sixth referee found that the evidence here was still version 14.1's.
+# The two runs of this command before it failed and are not shown: one on an example whose recorded answer
+# the audit's last fix had made stale (1 offline test), one on page tests written around a replaced sample
+# (161 page tests). The work log of Week 9B says what each was.
 
 All checks passed!
-294 files already formatted
-2568 passed in 212.58s (0:03:32)
+302 files already formatted
+2700 passed in 274.98s (0:04:34)
 smoke: ok
-573 passed, 2 skipped in 6.35s
+580 passed, 2 skipped in 8.04s
 
-# wall clock for the whole command, with the Docker image's layers cached: 4:04.15
+# wall clock for the whole command, with the Docker image's layers cached: 315 s

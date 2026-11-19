@@ -1,4 +1,4 @@
-.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench eval eval-validate backup restore-check up-recorded live-walk changes breakdowns sample-run-changes golden-sheet backup-status figures two-writers header-cut-check time-live events events-probe event-categories facts-load restatements claim-labels claim-results-key examples claim-foreign watch-once watch-status watch-examples watch-replay watch-contention sample-inbox sample-v14 sample-analysis look measures-probe readers-echo readers-check examples-analysis record-analysis market-probe outside-view market-view fixtures-market market-examples market-check reference-pack time-analysis look-print
+.PHONY: help build up down verify verify-fresh test lint fmt smoke uitest run demo screenshots fixtures fixtures-facts probe lock logs shell clean replay golden-check golden-baseline profile bench eval eval-validate backup restore-check up-recorded live-walk changes breakdowns sample-run-changes golden-sheet backup-status figures two-writers header-cut-check time-live events events-probe event-categories facts-load restatements claim-labels claim-results-key examples claim-foreign watch-once watch-status watch-examples watch-replay watch-contention sample-inbox sample-v14 sample-analysis look measures-probe readers-echo readers-check examples-analysis record-analysis market-probe outside-view market-view fixtures-market market-examples market-check reference-pack time-analysis look-print gate-edge-audit audit-recount pack-prices
 
 export COMPOSE_PROJECT_NAME := ee292m-evidence-desk
 export LOCAL_UID := $(shell id -u)
@@ -32,6 +32,9 @@ help:
 	@echo 'Looking while changing the page: look (captures the pages LOOK names, each name@width,height@query, into results/; nothing committed)'
 	@echo 'Browser test: uitest (headless Chromium renders the sample records, the recorded inbox and the version 14 examples, drives the keys and themes in uitests/keys.html, every answer of the watch routes in uitests/watch.html, the version 14 variants in uitests/v14.html, the frame at 1440x900, 1280x800, 900x800 and 360x740 in uitests/frame.html and the print layout in uitests/print.html; pytest uitests checks the DOM against the JSON); look-print (the note as a PDF and as a capture of its print layout, into results/)'
 	@echo "Replay: replay ARGS='--out demo' (the example thesis on recorded filings with model answers from the cassette; no network, no key)"
+	@echo 'Quote gate: gate-edge-audit (offline: every committed record of a run under demo, docs/examples, src/web and tests/golden, and each excerpt today'"'"'s gate would refuse; reads only)'
+	@echo 'Analysis audit: audit-recount (offline: the two live samples'"'"' argued sentences audited again by today'"'"'s rule, each mark that would change; ARGS="path.json ..." for other records; reads only)'
+	@echo 'Market view: pack-prices (offline: the 13F price the reference pack gives each of the eight probe companies and whether a second manager confirms it; market-check asks live EDGAR)'
 	@echo 'Tripwire: golden-check (the offline example run against tests/golden/golden.json; names the first stage that moved)'
 	@echo 'Tripwire: golden-baseline (rewrite tests/golden/golden.json, and replay.json when the replay has nothing pending; read the diff before committing a new baseline)'
 	@echo 'Speed: profile (the offline example run timed stage by stage, then cProfile of it, to results/profile-<UTC>.txt); bench RUNS=12 (the offline run with and without the parser'"'"'s header cut, in alternating pairs: the median saving and its spread, to results/bench-<UTC>.txt)'
@@ -330,6 +333,21 @@ golden-sheet:
 
 eval:
 	$(RUN) python -m app.evaluation run $(ARGS)
+
+# Every committed record of a run (demo/, docs/examples/, src/web/, tests/golden/): which of
+# its excerpts today's quote gate would refuse. Reads only; a record is never edited.
+gate-edge-audit:
+	$(RUN) python -m tests.gate_edge_audit $(ARGS)
+
+# Recorded runs' argued analysis audited again by today's rule (default: the page's two live
+# samples). Reads only: a record of a real run keeps the audit of its day.
+audit-recount:
+	$(RUN) python -m tests.audit_recount $(ARGS)
+
+# Offline, from the 13F tables of the reference pack: each probe company's quarter-end price
+# and whether a second manager's filing confirms it (an unconfirmed price values nothing).
+pack-prices:
+	$(RUN) python -m tests.pack_prices
 
 golden-check:
 	$(RUN) pytest -q -p no:cacheprovider tests/test_golden.py

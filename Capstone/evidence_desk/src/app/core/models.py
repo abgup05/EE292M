@@ -559,6 +559,9 @@ class Coverage(BaseModel):
     analysis_sentences_written: int = 0
     analysis_sentences_verified: int = 0
     analysis_sentences_unverified: int = 0
+    # Of the verified ones, those that restate a threshold (ArgSentence.thresholds): not
+    # failed for it, and not plainly verified either. 0 in records made before 14.3.
+    analysis_sentences_restating: int = 0
     # Sentences over a section's cap, cut by code before the audit (not in written).
     analysis_sentences_cut: int = 0
     analysis_unverified_no_evidence: int = 0

@@ -18,6 +18,10 @@ ComputedOutcome = Literal["holds", "fails", "cannot_compute"]
 OperandUnit = Literal["USD", "percent", "USD_per_share", "count", "shares"]
 
 
+# The label of an operand that is a constant the claim states, not a value read from facts.
+THRESHOLD_LABEL = "the threshold"
+
+
 class Operand(BaseModel):
     """One number a test read or computed, with the facts and arithmetic behind it.
 

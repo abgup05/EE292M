@@ -69,7 +69,7 @@ from app.core.relevance import (
     part_names,
     untied_metric_ids,
 )
-from app.engines.transport import EngineError
+from app.engines.transport import EngineError, answered_by, answers_mark
 from app.services.computed import Computed
 from app.services.numbers import NumbersResult
 
@@ -175,6 +175,8 @@ class Background:
     breakdowns_note: str
     providers: dict[str, _Task] = field(default_factory=dict)
     proposal: _Task | None = None
+    # Where the analyser's answers stood before this run asked for any (answers_mark).
+    answers_mark: int = 0
 
 
 def _tests(run: Run, computed: Computed) -> dict[str, tuple[ClaimTest, ComputedTest]]:
@@ -244,7 +246,7 @@ def start_background(
     provider, which runs at the end, does), and the proposer is not shown a verdict.
     """
     reports, note = _reports(computed, read_reports)
-    started = Background(reports, note)
+    started = Background(reports, note, answers_mark=answers_mark(analyser))
     if out_of_time():
         return started
     tests = _tests(run, computed)
@@ -527,6 +529,7 @@ def analyse_run(
         untied_note=rules.UNTIED,
         breakdowns_note=background.breakdowns_note,
         corollary_rule=rules.COROLLARY_RULE,
+        audit_rule=rules.AUDIT_RULE,
         persistence_method=rules.PERSISTENCE_METHOD.format(
             paths=rules.PERSISTENCE_PATHS,
             horizon=rules.PERSISTENCE_HORIZON,
@@ -680,7 +683,9 @@ def _model_steps(
         )
         found = corollaries(proposed.implications, facts, newest)
         analysis.corollaries_step = "answered"
-        analysis.corollaries_by = analyser.detail
+        analysis.corollaries_by = answered_by(
+            analyser, [rules.PROPOSE_STEP], background.answers_mark
+        )
         if proposed.problems:
             dropped = "; ".join(proposed.problems)
             analysis.corollaries_note = f"Dropped from the proposal: {dropped}."
@@ -699,6 +704,11 @@ def _model_steps(
         timing,
         clock,
     )
+    if analysis.argument_by == "model":
+        # Who answered the argument's own requests in this run, not the cassette at large.
+        analysis.argument_detail = answered_by(
+            analyser, [rules.ANALYSE_STEP, rules.CONCLUDE_STEP], background.answers_mark
+        )
     if failures:
         run.errors.append(rules.MODEL_STEP_ERROR.format(why="; ".join(failures)))
     return found, claims, thesis, reasons
@@ -843,6 +853,7 @@ def _argue(
     coverage.analysis_sentences_written = counts.written
     coverage.analysis_sentences_verified = counts.verified
     coverage.analysis_sentences_unverified = counts.unverified
+    coverage.analysis_sentences_restating = counts.restating
     coverage.analysis_sentences_cut = sum(d.cut for d in drafts.values()) + (
         thesis_draft.cut if thesis_draft else 0
     )

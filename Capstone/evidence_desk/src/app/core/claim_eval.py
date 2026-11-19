@@ -60,6 +60,7 @@ from app.core.breakdown_models import (
 )
 from app.core.claim_normal import Newest
 from app.core.claim_test_models import (
+    THRESHOLD_LABEL,
     ComputedOutcome,
     ComputedTest,
     HistoryPoint,
@@ -1136,7 +1137,7 @@ def _constant(number: Number, unit_like: OperandUnit) -> Operand:
         unit = "USD"
     return Operand(
         term=number.text(),
-        label="the threshold",
+        label=THRESHOLD_LABEL,
         value=number.value,
         unit=unit,
         display=number.text(),

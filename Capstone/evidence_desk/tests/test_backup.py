@@ -473,3 +473,41 @@ def test_a_decision_and_a_thesis_written_after_the_backup_are_behind_not_broken(
     assert backup.main(["restore-check", "--dir", str(directory)], store=store) == 2
     out = capsys.readouterr().out.splitlines()[-1]
     assert out.startswith("BEHIND:") and "1 decision and 1 thesis written since" in out
+
+
+# What the README says of the check, pinned (seventh referee, finding 9) -------------------------
+
+
+def test_a_run_that_finished_after_the_backup_was_taken_is_a_failure_not_behind(
+    store: Store, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A run keeps no time of its last change, so one still running when the backup was
+    taken and finished since cannot be told from a damaged row: FAIL, and the README says so."""
+    running = _run("run-9").model_copy(update={"status": RunStatus.running, "finished_at": None})
+    store.save_run(running)
+    directory = tmp_path / "backups"
+    backup.main(["backup", "--dir", str(directory)], store=store, now=NOON)
+    finished = running.model_copy(
+        update={"status": RunStatus.complete, "finished_at": NOON + timedelta(minutes=2)}
+    )
+    store.save_run(finished)
+    assert backup.main(["restore-check", "--dir", str(directory)], store=store) == 1
+    last = capsys.readouterr().out.splitlines()[-1]
+    assert last.startswith("FAIL: record-20261117T120000Z.sqlite: run run-9 differs")
+
+
+def test_a_record_the_live_app_cannot_read_fails_because_the_backup_holds_it_too(
+    store: Store, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The referee's reading: unreadable rows are looked for in the backup only, so a row
+    the live app already cannot parse "is copied and compared as identical, so it PASSes".
+    It does not pass: the copy holds the same row, and the copy is where it is looked for."""
+    _write_row(
+        store,
+        "INSERT INTO theses (id, created_at, record) VALUES (?, ?, ?)",
+        ("th-old", NOON.isoformat(), '{"id": "th-old", "title": "a field this version dropped"}'),
+    )
+    directory = tmp_path / "backups"
+    backup.main(["backup", "--dir", str(directory)], store=store, now=NOON)
+    assert backup.main(["restore-check", "--dir", str(directory)], store=store, now=NOON) == 1
+    assert "1 record(s) in it cannot be read" in capsys.readouterr().out.splitlines()[-1]

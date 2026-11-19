@@ -584,7 +584,7 @@ is ignored, so additive changes to these payloads do not break the page. The fun
 The recorded samples are `?sample=run-live`, offered first on the first screen: a live NVIDIA
 run of 19 Nov 2026 (UTC) answered by the Anthropic API (claude-opus-5-5 reading, claude-haiku-5-5
 checking) with three claim readers (the grammar, claude-haiku-5-5, claude-sonnet-5-5), copied
-unedited from `results/run-8a12ef614117.json`: three tests all three readers read alike, one of
+unedited from `results/run-b9d5f9224a25.json`: three tests all three readers read alike, one of
 them held in each of the last four quarters, and two claims no reader could read.
 `?sample=readers` (`docs/examples/v14/run-readers.json`) shows what the live run does not: the
 grammar refusing while both models agree ("2 of 3 readers"), two writings of one test, and a
@@ -634,6 +634,19 @@ accent at its left. A sentence the audit did not verify is never hidden: it has 
 in `--limit` and says why on a line of its own under it ("▲ Not verified: writes 70%, which
 nothing it cites carries").
 
+**A threshold restated** (`.an-threshold`, version 14.3). The audit lists, as
+`thresholds: [{raw, of, note}]` on a sentence, each number that is only the line a cited test,
+corollary or condition draws: it is not checked as a fact, and the sentence is verified all the
+same. The page says so in three places, none of them a failure's mark (no ▲, no `--limit`, no
+wavy rule): after the sentence's chips in small plain words ("· restates a threshold: 70%"); in
+the inspector in a sentence ("Restates a threshold: 70% (the test of c2). Not checked as a
+fact.") under "Verified by code, with a threshold restated."; and as a count on the Method tab's
+audit stage and in how the analysis was made (`analysis_sentences_restating`). **What "verified"
+means is never the page's wording**: the inspector prints `Run.analysis.audit_rule` whole under
+"What the audit checks", the same text heads the audit stage, and a record without the field
+says it has none. A referee found the page's own sentence there claiming more than the audit
+did (`docs/referee-7-triage.md`, finding 1).
+
 **A chip** (`.chip`) is the one way a citation is drawn, wherever it appears: small, in the code
 face, in `--link`. Its label is short: a finding's id (`f2`), an analytic's reference and the
 record's word for its kind (`A33 reverse dcf`: the reference is its place in
@@ -646,7 +659,7 @@ being read is filled in the accent. An id the record holds nothing under is a do
 `--limit` that says so. On paper a chip prints as the reference it is.
 
 **Who wrote what is said in words** under each title (`.an-by`): "✎ Written by claude-opus-5-5 via
-the Anthropic API. Code checked every sentence against what it cites." is the record's
+the Anthropic API. Audited by code, sentence by sentence." is the record's
 `argument_detail`, so a replayed answer says it was replayed from a cassette; "ƒ Computed by code"
 heads every group of analytics. A lean is an outlined tag (`.lean`), never filled: a filled stamp
 is a verdict. The argument's state when it is not whole is said before anything else: answered in
@@ -708,8 +721,8 @@ navigation label where a headline should be, two faces in one argument, a phone 
 screen was all claims, and stages chained by arrows that ran side by side. The page as described
 above is the answer to both. What they asked for and was not done is in the README's limits.
 
-**The samples.** `?sample=run-live` (NVIDIA, run-8a12ef614117) and `?sample=run-costco` (Costco,
-run-72359824897a) are offered first: two live runs of 19 November 2026 (UTC), each answered
+**The samples.** `?sample=run-live` (NVIDIA, run-b9d5f9224a25) and `?sample=run-costco` (Costco,
+run-6f20883d8811) are offered first: two live runs of 19 November 2026 (UTC), each answered
 through the Anthropic API (claude-opus-5-5 read the passages, proposed the corollaries and wrote
 the argument; claude-haiku-5-5 checked meaning; the grammar, claude-haiku-5-5 and
 claude-sonnet-5-5 read the claims into tests) and copied unedited from the runs' records.
@@ -761,6 +774,21 @@ tests hold the page to:
 - the Run drawer's contents, the first screen, and the strip and sheet below 1100px;
 - the second pass: the verdict strip's cells in the bar, over the rail and in the Overview against the record's verdicts, and a cell selecting its claim; a stamp filled and 11 to 12px, a model tag without a box; a rail row no taller than its id line and two lines of claim; the menu's three items and no key hint in the bar; the bar no taller than 36px; a code typed in the ticker field going to its panel and an unknown one saying so; the inspector staying on every tab and reading the run's facts (the counts, every source, every limit) when nothing is picked; the inbox laid out in the three panes with one rail entry per item; an operand with a long note staying inside the inspector.
 
+**The harnesses follow the record.** The two live samples are replaced whenever a run is made
+again, and what their claims hold moves with them (after one remake the second claim had no
+finding, the summary was not a model's, and the only unverified sentence sat in a claim's table
+of what would change the verdict). So `uitests/frame.html` and `uitests/analysis.html` read the
+samples' JSON first and choose what each step uses from it: the first claim with a computed test
+and a quoted finding, the first with two quoted findings and the last of those, the first whose
+test read a value with a long note, the first unverified sentence and the first that restates a
+threshold in the first sample that has one (the live runs, then the hand-built example),
+wherever in the argument it sits. The choice is recorded as a `plan` step and the tests check it
+against the record. A kind no sample has is recorded as a skipped step with its reason, and its
+tests skip saying so; a count the record gives (unverified, restating, flagged) is compared with
+the record's own number, never with "at least one". Following the record found a defect of the
+page: a sentence inside a table could not be selected (a click inside any table was left to the
+table), so the inspector kept reading another sentence.
+
 `uitests/test_analysis_dom.py` reads the dumps of four records (the two live samples, the
 hand-built example and the computed example) and what `uitests/analysis.html` recorded, each
 against the record's JSON:
@@ -787,7 +815,14 @@ against the record's JSON:
 - a run with no model saying so in the record's words, without a warning; a record without an
   analysis having no Analysis tab;
 - an argument answered in part, a claim left unargued, a provider that gave nothing and a record
-  without timings, each made by hand from the live run (no recorded run has one).
+  without timings, each made by hand from the live run (no recorded run has one);
+- a sentence that restates a threshold: its marks against the record's `thresholds`, their count
+  against `analysis_sentences_restating`, the inspector's sentence for each, the mark being
+  another colour than an unverified sentence's and carrying no limit glyph; and the inspector's
+  rule being the record's `audit_rule`, character for character, with the page's old sentence
+  gone from its source (shown failing on a page that ignores `thresholds`: 4 tests);
+- a replayed argument (`docs/examples/analysis/run-model-argument.json`, drawn by the page's own
+  code) saying which recorded answers it used, whole and inside its pane.
 
 Two of these failed before they passed and found defects of the page: the count on the control
 that holds the figures not tied to the selection claimed every figure of the record (158) where

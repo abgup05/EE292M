@@ -306,3 +306,49 @@ def test_growth_distribution_of_survivors_of_a_size() -> None:
     assert found.dropped == 2
     assert found.percentiles["p50"] == pytest.approx(root_two)
     assert found.at_least == 2
+
+
+# A level of revenue in a class chosen on revenue (seventh referee, finding 6) -------------------
+
+
+def _level_rate(floor_millions: float):  # noqa: ANN202
+    test = annual_test(compiled("Revenue was above $295 million in the latest fiscal year"))
+    assert not isinstance(test, str), test
+    return test, base_rate(
+        panel(),
+        test,
+        RefClass("filers of that size", floor_millions * M, definition="test"),
+        [2021, 2022],
+        company_cik=OWN,
+        claim_test="revenue[FY] > $295M",
+        as_of="2026-11-18",
+        result_id="r",
+    )
+
+
+def test_a_revenue_level_is_not_counted_in_a_class_chosen_on_that_years_revenue() -> None:
+    """The referee's case: a floor above the threshold. Until version 14.3 the class was
+    chosen in the year the test reads, so every filer in it had already passed: Beta (400)
+    and Gamma (300) in 2022, 2 of 2 by construction.
+
+    Chosen a year earlier, by hand, floor $296M:
+    t=2021, class of 2020: Delta 300 only. Delta's 2021 is 290: does not hold. 0 of 1.
+    t=2022, class of 2021: nobody is at 296 (Delta 290, Beta 250). 0 of 0.
+    """
+    test, rate = _level_rate(296)
+    assert [(y.year, y.in_class, y.computable, y.held) for y in rate.years] == [
+        (2021, 1, 1, 0),
+        (2022, 0, 0, 0),
+    ]
+    assert (rate.held, rate.computable) == (0, 1)
+    assert test.reach == 0 and test.class_reach == 1
+    assert any("decided a year earlier" in a for a in rate.assumptions)
+
+
+def test_a_level_of_another_measure_keeps_the_class_of_the_year_read() -> None:
+    growth = annual_test(compiled("Revenue grew more than 50% year over year"))
+    assert not isinstance(growth, str)
+    assert growth.reach == 1 and growth.class_reach == 1
+    margin = annual_test(compiled("Operating margin is above 20%"))
+    assert not isinstance(margin, str), margin
+    assert margin.reach == 0 and margin.class_reach == 0

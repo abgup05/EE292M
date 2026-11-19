@@ -341,7 +341,7 @@ The model reads the record as: challenges.
 
 **What would change the verdict**
 
-- A quarter of gross margin below 70% would fail the test. [test:c2]
+- A quarter of gross margin below 70% would fail the test. [test:c2] *Restates a threshold: 70% (test:c2); not checked as a fact.*
 
 **What the figures say** (computed by code)
 

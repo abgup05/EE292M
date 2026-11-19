@@ -783,9 +783,18 @@ def test_a_quote_that_cuts_a_word_is_not_found(quote: str) -> None:
 
 
 def test_a_later_whole_occurrence_is_found_after_one_that_cuts_a_number() -> None:
-    text = "Q1 revenue was $46.78 billion. Q2 revenue was $46.7 billion."
+    text = "In billions, Q1 revenue was $46.78. Q2 revenue was $46.7. Margin rose."
     span = locate("revenue was $46.7", text)
     assert span == (text.index("Q2") + 3, text.index("Q2") + 3 + len("revenue was $46.7"))
+
+
+def test_an_occurrence_whole_in_its_digits_but_cut_before_its_scale_word_is_not_one() -> None:
+    """Until version 14.3 this was the expected result of the test above: "revenue was $46.7"
+    found in "Q2 revenue was $46.7 billion", which is the sixth referee's finding 1."""
+    text = "Q1 revenue was $46.78 billion. Q2 revenue was $46.7 billion."
+    assert locate("revenue was $46.7", text) is None
+    whole = "revenue was $46.7 billion"
+    assert locate(whole, text) == (text.index("Q2") + 3, text.index("Q2") + 3 + len(whole))
 
 
 def test_a_later_whole_occurrence_is_found_after_one_inside_a_word() -> None:
@@ -823,3 +832,100 @@ def test_a_quote_that_cuts_a_number_withholds_a_finding_that_would_have_shown_th
     assert result.evidence == [] and result.quotes_rejected == 1
     [withheld] = result.unsupported
     assert withheld.withheld_reason == "no verified quote or reported figure"
+
+
+# A located span must not end between a number and its scale word or unit, nor begin between a
+# sign or currency symbol and its number (sixth referee, finding 1) --------------------------------
+
+UNITS = (
+    "Item 2. Results\n"
+    "Data Center revenue was $46.7 billion for the quarter, up 56% from a year ago.\n"
+    "Gaming revenue changed by -5% from the prior year and inventory was (1,234) million.\n"
+    "The notes pay 350 basis points over the benchmark and trade at 30 times earnings.\n"
+    "Net revenue $ 46,743 106 % of plan.\n"
+)
+UNIT_SOURCES = {"s9": StoredSource(text=UNITS, url=URL_1)}
+UNIT_PASSAGES = {"p9": _passage("p9", "s9", UNITS, "Part I, Item 2. Results")}
+
+
+def _gate_units(statement: str, quote: str) -> GateResult:
+    return gate_claim(
+        claim_id="c1",
+        draft=ClaimDraft(findings=[_stated(statement, ("p9", quote))]),
+        passages=UNIT_PASSAGES,
+        sources=UNIT_SOURCES,
+        ids=RunIds(),
+    )
+
+
+def test_a_quote_that_stops_before_the_scale_word_cannot_verify_another_scale() -> None:
+    """The referee's input: "$46.7" out of "$46.7 billion" under a statement of $46.7 million."""
+    result = _gate_units("Data Center revenue was $46.7 million.", "Data Center revenue was $46.7")
+    assert result.findings == [] and result.evidence == [] and result.quotes_rejected == 1
+    [withheld] = result.unsupported
+    assert withheld.withheld_reason == "no verified quote or reported figure"
+
+
+def test_a_quote_that_begins_after_the_minus_cannot_verify_growth() -> None:
+    """The referee's second input: "5% from the prior year" out of "-5% from the prior year"."""
+    result = _gate_units("Gaming revenue grew 5%.", "5% from the prior year and inventory")
+    assert result.findings == [] and result.quotes_rejected == 1
+
+
+@pytest.mark.parametrize(
+    "quote",
+    [
+        "Data Center revenue was $46.7",  # ends before the scale word
+        "Data Center revenue was $46.7 ",  # the same: padding is ignored
+        "for the quarter, up 56",  # ends before the percent sign
+        "5% from the prior year",  # begins after the minus
+        "46.7 billion for the quarter",  # begins after the dollar sign
+        "inventory was (1,234",  # ends before the closing parenthesis of a negative
+        "inventory was (1,234)",  # ends before the scale word of a negative
+        "1,234) million.\nThe notes pay",  # begins after the opening parenthesis
+        "The notes pay 350",  # ends before "basis points"
+        "The notes pay 350 basis",  # ends inside "basis points"
+        "over the benchmark and trade at 30",  # ends before "times"
+        "46,743 106 % of plan",  # begins after "$ "
+        "Net revenue $ 46,743 106",  # ends before " %"
+    ],
+)
+def test_a_quote_cut_beside_a_number_s_sign_scale_or_unit_is_not_found(quote: str) -> None:
+    assert locate(quote, UNITS) is None
+    # The same on the normalised path: the stored spaces are non-breaking, the quote's plain.
+    assert locate(quote, UNITS.replace(" ", "\u00a0")) is None
+
+
+@pytest.mark.parametrize(
+    "quote",
+    [
+        "Data Center revenue was $46.7 billion",  # the amount with its scale word
+        "revenue was $46.7 billion for the quarter, up 56%",  # ends after the percent sign
+        "changed by -5% from the prior year",  # begins before the minus
+        "inventory was (1,234) million",
+        "The notes pay 350 basis points",
+        "trade at 30 times earnings",
+        "Net revenue $ 46,743",  # a table cell: a number then another number, no unit between
+        "$ 46,743 106 % of plan",
+    ],
+)
+def test_a_quote_that_keeps_each_number_whole_with_its_unit_is_still_found(quote: str) -> None:
+    span = locate(quote, UNITS)
+    assert span is not None and UNITS[span[0] : span[1]] == quote
+
+
+@pytest.mark.parametrize(
+    ("text", "quote"),
+    [
+        ("Revenue for the year was 46.7. Margin rose.", "Revenue for the year was 46.7"),
+        ("Revenue was $1,234 million in 2026. Margin rose.", "Revenue was $1,234 million in 2026"),
+        ("The plan covers 2,000 employees.", "The plan covers 2,000"),  # a noun is not a unit
+        ("It earned $1.25 per share this year.", "It earned $1.25"),  # nor is "per share"
+        ("Growth of 5% (a record) followed.", "Growth of 5% (a record)"),
+        ("Sales rose 5%-7% in the period.", "Sales rose 5%"),  # a range's dash is not a sign
+        ("Revenue of 46.7 billions of yen.", "Revenue of 46.7"),  # "billions" is no scale word
+    ],
+)
+def test_a_true_quote_ending_in_a_number_is_not_refused_wrongly(text: str, quote: str) -> None:
+    span = locate(quote, text)
+    assert span is not None and text[span[0] : span[1]] == quote

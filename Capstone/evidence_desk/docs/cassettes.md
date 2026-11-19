@@ -80,9 +80,20 @@ prints the number first, sends only a request a cassette lacks and never more th
 
 ## The honesty rule
 
-Every response records who produced it: `model` and `via`. A run built from a cassette says so in
-its `engine_detail`, for example "replayed from cassette nvda: 6 responses recorded via Claude
-Code with claude-opus-5-5, 2026-11-17 to 2026-11-17". Never edit an answer after recording it to
+Every response records who produced it: `model` and `via`. A run built from a cassette says who
+answered **the requests it used**, step by step, never the directory at large (since the fixes
+after 14.2; the seventh referee's finding 3): `engine_detail` for the plan, the assessments and
+the summary, `checker_detail` for the meaning checks, `claim_reader_detail` for each reader's
+readings, `analysis.corollaries_by` for the proposal and `analysis.argument_detail` for the
+argument. For example, on `demo/cassettes/nvda-example`, which holds a stand-in's 12 answers and
+the API's 14: "replayed from cassette nvda-example: 6 of its 26 recorded answers used (analyse,
+conclude), recorded via the Anthropic API with claude-opus-5-5, 2026-11-19". Until then each of
+those lines described all 26 at once, so a replayed run could not say that the argument was the
+API model's and the findings a stand-in's. A transport keeps the list of answers it gave
+(`CassetteTransport.describe_used`); the description of the whole directory is still
+`Cassette.describe()` and is what `make run ARGS='cassette <dir>'` prints. Two runs replaying one
+cassette at the same time through one app are not told apart: each would name the other's
+answers given meanwhile. Never edit an answer after recording it to
 change a verdict; record a new cassette instead. A cassette holds no key and no header.
 
 ## The cassettes in this repository

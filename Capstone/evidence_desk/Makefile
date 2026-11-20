@@ -5,6 +5,8 @@ export LOCAL_UID := $(shell id -u)
 export LOCAL_GID := $(shell id -g)
 COMPOSE := docker compose -f docker/compose.yaml
 RUN := $(COMPOSE) run --rm --no-deps app
+# Ask Docker for the actual host port after it has bound the listener.
+SHOW_URL = address=$$($(COMPOSE) port app 8000) && printf 'Evidence Desk: http://%s\n' "$$address"
 
 # The claim readers for one command, without editing .env: `make run READERS=models ARGS=...`,
 # `make up READERS=models` (grammar, model or models). Given, it is passed into the containers
@@ -74,9 +76,11 @@ build:
 up:
 	$(WITH_READERS) up --build --force-recreate -d app watch
 	@-$(COMPOSE) exec -T app python -m app.backup status
+	@$(SHOW_URL)
 
 up-recorded:
 	EVIDENCE_DESK_CASSETTE=demo/cassettes/nvda-example $(WITH_READERS) up --build --force-recreate -d app
+	@$(SHOW_URL)
 
 # What the readers setting is inside a container started the way run and up start one.
 readers-echo:
@@ -102,6 +106,8 @@ down:
 
 verify: build lint test smoke uitest
 
+# The fresh clone can run beside the regular Evidence Desk project.
+verify-fresh: export EVIDENCE_DESK_SUBNET ?= 192.168.231.64/26
 verify-fresh:
 	@mkdir -p results
 	@checkout=$$(mktemp -d "$(CURDIR)/results/verify.XXXXXX"); \

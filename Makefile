@@ -20,7 +20,7 @@ referee:
 # The tagged versions side by side, each from its own checkout under .claude/worktrees/ and on
 # its own port: version N at http://127.0.0.1:87NN (version 3 at 8703). Each keeps its data under
 # its own checkout, so none of them reads or writes this checkout's record. This checkout, the
-# newest, stays on 8766 (make up).
+# newest, prints its own loopback URL (make up).
 #   make versions-up                  versions 1 to 11
 #   make versions-up VERSIONS="3 7"   only these
 VERSIONS ?= 1 2 3 4 5 6 7 8 9 10 11

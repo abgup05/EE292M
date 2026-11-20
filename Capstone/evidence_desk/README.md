@@ -26,9 +26,11 @@ You need Docker running and Make. From this directory, or from the repository ro
 
 ```sh
 cp .env.example .env   # optional: ANTHROPIC_API_KEY, ANTHROPIC_MODEL, SEC_USER_AGENT
-make up                # http://127.0.0.1:8766, and the watcher beside it
+make up                # prints the local app URL and starts the watcher
 make down
 ```
+
+Use the address printed by `make up` in place of port 8766 in the examples below. Docker selects an available loopback port from 8766 through 8769. You can request one port with `make up EVIDENCE_DESK_PORT=8876`. The default Docker subnet is `192.168.231.0/26`. If it overlaps a local network, set `EVIDENCE_DESK_SUBNET` to an unused CIDR.
 
 - **Without any key** the app works on real filings: the deterministic engine quotes the sentences that best match each claim and judges no stance, so claims read "passages found, not judged". **Reported figures only** needs just a ticker.
 - **With `ANTHROPIC_API_KEY`** Claude plans the retrieval queries, drafts findings with a stance and writes the summary. The same checks apply to everything it returns. It answered through the API once at version 1 (22 October) and again from 18 November, when credit was added; on 17 November both keys were refused for lack of credit. Which results the API answered and which a stand-in's recordings answered is in one place: [Where the model answers came from](#where-the-model-answers-came-from).

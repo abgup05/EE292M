@@ -4,7 +4,7 @@ This repository holds independent coursework, the capstone plan and app, and the
 
 ## Capstone: Evidence Desk
 
-Capstone/evidence_desk/ tests the claims of an investment thesis against a company's SEC filings: a ticker, a decision and one to six claims go in; a verdict per claim comes out, each backed by exact excerpts that the backend verified against the stored filing text. It keeps the stack of the Week 2 app (Python 3.14 / FastAPI, uv lock, Docker Compose on 127.0.0.1:8766, static frontend, ruff and pytest) and the same invariants: the backend computes everything, dependencies install at image build, and all commands run through the Makefile. Its layout, pipeline, patterns and boundary are described in Capstone/evidence_desk/ARCHITECTURE.md; the build prompt for the current milestone is Capstone/PROMPT.md.
+Capstone/evidence_desk/ tests the claims of an investment thesis against a company's SEC filings: a ticker, a decision and one to six claims go in; a verdict per claim comes out, each backed by exact excerpts that the backend verified against the stored filing text. It keeps the stack of the Week 2 app (Python 3.14 / FastAPI, uv lock, Docker Compose on loopback with the port printed by Make, static frontend, ruff and pytest) and the same invariants: the backend computes everything, dependencies install at image build, and all commands run through the Makefile. Its layout, pipeline, patterns and boundary are described in Capstone/evidence_desk/ARCHITECTURE.md; the build prompt for the current milestone is Capstone/PROMPT.md.
 
 ## Week 2: Industry Flow Explorer
 

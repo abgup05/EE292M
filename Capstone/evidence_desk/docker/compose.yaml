@@ -18,7 +18,7 @@ services:
     volumes:
       - ..:/work
     ports:
-      - "127.0.0.1:8766:8000"
+      - "127.0.0.1:${EVIDENCE_DESK_PORT:-8766-8769}:8000"
   watch:
     # The standing watch (version 13): polls EDGAR for new filings of watched theses, triages
     # them and runs or queues each run. No port; it shares the data directory with the app.
@@ -65,3 +65,10 @@ services:
     volumes:
       - ..:/work
     entrypoint: ["chromium-browser", "--headless", "--no-sandbox", "--disable-gpu", "--hide-scrollbars", "--virtual-time-budget=8000"]
+
+# Automatic Docker subnets can capture the Stanford companion's 172.24.0.0/16 route.
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: "${EVIDENCE_DESK_SUBNET:-192.168.231.0/26}"

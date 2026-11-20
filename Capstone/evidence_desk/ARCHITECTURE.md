@@ -7,7 +7,7 @@ finding, save a thesis, run it again and see what moved. `../PROMPT.md` is the b
 ## Stack
 
 - Python 3.14, FastAPI, Pydantic, httpx, BeautifulSoup, SQLite; `anthropic` for the optional model engine. No front-end build.
-- Docker Compose, on `127.0.0.1:8766` only; dependencies install at image build. All through the `Makefile`.
+- Docker Compose, on loopback only (ports 8766 through 8769 by default, or `EVIDENCE_DESK_PORT`); dependencies install at image build. All through the `Makefile`.
 - Two long-lived processes from one image: the app (`app`) and, since version 13, the watcher (`watch`, no port).
 
 ## Layout (one job per module)
